@@ -3,8 +3,9 @@
     "target": "ES2024",
     "useDefineForClassFields": true,
     "lib": ["ES2024", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
     "allowJs": false,
-    "skipLibCheck": false,
+    "skipLibCheck": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "strict": true,
@@ -33,5 +34,5 @@
     "verbatimModuleSyntax": true,
     "noEmit": true
   },
-  "include": ["*.ts", "tests/**/*.ts"]
+  "include": ["*.ts", "src/**/*.ts", "src/**/*.tsx", "e2e/**/*.ts"]
 }

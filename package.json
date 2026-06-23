@@ -5,21 +5,33 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && vite build && cp build/dist/assets/index.html build/dist/index.html",
     "preview": "vite preview --host 127.0.0.1",
-    "personal-prod": "npm run build && python3 -m http.server 8080 --directory dist",
+    "personal-prod": "npm run build && python3 -m http.server 8080 --directory build/dist",
     "test": "vitest run --coverage",
     "test:unit": "vitest run --coverage",
     "test:e2e": "playwright test"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/node": "^24.10.1",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.2",
     "@vitest/coverage-v8": "^4.0.14",
     "jsdom": "^27.3.0",
     "sass": "^1.94.2",
     "typescript": "6.0.3",
-    "vite": "^7.2.7",
+    "vite": "^8.0.16",
     "vitest": "^4.0.14"
+  },
+  "dependencies": {
+    "@reduxjs/toolkit": "^2.12.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "react-redux": "^9.3.0"
   }
 }
