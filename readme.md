@@ -1,11 +1,11 @@
 Spanish Diplomacy (V1)
 ---
 
-_last updated: 2026-06-22; by: @nrhubbar_
+## Goal
+A browser-based strategy game inspired by Diplomacy, built around hidden simultaneous orders and deterministic turn resolution.
 
-This is my second attempt at making a web based strategy game. I am vibing this with GPT-5 and Codex.
+## First Scenario
+A Spanish Civil War-inspired tutorial scenario with three asymmetric factions, abstract SVG territory play, and contested territory partitions.
 
-The goal of this game is to provide something simiar to the game "Diplomacy", with a secret "Order Submission" phase followed by a simulaneous "Order Resolution" phase.
-
-The orignal plan for the implementaiton of this has been laid out in [plan.md](./plan.md).
- 
+## Build Plan
+Start with a strict TypeScript rules engine, local shared-PC play, AI actors for testing, then grow toward richer maps and async cloud multiplayer.
