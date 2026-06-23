@@ -130,19 +130,30 @@ button:disabled {
   stroke: #241d18;
   stroke-width: 0.6;
   cursor: pointer;
+  outline: none;
+  transition:
+    fill 120ms ease,
+    stroke-width 120ms ease;
 }
 
 .map-territory:hover,
 .map-territory-legal {
-  fill: #d9cfaa;
+  fill: #d8cfae;
 }
 
-.map-territory-selected {
-  fill: #b95749;
+.map-territory.map-territory-selected {
+  fill: #b85b4c;
+  stroke-width: 1;
 }
 
-.map-territory-destination {
-  fill: #70956f;
+.map-territory.map-territory-destination {
+  fill: #789469;
+  stroke-width: 1;
+}
+
+.map-territory:focus-visible {
+  stroke: #5b4734;
+  stroke-width: 1.2;
 }
 
 .map-label,
@@ -156,6 +167,16 @@ button:disabled {
 .map-unit-count {
   font-size: 3.5px;
   font-weight: 600;
+}
+
+.map-label-group {
+  pointer-events: none;
+}
+
+.map-label-backplate {
+  fill: rgb(255 250 240 / 72%);
+  stroke: rgb(36 29 24 / 18%);
+  stroke-width: 0.25;
 }
 
 .feedback-message {

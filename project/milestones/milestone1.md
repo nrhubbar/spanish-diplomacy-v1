@@ -240,7 +240,7 @@ The goal is not final game design. The goal is a working debug-grade turn loop w
 - Milestone faction display names are fixed debug names: Player 1, Player 2, and Player 3.
 - All four territories are mutually adjacent for Milestone 1.
 - Moving into a territory vacated by its defender succeeds if no other unit contests that destination.
-- Two units swapping territories succeeds in Milestone 1 because each destination has one incoming move and no stationary defender.
+- Two units attempting to swap territories bounce because the armies collide in transit.
 - Engine resolution returns structured outcomes and summary lines.
 - UI may display engine summary lines directly for debug-grade milestone output.
 - The setup screen uses fixed faction/player names.

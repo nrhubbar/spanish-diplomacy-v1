@@ -1,5 +1,5 @@
 import "@testing-library/jest-dom/vitest";
-import { act, cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Provider } from "react-redux";
 import { MemoryRouter } from "react-router";
@@ -156,5 +156,27 @@ describe("AbstractMap", () => {
     await user.click(screen.getByRole("button", { name: "North" }));
 
     expect(onSelectTerritory).toHaveBeenCalledWith("north");
+  });
+
+  it("supports keyboard territory selection", () => {
+    const onSelectTerritory = vi.fn();
+
+    render(
+      <AbstractMap
+        legalDestinationIds={[]}
+        onSelectTerritory={onSelectTerritory}
+        selectedDestinationId={undefined}
+        selectedTerritoryId={undefined}
+        units={[]}
+      />
+    );
+
+    fireEvent.keyDown(screen.getByRole("button", { name: "Center" }), { key: "Enter" });
+    fireEvent.keyDown(screen.getByRole("button", { name: "Southwest" }), { key: " " });
+    fireEvent.keyDown(screen.getByRole("button", { name: "North" }), { key: "Escape" });
+
+    expect(onSelectTerritory).toHaveBeenCalledWith("center");
+    expect(onSelectTerritory).toHaveBeenCalledWith("southwest");
+    expect(onSelectTerritory).toHaveBeenCalledTimes(2);
   });
 });

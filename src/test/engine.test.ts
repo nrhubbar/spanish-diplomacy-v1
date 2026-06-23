@@ -197,6 +197,33 @@ describe("resolveTurn", () => {
     expect(result.outcomes[0]?.kind).toBe("bounced-move");
   });
 
+  it("bounces units attempting to swap territories", () => {
+    const state = createInitialGameState();
+    const result = resolveTurn(milestone1Scenario, state, [
+      {
+        kind: "move",
+        factionId: "player-1",
+        unitId: "soldier-1",
+        from: "north",
+        to: "southwest"
+      },
+      {
+        kind: "move",
+        factionId: "player-2",
+        unitId: "soldier-2",
+        from: "southwest",
+        to: "north"
+      }
+    ]);
+
+    expect(result.finalUnits["soldier-1"].territoryId).toBe("north");
+    expect(result.finalUnits["soldier-2"].territoryId).toBe("southwest");
+    expect(result.summaryLines).toEqual([
+      "player-1 bounced moving from north to southwest: Units attempted to swap territories.",
+      "player-2 bounced moving from southwest to north: Units attempted to swap territories."
+    ]);
+  });
+
   it("leaves a no-move unit in place", () => {
     const state = createInitialGameState();
     const result = resolveTurn(milestone1Scenario, state, [

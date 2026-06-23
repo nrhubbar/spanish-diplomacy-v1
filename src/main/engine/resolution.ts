@@ -23,8 +23,12 @@ export function resolveTurn(
     const stationaryOccupant = Object.values(state.units).find(
       (unit) => unit.territoryId === order.to && !movingUnitIds.has(unit.id)
     );
+    const headOnSwap = moveOrders.some(
+      (otherOrder) =>
+        otherOrder.unitId !== order.unitId && otherOrder.from === order.to && otherOrder.to === order.from
+    );
 
-    if (destinationIncoming.length === 1 && stationaryOccupant === undefined) {
+    if (destinationIncoming.length === 1 && stationaryOccupant === undefined && !headOnSwap) {
       finalUnits[order.unitId] = {
         ...finalUnits[order.unitId],
         territoryId: order.to
@@ -35,7 +39,9 @@ export function resolveTurn(
         kind: "bounced-move",
         order,
         reason:
-          stationaryOccupant === undefined
+          headOnSwap
+            ? "Units attempted to swap territories."
+            : stationaryOccupant === undefined
             ? "Multiple units moved to the same territory."
             : "Destination was occupied."
       });
