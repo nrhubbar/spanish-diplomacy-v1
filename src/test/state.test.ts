@@ -1,6 +1,20 @@
 import type { UnknownAction } from "@reduxjs/toolkit";
 import { describe, expect, it, vi } from "vitest";
-import { decrement, increment, selectCounterValue } from "../main/state/counterSlice";
+import {
+  chooseMoveDestination,
+  enterSetup,
+  selectActiveFaction,
+  selectGamePhase,
+  selectSelectedDestinationId,
+  selectResolutionSummary,
+  selectSubmittedOrders,
+  selectUnits,
+  selectValidationMessage,
+  startNewGame,
+  startNextTurn,
+  submitMove,
+  submitNoMove
+} from "../main/state/gameSlice";
 import {
   addErrorNotification,
   addInfoNotification,
@@ -11,33 +25,104 @@ import {
 import { createAppStore } from "../main/state/store";
 
 describe("app store", () => {
-  it("uses a zero counter and no notifications by default", () => {
+  it("starts idle with no notifications", () => {
     const store = createAppStore();
 
-    expect(selectCounterValue(store.getState())).toBe(0);
+    expect(selectGamePhase(store.getState())).toBe("idle");
     expect(selectNotifications(store.getState())).toEqual([]);
   });
 
   it("accepts injected preloaded state", () => {
     const store = createAppStore({
-      counter: { value: 4 },
+      game: {
+        activeFactionId: "player-2",
+        phase: "orders",
+        resolution: undefined,
+        selectedDestinationId: undefined,
+        selectedTerritoryId: undefined,
+        submittedOrders: {},
+        turnNumber: 2,
+        units: {
+          "soldier-1": {
+            id: "soldier-1",
+            factionId: "player-1",
+            type: "soldier",
+            territoryId: "center"
+          },
+          "soldier-2": {
+            id: "soldier-2",
+            factionId: "player-2",
+            type: "soldier",
+            territoryId: "southwest"
+          },
+          "soldier-3": {
+            id: "soldier-3",
+            factionId: "player-3",
+            type: "soldier",
+            territoryId: "eastern-port"
+          }
+        },
+        validationMessage: undefined
+      },
       notifications: {
         notifications: [{ id: "known", message: "Loaded", tone: "info" }]
       }
     });
 
-    expect(selectCounterValue(store.getState())).toBe(4);
+    expect(selectActiveFaction(store.getState()).name).toBe("Player 2");
     expect(selectNotifications(store.getState())).toHaveLength(1);
   });
 
-  it("updates the counter through actions", () => {
+  it("runs a full local turn and starts the next turn", () => {
     const store = createAppStore();
 
-    store.dispatch(increment());
-    store.dispatch(increment());
-    store.dispatch(decrement());
+    store.dispatch(startNewGame());
+    store.dispatch(chooseMoveDestination("center"));
+    store.dispatch(submitMove());
 
-    expect(selectCounterValue(store.getState())).toBe(1);
+    expect(selectActiveFaction(store.getState()).name).toBe("Player 2");
+    expect(selectSubmittedOrders(store.getState())[0]?.description).toBe(
+      "Move from North to Center"
+    );
+
+    store.dispatch(chooseMoveDestination("center"));
+    store.dispatch(submitMove());
+    store.dispatch(submitNoMove());
+
+    expect(selectGamePhase(store.getState())).toBe("resolution");
+    expect(selectResolutionSummary(store.getState()).join(" ")).toContain("bounced");
+    expect(selectUnits(store.getState()).find((unit) => unit.id === "soldier-1")?.territoryId).toBe(
+      "north"
+    );
+
+    store.dispatch(startNextTurn());
+
+    expect(selectGamePhase(store.getState())).toBe("orders");
+    expect(selectActiveFaction(store.getState()).name).toBe("Player 1");
+    expect(store.getState().game.turnNumber).toBe(2);
+  });
+
+  it("enters setup and validates missing move destinations", () => {
+    const store = createAppStore();
+
+    store.dispatch(enterSetup());
+    expect(selectGamePhase(store.getState())).toBe("setup");
+
+    store.dispatch(startNewGame());
+    store.dispatch(submitMove());
+
+    expect(selectValidationMessage(store.getState())).toBe("Choose a legal move destination first.");
+  });
+
+  it("selects the active origin without choosing a destination", () => {
+    const store = createAppStore();
+
+    store.dispatch(startNewGame());
+    store.dispatch(chooseMoveDestination("center"));
+    expect(selectSelectedDestinationId(store.getState())).toBe("center");
+
+    store.dispatch(chooseMoveDestination("north"));
+    expect(selectSelectedDestinationId(store.getState())).toBeUndefined();
   });
 
   it("adds and removes notifications", () => {

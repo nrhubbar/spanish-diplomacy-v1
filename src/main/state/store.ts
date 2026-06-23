@@ -1,10 +1,10 @@
 import { combineReducers, configureStore } from "@reduxjs/toolkit";
-import { counterReducer } from "./counterSlice";
+import { gameReducer } from "./gameSlice";
 import { notificationMiddleware } from "./notificationMiddleware";
 import { notificationReducer } from "./notificationSlice";
 
 export const rootReducer = combineReducers({
-  counter: counterReducer,
+  game: gameReducer,
   notifications: notificationReducer
 });
 

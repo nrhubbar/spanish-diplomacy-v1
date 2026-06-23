@@ -34,6 +34,10 @@ body {
   box-shadow: 0 1rem 3rem rgb(36 29 24 / 12%);
 }
 
+.game-screen {
+  width: min(100%, 58rem);
+}
+
 .screen-kicker {
   margin: 0 0 0.75rem;
   color: #7d2f2a;
@@ -93,10 +97,87 @@ button:hover {
   line-height: 1;
 }
 
-.counter-controls {
+.counter-controls,
+.action-row {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.setup-list {
+  margin: 1.5rem 0 0;
+  padding-left: 1.25rem;
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
+.abstract-map {
+  width: min(100%, 34rem);
+  aspect-ratio: 1;
+  display: block;
+  margin-top: 1.5rem;
+  border: 1px solid #241d18;
+  background: #e4ddcf;
+}
+
+.map-territory {
+  fill: #cbbd9b;
+  stroke: #241d18;
+  stroke-width: 0.6;
+  cursor: pointer;
+}
+
+.map-territory:hover,
+.map-territory-legal {
+  fill: #d9cfaa;
+}
+
+.map-territory-selected {
+  fill: #b95749;
+}
+
+.map-territory-destination {
+  fill: #70956f;
+}
+
+.map-label,
+.map-unit-count {
+  pointer-events: none;
+  fill: #241d18;
+  font-size: 4px;
+  font-weight: 700;
+}
+
+.map-unit-count {
+  font-size: 3.5px;
+  font-weight: 600;
+}
+
+.feedback-message {
+  color: #9f2525;
+  font-weight: 700;
+}
+
+.debug-panel {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #9b8b72;
+}
+
+.debug-panel h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.debug-panel ul {
+  margin: 0.75rem 0 0;
+  padding-left: 1.25rem;
+  line-height: 1.6;
 }
 
 .notification-shelf {

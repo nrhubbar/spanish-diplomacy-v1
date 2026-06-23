@@ -8,8 +8,8 @@ export function StartScreen(): JSX.Element {
     <section className="screen" aria-labelledby="start-title">
       <p className="screen-kicker">Strategy prototype</p>
       <h1 id="start-title">Spanish Diplomacy</h1>
-      <p className="screen-copy">Hidden orders. Simultaneous resolution.</p>
-      <button type="button" onClick={() => navigate("/counter")}>
+      <p className="screen-copy">Milestone 1: visible debug orders on an abstract SVG map.</p>
+      <button type="button" onClick={() => navigate("/setup")}>
         Start
       </button>
     </section>
