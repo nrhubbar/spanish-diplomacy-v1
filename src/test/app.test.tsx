@@ -1,17 +1,25 @@
 import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Provider } from "react-redux";
+import { MemoryRouter } from "react-router";
 import { afterEach, describe, expect, it } from "vitest";
 import { App } from "../main/app";
+import { addInfoNotification } from "../main/state/notificationSlice";
 import { createAppStore } from "../main/state/store";
 
-function renderWithStore(): void {
+function renderWithStore(initialPath = "/"): ReturnType<typeof createAppStore> {
+  const store = createAppStore();
+
   render(
-    <Provider store={createAppStore()}>
-      <App />
+    <Provider store={store}>
+      <MemoryRouter initialEntries={[initialPath]}>
+        <App />
+      </MemoryRouter>
     </Provider>
   );
+
+  return store;
 }
 
 describe("App", () => {
@@ -56,5 +64,27 @@ describe("App", () => {
     await user.click(screen.getByRole("button", { name: "Back" }));
 
     expect(screen.getByRole("heading", { name: "Spanish Diplomacy" })).toBeVisible();
+  });
+
+  it("redirects unknown routes to the start screen", () => {
+    renderWithStore("/missing");
+
+    expect(screen.getByRole("heading", { name: "Spanish Diplomacy" })).toBeVisible();
+  });
+
+  it("shows and dismisses app notifications", async () => {
+    const user = userEvent.setup();
+    const store = renderWithStore();
+
+    act(() => {
+      store.dispatch(addInfoNotification("Orders saved."));
+    });
+
+    expect(await screen.findByLabelText("Notifications")).toBeVisible();
+    expect(screen.getByText("Orders saved.")).toBeVisible();
+
+    await user.click(screen.getByRole("button", { name: "Dismiss" }));
+
+    expect(screen.queryByText("Orders saved.")).not.toBeInTheDocument();
   });
 });

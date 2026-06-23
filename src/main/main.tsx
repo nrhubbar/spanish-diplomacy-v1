@@ -1,6 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { Provider } from "react-redux";
+import { BrowserRouter } from "react-router";
 import { App } from "./app";
 import "./style.scss";
 import { createAppStore } from "./state/store";
@@ -14,7 +15,9 @@ if (root === null) {
 createRoot(root).render(
   <StrictMode>
     <Provider store={createAppStore()}>
-      <App />
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
     </Provider>
   </StrictMode>
 );
