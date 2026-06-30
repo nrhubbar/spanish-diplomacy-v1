@@ -1,12 +1,14 @@
-export type FactionId = "player-1" | "player-2" | "player-3";
+export type FactionId = "com" | "roy" | "fas";
 
 export type TerritoryId = "north" | "center" | "southwest" | "eastern-port";
 
-export type UnitId = "soldier-1" | "soldier-2" | "soldier-3";
+export type UnitId = string;
 
-export type UnitType = "soldier";
+export type UnitType = "infantry";
 
 export interface FactionDefinition {
+  readonly abbreviation: string;
+  readonly color: string;
   readonly id: FactionId;
   readonly name: string;
 }
@@ -18,13 +20,15 @@ export interface TerritoryDefinition {
 }
 
 export interface UnitState {
-  readonly id: UnitId;
+  readonly displayName: string;
   readonly factionId: FactionId;
+  readonly id: UnitId;
   readonly type: UnitType;
   readonly territoryId: TerritoryId;
 }
 
 export interface GameState {
+  readonly control: Partial<Record<TerritoryId, FactionId>>;
   readonly turnNumber: number;
   readonly units: Record<UnitId, UnitState>;
 }
@@ -33,23 +37,21 @@ export interface ScenarioDefinition {
   readonly factions: readonly FactionDefinition[];
   readonly territories: readonly TerritoryDefinition[];
   readonly units: Record<UnitId, UnitState>;
+  readonly initialControl: Partial<Record<TerritoryId, FactionId>>;
 }
 
 export interface MoveOrder {
   readonly kind: "move";
   readonly factionId: FactionId;
-  readonly unitId: UnitId;
   readonly from: TerritoryId;
   readonly to: TerritoryId;
-}
-
-export interface NoMoveOrder {
-  readonly kind: "no-move";
-  readonly factionId: FactionId;
   readonly unitId: UnitId;
 }
 
-export type Order = MoveOrder | NoMoveOrder;
+export interface PlayerSubmission {
+  readonly factionId: FactionId;
+  readonly orders: readonly MoveOrder[];
+}
 
 export type ValidationResult =
   | { readonly ok: true }
@@ -66,15 +68,41 @@ export interface BouncedMoveOutcome {
   readonly reason: string;
 }
 
-export interface NoMoveOutcome {
-  readonly kind: "no-move";
-  readonly order: NoMoveOrder;
+export interface DisbandedMoveOutcome {
+  readonly kind: "disbanded-move";
+  readonly order: MoveOrder;
+  readonly reason: string;
 }
 
-export type TurnOutcome = SuccessfulMoveOutcome | BouncedMoveOutcome | NoMoveOutcome;
+export interface InvalidOrderOutcome {
+  readonly kind: "invalid-order";
+  readonly order: MoveOrder;
+  readonly reason: string;
+}
+
+export interface NoMoveOutcome {
+  readonly factionId: FactionId;
+  readonly kind: "no-move";
+  readonly unitId?: UnitId;
+}
+
+export interface ControlChange {
+  readonly controller: FactionId;
+  readonly territoryId: TerritoryId;
+}
+
+export type TurnOutcome =
+  | SuccessfulMoveOutcome
+  | BouncedMoveOutcome
+  | DisbandedMoveOutcome
+  | InvalidOrderOutcome
+  | NoMoveOutcome;
 
 export interface TurnResolutionResult {
-  readonly outcomes: readonly TurnOutcome[];
+  readonly controlChanges: readonly ControlChange[];
+  readonly finalControl: Partial<Record<TerritoryId, FactionId>>;
   readonly finalUnits: Record<UnitId, UnitState>;
+  readonly outcomes: readonly TurnOutcome[];
+  readonly submittedOrders: readonly MoveOrder[];
   readonly summaryLines: readonly string[];
 }

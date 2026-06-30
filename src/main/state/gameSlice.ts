@@ -2,41 +2,56 @@ import { createSelector, createSlice, type PayloadAction } from "@reduxjs/toolki
 import type {
   FactionId,
   GameState,
-  Order,
+  MoveOrder,
+  PlayerSubmission,
   TerritoryId,
   TurnResolutionResult,
   UnitId,
   UnitState
 } from "../engine/types";
 import { resolveTurn } from "../engine/resolution";
-import { validateOrder } from "../engine/validation";
+import { validateMoveOrder } from "../engine/validation";
 import { createInitialGameState, milestone1Scenario } from "../scenarios/milestone1Scenario";
 import type { RootState } from "./store";
 
 export type GamePhase = "idle" | "setup" | "orders" | "resolution";
 
+type DraftAction = "move";
+
+export interface TurnHistoryEntry {
+  readonly summaryLines: readonly string[];
+  readonly turnNumber: number;
+}
+
 export interface GameSliceState {
   activeFactionId: FactionId;
+  control: Partial<Record<TerritoryId, FactionId>>;
+  draftAction: DraftAction | undefined;
+  history: readonly TurnHistoryEntry[];
   phase: GamePhase;
   resolution: TurnResolutionResult | undefined;
   selectedDestinationId: TerritoryId | undefined;
-  selectedTerritoryId: TerritoryId | undefined;
-  submittedOrders: Partial<Record<FactionId, Order>>;
+  selectedFromTerritoryId: TerritoryId | undefined;
+  selectedUnitIds: readonly UnitId[];
+  submittedOrders: Partial<Record<FactionId, PlayerSubmission>>;
   turnNumber: number;
   units: Record<UnitId, UnitState>;
   validationMessage: string | undefined;
 }
 
 const factionOrder = milestone1Scenario.factions.map((faction) => faction.id);
-
 const initialEngineState = createInitialGameState();
 
 const initialState: GameSliceState = {
-  activeFactionId: "player-1",
+  activeFactionId: "com",
+  control: initialEngineState.control,
+  draftAction: undefined,
+  history: [],
   phase: "idle",
   resolution: undefined,
   selectedDestinationId: undefined,
-  selectedTerritoryId: undefined,
+  selectedFromTerritoryId: undefined,
+  selectedUnitIds: [],
   submittedOrders: {},
   turnNumber: initialEngineState.turnNumber,
   units: initialEngineState.units,
@@ -47,108 +62,161 @@ const gameSlice = createSlice({
   name: "game",
   initialState,
   reducers: {
+    chooseMoveAction: (state) => {
+      if (state.selectedUnitIds.length === 0) {
+        state.validationMessage = "Select at least one friendly unit first.";
+        return;
+      }
+
+      state.draftAction = "move";
+      state.selectedDestinationId = undefined;
+      state.validationMessage = undefined;
+    },
+    chooseMoveDestination: (state, action: PayloadAction<TerritoryId>) => {
+      if (state.draftAction !== "move" || state.selectedFromTerritoryId === undefined) {
+        state.validationMessage = "Choose a from territory and move action first.";
+        return;
+      }
+
+      const destinationId = action.payload;
+
+      if (destinationId === state.selectedFromTerritoryId) {
+        state.selectedDestinationId = undefined;
+        state.validationMessage = "Choose a different territory as the destination.";
+        return;
+      }
+
+      const firstOrder = buildMoveOrders(state, destinationId)[0];
+
+      if (firstOrder === undefined) {
+        state.validationMessage = "Select at least one unit before choosing a destination.";
+        return;
+      }
+
+      const validation = validateMoveOrder(milestone1Scenario, toEngineState(state), firstOrder);
+
+      if (validation.ok) {
+        state.selectedDestinationId = destinationId;
+        state.validationMessage = undefined;
+      } else {
+        state.selectedDestinationId = undefined;
+        state.validationMessage = validation.reason;
+      }
+    },
     enterSetup: (state) => {
       state.phase = "setup";
+      state.validationMessage = undefined;
+    },
+    selectTerritory: (state, action: PayloadAction<TerritoryId>) => {
+      const territoryId = action.payload;
+      const friendlyUnits = Object.values(state.units).filter(
+        (unit) => unit.factionId === state.activeFactionId && unit.territoryId === territoryId
+      );
+
+      state.selectedFromTerritoryId = territoryId;
+      state.selectedDestinationId = undefined;
+      state.draftAction = undefined;
+      state.validationMessage =
+        friendlyUnits.length === 0 ? "No friendly units are available in that territory." : undefined;
+      state.selectedUnitIds = friendlyUnits.map((unit) => unit.id);
+    },
+    selectUnit: (state, action: PayloadAction<UnitId>) => {
+      const unit = state.units[action.payload];
+
+      if (unit === undefined || unit.factionId !== state.activeFactionId) {
+        state.validationMessage = "Select one of your own units.";
+        return;
+      }
+
+      state.selectedFromTerritoryId = unit.territoryId;
+      state.selectedDestinationId = undefined;
+      state.draftAction = undefined;
+      state.selectedUnitIds = [unit.id];
       state.validationMessage = undefined;
     },
     startNewGame: () => {
       const nextState = createInitialGameState();
 
       return {
-        activeFactionId: "player-1",
+        activeFactionId: "com",
+        control: nextState.control,
+        draftAction: undefined,
+        history: [],
         phase: "orders",
         resolution: undefined,
         selectedDestinationId: undefined,
-        selectedTerritoryId: undefined,
+        selectedFromTerritoryId: undefined,
+        selectedUnitIds: [],
         submittedOrders: {},
         turnNumber: nextState.turnNumber,
         units: nextState.units,
         validationMessage: undefined
       } satisfies GameSliceState;
     },
-    chooseMoveDestination: (state, action: PayloadAction<TerritoryId>) => {
-      const activeUnit = findActiveUnit(state);
-      const selectedTerritoryId = action.payload;
-
-      state.selectedTerritoryId = selectedTerritoryId;
-      state.validationMessage = undefined;
-
-      if (selectedTerritoryId === activeUnit.territoryId) {
-        state.selectedDestinationId = undefined;
-        return;
-      }
-
-      const order = {
-        kind: "move",
-        factionId: state.activeFactionId,
-        unitId: activeUnit.id,
-        from: activeUnit.territoryId,
-        to: selectedTerritoryId
-      } satisfies Order;
-      const validation = validateOrder(milestone1Scenario, toEngineState(state), order);
-
-      if (validation.ok) {
-        state.selectedDestinationId = selectedTerritoryId;
-      } else {
-        state.selectedDestinationId = undefined;
-        state.validationMessage = validation.reason;
-      }
-    },
-    submitMove: (state) => {
-      const activeUnit = findActiveUnit(state);
-
-      if (state.selectedDestinationId === undefined) {
-        state.validationMessage = "Choose a legal move destination first.";
-        return;
-      }
-
-      const order = {
-        kind: "move",
-        factionId: state.activeFactionId,
-        unitId: activeUnit.id,
-        from: activeUnit.territoryId,
-        to: state.selectedDestinationId
-      } satisfies Order;
-      const validation = validateOrder(milestone1Scenario, toEngineState(state), order);
-
-      if (!validation.ok) {
-        state.validationMessage = validation.reason;
-        return;
-      }
-
-      submitOrderAndAdvance(state, order);
-    },
-    submitNoMove: (state) => {
-      const activeUnit = findActiveUnit(state);
-
-      submitOrderAndAdvance(state, {
-        kind: "no-move",
-        factionId: state.activeFactionId,
-        unitId: activeUnit.id
-      });
-    },
     startNextTurn: (state) => {
-      state.activeFactionId = "player-1";
+      if (state.resolution !== undefined) {
+        state.history = [
+          ...state.history,
+          {
+            summaryLines: state.resolution.summaryLines,
+            turnNumber: state.turnNumber
+          }
+        ];
+      }
+
+      state.activeFactionId = "com";
+      state.draftAction = undefined;
       state.phase = "orders";
       state.resolution = undefined;
       state.selectedDestinationId = undefined;
-      state.selectedTerritoryId = undefined;
+      state.selectedFromTerritoryId = undefined;
+      state.selectedUnitIds = [];
       state.submittedOrders = {};
       state.turnNumber += 1;
       state.validationMessage = undefined;
+    },
+    submitCurrentOrder: (state) => {
+      const orders =
+        state.draftAction === "move" && state.selectedDestinationId !== undefined
+          ? buildMoveOrders(state, state.selectedDestinationId)
+          : [];
+
+      const invalidOrder = orders.find((order) => {
+        const validation = validateMoveOrder(milestone1Scenario, toEngineState(state), order);
+
+        return !validation.ok;
+      });
+
+      if (invalidOrder !== undefined) {
+        const validation = validateMoveOrder(milestone1Scenario, toEngineState(state), invalidOrder);
+
+        state.validationMessage = validation.ok ? undefined : validation.reason;
+        return;
+      }
+
+      submitAndAdvance(state, {
+        factionId: state.activeFactionId,
+        orders
+      });
     }
   }
 });
 
-export const { chooseMoveDestination, enterSetup, startNewGame, startNextTurn, submitMove, submitNoMove } =
-  gameSlice.actions;
+export const {
+  chooseMoveAction,
+  chooseMoveDestination,
+  enterSetup,
+  selectTerritory,
+  selectUnit,
+  startNewGame,
+  startNextTurn,
+  submitCurrentOrder
+} = gameSlice.actions;
 export const gameReducer = gameSlice.reducer;
 
-function submitOrderAndAdvance(state: GameSliceState, order: Order): void {
-  state.submittedOrders[state.activeFactionId] = order;
-  state.selectedDestinationId = undefined;
-  state.selectedTerritoryId = undefined;
-  state.validationMessage = undefined;
+function submitAndAdvance(state: GameSliceState, submission: PlayerSubmission): void {
+  state.submittedOrders[state.activeFactionId] = submission;
+  clearDraft(state);
 
   const currentIndex = factionOrder.indexOf(state.activeFactionId);
   const nextFactionId = factionOrder[currentIndex + 1];
@@ -158,74 +226,114 @@ function submitOrderAndAdvance(state: GameSliceState, order: Order): void {
     return;
   }
 
-  const submittedOrders = factionOrder.map((factionId) => state.submittedOrders[factionId]);
+  const submissions = factionOrder.map(
+    (factionId) => state.submittedOrders[factionId] ?? { factionId, orders: [] }
+  );
+  const resolution = resolveTurn(milestone1Scenario, toEngineState(state), submissions);
 
-  if (submittedOrders.every((submittedOrder): submittedOrder is Order => submittedOrder !== undefined)) {
-    const resolution = resolveTurn(milestone1Scenario, toEngineState(state), submittedOrders);
-    state.phase = "resolution";
-    state.resolution = resolution;
-    state.units = resolution.finalUnits;
-  }
+  state.control = resolution.finalControl;
+  state.phase = "resolution";
+  state.resolution = resolution;
+  state.units = resolution.finalUnits;
 }
 
-function findActiveUnit(state: GameSliceState): UnitState {
-  const activeUnit = Object.values(state.units).find((unit) => unit.factionId === state.activeFactionId);
+function clearDraft(state: GameSliceState): void {
+  state.draftAction = undefined;
+  state.selectedDestinationId = undefined;
+  state.selectedFromTerritoryId = undefined;
+  state.selectedUnitIds = [];
+  state.validationMessage = undefined;
+}
 
-  if (activeUnit === undefined) {
-    throw new Error("Active faction has no unit.");
+function buildMoveOrders(state: GameSliceState, to: TerritoryId): readonly MoveOrder[] {
+  if (state.selectedFromTerritoryId === undefined) {
+    return [];
   }
 
-  return activeUnit;
+  return state.selectedUnitIds.map((unitId) => ({
+    factionId: state.activeFactionId,
+    from: state.selectedFromTerritoryId as TerritoryId,
+    kind: "move",
+    to,
+    unitId
+  }));
 }
 
 function toEngineState(state: GameSliceState): GameState {
   return {
+    control: { ...state.control },
     turnNumber: state.turnNumber,
-    units: {
-      "soldier-1": { ...state.units["soldier-1"] },
-      "soldier-2": { ...state.units["soldier-2"] },
-      "soldier-3": { ...state.units["soldier-3"] }
-    }
+    units: Object.fromEntries(Object.entries(state.units).map(([unitId, unit]) => [unitId, { ...unit }]))
   };
+}
+
+const selectSubmittedOrderRecord = (state: RootState) => state.game.submittedOrders;
+const selectUnitRecord = (state: RootState) => state.game.units;
+
+export function selectActiveFaction(state: RootState) {
+  return factionById(state.game.activeFactionId);
+}
+
+export function selectCanSubmit(state: RootState): boolean {
+  return (
+    state.game.draftAction === undefined ||
+    (state.game.selectedDestinationId !== undefined && state.game.selectedUnitIds.length > 0)
+  );
+}
+
+export function selectControl(state: RootState): Partial<Record<TerritoryId, FactionId>> {
+  return state.game.control;
+}
+
+export function selectDraftAction(state: RootState): DraftAction | undefined {
+  return state.game.draftAction;
 }
 
 export function selectGamePhase(state: RootState): GamePhase {
   return state.game.phase;
 }
 
-export function selectActiveFaction(state: RootState) {
-  return factionById(state.game.activeFactionId);
-}
-
-export function selectActiveUnit(state: RootState): UnitState {
-  return findActiveUnit(state.game);
+export function selectHistory(state: RootState): readonly TurnHistoryEntry[] {
+  return state.game.history;
 }
 
 export function selectLegalDestinationIds(state: RootState): readonly TerritoryId[] {
-  const activeUnit = selectActiveUnit(state);
+  if (state.game.draftAction !== "move" || state.game.selectedFromTerritoryId === undefined) {
+    return [];
+  }
+
   const territory = milestone1Scenario.territories.find(
-    (candidate) => candidate.id === activeUnit.territoryId
+    (candidate) => candidate.id === state.game.selectedFromTerritoryId
   );
 
   return territory?.adjacent ?? [];
+}
+
+export function selectResolution(state: RootState): TurnResolutionResult | undefined {
+  return state.game.resolution;
+}
+
+export function selectResolutionSummary(state: RootState): readonly string[] {
+  return state.game.resolution?.summaryLines ?? [];
 }
 
 export function selectSelectedDestinationId(state: RootState): TerritoryId | undefined {
   return state.game.selectedDestinationId;
 }
 
-export function selectSelectedTerritoryId(state: RootState): TerritoryId | undefined {
-  return state.game.selectedTerritoryId ?? selectActiveUnit(state).territoryId;
+export function selectSelectedFromTerritoryId(state: RootState): TerritoryId | undefined {
+  return state.game.selectedFromTerritoryId;
 }
 
-const selectSubmittedOrderRecord = (state: RootState) => state.game.submittedOrders;
-const selectUnitRecord = (state: RootState) => state.game.units;
+export function selectSelectedUnitIds(state: RootState): readonly UnitId[] {
+  return state.game.selectedUnitIds;
+}
 
 export const selectSubmittedOrders = createSelector([selectSubmittedOrderRecord], (submittedOrders) =>
   factionOrder.flatMap((factionId) => {
-    const order = submittedOrders[factionId];
+    const submission = submittedOrders[factionId];
 
-    if (order === undefined) {
+    if (submission === undefined) {
       return [];
     }
 
@@ -233,7 +341,10 @@ export const selectSubmittedOrders = createSelector([selectSubmittedOrderRecord]
       {
         factionId,
         factionName: factionById(factionId).name,
-        description: describeOrder(order)
+        description:
+          submission.orders.length === 0
+            ? "No orders"
+            : submission.orders.map((order) => describeOrder(order)).join(", ")
       }
     ];
   })
@@ -251,20 +362,16 @@ export const selectUnitsWithFactionNames = createSelector([selectUnitRecord], (u
   }))
 );
 
-export function selectResolutionSummary(state: RootState): readonly string[] {
-  return state.game.resolution?.summaryLines ?? [];
-}
-
 export function selectValidationMessage(state: RootState): string | undefined {
   return state.game.validationMessage;
 }
 
-function describeOrder(order: Order): string {
-  if (order.kind === "no-move") {
-    return "No move";
-  }
+export function selectTurnDate(state: RootState): string {
+  return turnDate(state.game.turnNumber);
+}
 
-  return `Move from ${territoryName(order.from)} to ${territoryName(order.to)}`;
+function describeOrder(order: MoveOrder): string {
+  return `Move ${order.unitId} from ${territoryName(order.from)} to ${territoryName(order.to)}`;
 }
 
 function factionById(factionId: FactionId) {
@@ -281,4 +388,27 @@ function territoryName(territoryId: TerritoryId): string {
   const territory = milestone1Scenario.territories.find((candidate) => candidate.id === territoryId);
 
   return territory?.name ?? territoryId;
+}
+
+function turnDate(turnNumber: number): string {
+  const monthNames = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December"
+  ];
+  const halfStep = turnNumber - 1;
+  const year = 1930 + Math.floor(halfStep / 24);
+  const month = monthNames[Math.floor((halfStep % 24) / 2)] ?? "January";
+  const half = halfStep % 2 === 0 ? "early" : "late";
+
+  return `${half} ${month} ${year}`;
 }

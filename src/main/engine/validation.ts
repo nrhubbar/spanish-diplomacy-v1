@@ -1,9 +1,9 @@
-import type { GameState, Order, ScenarioDefinition, ValidationResult } from "./types";
+import type { GameState, MoveOrder, ScenarioDefinition, ValidationResult } from "./types";
 
-export function validateOrder(
+export function validateMoveOrder(
   scenario: ScenarioDefinition,
   state: GameState,
-  order: Order
+  order: MoveOrder
 ): ValidationResult {
   const unit = state.units[order.unitId];
 
@@ -13,10 +13,6 @@ export function validateOrder(
 
   if (unit.factionId !== order.factionId) {
     return { ok: false, reason: "Selected unit belongs to another player." };
-  }
-
-  if (order.kind === "no-move") {
-    return { ok: true };
   }
 
   if (unit.territoryId !== order.from) {

@@ -1,11 +1,23 @@
 import type { JSX, KeyboardEvent } from "react";
-import type { TerritoryId, UnitState } from "../engine/types";
+import type {
+  FactionDefinition,
+  FactionId,
+  TerritoryId,
+  TurnOutcome,
+  UnitId,
+  UnitState
+} from "../engine/types";
 
 interface AbstractMapProps {
+  readonly control: Partial<Record<TerritoryId, FactionId>>;
+  readonly factions: readonly FactionDefinition[];
   readonly legalDestinationIds: readonly TerritoryId[];
   readonly onSelectTerritory: (territoryId: TerritoryId) => void;
+  readonly onSelectUnit: (unitId: UnitId) => void;
+  readonly resolutionOutcomes?: readonly TurnOutcome[];
   readonly selectedDestinationId: TerritoryId | undefined;
-  readonly selectedTerritoryId: TerritoryId | undefined;
+  readonly selectedFromTerritoryId: TerritoryId | undefined;
+  readonly selectedUnitIds: readonly UnitId[];
   readonly units: readonly UnitState[];
 }
 
@@ -22,6 +34,11 @@ interface TerritoryShape {
   readonly labelX: number;
   readonly labelY: number;
   readonly titleLines?: readonly string[];
+}
+
+interface TerritoryAnchor {
+  readonly x: number;
+  readonly y: number;
 }
 
 const territoryShapes: readonly TerritoryShape[] = [
@@ -60,19 +77,38 @@ const territoryShapes: readonly TerritoryShape[] = [
   }
 ];
 
+const territoryAnchors: Record<TerritoryId, TerritoryAnchor> = {
+  center: { x: 50, y: 58 },
+  "eastern-port": { x: 76, y: 91 },
+  north: { x: 50, y: 21 },
+  southwest: { x: 24, y: 93 }
+};
+
 export function AbstractMap({
+  control,
+  factions,
   legalDestinationIds,
   onSelectTerritory,
+  onSelectUnit,
+  resolutionOutcomes = [],
   selectedDestinationId,
-  selectedTerritoryId,
+  selectedFromTerritoryId,
+  selectedUnitIds,
   units
 }: AbstractMapProps): JSX.Element {
   return (
     <svg className="abstract-map" role="img" aria-label="Milestone 1 territory map" viewBox="0 0 100 100">
+      <defs>
+        <marker id="arrowhead" markerHeight="4" markerWidth="4" orient="auto" refX="3.4" refY="2">
+          <path d="M 0 0 L 4 2 L 0 4 Z" />
+        </marker>
+      </defs>
       {territoryShapes.map((shape) => {
+        const controller = control[shape.id];
         const classes = [
           "map-territory",
-          selectedTerritoryId === shape.id ? "map-territory-selected" : "",
+          controller === undefined ? "" : `map-control-${controller}`,
+          selectedFromTerritoryId === shape.id ? "map-territory-selected" : "",
           selectedDestinationId === shape.id ? "map-territory-destination" : "",
           legalDestinationIds.includes(shape.id) ? "map-territory-legal" : ""
         ]
@@ -85,8 +121,8 @@ export function AbstractMap({
               <circle
                 aria-label={shape.label}
                 className={classes}
-                onKeyDown={(event) => handleTerritoryKeyDown(event, () => onSelectTerritory(shape.id))}
                 onClick={() => onSelectTerritory(shape.id)}
+                onKeyDown={(event) => handleTerritoryKeyDown(event, () => onSelectTerritory(shape.id))}
                 role="button"
                 tabIndex={0}
                 {...shape.circle}
@@ -97,8 +133,8 @@ export function AbstractMap({
                 className={classes}
                 d={shape.path}
                 fillRule="evenodd"
-                onKeyDown={(event) => handleTerritoryKeyDown(event, () => onSelectTerritory(shape.id))}
                 onClick={() => onSelectTerritory(shape.id)}
+                onKeyDown={(event) => handleTerritoryKeyDown(event, () => onSelectTerritory(shape.id))}
                 role="button"
                 tabIndex={0}
               />
@@ -106,29 +142,114 @@ export function AbstractMap({
           </g>
         );
       })}
+      <OrderAnnotations factions={factions} outcomes={resolutionOutcomes} />
       {territoryShapes.map((shape) => (
-        <MapLabel
-          key={shape.id}
-          shape={shape}
-          unitCount={units.filter((unit) => unit.territoryId === shape.id).length}
+        <MapLabel key={shape.id} shape={shape} />
+      ))}
+      {units.map((unit, index) => (
+        <UnitCounter
+          faction={factionById(factions, unit.factionId)}
+          index={index}
+          isSelected={selectedUnitIds.includes(unit.id)}
+          key={unit.id}
+          onSelectUnit={onSelectUnit}
+          unit={unit}
         />
       ))}
     </svg>
   );
 }
 
-interface MapLabelProps {
-  readonly shape: TerritoryShape;
-  readonly unitCount: number;
+interface OrderAnnotationsProps {
+  readonly factions: readonly FactionDefinition[];
+  readonly outcomes: readonly TurnOutcome[];
 }
 
-function MapLabel({ shape, unitCount }: MapLabelProps): JSX.Element {
+function OrderAnnotations({ factions, outcomes }: OrderAnnotationsProps): JSX.Element {
+  return (
+    <g className="map-annotations">
+      {outcomes.flatMap((outcome) => {
+        if (outcome.kind === "no-move" || outcome.kind === "invalid-order") {
+          return [];
+        }
+
+        const from = territoryAnchors[outcome.order.from];
+        const to = territoryAnchors[outcome.order.to];
+        const faction = factionById(factions, outcome.order.factionId);
+        const midpoint = {
+          x: (from.x + to.x) / 2,
+          y: (from.y + to.y) / 2
+        };
+
+        return [
+          <line
+            className="map-order-arrow"
+            key={`${outcome.order.unitId}-arrow`}
+            markerEnd="url(#arrowhead)"
+            style={{ color: faction.color }}
+            x1={from.x}
+            x2={to.x}
+            y1={from.y}
+            y2={to.y}
+          />,
+          outcome.kind === "bounced-move" ? (
+            <text className="map-bounce-marker" key={`${outcome.order.unitId}-bounce`} x={midpoint.x} y={midpoint.y}>
+              x
+            </text>
+          ) : null,
+          outcome.kind === "disbanded-move" ? (
+            <text className="map-skull-marker" key={`${outcome.order.unitId}-skull`} x={midpoint.x} y={midpoint.y}>
+              skull
+            </text>
+          ) : null
+        ];
+      })}
+    </g>
+  );
+}
+
+interface UnitCounterProps {
+  readonly faction: FactionDefinition;
+  readonly index: number;
+  readonly isSelected: boolean;
+  readonly onSelectUnit: (unitId: UnitId) => void;
+  readonly unit: UnitState;
+}
+
+function UnitCounter({ faction, index, isSelected, onSelectUnit, unit }: UnitCounterProps): JSX.Element {
+  const anchor = territoryAnchors[unit.territoryId];
+  const x = anchor.x + (index % 2) * 8 - 4;
+  const y = anchor.y + Math.floor(index / 2) * 7;
+
+  return (
+    <g
+      aria-label={unit.displayName}
+      className={isSelected ? "unit-counter unit-counter-selected" : "unit-counter"}
+      onClick={(event) => {
+        event.stopPropagation();
+        onSelectUnit(unit.id);
+      }}
+      role="button"
+      tabIndex={0}
+      transform={`translate(${x} ${y})`}
+    >
+      <rect height="7" rx="0.8" style={{ fill: faction.color }} width="12" x="-6" y="-4" />
+      <text className="unit-counter-symbol" textAnchor="middle" x="0" y="1.2">
+        X
+      </text>
+    </g>
+  );
+}
+
+interface MapLabelProps {
+  readonly shape: TerritoryShape;
+}
+
+function MapLabel({ shape }: MapLabelProps): JSX.Element {
   const titleLines = shape.titleLines ?? [shape.label];
-  const unitLine = unitCount > 0 ? `${unitCount} soldier${unitCount === 1 ? "" : "s"}` : undefined;
-  const lines = unitLine === undefined ? titleLines : [...titleLines, unitLine];
-  const fontSize = Math.min(4.2, Math.max(2.8, shape.labelWidth / longestLineLength(lines) / 1.35));
+  const fontSize = Math.min(4.2, Math.max(2.8, shape.labelWidth / longestLineLength(titleLines) / 1.35));
   const lineHeight = fontSize * 1.35;
-  const labelHeight = lineHeight * lines.length + 2.4;
+  const labelHeight = lineHeight * titleLines.length + 2.4;
   const labelY = shape.labelY - lineHeight;
 
   return (
@@ -141,9 +262,9 @@ function MapLabel({ shape, unitCount }: MapLabelProps): JSX.Element {
         x={shape.labelWidth / -2}
         y="0"
       />
-      {lines.map((line, index) => (
+      {titleLines.map((line, index) => (
         <text
-          className={index < titleLines.length ? "map-label" : "map-unit-count"}
+          className="map-label"
           key={`${shape.id}-${line}`}
           textAnchor="middle"
           x="0"
@@ -154,6 +275,16 @@ function MapLabel({ shape, unitCount }: MapLabelProps): JSX.Element {
       ))}
     </g>
   );
+}
+
+function factionById(factions: readonly FactionDefinition[], factionId: FactionId): FactionDefinition {
+  const faction = factions.find((candidate) => candidate.id === factionId);
+
+  if (faction === undefined) {
+    throw new Error(`Unknown faction: ${factionId}`);
+  }
+
+  return faction;
 }
 
 function longestLineLength(lines: readonly string[]): number {

@@ -2,9 +2,9 @@ import type { GameState, ScenarioDefinition } from "../engine/types";
 
 export const milestone1Scenario: ScenarioDefinition = {
   factions: [
-    { id: "player-1", name: "Player 1" },
-    { id: "player-2", name: "Player 2" },
-    { id: "player-3", name: "Player 3" }
+    { abbreviation: "COM", color: "#b85b4c", id: "com", name: "Player 1" },
+    { abbreviation: "ROY", color: "#c7a642", id: "roy", name: "Player 2" },
+    { abbreviation: "FAS", color: "#7b5aa6", id: "fas", name: "Player 3" }
   ],
   territories: [
     {
@@ -28,23 +28,31 @@ export const milestone1Scenario: ScenarioDefinition = {
       adjacent: ["north", "center", "southwest"]
     }
   ],
+  initialControl: {
+    north: "com",
+    southwest: "roy",
+    "eastern-port": "fas"
+  },
   units: {
-    "soldier-1": {
-      id: "soldier-1",
-      factionId: "player-1",
-      type: "soldier",
+    "com-inf-001": {
+      displayName: "1st International Infantry",
+      factionId: "com",
+      id: "com-inf-001",
+      type: "infantry",
       territoryId: "north"
     },
-    "soldier-2": {
-      id: "soldier-2",
-      factionId: "player-2",
-      type: "soldier",
+    "roy-inf-001": {
+      displayName: "1st Royal Infantry",
+      factionId: "roy",
+      id: "roy-inf-001",
+      type: "infantry",
       territoryId: "southwest"
     },
-    "soldier-3": {
-      id: "soldier-3",
-      factionId: "player-3",
-      type: "soldier",
+    "fas-inf-001": {
+      displayName: "1st Falangist Infantry",
+      factionId: "fas",
+      id: "fas-inf-001",
+      type: "infantry",
       territoryId: "eastern-port"
     }
   }
@@ -52,6 +60,7 @@ export const milestone1Scenario: ScenarioDefinition = {
 
 export function createInitialGameState(): GameState {
   return {
+    control: structuredClone(milestone1Scenario.initialControl),
     turnNumber: 1,
     units: structuredClone(milestone1Scenario.units)
   };

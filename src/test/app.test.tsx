@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { App } from "../main/app";
 import { AbstractMap } from "../main/components/AbstractMap";
 import type { UnitState } from "../main/engine/types";
+import { milestone1Scenario } from "../main/scenarios/milestone1Scenario";
 import { addInfoNotification } from "../main/state/notificationSlice";
 import { createAppStore } from "../main/state/store";
 
@@ -65,11 +66,13 @@ describe("App", () => {
 
     await user.click(screen.getByRole("button", { name: "Start" }));
     await user.click(screen.getByRole("button", { name: "Create Local Game" }));
+    await user.click(screen.getByRole("button", { name: "North" }));
+    await user.click(screen.getByRole("button", { name: "Move" }));
     await user.click(screen.getByRole("button", { name: "Center" }));
-    await user.click(screen.getByRole("button", { name: "Submit Move" }));
+    await user.click(screen.getByRole("button", { name: "Submit" }));
 
     expect(screen.getByRole("heading", { name: "Player 2 Order Submission" })).toBeVisible();
-    expect(screen.getByText("Player 1: Move from North to Center")).toBeVisible();
+    expect(screen.getByText("Player 1 submitted orders.")).toBeVisible();
   });
 
   it("runs the full first turn and starts the next turn", async () => {
@@ -78,15 +81,19 @@ describe("App", () => {
 
     await user.click(screen.getByRole("button", { name: "Start" }));
     await user.click(screen.getByRole("button", { name: "Create Local Game" }));
+    await user.click(screen.getByRole("button", { name: "North" }));
+    await user.click(screen.getByRole("button", { name: "Move" }));
     await user.click(screen.getByRole("button", { name: "Center" }));
-    await user.click(screen.getByRole("button", { name: "Submit Move" }));
+    await user.click(screen.getByRole("button", { name: "Submit" }));
+    await user.click(screen.getByRole("button", { name: "Southwest" }));
+    await user.click(screen.getByRole("button", { name: "Move" }));
     await user.click(screen.getByRole("button", { name: "Center" }));
-    await user.click(screen.getByRole("button", { name: "Submit Move" }));
-    await user.click(screen.getByRole("button", { name: "Submit No Move" }));
+    await user.click(screen.getByRole("button", { name: "Submit" }));
+    await user.click(screen.getByRole("button", { name: "Submit" }));
 
     expect(screen.getByRole("heading", { name: "Resolution Summary" })).toBeVisible();
-    expect(screen.getByText(/player-1 bounced moving from north to center/)).toBeVisible();
-    expect(screen.getByText("Player 3: No move")).toBeVisible();
+    expect(screen.getByText(/com bounced com-inf-001 moving from north to center/)).toBeVisible();
+    expect(screen.getByText("Player 3: No orders")).toBeVisible();
 
     await user.click(screen.getByRole("button", { name: "Start Next Turn" }));
 
@@ -134,28 +141,47 @@ describe("AbstractMap", () => {
   it("renders territories, unit counts, and selection callbacks", async () => {
     const user = userEvent.setup();
     const onSelectTerritory = vi.fn();
+    const onSelectUnit = vi.fn();
     const units: readonly UnitState[] = [
-      { id: "soldier-1", factionId: "player-1", type: "soldier", territoryId: "center" },
-      { id: "soldier-2", factionId: "player-2", type: "soldier", territoryId: "center" }
+      {
+        displayName: "1st International Infantry",
+        factionId: "com",
+        id: "com-inf-001",
+        type: "infantry",
+        territoryId: "center"
+      },
+      {
+        displayName: "1st Royal Infantry",
+        factionId: "roy",
+        id: "roy-inf-001",
+        type: "infantry",
+        territoryId: "center"
+      }
     ];
 
     render(
       <AbstractMap
+        control={{ center: "com" }}
+        factions={milestone1Scenario.factions}
         legalDestinationIds={["north"]}
+        onSelectUnit={onSelectUnit}
         onSelectTerritory={onSelectTerritory}
         selectedDestinationId="north"
-        selectedTerritoryId="center"
+        selectedFromTerritoryId="center"
+        selectedUnitIds={["com-inf-001"]}
         units={units}
       />
     );
 
     expect(screen.getByLabelText("Milestone 1 territory map")).toBeVisible();
-    expect(screen.getByText("2 soldiers")).toBeVisible();
+    expect(screen.getByRole("button", { name: "1st International Infantry" })).toBeVisible();
     expect(screen.getByRole("button", { name: "North" })).toHaveClass("map-territory-destination");
 
     await user.click(screen.getByRole("button", { name: "North" }));
+    await user.click(screen.getByRole("button", { name: "1st International Infantry" }));
 
     expect(onSelectTerritory).toHaveBeenCalledWith("north");
+    expect(onSelectUnit).toHaveBeenCalledWith("com-inf-001");
   });
 
   it("supports keyboard territory selection", () => {
@@ -163,10 +189,14 @@ describe("AbstractMap", () => {
 
     render(
       <AbstractMap
+        control={{}}
+        factions={milestone1Scenario.factions}
         legalDestinationIds={[]}
+        onSelectUnit={vi.fn()}
         onSelectTerritory={onSelectTerritory}
         selectedDestinationId={undefined}
-        selectedTerritoryId={undefined}
+        selectedFromTerritoryId={undefined}
+        selectedUnitIds={[]}
         units={[]}
       />
     );

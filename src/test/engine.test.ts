@@ -1,115 +1,64 @@
 import { describe, expect, it } from "vitest";
 import { resolveTurn } from "../main/engine/resolution";
-import type { GameState, Order, ScenarioDefinition, TerritoryId } from "../main/engine/types";
-import { validateOrder } from "../main/engine/validation";
+import type { GameState, MoveOrder, PlayerSubmission, ScenarioDefinition, TerritoryId } from "../main/engine/types";
+import { validateMoveOrder } from "../main/engine/validation";
 import { createInitialGameState, milestone1Scenario } from "../main/scenarios/milestone1Scenario";
 
+const move = (
+  factionId: MoveOrder["factionId"],
+  unitId: string,
+  from: TerritoryId,
+  to: TerritoryId
+): MoveOrder => ({
+  factionId,
+  from,
+  kind: "move",
+  to,
+  unitId
+});
+
+const submit = (submission: PlayerSubmission): PlayerSubmission => submission;
+
 describe("milestone1Scenario", () => {
-  it("defines the milestone factions, territories, units, and empty center", () => {
+  it("defines factions, territory control, named units, and empty center", () => {
     const state = createInitialGameState();
 
-    expect(milestone1Scenario.factions).toHaveLength(3);
-    expect(milestone1Scenario.territories.map((territory) => territory.id)).toEqual([
-      "north",
-      "center",
-      "southwest",
-      "eastern-port"
+    expect(milestone1Scenario.factions.map((faction) => faction.id)).toEqual(["com", "roy", "fas"]);
+    expect(Object.values(state.units).map((unit) => unit.id)).toEqual([
+      "com-inf-001",
+      "roy-inf-001",
+      "fas-inf-001"
     ]);
-    expect(Object.values(state.units)).toHaveLength(3);
     expect(Object.values(state.units).some((unit) => unit.territoryId === "center")).toBe(false);
+    expect(state.control).toEqual({
+      north: "com",
+      southwest: "roy",
+      "eastern-port": "fas"
+    });
   });
 });
 
-describe("validateOrder", () => {
+describe("validateMoveOrder", () => {
   it("accepts a valid adjacent move", () => {
     const state = createInitialGameState();
 
-    expect(
-      validateOrder(milestone1Scenario, state, {
-        kind: "move",
-        factionId: "player-1",
-        unitId: "soldier-1",
-        from: "north",
-        to: "center"
-      })
-    ).toEqual({ ok: true });
+    expect(validateMoveOrder(milestone1Scenario, state, move("com", "com-inf-001", "north", "center"))).toEqual({
+      ok: true
+    });
   });
 
-  it("accepts no move", () => {
+  it("rejects wrong faction, unknown unit, wrong origin, unknown origin, and illegal destination", () => {
     const state = createInitialGameState();
-
-    expect(
-      validateOrder(milestone1Scenario, state, {
-        kind: "no-move",
-        factionId: "player-1",
-        unitId: "soldier-1"
-      })
-    ).toEqual({ ok: true });
-  });
-
-  it("rejects a unit controlled by another faction", () => {
-    const state = createInitialGameState();
-
-    expect(
-      validateOrder(milestone1Scenario, state, {
-        kind: "no-move",
-        factionId: "player-2",
-        unitId: "soldier-1"
-      })
-    ).toEqual({ ok: false, reason: "Selected unit belongs to another player." });
-  });
-
-  it("rejects an unknown unit", () => {
-    const state = createInitialGameState();
-
-    expect(
-      validateOrder(milestone1Scenario, state, {
-        kind: "no-move",
-        factionId: "player-1",
-        unitId: "missing"
-      } as unknown as Order)
-    ).toEqual({ ok: false, reason: "Unknown unit." });
-  });
-
-  it("rejects a unit that is no longer in the origin territory", () => {
-    const state = createInitialGameState();
-
-    expect(
-      validateOrder(milestone1Scenario, state, {
-        kind: "move",
-        factionId: "player-1",
-        unitId: "soldier-1",
-        from: "southwest",
-        to: "center"
-      })
-    ).toEqual({ ok: false, reason: "Selected unit is no longer in that territory." });
-  });
-
-  it("rejects a move from an unknown origin territory", () => {
-    const state = {
-      ...createInitialGameState(),
+    const stateWithBadOrigin = {
+      ...state,
       units: {
-        ...createInitialGameState().units,
-        "soldier-1": {
-          ...createInitialGameState().units["soldier-1"],
+        ...state.units,
+        "com-inf-001": {
+          ...state.units["com-inf-001"],
           territoryId: "missing"
         }
       }
     } as unknown as GameState;
-
-    expect(
-      validateOrder(milestone1Scenario, state, {
-        kind: "move",
-        factionId: "player-1",
-        unitId: "soldier-1",
-        from: "missing",
-        to: "center"
-      } as unknown as Order)
-    ).toEqual({ ok: false, reason: "Unknown origin territory." });
-  });
-
-  it("rejects a non-adjacent move", () => {
-    const state = createInitialGameState();
     const scenario = {
       ...milestone1Scenario,
       territories: milestone1Scenario.territories.map((territory) =>
@@ -119,15 +68,28 @@ describe("validateOrder", () => {
       )
     } satisfies ScenarioDefinition;
 
+    expect(validateMoveOrder(milestone1Scenario, state, move("roy", "com-inf-001", "north", "center"))).toEqual({
+      ok: false,
+      reason: "Selected unit belongs to another player."
+    });
+    expect(validateMoveOrder(milestone1Scenario, state, move("com", "missing", "north", "center"))).toEqual({
+      ok: false,
+      reason: "Unknown unit."
+    });
+    expect(validateMoveOrder(milestone1Scenario, state, move("com", "com-inf-001", "southwest", "center"))).toEqual({
+      ok: false,
+      reason: "Selected unit is no longer in that territory."
+    });
     expect(
-      validateOrder(scenario, state, {
-        kind: "move",
-        factionId: "player-1",
-        unitId: "soldier-1",
-        from: "north",
-        to: "center"
-      })
-    ).toEqual({ ok: false, reason: "Destination is not adjacent." });
+      validateMoveOrder(milestone1Scenario, stateWithBadOrigin, move("com", "com-inf-001", "missing" as TerritoryId, "center"))
+    ).toEqual({
+      ok: false,
+      reason: "Unknown origin territory."
+    });
+    expect(validateMoveOrder(scenario, state, move("com", "com-inf-001", "north", "center"))).toEqual({
+      ok: false,
+      reason: "Destination is not adjacent."
+    });
   });
 });
 
@@ -135,138 +97,97 @@ describe("resolveTurn", () => {
   it("moves into empty center when uncontested", () => {
     const state = createInitialGameState();
     const result = resolveTurn(milestone1Scenario, state, [
-      {
-        kind: "move",
-        factionId: "player-1",
-        unitId: "soldier-1",
-        from: "north",
-        to: "center"
-      }
+      submit({ factionId: "com", orders: [move("com", "com-inf-001", "north", "center")] })
     ]);
 
-    expect(result.finalUnits["soldier-1"].territoryId).toBe("center");
+    expect(result.finalUnits["com-inf-001"]?.territoryId).toBe("center");
+    expect(result.finalControl.center).toBe("com");
     expect(result.outcomes[0]?.kind).toBe("successful-move");
   });
 
-  it("bounces two units moving into center", () => {
+  it("keeps an empty contested destination empty", () => {
     const state = createInitialGameState();
     const result = resolveTurn(milestone1Scenario, state, [
-      {
-        kind: "move",
-        factionId: "player-1",
-        unitId: "soldier-1",
-        from: "north",
-        to: "center"
-      },
-      {
-        kind: "move",
-        factionId: "player-2",
-        unitId: "soldier-2",
-        from: "southwest",
-        to: "center"
-      }
+      submit({ factionId: "com", orders: [move("com", "com-inf-001", "north", "center")] }),
+      submit({ factionId: "roy", orders: [move("roy", "roy-inf-001", "southwest", "center")] })
     ]);
 
-    expect(result.finalUnits["soldier-1"].territoryId).toBe("north");
-    expect(result.finalUnits["soldier-2"].territoryId).toBe("southwest");
-    expect(result.outcomes.map((outcome) => outcome.kind)).toEqual([
-      "bounced-move",
-      "bounced-move"
-    ]);
+    expect(result.finalUnits["com-inf-001"]?.territoryId).toBe("north");
+    expect(result.finalUnits["roy-inf-001"]?.territoryId).toBe("southwest");
+    expect(result.finalControl.center).toBeUndefined();
   });
 
-  it("bounces a move into an occupied stationary territory", () => {
+  it("disbands a defender that fails to vacate while the attacker takes the territory", () => {
     const state = createInitialGameState();
     const result = resolveTurn(milestone1Scenario, state, [
-      {
-        kind: "move",
-        factionId: "player-1",
-        unitId: "soldier-1",
-        from: "north",
-        to: "southwest"
-      },
-      {
-        kind: "no-move",
-        factionId: "player-2",
-        unitId: "soldier-2"
-      }
+      submit({ factionId: "com", orders: [move("com", "com-inf-001", "north", "southwest")] }),
+      submit({ factionId: "roy", orders: [move("roy", "roy-inf-001", "southwest", "eastern-port")] }),
+      submit({ factionId: "fas", orders: [] })
     ]);
 
-    expect(result.finalUnits["soldier-1"].territoryId).toBe("north");
-    expect(result.finalUnits["soldier-2"].territoryId).toBe("southwest");
-    expect(result.outcomes[0]?.kind).toBe("bounced-move");
+    expect(result.finalUnits["com-inf-001"]?.territoryId).toBe("southwest");
+    expect(result.finalUnits["roy-inf-001"]).toBeUndefined();
+    expect(result.finalControl.southwest).toBe("com");
+    expect(result.summaryLines.join(" ")).toContain("disbanded roy-inf-001");
   });
 
-  it("bounces units attempting to swap territories", () => {
+  it("disbands a bounced attacker whose origin was captured", () => {
     const state = createInitialGameState();
     const result = resolveTurn(milestone1Scenario, state, [
-      {
-        kind: "move",
-        factionId: "player-1",
-        unitId: "soldier-1",
-        from: "north",
-        to: "southwest"
-      },
-      {
-        kind: "move",
-        factionId: "player-2",
-        unitId: "soldier-2",
-        from: "southwest",
-        to: "north"
-      }
+      submit({ factionId: "com", orders: [move("com", "com-inf-001", "north", "center")] }),
+      submit({ factionId: "roy", orders: [move("roy", "roy-inf-001", "southwest", "north")] }),
+      submit({ factionId: "fas", orders: [move("fas", "fas-inf-001", "eastern-port", "center")] })
     ]);
 
-    expect(result.finalUnits["soldier-1"].territoryId).toBe("north");
-    expect(result.finalUnits["soldier-2"].territoryId).toBe("southwest");
-    expect(result.summaryLines).toEqual([
-      "player-1 bounced moving from north to southwest: Units attempted to swap territories.",
-      "player-2 bounced moving from southwest to north: Units attempted to swap territories."
-    ]);
+    expect(result.finalUnits["com-inf-001"]).toBeUndefined();
+    expect(result.finalUnits["roy-inf-001"]?.territoryId).toBe("north");
+    expect(result.finalUnits["fas-inf-001"]?.territoryId).toBe("eastern-port");
+    expect(result.finalControl.north).toBe("roy");
   });
 
-  it("leaves a no-move unit in place", () => {
+  it("bounces units attempting a head-on swap", () => {
     const state = createInitialGameState();
     const result = resolveTurn(milestone1Scenario, state, [
-      {
-        kind: "no-move",
-        factionId: "player-1",
-        unitId: "soldier-1"
-      }
+      submit({ factionId: "com", orders: [move("com", "com-inf-001", "north", "southwest")] }),
+      submit({ factionId: "roy", orders: [move("roy", "roy-inf-001", "southwest", "north")] })
     ]);
 
-    expect(result.finalUnits["soldier-1"].territoryId).toBe("north");
-    expect(result.outcomes[0]?.kind).toBe("no-move");
+    expect(result.finalUnits["com-inf-001"]?.territoryId).toBe("north");
+    expect(result.finalUnits["roy-inf-001"]?.territoryId).toBe("southwest");
+    expect(result.summaryLines.join(" ")).toContain("Units attempted to swap territories.");
   });
 
-  it("supports mixed success, bounce, and no-move resolution", () => {
+  it("allows three-unit cycles", () => {
     const state = createInitialGameState();
     const result = resolveTurn(milestone1Scenario, state, [
-      {
-        kind: "move",
-        factionId: "player-1",
-        unitId: "soldier-1",
-        from: "north",
-        to: "center"
-      },
-      {
-        kind: "move",
-        factionId: "player-2",
-        unitId: "soldier-2",
-        from: "southwest",
-        to: "eastern-port"
-      },
-      {
-        kind: "no-move",
-        factionId: "player-3",
-        unitId: "soldier-3"
-      }
+      submit({ factionId: "com", orders: [move("com", "com-inf-001", "north", "center")] }),
+      submit({ factionId: "roy", orders: [move("roy", "roy-inf-001", "southwest", "north")] }),
+      submit({ factionId: "fas", orders: [move("fas", "fas-inf-001", "eastern-port", "southwest")] })
     ]);
 
-    expect(result.outcomes.map((outcome) => outcome.kind)).toEqual([
-      "successful-move",
-      "bounced-move",
-      "no-move"
+    expect(result.finalUnits["com-inf-001"]?.territoryId).toBe("center");
+    expect(result.finalUnits["roy-inf-001"]?.territoryId).toBe("north");
+    expect(result.finalUnits["fas-inf-001"]?.territoryId).toBe("southwest");
+  });
+
+  it("disbands units with impossible submitted orders", () => {
+    const state = createInitialGameState();
+    const result = resolveTurn(milestone1Scenario, state, [
+      submit({
+        factionId: "com",
+        orders: [move("com", "com-inf-001", "southwest", "center")]
+      })
     ]);
-    expect(result.summaryLines).toHaveLength(3);
+
+    expect(result.finalUnits["com-inf-001"]).toBeUndefined();
+    expect(result.outcomes[0]?.kind).toBe("invalid-order");
+  });
+
+  it("handles missing submissions as no move", () => {
+    const state = createInitialGameState();
+    const result = resolveTurn(milestone1Scenario, state, []);
+
+    expect(result.outcomes.map((outcome) => outcome.kind)).toEqual(["no-move", "no-move", "no-move"]);
+    expect(result.finalUnits["com-inf-001"]?.territoryId).toBe("north");
   });
 });

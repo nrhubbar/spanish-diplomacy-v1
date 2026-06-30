@@ -141,6 +141,18 @@ button:disabled {
   fill: #d8cfae;
 }
 
+.map-control-com {
+  fill: #c89b8f;
+}
+
+.map-control-roy {
+  fill: #d7c583;
+}
+
+.map-control-fas {
+  fill: #b8a7ca;
+}
+
 .map-territory.map-territory-selected {
   fill: #b85b4c;
   stroke-width: 1;
@@ -177,6 +189,99 @@ button:disabled {
   fill: rgb(255 250 240 / 72%);
   stroke: rgb(36 29 24 / 18%);
   stroke-width: 0.25;
+}
+
+.unit-counter {
+  cursor: pointer;
+  outline: none;
+}
+
+.unit-counter rect {
+  stroke: #241d18;
+  stroke-width: 0.45;
+}
+
+.unit-counter-selected rect {
+  stroke-width: 1.2;
+}
+
+.unit-counter-symbol {
+  fill: #fffaf0;
+  font-size: 4px;
+  font-weight: 900;
+  pointer-events: none;
+}
+
+.map-order-arrow {
+  stroke: currentColor;
+  stroke-width: 1.2;
+}
+
+.map-order-arrow + path,
+marker path {
+  fill: currentColor;
+}
+
+.map-bounce-marker,
+.map-skull-marker {
+  paint-order: stroke;
+  stroke: #fffaf0;
+  stroke-width: 1;
+  text-anchor: middle;
+  font-size: 5px;
+  font-weight: 900;
+}
+
+.map-bounce-marker {
+  fill: #241d18;
+}
+
+.map-skull-marker {
+  fill: #9f2525;
+  font-size: 3px;
+}
+
+.game-layout {
+  display: grid;
+  grid-template-columns: minmax(20rem, 34rem) minmax(16rem, 1fr);
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.order-panel,
+.resolution-panel {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  border: 1px solid #9b8b72;
+  border-radius: 8px;
+  background: #fffaf0;
+}
+
+.order-panel h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.unit-list {
+  margin: 0.75rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.unit-list li + li {
+  margin-top: 0.5rem;
+}
+
+.unit-list label {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+@media (max-width: 760px) {
+  .game-layout {
+    grid-template-columns: 1fr;
+  }
 }
 
 .feedback-message {
