@@ -42,6 +42,8 @@
 - Maintain at least 90 percent coverage for statements, branches, functions, and lines.
 - Add unit tests for core logic and integration tests for user-visible flows.
 - Use Playwright for browser behavior and routing smoke tests.
+- Keep Playwright screenshots and traces under `build/e2e`.
+- Inspect relevant desktop and mobile Playwright screenshots when developing visual features.
 - Run `npm run build`, `npm run test:unit`, and `npm run test:e2e` before claiming implementation work is complete.
 - Keep generated artifacts out of git, including dependency folders, coverage, test results, and build output.
 

@@ -43,7 +43,7 @@ describe("app store", () => {
     const store = createAppStore({
       game: {
         activeFactionId: "roy",
-        control: { center: "com" },
+        control: { asturias: "com" },
         draftAction: undefined,
         history: [],
         phase: "orders",
@@ -58,7 +58,7 @@ describe("app store", () => {
             displayName: "1st International Infantry",
             factionId: "com",
             id: "com-inf-001",
-            territoryId: "center",
+            territoryId: "asturias",
             type: "infantry"
           }
         },
@@ -77,25 +77,25 @@ describe("app store", () => {
     const store = createAppStore();
 
     store.dispatch(startNewGame());
-    store.dispatch(selectTerritory("north"));
+    store.dispatch(selectTerritory("galicia"));
     store.dispatch(chooseMoveAction());
-    store.dispatch(chooseMoveDestination("center"));
+    store.dispatch(chooseMoveDestination("asturias"));
     store.dispatch(submitCurrentOrder());
 
     expect(selectActiveFaction(store.getState()).name).toBe("Player 2");
     expect(selectSubmittedOrders(store.getState())[0]?.description).toBe(
-      "Move com-inf-001 from North to Center"
+      "Move com-inf-001 from Galicia to Asturias"
     );
 
-    store.dispatch(selectTerritory("southwest"));
+    store.dispatch(selectTerritory("catalunya"));
     store.dispatch(chooseMoveAction());
-    store.dispatch(chooseMoveDestination("center"));
+    store.dispatch(chooseMoveDestination("aragon"));
     store.dispatch(submitCurrentOrder());
     store.dispatch(submitCurrentOrder());
 
     expect(selectGamePhase(store.getState())).toBe("resolution");
     expect(selectUnits(store.getState()).find((unit) => unit.id === "com-inf-001")?.territoryId).toBe(
-      "north"
+      "asturias"
     );
 
     store.dispatch(startNextTurn());
@@ -123,15 +123,15 @@ describe("app store", () => {
     const store = createAppStore();
 
     store.dispatch(startNewGame());
-    store.dispatch(selectTerritory("north"));
+    store.dispatch(selectTerritory("galicia"));
     store.dispatch(chooseMoveAction());
-    store.dispatch(chooseMoveDestination("center"));
+    store.dispatch(chooseMoveDestination("asturias"));
 
-    expect(selectSelectedDestinationId(store.getState())).toBe("center");
-    expect(selectLegalDestinationIds(store.getState())).toEqual(["center", "southwest", "eastern-port"]);
+    expect(selectSelectedDestinationId(store.getState())).toBe("asturias");
+    expect(selectLegalDestinationIds(store.getState())).toEqual(["asturias", "castilla-y-leon"]);
     expect(selectCanSubmit(store.getState())).toBe(true);
 
-    store.dispatch(chooseMoveDestination("north"));
+    store.dispatch(chooseMoveDestination("galicia"));
 
     expect(selectSelectedDestinationId(store.getState())).toBeUndefined();
   });
@@ -140,7 +140,7 @@ describe("app store", () => {
     const store = createAppStore();
 
     store.dispatch(startNewGame());
-    store.dispatch(chooseMoveDestination("center"));
+    store.dispatch(chooseMoveDestination("asturias"));
 
     expect(selectValidationMessage(store.getState())).toBe("Choose a from territory and move action first.");
     expect(selectLegalDestinationIds(store.getState())).toEqual([]);
@@ -150,9 +150,9 @@ describe("app store", () => {
     const store = createAppStore();
 
     store.dispatch(startNewGame());
-    store.dispatch(selectTerritory("north"));
+    store.dispatch(selectTerritory("galicia"));
     store.dispatch(chooseMoveAction());
-    store.dispatch(chooseMoveDestination("unknown" as "center"));
+    store.dispatch(chooseMoveDestination("unknown" as "asturias"));
 
     expect(selectSelectedDestinationId(store.getState())).toBeUndefined();
     expect(selectValidationMessage(store.getState())).toBe("Destination is not adjacent.");
@@ -164,7 +164,7 @@ describe("app store", () => {
     store.dispatch(startNewGame());
     store.dispatch(selectUnit("com-inf-001"));
 
-    expect(selectSelectedFromTerritoryId(store.getState())).toBe("north");
+    expect(selectSelectedFromTerritoryId(store.getState())).toBe("galicia");
     expect(selectSelectedUnitIds(store.getState())).toEqual(["com-inf-001"]);
 
     store.dispatch(selectUnit("roy-inf-001"));
@@ -176,13 +176,13 @@ describe("app store", () => {
     const store = createAppStore({
       game: {
         activeFactionId: "com",
-        control: { north: "com", southwest: "roy", "eastern-port": "fas" },
+        control: { galicia: "com", catalunya: "roy", andalucia: "fas" },
         draftAction: "move",
         history: [],
         phase: "orders",
         resolution: undefined,
-        selectedDestinationId: "center",
-        selectedFromTerritoryId: "southwest",
+        selectedDestinationId: "aragon",
+        selectedFromTerritoryId: "catalunya",
         selectedUnitIds: ["com-inf-001"],
         submittedOrders: {},
         turnNumber: 1,
@@ -191,7 +191,7 @@ describe("app store", () => {
             displayName: "1st International Infantry",
             factionId: "com",
             id: "com-inf-001",
-            territoryId: "north",
+            territoryId: "galicia",
             type: "infantry"
           }
         },
@@ -212,12 +212,12 @@ describe("app store", () => {
     const store = createAppStore({
       game: {
         activeFactionId: "com",
-        control: { north: "com" },
+        control: { galicia: "com" },
         draftAction: "move",
         history: [],
         phase: "orders",
         resolution: undefined,
-        selectedDestinationId: "center",
+        selectedDestinationId: "asturias",
         selectedFromTerritoryId: undefined,
         selectedUnitIds: ["com-inf-001"],
         submittedOrders: {},
@@ -227,7 +227,7 @@ describe("app store", () => {
             displayName: "1st International Infantry",
             factionId: "com",
             id: "com-inf-001",
-            territoryId: "north",
+            territoryId: "galicia",
             type: "infantry"
           }
         },

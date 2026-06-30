@@ -41,6 +41,7 @@ export interface GameSliceState {
 
 const factionOrder = milestone1Scenario.factions.map((faction) => faction.id);
 const initialEngineState = createInitialGameState();
+const noTerritoryIds: readonly TerritoryId[] = [];
 
 const initialState: GameSliceState = {
   activeFactionId: "com",
@@ -299,14 +300,14 @@ export function selectHistory(state: RootState): readonly TurnHistoryEntry[] {
 
 export function selectLegalDestinationIds(state: RootState): readonly TerritoryId[] {
   if (state.game.draftAction !== "move" || state.game.selectedFromTerritoryId === undefined) {
-    return [];
+    return noTerritoryIds;
   }
 
   const territory = milestone1Scenario.territories.find(
     (candidate) => candidate.id === state.game.selectedFromTerritoryId
   );
 
-  return territory?.adjacent ?? [];
+  return territory?.adjacent ?? noTerritoryIds;
 }
 
 export function selectResolution(state: RootState): TurnResolutionResult | undefined {

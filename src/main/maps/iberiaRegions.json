@@ -1,0 +1,234 @@
+{
+  "ES11": {
+    "name": "Galicia",
+    "country": "spain",
+    "territoryId": "galicia",
+    "adjacent": ["asturias", "castilla-y-leon"],
+    "anchor": { "x": 290.5, "y": 566.3 },
+    "showLabel": true
+  },
+  "ES12": {
+    "name": "Asturias",
+    "country": "spain",
+    "territoryId": "asturias",
+    "adjacent": ["galicia", "cantabria", "castilla-y-leon"],
+    "anchor": { "x": 322.8, "y": 561.3 },
+    "showLabel": false
+  },
+  "ES13": {
+    "name": "Cantabria",
+    "country": "spain",
+    "territoryId": "cantabria",
+    "adjacent": ["asturias", "pais-vasco", "castilla-y-leon"],
+    "anchor": { "x": 347.9, "y": 571.2 },
+    "showLabel": false
+  },
+  "ES21": {
+    "name": "Pais Vasco",
+    "country": "spain",
+    "territoryId": "pais-vasco",
+    "adjacent": ["cantabria", "navarra", "la-rioja", "castilla-y-leon"],
+    "anchor": { "x": 367.9, "y": 577.4 },
+    "showLabel": false
+  },
+  "ES22": {
+    "name": "Navarra",
+    "country": "spain",
+    "territoryId": "navarra",
+    "adjacent": ["pais-vasco", "la-rioja", "aragon"],
+    "anchor": { "x": 380.2, "y": 586.7 },
+    "showLabel": false
+  },
+  "ES23": {
+    "name": "La Rioja",
+    "country": "spain",
+    "territoryId": "la-rioja",
+    "adjacent": ["pais-vasco", "navarra", "aragon", "castilla-y-leon"],
+    "anchor": { "x": 367.3, "y": 590.9 },
+    "showLabel": false
+  },
+  "ES24": {
+    "name": "Aragon",
+    "country": "spain",
+    "territoryId": "aragon",
+    "adjacent": ["navarra", "la-rioja", "castilla-y-leon", "castilla-la-mancha", "valencia", "catalunya"],
+    "anchor": { "x": 390.9, "y": 612.0 },
+    "showLabel": false
+  },
+  "ES30": {
+    "name": "Madrid",
+    "country": "spain",
+    "territoryId": "madrid",
+    "adjacent": ["castilla-y-leon", "castilla-la-mancha"],
+    "anchor": { "x": 340.4, "y": 621.7 },
+    "showLabel": false
+  },
+  "ES41": {
+    "name": "Castilla y Leon",
+    "country": "spain",
+    "territoryId": "castilla-y-leon",
+    "adjacent": ["galicia", "asturias", "cantabria", "pais-vasco", "la-rioja", "aragon", "madrid", "castilla-la-mancha", "extremadura"],
+    "anchor": { "x": 335.5, "y": 595.7 },
+    "showLabel": false
+  },
+  "ES42": {
+    "name": "Castilla-La Mancha",
+    "country": "spain",
+    "territoryId": "castilla-la-mancha",
+    "adjacent": ["castilla-y-leon", "madrid", "aragon", "valencia", "murcia", "andalucia", "extremadura"],
+    "anchor": { "x": 348.1, "y": 640.6 },
+    "showLabel": false
+  },
+  "ES43": {
+    "name": "Extremadura",
+    "country": "spain",
+    "territoryId": "extremadura",
+    "adjacent": ["castilla-y-leon", "castilla-la-mancha", "andalucia"],
+    "anchor": { "x": 303.7, "y": 639.4 },
+    "showLabel": false
+  },
+  "ES51": {
+    "name": "Catalunya",
+    "country": "spain",
+    "territoryId": "catalunya",
+    "adjacent": ["aragon", "valencia"],
+    "anchor": { "x": 425.5, "y": 608.9 },
+    "showLabel": true
+  },
+  "ES52": {
+    "name": "Valencia",
+    "country": "spain",
+    "territoryId": "valencia",
+    "adjacent": ["catalunya", "aragon", "castilla-la-mancha", "murcia"],
+    "anchor": { "x": 389.0, "y": 652.7 },
+    "showLabel": false
+  },
+  "ES53": {
+    "name": "Islas Baleares",
+    "country": "spain",
+    "territoryId": "islas-baleares",
+    "adjacent": [],
+    "anchor": { "x": 436.9, "y": 657.5 },
+    "showLabel": false
+  },
+  "ES61": {
+    "name": "Andalucia",
+    "country": "spain",
+    "territoryId": "andalucia",
+    "adjacent": ["extremadura", "castilla-la-mancha", "murcia"],
+    "anchor": { "x": 320.4, "y": 677.3 },
+    "showLabel": true
+  },
+  "ES62": {
+    "name": "Murcia",
+    "country": "spain",
+    "territoryId": "murcia",
+    "adjacent": ["valencia", "castilla-la-mancha", "andalucia"],
+    "anchor": { "x": 368.3, "y": 674.7 },
+    "showLabel": false
+  },
+  "ES63": {
+    "name": "Ceuta",
+    "country": "spain",
+    "territoryId": "ceuta",
+    "adjacent": [],
+    "anchor": { "x": 302.1, "y": 705.9 },
+    "showLabel": false
+  },
+  "ES64": {
+    "name": "Melilla",
+    "country": "spain",
+    "territoryId": "melilla",
+    "adjacent": [],
+    "anchor": { "x": 338.5, "y": 724.1 },
+    "showLabel": false
+  },
+  "ES70": {
+    "name": "Canarias",
+    "country": "spain",
+    "territoryId": "canarias",
+    "adjacent": [],
+    "anchor": { "x": 134.8, "y": 756.3 },
+    "showLabel": false
+  },
+  "PT11": {
+    "name": "North Portugal",
+    "country": "portugal",
+    "territoryId": null,
+    "adjacent": [],
+    "anchor": { "x": 291.9, "y": 590.6 },
+    "showLabel": false
+  },
+  "PT15": {
+    "name": "Algarve",
+    "country": "portugal",
+    "territoryId": null,
+    "adjacent": [],
+    "anchor": { "x": 263.5, "y": 670.2 },
+    "showLabel": false
+  },
+  "PT19": {
+    "name": "Central Portugal",
+    "country": "portugal",
+    "territoryId": null,
+    "adjacent": [],
+    "anchor": { "x": 276.3, "y": 616.2 },
+    "showLabel": false
+  },
+  "PT1A": {
+    "name": "Greater Lisbon",
+    "country": "portugal",
+    "territoryId": null,
+    "adjacent": [],
+    "anchor": { "x": 256.3, "y": 634.8 },
+    "showLabel": false
+  },
+  "PT1B": {
+    "name": "Setubal Peninsula",
+    "country": "portugal",
+    "territoryId": null,
+    "adjacent": [],
+    "anchor": { "x": 259.6, "y": 641.0 },
+    "showLabel": false
+  },
+  "PT1C": {
+    "name": "Alentejo",
+    "country": "portugal",
+    "territoryId": null,
+    "adjacent": [],
+    "anchor": { "x": 272.7, "y": 647.6 },
+    "showLabel": false
+  },
+  "PT1D": {
+    "name": "West and Tagus Valley",
+    "country": "portugal",
+    "territoryId": null,
+    "adjacent": [],
+    "anchor": { "x": 266.4, "y": 630.2 },
+    "showLabel": false
+  },
+  "PT20": {
+    "name": "Azores",
+    "country": "portugal",
+    "territoryId": null,
+    "adjacent": [],
+    "anchor": { "x": 154.7, "y": 712.1 },
+    "showLabel": false
+  },
+  "PT30": {
+    "name": "Madeira",
+    "country": "portugal",
+    "territoryId": null,
+    "adjacent": [],
+    "anchor": { "x": 109.3, "y": 713.0 },
+    "showLabel": false
+  },
+  "Gibraltar": {
+    "name": "Gibraltar",
+    "country": "gibraltar",
+    "territoryId": null,
+    "adjacent": [],
+    "anchor": { "x": 303.1, "y": 700.9 },
+    "showLabel": false
+  }
+}

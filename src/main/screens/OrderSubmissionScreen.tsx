@@ -1,6 +1,6 @@
 import type { JSX } from "react";
 import { Navigate } from "react-router";
-import { AbstractMap } from "../components/AbstractMap";
+import { IberiaMap } from "../components/IberiaMap";
 import type { TerritoryId } from "../engine/types";
 import { useAppDispatch, useAppSelector } from "../hooks";
 import { milestone1Scenario } from "../scenarios/milestone1Scenario";
@@ -78,7 +78,7 @@ export function OrderSubmissionScreen(): JSX.Element {
       </p>
 
       <div className="game-layout">
-        <AbstractMap
+        <IberiaMap
           control={control}
           factions={milestone1Scenario.factions}
           legalDestinationIds={legalDestinationIds}
@@ -96,7 +96,7 @@ export function OrderSubmissionScreen(): JSX.Element {
             <p>Select one of your territories or counters.</p>
           ) : (
             <>
-              <p>From: {selectedFromTerritoryId}</p>
+              <p>From: {territoryName(selectedFromTerritoryId)}</p>
               {fromTerritoryUnits.length === 0 ? (
                 <p>No friendly units here.</p>
               ) : (
@@ -119,7 +119,10 @@ export function OrderSubmissionScreen(): JSX.Element {
 
           {draftAction === "move" ? (
             <p>
-              To: {selectedDestinationId ?? "select a highlighted destination"}
+              To:{" "}
+              {selectedDestinationId === undefined
+                ? "select a highlighted destination"
+                : territoryName(selectedDestinationId)}
             </p>
           ) : null}
 
@@ -164,4 +167,8 @@ export function OrderSubmissionScreen(): JSX.Element {
       </section>
     </section>
   );
+}
+
+function territoryName(territoryId: TerritoryId): string {
+  return milestone1Scenario.territories.find((territory) => territory.id === territoryId)?.name ?? territoryId;
 }

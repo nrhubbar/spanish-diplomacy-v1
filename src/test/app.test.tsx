@@ -5,7 +5,7 @@ import { Provider } from "react-redux";
 import { MemoryRouter } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { App } from "../main/app";
-import { AbstractMap } from "../main/components/AbstractMap";
+import { IberiaMap } from "../main/components/IberiaMap";
 import type { UnitState } from "../main/engine/types";
 import { milestone1Scenario } from "../main/scenarios/milestone1Scenario";
 import { addInfoNotification } from "../main/state/notificationSlice";
@@ -57,7 +57,7 @@ describe("App", () => {
     await user.click(screen.getByRole("button", { name: "Create Local Game" }));
 
     expect(screen.getByRole("heading", { name: "Player 1 Order Submission" })).toBeVisible();
-    expect(screen.getByLabelText("Milestone 1 territory map")).toBeVisible();
+    expect(screen.getByLabelText("Iberia campaign map")).toBeVisible();
   });
 
   it("submits a first player move and advances to player 2", async () => {
@@ -66,9 +66,9 @@ describe("App", () => {
 
     await user.click(screen.getByRole("button", { name: "Start" }));
     await user.click(screen.getByRole("button", { name: "Create Local Game" }));
-    await user.click(screen.getByRole("button", { name: "North" }));
+    await user.click(screen.getByRole("button", { name: "Galicia" }));
     await user.click(screen.getByRole("button", { name: "Move" }));
-    await user.click(screen.getByRole("button", { name: "Center" }));
+    await user.click(screen.getByRole("button", { name: "Asturias" }));
     await user.click(screen.getByRole("button", { name: "Submit" }));
 
     expect(screen.getByRole("heading", { name: "Player 2 Order Submission" })).toBeVisible();
@@ -81,18 +81,18 @@ describe("App", () => {
 
     await user.click(screen.getByRole("button", { name: "Start" }));
     await user.click(screen.getByRole("button", { name: "Create Local Game" }));
-    await user.click(screen.getByRole("button", { name: "North" }));
+    await user.click(screen.getByRole("button", { name: "Galicia" }));
     await user.click(screen.getByRole("button", { name: "Move" }));
-    await user.click(screen.getByRole("button", { name: "Center" }));
+    await user.click(screen.getByRole("button", { name: "Asturias" }));
     await user.click(screen.getByRole("button", { name: "Submit" }));
-    await user.click(screen.getByRole("button", { name: "Southwest" }));
+    await user.click(screen.getByRole("button", { name: "Catalunya" }));
     await user.click(screen.getByRole("button", { name: "Move" }));
-    await user.click(screen.getByRole("button", { name: "Center" }));
+    await user.click(screen.getByRole("button", { name: "Aragon" }));
     await user.click(screen.getByRole("button", { name: "Submit" }));
     await user.click(screen.getByRole("button", { name: "Submit" }));
 
     expect(screen.getByRole("heading", { name: "Resolution Summary" })).toBeVisible();
-    expect(screen.getByText(/com bounced com-inf-001 moving from north to center/)).toBeVisible();
+    expect(screen.getByText(/com moved com-inf-001 from galicia to asturias/)).toBeVisible();
     expect(screen.getByText("Player 3: No orders")).toBeVisible();
 
     await user.click(screen.getByRole("button", { name: "Start Next Turn" }));
@@ -133,7 +133,7 @@ describe("App", () => {
   });
 });
 
-describe("AbstractMap", () => {
+describe("IberiaMap", () => {
   afterEach(() => {
     cleanup();
   });
@@ -148,39 +148,57 @@ describe("AbstractMap", () => {
         factionId: "com",
         id: "com-inf-001",
         type: "infantry",
-        territoryId: "center"
+        territoryId: "madrid"
       },
       {
         displayName: "1st Royal Infantry",
         factionId: "roy",
         id: "roy-inf-001",
         type: "infantry",
-        territoryId: "center"
+        territoryId: "madrid"
       }
     ];
 
     render(
-      <AbstractMap
-        control={{ center: "com" }}
+      <IberiaMap
+        control={{ madrid: "com" }}
         factions={milestone1Scenario.factions}
-        legalDestinationIds={["north"]}
+        legalDestinationIds={["castilla-y-leon"]}
         onSelectUnit={onSelectUnit}
         onSelectTerritory={onSelectTerritory}
-        selectedDestinationId="north"
-        selectedFromTerritoryId="center"
+        selectedDestinationId="castilla-y-leon"
+        selectedFromTerritoryId="madrid"
         selectedUnitIds={["com-inf-001"]}
         units={units}
       />
     );
 
-    expect(screen.getByLabelText("Milestone 1 territory map")).toBeVisible();
+    expect(screen.getByLabelText("Iberia campaign map")).toBeVisible();
     expect(screen.getByRole("button", { name: "1st International Infantry" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "North" })).toHaveClass("map-territory-destination");
+    expect(screen.getByRole("button", { name: "Galicia" })).toHaveAttribute(
+      "data-territory-id",
+      "galicia"
+    );
+    expect(screen.getByRole("button", { name: "Madrid" })).toHaveAttribute(
+      "data-territory-id",
+      "madrid"
+    );
+    expect(screen.getByRole("button", { name: "Castilla y Leon" })).toHaveAttribute(
+      "data-legal-destination",
+      "true"
+    );
+    expect(document.getElementById("PT11")).toHaveAttribute("data-country", "portugal");
+    expect(document.getElementById("PT11")).not.toHaveAttribute("role");
+    expect(screen.getByLabelText("Iberia campaign map").querySelector(".nato-unit-svg")).toBeVisible();
 
-    await user.click(screen.getByRole("button", { name: "North" }));
+    fireEvent.click(document.getElementById("PT11") as Element);
+    fireEvent.click(screen.getByLabelText("Iberian Peninsula regions"));
+    expect(onSelectTerritory).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole("button", { name: "Galicia" }));
     await user.click(screen.getByRole("button", { name: "1st International Infantry" }));
 
-    expect(onSelectTerritory).toHaveBeenCalledWith("north");
+    expect(onSelectTerritory).toHaveBeenCalledWith("galicia");
     expect(onSelectUnit).toHaveBeenCalledWith("com-inf-001");
   });
 
@@ -188,7 +206,7 @@ describe("AbstractMap", () => {
     const onSelectTerritory = vi.fn();
 
     render(
-      <AbstractMap
+      <IberiaMap
         control={{}}
         factions={milestone1Scenario.factions}
         legalDestinationIds={[]}
@@ -201,12 +219,12 @@ describe("AbstractMap", () => {
       />
     );
 
-    fireEvent.keyDown(screen.getByRole("button", { name: "Center" }), { key: "Enter" });
-    fireEvent.keyDown(screen.getByRole("button", { name: "Southwest" }), { key: " " });
-    fireEvent.keyDown(screen.getByRole("button", { name: "North" }), { key: "Escape" });
+    fireEvent.keyDown(screen.getByRole("button", { name: "Madrid" }), { key: "Enter" });
+    fireEvent.keyDown(screen.getByRole("button", { name: "Extremadura" }), { key: " " });
+    fireEvent.keyDown(screen.getByRole("button", { name: "Galicia" }), { key: "Escape" });
 
-    expect(onSelectTerritory).toHaveBeenCalledWith("center");
-    expect(onSelectTerritory).toHaveBeenCalledWith("southwest");
+    expect(onSelectTerritory).toHaveBeenCalledWith("madrid");
+    expect(onSelectTerritory).toHaveBeenCalledWith("extremadura");
     expect(onSelectTerritory).toHaveBeenCalledTimes(2);
   });
 });

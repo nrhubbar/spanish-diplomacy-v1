@@ -1,19 +1,15 @@
 # 1) Milestone 1: Thin Vertical Slice
 
-Milestone 1 proves the smallest playable loop that combines the rules engine, React UI, Redux state, and an abstract SVG map.
+Milestone 1 proves the smallest playable loop that combines the rules engine, React UI, Redux state, and an SVG map of Iberia.
 
 The goal is not final game design. The goal is a working debug-grade turn loop where one human plays all three factions, submits visible move orders, resolves them deterministically, and starts the next turn.
 
 ## 1.1) Acceptance Criteria
 
 - A user can start from the current app shell and begin a new local in-memory game.
-- A setup step creates a 3-faction, 4-territory scenario with 1 soldier per faction.
-- The game displays an abstract SVG map with these territories:
-  - `north`: the top half of the square outside the center circle.
-  - `center`: the circle in the center.
-  - `southwest`: the bottom-left quarter of the square outside the center circle.
-  - `eastern-port`: the remaining outside section.
-- The center territory starts unoccupied.
+- A setup step creates a 3-faction scenario across the Spanish regions with 1 soldier per faction.
+- The game displays an SVG map of Iberia with stable geographic territory IDs.
+- Galicia, Catalunya, and Andalucia contain the starting units; all other Spanish regions start unoccupied.
 - Each faction starts with exactly 1 soldier.
 - One human locally submits orders for player 1, then player 2, then player 3.
 - Orders are visible debug orders, not hidden orders.
@@ -22,8 +18,9 @@ The goal is not final game design. The goal is a working debug-grade turn loop w
 - A unit that has no submitted move remains in its current territory.
 - A move into an uncontested destination succeeds.
 - A move into a contested destination bounces.
-- A bounced unit stays in its origin territory.
-- No units are destroyed.
+- A bounced unit stays in its origin territory unless that origin was captured.
+- A unit disbands when its move fails and another unit captures its origin.
+- An impossible submitted order disbands the offending unit.
 - After all three players submit, the app reveals submitted orders and resolves the turn.
 - The app shows a resolution summary explaining successful moves, bounced moves, and no-move outcomes.
 - After resolution, the app can advance to the next turn and return to player 1 order submission.
@@ -43,13 +40,13 @@ The goal is not final game design. The goal is a working debug-grade turn loop w
 - Create a scenario module under `src/main` or a dedicated scenario folder that can later grow into the planned scenario system.
 - Define stable IDs for factions, territories, and units.
 - Define exactly 3 factions for the milestone.
-- Define exactly 4 territories: `north`, `center`, `southwest`, and `eastern-port`.
-- Define adjacency rules that support useful movement between territories.
+- Define each playable Spanish map region as a territory.
+- Define explicit symmetric land-border adjacency rules between territories.
 - Define 1 soldier unit type.
 - Define starting positions for 3 soldiers, one per faction.
-- Leave `center` unoccupied at game start.
+- Leave every territory except Galicia, Catalunya, and Andalucia unoccupied at game start.
 - Keep the data explicit and readable.
-- Add unit tests confirming scenario shape, starting unit count, and center vacancy.
+- Add unit tests confirming starting positions and movement rules.
 
 ### 1.2.2) Build Core Game State Types
 
@@ -76,13 +73,13 @@ The goal is not final game design. The goal is a working debug-grade turn loop w
 ### 1.2.4) Implement Deterministic Turn Resolution
 
 - Resolve all submitted move orders from the same start-of-turn state.
-- Treat missing movement as no move only when the player intentionally submitted no move.
+- Treat missing movement as no move.
 - A destination with exactly one incoming move and no other conflict receives the moving unit.
 - A destination with multiple incoming moves is contested and all incoming moves bounce.
 - A destination occupied by a unit that is not moving away is contested and incoming moves bounce.
-- A unit whose move bounces remains in its origin territory.
+- A unit whose move bounces remains in its origin territory unless that origin was captured.
 - A unit with no move remains in its origin territory.
-- No combat destruction occurs.
+- Disband units with impossible orders or failed moves whose origins were captured.
 - No territory partitioning occurs.
 - Return a structured turn result with:
   - successful moves.
@@ -91,8 +88,8 @@ The goal is not final game design. The goal is a working debug-grade turn loop w
   - final unit positions.
   - human-readable summary lines.
 - Add unit tests for:
-  - uncontested move into empty center succeeds.
-  - two units moving into center bounce.
+  - uncontested move into an empty neighboring region succeeds.
+  - two units moving into the same region bounce.
   - move into occupied stationary territory bounces.
   - no-move unit remains in place.
   - mixed success, bounce, and no-move resolution.
@@ -132,14 +129,12 @@ The goal is not final game design. The goal is a working debug-grade turn loop w
 - Do not add polished onboarding, full rules reference, or final art.
 - Add component tests for each screen's main behavior.
 
-### 1.2.7) Build Abstract SVG Map
+### 1.2.7) Build Iberia SVG Map
 
 - Create an SVG map component in its own file.
-- Render a square map surface.
-- Render `center` as a circle in the middle.
-- Render `north` as the top half of the square outside the circle.
-- Render `southwest` as the bottom-left quarter of the square outside the circle.
-- Render `eastern-port` as the remaining outside section.
+- Render the Iberian Peninsula from the MapChart SVG source.
+- Bind Spanish SVG region IDs to geographic territory metadata.
+- Render Portugal as one unavailable gray area without visible internal divisions.
 - Ensure each territory has a stable interactive element and accessible label.
 - Show ownership or unit presence in a simple debug-friendly way.
 - Highlight the selected territory.
@@ -212,7 +207,6 @@ The goal is not final game design. The goal is a working debug-grade turn loop w
 - Trade orders.
 - Diplomacy UI.
 - Territory partitioning.
-- Combat destruction.
 - Retreats.
 - AI actors.
 - Persistence beyond in-memory state.
@@ -233,12 +227,12 @@ The goal is not final game design. The goal is a working debug-grade turn loop w
 ## 1.4) Implementation Decisions
 
 - Starting positions:
-  - Player 1 starts in `north`.
-  - Player 2 starts in `southwest`.
-  - Player 3 starts in `eastern-port`.
-  - `center` starts empty.
+  - Player 1 starts in `galicia`.
+  - Player 2 starts in `catalunya`.
+  - Player 3 starts in `andalucia`.
+  - All other regions start empty.
 - Milestone faction display names are fixed debug names: Player 1, Player 2, and Player 3.
-- All four territories are mutually adjacent for Milestone 1.
+- Infantry movement is limited to explicit shared land borders.
 - Moving into a territory vacated by its defender succeeds if no other unit contests that destination.
 - Two units attempting to swap territories bounce because the armies collide in transit.
 - Engine resolution returns structured outcomes and summary lines.

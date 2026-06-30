@@ -1,6 +1,25 @@
 export type FactionId = "com" | "roy" | "fas";
 
-export type TerritoryId = "north" | "center" | "southwest" | "eastern-port";
+export type TerritoryId =
+  | "galicia"
+  | "asturias"
+  | "cantabria"
+  | "pais-vasco"
+  | "navarra"
+  | "la-rioja"
+  | "aragon"
+  | "madrid"
+  | "castilla-y-leon"
+  | "castilla-la-mancha"
+  | "extremadura"
+  | "catalunya"
+  | "valencia"
+  | "islas-baleares"
+  | "andalucia"
+  | "murcia"
+  | "ceuta"
+  | "melilla"
+  | "canarias";
 
 export type UnitId = string;
 

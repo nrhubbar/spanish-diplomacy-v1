@@ -35,7 +35,7 @@ body {
 }
 
 .game-screen {
-  width: min(100%, 58rem);
+  width: min(100%, 64rem);
 }
 
 .screen-kicker {
@@ -116,119 +116,206 @@ button:disabled {
   line-height: 1.7;
 }
 
-.abstract-map {
-  width: min(100%, 34rem);
-  aspect-ratio: 1;
-  display: block;
+.iberia-map-section {
+  width: min(100%, 38rem);
   margin-top: 1.5rem;
-  border: 1px solid #241d18;
-  background: #e4ddcf;
 }
 
-.map-territory {
-  fill: #cbbd9b;
-  stroke: #241d18;
-  stroke-width: 0.6;
+.iberia-map {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 225 / 176;
+  overflow: hidden;
+  border: 1px solid #241d18;
+  background: #dce6e9;
+}
+
+.iberia-map-art,
+.iberia-map-art > svg,
+.iberia-map-overlay {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.iberia-map-art {
+  overflow: hidden;
+}
+
+.iberia-map-art [data-country="spain"] {
+  stroke: #665b4c !important;
+  stroke-width: 1 !important;
+  vector-effect: non-scaling-stroke;
+}
+
+.iberia-map-art [data-country="portugal"] {
+  fill: #aeb3b5 !important;
+  stroke: #aeb3b5 !important;
+  stroke-width: 1.5 !important;
+  pointer-events: none !important;
+}
+
+.iberia-map-art [data-country="gibraltar"] {
+  fill: #81878a !important;
+  stroke: #81878a !important;
+  pointer-events: none !important;
+}
+
+.iberia-map-art [data-territory-id] {
+  fill: var(--region-color) !important;
   cursor: pointer;
   outline: none;
   transition:
     fill 120ms ease,
-    stroke-width 120ms ease;
+    filter 120ms ease,
+    stroke 120ms ease;
 }
 
-.map-territory:hover,
-.map-territory-legal {
-  fill: #d8cfae;
+.iberia-map-art [data-territory-id]:hover {
+  filter: brightness(1.06);
 }
 
-.map-control-com {
-  fill: #c89b8f;
+.iberia-map-art [data-legal-destination="true"] {
+  filter: brightness(1.08) saturate(1.1);
+  stroke: #4f7c59 !important;
+  stroke-width: 3 !important;
 }
 
-.map-control-roy {
-  fill: #d7c583;
+.iberia-map-art [data-selected-origin="true"] {
+  stroke: #2e2923 !important;
+  stroke-width: 3 !important;
 }
 
-.map-control-fas {
-  fill: #b8a7ca;
+.iberia-map-art [data-selected-destination="true"] {
+  stroke: #3f6f4c !important;
+  stroke-width: 3 !important;
 }
 
-.map-territory.map-territory-selected {
-  fill: #b85b4c;
-  stroke-width: 1;
+.iberia-map-art [data-territory-id]:focus-visible {
+  stroke: #241d18 !important;
+  stroke-width: 3 !important;
 }
 
-.map-territory.map-territory-destination {
-  fill: #789469;
-  stroke-width: 1;
-}
-
-.map-territory:focus-visible {
-  stroke: #5b4734;
-  stroke-width: 1.2;
-}
-
-.map-label,
-.map-unit-count {
+.iberia-map-overlay {
+  z-index: 2;
+  overflow: visible;
   pointer-events: none;
+}
+
+.iberia-country-label {
+  fill: #565b5d;
+  font-size: 7px;
+  font-weight: 700;
+  opacity: 0.9;
+}
+
+.iberia-region-label rect {
+  fill: rgb(255 250 240 / 86%);
+  stroke: rgb(36 29 24 / 20%);
+  stroke-width: 0.5;
+}
+
+.iberia-region-label text {
   fill: #241d18;
-  font-size: 4px;
+  font-size: 6px;
   font-weight: 700;
 }
 
-.map-unit-count {
-  font-size: 3.5px;
-  font-weight: 600;
+.nato-unit-counter {
+  position: absolute;
+  z-index: 3;
+  width: clamp(2.75rem, 11%, 4.25rem);
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 2px solid #241d18;
+  border-radius: 3px;
+  color: #241d18;
+  background: #fffaf0;
+  box-shadow: 0 2px 5px rgb(36 29 24 / 25%);
+  line-height: 0;
+  transform: translate(-50%, -50%);
 }
 
-.map-label-group {
-  pointer-events: none;
+.nato-unit-counter:hover {
+  background: #fffaf0;
+  box-shadow: 0 3px 8px rgb(36 29 24 / 35%);
+  transform: translate(-50%, -50%) scale(1.04);
 }
 
-.map-label-backplate {
-  fill: rgb(255 250 240 / 72%);
-  stroke: rgb(36 29 24 / 18%);
-  stroke-width: 0.25;
+.nato-unit-counter:focus-visible,
+.nato-unit-counter-selected {
+  outline: 3px solid #3f6f4c;
+  outline-offset: 2px;
 }
 
-.unit-counter {
-  cursor: pointer;
-  outline: none;
+.nato-unit-counter span:first-child,
+.nato-unit-svg {
+  display: block;
+  width: 100%;
+  height: auto;
 }
 
-.unit-counter rect {
-  stroke: #241d18;
-  stroke-width: 0.45;
-}
-
-.unit-counter-selected rect {
-  stroke-width: 1.2;
-}
-
-.unit-counter-symbol {
-  fill: #fffaf0;
-  font-size: 4px;
+.nato-unit-abbreviation {
+  position: absolute;
+  right: 2px;
+  bottom: 1px;
+  padding: 1px 2px;
+  border-radius: 2px;
+  color: #241d18;
+  background: rgb(255 250 240 / 82%);
+  font-size: 0.5rem;
   font-weight: 900;
-  pointer-events: none;
+  line-height: 1;
+}
+
+.map-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  color: #51463a;
+  font-size: 0.75rem;
+  font-weight: 700;
+  list-style: none;
+}
+
+.map-legend li {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.map-legend-swatch {
+  width: 0.85rem;
+  height: 0.85rem;
+  border: 1px solid #665b4c;
+}
+
+.map-legend-uncontrolled {
+  background: #d8c59d;
+}
+
+.map-legend-portugal {
+  background: #aeb3b5;
 }
 
 .map-order-arrow {
   stroke: currentColor;
-  stroke-width: 1.2;
-}
-
-.map-order-arrow + path,
-marker path {
-  fill: currentColor;
+  stroke-width: 2.5;
+  vector-effect: non-scaling-stroke;
 }
 
 .map-bounce-marker,
 .map-skull-marker {
   paint-order: stroke;
   stroke: #fffaf0;
-  stroke-width: 1;
+  stroke-width: 2;
   text-anchor: middle;
-  font-size: 5px;
+  font-size: 9px;
   font-weight: 900;
 }
 
@@ -238,12 +325,12 @@ marker path {
 
 .map-skull-marker {
   fill: #9f2525;
-  font-size: 3px;
+  font-size: 5px;
 }
 
 .game-layout {
   display: grid;
-  grid-template-columns: minmax(20rem, 34rem) minmax(16rem, 1fr);
+  grid-template-columns: minmax(20rem, 38rem) minmax(16rem, 1fr);
   gap: 1.5rem;
   align-items: start;
 }

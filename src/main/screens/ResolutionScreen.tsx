@@ -1,6 +1,6 @@
 import type { JSX } from "react";
 import { Navigate, useNavigate } from "react-router";
-import { AbstractMap } from "../components/AbstractMap";
+import { IberiaMap } from "../components/IberiaMap";
 import { useAppDispatch, useAppSelector } from "../hooks";
 import { milestone1Scenario } from "../scenarios/milestone1Scenario";
 import {
@@ -39,7 +39,7 @@ export function ResolutionScreen(): JSX.Element {
       <h1 id="resolution-title">Resolution Summary</h1>
 
       <div className="game-layout">
-        <AbstractMap
+        <IberiaMap
           control={control}
           factions={milestone1Scenario.factions}
           legalDestinationIds={[]}
