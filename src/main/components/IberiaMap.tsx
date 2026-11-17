@@ -5,7 +5,10 @@ import infantrySvgSource from "../../../assets/icons/nato/infantry.svg?raw";
 import type {
   FactionDefinition,
   FactionId,
+  CityDefinition,
+  CityId,
   TerritoryId,
+  TerritoryControl,
   TurnOutcome,
   UnitId,
   UnitState
@@ -19,7 +22,9 @@ import {
 } from "../maps/iberiaRegions";
 
 interface IberiaMapProps {
-  readonly control: Partial<Record<TerritoryId, FactionId>>;
+  readonly cities?: readonly CityDefinition[];
+  readonly cityControl?: Partial<Record<CityId, FactionId>>;
+  readonly control: Record<TerritoryId, TerritoryControl>;
   readonly factions: readonly FactionDefinition[];
   readonly legalDestinationIds: readonly TerritoryId[];
   readonly onSelectTerritory: (territoryId: TerritoryId) => void;
@@ -46,6 +51,8 @@ const mapViewBox = {
 const uncontrolledColor = "#d8c59d";
 
 export function IberiaMap({
+  cities = [],
+  cityControl = {},
   control,
   factions,
   legalDestinationIds,
@@ -86,7 +93,7 @@ export function IberiaMap({
   return (
     <section aria-label="Iberia campaign map" className="iberia-map-section">
       <div
-        className="iberia-map"
+        className={legalDestinationIds.length > 0 ? "iberia-map iberia-map-choosing-destination" : "iberia-map"}
         onClick={(event: MouseEvent<HTMLDivElement>) => selectTerritoryFromTarget(event.target)}
         onKeyDown={(event: KeyboardEvent<HTMLDivElement>) => {
           if (event.key === "Enter" || event.key === " ") {
@@ -97,7 +104,7 @@ export function IberiaMap({
         style={mapColors}
       >
         <div className="iberia-map-art" dangerouslySetInnerHTML={{ __html: mapMarkup }} />
-        <MapOverlay factions={factions} outcomes={resolutionOutcomes} />
+        <MapOverlay cities={cities} cityControl={cityControl} factions={factions} outcomes={resolutionOutcomes} />
         {positionedUnits.map(({ stackIndex, unit }) => (
           <NatoUnitCounter
             faction={factionById(factions, unit.factionId)}
@@ -115,11 +122,13 @@ export function IberiaMap({
 }
 
 interface MapOverlayProps {
+  readonly cities: readonly CityDefinition[];
+  readonly cityControl: Partial<Record<CityId, FactionId>>;
   readonly factions: readonly FactionDefinition[];
   readonly outcomes: readonly TurnOutcome[];
 }
 
-function MapOverlay({ factions, outcomes }: MapOverlayProps): JSX.Element {
+function MapOverlay({ cities, cityControl, factions, outcomes }: MapOverlayProps): JSX.Element {
   const featuredRegions = Object.entries(iberiaRegions).filter(([, region]) => region.showLabel);
 
   return (
@@ -138,6 +147,12 @@ function MapOverlay({ factions, outcomes }: MapOverlayProps): JSX.Element {
       </text>
       {featuredRegions.map(([regionId, region]) => (
         <MapRegionLabel key={regionId} region={region} />
+      ))}
+      {cities.map((city) => (
+        <g className="map-city" key={city.id} transform={`translate(${city.x} ${city.y})`}>
+          <circle fill={cityColor(cityControl[city.id], factions)} r="1.8" />
+          <text textAnchor={city.x > 410 ? "end" : "start"} x={city.x > 410 ? -3 : 3} y="1.4">{city.name}</text>
+        </g>
       ))}
       <OrderAnnotations factions={factions} outcomes={outcomes} />
     </svg>
@@ -224,8 +239,10 @@ function NatoUnitCounter({
 }: NatoUnitCounterProps): JSX.Element {
   const iconMarkup = useMemo(() => prepareNatoIconMarkup(infantrySvgSource, faction.color), [faction.color]);
   const anchor = territoryAnchors[unit.territoryId];
-  const left = ((anchor.x - mapViewBox.x) / mapViewBox.width) * 100 + stackIndex * 2.5;
-  const top = ((anchor.y - mapViewBox.y) / mapViewBox.height) * 100 + stackIndex * 3;
+  const column = stackIndex % 3;
+  const row = Math.floor(stackIndex / 3);
+  const left = ((anchor.x - mapViewBox.x) / mapViewBox.width) * 100 + column * 2.4;
+  const top = ((anchor.y - mapViewBox.y) / mapViewBox.height) * 100 + row * 3.2;
 
   return (
     <button
@@ -256,6 +273,10 @@ function MapLegend({ factions }: { readonly factions: readonly FactionDefinition
       <li>
         <span className="map-legend-swatch map-legend-uncontrolled" />
         Uncontrolled
+      </li>
+      <li>
+        <span className="map-legend-swatch map-legend-contested" />
+        Contested in the historical snapshot
       </li>
       <li>
         <span className="map-legend-swatch map-legend-portugal" />
@@ -357,9 +378,15 @@ function positionUnits(units: readonly UnitState[]): readonly PositionedUnit[] {
 }
 
 function territoryColor(
-  controller: FactionId | undefined,
+  control: TerritoryControl | undefined,
   factions: readonly FactionDefinition[]
 ): string {
+  if (control === undefined) return uncontrolledColor;
+  if (control.kind === "controlled") return factionById(factions, control.factionId).color;
+  return "#9a7e69";
+}
+
+function cityColor(controller: FactionId | undefined, factions: readonly FactionDefinition[]): string {
   return controller === undefined ? uncontrolledColor : factionById(factions, controller).color;
 }
 

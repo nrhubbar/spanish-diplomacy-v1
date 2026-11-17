@@ -3,84 +3,83 @@ import { Navigate } from "react-router";
 import { IberiaMap } from "../components/IberiaMap";
 import type { TerritoryId } from "../engine/types";
 import { useAppDispatch, useAppSelector } from "../hooks";
-import { milestone1Scenario } from "../scenarios/milestone1Scenario";
+import { milestone2Scenario } from "../scenarios/milestone2Scenario";
 import { addWarningNotification } from "../state/notificationSlice";
 import {
+  addDraftMove,
   chooseMoveAction,
   chooseMoveDestination,
+  removeDraftOrder,
   selectActiveFaction,
-  selectCanSubmit,
+  selectCanAddMove,
+  selectCityControl,
   selectControl,
   selectDraftAction,
+  selectDraftOrders,
   selectGamePhase,
-  selectHistory,
   selectLegalDestinationIds,
   selectSelectedDestinationId,
   selectSelectedFromTerritoryId,
   selectSelectedUnitIds,
-  selectSubmittedOrders,
+  selectSubmissionStatus,
   selectTurnDate,
   selectUnits,
   selectValidationMessage,
   selectTerritory,
   selectUnit,
-  submitCurrentOrder
+  submitCurrentOrders
 } from "../state/gameSlice";
 
 export function OrderSubmissionScreen(): JSX.Element {
   const dispatch = useAppDispatch();
   const activeFaction = useAppSelector(selectActiveFaction);
-  const canSubmit = useAppSelector(selectCanSubmit);
+  const canAddMove = useAppSelector(selectCanAddMove);
+  const cityControl = useAppSelector(selectCityControl);
   const control = useAppSelector(selectControl);
   const draftAction = useAppSelector(selectDraftAction);
-  const history = useAppSelector(selectHistory);
+  const draftOrders = useAppSelector(selectDraftOrders);
   const legalDestinationIds = useAppSelector(selectLegalDestinationIds);
   const phase = useAppSelector(selectGamePhase);
   const selectedDestinationId = useAppSelector(selectSelectedDestinationId);
   const selectedFromTerritoryId = useAppSelector(selectSelectedFromTerritoryId);
   const selectedUnitIds = useAppSelector(selectSelectedUnitIds);
-  const submittedOrders = useAppSelector(selectSubmittedOrders);
+  const submissionStatus = useAppSelector(selectSubmissionStatus);
   const turnDate = useAppSelector(selectTurnDate);
   const units = useAppSelector(selectUnits);
   const validationMessage = useAppSelector(selectValidationMessage);
-  const selectedFriendlyUnits = units.filter((unit) => selectedUnitIds.includes(unit.id));
-  const fromTerritoryUnits = units.filter(
-    (unit) => unit.territoryId === selectedFromTerritoryId && unit.factionId === activeFaction.id
-  );
+  const territoryUnits = units.filter((unit) => unit.territoryId === selectedFromTerritoryId);
+  const territoryCities = milestone2Scenario.cities.filter((city) => city.territoryId === selectedFromTerritoryId);
 
-  if (phase === "idle" || phase === "setup") {
-    return <Navigate to="/setup" replace />;
-  }
-
-  if (phase === "resolution") {
-    return <Navigate to="/resolution" replace />;
-  }
+  if (phase === "handoff") return <Navigate to="/handoff" replace />;
+  if (phase === "resolution") return <Navigate to="/resolution" replace />;
+  if (phase === "game-over") return <Navigate to="/game-over" replace />;
+  if (phase !== "planning") return <Navigate to="/setup" replace />;
 
   function selectMapTerritory(territoryId: TerritoryId): void {
     if (draftAction === "move") {
-      if (!legalDestinationIds.includes(territoryId)) {
-        dispatch(addWarningNotification("That territory is not a legal destination."));
-      }
-
+      if (!legalDestinationIds.includes(territoryId)) dispatch(addWarningNotification("That territory is not a legal destination."));
       dispatch(chooseMoveDestination(territoryId));
       return;
     }
-
     dispatch(selectTerritory(territoryId));
   }
 
   return (
-    <section className="screen game-screen" aria-labelledby="orders-title">
-      <p className="screen-kicker">{turnDate}</p>
-      <h1 id="orders-title">{activeFaction.name} Order Submission</h1>
-      <p className="screen-copy">
-        Select a friendly territory or counter, choose move, pick a destination, then submit.
-      </p>
-
+    <main className="screen game-screen" aria-labelledby="orders-title">
+      <div className="screen-heading-row">
+        <div>
+          <p className="screen-kicker">{turnDate} · Local Player</p>
+          <h1 id="orders-title">{activeFaction.name}</h1>
+        </div>
+        <p className="privacy-chip">Orders are private</p>
+      </div>
+      <p className="screen-copy">Select individual formations, add their moves, then lock the complete order set.</p>
       <div className="game-layout">
         <IberiaMap
+          cities={milestone2Scenario.cities}
+          cityControl={cityControl}
           control={control}
-          factions={milestone1Scenario.factions}
+          factions={milestone2Scenario.factions}
           legalDestinationIds={legalDestinationIds}
           onSelectTerritory={selectMapTerritory}
           onSelectUnit={(unitId) => dispatch(selectUnit(unitId))}
@@ -89,86 +88,51 @@ export function OrderSubmissionScreen(): JSX.Element {
           selectedUnitIds={selectedUnitIds}
           units={units}
         />
-
         <aside className="order-panel" aria-label="Order builder">
           <h2>Order Builder</h2>
-          {selectedFromTerritoryId === undefined ? (
-            <p>Select one of your territories or counters.</p>
-          ) : (
+          {selectedFromTerritoryId === undefined ? <p>Select a territory to inspect its formations.</p> : (
             <>
-              <p>From: {territoryName(selectedFromTerritoryId)}</p>
-              {fromTerritoryUnits.length === 0 ? (
-                <p>No friendly units here.</p>
-              ) : (
-                <ul className="unit-list">
-                  {fromTerritoryUnits.map((unit) => (
+              <p className="territory-heading">{territoryName(selectedFromTerritoryId)}</p>
+              {territoryCities.length > 0 ? <p className="territory-cities">Cities: {territoryCities.map((city) => city.name).join(", ")}</p> : null}
+              {territoryUnits.length === 0 ? <p>No formations present.</p> : (
+                <ul className="formation-list">
+                  {territoryUnits.map((unit) => (
                     <li key={unit.id}>
-                      <label>
-                        <input checked={selectedUnitIds.includes(unit.id)} readOnly type="checkbox" />
-                        {unit.displayName}
-                      </label>
+                      <button
+                        className={selectedUnitIds.includes(unit.id) ? "formation-button formation-button-selected" : "formation-button"}
+                        disabled={unit.factionId !== activeFaction.id}
+                        onClick={() => dispatch(selectUnit(unit.id))}
+                        type="button"
+                      >
+                        <span>{unit.displayName}</span><small>{unit.formationKind} · {unit.strength} personnel</small>
+                      </button>
                     </li>
                   ))}
                 </ul>
               )}
-              <button type="button" disabled={selectedUnitIds.length === 0} onClick={() => dispatch(chooseMoveAction())}>
-                Move
-              </button>
+              <button type="button" disabled={selectedUnitIds.length === 0} onClick={() => dispatch(chooseMoveAction())}>Move selected</button>
             </>
           )}
-
-          {draftAction === "move" ? (
-            <p>
-              To:{" "}
-              {selectedDestinationId === undefined
-                ? "select a highlighted destination"
-                : territoryName(selectedDestinationId)}
-            </p>
-          ) : null}
-
-          {selectedFriendlyUnits.length > 0 ? (
-            <p>Selected: {selectedFriendlyUnits.map((unit) => unit.displayName).join(", ")}</p>
-          ) : null}
-
+          {draftAction === "move" ? <p>Destination: {selectedDestinationId === undefined ? "choose a highlighted territory" : territoryName(selectedDestinationId)}</p> : null}
           {validationMessage === undefined ? null : <p className="feedback-message">{validationMessage}</p>}
-
-          <button type="button" disabled={!canSubmit} onClick={() => dispatch(submitCurrentOrder())}>
-            Submit
-          </button>
+          <button type="button" disabled={!canAddMove} onClick={() => dispatch(addDraftMove())}>Add Move</button>
+          <div className="draft-orders">
+            <h3>Planned orders</h3>
+            {draftOrders.length === 0 ? <p>All formations will hold.</p> : (
+              <ul>{draftOrders.map((order) => <li key={order.unitId}>{unitName(order.unitId)} → {territoryName(order.to)} <button aria-label={`Remove ${unitName(order.unitId)} order`} className="text-button" onClick={() => dispatch(removeDraftOrder(order.unitId))} type="button">Remove</button></li>)}</ul>
+            )}
+          </div>
+          <button className="lock-orders-button" type="button" onClick={() => dispatch(submitCurrentOrders())}>Submit Orders</button>
         </aside>
       </div>
-
-      <section className="debug-panel" aria-labelledby="submitted-orders-title">
-        <h2 id="submitted-orders-title">Submission Status</h2>
-        {submittedOrders.length === 0 ? (
-          <p>No players have submitted yet.</p>
-        ) : (
-          <ul>
-            {submittedOrders.map((order) => (
-              <li key={order.factionId}>{order.factionName} submitted orders.</li>
-            ))}
-          </ul>
-        )}
+      <section className="status-strip" aria-label="Submission status">
+        {submissionStatus.map((status) => <span className={status.ready ? "status-ready" : "status-waiting"} key={status.factionId}>{status.factionName}: {status.ready ? "Ready" : "Planning"}</span>)}
       </section>
-
-      <section className="debug-panel" aria-labelledby="turn-history-title">
-        <h2 id="turn-history-title">Turn History</h2>
-        {history.length === 0 ? (
-          <p>No resolved turns yet.</p>
-        ) : (
-          <ul>
-            {history.map((entry) => (
-              <li key={entry.turnNumber}>
-                Turn {entry.turnNumber}: {entry.summaryLines.join(" ")}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-    </section>
+    </main>
   );
 }
 
 function territoryName(territoryId: TerritoryId): string {
-  return milestone1Scenario.territories.find((territory) => territory.id === territoryId)?.name ?? territoryId;
+  return milestone2Scenario.territories.find((territory) => territory.id === territoryId)!.name;
 }
+function unitName(unitId: string): string { return milestone2Scenario.units[unitId]!.displayName; }

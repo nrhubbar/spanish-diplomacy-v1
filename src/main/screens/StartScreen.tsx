@@ -6,11 +6,11 @@ export function StartScreen(): JSX.Element {
 
   return (
     <section className="screen" aria-labelledby="start-title">
-      <p className="screen-kicker">Strategy prototype</p>
+      <p className="screen-kicker">Simultaneous-orders campaign</p>
       <h1 id="start-title">Spanish Diplomacy</h1>
-      <p className="screen-copy">Milestone 1: visible debug orders across an Iberian campaign map.</p>
+      <p className="screen-copy">Command a historically grounded July 1936 campaign against local or computer players. Plan privately, reveal together, and control Spain.</p>
       <button type="button" onClick={() => navigate("/setup")}>
-        Start
+        Set Up Campaign
       </button>
     </section>
   );

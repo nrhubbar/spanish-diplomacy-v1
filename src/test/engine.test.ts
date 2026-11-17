@@ -1,395 +1,147 @@
 import { describe, expect, it } from "vitest";
+import { generateComputerSubmission, legalMovesForUnit } from "../main/ai/historicallyMotivatedActor";
 import { resolveTurn } from "../main/engine/resolution";
-import type {
-  GameState,
-  MoveOrder,
-  PlayerSubmission,
-  TerritoryId
-} from "../main/engine/types";
+import { validateSubmission } from "../main/engine/submission";
+import type { FactionId, GameState, MoveOrder, TerritoryId, VictoryProgress } from "../main/engine/types";
 import { validateMoveOrder } from "../main/engine/validation";
-import { createInitialGameState, milestone1Scenario } from "../main/scenarios/milestone1Scenario";
+import { evaluateVictory, victoryProgress } from "../main/engine/victory";
+import { createInitialGameState, milestone2Scenario } from "../main/scenarios/milestone2Scenario";
 
-const move = (
-  factionId: MoveOrder["factionId"],
-  unitId: string,
-  from: TerritoryId,
-  to: TerritoryId
-): MoveOrder => ({
-  factionId,
-  from,
-  kind: "move",
-  to,
-  unitId
-});
+function move(factionId: FactionId, unitId: string, from: TerritoryId, to: TerritoryId): MoveOrder {
+  return { factionId, from, kind: "move", to, unitId };
+}
 
-const submit = (submission: PlayerSubmission): PlayerSubmission => submission;
-
-function stateWithComAt(territoryId: TerritoryId): GameState {
-  const state = createInitialGameState();
-
+function smallState(): GameState {
+  const base = createInitialGameState();
   return {
-    ...state,
+    ...base,
     units: {
-      ...state.units,
-      "com-inf-001": {
-        ...state.units["com-inf-001"]!,
-        territoryId
-      }
+      rep: { ...base.units["rep-wad-ras-1"]!, id: "rep", territoryId: "madrid" },
+      north: { ...base.units["north-san-marcial-22"]!, id: "north", territoryId: "castilla-y-leon" },
+      south: { ...base.units["south-granada-6"]!, id: "south", territoryId: "andalucia" }
     }
   };
 }
 
-function stateWithPositions(
-  com: TerritoryId,
-  roy: TerritoryId,
-  fas: TerritoryId
-): GameState {
-  const state = createInitialGameState();
-
-  return {
-    ...state,
-    control: {
-      [com]: "com",
-      [roy]: "roy",
-      [fas]: "fas"
-    },
-    units: {
-      "com-inf-001": {
-        ...state.units["com-inf-001"]!,
-        territoryId: com
-      },
-      "roy-inf-001": {
-        ...state.units["roy-inf-001"]!,
-        territoryId: roy
-      },
-      "fas-inf-001": {
-        ...state.units["fas-inf-001"]!,
-        territoryId: fas
-      }
-    }
-  };
-}
-
-describe("milestone1Scenario", () => {
-  it("starts one faction in Galicia, Catalunya, and Andalucia", () => {
+describe("historical scenario", () => {
+  it("contains researched commands, cities, contested regions, and formation provenance", () => {
     const state = createInitialGameState();
-
-    expect(milestone1Scenario.factions.map((faction) => faction.id)).toEqual(["com", "roy", "fas"]);
-    expect(Object.values(state.units).map((unit) => unit.id)).toEqual([
-      "com-inf-001",
-      "roy-inf-001",
-      "fas-inf-001"
-    ]);
-    expect(state.control).toEqual({
-      galicia: "com",
-      catalunya: "roy",
-      andalucia: "fas"
-    });
-    expect(state.units["com-inf-001"]?.territoryId).toBe("galicia");
-    expect(state.units["roy-inf-001"]?.territoryId).toBe("catalunya");
-    expect(state.units["fas-inf-001"]?.territoryId).toBe("andalucia");
+    expect(milestone2Scenario.id).toBe("spain-1936-07-31");
+    expect(milestone2Scenario.factions.map((faction) => faction.id)).toEqual(["republic", "north", "south"]);
+    expect(milestone2Scenario.cities).toHaveLength(25);
+    expect(state.control.andalucia.kind).toBe("contested");
+    expect(Object.values(state.units).length).toBeGreaterThan(20);
+    expect(Object.values(state.units).every((unit) => unit.sourceIds.length > 0)).toBe(true);
+    expect(victoryProgress(milestone2Scenario, state).every((entry) => entry.territoriesControlled < entry.territoryThreshold && entry.citiesControlled < entry.cityThreshold)).toBe(true);
   });
 });
 
-describe("validateMoveOrder adjacency", () => {
-  it.each<[TerritoryId, TerritoryId]>([
-    ["galicia", "asturias"],
-    ["galicia", "castilla-y-leon"],
-    ["asturias", "cantabria"],
-    ["asturias", "castilla-y-leon"],
-    ["cantabria", "pais-vasco"],
-    ["cantabria", "castilla-y-leon"],
-    ["pais-vasco", "navarra"],
-    ["pais-vasco", "la-rioja"],
-    ["pais-vasco", "castilla-y-leon"],
-    ["navarra", "la-rioja"],
-    ["navarra", "aragon"],
-    ["la-rioja", "aragon"],
-    ["la-rioja", "castilla-y-leon"],
-    ["aragon", "castilla-y-leon"],
-    ["aragon", "castilla-la-mancha"],
-    ["aragon", "valencia"],
-    ["aragon", "catalunya"],
-    ["madrid", "castilla-y-leon"],
-    ["madrid", "castilla-la-mancha"],
-    ["castilla-y-leon", "extremadura"],
-    ["castilla-y-leon", "castilla-la-mancha"],
-    ["castilla-la-mancha", "extremadura"],
-    ["castilla-la-mancha", "valencia"],
-    ["castilla-la-mancha", "murcia"],
-    ["castilla-la-mancha", "andalucia"],
-    ["extremadura", "andalucia"],
-    ["catalunya", "valencia"],
-    ["valencia", "murcia"],
-    ["murcia", "andalucia"]
-  ])("allows neighboring movement from %s to %s", (from, to) => {
-    const state = stateWithComAt(from);
-
-    expect(
-      validateMoveOrder(
-        milestone1Scenario,
-        state,
-        move("com", "com-inf-001", from, to)
-      )
-    ).toEqual({ ok: true });
+describe("validation and independent orders", () => {
+  it("validates adjacent movement and rejects integrity errors", () => {
+    const state = smallState();
+    expect(validateMoveOrder(milestone2Scenario, state, move("republic", "rep", "madrid", "castilla-la-mancha"))).toEqual({ ok: true });
+    expect(validateMoveOrder(milestone2Scenario, state, move("north", "rep", "madrid", "castilla-la-mancha"))).toMatchObject({ ok: false });
+    expect(validateMoveOrder(milestone2Scenario, state, move("republic", "missing", "madrid", "castilla-la-mancha"))).toMatchObject({ ok: false });
+    expect(validateMoveOrder(milestone2Scenario, state, move("republic", "rep", "galicia", "asturias"))).toMatchObject({ ok: false });
+    expect(validateMoveOrder(milestone2Scenario, state, move("republic", "rep", "madrid", "galicia"))).toMatchObject({ ok: false });
   });
 
-  it.each<[TerritoryId, TerritoryId]>([
-    ["galicia", "cantabria"],
-    ["galicia", "catalunya"],
-    ["asturias", "pais-vasco"],
-    ["cantabria", "navarra"],
-    ["pais-vasco", "aragon"],
-    ["navarra", "castilla-y-leon"],
-    ["madrid", "extremadura"],
-    ["catalunya", "madrid"],
-    ["andalucia", "valencia"],
-    ["islas-baleares", "valencia"],
-    ["canarias", "andalucia"],
-    ["ceuta", "andalucia"],
-    ["melilla", "murcia"]
-  ])("rejects non-neighbor movement from %s to %s", (from, to) => {
-    const state = stateWithComAt(from);
-
-    expect(
-      validateMoveOrder(
-        milestone1Scenario,
-        state,
-        move("com", "com-inf-001", from, to)
-      )
-    ).toEqual({
-      ok: false,
-      reason: "Destination is not adjacent."
-    });
-  });
-
-  it("allows every land border in both directions", () => {
-    for (const territory of milestone1Scenario.territories) {
-      for (const adjacentId of territory.adjacent) {
-        const state = stateWithComAt(adjacentId);
-
-        expect(
-          validateMoveOrder(
-            milestone1Scenario,
-            state,
-            move("com", "com-inf-001", adjacentId, territory.id)
-          )
-        ).toEqual({ ok: true });
-      }
-    }
-  });
-
-  it("rejects a move that remains in the same region", () => {
-    const state = stateWithComAt("galicia");
-
-    expect(
-      validateMoveOrder(
-        milestone1Scenario,
-        state,
-        move("com", "com-inf-001", "galicia", "galicia")
-      )
-    ).toEqual({
-      ok: false,
-      reason: "Destination is not adjacent."
-    });
+  it("accepts multiple unit orders but rejects duplicate unit and wrong-faction submissions", () => {
+    const state = createInitialGameState();
+    const first = move("republic", "rep-wad-ras-1", "madrid", "castilla-la-mancha");
+    const second = move("republic", "rep-covadonga-4", "madrid", "castilla-la-mancha");
+    expect(validateSubmission(milestone2Scenario, state, "republic", { factionId: "republic", orders: [first, second] })).toEqual({ ok: true });
+    expect(validateSubmission(milestone2Scenario, state, "republic", { factionId: "republic", orders: [first, first] })).toMatchObject({ ok: false });
+    expect(validateSubmission(milestone2Scenario, state, "north", { factionId: "republic", orders: [] })).toMatchObject({ ok: false });
+    expect(validateSubmission(milestone2Scenario, state, "republic", { factionId: "republic", orders: [move("republic", "rep-wad-ras-1", "madrid", "galicia")] })).toMatchObject({ ok: false });
   });
 });
 
-describe("validateMoveOrder integrity", () => {
-  it("rejects wrong faction, unknown unit, wrong origin, and unknown origin", () => {
-    const state = createInitialGameState();
-    const stateWithBadOrigin = {
-      ...state,
-      units: {
-        ...state.units,
-        "com-inf-001": {
-          ...state.units["com-inf-001"],
-          territoryId: "missing"
-        }
-      }
-    } as unknown as GameState;
+describe("historically motivated computer player", () => {
+  it("generates valid objective-seeking orders and is independent of hidden submissions", () => {
+    const state = smallState();
+    const first = generateComputerSubmission(milestone2Scenario, state, "north", () => 0);
+    const second = generateComputerSubmission(milestone2Scenario, structuredClone(state), "north", () => 0);
+    expect(validateSubmission(milestone2Scenario, state, "north", first)).toEqual({ ok: true });
+    expect(first).toEqual(second);
+    expect(milestone2Scenario.factions.find((faction) => faction.id === "north")?.objectiveTerritoryIds).toContain(first.orders[0]?.to);
+  });
 
-    expect(
-      validateMoveOrder(
-        milestone1Scenario,
-        state,
-        move("roy", "com-inf-001", "galicia", "asturias")
-      )
-    ).toEqual({
-      ok: false,
-      reason: "Selected unit belongs to another player."
-    });
-    expect(
-      validateMoveOrder(
-        milestone1Scenario,
-        state,
-        move("com", "missing", "galicia", "asturias")
-      )
-    ).toEqual({
-      ok: false,
-      reason: "Unknown unit."
-    });
-    expect(
-      validateMoveOrder(
-        milestone1Scenario,
-        state,
-        move("com", "com-inf-001", "asturias", "cantabria")
-      )
-    ).toEqual({
-      ok: false,
-      reason: "Selected unit is no longer in that territory."
-    });
-    expect(
-      validateMoveOrder(
-        milestone1Scenario,
-        stateWithBadOrigin,
-        move("com", "com-inf-001", "missing" as TerritoryId, "asturias")
-      )
-    ).toEqual({
-      ok: false,
-      reason: "Unknown origin territory."
-    });
+  it("enumerates legal moves and handles unknown or unitless factions", () => {
+    const state = smallState();
+    expect(legalMovesForUnit(milestone2Scenario, state, state.units["rep"]!)).toHaveLength(2);
+    const noUnits = { ...state, units: {} };
+    expect(generateComputerSubmission(milestone2Scenario, noUnits, "south", () => 0)).toEqual({ factionId: "south", orders: [] });
+    expect(() => generateComputerSubmission(milestone2Scenario, state, "missing" as FactionId)).toThrow("Unknown computer faction");
   });
 });
 
-describe("resolveTurn", () => {
-  it("moves into an empty neighboring region when uncontested", () => {
+describe("turn resolution", () => {
+  it("moves friendly formations independently into the same destination", () => {
     const state = createInitialGameState();
-    const result = resolveTurn(milestone1Scenario, state, [
-      submit({
-        factionId: "com",
-        orders: [move("com", "com-inf-001", "galicia", "asturias")]
-      })
-    ]);
-
-    expect(result.finalUnits["com-inf-001"]?.territoryId).toBe("asturias");
-    expect(result.finalControl.asturias).toBe("com");
-    expect(result.outcomes[0]?.kind).toBe("successful-move");
+    const result = resolveTurn(milestone2Scenario, state, [{
+      factionId: "republic",
+      orders: [
+        move("republic", "rep-wad-ras-1", "madrid", "castilla-la-mancha"),
+        move("republic", "rep-covadonga-4", "madrid", "castilla-la-mancha")
+      ]
+    }]);
+    expect(result.finalUnits["rep-wad-ras-1"]?.territoryId).toBe("castilla-la-mancha");
+    expect(result.finalUnits["rep-covadonga-4"]?.territoryId).toBe("castilla-la-mancha");
+    expect(result.finalControl["castilla-la-mancha"]).toEqual({ kind: "controlled", factionId: "republic" });
   });
 
-  it("keeps an empty contested destination empty", () => {
-    const state = stateWithPositions("galicia", "cantabria", "andalucia");
-    const result = resolveTurn(milestone1Scenario, state, [
-      submit({
-        factionId: "com",
-        orders: [move("com", "com-inf-001", "galicia", "asturias")]
-      }),
-      submit({
-        factionId: "roy",
-        orders: [move("roy", "roy-inf-001", "cantabria", "asturias")]
-      })
+  it("bounces hostile incoming moves and head-on swaps", () => {
+    const state = smallState();
+    const contested = resolveTurn(milestone2Scenario, state, [
+      { factionId: "republic", orders: [move("republic", "rep", "madrid", "castilla-la-mancha")] },
+      { factionId: "south", orders: [move("south", "south", "andalucia", "castilla-la-mancha")] }
     ]);
+    expect(contested.outcomes.filter((outcome) => outcome.kind === "bounced-move")).toHaveLength(2);
 
-    expect(result.finalUnits["com-inf-001"]?.territoryId).toBe("galicia");
-    expect(result.finalUnits["roy-inf-001"]?.territoryId).toBe("cantabria");
-    expect(result.finalControl.asturias).toBeUndefined();
+    const swapped = resolveTurn(milestone2Scenario, state, [
+      { factionId: "republic", orders: [move("republic", "rep", "madrid", "castilla-y-leon")] },
+      { factionId: "north", orders: [move("north", "north", "castilla-y-leon", "madrid")] }
+    ]);
+    expect(swapped.summaryLines.join(" ")).toContain("swap territories");
   });
 
-  it("disbands a defender that fails to vacate while the attacker succeeds", () => {
-    const state = stateWithPositions("galicia", "asturias", "cantabria");
-    const result = resolveTurn(milestone1Scenario, state, [
-      submit({
-        factionId: "com",
-        orders: [move("com", "com-inf-001", "galicia", "asturias")]
-      }),
-      submit({
-        factionId: "roy",
-        orders: [move("roy", "roy-inf-001", "asturias", "cantabria")]
-      }),
-      submit({ factionId: "fas", orders: [] })
+  it("handles holds, invalid orders, captures, city control, and disbands", () => {
+    const state = smallState();
+    const result = resolveTurn(milestone2Scenario, state, [
+      { factionId: "republic", orders: [move("republic", "rep", "madrid", "galicia")] },
+      { factionId: "north", orders: [move("north", "north", "castilla-y-leon", "madrid")] },
+      { factionId: "south", orders: [] }
     ]);
+    expect(result.finalUnits["rep"]).toBeUndefined();
+    expect(result.cityControl["madrid"]).toBe("republic");
+    expect(result.summaryLines.join(" ")).toContain("Impossible order");
+    expect(result.summaryLines.join(" ")).toContain("held in place");
 
-    expect(result.finalUnits["com-inf-001"]?.territoryId).toBe("asturias");
-    expect(result.finalUnits["roy-inf-001"]).toBeUndefined();
-    expect(result.finalControl.asturias).toBe("com");
-    expect(result.summaryLines.join(" ")).toContain("disbanded roy-inf-001");
+    const capture = resolveTurn(milestone2Scenario, state, [
+      { factionId: "south", orders: [move("south", "south", "andalucia", "castilla-la-mancha")] }
+    ]);
+    expect(capture.cityControl["albacete"]).toBe("south");
   });
 
-  it("disbands a bounced attacker whose origin was captured", () => {
-    const state = stateWithPositions("galicia", "castilla-y-leon", "cantabria");
-    const result = resolveTurn(milestone1Scenario, state, [
-      submit({
-        factionId: "com",
-        orders: [move("com", "com-inf-001", "galicia", "asturias")]
-      }),
-      submit({
-        factionId: "roy",
-        orders: [move("roy", "roy-inf-001", "castilla-y-leon", "galicia")]
-      }),
-      submit({
-        factionId: "fas",
-        orders: [move("fas", "fas-inf-001", "cantabria", "asturias")]
-      })
-    ]);
+  it("describes a faction with no units and no submitted orders", () => {
+    const empty = { ...smallState(), units: {} };
+    const result = resolveTurn(milestone2Scenario, empty, []);
+    expect(result.summaryLines).toContain("Republican Government submitted no orders.");
+    expect(result.summaryLines).toContain("Northern Insurgent Command submitted no orders.");
+    expect(result.summaryLines).toContain("Southern Insurgent Command submitted no orders.");
+  });
+});
 
-    expect(result.finalUnits["com-inf-001"]).toBeUndefined();
-    expect(result.finalUnits["roy-inf-001"]?.territoryId).toBe("galicia");
-    expect(result.finalUnits["fas-inf-001"]?.territoryId).toBe("cantabria");
-    expect(result.finalControl.galicia).toBe("roy");
+describe("victory", () => {
+  const progress = (factionId: FactionId, territoriesControlled: number, citiesControlled: number): VictoryProgress => ({
+    factionId, territoriesControlled, citiesControlled, territoryThreshold: 10, cityThreshold: 19
   });
 
-  it("bounces units attempting a head-on swap", () => {
-    const state = stateWithPositions("galicia", "asturias", "andalucia");
-    const result = resolveTurn(milestone1Scenario, state, [
-      submit({
-        factionId: "com",
-        orders: [move("com", "com-inf-001", "galicia", "asturias")]
-      }),
-      submit({
-        factionId: "roy",
-        orders: [move("roy", "roy-inf-001", "asturias", "galicia")]
-      })
-    ]);
-
-    expect(result.finalUnits["com-inf-001"]?.territoryId).toBe("galicia");
-    expect(result.finalUnits["roy-inf-001"]?.territoryId).toBe("asturias");
-    expect(result.summaryLines.join(" ")).toContain("Units attempted to swap territories.");
-  });
-
-  it("allows three-unit cycles across mutually neighboring regions", () => {
-    const state = stateWithPositions("galicia", "asturias", "castilla-y-leon");
-    const result = resolveTurn(milestone1Scenario, state, [
-      submit({
-        factionId: "com",
-        orders: [move("com", "com-inf-001", "galicia", "asturias")]
-      }),
-      submit({
-        factionId: "roy",
-        orders: [move("roy", "roy-inf-001", "asturias", "castilla-y-leon")]
-      }),
-      submit({
-        factionId: "fas",
-        orders: [move("fas", "fas-inf-001", "castilla-y-leon", "galicia")]
-      })
-    ]);
-
-    expect(result.finalUnits["com-inf-001"]?.territoryId).toBe("asturias");
-    expect(result.finalUnits["roy-inf-001"]?.territoryId).toBe("castilla-y-leon");
-    expect(result.finalUnits["fas-inf-001"]?.territoryId).toBe("galicia");
-  });
-
-  it("disbands units with impossible submitted orders", () => {
-    const state = createInitialGameState();
-    const result = resolveTurn(milestone1Scenario, state, [
-      submit({
-        factionId: "com",
-        orders: [move("com", "com-inf-001", "galicia", "catalunya")]
-      })
-    ]);
-
-    expect(result.finalUnits["com-inf-001"]).toBeUndefined();
-    expect(result.outcomes[0]?.kind).toBe("invalid-order");
-  });
-
-  it("handles missing submissions as no move", () => {
-    const state = createInitialGameState();
-    const result = resolveTurn(milestone1Scenario, state, []);
-
-    expect(result.outcomes.map((outcome) => outcome.kind)).toEqual([
-      "no-move",
-      "no-move",
-      "no-move"
-    ]);
-    expect(result.finalUnits["com-inf-001"]?.territoryId).toBe("galicia");
+  it("awards territory, city, shared, and no victory outcomes", () => {
+    expect(evaluateVictory([progress("republic", 10, 5)] )).toEqual({ condition: "territories", factionIds: ["republic"] });
+    expect(evaluateVictory([progress("north", 3, 19)] )).toEqual({ condition: "cities", factionIds: ["north"] });
+    expect(evaluateVictory([progress("north", 10, 19), progress("south", 10, 19)])).toEqual({ condition: "shared", factionIds: ["north", "south"] });
+    expect(evaluateVictory([progress("south", 3, 2)])).toBeUndefined();
   });
 });

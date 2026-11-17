@@ -2,13 +2,14 @@ import type { JSX } from "react";
 import { Navigate, useNavigate } from "react-router";
 import { IberiaMap } from "../components/IberiaMap";
 import { useAppDispatch, useAppSelector } from "../hooks";
-import { milestone1Scenario } from "../scenarios/milestone1Scenario";
+import { milestone2Scenario } from "../scenarios/milestone2Scenario";
 import {
+  selectCityControl,
   selectControl,
   selectGamePhase,
   selectResolution,
   selectResolutionSummary,
-  selectSubmittedOrders,
+  selectRevealedOrders,
   selectTurnDate,
   selectUnitsWithFactionNames,
   startNextTurn
@@ -17,82 +18,38 @@ import {
 export function ResolutionScreen(): JSX.Element {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const cityControl = useAppSelector(selectCityControl);
   const control = useAppSelector(selectControl);
   const phase = useAppSelector(selectGamePhase);
   const resolution = useAppSelector(selectResolution);
   const resolutionSummary = useAppSelector(selectResolutionSummary);
-  const submittedOrders = useAppSelector(selectSubmittedOrders);
+  const submittedOrders = useAppSelector(selectRevealedOrders);
   const turnDate = useAppSelector(selectTurnDate);
   const units = useAppSelector(selectUnitsWithFactionNames);
 
-  if (phase === "orders") {
-    return <Navigate to="/orders" replace />;
-  }
-
-  if (phase !== "resolution") {
-    return <Navigate to="/setup" replace />;
-  }
+  if (phase === "game-over") return <Navigate to="/game-over" replace />;
+  if (phase !== "resolution") return <Navigate to={phase === "handoff" ? "/handoff" : "/setup"} replace />;
 
   return (
-    <section className="screen game-screen" aria-labelledby="resolution-title">
-      <p className="screen-kicker">{turnDate}</p>
-      <h1 id="resolution-title">Resolution Summary</h1>
-
+    <main className="screen game-screen" aria-labelledby="resolution-title">
+      <p className="screen-kicker">{turnDate} · Orders revealed</p>
+      <h1 id="resolution-title">Turn resolution</h1>
       <div className="game-layout">
-        <IberiaMap
-          control={control}
-          factions={milestone1Scenario.factions}
-          legalDestinationIds={[]}
-          onSelectTerritory={() => undefined}
-          onSelectUnit={() => undefined}
-          resolutionOutcomes={resolution?.outcomes ?? []}
-          selectedDestinationId={undefined}
-          selectedFromTerritoryId={undefined}
-          selectedUnitIds={[]}
-          units={units}
-        />
-
-        <section className="debug-panel resolution-panel" aria-labelledby="revealed-orders-title">
-          <h2 id="revealed-orders-title">Revealed Orders</h2>
-          <ul>
-            {submittedOrders.map((order) => (
-              <li key={order.factionId}>
-                {order.factionName}: {order.description}
-              </li>
-            ))}
-          </ul>
+        <IberiaMap cities={milestone2Scenario.cities} cityControl={cityControl} control={control} factions={milestone2Scenario.factions} legalDestinationIds={[]} onSelectTerritory={() => undefined} onSelectUnit={() => undefined} resolutionOutcomes={resolution!.outcomes} selectedDestinationId={undefined} selectedFromTerritoryId={undefined} selectedUnitIds={[]} units={units} />
+        <section className="order-panel resolution-panel" aria-labelledby="revealed-orders-title">
+          <h2 id="revealed-orders-title">Revealed orders</h2>
+          <ul className="resolution-list">{submittedOrders.map((order) => <li key={order.factionId}><strong>{order.factionName}</strong><span>{order.description}</span></li>)}</ul>
+          <h2>Victory progress</h2>
+          <ul className="progress-list">{resolution?.progress.map((entry) => <li key={entry.factionId}><strong>{factionName(entry.factionId)}</strong><span>{entry.territoriesControlled}/{entry.territoryThreshold} territories · {entry.citiesControlled}/{entry.cityThreshold} cities</span></li>)}</ul>
         </section>
       </div>
-
-      <section className="debug-panel" aria-labelledby="resolution-lines-title">
-        <h2 id="resolution-lines-title">Outcomes</h2>
-        <ul>
-          {resolutionSummary.map((line) => (
-            <li key={line}>{line}</li>
-          ))}
-        </ul>
+      <section className="outcome-panel" aria-labelledby="outcomes-title">
+        <h2 id="outcomes-title">What happened</h2>
+        <ul>{resolutionSummary.map((line, index) => <li key={`${index}-${line}`}>{line}</li>)}</ul>
       </section>
-
-      <section className="debug-panel" aria-labelledby="final-positions-title">
-        <h2 id="final-positions-title">Final Positions</h2>
-        <ul>
-          {units.map((unit) => (
-            <li key={unit.id}>
-              {unit.factionName}: {unit.territoryName}
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <button
-        type="button"
-        onClick={() => {
-          navigate("/orders");
-          dispatch(startNextTurn());
-        }}
-      >
-        Start Next Turn
-      </button>
-    </section>
+      <button type="button" onClick={() => { dispatch(startNextTurn()); navigate("/handoff"); }}>Start Next Turn</button>
+    </main>
   );
 }
+
+function factionName(id: string): string { return milestone2Scenario.factions.find((faction) => faction.id === id)!.name; }

@@ -1,4 +1,4 @@
-export type FactionId = "com" | "roy" | "fas";
+export type FactionId = "republic" | "north" | "south";
 
 export type TerritoryId =
   | "galicia"
@@ -22,41 +22,74 @@ export type TerritoryId =
   | "canarias";
 
 export type UnitId = string;
-
+export type CityId = string;
+export type ActorKind = "local-human" | "computer" | "online-human";
 export type UnitType = "infantry";
+export type FormationKind = "regiment" | "battalion" | "column" | "security" | "other";
 
 export interface FactionDefinition {
   readonly abbreviation: string;
   readonly color: string;
   readonly id: FactionId;
+  readonly motivation: string;
   readonly name: string;
+  readonly objectiveTerritoryIds: readonly TerritoryId[];
 }
 
 export interface TerritoryDefinition {
   readonly id: TerritoryId;
   readonly name: string;
   readonly adjacent: readonly TerritoryId[];
+  readonly countsForVictory: boolean;
 }
 
+export interface CityDefinition {
+  readonly countsForVictory: boolean;
+  readonly id: CityId;
+  readonly name: string;
+  readonly territoryId: TerritoryId;
+  readonly x: number;
+  readonly y: number;
+}
+
+export type TerritoryControl =
+  | { readonly kind: "controlled"; readonly factionId: FactionId }
+  | { readonly kind: "contested"; readonly factionIds: readonly FactionId[] };
+
 export interface UnitState {
+  readonly cityId?: CityId;
   readonly displayName: string;
   readonly factionId: FactionId;
+  readonly formationKind: FormationKind;
+  readonly historicalNote?: string;
   readonly id: UnitId;
+  readonly sourceIds: readonly string[];
+  readonly strength: number;
   readonly type: UnitType;
   readonly territoryId: TerritoryId;
 }
 
 export interface GameState {
-  readonly control: Partial<Record<TerritoryId, FactionId>>;
+  readonly cityControl: Partial<Record<CityId, FactionId>>;
+  readonly control: Record<TerritoryId, TerritoryControl>;
   readonly turnNumber: number;
   readonly units: Record<UnitId, UnitState>;
 }
 
 export interface ScenarioDefinition {
+  readonly cities: readonly CityDefinition[];
   readonly factions: readonly FactionDefinition[];
+  readonly initialCityControl: Partial<Record<CityId, FactionId>>;
+  readonly initialControl: Record<TerritoryId, TerritoryControl>;
+  readonly id: string;
+  readonly snapshotLabel: string;
   readonly territories: readonly TerritoryDefinition[];
   readonly units: Record<UnitId, UnitState>;
-  readonly initialControl: Partial<Record<TerritoryId, FactionId>>;
+}
+
+export interface ActorAssignment {
+  readonly factionId: FactionId;
+  readonly kind: ActorKind;
 }
 
 export interface MoveOrder {
@@ -117,11 +150,27 @@ export type TurnOutcome =
   | InvalidOrderOutcome
   | NoMoveOutcome;
 
+export interface VictoryProgress {
+  readonly citiesControlled: number;
+  readonly cityThreshold: number;
+  readonly factionId: FactionId;
+  readonly territoriesControlled: number;
+  readonly territoryThreshold: number;
+}
+
+export interface VictoryResult {
+  readonly condition: "cities" | "territories" | "shared";
+  readonly factionIds: readonly FactionId[];
+}
+
 export interface TurnResolutionResult {
+  readonly cityControl: Partial<Record<CityId, FactionId>>;
   readonly controlChanges: readonly ControlChange[];
-  readonly finalControl: Partial<Record<TerritoryId, FactionId>>;
+  readonly finalControl: Record<TerritoryId, TerritoryControl>;
   readonly finalUnits: Record<UnitId, UnitState>;
   readonly outcomes: readonly TurnOutcome[];
+  readonly progress: readonly VictoryProgress[];
   readonly submittedOrders: readonly MoveOrder[];
   readonly summaryLines: readonly string[];
+  readonly victory?: VictoryResult;
 }

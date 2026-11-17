@@ -6,225 +6,149 @@ import { MemoryRouter } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { App } from "../main/app";
 import { IberiaMap } from "../main/components/IberiaMap";
-import type { UnitState } from "../main/engine/types";
-import { milestone1Scenario } from "../main/scenarios/milestone1Scenario";
+import { resolveTurn } from "../main/engine/resolution";
+import { createInitialGameState, milestone2Scenario } from "../main/scenarios/milestone2Scenario";
 import { addInfoNotification } from "../main/state/notificationSlice";
 import { createAppStore } from "../main/state/store";
 
-function renderWithStore(
-  initialPath = "/",
-  store: ReturnType<typeof createAppStore> = createAppStore()
-): ReturnType<typeof createAppStore> {
-
-  render(
-    <Provider store={store}>
-      <MemoryRouter initialEntries={[initialPath]}>
-        <App />
-      </MemoryRouter>
-    </Provider>
-  );
-
+function renderApp(initialPath = "/", store = createAppStore()) {
+  render(<Provider store={store}><MemoryRouter initialEntries={[initialPath]}><App /></MemoryRouter></Provider>);
   return store;
 }
 
-describe("App", () => {
-  afterEach(() => {
-    cleanup();
-  });
+describe("Milestone 2 application flow", () => {
+  afterEach(cleanup);
 
-  it("starts on the main screen", () => {
-    renderWithStore();
-
+  it("opens the faction assignment screen", async () => {
+    const user = userEvent.setup();
+    renderApp();
     expect(screen.getByRole("heading", { name: "Spanish Diplomacy" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Start" })).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Set Up Campaign" }));
+    expect(screen.getByRole("heading", { name: "Choose the commanders" })).toBeVisible();
+    expect(screen.getAllByRole("combobox")).toHaveLength(3);
+    expect(screen.getAllByRole("option", { name: /Online Player/ }).every((option) => option.hasAttribute("disabled"))).toBe(true);
   });
 
-  it("opens setup from the start button", async () => {
+  it("starts the default mixed game behind a privacy handoff", async () => {
     const user = userEvent.setup();
-    renderWithStore();
-
-    await user.click(screen.getByRole("button", { name: "Start" }));
-
-    expect(screen.getByRole("heading", { name: "Milestone 1 Setup" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Create Local Game" })).toBeVisible();
-  });
-
-  it("creates a local game and opens player 1 order submission", async () => {
-    const user = userEvent.setup();
-    renderWithStore();
-
-    await user.click(screen.getByRole("button", { name: "Start" }));
-    await user.click(screen.getByRole("button", { name: "Create Local Game" }));
-
-    expect(screen.getByRole("heading", { name: "Player 1 Order Submission" })).toBeVisible();
+    renderApp("/setup");
+    await user.click(screen.getByRole("button", { name: "Start Campaign" }));
+    expect(screen.getByRole("heading", { name: /Pass to Republican Government/ })).toBeVisible();
+    expect(screen.queryByLabelText("Iberia campaign map")).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /Begin Republican Government Orders/ }));
+    expect(screen.getByRole("heading", { name: "Republican Government" })).toBeVisible();
     expect(screen.getByLabelText("Iberia campaign map")).toBeVisible();
+    expect(screen.getByText("Madrid", { selector: "text" })).toBeInTheDocument();
   });
 
-  it("submits a first player move and advances to player 2", async () => {
+  it("selects formations independently, adds a move, and resolves with computer players", async () => {
     const user = userEvent.setup();
-    renderWithStore();
-
-    await user.click(screen.getByRole("button", { name: "Start" }));
-    await user.click(screen.getByRole("button", { name: "Create Local Game" }));
-    await user.click(screen.getByRole("button", { name: "Galicia" }));
-    await user.click(screen.getByRole("button", { name: "Move" }));
-    await user.click(screen.getByRole("button", { name: "Asturias" }));
-    await user.click(screen.getByRole("button", { name: "Submit" }));
-
-    expect(screen.getByRole("heading", { name: "Player 2 Order Submission" })).toBeVisible();
-    expect(screen.getByText("Player 1 submitted orders.")).toBeVisible();
-  });
-
-  it("runs the full first turn and starts the next turn", async () => {
-    const user = userEvent.setup();
-    renderWithStore();
-
-    await user.click(screen.getByRole("button", { name: "Start" }));
-    await user.click(screen.getByRole("button", { name: "Create Local Game" }));
-    await user.click(screen.getByRole("button", { name: "Galicia" }));
-    await user.click(screen.getByRole("button", { name: "Move" }));
-    await user.click(screen.getByRole("button", { name: "Asturias" }));
-    await user.click(screen.getByRole("button", { name: "Submit" }));
-    await user.click(screen.getByRole("button", { name: "Catalunya" }));
-    await user.click(screen.getByRole("button", { name: "Move" }));
-    await user.click(screen.getByRole("button", { name: "Aragon" }));
-    await user.click(screen.getByRole("button", { name: "Submit" }));
-    await user.click(screen.getByRole("button", { name: "Submit" }));
-
-    expect(screen.getByRole("heading", { name: "Resolution Summary" })).toBeVisible();
-    expect(screen.getByText(/com moved com-inf-001 from galicia to asturias/)).toBeVisible();
-    expect(screen.getByText("Player 3: No orders")).toBeVisible();
-
+    renderApp("/setup");
+    await user.click(screen.getByRole("button", { name: "Start Campaign" }));
+    await user.click(screen.getByRole("button", { name: /Begin Republican Government Orders/ }));
+    await user.click(screen.getByRole("button", { name: "Madrid" }));
+    await user.click(screen.getAllByRole("button", { name: /Wad-Ras Infantry Regiment/ })[1]!);
+    await user.click(screen.getByRole("button", { name: "Move selected" }));
+    await user.click(screen.getByRole("button", { name: "Castilla-La Mancha" }));
+    await user.click(screen.getByRole("button", { name: "Add Move" }));
+    expect(screen.getByText(/Wad-Ras Infantry Regiment No. 1 → Castilla-La Mancha/)).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Submit Orders" }));
+    expect(screen.getByRole("heading", { name: "Turn resolution" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Victory progress" })).toBeVisible();
     await user.click(screen.getByRole("button", { name: "Start Next Turn" }));
-
-    expect(screen.getByRole("heading", { name: "Player 1 Order Submission" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: /Pass to Republican Government/ })).toBeVisible();
   });
 
-  it("guards order and resolution routes before a game is ready", () => {
-    renderWithStore("/orders");
-    expect(screen.getByRole("heading", { name: "Milestone 1 Setup" })).toBeVisible();
-
-    cleanup();
-
-    renderWithStore("/resolution");
-    expect(screen.getByRole("heading", { name: "Milestone 1 Setup" })).toBeVisible();
-  });
-
-  it("redirects unknown routes to the start screen", () => {
-    renderWithStore("/missing");
-
-    expect(screen.getByRole("heading", { name: "Spanish Diplomacy" })).toBeVisible();
-  });
-
-  it("shows and dismisses app notifications", async () => {
+  it("shows a private handoff between two local players", async () => {
     const user = userEvent.setup();
-    const store = renderWithStore();
+    renderApp("/setup");
+    const selects = screen.getAllByRole("combobox");
+    await user.selectOptions(selects[1]!, "local-human");
+    await user.click(screen.getByRole("button", { name: "Start Campaign" }));
+    await user.click(screen.getByRole("button", { name: /Begin Republican Government Orders/ }));
+    await user.click(screen.getByRole("button", { name: "Submit Orders" }));
+    expect(screen.getByRole("heading", { name: /Pass to Northern Insurgent Command/ })).toBeVisible();
+    expect(screen.queryByText(/All formations held/)).not.toBeInTheDocument();
+  });
 
-    act(() => {
-      store.dispatch(addInfoNotification("Orders saved."));
-    });
+  it("runs an all-computer turn only when requested", async () => {
+    const user = userEvent.setup();
+    renderApp("/setup");
+    for (const select of screen.getAllByRole("combobox")) await user.selectOptions(select, "computer");
+    await user.click(screen.getByRole("button", { name: "Start Campaign" }));
+    expect(screen.getByRole("button", { name: "Run Computer Turn" })).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Run Computer Turn" }));
+    expect(screen.getByRole("heading", { name: "Turn resolution" })).toBeVisible();
+  });
 
-    expect(await screen.findByLabelText("Notifications")).toBeVisible();
+  it("guards routes and renders notifications", async () => {
+    const user = userEvent.setup();
+    const store = renderApp("/orders");
+    expect(screen.getByRole("heading", { name: "Choose the commanders" })).toBeVisible();
+    act(() => { store.dispatch(addInfoNotification("Orders saved.")); });
     expect(screen.getByText("Orders saved.")).toBeVisible();
-
     await user.click(screen.getByRole("button", { name: "Dismiss" }));
-
     expect(screen.queryByText("Orders saved.")).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ["cities", "Republican Government wins", "decisive cities"],
+    ["territories", "Republican Government wins", "territorial control"],
+    ["shared", "Republican Government and Northern Insurgent Command share victory", "equal control"]
+  ] as const)("renders the terminal %s result", (condition, heading, explanation) => {
+    const base = createAppStore().getState();
+    const engine = createInitialGameState();
+    const resolved = resolveTurn(milestone2Scenario, engine, []);
+    const factionIds = condition === "shared" ? ["republic", "north"] as const : ["republic"] as const;
+    const store = createAppStore({
+      game: {
+        ...base.game,
+        cityControl: engine.cityControl,
+        control: engine.control,
+        phase: "game-over",
+        resolution: { ...resolved, victory: { condition, factionIds } },
+        units: engine.units
+      }
+    });
+    renderApp("/game-over", store);
+    expect(screen.getByRole("heading", { name: heading })).toBeVisible();
+    expect(screen.getByText(new RegExp(explanation))).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Start Next Turn" })).not.toBeInTheDocument();
+  });
+
+  it("redirects invalid handoff, resolution, and game-over routes", () => {
+    renderApp("/handoff");
+    expect(screen.getByRole("heading", { name: "Choose the commanders" })).toBeVisible();
+    cleanup();
+    renderApp("/resolution");
+    expect(screen.getByRole("heading", { name: "Choose the commanders" })).toBeVisible();
+    cleanup();
+    renderApp("/game-over");
+    expect(screen.getByRole("heading", { name: "Choose the commanders" })).toBeVisible();
   });
 });
 
-describe("IberiaMap", () => {
-  afterEach(() => {
-    cleanup();
-  });
+describe("IberiaMap interaction and annotations", () => {
+  afterEach(cleanup);
 
-  it("renders territories, unit counts, and selection callbacks", async () => {
-    const user = userEvent.setup();
+  it("supports keyboard selection, background clicks, city labels, and resolution markers", () => {
+    const state = createInitialGameState();
     const onSelectTerritory = vi.fn();
     const onSelectUnit = vi.fn();
-    const units: readonly UnitState[] = [
-      {
-        displayName: "1st International Infantry",
-        factionId: "com",
-        id: "com-inf-001",
-        type: "infantry",
-        territoryId: "madrid"
-      },
-      {
-        displayName: "1st Royal Infantry",
-        factionId: "roy",
-        id: "roy-inf-001",
-        type: "infantry",
-        territoryId: "madrid"
-      }
+    const orders = [
+      { factionId: "republic", from: "madrid", kind: "move", to: "castilla-la-mancha", unitId: "rep-wad-ras-1" } as const
     ];
-
-    render(
-      <IberiaMap
-        control={{ madrid: "com" }}
-        factions={milestone1Scenario.factions}
-        legalDestinationIds={["castilla-y-leon"]}
-        onSelectUnit={onSelectUnit}
-        onSelectTerritory={onSelectTerritory}
-        selectedDestinationId="castilla-y-leon"
-        selectedFromTerritoryId="madrid"
-        selectedUnitIds={["com-inf-001"]}
-        units={units}
-      />
-    );
-
-    expect(screen.getByLabelText("Iberia campaign map")).toBeVisible();
-    expect(screen.getByRole("button", { name: "1st International Infantry" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Galicia" })).toHaveAttribute(
-      "data-territory-id",
-      "galicia"
-    );
-    expect(screen.getByRole("button", { name: "Madrid" })).toHaveAttribute(
-      "data-territory-id",
-      "madrid"
-    );
-    expect(screen.getByRole("button", { name: "Castilla y Leon" })).toHaveAttribute(
-      "data-legal-destination",
-      "true"
-    );
-    expect(document.getElementById("PT11")).toHaveAttribute("data-country", "portugal");
-    expect(document.getElementById("PT11")).not.toHaveAttribute("role");
-    expect(screen.getByLabelText("Iberia campaign map").querySelector(".nato-unit-svg")).toBeVisible();
-
-    fireEvent.click(document.getElementById("PT11") as Element);
-    fireEvent.click(screen.getByLabelText("Iberian Peninsula regions"));
-    expect(onSelectTerritory).not.toHaveBeenCalled();
-
-    await user.click(screen.getByRole("button", { name: "Galicia" }));
-    await user.click(screen.getByRole("button", { name: "1st International Infantry" }));
-
-    expect(onSelectTerritory).toHaveBeenCalledWith("galicia");
-    expect(onSelectUnit).toHaveBeenCalledWith("com-inf-001");
-  });
-
-  it("supports keyboard territory selection", () => {
-    const onSelectTerritory = vi.fn();
-
-    render(
-      <IberiaMap
-        control={{}}
-        factions={milestone1Scenario.factions}
-        legalDestinationIds={[]}
-        onSelectUnit={vi.fn()}
-        onSelectTerritory={onSelectTerritory}
-        selectedDestinationId={undefined}
-        selectedFromTerritoryId={undefined}
-        selectedUnitIds={[]}
-        units={[]}
-      />
-    );
-
+    const result = resolveTurn(milestone2Scenario, state, [{ factionId: "republic", orders }]);
+    render(<IberiaMap cities={milestone2Scenario.cities} cityControl={{}} control={state.control} factions={milestone2Scenario.factions} legalDestinationIds={["castilla-la-mancha"]} onSelectTerritory={onSelectTerritory} onSelectUnit={onSelectUnit} resolutionOutcomes={result.outcomes} selectedDestinationId="castilla-la-mancha" selectedFromTerritoryId="madrid" selectedUnitIds={["rep-wad-ras-1"]} units={[state.units["rep-wad-ras-1"]!]} />);
+    expect(screen.getByText("Barcelona", { selector: ".map-city text" })).toBeInTheDocument();
     fireEvent.keyDown(screen.getByRole("button", { name: "Madrid" }), { key: "Enter" });
-    fireEvent.keyDown(screen.getByRole("button", { name: "Extremadura" }), { key: " " });
-    fireEvent.keyDown(screen.getByRole("button", { name: "Galicia" }), { key: "Escape" });
-
     expect(onSelectTerritory).toHaveBeenCalledWith("madrid");
-    expect(onSelectTerritory).toHaveBeenCalledWith("extremadura");
-    expect(onSelectTerritory).toHaveBeenCalledTimes(2);
+    fireEvent.keyDown(screen.getByRole("button", { name: "Madrid" }), { key: "Escape" });
+    fireEvent.click(screen.getByLabelText("Iberia campaign map"));
+    expect(onSelectTerritory).toHaveBeenCalledTimes(1);
+    fireEvent.click(document.getElementById("PT11") as Element);
+    expect(onSelectTerritory).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole("button", { name: "Wad-Ras Infantry Regiment No. 1" }));
+    expect(onSelectUnit).toHaveBeenCalledWith("rep-wad-ras-1");
   });
 });

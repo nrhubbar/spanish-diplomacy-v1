@@ -1,21 +1,24 @@
 import { createSelector, createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import { generateComputerSubmission } from "../ai/historicallyMotivatedActor";
+import { resolveTurn } from "../engine/resolution";
+import { validateSubmission } from "../engine/submission";
 import type {
+  ActorKind,
   FactionId,
   GameState,
   MoveOrder,
   PlayerSubmission,
+  TerritoryControl,
   TerritoryId,
   TurnResolutionResult,
   UnitId,
   UnitState
 } from "../engine/types";
-import { resolveTurn } from "../engine/resolution";
 import { validateMoveOrder } from "../engine/validation";
-import { createInitialGameState, milestone1Scenario } from "../scenarios/milestone1Scenario";
+import { createInitialGameState, milestone2Scenario } from "../scenarios/milestone2Scenario";
 import type { RootState } from "./store";
 
-export type GamePhase = "idle" | "setup" | "orders" | "resolution";
-
+export type GamePhase = "idle" | "setup" | "handoff" | "planning" | "resolution" | "game-over";
 type DraftAction = "move";
 
 export interface TurnHistoryEntry {
@@ -23,10 +26,16 @@ export interface TurnHistoryEntry {
   readonly turnNumber: number;
 }
 
+export type AssignmentRecord = Record<FactionId, ActorKind>;
+
 export interface GameSliceState {
   activeFactionId: FactionId;
-  control: Partial<Record<TerritoryId, FactionId>>;
+  assignments: AssignmentRecord;
+  cityControl: GameState["cityControl"];
+  control: Record<TerritoryId, TerritoryControl>;
   draftAction: DraftAction | undefined;
+  draftOrders: readonly MoveOrder[];
+  handoffFromFactionId: FactionId | undefined;
   history: readonly TurnHistoryEntry[];
   phase: GamePhase;
   resolution: TurnResolutionResult | undefined;
@@ -39,14 +48,25 @@ export interface GameSliceState {
   validationMessage: string | undefined;
 }
 
-const factionOrder = milestone1Scenario.factions.map((faction) => faction.id);
+export const defaultAssignments: AssignmentRecord = {
+  republic: "local-human",
+  north: "computer",
+  south: "computer"
+};
+
+const factionOrder = milestone2Scenario.factions.map((faction) => faction.id);
 const initialEngineState = createInitialGameState();
 const noTerritoryIds: readonly TerritoryId[] = [];
+const noSummaryLines: readonly string[] = [];
 
 const initialState: GameSliceState = {
-  activeFactionId: "com",
+  activeFactionId: "republic",
+  assignments: defaultAssignments,
+  cityControl: initialEngineState.cityControl,
   control: initialEngineState.control,
   draftAction: undefined,
+  draftOrders: [],
+  handoffFromFactionId: undefined,
   history: [],
   phase: "idle",
   resolution: undefined,
@@ -63,182 +83,268 @@ const gameSlice = createSlice({
   name: "game",
   initialState,
   reducers: {
+    addDraftMove: (state) => {
+      if (state.selectedDestinationId === undefined) {
+        state.validationMessage = "Choose a destination before adding the move.";
+        return;
+      }
+
+      const orders = buildMoveOrders(state, state.selectedDestinationId);
+      const withoutSelectedUnits = state.draftOrders.filter(
+        (order) => !state.selectedUnitIds.includes(order.unitId)
+      );
+      state.draftOrders = [...withoutSelectedUnits, ...orders];
+      clearSelection(state);
+    },
+    beginPlanning: (state) => {
+      if (state.phase !== "handoff" || state.assignments[state.activeFactionId] !== "local-human") {
+        return;
+      }
+      state.phase = "planning";
+    },
     chooseMoveAction: (state) => {
       if (state.selectedUnitIds.length === 0) {
         state.validationMessage = "Select at least one friendly unit first.";
         return;
       }
-
       state.draftAction = "move";
       state.selectedDestinationId = undefined;
       state.validationMessage = undefined;
     },
     chooseMoveDestination: (state, action: PayloadAction<TerritoryId>) => {
       if (state.draftAction !== "move" || state.selectedFromTerritoryId === undefined) {
-        state.validationMessage = "Choose a from territory and move action first.";
+        state.validationMessage = "Choose units and the move action first.";
         return;
       }
 
-      const destinationId = action.payload;
-
-      if (destinationId === state.selectedFromTerritoryId) {
+      if (action.payload === state.selectedFromTerritoryId) {
         state.selectedDestinationId = undefined;
         state.validationMessage = "Choose a different territory as the destination.";
         return;
       }
 
-      const firstOrder = buildMoveOrders(state, destinationId)[0];
+      const orders = buildMoveOrders(state, action.payload);
+      const invalid = orders.find(
+        (order) => !validateMoveOrder(milestone2Scenario, toEngineState(state), order).ok
+      );
 
-      if (firstOrder === undefined) {
-        state.validationMessage = "Select at least one unit before choosing a destination.";
+      if (invalid !== undefined) {
+        const validation = validateMoveOrder(milestone2Scenario, toEngineState(state), invalid);
+        state.selectedDestinationId = undefined;
+        state.validationMessage = validation.ok ? undefined : validation.reason;
         return;
       }
 
-      const validation = validateMoveOrder(milestone1Scenario, toEngineState(state), firstOrder);
-
-      if (validation.ok) {
-        state.selectedDestinationId = destinationId;
-        state.validationMessage = undefined;
-      } else {
-        state.selectedDestinationId = undefined;
-        state.validationMessage = validation.reason;
-      }
+      state.selectedDestinationId = action.payload;
+      state.validationMessage = undefined;
     },
     enterSetup: (state) => {
       state.phase = "setup";
       state.validationMessage = undefined;
     },
+    removeDraftOrder: (state, action: PayloadAction<UnitId>) => {
+      state.draftOrders = state.draftOrders.filter((order) => order.unitId !== action.payload);
+    },
+    runComputerTurn: (state) => {
+      if (state.phase !== "handoff" || hasLocalPlayer(state.assignments)) {
+        return;
+      }
+      processActors(state);
+    },
     selectTerritory: (state, action: PayloadAction<TerritoryId>) => {
-      const territoryId = action.payload;
-      const friendlyUnits = Object.values(state.units).filter(
-        (unit) => unit.factionId === state.activeFactionId && unit.territoryId === territoryId
-      );
-
-      state.selectedFromTerritoryId = territoryId;
+      state.selectedFromTerritoryId = action.payload;
       state.selectedDestinationId = undefined;
       state.draftAction = undefined;
-      state.validationMessage =
-        friendlyUnits.length === 0 ? "No friendly units are available in that territory." : undefined;
-      state.selectedUnitIds = friendlyUnits.map((unit) => unit.id);
+      state.selectedUnitIds = [];
+      const hasFriendlyUnits = Object.values(state.units).some(
+        (unit) => unit.factionId === state.activeFactionId && unit.territoryId === action.payload
+      );
+      state.validationMessage = hasFriendlyUnits
+        ? undefined
+        : "No friendly formations are available in that territory.";
     },
     selectUnit: (state, action: PayloadAction<UnitId>) => {
       const unit = state.units[action.payload];
-
       if (unit === undefined || unit.factionId !== state.activeFactionId) {
-        state.validationMessage = "Select one of your own units.";
+        state.validationMessage = "Select one of your own formations.";
         return;
       }
 
+      const selectedElsewhere =
+        state.selectedFromTerritoryId !== undefined && state.selectedFromTerritoryId !== unit.territoryId;
+      const alreadySelected = state.selectedUnitIds.includes(unit.id);
       state.selectedFromTerritoryId = unit.territoryId;
       state.selectedDestinationId = undefined;
       state.draftAction = undefined;
-      state.selectedUnitIds = [unit.id];
+      state.selectedUnitIds = alreadySelected
+        ? state.selectedUnitIds.filter((unitId) => unitId !== unit.id)
+        : selectedElsewhere
+          ? [unit.id]
+          : [...state.selectedUnitIds, unit.id];
       state.validationMessage = undefined;
     },
-    startNewGame: () => {
+    setActorKind: (
+      state,
+      action: PayloadAction<{ readonly factionId: FactionId; readonly kind: ActorKind }>
+    ) => {
+      state.assignments[action.payload.factionId] = action.payload.kind;
+    },
+    startNewGame: (state, action: PayloadAction<AssignmentRecord | undefined>) => {
       const nextState = createInitialGameState();
-
-      return {
-        activeFactionId: "com",
+      const assignments = action.payload ?? state.assignments;
+      Object.assign(state, {
+        activeFactionId: factionOrder[0] as FactionId,
+        assignments,
+        cityControl: nextState.cityControl,
         control: nextState.control,
         draftAction: undefined,
+        draftOrders: [],
+        handoffFromFactionId: undefined,
         history: [],
-        phase: "orders",
+        phase: "handoff" as GamePhase,
         resolution: undefined,
         selectedDestinationId: undefined,
         selectedFromTerritoryId: undefined,
         selectedUnitIds: [],
         submittedOrders: {},
-        turnNumber: nextState.turnNumber,
+        turnNumber: 1,
         units: nextState.units,
         validationMessage: undefined
-      } satisfies GameSliceState;
+      });
+
+      if (hasLocalPlayer(assignments)) {
+        processActors(state);
+      }
     },
     startNextTurn: (state) => {
-      if (state.resolution !== undefined) {
-        state.history = [
-          ...state.history,
-          {
-            summaryLines: state.resolution.summaryLines,
-            turnNumber: state.turnNumber
-          }
-        ];
-      }
-
-      state.activeFactionId = "com";
-      state.draftAction = undefined;
-      state.phase = "orders";
-      state.resolution = undefined;
-      state.selectedDestinationId = undefined;
-      state.selectedFromTerritoryId = undefined;
-      state.selectedUnitIds = [];
-      state.submittedOrders = {};
-      state.turnNumber += 1;
-      state.validationMessage = undefined;
-    },
-    submitCurrentOrder: (state) => {
-      const orders =
-        state.draftAction === "move" && state.selectedDestinationId !== undefined
-          ? buildMoveOrders(state, state.selectedDestinationId)
-          : [];
-
-      const invalidOrder = orders.find((order) => {
-        const validation = validateMoveOrder(milestone1Scenario, toEngineState(state), order);
-
-        return !validation.ok;
-      });
-
-      if (invalidOrder !== undefined) {
-        const validation = validateMoveOrder(milestone1Scenario, toEngineState(state), invalidOrder);
-
-        state.validationMessage = validation.ok ? undefined : validation.reason;
+      if (state.phase !== "resolution") {
         return;
       }
+      archiveResolution(state);
+      state.activeFactionId = factionOrder[0] as FactionId;
+      state.draftOrders = [];
+      state.handoffFromFactionId = undefined;
+      state.phase = "handoff";
+      state.resolution = undefined;
+      state.submittedOrders = {};
+      state.turnNumber += 1;
+      clearSelection(state);
 
-      submitAndAdvance(state, {
-        factionId: state.activeFactionId,
-        orders
-      });
+      if (hasLocalPlayer(state.assignments)) {
+        processActors(state);
+      }
+    },
+    submitCurrentOrders: (state) => {
+      if (state.phase !== "planning") {
+        return;
+      }
+      const submission = { factionId: state.activeFactionId, orders: state.draftOrders };
+      const accepted = submitOrdersThroughGateway(state, submission);
+      if (!accepted) {
+        return;
+      }
+      state.handoffFromFactionId = state.activeFactionId;
+      processActors(state);
     }
   }
 });
 
 export const {
+  addDraftMove,
+  beginPlanning,
   chooseMoveAction,
   chooseMoveDestination,
   enterSetup,
+  removeDraftOrder,
+  runComputerTurn,
   selectTerritory,
   selectUnit,
+  setActorKind,
   startNewGame,
   startNextTurn,
-  submitCurrentOrder
+  submitCurrentOrders
 } = gameSlice.actions;
 export const gameReducer = gameSlice.reducer;
 
-function submitAndAdvance(state: GameSliceState, submission: PlayerSubmission): void {
-  state.submittedOrders[state.activeFactionId] = submission;
-  clearDraft(state);
-
-  const currentIndex = factionOrder.indexOf(state.activeFactionId);
-  const nextFactionId = factionOrder[currentIndex + 1];
-
-  if (nextFactionId !== undefined) {
-    state.activeFactionId = nextFactionId;
-    return;
-  }
-
-  const submissions = factionOrder.map(
-    (factionId) => state.submittedOrders[factionId] ?? { factionId, orders: [] }
+export function submitOrdersThroughGateway(
+  state: GameSliceState,
+  submission: PlayerSubmission
+): boolean {
+  const validation = validateSubmission(
+    milestone2Scenario,
+    toEngineState(state),
+    submission.factionId,
+    submission
   );
-  const resolution = resolveTurn(milestone1Scenario, toEngineState(state), submissions);
-
-  state.control = resolution.finalControl;
-  state.phase = "resolution";
-  state.resolution = resolution;
-  state.units = resolution.finalUnits;
+  if (!validation.ok) {
+    state.validationMessage = validation.reason;
+    return false;
+  }
+  state.submittedOrders[submission.factionId] = submission;
+  state.draftOrders = [];
+  clearSelection(state);
+  return true;
 }
 
-function clearDraft(state: GameSliceState): void {
+function processActors(state: GameSliceState): void {
+  while (true) {
+    const nextFactionId = factionOrder.find((factionId) => state.submittedOrders[factionId] === undefined);
+    if (nextFactionId === undefined) {
+      resolveCurrentTurn(state);
+      return;
+    }
+
+    state.activeFactionId = nextFactionId;
+    const kind = state.assignments[nextFactionId];
+    if (kind === "local-human") {
+      state.phase = "handoff";
+      return;
+    }
+    if (kind === "online-human") {
+      state.validationMessage = "Online players are not available in this milestone.";
+      state.phase = "handoff";
+      return;
+    }
+
+    const submission = generateComputerSubmission(
+      milestone2Scenario,
+      toEngineState(state),
+      nextFactionId,
+      () => 0
+    );
+    if (!submitOrdersThroughGateway(state, submission)) {
+      state.phase = "handoff";
+      return;
+    }
+  }
+}
+
+function resolveCurrentTurn(state: GameSliceState): void {
+  const submissions = factionOrder.map(
+    (factionId) => state.submittedOrders[factionId] as PlayerSubmission
+  );
+  const resolution = resolveTurn(milestone2Scenario, toEngineState(state), submissions);
+  state.cityControl = resolution.cityControl;
+  state.control = resolution.finalControl;
+  state.resolution = resolution;
+  state.units = resolution.finalUnits;
+  state.phase = resolution.victory === undefined ? "resolution" : "game-over";
+}
+
+function archiveResolution(state: GameSliceState): void {
+  if (state.resolution !== undefined) {
+    state.history = [
+      ...state.history,
+      { summaryLines: state.resolution.summaryLines, turnNumber: state.turnNumber }
+    ];
+  }
+}
+
+function hasLocalPlayer(assignments: AssignmentRecord): boolean {
+  return Object.values(assignments).includes("local-human");
+}
+
+function clearSelection(state: GameSliceState): void {
   state.draftAction = undefined;
   state.selectedDestinationId = undefined;
   state.selectedFromTerritoryId = undefined;
@@ -250,7 +356,6 @@ function buildMoveOrders(state: GameSliceState, to: TerritoryId): readonly MoveO
   if (state.selectedFromTerritoryId === undefined) {
     return [];
   }
-
   return state.selectedUnitIds.map((unitId) => ({
     factionId: state.activeFactionId,
     from: state.selectedFromTerritoryId as TerritoryId,
@@ -262,99 +367,77 @@ function buildMoveOrders(state: GameSliceState, to: TerritoryId): readonly MoveO
 
 function toEngineState(state: GameSliceState): GameState {
   return {
-    control: { ...state.control },
+    cityControl: { ...state.cityControl },
+    control: Object.fromEntries(
+      Object.entries(state.control).map(([territoryId, control]) => [
+        territoryId,
+        control.kind === "controlled"
+          ? { kind: "controlled", factionId: control.factionId }
+          : { kind: "contested", factionIds: [...control.factionIds] }
+      ])
+    ) as Record<TerritoryId, TerritoryControl>,
     turnNumber: state.turnNumber,
-    units: Object.fromEntries(Object.entries(state.units).map(([unitId, unit]) => [unitId, { ...unit }]))
+    units: Object.fromEntries(
+      Object.entries(state.units).map(([unitId, unit]) => [unitId, { ...unit, sourceIds: [...unit.sourceIds] }])
+    )
   };
 }
 
 const selectSubmittedOrderRecord = (state: RootState) => state.game.submittedOrders;
 const selectUnitRecord = (state: RootState) => state.game.units;
 
-export function selectActiveFaction(state: RootState) {
-  return factionById(state.game.activeFactionId);
-}
-
-export function selectCanSubmit(state: RootState): boolean {
-  return (
-    state.game.draftAction === undefined ||
-    (state.game.selectedDestinationId !== undefined && state.game.selectedUnitIds.length > 0)
-  );
-}
-
-export function selectControl(state: RootState): Partial<Record<TerritoryId, FactionId>> {
-  return state.game.control;
-}
-
-export function selectDraftAction(state: RootState): DraftAction | undefined {
-  return state.game.draftAction;
-}
-
-export function selectGamePhase(state: RootState): GamePhase {
-  return state.game.phase;
-}
-
-export function selectHistory(state: RootState): readonly TurnHistoryEntry[] {
-  return state.game.history;
-}
-
-export function selectLegalDestinationIds(state: RootState): readonly TerritoryId[] {
+export const selectActiveFaction = (state: RootState) => factionById(state.game.activeFactionId);
+export const selectActorKind = (state: RootState) => state.game.assignments[state.game.activeFactionId];
+export const selectAssignments = (state: RootState) => state.game.assignments;
+export const selectCanAddMove = (state: RootState) =>
+  state.game.selectedDestinationId !== undefined && state.game.selectedUnitIds.length > 0;
+export const selectCityControl = (state: RootState) => state.game.cityControl;
+export const selectControl = (state: RootState) => state.game.control;
+export const selectDraftAction = (state: RootState) => state.game.draftAction;
+export const selectDraftOrders = (state: RootState) => state.game.draftOrders;
+export const selectGamePhase = (state: RootState) => state.game.phase;
+export const selectHandoffFromFaction = (state: RootState) =>
+  state.game.handoffFromFactionId === undefined ? undefined : factionById(state.game.handoffFromFactionId);
+export const selectHistory = (state: RootState) => state.game.history;
+export const selectLegalDestinationIds = (state: RootState): readonly TerritoryId[] => {
   if (state.game.draftAction !== "move" || state.game.selectedFromTerritoryId === undefined) {
     return noTerritoryIds;
   }
+  return milestone2Scenario.territories.find(
+    (territory) => territory.id === state.game.selectedFromTerritoryId
+  )?.adjacent ?? noTerritoryIds;
+};
+export const selectResolution = (state: RootState) => state.game.resolution;
+export const selectResolutionSummary = (state: RootState) => state.game.resolution?.summaryLines ?? noSummaryLines;
+export const selectSelectedDestinationId = (state: RootState) => state.game.selectedDestinationId;
+export const selectSelectedFromTerritoryId = (state: RootState) => state.game.selectedFromTerritoryId;
+export const selectSelectedUnitIds = (state: RootState) => state.game.selectedUnitIds;
+export const selectValidationMessage = (state: RootState) => state.game.validationMessage;
+export const selectTurnDate = (state: RootState) => `Turn ${state.game.turnNumber} · ${milestone2Scenario.snapshotLabel}`;
 
-  const territory = milestone1Scenario.territories.find(
-    (candidate) => candidate.id === state.game.selectedFromTerritoryId
-  );
+export const selectSubmissionStatus = createSelector([selectSubmittedOrderRecord], (submissions) =>
+  factionOrder.map((factionId) => ({
+    factionId,
+    factionName: factionById(factionId).name,
+    ready: submissions[factionId] !== undefined
+  }))
+);
 
-  return territory?.adjacent ?? noTerritoryIds;
-}
-
-export function selectResolution(state: RootState): TurnResolutionResult | undefined {
-  return state.game.resolution;
-}
-
-export function selectResolutionSummary(state: RootState): readonly string[] {
-  return state.game.resolution?.summaryLines ?? [];
-}
-
-export function selectSelectedDestinationId(state: RootState): TerritoryId | undefined {
-  return state.game.selectedDestinationId;
-}
-
-export function selectSelectedFromTerritoryId(state: RootState): TerritoryId | undefined {
-  return state.game.selectedFromTerritoryId;
-}
-
-export function selectSelectedUnitIds(state: RootState): readonly UnitId[] {
-  return state.game.selectedUnitIds;
-}
-
-export const selectSubmittedOrders = createSelector([selectSubmittedOrderRecord], (submittedOrders) =>
+export const selectRevealedOrders = createSelector([selectSubmittedOrderRecord], (submissions) =>
   factionOrder.flatMap((factionId) => {
-    const submission = submittedOrders[factionId];
-
-    if (submission === undefined) {
-      return [];
-    }
-
-    return [
-      {
-        factionId,
-        factionName: factionById(factionId).name,
-        description:
-          submission.orders.length === 0
-            ? "No orders"
-            : submission.orders.map((order) => describeOrder(order)).join(", ")
-      }
-    ];
+    const submission = submissions[factionId];
+    if (submission === undefined) return [];
+    return [{
+      factionId,
+      factionName: factionById(factionId).name,
+      description: submission.orders.length === 0
+        ? "All formations held"
+        : submission.orders.map(describeOrder).join(", ")
+    }];
   })
 );
 
-export const selectUnits = createSelector([selectUnitRecord], (units): readonly UnitState[] =>
-  Object.values(units)
-);
-
+export const selectUnits = createSelector([selectUnitRecord], (units): readonly UnitState[] => Object.values(units));
 export const selectUnitsWithFactionNames = createSelector([selectUnitRecord], (units) =>
   Object.values(units).map((unit) => ({
     ...unit,
@@ -363,53 +446,20 @@ export const selectUnitsWithFactionNames = createSelector([selectUnitRecord], (u
   }))
 );
 
-export function selectValidationMessage(state: RootState): string | undefined {
-  return state.game.validationMessage;
-}
-
-export function selectTurnDate(state: RootState): string {
-  return turnDate(state.game.turnNumber);
-}
-
 function describeOrder(order: MoveOrder): string {
-  return `Move ${order.unitId} from ${territoryName(order.from)} to ${territoryName(order.to)}`;
+  return `${stateUnitName(order.unitId)}: ${territoryName(order.from)} to ${territoryName(order.to)}`;
+}
+
+function stateUnitName(unitId: UnitId): string {
+  return milestone2Scenario.units[unitId]!.displayName;
 }
 
 function factionById(factionId: FactionId) {
-  const faction = milestone1Scenario.factions.find((candidate) => candidate.id === factionId);
-
-  if (faction === undefined) {
-    throw new Error(`Unknown faction: ${factionId}`);
-  }
-
+  const faction = milestone2Scenario.factions.find((candidate) => candidate.id === factionId);
+  if (faction === undefined) throw new Error(`Unknown faction: ${factionId}`);
   return faction;
 }
 
 function territoryName(territoryId: TerritoryId): string {
-  const territory = milestone1Scenario.territories.find((candidate) => candidate.id === territoryId);
-
-  return territory?.name ?? territoryId;
-}
-
-function turnDate(turnNumber: number): string {
-  const monthNames = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December"
-  ];
-  const halfStep = turnNumber - 1;
-  const year = 1930 + Math.floor(halfStep / 24);
-  const month = monthNames[Math.floor((halfStep % 24) / 2)] ?? "January";
-  const half = halfStep % 2 === 0 ? "early" : "late";
-
-  return `${half} ${month} ${year}`;
+  return milestone2Scenario.territories.find((territory) => territory.id === territoryId)!.name;
 }

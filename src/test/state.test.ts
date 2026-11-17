@@ -1,331 +1,164 @@
-import type { UnknownAction } from "@reduxjs/toolkit";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
+  addDraftMove,
+  beginPlanning,
   chooseMoveAction,
   chooseMoveDestination,
   enterSetup,
+  removeDraftOrder,
+  runComputerTurn,
   selectActiveFaction,
-  selectCanSubmit,
+  selectDraftOrders,
   selectGamePhase,
-  selectHistory,
-  selectLegalDestinationIds,
-  selectSelectedDestinationId,
-  selectSelectedFromTerritoryId,
-  selectSelectedUnitIds,
-  selectSubmittedOrders,
+  selectSubmissionStatus,
+  selectRevealedOrders,
   selectTerritory,
-  selectTurnDate,
-  selectUnits,
-  selectValidationMessage,
+  selectUnit,
+  setActorKind,
   startNewGame,
   startNextTurn,
-  submitCurrentOrder,
-  selectUnit
+  submitCurrentOrders
 } from "../main/state/gameSlice";
-import {
-  addErrorNotification,
-  addInfoNotification,
-  addWarningNotification,
-  removeNotification,
-  selectNotifications
-} from "../main/state/notificationSlice";
 import { createAppStore } from "../main/state/store";
 
-describe("app store", () => {
-  it("starts idle with no notifications", () => {
+describe("game state orchestration", () => {
+  it("enters setup and edits actor assignments", () => {
     const store = createAppStore();
-
-    expect(selectGamePhase(store.getState())).toBe("idle");
-    expect(selectNotifications(store.getState())).toEqual([]);
-  });
-
-  it("accepts injected preloaded state", () => {
-    const store = createAppStore({
-      game: {
-        activeFactionId: "roy",
-        control: { asturias: "com" },
-        draftAction: undefined,
-        history: [],
-        phase: "orders",
-        resolution: undefined,
-        selectedDestinationId: undefined,
-        selectedFromTerritoryId: undefined,
-        selectedUnitIds: [],
-        submittedOrders: {},
-        turnNumber: 2,
-        units: {
-          "com-inf-001": {
-            displayName: "1st International Infantry",
-            factionId: "com",
-            id: "com-inf-001",
-            territoryId: "asturias",
-            type: "infantry"
-          }
-        },
-        validationMessage: undefined
-      },
-      notifications: {
-        notifications: [{ id: "known", message: "Loaded", tone: "info" }]
-      }
-    });
-
-    expect(selectActiveFaction(store.getState()).name).toBe("Player 2");
-    expect(selectNotifications(store.getState())).toHaveLength(1);
-  });
-
-  it("runs a full local turn and starts the next turn with history", () => {
-    const store = createAppStore();
-
-    store.dispatch(startNewGame());
-    store.dispatch(selectTerritory("galicia"));
-    store.dispatch(chooseMoveAction());
-    store.dispatch(chooseMoveDestination("asturias"));
-    store.dispatch(submitCurrentOrder());
-
-    expect(selectActiveFaction(store.getState()).name).toBe("Player 2");
-    expect(selectSubmittedOrders(store.getState())[0]?.description).toBe(
-      "Move com-inf-001 from Galicia to Asturias"
-    );
-
-    store.dispatch(selectTerritory("catalunya"));
-    store.dispatch(chooseMoveAction());
-    store.dispatch(chooseMoveDestination("aragon"));
-    store.dispatch(submitCurrentOrder());
-    store.dispatch(submitCurrentOrder());
-
-    expect(selectGamePhase(store.getState())).toBe("resolution");
-    expect(selectUnits(store.getState()).find((unit) => unit.id === "com-inf-001")?.territoryId).toBe(
-      "asturias"
-    );
-
-    store.dispatch(startNextTurn());
-
-    expect(selectGamePhase(store.getState())).toBe("orders");
-    expect(selectActiveFaction(store.getState()).name).toBe("Player 1");
-    expect(selectHistory(store.getState())).toHaveLength(1);
-    expect(selectTurnDate(store.getState())).toBe("late January 1930");
-  });
-
-  it("enters setup and validates incomplete move drafts", () => {
-    const store = createAppStore();
-
     store.dispatch(enterSetup());
+    store.dispatch(setActorKind({ factionId: "north", kind: "local-human" }));
     expect(selectGamePhase(store.getState())).toBe("setup");
+    expect(store.getState().game.assignments.north).toBe("local-human");
+  });
 
-    store.dispatch(startNewGame());
+  it("runs a mixed game through private handoff, independent draft orders, AI, and resolution", () => {
+    const store = createAppStore();
+    store.dispatch(startNewGame({ republic: "local-human", north: "computer", south: "computer" }));
+    expect(selectGamePhase(store.getState())).toBe("handoff");
+    store.dispatch(beginPlanning());
+    store.dispatch(selectTerritory("madrid"));
+    store.dispatch(selectUnit("rep-wad-ras-1"));
     store.dispatch(chooseMoveAction());
-
-    expect(selectValidationMessage(store.getState())).toBe("Select at least one friendly unit first.");
-    expect(selectCanSubmit(store.getState())).toBe(true);
-  });
-
-  it("selects a from territory and destination", () => {
-    const store = createAppStore();
-
-    store.dispatch(startNewGame());
-    store.dispatch(selectTerritory("galicia"));
-    store.dispatch(chooseMoveAction());
-    store.dispatch(chooseMoveDestination("asturias"));
-
-    expect(selectSelectedDestinationId(store.getState())).toBe("asturias");
-    expect(selectLegalDestinationIds(store.getState())).toEqual(["asturias", "castilla-y-leon"]);
-    expect(selectCanSubmit(store.getState())).toBe(true);
-
-    store.dispatch(chooseMoveDestination("galicia"));
-
-    expect(selectSelectedDestinationId(store.getState())).toBeUndefined();
-  });
-
-  it("warns when selecting a destination before a valid move draft", () => {
-    const store = createAppStore();
-
-    store.dispatch(startNewGame());
-    store.dispatch(chooseMoveDestination("asturias"));
-
-    expect(selectValidationMessage(store.getState())).toBe("Choose a from territory and move action first.");
-    expect(selectLegalDestinationIds(store.getState())).toEqual([]);
-  });
-
-  it("rejects impossible destination payloads", () => {
-    const store = createAppStore();
-
-    store.dispatch(startNewGame());
-    store.dispatch(selectTerritory("galicia"));
-    store.dispatch(chooseMoveAction());
-    store.dispatch(chooseMoveDestination("unknown" as "asturias"));
-
-    expect(selectSelectedDestinationId(store.getState())).toBeUndefined();
-    expect(selectValidationMessage(store.getState())).toBe("Destination is not adjacent.");
-  });
-
-  it("selects an owned unit and rejects enemy units", () => {
-    const store = createAppStore();
-
-    store.dispatch(startNewGame());
-    store.dispatch(selectUnit("com-inf-001"));
-
-    expect(selectSelectedFromTerritoryId(store.getState())).toBe("galicia");
-    expect(selectSelectedUnitIds(store.getState())).toEqual(["com-inf-001"]);
-
-    store.dispatch(selectUnit("roy-inf-001"));
-
-    expect(selectValidationMessage(store.getState())).toBe("Select one of your own units.");
-  });
-
-  it("prevents corrupted invalid draft orders from submitting", () => {
-    const store = createAppStore({
-      game: {
-        activeFactionId: "com",
-        control: { galicia: "com", catalunya: "roy", andalucia: "fas" },
-        draftAction: "move",
-        history: [],
-        phase: "orders",
-        resolution: undefined,
-        selectedDestinationId: "aragon",
-        selectedFromTerritoryId: "catalunya",
-        selectedUnitIds: ["com-inf-001"],
-        submittedOrders: {},
-        turnNumber: 1,
-        units: {
-          "com-inf-001": {
-            displayName: "1st International Infantry",
-            factionId: "com",
-            id: "com-inf-001",
-            territoryId: "galicia",
-            type: "infantry"
-          }
-        },
-        validationMessage: undefined
-      },
-      notifications: {
-        notifications: []
-      }
-    });
-
-    store.dispatch(submitCurrentOrder());
-
-    expect(selectValidationMessage(store.getState())).toBe("Selected unit is no longer in that territory.");
-    expect(selectSubmittedOrders(store.getState())).toEqual([]);
-  });
-
-  it("treats a move draft without a from territory as an empty submission", () => {
-    const store = createAppStore({
-      game: {
-        activeFactionId: "com",
-        control: { galicia: "com" },
-        draftAction: "move",
-        history: [],
-        phase: "orders",
-        resolution: undefined,
-        selectedDestinationId: "asturias",
-        selectedFromTerritoryId: undefined,
-        selectedUnitIds: ["com-inf-001"],
-        submittedOrders: {},
-        turnNumber: 1,
-        units: {
-          "com-inf-001": {
-            displayName: "1st International Infantry",
-            factionId: "com",
-            id: "com-inf-001",
-            territoryId: "galicia",
-            type: "infantry"
-          }
-        },
-        validationMessage: undefined
-      },
-      notifications: {
-        notifications: []
-      }
-    });
-
-    store.dispatch(submitCurrentOrder());
-
-    expect(selectSubmittedOrders(store.getState())[0]?.description).toBe("No orders");
-  });
-
-  it("can clear draft state without a stored resolution", () => {
-    const store = createAppStore();
-
+    store.dispatch(chooseMoveDestination("castilla-la-mancha"));
+    store.dispatch(addDraftMove());
+    expect(selectDraftOrders(store.getState())).toHaveLength(1);
+    store.dispatch(submitCurrentOrders());
+    expect(selectGamePhase(store.getState())).toBe("resolution");
+    expect(selectSubmissionStatus(store.getState()).every((status) => status.ready)).toBe(true);
     store.dispatch(startNextTurn());
-
-    expect(selectGamePhase(store.getState())).toBe("orders");
-    expect(selectHistory(store.getState())).toEqual([]);
+    expect(selectGamePhase(store.getState())).toBe("handoff");
+    expect(store.getState().game.turnNumber).toBe(2);
+    expect(store.getState().game.history).toHaveLength(1);
   });
 
-  it("derives calendar labels from the turn number", () => {
-    const store = createAppStore({
-      game: {
-        activeFactionId: "com",
-        control: {},
-        draftAction: undefined,
-        history: [],
-        phase: "orders",
-        resolution: undefined,
-        selectedDestinationId: undefined,
-        selectedFromTerritoryId: undefined,
-        selectedUnitIds: [],
-        submittedOrders: {},
-        turnNumber: 25,
-        units: {},
-        validationMessage: undefined
-      },
-      notifications: {
-        notifications: []
-      }
-    });
-
-    expect(selectTurnDate(store.getState())).toBe("early January 1931");
-  });
-
-  it("adds and removes notifications", () => {
+  it("hands off between local players without revealing submissions", () => {
     const store = createAppStore();
-
-    store.dispatch(addInfoNotification("Info message"));
-    store.dispatch(addWarningNotification("Warning message"));
-    store.dispatch(addErrorNotification("Error message"));
-
-    const notifications = selectNotifications(store.getState());
-
-    expect(notifications.map((notification) => notification.tone)).toEqual([
-      "info",
-      "warning",
-      "error"
-    ]);
-
-    store.dispatch(removeNotification(notifications[0]?.id ?? ""));
-
-    expect(selectNotifications(store.getState())).toHaveLength(2);
+    store.dispatch(startNewGame({ republic: "local-human", north: "local-human", south: "computer" }));
+    store.dispatch(beginPlanning());
+    store.dispatch(submitCurrentOrders());
+    expect(selectGamePhase(store.getState())).toBe("handoff");
+    expect(selectActiveFaction(store.getState()).id).toBe("north");
+    expect(selectSubmissionStatus(store.getState())[0]).toMatchObject({ ready: true });
   });
 
-  it("turns rejected actions into error notifications", async () => {
+  it("gates an all-computer game behind an explicit action", () => {
     const store = createAppStore();
-    const rejectedAction = {
-      type: "scenario/load/rejected",
-      error: { message: "Scenario failed to load." },
-      meta: { requestId: "scenario-1", requestStatus: "rejected" }
-    } satisfies UnknownAction;
-
-    store.dispatch(rejectedAction);
-
-    await vi.waitFor(() => {
-      expect(selectNotifications(store.getState())[0]?.message).toBe("Scenario failed to load.");
-    });
+    store.dispatch(startNewGame({ republic: "computer", north: "computer", south: "computer" }));
+    expect(selectGamePhase(store.getState())).toBe("handoff");
+    expect(selectSubmissionStatus(store.getState()).some((status) => status.ready)).toBe(false);
+    store.dispatch(runComputerTurn());
+    expect(["resolution", "game-over"]).toContain(selectGamePhase(store.getState()));
   });
 
-  it("uses a fallback message for rejected actions without an error message", async () => {
+  it("toggles individual stacked units and supports removing draft orders", () => {
     const store = createAppStore();
-    const rejectedAction = {
-      type: "scenario/load/rejected",
-      error: {},
-      meta: { requestId: "scenario-2", requestStatus: "rejected" }
-    } satisfies UnknownAction;
+    store.dispatch(startNewGame({ republic: "local-human", north: "computer", south: "computer" }));
+    store.dispatch(beginPlanning());
+    store.dispatch(selectUnit("rep-wad-ras-1"));
+    store.dispatch(selectUnit("rep-covadonga-4"));
+    expect(store.getState().game.selectedUnitIds).toHaveLength(2);
+    store.dispatch(selectUnit("rep-wad-ras-1"));
+    expect(store.getState().game.selectedUnitIds).toEqual(["rep-covadonga-4"]);
+    store.dispatch(selectUnit("rep-otumba-9"));
+    expect(store.getState().game.selectedUnitIds).toEqual(["rep-otumba-9"]);
+    store.dispatch(selectUnit("rep-wad-ras-1"));
+    store.dispatch(selectUnit("rep-covadonga-4"));
+    store.dispatch(chooseMoveAction());
+    store.dispatch(chooseMoveDestination("castilla-la-mancha"));
+    store.dispatch(addDraftMove());
+    expect(selectDraftOrders(store.getState())).toHaveLength(2);
+    store.dispatch(removeDraftOrder("rep-wad-ras-1"));
+    expect(selectDraftOrders(store.getState())).toHaveLength(1);
+  });
 
-    store.dispatch(rejectedAction);
+  it("uses saved assignments when starting without a payload and describes hold submissions after reveal", () => {
+    const store = createAppStore();
+    store.dispatch(setActorKind({ factionId: "north", kind: "local-human" }));
+    store.dispatch(startNewGame(undefined));
+    store.dispatch(beginPlanning());
+    store.dispatch(submitCurrentOrders());
+    expect(selectRevealedOrders(store.getState())[0]?.description).toBe("All formations held");
+  });
 
-    await vi.waitFor(() => {
-      expect(selectNotifications(store.getState())[0]?.message).toBe(
-        "Unexpected application error."
-      );
-    });
+  it("enters game over when a submitted turn reaches the territory threshold", () => {
+    const baseStore = createAppStore();
+    const base = baseStore.getState().game;
+    const winningTerritories = ["galicia", "asturias", "cantabria", "pais-vasco", "navarra", "la-rioja", "madrid", "castilla-y-leon", "castilla-la-mancha", "catalunya"] as const;
+    const control = { ...base.control };
+    for (const territoryId of winningTerritories) control[territoryId] = { kind: "controlled", factionId: "republic" };
+    const store = createAppStore({ game: {
+      ...base,
+      activeFactionId: "republic",
+      assignments: { republic: "local-human", north: "computer", south: "computer" },
+      control,
+      phase: "planning",
+      submittedOrders: { north: { factionId: "north", orders: [] }, south: { factionId: "south", orders: [] } }
+    }});
+    store.dispatch(submitCurrentOrders());
+    expect(selectGamePhase(store.getState())).toBe("game-over");
+    expect(store.getState().game.resolution?.victory?.factionIds).toEqual(["republic"]);
+  });
+
+  it("reports invalid selections and incomplete moves", () => {
+    const store = createAppStore();
+    store.dispatch(startNewGame({ republic: "local-human", north: "computer", south: "computer" }));
+    store.dispatch(beginPlanning());
+    store.dispatch(selectTerritory("galicia"));
+    expect(store.getState().game.validationMessage).toContain("No friendly formations");
+    store.dispatch(selectUnit("north-zamora-29"));
+    expect(store.getState().game.validationMessage).toContain("own formations");
+    store.dispatch(chooseMoveAction());
+    store.dispatch(chooseMoveDestination("galicia"));
+    store.dispatch(addDraftMove());
+    expect(store.getState().game.validationMessage).toBeDefined();
+  });
+
+  it("keeps invalid phase commands and malformed drafts safely contained", () => {
+    const store = createAppStore();
+    store.dispatch(beginPlanning());
+    store.dispatch(runComputerTurn());
+    store.dispatch(startNextTurn());
+    store.dispatch(submitCurrentOrders());
+    expect(selectGamePhase(store.getState())).toBe("idle");
+
+    store.dispatch(startNewGame({ republic: "local-human", north: "computer", south: "computer" }));
+    store.dispatch(chooseMoveDestination("madrid"));
+    expect(store.getState().game.validationMessage).toContain("Choose units");
+    store.dispatch(beginPlanning());
+    store.dispatch(selectUnit("rep-wad-ras-1"));
+    store.dispatch(chooseMoveAction());
+    store.dispatch(chooseMoveDestination("madrid"));
+    expect(store.getState().game.validationMessage).toContain("different territory");
+    store.dispatch(addDraftMove());
+    expect(store.getState().game.validationMessage).toContain("destination");
+    store.dispatch(chooseMoveDestination("galicia"));
+    expect(store.getState().game.validationMessage).toContain("not adjacent");
+  });
+
+  it("stops at an unavailable online actor", () => {
+    const store = createAppStore();
+    store.dispatch(startNewGame({ republic: "computer", north: "online-human", south: "local-human" }));
+    expect(selectGamePhase(store.getState())).toBe("handoff");
+    expect(selectActiveFaction(store.getState()).id).toBe("north");
+    expect(store.getState().game.validationMessage).toContain("Online players");
   });
 });
