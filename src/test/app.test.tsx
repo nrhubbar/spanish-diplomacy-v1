@@ -1,236 +1,318 @@
-import "@testing-library/jest-dom/vitest";
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type { JSX } from "react";
 import { Provider } from "react-redux";
 import { MemoryRouter } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { App } from "../main/app";
-import { IberiaMap } from "../main/components/IberiaMap";
-import { resolveTurn } from "../main/engine/resolution";
-import { createInitialGameState, milestone2Scenario } from "../main/scenarios/milestone2Scenario";
+import { ErrorBoundary } from "../main/components/ErrorBoundary";
+import { RegistryContext } from "../main/hooks";
 import { addInfoNotification } from "../main/state/notificationSlice";
-import { createAppStore } from "../main/state/store";
+import { testRegistry, testStore } from "./support";
 
-function renderApp(initialPath = "/", store = createAppStore()) {
-  render(<Provider store={store}><MemoryRouter initialEntries={[initialPath]}><App /></MemoryRouter></Provider>);
-  return store;
+function renderApp(path = "/", store = testStore()) {
+  const user = userEvent.setup();
+  render(
+    <Provider store={store}>
+      <RegistryContext value={testRegistry()}>
+        <MemoryRouter initialEntries={[path]}>
+          <App />
+        </MemoryRouter>
+      </RegistryContext>
+    </Provider>
+  );
+  return { store, user };
 }
 
-describe("Milestone 2 application flow", () => {
+const region = (territoryId: string): Element => {
+  const element = document.querySelector(`.map-region[data-territory-id="${territoryId}"]`);
+  if (element === null) throw new Error(`No region ${territoryId}`);
+  return element;
+};
+
+async function startDefaultGame(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole("button", { name: "Create Game" }));
+  await user.click(screen.getByRole("button", { name: "Start Campaign" }));
+  await screen.findByRole("application", { name: /map/ });
+}
+
+describe("application flow", () => {
   afterEach(cleanup);
 
-  it("opens the faction assignment screen", async () => {
-    const user = userEvent.setup();
-    renderApp();
+  it("plays a full turn: select, move, remove, submit, reveal, and continue", async () => {
+    const { user } = renderApp();
     expect(screen.getByRole("heading", { name: "Spanish Diplomacy" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Settings" })).toBeVisible();
     await user.click(screen.getByRole("button", { name: "Create Game" }));
-    expect(screen.getByRole("heading", { name: "Choose the commanders" })).toBeVisible();
-    expect(screen.getAllByRole("combobox")).toHaveLength(3);
-    expect(screen.getAllByRole("option", { name: /Remote player/ }).every((option) => option.hasAttribute("disabled"))).toBe(true);
-    expect(screen.queryByText(/researched game-scale interpretation/)).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Choose the players" })).toBeVisible();
+    expect(screen.getAllByRole("option", { name: /Online Player/ }).every((option) => option.hasAttribute("disabled"))).toBe(true);
+    await user.click(screen.getByRole("button", { name: "Start Campaign" }));
+    await screen.findByRole("application", { name: /map/ });
+    expect(screen.getByRole("heading", { level: 1, name: "Republican Government" })).toBeVisible();
+    expect(screen.getByText(/Turn 1 . 31 July 1936/)).toBeVisible();
+
+    await user.click(region("madrid"));
+    const pane = screen.getByRole("complementary", { name: "Orders" });
+    expect(within(pane).getByRole("heading", { name: "Madrid" })).toBeVisible();
+    expect(within(pane).getByText("2 of 2 selected")).toBeVisible();
+    await user.click(within(pane).getByRole("button", { name: "Give Selected Armies Order" }));
+    await user.click(within(pane).getByRole("button", { name: "Move" }));
+    expect(within(pane).getByText(/Moving 2 armies from Madrid. Choose a highlighted territory/)).toBeVisible();
+    expect(within(pane).getByRole("button", { name: "Cancel move" })).toHaveFocus();
+    expect(document.querySelectorAll('[data-highlight="destination"]').length).toBeGreaterThan(0);
+    await user.click(region("galicia"));
+    expect(within(pane).getByText(/not connected to Madrid/)).toBeVisible();
+    await user.click(region("castilla-la-mancha"));
+    expect(within(pane).getByRole("heading", { name: "Planned orders (2)" })).toBeVisible();
+    expect(document.querySelectorAll('[data-route-kind="planned"]')).toHaveLength(1);
+    await user.click(within(pane).getByRole("button", { name: /Remove order for Wad-Ras/ }));
+    expect(within(pane).getByRole("heading", { name: "Planned orders (1)" })).toBeVisible();
+
+    await user.click(within(pane).getByRole("button", { name: "Submit Orders" }));
+    expect(screen.getByRole("heading", { name: "All orders are locked" })).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Reveal and Resolve" }));
+    await screen.findByRole("application", { name: /map/ });
+    const report = screen.getByRole("complementary", { name: "Turn report" });
+    expect(within(report).getByRole("heading", { name: "What happened" })).toBeVisible();
+    expect(within(report).getByRole("heading", { name: "Victory progress" })).toBeVisible();
+    expect(within(report).getAllByRole("meter").length).toBeGreaterThan(0);
+    await user.click(within(report).getByRole("button", { name: "Start Next Turn" }));
+    await screen.findByRole("application", { name: /map/ });
+    expect(screen.getByText(/^Turn 2/)).toBeVisible();
+    expect(screen.queryByText(/31 July 1936/)).not.toBeInTheDocument();
   });
 
-  it("opens settings from home and returns", async () => {
-    const user = userEvent.setup();
-    renderApp();
+  it("selects every army by default and lets the player unselect before ordering", async () => {
+    const { user } = renderApp();
+    await startDefaultGame(user);
+    await user.click(screen.getByRole("button", { name: /Covadonga Infantry Regiment No. 4/ }));
+    const pane = screen.getByRole("complementary", { name: "Orders" });
+    const armies = within(pane).getByRole("list", { name: "Your armies" });
+    const wadRas = within(armies).getByRole("button", { name: /Wad-Ras/ });
+    const covadonga = within(armies).getByRole("button", { name: /Covadonga/ });
+    expect(wadRas).toHaveAttribute("aria-pressed", "true");
+    expect(covadonga).toHaveAttribute("aria-pressed", "true");
+
+    await user.click(covadonga);
+    expect(covadonga).toHaveAttribute("aria-pressed", "false");
+    expect(within(pane).getByText("1 of 2 selected")).toBeVisible();
+    await user.click(within(pane).getByRole("button", { name: "Clear" }));
+    const give = within(pane).getByRole("button", { name: "Give Selected Armies Order" });
+    expect(give).toBeDisabled();
+    expect(give).toHaveAccessibleDescription("Select at least one army to give an order.");
+    await user.click(within(pane).getByRole("button", { name: "Select all" }));
+    await user.click(covadonga);
+    expect(give).toBeEnabled();
+    expect(give).toHaveAttribute("aria-expanded", "false");
+
+    await user.click(give);
+    expect(give).toHaveAttribute("aria-expanded", "true");
+    const menu = within(pane).getByRole("group", { name: "Order for 1 army" });
+    expect(give).toHaveAttribute("aria-controls", menu.id);
+    expect(within(menu).getByRole("button", { name: "Move" })).toHaveAccessibleDescription("March to a neighboring territory.");
+    await user.click(give);
+    expect(within(pane).queryByRole("group", { name: /Order for/ })).not.toBeInTheDocument();
+
+    await user.click(give);
+    await user.click(within(pane).getByRole("button", { name: "Move" }));
+    await user.click(screen.getByText("Legend"));
+    expect(screen.getByText("Possible destination")).toBeVisible();
+    await user.click(within(pane).getByRole("button", { name: "Cancel move" }));
+    expect(document.querySelectorAll('[data-highlight="destination"]')).toHaveLength(0);
+    expect(wadRas).toHaveAttribute("aria-pressed", "true");
+    expect(covadonga).toHaveAttribute("aria-pressed", "false");
+
+    await user.click(within(pane).getByRole("button", { name: "Give Selected Armies Order" }));
+    await user.click(within(pane).getByRole("button", { name: "Move" }));
+    await user.click(region("castilla-la-mancha"));
+    expect(within(pane).getByText(/Madrid . Castilla-La Mancha/)).toBeVisible();
+    expect(within(armies).getByRole("button", { name: /Wad-Ras/ })).toHaveAttribute("aria-pressed", "false");
+    expect(within(armies).getByRole("button", { name: /Covadonga/ })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByText("Planned move")).toBeVisible();
+  });
+
+  it("explains a territory whose armies all have orders", async () => {
+    const { user } = renderApp();
+    await startDefaultGame(user);
+    await user.click(region("madrid"));
+    const pane = screen.getByRole("complementary", { name: "Orders" });
+    await user.click(within(pane).getByRole("button", { name: "Give Selected Armies Order" }));
+    await user.click(within(pane).getByRole("button", { name: "Move" }));
+    await user.click(region("castilla-la-mancha"));
+    expect(within(pane).getByText("All have orders")).toBeVisible();
+    expect(within(pane).queryByRole("button", { name: "Select all" })).not.toBeInTheDocument();
+    expect(within(pane).getByRole("button", { name: "Give Selected Armies Order" })).toHaveAccessibleDescription(/Every army here has an order/);
+  });
+
+  it("hands the device between local players without revealing orders", async () => {
+    const { user } = renderApp();
+    await user.click(screen.getByRole("button", { name: "Create Game" }));
+    await user.selectOptions(screen.getByLabelText("Player", { selector: "#actor-north" }), "local-human");
+    await user.click(screen.getByRole("button", { name: "Start Campaign" }));
+    expect(screen.getByRole("heading", { name: "Pass to Republican Government" })).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Continue to Republican Government" }));
+    await user.click(await screen.findByRole("button", { name: "Submit Orders" }));
+    expect(screen.getByRole("heading", { name: "Pass to Northern Insurgent Command" })).toBeVisible();
+    expect(screen.getByText(/Republican Government has submitted its orders/)).toBeVisible();
+    expect(screen.queryByText(/Madrid/)).not.toBeInTheDocument();
+  });
+
+  it("plays the fixture scenario to a victory and starts again", async () => {
+    const { user } = renderApp();
+    await user.click(screen.getByRole("button", { name: "Create Game" }));
+    await user.selectOptions(screen.getByLabelText("Scenario"), "tiny-front");
+    await user.click(screen.getByRole("button", { name: "Start Campaign" }));
+    await screen.findByRole("application", { name: /map/ });
+    await user.click(region("westfold"));
+    await user.click(screen.getByRole("button", { name: "Give Selected Armies Order" }));
+    await user.click(screen.getByRole("button", { name: "Move" }));
+    await user.click(region("lowlands"));
+    await user.click(screen.getByRole("button", { name: "Submit Orders" }));
+    await user.click(screen.getByRole("button", { name: "Reveal and Resolve" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "Red League wins" })).toBeVisible();
+    expect(screen.getByText(/won by controlling the most territory/)).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Start Next Turn" })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Set Up Another Campaign" }));
+    expect(screen.getByRole("heading", { name: "Choose the players" })).toBeVisible();
+  });
+
+  it("guards routes, opens settings, and returns", async () => {
+    const { user } = renderApp("/orders");
+    expect(screen.getByRole("heading", { name: "Spanish Diplomacy" })).toBeVisible();
     await user.click(screen.getByRole("button", { name: "Settings" }));
     expect(screen.getByRole("heading", { name: "Settings" })).toBeVisible();
-    expect(screen.getByText(/W, A, S, and D/)).toBeVisible();
-    await user.click(screen.getByRole("button", { name: "Back to home" }));
+    expect(screen.getByText(/geoBoundaries/)).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Back" }));
+    expect(screen.getByRole("heading", { name: "Spanish Diplomacy" })).toBeVisible();
+    cleanup();
+    renderApp("/no-such-page");
     expect(screen.getByRole("heading", { name: "Spanish Diplomacy" })).toBeVisible();
   });
 
-  it("starts the default mixed game without a handoff screen", async () => {
-    const user = userEvent.setup();
-    renderApp("/setup");
-    await user.click(screen.getByRole("button", { name: "Start Campaign" }));
-    expect(screen.getByRole("heading", { name: "Republican Government" })).toBeVisible();
-    expect(screen.getByLabelText("Iberia campaign map")).toBeVisible();
-    expect(screen.getByText("Madrid", { selector: "text" })).toBeInTheDocument();
+  it("confirms before leaving a game and warns before unloading", async () => {
+    const { user } = renderApp();
+    await startDefaultGame(user);
+    const unload = new Event("beforeunload", { cancelable: true });
+    window.dispatchEvent(unload);
+    expect(unload.defaultPrevented).toBe(true);
     await user.click(screen.getByRole("button", { name: "Exit game" }));
+    await user.click(screen.getByRole("button", { name: "Stay" }));
+    await user.click(screen.getByRole("button", { name: "Exit game" }));
+    await user.click(screen.getByRole("button", { name: "Leave" }));
     expect(screen.getByRole("heading", { name: "Spanish Diplomacy" })).toBeVisible();
   });
 
-  it("selects formations independently, adds a move, and resolves with computer players", async () => {
-    const user = userEvent.setup();
-    renderApp("/setup");
+  it("shows setup feedback and goes back home", async () => {
+    const { store, user } = renderApp();
+    await user.click(screen.getByRole("button", { name: "Create Game" }));
+    act(() => { store.dispatch({ payload: { factionId: "north", kind: "online-human" }, type: "game/setActorKind" }); });
     await user.click(screen.getByRole("button", { name: "Start Campaign" }));
-    await user.click(screen.getByRole("button", { name: "Madrid" }));
-    await user.click(screen.getAllByRole("button", { name: /Wad-Ras Infantry Regiment/ })[1]!);
-    await user.click(screen.getByRole("button", { name: "Move selected" }));
-    await user.click(screen.getByRole("button", { name: "Castilla-La Mancha" }));
-    await user.click(screen.getByRole("button", { name: "Add Move" }));
-    expect(screen.getByText(/Wad-Ras Infantry Regiment No. 1 → Castilla-La Mancha/)).toBeVisible();
-    await user.click(screen.getByRole("button", { name: "Submit Orders" }));
-    expect(screen.getByRole("heading", { name: "Turn resolution" })).toBeVisible();
-    expect(screen.getByRole("heading", { name: "Victory progress" })).toBeVisible();
-    await user.click(screen.getByRole("button", { name: "Start Next Turn" }));
-    expect(screen.getByRole("heading", { name: "Republican Government" })).toBeVisible();
-  });
-
-  it("shows a private handoff between two local players", async () => {
-    const user = userEvent.setup();
-    renderApp("/setup");
-    const selects = screen.getAllByRole("combobox");
-    await user.selectOptions(selects[1]!, "local-human");
-    await user.click(screen.getByRole("button", { name: "Start Campaign" }));
-    await user.click(screen.getByRole("button", { name: /Begin Republican Government Orders/ }));
-    await user.click(screen.getByRole("button", { name: "Submit Orders" }));
-    expect(screen.getByRole("heading", { name: /Pass to Northern Insurgent Command/ })).toBeVisible();
-    expect(screen.queryByText(/All formations held/)).not.toBeInTheDocument();
-  });
-
-  it("runs an all-computer turn automatically", async () => {
-    const user = userEvent.setup();
-    renderApp("/setup");
-    for (const select of screen.getAllByRole("combobox")) await user.selectOptions(select, "computer");
-    await user.click(screen.getByRole("button", { name: "Start Campaign" }));
-    expect(screen.getByRole("heading", { name: "Turn resolution" })).toBeVisible();
-  });
-
-  it("guards routes and renders notifications", async () => {
-    const user = userEvent.setup();
-    const store = renderApp("/orders");
+    expect(screen.getByRole("alert")).toHaveTextContent("Online play is coming later");
+    await user.click(screen.getByRole("button", { name: "Back" }));
     expect(screen.getByRole("heading", { name: "Spanish Diplomacy" })).toBeVisible();
+  });
+
+  it("renders and dismisses notifications", async () => {
+    const { store, user } = renderApp();
     act(() => { store.dispatch(addInfoNotification("Orders saved.")); });
     expect(screen.getByText("Orders saved.")).toBeVisible();
     await user.click(screen.getByRole("button", { name: "Dismiss" }));
     expect(screen.queryByText("Orders saved.")).not.toBeInTheDocument();
   });
+});
 
-  it.each([
-    ["cities", "Republican Government wins", "decisive cities"],
-    ["territories", "Republican Government wins", "territorial control"],
-    ["shared", "Republican Government and Northern Insurgent Command share victory", "equal control"]
-  ] as const)("renders the terminal %s result", (condition, heading, explanation) => {
-    const base = createAppStore().getState();
-    const engine = createInitialGameState();
-    const resolved = resolveTurn(milestone2Scenario, engine, []);
-    const factionIds = condition === "shared" ? ["republic", "north"] as const : ["republic"] as const;
-    const store = createAppStore({
-      game: {
-        ...base.game,
-        cityControl: engine.cityControl,
-        control: engine.control,
-        phase: "game-over",
-        resolution: { ...resolved, victory: { condition, factionIds } },
-        units: engine.units
-      }
-    });
-    renderApp("/game-over", store);
-    expect(screen.getByRole("heading", { name: heading })).toBeVisible();
-    expect(screen.getByText(new RegExp(explanation))).toBeVisible();
-    expect(screen.queryByRole("button", { name: "Start Next Turn" })).not.toBeInTheDocument();
+describe("campaign map interaction", () => {
+  afterEach(cleanup);
+
+  it("zooms and pans from controls, keys, and the wheel", async () => {
+    const { user } = renderApp();
+    await startDefaultGame(user);
+    const map = screen.getByRole("application", { name: /map/ });
+    expect(map).toHaveAttribute("data-semantic-level", "overview");
+    await user.click(screen.getByRole("button", { name: "Zoom in" }));
+    expect(screen.getByText("Map zoom 125 percent")).toBeInTheDocument();
+    fireEvent.keyDown(map, { key: "+" });
+    expect(map).toHaveAttribute("data-semantic-level", "operational");
+    const before = map.getAttribute("data-camera-x");
+    fireEvent.keyDown(map, { key: "d" });
+    expect(map.getAttribute("data-camera-x")).not.toBe(before);
+    fireEvent.keyDown(map, { key: "0" });
+    expect(screen.getByText("Map zoom 100 percent")).toBeInTheDocument();
+    fireEvent.keyDown(map, { key: "-" });
+    fireEvent.keyDown(map, { key: "Escape" });
+    fireEvent.wheel(map, { clientX: 200, clientY: 200, deltaY: -400 });
+    expect(Number(map.getAttribute("data-zoom"))).toBeGreaterThan(1);
+    await user.click(screen.getByRole("button", { name: /reset map view/i }));
+    expect(map).toHaveAttribute("data-zoom", "1.00");
+    for (let step = 0; step < 14; step += 1) await user.click(screen.getByRole("button", { name: "Zoom in" }));
+    expect(screen.getByRole("button", { name: "Zoom in" })).toBeDisabled();
+    expect(map).toHaveAttribute("data-semantic-level", "detail");
   });
 
-  it("redirects invalid handoff, resolution, and game-over routes", () => {
-    renderApp("/handoff");
-    expect(screen.getByRole("heading", { name: "Spanish Diplomacy" })).toBeVisible();
-    cleanup();
-    renderApp("/resolution");
-    expect(screen.getByRole("heading", { name: "Spanish Diplomacy" })).toBeVisible();
-    cleanup();
-    renderApp("/game-over");
-    expect(screen.getByRole("heading", { name: "Spanish Diplomacy" })).toBeVisible();
+  it("selects territories with Enter but leaves Enter on counters to the button (B3)", async () => {
+    const { user } = renderApp();
+    await startDefaultGame(user);
+    fireEvent.keyDown(region("valencia"), { key: "Enter" });
+    expect(screen.getByRole("heading", { name: "Valencia" })).toBeVisible();
+    const counter = screen.getByRole("button", { name: /Wad-Ras Infantry Regiment No. 1/ });
+    fireEvent.keyDown(counter, { key: "Enter" });
+    expect(screen.getByRole("heading", { name: "Valencia" })).toBeVisible();
+    await user.click(counter);
+    expect(screen.getByRole("heading", { name: "Madrid" })).toBeVisible();
+    expect(counter).toHaveAttribute("aria-pressed", "true");
+    await user.click(screen.getByRole("button", { name: /Zamora Infantry Regiment/ }));
+    expect(screen.getByRole("heading", { name: "Galicia" })).toBeVisible();
+    expect(screen.getByText(/Other armies here/)).toBeVisible();
   });
 
-  it("routes every screen away from phases it cannot display", () => {
-    const cases = [
-      ["/handoff", "planning"],
-      ["/handoff", "resolution"],
-      ["/handoff", "game-over"],
-      ["/handoff", "setup"],
-      ["/orders", "handoff"],
-      ["/orders", "resolution"],
-      ["/orders", "game-over"],
-      ["/orders", "setup"],
-      ["/resolution", "handoff"],
-      ["/resolution", "game-over"],
-      ["/resolution", "setup"]
-    ] as const;
+  it("drags without selecting and collapses the pane", async () => {
+    const { user } = renderApp();
+    await startDefaultGame(user);
+    const map = screen.getByRole("application", { name: /map/ });
+    const before = map.getAttribute("data-camera-x");
+    const target = region("madrid");
+    fireEvent.pointerDown(target, { button: 0, clientX: 300, clientY: 300, pointerId: 1 });
+    fireEvent.pointerMove(target, { clientX: 360, clientY: 300, pointerId: 1 });
+    fireEvent.pointerUp(target, { clientX: 360, clientY: 300, pointerId: 1 });
+    fireEvent.click(target);
+    expect(map.getAttribute("data-camera-x")).not.toBe(before);
+    expect(screen.queryByRole("heading", { name: "Madrid" })).not.toBeInTheDocument();
+    fireEvent.pointerDown(target, { button: 0, clientX: 300, clientY: 300, pointerId: 2 });
+    fireEvent.pointerCancel(target, { pointerId: 2 });
 
-    for (const [path, phase] of cases) {
-      const base = createAppStore().getState();
-      const resolution = phase === "resolution"
-        ? resolveTurn(milestone2Scenario, createInitialGameState(), [])
-        : undefined;
-      renderApp(path, createAppStore({ game: { ...base.game, phase, resolution } }));
-      expect(document.body.textContent).not.toBe("");
-      cleanup();
-    }
+    await user.click(screen.getByRole("button", { name: "Hide orders" }));
+    expect(screen.getByRole("button", { name: "Orders" })).toHaveAttribute("aria-expanded", "false");
+    await user.click(screen.getByRole("button", { name: "Orders" }));
+    expect(screen.getByRole("button", { name: "Hide orders" })).toHaveAttribute("aria-expanded", "true");
+  });
 
-    const base = createAppStore().getState();
-    renderApp("/handoff", createAppStore({
-      game: {
-        ...base.game,
-        assignments: { republic: "computer", north: "computer", south: "computer" },
-        phase: "handoff"
-      }
-    }));
-    expect(screen.getByRole("heading", { name: "Choose the commanders" })).toBeVisible();
+  it("shows the legend for what is on the map", async () => {
+    const { user } = renderApp();
+    await startDefaultGame(user);
+    await user.click(screen.getByText("Legend"));
+    expect(screen.getByText("Contested")).toBeVisible();
+    expect(screen.getByText("Sea crossing")).toBeVisible();
+    expect(screen.queryByText("Uncontrolled")).not.toBeInTheDocument();
   });
 });
 
-describe("IberiaMap interaction and annotations", () => {
+describe("error boundary", () => {
   afterEach(cleanup);
 
-  it("supports keyboard selection, background clicks, city labels, and resolution markers", () => {
-    const state = createInitialGameState();
-    const onSelectTerritory = vi.fn();
-    const onSelectUnit = vi.fn();
-    const orders = [
-      { factionId: "republic", from: "madrid", kind: "move", to: "castilla-la-mancha", unitId: "rep-wad-ras-1" } as const
-    ];
-    const outcomes = [
-      { kind: "bounced-move", order: orders[0]!, reason: "opposed" },
-      { kind: "disbanded-move", order: { ...orders[0]!, unitId: "removed-unit" }, reason: "overwhelmed" },
-      { kind: "invalid-order", order: { ...orders[0]!, unitId: "invalid-unit" }, reason: "invalid" },
-      { factionId: "north", kind: "no-move", unitId: "holding-unit" }
-    ] as const;
-    render(<IberiaMap cities={milestone2Scenario.cities} cityControl={{}} control={state.control} factions={milestone2Scenario.factions} legalDestinationIds={["castilla-la-mancha"]} onSelectTerritory={onSelectTerritory} onSelectUnit={onSelectUnit} plannedOrders={orders} resolutionOutcomes={outcomes} selectedDestinationId="castilla-la-mancha" selectedFromTerritoryId="madrid" selectedUnitIds={["rep-wad-ras-1"]} units={[state.units["rep-wad-ras-1"]!]} />);
-    expect(screen.getByText("Barcelona", { selector: ".map-city text" })).toBeInTheDocument();
-    expect(screen.getByText("France", { selector: ".iberia-country-label text" })).toBeInTheDocument();
-    expect(screen.getByText("Morocco", { selector: ".iberia-country-label text" })).toBeInTheDocument();
-    expect(screen.getByLabelText("Iberia campaign map")).toHaveAttribute("data-semantic-level", "overview");
-    expect(document.getElementById("ES53")).toHaveStyle("--region-color: var(--territory-islas-baleares-color)");
-    expect(screen.getByLabelText("Iberia campaign map").getAttribute("style")).toContain("--territory-islas-baleares-color: #9a7e69");
-    expect(screen.getByRole("button", { name: "Madrid" })).toHaveAttribute("data-selected-origin", "true");
-    expect(screen.getByRole("button", { name: "Castilla-La Mancha" })).toHaveAttribute("data-selected-destination", "true");
-    fireEvent.keyDown(screen.getByRole("button", { name: "Madrid" }), { key: "Enter" });
-    expect(onSelectTerritory).toHaveBeenCalledWith("madrid");
-    fireEvent.keyDown(screen.getByRole("button", { name: "Madrid" }), { key: "Escape" });
-    fireEvent.click(screen.getByLabelText("Iberia campaign map"));
-    expect(onSelectTerritory).toHaveBeenCalledTimes(1);
-    fireEvent.click(document.querySelector(".iberia-map-terrain") as Element);
-    expect(onSelectTerritory).toHaveBeenCalledTimes(1);
-    expect(screen.getByRole("button", { name: /Wad-Ras Infantry Regiment No. 1/ })).toBeDisabled();
-    expect(document.querySelector(".map-planned-order-arrow")).toBeInTheDocument();
-    expect(document.querySelector(".map-bounce-icon, .map-disband-icon")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Zoom in" }));
-    expect(screen.getByText("Map zoom 125 percent")).toBeInTheDocument();
-    fireEvent.keyDown(screen.getByLabelText("Iberia campaign map"), { key: "+" });
-    expect(screen.getByText("Map zoom 150 percent")).toBeInTheDocument();
-    expect(screen.getByLabelText("Iberia campaign map")).toHaveAttribute("data-semantic-level", "operational");
-    expect(document.querySelector(".map-bounce-icon")?.getAttribute("transform")).toContain("scale(0.617");
-    fireEvent.keyDown(screen.getByLabelText("Iberia campaign map"), { key: "w" });
-    fireEvent.wheel(screen.getByLabelText("Iberia campaign map"), { clientX: 20, clientY: 20, deltaY: 100 });
-    fireEvent.keyDown(screen.getByLabelText("Iberia campaign map"), { key: "0" });
-    expect(screen.getByText("Map zoom 100 percent")).toBeInTheDocument();
-    fireEvent.keyDown(screen.getByLabelText("Iberia campaign map"), { key: "-" });
-    fireEvent.keyDown(screen.getByLabelText("Iberia campaign map"), { key: "Escape" });
-    fireEvent.keyDown(screen.getByLabelText("Iberia campaign map"), { key: "Enter" });
-    for (let step = 0; step < 8; step += 1) fireEvent.click(screen.getByRole("button", { name: "Zoom in" }));
-    expect(screen.getByRole("button", { name: "Zoom in" })).toBeDisabled();
-    for (let step = 0; step < 8; step += 1) fireEvent.click(screen.getByRole("button", { name: "Zoom out" }));
-    expect(screen.getByRole("button", { name: "Zoom out" })).toBeDisabled();
-  });
-
-  it("selects an available map counter", () => {
-    const state = createInitialGameState();
-    const onSelectUnit = vi.fn();
-    render(<IberiaMap control={state.control} factions={milestone2Scenario.factions} legalDestinationIds={[]} onSelectTerritory={() => undefined} onSelectUnit={onSelectUnit} selectedDestinationId={undefined} selectedFromTerritoryId={undefined} selectedUnitIds={[]} units={[state.units["rep-wad-ras-1"]!]} />);
-    fireEvent.click(screen.getByRole("button", { name: /Wad-Ras Infantry Regiment No. 1/ }));
-    expect(onSelectUnit).toHaveBeenCalledWith("rep-wad-ras-1");
+  it("reports a render error and resets", async () => {
+    const onError = vi.fn();
+    const onReset = vi.fn();
+    let broken = true;
+    function Fragile(): JSX.Element {
+      if (broken) throw new Error("boom");
+      return <p>Recovered</p>;
+    }
+    const quiet = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    render(<ErrorBoundary onError={onError} onReset={onReset}><Fragile /></ErrorBoundary>);
+    expect(onError).toHaveBeenCalledWith("Something went wrong: boom");
+    broken = false;
+    await userEvent.setup().click(screen.getByRole("button", { name: "Return home" }));
+    expect(onReset).toHaveBeenCalled();
+    expect(screen.getByText("Recovered")).toBeVisible();
+    quiet.mockRestore();
   });
 });

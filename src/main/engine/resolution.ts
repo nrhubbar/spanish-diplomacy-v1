@@ -1,15 +1,21 @@
+import { citiesIn } from "./lookup";
 import type {
+  BounceCause,
   BouncedMoveOutcome,
+  CityChange,
+  CityId,
+  ControlChange,
   DisbandedMoveOutcome,
+  FactionId,
   GameState,
   InvalidOrderOutcome,
   MoveOrder,
   NoMoveOutcome,
   PlayerSubmission,
-  ScenarioDefinition,
+  Scenario,
   SuccessfulMoveOutcome,
+  TerritoryControl,
   TerritoryId,
-  TurnOutcome,
   TurnResolutionResult,
   UnitId,
   UnitState
@@ -17,258 +23,280 @@ import type {
 import { validateMoveOrder } from "./validation";
 import { evaluateVictory, victoryProgress } from "./victory";
 
+/**
+ * Resolves one turn under the `m2-movement` ruleset. Rule ids (M1-M10) refer to
+ * `project/specs/scenario-package.md`.
+ */
 export function resolveTurn(
-  scenario: ScenarioDefinition,
+  scenario: Scenario,
   state: GameState,
   submissions: readonly PlayerSubmission[]
 ): TurnResolutionResult {
   const submittedOrders = submissions.flatMap((submission) => submission.orders);
-  const invalidOutcomes = submittedOrders.flatMap((order): InvalidOrderOutcome[] => {
-    const validation = validateMoveOrder(scenario, state, order);
+  const { invalid, valid } = partitionOrders(scenario, state, submittedOrders);
+  const invalidUnitIds = new Set<UnitId>(invalid.map((outcome) => outcome.order.unitId));
+  const movingUnitIds = new Set<UnitId>(valid.map((order) => order.unitId));
 
-    return validation.ok
-      ? []
-      : [{ kind: "invalid-order", order, reason: `Impossible order: ${validation.reason}` }];
-  });
-  const validMoves = submittedOrders.filter((order) => validateMoveOrder(scenario, state, order).ok);
-  const movingUnitIds = new Set<UnitId>(validMoves.map((order) => order.unitId));
-  const incomingByDestination = groupMovesByDestination(validMoves);
-  const invalidUnitIds = new Set<UnitId>(invalidOutcomes.map((outcome) => outcome.order.unitId));
-  const firstPass = validMoves.map((order) =>
-    resolveMoveOrder(order, state, validMoves, movingUnitIds, incomingByDestination)
-  );
-  const successfulMoveDestinations = new Map<TerritoryId, SuccessfulMoveOutcome>();
+  // Units without a valid move hold their territory this turn and can block entry (M4).
+  const holders = Object.values(state.units).filter((unit) => !movingUnitIds.has(unit.id));
+  const movement = valid.map((order) => resolveMove(order, valid, holders));
+  const successful = movement.filter((outcome): outcome is SuccessfulMoveOutcome => outcome.kind === "successful-move");
+  const moveOutcomes = movement.map((outcome) => disbandIfOriginCaptured(outcome, successful));
 
-  for (const outcome of firstPass) {
-    if (outcome.kind === "successful-move") {
-      successfulMoveDestinations.set(outcome.order.to, outcome);
-    }
-  }
-
-  const outcomes = [
-    ...firstPass.map((outcome) => applyDisbandIfOriginWasCaptured(outcome, successfulMoveDestinations)),
-    ...invalidOutcomes,
-    ...buildNoMoveOutcomes(scenario, state, submissions, movingUnitIds, invalidUnitIds)
-  ];
-  const disbandedUnitIds = new Set<UnitId>(
-    outcomes.flatMap((outcome) =>
-      outcome.kind === "disbanded-move" || outcome.kind === "invalid-order" ? [outcome.order.unitId] : []
-    )
-  );
-  const finalUnits = applyUnitOutcomes(state.units, outcomes, disbandedUnitIds);
-  const finalControl = applyControlOutcomes(state.control, outcomes);
-  const cityControl = applyCityControlOutcomes(scenario, state.cityControl, outcomes);
-  const finalState = { cityControl, control: finalControl, turnNumber: state.turnNumber, units: finalUnits };
+  const removedUnitIds = new Set<UnitId>([
+    ...invalidUnitIds,
+    ...moveOutcomes.flatMap((outcome) => (outcome.kind === "disbanded-move" ? [outcome.order.unitId] : []))
+  ]);
+  const units = applyUnitMovement(state.units, successful, removedUnitIds);
+  const { cityControl, control } = deriveControl(scenario, state, units, successful);
+  const finalState: GameState = { cityControl, control, turnNumber: state.turnNumber, units };
   const progress = victoryProgress(scenario, finalState);
-  const victory = evaluateVictory(progress);
-  const controlChanges = outcomes.flatMap((outcome) =>
-    outcome.kind === "successful-move"
-      ? [{ territoryId: outcome.order.to, controller: outcome.order.factionId }]
-      : []
-  );
+  const victory = evaluateVictory(progress, scenario.victory.tieBreak);
 
   return {
-    controlChanges,
-    cityControl,
-    finalControl,
-    finalUnits,
-    outcomes,
+    cityChanges: diffCities(state.cityControl, cityControl),
+    controlChanges: diffControl(scenario, state.control, control),
+    finalState,
+    outcomes: [
+      ...moveOutcomes,
+      ...invalid,
+      ...holdOutcomes(scenario, state, submissions)
+    ],
     progress,
     submittedOrders,
-    summaryLines: outcomes.map((outcome) => formatOutcome(scenario, outcome)),
     ...(victory === undefined ? {} : { victory })
   };
 }
 
-function resolveMoveOrder(
-  order: MoveOrder,
+/** M1, M9: orders validate against the start-of-turn state; every order of a unit ordered twice is invalid. */
+function partitionOrders(
+  scenario: Scenario,
   state: GameState,
-  validMoves: readonly MoveOrder[],
-  movingUnitIds: ReadonlySet<UnitId>,
-  incomingByDestination: ReadonlyMap<TerritoryId, readonly MoveOrder[]>
-): SuccessfulMoveOutcome | BouncedMoveOutcome {
-  const destinationIncoming = incomingByDestination.get(order.to) as readonly MoveOrder[];
-  const hostileStationaryOccupant = Object.values(state.units).find(
-    (unit) =>
-      unit.territoryId === order.to &&
-      unit.factionId !== order.factionId &&
-      !movingUnitIds.has(unit.id)
-  );
-  const hostileIncoming = destinationIncoming.filter(
-    (candidate) => candidate.factionId !== order.factionId
-  );
-  const headOnSwap = validMoves.some(
-    (otherOrder) =>
-      otherOrder.factionId !== order.factionId &&
-      otherOrder.unitId !== order.unitId &&
-      otherOrder.from === order.to &&
-      otherOrder.to === order.from
-  );
+  orders: readonly MoveOrder[]
+): { readonly invalid: readonly InvalidOrderOutcome[]; readonly valid: readonly MoveOrder[] } {
+  const orderCount = new Map<UnitId, number>();
+  for (const order of orders) orderCount.set(order.unitId, (orderCount.get(order.unitId) ?? 0) + 1);
 
-  if (hostileIncoming.length === 0 && hostileStationaryOccupant === undefined && !headOnSwap) {
-    return { kind: "successful-move", order };
+  const invalid: InvalidOrderOutcome[] = [];
+  const valid: MoveOrder[] = [];
+  for (const order of orders) {
+    if ((orderCount.get(order.unitId) ?? 0) > 1) {
+      invalid.push({ kind: "invalid-order", order, reason: "A unit can receive only one order per turn." });
+      continue;
+    }
+    const validation = validateMoveOrder(scenario, state, order);
+    if (validation.ok) {
+      valid.push(order);
+    } else {
+      invalid.push({ kind: "invalid-order", order, reason: validation.reason });
+    }
   }
-
-  return {
-    kind: "bounced-move",
-    order,
-    reason:
-      headOnSwap
-        ? "Units attempted to swap territories."
-        : hostileStationaryOccupant === undefined
-        ? "Multiple units moved to the same territory."
-        : "Destination was occupied."
-  };
+  return { invalid, valid };
 }
 
-function applyDisbandIfOriginWasCaptured(
+/** M3, M4, M5, and the OD-7 reinforcement exception. */
+function resolveMove(
+  order: MoveOrder,
+  validMoves: readonly MoveOrder[],
+  holders: readonly UnitState[]
+): SuccessfulMoveOutcome | BouncedMoveOutcome {
+  const cause = bounceCause(order, validMoves, holders);
+  return cause === undefined
+    ? { kind: "successful-move", order }
+    : { cause, kind: "bounced-move", order };
+}
+
+function bounceCause(
+  order: MoveOrder,
+  validMoves: readonly MoveOrder[],
+  holders: readonly UnitState[]
+): BounceCause | undefined {
+  const opposingIncoming = uniqueFactions(
+    validMoves.filter((other) => other.to === order.to && other.factionId !== order.factionId)
+  );
+  if (opposingIncoming.length > 0) {
+    return { kind: "standoff", opposingFactionIds: opposingIncoming };
+  }
+
+  const headOn = uniqueFactions(
+    validMoves.filter(
+      (other) => other.factionId !== order.factionId && other.from === order.to && other.to === order.from
+    )
+  );
+  if (headOn.length > 0) {
+    return { kind: "head-on", opposingFactionIds: headOn };
+  }
+
+  const holdingHere = holders.filter((unit) => unit.territoryId === order.to);
+  const hostileHolders = uniqueFactions(holdingHere.filter((unit) => unit.factionId !== order.factionId));
+  const reinforcing = holdingHere.some((unit) => unit.factionId === order.factionId);
+  if (hostileHolders.length > 0 && !reinforcing) {
+    return { holdingFactionIds: hostileHolders, kind: "held" };
+  }
+  return undefined;
+}
+
+/** M8: a bounced unit is lost if a unit of another faction entered its origin. */
+function disbandIfOriginCaptured(
   outcome: SuccessfulMoveOutcome | BouncedMoveOutcome,
-  successfulMoveDestinations: ReadonlyMap<TerritoryId, SuccessfulMoveOutcome>
+  successful: readonly SuccessfulMoveOutcome[]
 ): SuccessfulMoveOutcome | BouncedMoveOutcome | DisbandedMoveOutcome {
   if (outcome.kind === "successful-move") {
     return outcome;
   }
-
-  const originCapture = successfulMoveDestinations.get(outcome.order.from);
-
-  if (originCapture === undefined) {
-    return outcome;
-  }
-
-  return {
-    kind: "disbanded-move",
-    order: outcome.order,
-    reason: `${outcome.reason} Origin was captured by ${originCapture.order.factionId}.`
-  };
+  const capture = successful.find(
+    (move) => move.order.to === outcome.order.from && move.order.factionId !== outcome.order.factionId
+  );
+  return capture === undefined
+    ? outcome
+    : {
+        capturedByFactionId: capture.order.factionId,
+        cause: outcome.cause,
+        kind: "disbanded-move",
+        order: outcome.order
+      };
 }
 
-function buildNoMoveOutcomes(
-  scenario: ScenarioDefinition,
-  state: GameState,
-  submissions: readonly PlayerSubmission[],
-  movingUnitIds: ReadonlySet<UnitId>,
-  invalidUnitIds: ReadonlySet<UnitId>
-): readonly NoMoveOutcome[] {
-  return scenario.factions.flatMap((faction) => {
-    const submission = submissions.find((candidate) => candidate.factionId === faction.id);
-    const factionUnits = Object.values(state.units).filter((unit) => unit.factionId === faction.id);
-    const idleUnits = factionUnits.filter(
-      (unit) => !movingUnitIds.has(unit.id) && !invalidUnitIds.has(unit.id)
-    );
+function applyUnitMovement(
+  startUnits: GameState["units"],
+  successful: readonly SuccessfulMoveOutcome[],
+  removedUnitIds: ReadonlySet<UnitId>
+): GameState["units"] {
+  const destinations = new Map<UnitId, TerritoryId>(successful.map((move) => [move.order.unitId, move.order.to]));
+  const units: Record<UnitId, UnitState> = {};
 
-    if (submission === undefined || submission.orders.length === 0) {
-      return idleUnits.length === 0
-        ? [{ kind: "no-move", factionId: faction.id }]
-        : idleUnits.map((unit) => ({ kind: "no-move", factionId: faction.id, unitId: unit.id }));
+  for (const unit of Object.values(startUnits)) {
+    if (removedUnitIds.has(unit.id)) {
+      continue;
     }
+    const destination = destinations.get(unit.id);
+    units[unit.id] = destination === undefined
+      ? unit
+      : { factionId: unit.factionId, id: unit.id, territoryId: destination };
+  }
+  return units;
+}
 
-    return [];
+/**
+ * M6, M7: a territory changes hands only when exactly one faction has units there after
+ * resolution and either the set of factions present changed this turn or that faction
+ * entered it. Holding never changes control, which preserves the historical start.
+ */
+function deriveControl(
+  scenario: Scenario,
+  start: GameState,
+  finalUnits: GameState["units"],
+  successful: readonly SuccessfulMoveOutcome[]
+): Pick<GameState, "cityControl" | "control"> {
+  const control: Record<TerritoryId, TerritoryControl> = { ...start.control };
+  const cityControl: Record<CityId, FactionId> = { ...start.cityControl };
+  const before = presence(start.units);
+  const after = presence(finalUnits);
+
+  for (const territory of scenario.territories) {
+    const present = after.get(territory.id) ?? new Set<FactionId>();
+    const [onlyFaction] = present;
+    if (present.size !== 1 || onlyFaction === undefined) {
+      continue;
+    }
+    const changed = !sameSet(before.get(territory.id) ?? new Set(), present);
+    const entered = successful.some(
+      (move) => move.order.to === territory.id && move.order.factionId === onlyFaction
+    );
+    if (changed || entered) {
+      control[territory.id] = { factionId: onlyFaction, kind: "controlled" };
+      for (const city of citiesIn(scenario, territory.id)) {
+        cityControl[city.id] = onlyFaction;
+      }
+    }
+  }
+  return { cityControl, control };
+}
+
+function holdOutcomes(
+  scenario: Scenario,
+  state: GameState,
+  submissions: readonly PlayerSubmission[]
+): readonly NoMoveOutcome[] {
+  return scenario.factions.flatMap((faction): NoMoveOutcome[] => {
+    const submission = submissions.find((candidate) => candidate.factionId === faction.id);
+    if (submission !== undefined && submission.orders.length > 0) {
+      return [];
+    }
+    const units = Object.values(state.units).filter((unit) => unit.factionId === faction.id);
+    return units.length === 0
+      ? [{ factionId: faction.id, kind: "no-move" }]
+      : units.map((unit) => ({ factionId: faction.id, kind: "no-move", unitId: unit.id }));
   });
 }
 
-function applyUnitOutcomes(
-  startUnits: Record<UnitId, UnitState>,
-  outcomes: readonly TurnOutcome[],
-  disbandedUnitIds: ReadonlySet<UnitId>
-): Record<UnitId, UnitState> {
-  const finalUnits = Object.fromEntries(
-    Object.entries(startUnits).filter(([unitId]) => !disbandedUnitIds.has(unitId))
+function diffControl(
+  scenario: Scenario,
+  before: GameState["control"],
+  after: GameState["control"]
+): readonly ControlChange[] {
+  return scenario.territories.flatMap((territory): ControlChange[] => {
+    const previous = before[territory.id];
+    const next = after[territory.id];
+    return previous === undefined || next === undefined || sameControl(previous, next)
+      ? []
+      : [{ after: next, before: previous, territoryId: territory.id }];
+  });
+}
+
+function diffCities(before: GameState["cityControl"], after: GameState["cityControl"]): readonly CityChange[] {
+  return (Object.entries(after) as [CityId, FactionId][]).flatMap(([cityId, controller]): CityChange[] =>
+    before[cityId] === controller ? [] : [{ after: controller, before: before[cityId], cityId }]
   );
+}
 
-  for (const outcome of outcomes) {
-    if (outcome.kind === "successful-move" && !disbandedUnitIds.has(outcome.order.unitId)) {
-      const unit = finalUnits[outcome.order.unitId];
+function presence(units: GameState["units"]): ReadonlyMap<TerritoryId, ReadonlySet<FactionId>> {
+  const result = new Map<TerritoryId, Set<FactionId>>();
+  for (const unit of Object.values(units)) {
+    const factions = result.get(unit.territoryId) ?? new Set<FactionId>();
+    factions.add(unit.factionId);
+    result.set(unit.territoryId, factions);
+  }
+  return result;
+}
 
-      if (unit === undefined) {
-        continue;
-      }
+function uniqueFactions(items: readonly { readonly factionId: FactionId }[]): readonly FactionId[] {
+  return [...new Set(items.map((item) => item.factionId))];
+}
 
-      finalUnits[outcome.order.unitId] = {
-        ...unit,
-        territoryId: outcome.order.to
-      };
+function sameSet<Value>(left: ReadonlySet<Value>, right: ReadonlySet<Value>): boolean {
+  return left.size === right.size && [...left].every((value) => right.has(value));
+}
+
+function sameControl(left: TerritoryControl, right: TerritoryControl): boolean {
+  if (left.kind === "controlled" && right.kind === "controlled") {
+    return left.factionId === right.factionId;
+  }
+  if (left.kind === "contested" && right.kind === "contested") {
+    return sameSet(new Set(left.factionIds), new Set(right.factionIds));
+  }
+  return false;
+}
+
+export function initialGameState(scenario: Scenario): GameState {
+  const control: Record<TerritoryId, TerritoryControl> = {};
+  for (const territory of scenario.territories) {
+    control[territory.id] = territory.initialControl;
+  }
+  const cityControl: Record<CityId, FactionId> = {};
+  for (const city of scenario.cities) {
+    if (city.initialController !== undefined) {
+      cityControl[city.id] = city.initialController;
     }
   }
-
-  return finalUnits;
-}
-
-function applyControlOutcomes(
-  startControl: GameState["control"],
-  outcomes: readonly TurnOutcome[]
-): GameState["control"] {
-  const finalControl = { ...startControl };
-
-  for (const outcome of outcomes) {
-    if (outcome.kind === "successful-move") {
-      finalControl[outcome.order.to] = { kind: "controlled", factionId: outcome.order.factionId };
-    }
+  const units: Record<UnitId, UnitState> = {};
+  for (const unit of scenario.units) {
+    units[unit.id] = {
+      factionId: unit.factionId,
+      id: unit.id,
+      territoryId: unit.territoryId,
+      ...(unit.cityId === undefined ? {} : { cityId: unit.cityId })
+    };
   }
-
-  return finalControl;
-}
-
-function applyCityControlOutcomes(
-  scenario: ScenarioDefinition,
-  startControl: GameState["cityControl"],
-  outcomes: readonly TurnOutcome[]
-): GameState["cityControl"] {
-  const finalControl = { ...startControl };
-
-  for (const outcome of outcomes) {
-    if (outcome.kind !== "successful-move") {
-      continue;
-    }
-
-    for (const city of scenario.cities.filter((candidate) => candidate.territoryId === outcome.order.to)) {
-      finalControl[city.id] = outcome.order.factionId;
-    }
-  }
-
-  return finalControl;
-}
-
-function groupMovesByDestination(moveOrders: readonly MoveOrder[]): Map<TerritoryId, MoveOrder[]> {
-  const grouped = new Map<TerritoryId, MoveOrder[]>();
-
-  for (const order of moveOrders) {
-    grouped.set(order.to, [...(grouped.get(order.to) ?? []), order]);
-  }
-
-  return grouped;
-}
-
-function formatOutcome(scenario: ScenarioDefinition, outcome: TurnOutcome): string {
-  if (outcome.kind === "no-move") {
-    const factionName = scenario.factions.find((faction) => faction.id === outcome.factionId)?.name ?? outcome.factionId;
-    return outcome.unitId === undefined
-      ? `${factionName} submitted no orders.`
-      : `${unitName(scenario, outcome.unitId)} held in place.`;
-  }
-
-  const unit = unitName(scenario, outcome.order.unitId);
-  const from = territoryName(scenario, outcome.order.from);
-  const to = territoryName(scenario, outcome.order.to);
-
-  if (outcome.kind === "successful-move") {
-    return `${unit} moved from ${from} to ${to}.`;
-  }
-
-  if (outcome.kind === "disbanded-move") {
-    return `${unit} was disbanded while moving from ${from} to ${to}: ${outcome.reason}`;
-  }
-
-  if (outcome.kind === "invalid-order") {
-    return `${unit} was disbanded: ${outcome.reason}`;
-  }
-
-  return `${unit} bounced moving from ${from} to ${to}: ${outcome.reason}`;
-}
-
-function unitName(scenario: ScenarioDefinition, unitId: UnitId): string {
-  return scenario.units[unitId]?.displayName ?? unitId;
-}
-
-function territoryName(scenario: ScenarioDefinition, territoryId: TerritoryId): string {
-  return scenario.territories.find((territory) => territory.id === territoryId)?.name ?? territoryId;
+  return { cityControl, control, turnNumber: 1, units };
 }

@@ -1,0 +1,38 @@
+import type { FactionId, MoveOrder, Scenario } from "../engine/types";
+import type { Session } from "./session";
+
+export interface SubmissionStatus {
+  readonly abbreviation: string;
+  readonly factionId: FactionId;
+  readonly name: string;
+  readonly ready: boolean;
+}
+
+/** Ready flags only; never the content of another faction's orders (M2 section 7.4). */
+export function selectSubmissionStatus(scenario: Scenario, session: Session): readonly SubmissionStatus[] {
+  if (session.phase === "idle" || session.phase === "setup") return [];
+  return scenario.factions.map((faction) => ({
+    abbreviation: faction.abbreviation,
+    factionId: faction.id,
+    name: faction.name,
+    ready: session.phase !== "planning" && session.phase !== "handoff"
+      ? true
+      : session.game.locked[faction.id] !== undefined
+  }));
+}
+
+export interface RevealedOrders {
+  readonly factionId: FactionId;
+  readonly orders: readonly MoveOrder[];
+}
+
+/** Orders become visible only after resolution (B13). */
+export function selectRevealedOrders(session: Session): readonly RevealedOrders[] {
+  if (session.phase !== "resolution" && session.phase !== "game-over") return [];
+  const byFaction = new Map<FactionId, MoveOrder[]>();
+  for (const submission of Object.values(session.game.locked)) byFaction.set(submission.factionId, []);
+  for (const order of session.result.submittedOrders) {
+    byFaction.set(order.factionId, [...(byFaction.get(order.factionId) ?? []), order]);
+  }
+  return [...byFaction].map(([factionId, orders]) => ({ factionId, orders }));
+}

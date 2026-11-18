@@ -1,0 +1,33 @@
+{
+  "$schema": "../../../../main/scenarios/schema/map.schema.json",
+  "specVersion": 1,
+  "id": "tiny-front-map",
+  "viewBox": { "x": 0, "y": 0, "width": 200, "height": 200 },
+  "focus": { "x": 0, "y": 0, "width": 200, "height": 200 },
+  "background": "#6f8fa6",
+  "geometry": { "svg": "src/test/fixtures/scenarios/tiny-front/geometry.svg", "stripSelectors": ["metadata"] },
+  "regions": {
+    "tf-westfold": { "territoryId": "westfold" },
+    "tf-highlands": { "territoryId": "highlands" },
+    "tf-harbor": { "territoryId": "harbor" },
+    "tf-lowlands": { "territoryId": "lowlands" }
+  },
+  "territories": {
+    "westfold": { "unitAnchor": { "x": 45, "y": 120 }, "label": { "x": 45, "y": 100, "tier": "overview" } },
+    "highlands": { "unitAnchor": { "x": 75, "y": 45 }, "label": { "x": 75, "y": 25, "tier": "overview" } },
+    "harbor": { "unitAnchor": { "x": 140, "y": 75 }, "label": { "x": 140, "y": 55, "tier": "overview" } },
+    "lowlands": { "unitAnchor": { "x": 110, "y": 150 }, "label": { "x": 110, "y": 130, "tier": "overview" } },
+    "isle": {
+      "unitAnchor": { "x": 180, "y": 30 },
+      "label": { "x": 180, "y": 14, "tier": "overview" },
+      "shape": { "kind": "circle", "x": 180, "y": 30, "r": 12 }
+    }
+  },
+  "cities": {
+    "west-town": { "x": 35, "y": 135, "tier": "overview" },
+    "port-town": { "x": 150, "y": 90, "tier": "overview" }
+  },
+  "contextLabels": [{ "text": "Open Sea", "x": 175, "y": 185 }],
+  "unitSymbols": { "foot": "src/test/fixtures/scenarios/tiny-front/foot.svg" },
+  "attribution": [{ "text": "Fixture geometry drawn for tests." }]
+}

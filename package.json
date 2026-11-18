@@ -6,16 +6,26 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "tsc --noEmit && vite build && cp build/dist/assets/index.html build/dist/index.html",
-    "map:register": "node scripts/register-geography.mjs",
-    "map:terrain": "node scripts/calibrate-map.mjs",
-    "maps:build": "npm run map:terrain && npm run map:register",
+    "maps:fetch": "node scripts/fetch-map-sources.ts",
+    "maps:build": "node scripts/build-map.ts && node scripts/asset-checksums.mjs --check",
     "preview": "vite preview --host 127.0.0.1",
     "personal-prod": "npm run build && python3 -m http.server 8080 --directory build/dist",
     "test": "vitest run --coverage",
     "test:unit": "vitest run --coverage",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test --grep-invert @capture",
+    "e2e:capture": "playwright test --grep @capture --project=chromium --project=mobile-chromium",
+    "lint": "eslint src e2e scripts *.ts *.js",
+    "typecheck": "tsc --noEmit",
+    "spec:build": "node scripts/build-schemas.ts",
+    "spec:check": "vitest run src/test/spec.test.ts",
+    "verify": "npm run lint && npm run typecheck && npm run test:unit && npm run build && npm run test:e2e",
+    "e2e:baselines": "playwright test e2e/visual.spec.ts --project=chromium --project=mobile-chromium --update-snapshots=all",
+    "maps:checksums": "node scripts/asset-checksums.mjs",
+    "test:prod-smoke": "playwright test e2e/production.spec.ts --project=chromium"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.14.0",
+    "@eslint/js": "10.0.1",
     "@playwright/test": "^1.56.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
@@ -26,9 +36,14 @@
     "@types/three": "^0.187.0",
     "@vitejs/plugin-react": "^6.0.2",
     "@vitest/coverage-v8": "^4.0.14",
+    "eslint": "10.14.0",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "globals": "17.14.0",
     "jsdom": "^27.3.0",
     "sass": "^1.94.2",
+    "sharp": "0.35.5",
     "typescript": "6.0.3",
+    "typescript-eslint": "8.72.1",
     "vite": "^8.0.16",
     "vitest": "^4.0.14"
   },
@@ -38,6 +53,7 @@
     "react-dom": "^19.2.7",
     "react-redux": "^9.3.0",
     "react-router": "^7.18.5",
-    "three": "^0.187.0"
+    "three": "^0.187.0",
+    "zod": "4.6.7"
   }
 }

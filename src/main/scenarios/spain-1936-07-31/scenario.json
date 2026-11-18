@@ -1,0 +1,1167 @@
+{
+  "$schema": "../schema/scenario.schema.json",
+  "specVersion": 1,
+  "id": "spain-1936-07-31",
+  "name": "Spain, July 1936",
+  "snapshotLabel": "31 July 1936",
+  "ruleset": "m2-movement",
+  "map": "./map.json",
+  "victory": {
+    "territoryShare": 0.51,
+    "cityShare": 0.75,
+    "tieBreak": [
+      "cities",
+      "territories"
+    ]
+  },
+  "unitTypes": [
+    {
+      "id": "infantry",
+      "name": "Infantry"
+    }
+  ],
+  "factions": [
+    {
+      "id": "republic",
+      "name": "Republican Government",
+      "abbreviation": "REP",
+      "color": "#b1493f",
+      "motivation": "Defend Madrid, Barcelona, Valencia, and the loyal northern cities.",
+      "defaultActor": "local-human",
+      "objectiveTerritoryIds": [
+        "madrid",
+        "catalunya",
+        "valencia",
+        "pais-vasco"
+      ]
+    },
+    {
+      "id": "north",
+      "name": "Northern Insurgent Command",
+      "abbreviation": "NIC",
+      "color": "#b39232",
+      "motivation": "Drive toward Madrid and connect the northern insurgent zone.",
+      "defaultActor": "computer",
+      "objectiveTerritoryIds": [
+        "madrid",
+        "asturias",
+        "pais-vasco",
+        "aragon"
+      ]
+    },
+    {
+      "id": "south",
+      "name": "Southern Insurgent Command",
+      "abbreviation": "SIC",
+      "color": "#665089",
+      "motivation": "Expand from Seville and the African bridgeheads toward Madrid.",
+      "defaultActor": "computer",
+      "objectiveTerritoryIds": [
+        "extremadura",
+        "madrid",
+        "castilla-la-mancha",
+        "andalucia"
+      ]
+    }
+  ],
+  "territories": [
+    {
+      "id": "galicia",
+      "name": "Galicia",
+      "countsForVictory": true,
+      "initialControl": {
+        "kind": "controlled",
+        "factionId": "north"
+      }
+    },
+    {
+      "id": "asturias",
+      "name": "Asturias",
+      "countsForVictory": true,
+      "initialControl": {
+        "kind": "contested",
+        "factionIds": [
+          "republic",
+          "north"
+        ]
+      }
+    },
+    {
+      "id": "cantabria",
+      "name": "Cantabria",
+      "countsForVictory": true,
+      "initialControl": {
+        "kind": "controlled",
+        "factionId": "republic"
+      }
+    },
+    {
+      "id": "pais-vasco",
+      "name": "Pais Vasco",
+      "countsForVictory": true,
+      "initialControl": {
+        "kind": "controlled",
+        "factionId": "republic"
+      }
+    },
+    {
+      "id": "navarra",
+      "name": "Navarra",
+      "countsForVictory": true,
+      "initialControl": {
+        "kind": "controlled",
+        "factionId": "north"
+      }
+    },
+    {
+      "id": "la-rioja",
+      "name": "La Rioja",
+      "countsForVictory": true,
+      "initialControl": {
+        "kind": "controlled",
+        "factionId": "north"
+      }
+    },
+    {
+      "id": "aragon",
+      "name": "Aragon",
+      "countsForVictory": true,
+      "initialControl": {
+        "kind": "contested",
+        "factionIds": [
+          "north",
+          "republic"
+        ]
+      }
+    },
+    {
+      "id": "madrid",
+      "name": "Madrid",
+      "countsForVictory": true,
+      "initialControl": {
+        "kind": "controlled",
+        "factionId": "republic"
+      }
+    },
+    {
+      "id": "castilla-y-leon",
+      "name": "Castilla y Leon",
+      "countsForVictory": true,
+      "initialControl": {
+        "kind": "controlled",
+        "factionId": "north"
+      }
+    },
+    {
+      "id": "castilla-la-mancha",
+      "name": "Castilla-La Mancha",
+      "countsForVictory": true,
+      "initialControl": {
+        "kind": "controlled",
+        "factionId": "republic"
+      }
+    },
+    {
+      "id": "extremadura",
+      "name": "Extremadura",
+      "countsForVictory": true,
+      "initialControl": {
+        "kind": "contested",
+        "factionIds": [
+          "republic",
+          "south"
+        ]
+      }
+    },
+    {
+      "id": "catalunya",
+      "name": "Catalunya",
+      "countsForVictory": true,
+      "initialControl": {
+        "kind": "controlled",
+        "factionId": "republic"
+      }
+    },
+    {
+      "id": "valencia",
+      "name": "Valencia",
+      "countsForVictory": true,
+      "initialControl": {
+        "kind": "controlled",
+        "factionId": "republic"
+      }
+    },
+    {
+      "id": "islas-baleares",
+      "name": "Islas Baleares",
+      "countsForVictory": true,
+      "initialControl": {
+        "kind": "contested",
+        "factionIds": [
+          "republic",
+          "south"
+        ]
+      }
+    },
+    {
+      "id": "andalucia",
+      "name": "Andalucia",
+      "countsForVictory": true,
+      "initialControl": {
+        "kind": "contested",
+        "factionIds": [
+          "republic",
+          "south"
+        ]
+      }
+    },
+    {
+      "id": "murcia",
+      "name": "Murcia",
+      "countsForVictory": true,
+      "initialControl": {
+        "kind": "controlled",
+        "factionId": "republic"
+      }
+    },
+    {
+      "id": "ceuta",
+      "name": "Ceuta",
+      "countsForVictory": true,
+      "initialControl": {
+        "kind": "controlled",
+        "factionId": "south"
+      }
+    },
+    {
+      "id": "melilla",
+      "name": "Melilla",
+      "countsForVictory": true,
+      "initialControl": {
+        "kind": "controlled",
+        "factionId": "south"
+      }
+    }
+  ],
+  "connections": [
+    {
+      "between": [
+        "galicia",
+        "asturias"
+      ],
+      "kind": "land"
+    },
+    {
+      "between": [
+        "galicia",
+        "castilla-y-leon"
+      ],
+      "kind": "land"
+    },
+    {
+      "between": [
+        "asturias",
+        "cantabria"
+      ],
+      "kind": "land"
+    },
+    {
+      "between": [
+        "asturias",
+        "castilla-y-leon"
+      ],
+      "kind": "land"
+    },
+    {
+      "between": [
+        "cantabria",
+        "pais-vasco"
+      ],
+      "kind": "land"
+    },
+    {
+      "between": [
+        "cantabria",
+        "castilla-y-leon"
+      ],
+      "kind": "land"
+    },
+    {
+      "between": [
+        "pais-vasco",
+        "navarra"
+      ],
+      "kind": "land"
+    },
+    {
+      "between": [
+        "pais-vasco",
+        "la-rioja"
+      ],
+      "kind": "land"
+    },
+    {
+      "between": [
+        "pais-vasco",
+        "castilla-y-leon"
+      ],
+      "kind": "land"
+    },
+    {
+      "between": [
+        "navarra",
+        "la-rioja"
+      ],
+      "kind": "land"
+    },
+    {
+      "between": [
+        "navarra",
+        "aragon"
+      ],
+      "kind": "land"
+    },
+    {
+      "between": [
+        "la-rioja",
+        "aragon"
+      ],
+      "kind": "land"
+    },
+    {
+      "between": [
+        "la-rioja",
+        "castilla-y-leon"
+      ],
+      "kind": "land"
+    },
+    {
+      "between": [
+        "aragon",
+        "castilla-y-leon"
+      ],
+      "kind": "land"
+    },
+    {
+      "between": [
+        "aragon",
+        "castilla-la-mancha"
+      ],
+      "kind": "land"
+    },
+    {
+      "between": [
+        "aragon",
+        "valencia"
+      ],
+      "kind": "land"
+    },
+    {
+      "between": [
+        "aragon",
+        "catalunya"
+      ],
+      "kind": "land"
+    },
+    {
+      "between": [
+        "madrid",
+        "castilla-y-leon"
+      ],
+      "kind": "land"
+    },
+    {
+      "between": [
+        "madrid",
+        "castilla-la-mancha"
+      ],
+      "kind": "land"
+    },
+    {
+      "between": [
+        "castilla-y-leon",
+        "castilla-la-mancha"
+      ],
+      "kind": "land"
+    },
+    {
+      "between": [
+        "castilla-y-leon",
+        "extremadura"
+      ],
+      "kind": "land"
+    },
+    {
+      "between": [
+        "castilla-la-mancha",
+        "valencia"
+      ],
+      "kind": "land"
+    },
+    {
+      "between": [
+        "castilla-la-mancha",
+        "murcia"
+      ],
+      "kind": "land"
+    },
+    {
+      "between": [
+        "castilla-la-mancha",
+        "andalucia"
+      ],
+      "kind": "land"
+    },
+    {
+      "between": [
+        "castilla-la-mancha",
+        "extremadura"
+      ],
+      "kind": "land"
+    },
+    {
+      "between": [
+        "extremadura",
+        "andalucia"
+      ],
+      "kind": "land"
+    },
+    {
+      "between": [
+        "catalunya",
+        "valencia"
+      ],
+      "kind": "land"
+    },
+    {
+      "between": [
+        "valencia",
+        "murcia"
+      ],
+      "kind": "land"
+    },
+    {
+      "between": [
+        "andalucia",
+        "murcia"
+      ],
+      "kind": "land"
+    },
+    {
+      "between": [
+        "andalucia",
+        "ceuta"
+      ],
+      "kind": "sea",
+      "label": "Strait of Gibraltar"
+    },
+    {
+      "between": [
+        "andalucia",
+        "melilla"
+      ],
+      "kind": "sea",
+      "label": "Alboran Sea"
+    },
+    {
+      "between": [
+        "catalunya",
+        "islas-baleares"
+      ],
+      "kind": "sea",
+      "label": "Balearic Sea"
+    },
+    {
+      "between": [
+        "valencia",
+        "islas-baleares"
+      ],
+      "kind": "sea",
+      "label": "Balearic Sea"
+    }
+  ],
+  "cities": [
+    {
+      "id": "a-coruna",
+      "name": "A Coruna",
+      "territoryId": "galicia",
+      "countsForVictory": true,
+      "initialController": "north"
+    },
+    {
+      "id": "oviedo",
+      "name": "Oviedo",
+      "territoryId": "asturias",
+      "countsForVictory": true,
+      "initialController": "north"
+    },
+    {
+      "id": "gijon",
+      "name": "Gijon",
+      "territoryId": "asturias",
+      "countsForVictory": true,
+      "initialController": "republic"
+    },
+    {
+      "id": "santander",
+      "name": "Santander",
+      "territoryId": "cantabria",
+      "countsForVictory": true,
+      "initialController": "republic"
+    },
+    {
+      "id": "bilbao",
+      "name": "Bilbao",
+      "territoryId": "pais-vasco",
+      "countsForVictory": true,
+      "initialController": "republic"
+    },
+    {
+      "id": "san-sebastian",
+      "name": "San Sebastian",
+      "territoryId": "pais-vasco",
+      "countsForVictory": true,
+      "initialController": "republic"
+    },
+    {
+      "id": "pamplona",
+      "name": "Pamplona",
+      "territoryId": "navarra",
+      "countsForVictory": true,
+      "initialController": "north"
+    },
+    {
+      "id": "burgos",
+      "name": "Burgos",
+      "territoryId": "castilla-y-leon",
+      "countsForVictory": true,
+      "initialController": "north"
+    },
+    {
+      "id": "valladolid",
+      "name": "Valladolid",
+      "territoryId": "castilla-y-leon",
+      "countsForVictory": true,
+      "initialController": "north"
+    },
+    {
+      "id": "salamanca",
+      "name": "Salamanca",
+      "territoryId": "castilla-y-leon",
+      "countsForVictory": true,
+      "initialController": "north"
+    },
+    {
+      "id": "zaragoza",
+      "name": "Zaragoza",
+      "territoryId": "aragon",
+      "countsForVictory": true,
+      "initialController": "north"
+    },
+    {
+      "id": "teruel",
+      "name": "Teruel",
+      "territoryId": "aragon",
+      "countsForVictory": true,
+      "initialController": "north"
+    },
+    {
+      "id": "barcelona",
+      "name": "Barcelona",
+      "territoryId": "catalunya",
+      "countsForVictory": true,
+      "initialController": "republic"
+    },
+    {
+      "id": "madrid",
+      "name": "Madrid",
+      "territoryId": "madrid",
+      "countsForVictory": true,
+      "initialController": "republic"
+    },
+    {
+      "id": "toledo",
+      "name": "Toledo",
+      "territoryId": "castilla-la-mancha",
+      "countsForVictory": true,
+      "initialController": "republic"
+    },
+    {
+      "id": "badajoz",
+      "name": "Badajoz",
+      "territoryId": "extremadura",
+      "countsForVictory": true,
+      "initialController": "republic"
+    },
+    {
+      "id": "valencia",
+      "name": "Valencia",
+      "territoryId": "valencia",
+      "countsForVictory": true,
+      "initialController": "republic"
+    },
+    {
+      "id": "albacete",
+      "name": "Albacete",
+      "territoryId": "castilla-la-mancha",
+      "countsForVictory": true,
+      "initialController": "republic"
+    },
+    {
+      "id": "alicante",
+      "name": "Alicante",
+      "territoryId": "valencia",
+      "countsForVictory": true,
+      "initialController": "republic"
+    },
+    {
+      "id": "cartagena",
+      "name": "Cartagena",
+      "territoryId": "murcia",
+      "countsForVictory": true,
+      "initialController": "republic"
+    },
+    {
+      "id": "seville",
+      "name": "Seville",
+      "territoryId": "andalucia",
+      "countsForVictory": true,
+      "initialController": "south"
+    },
+    {
+      "id": "cordoba",
+      "name": "Cordoba",
+      "territoryId": "andalucia",
+      "countsForVictory": true,
+      "initialController": "south"
+    },
+    {
+      "id": "granada",
+      "name": "Granada",
+      "territoryId": "andalucia",
+      "countsForVictory": true,
+      "initialController": "south"
+    },
+    {
+      "id": "malaga",
+      "name": "Malaga",
+      "territoryId": "andalucia",
+      "countsForVictory": true,
+      "initialController": "republic"
+    },
+    {
+      "id": "cadiz",
+      "name": "Cadiz",
+      "territoryId": "andalucia",
+      "countsForVictory": true,
+      "initialController": "south"
+    }
+  ],
+  "units": [
+    {
+      "id": "rep-wad-ras-1",
+      "name": "Wad-Ras Infantry Regiment No. 1",
+      "factionId": "republic",
+      "type": "infantry",
+      "formationKind": "regiment",
+      "approximateStrength": 740,
+      "territoryId": "madrid",
+      "cityId": "madrid",
+      "sources": [
+        {
+          "sourceId": "nafziger-1936"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "Representative formation mapped from the July 1936 garrison order of battle."
+    },
+    {
+      "id": "rep-covadonga-4",
+      "name": "Covadonga Infantry Regiment No. 4",
+      "factionId": "republic",
+      "type": "infantry",
+      "formationKind": "regiment",
+      "approximateStrength": 740,
+      "territoryId": "madrid",
+      "cityId": "madrid",
+      "sources": [
+        {
+          "sourceId": "nafziger-1936"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "Representative formation mapped from the July 1936 garrison order of battle."
+    },
+    {
+      "id": "rep-otumba-9",
+      "name": "Otumba Infantry Regiment No. 9",
+      "factionId": "republic",
+      "type": "infantry",
+      "formationKind": "regiment",
+      "approximateStrength": 760,
+      "territoryId": "valencia",
+      "cityId": "valencia",
+      "sources": [
+        {
+          "sourceId": "nafziger-1936"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "Representative formation mapped from the July 1936 garrison order of battle."
+    },
+    {
+      "id": "rep-guadalajara-10",
+      "name": "Guadalajara Infantry Regiment No. 10",
+      "factionId": "republic",
+      "type": "infantry",
+      "formationKind": "regiment",
+      "approximateStrength": 760,
+      "territoryId": "valencia",
+      "cityId": "valencia",
+      "sources": [
+        {
+          "sourceId": "nafziger-1936"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "Representative formation mapped from the July 1936 garrison order of battle."
+    },
+    {
+      "id": "rep-badajoz-13",
+      "name": "Badajoz Infantry Regiment No. 13",
+      "factionId": "republic",
+      "type": "infantry",
+      "formationKind": "regiment",
+      "approximateStrength": 720,
+      "territoryId": "catalunya",
+      "cityId": "barcelona",
+      "sources": [
+        {
+          "sourceId": "nafziger-1936"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "Representative formation mapped from the July 1936 garrison order of battle."
+    },
+    {
+      "id": "rep-alcantara-14",
+      "name": "Alcantara Infantry Regiment No. 14",
+      "factionId": "republic",
+      "type": "infantry",
+      "formationKind": "regiment",
+      "approximateStrength": 720,
+      "territoryId": "catalunya",
+      "cityId": "barcelona",
+      "sources": [
+        {
+          "sourceId": "nafziger-1936"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "Representative formation mapped from the July 1936 garrison order of battle."
+    },
+    {
+      "id": "rep-asturian-militia",
+      "name": "Asturian Workers Militia",
+      "factionId": "republic",
+      "type": "infantry",
+      "formationKind": "column",
+      "approximateStrength": 700,
+      "territoryId": "asturias",
+      "cityId": "gijon",
+      "sources": [
+        {
+          "sourceId": "nafziger-1936"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "Representative formation mapped from the July 1936 garrison order of battle."
+    },
+    {
+      "id": "rep-sevilla-34",
+      "name": "Sevilla Infantry Regiment No. 34",
+      "factionId": "republic",
+      "type": "infantry",
+      "formationKind": "regiment",
+      "approximateStrength": 730,
+      "territoryId": "murcia",
+      "cityId": "cartagena",
+      "sources": [
+        {
+          "sourceId": "nafziger-1936"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "Representative formation mapped from the July 1936 garrison order of battle."
+    },
+    {
+      "id": "rep-vitoria-8",
+      "name": "Vitoria Infantry Regiment No. 8",
+      "factionId": "republic",
+      "type": "infantry",
+      "formationKind": "regiment",
+      "approximateStrength": 700,
+      "territoryId": "andalucia",
+      "cityId": "malaga",
+      "sources": [
+        {
+          "sourceId": "nafziger-1936"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "Representative formation mapped from the July 1936 garrison order of battle."
+    },
+    {
+      "id": "rep-basque-column",
+      "name": "Basque Loyalist Column",
+      "factionId": "republic",
+      "type": "infantry",
+      "formationKind": "column",
+      "approximateStrength": 700,
+      "territoryId": "pais-vasco",
+      "cityId": "bilbao",
+      "sources": [
+        {
+          "sourceId": "warwick-timeline"
+        },
+        {
+          "sourceId": "nafziger-1936"
+        }
+      ],
+      "historicalNote": "Game-scale grouping of the garrison and militia forces that kept Bizkaia and Gipuzkoa loyal in July 1936. Individual formation identities require historical review."
+    },
+    {
+      "id": "rep-santander-column",
+      "name": "Santander Loyalist Column",
+      "factionId": "republic",
+      "type": "infantry",
+      "formationKind": "column",
+      "approximateStrength": 650,
+      "territoryId": "cantabria",
+      "cityId": "santander",
+      "sources": [
+        {
+          "sourceId": "warwick-timeline"
+        },
+        {
+          "sourceId": "nafziger-1936"
+        }
+      ],
+      "historicalNote": "Game-scale grouping of the loyal Santander garrison and militia. Individual formation identities require historical review."
+    },
+    {
+      "id": "north-zamora-29",
+      "name": "Zamora Infantry Regiment No. 29",
+      "factionId": "north",
+      "type": "infantry",
+      "formationKind": "regiment",
+      "approximateStrength": 720,
+      "territoryId": "galicia",
+      "cityId": "a-coruna",
+      "sources": [
+        {
+          "sourceId": "nafziger-1936"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "Representative formation mapped from the July 1936 garrison order of battle."
+    },
+    {
+      "id": "north-san-marcial-22",
+      "name": "San Marcial Infantry Regiment No. 22",
+      "factionId": "north",
+      "type": "infantry",
+      "formationKind": "regiment",
+      "approximateStrength": 720,
+      "territoryId": "castilla-y-leon",
+      "cityId": "burgos",
+      "sources": [
+        {
+          "sourceId": "nafziger-1936"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "Representative formation mapped from the July 1936 garrison order of battle."
+    },
+    {
+      "id": "north-san-quintin-25",
+      "name": "San Quintin Infantry Regiment No. 25",
+      "factionId": "north",
+      "type": "infantry",
+      "formationKind": "regiment",
+      "approximateStrength": 720,
+      "territoryId": "castilla-y-leon",
+      "cityId": "valladolid",
+      "sources": [
+        {
+          "sourceId": "nafziger-1936"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "Representative formation mapped from the July 1936 garrison order of battle."
+    },
+    {
+      "id": "north-america-23",
+      "name": "America Infantry Regiment No. 23",
+      "factionId": "north",
+      "type": "infantry",
+      "formationKind": "regiment",
+      "approximateStrength": 720,
+      "territoryId": "navarra",
+      "cityId": "pamplona",
+      "sources": [
+        {
+          "sourceId": "nafziger-1936"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "Representative formation mapped from the July 1936 garrison order of battle."
+    },
+    {
+      "id": "north-aragon-17",
+      "name": "Aragon Infantry Regiment No. 17",
+      "factionId": "north",
+      "type": "infantry",
+      "formationKind": "regiment",
+      "approximateStrength": 700,
+      "territoryId": "aragon",
+      "cityId": "zaragoza",
+      "sources": [
+        {
+          "sourceId": "nafziger-1936"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "Representative formation mapped from the July 1936 garrison order of battle."
+    },
+    {
+      "id": "north-gerona-18",
+      "name": "Gerona Infantry Regiment No. 18",
+      "factionId": "north",
+      "type": "infantry",
+      "formationKind": "regiment",
+      "approximateStrength": 700,
+      "territoryId": "aragon",
+      "cityId": "zaragoza",
+      "sources": [
+        {
+          "sourceId": "nafziger-1936"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "Representative formation mapped from the July 1936 garrison order of battle."
+    },
+    {
+      "id": "north-la-victoria-28",
+      "name": "La Victoria Infantry Regiment No. 28",
+      "factionId": "north",
+      "type": "infantry",
+      "formationKind": "regiment",
+      "approximateStrength": 700,
+      "territoryId": "castilla-y-leon",
+      "cityId": "salamanca",
+      "sources": [
+        {
+          "sourceId": "nafziger-1936"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "Representative formation mapped from the July 1936 garrison order of battle."
+    },
+    {
+      "id": "north-milan-32",
+      "name": "Milan Infantry Regiment No. 32",
+      "factionId": "north",
+      "type": "infantry",
+      "formationKind": "regiment",
+      "approximateStrength": 700,
+      "territoryId": "asturias",
+      "cityId": "oviedo",
+      "sources": [
+        {
+          "sourceId": "nafziger-1936"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "Representative formation mapped from the July 1936 garrison order of battle."
+    },
+    {
+      "id": "north-simancas-40",
+      "name": "Simancas Barracks Detachment",
+      "factionId": "north",
+      "type": "infantry",
+      "formationKind": "battalion",
+      "approximateStrength": 650,
+      "territoryId": "asturias",
+      "cityId": "gijon",
+      "sources": [
+        {
+          "sourceId": "nafziger-1936"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "Representative formation mapped from the July 1936 garrison order of battle."
+    },
+    {
+      "id": "south-granada-6",
+      "name": "Granada Infantry Regiment No. 6",
+      "factionId": "south",
+      "type": "infantry",
+      "formationKind": "regiment",
+      "approximateStrength": 700,
+      "territoryId": "andalucia",
+      "cityId": "seville",
+      "sources": [
+        {
+          "sourceId": "nafziger-1936"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "Representative formation mapped from the July 1936 garrison order of battle."
+    },
+    {
+      "id": "south-lepanto-5",
+      "name": "Lepanto Infantry Regiment No. 5",
+      "factionId": "south",
+      "type": "infantry",
+      "formationKind": "regiment",
+      "approximateStrength": 700,
+      "territoryId": "andalucia",
+      "cityId": "granada",
+      "sources": [
+        {
+          "sourceId": "nafziger-1936"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "Representative formation mapped from the July 1936 garrison order of battle."
+    },
+    {
+      "id": "south-cadiz-33",
+      "name": "Cadiz Infantry Regiment No. 33",
+      "factionId": "south",
+      "type": "infantry",
+      "formationKind": "regiment",
+      "approximateStrength": 700,
+      "territoryId": "andalucia",
+      "cityId": "cadiz",
+      "sources": [
+        {
+          "sourceId": "nafziger-1936"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "Representative formation mapped from the July 1936 garrison order of battle."
+    },
+    {
+      "id": "south-legion",
+      "name": "Spanish Legion Detachment",
+      "factionId": "south",
+      "type": "infantry",
+      "formationKind": "battalion",
+      "approximateStrength": 850,
+      "territoryId": "ceuta",
+      "sources": [
+        {
+          "sourceId": "nafziger-1936"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "Representative formation mapped from the July 1936 garrison order of battle."
+    },
+    {
+      "id": "south-regulares",
+      "name": "Regulares Detachment",
+      "factionId": "south",
+      "type": "infantry",
+      "formationKind": "battalion",
+      "approximateStrength": 850,
+      "territoryId": "melilla",
+      "sources": [
+        {
+          "sourceId": "nafziger-1936"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "Representative formation mapped from the July 1936 garrison order of battle."
+    }
+  ],
+  "sources": [
+    {
+      "id": "warwick-timeline",
+      "title": "University of Warwick Modern Records Centre, Illustrated timeline of the Spanish Civil War",
+      "url": "https://warwick.ac.uk/services/library/mrc/collections/digital/scw/simpletimeline2/"
+    },
+    {
+      "id": "spanish-memory",
+      "title": "Spain Ministry of Territorial Policy and Democratic Memory, Por vuestra libertad y la nuestra",
+      "url": "https://mptmd.gob.es/content/dam/mpt/memoria-democratica/publicaciones-memoria/catalogos_y_monografias/Por%20vuestra%20libertad%20y%20nuestra%20%28catalogo%29_WEB.pdf"
+    },
+    {
+      "id": "country-study-map",
+      "title": "U.S. Marine Corps, Spain: A Country Study, Figure 4",
+      "url": "https://www.marines.mil/portals/1/Publications/Spain%20Study_1.pdf?ver=2012-10-11-163301-923"
+    },
+    {
+      "id": "ubc-july-map",
+      "title": "University of British Columbia Press, Spain, July 1936",
+      "url": "https://www.ubcpress.ca/asset/9430/1/9780774814171.pdf"
+    },
+    {
+      "id": "nafziger-1936",
+      "title": "Nafziger Collection, Spanish Army in Quarters: Strengths and Assignments, July 1936",
+      "url": "https://cgsc.contentdm.oclc.org/digital/api/collection/p15040coll6/id/9540/download"
+    },
+    {
+      "id": "spanish-defence-human-factor",
+      "title": "Spanish Ministry of Defence, El factor humano",
+      "url": "https://publicaciones.defensa.gob.es/media/downloadable/files/links/e/l/el_factor_humano_adalid_75_.pdf"
+    }
+  ]
+}

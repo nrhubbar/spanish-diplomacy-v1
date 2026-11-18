@@ -1,29 +1,32 @@
 import { combineReducers, configureStore } from "@reduxjs/toolkit";
-import { gameReducer } from "./gameSlice";
+import type { ScenarioRegistry } from "../scenarios/registry";
+import { createGameReducer } from "./gameSlice";
+import { mapAssetsSlice } from "./mapAssetsSlice";
 import { notificationMiddleware } from "./notificationMiddleware";
 import { notificationReducer } from "./notificationSlice";
 
-export const rootReducer = combineReducers({
-  game: gameReducer,
-  notifications: notificationReducer
-});
+export function createRootReducer(registry: ScenarioRegistry) {
+  return combineReducers({
+    game: createGameReducer({ registry }),
+    mapAssets: mapAssetsSlice.reducer,
+    notifications: notificationReducer
+  });
+}
 
-export type RootState = ReturnType<typeof rootReducer>;
+export type RootState = ReturnType<ReturnType<typeof createRootReducer>>;
 
-export function createAppStore(preloadedState?: Partial<RootState>) {
-  if (preloadedState === undefined) {
-    return configureStore({
-      reducer: rootReducer,
-      middleware: (getDefaultMiddleware) =>
-        getDefaultMiddleware().prepend(notificationMiddleware.middleware)
-    });
-  }
+export interface AppStoreOptions {
+  readonly preloadedState?: Partial<RootState>;
+  readonly registry: ScenarioRegistry;
+}
 
+/** Store factory; the scenario registry is injected so tests and fixtures can swap packages. */
+export function createAppStore({ preloadedState, registry }: AppStoreOptions) {
   return configureStore({
-    reducer: rootReducer,
+    reducer: createRootReducer(registry),
     middleware: (getDefaultMiddleware) =>
-      getDefaultMiddleware().prepend(notificationMiddleware.middleware),
-    preloadedState
+      getDefaultMiddleware({ thunk: { extraArgument: { registry } } }).prepend(notificationMiddleware.middleware),
+    ...(preloadedState === undefined ? {} : { preloadedState })
   });
 }
 

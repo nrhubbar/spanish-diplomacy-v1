@@ -27,6 +27,8 @@
 - Use typed Redux hooks instead of repeating app dispatch and selector types.
 - Prefer dependency injection where it keeps code testable, such as store creation with optional preloaded state.
 - Use app-level notification state for info, warning, and error messages instead of ad hoc alerts.
+- Keep one feedback boundary: inline messages answer the player's current form or map action, next to the control that caused it; the notification shelf carries app-level events (load failures, caught render errors, renderer fallbacks). No action emits both.
+- Route from session state in one place (`routeForSession` and the session guard); screens dispatch intent and never navigate after a state change.
 
 ## Engine And Game Logic
 
@@ -35,6 +37,8 @@
 - Avoid premature generic abstractions.
 - Validate orders through the engine, not the UI.
 - Represent maps and scenarios with data first; visual layers should bind back to stable territory and sub-territory IDs.
+- Scenarios and maps are JSON packages defined by `project/specs/`; code contains no scenario-specific ids, and a new scenario needs no code changes unless it needs a new ruleset.
+- Validate package data once, at the loader; code past the loader trusts its types and uses `require*` lookups instead of defensive fallbacks.
 - Prefer deterministic tests for movement, validation, combat, control updates, and turn resolution.
 
 ## Testing And Quality
@@ -44,7 +48,7 @@
 - Use Playwright for browser behavior and routing smoke tests.
 - Keep Playwright screenshots and traces under `build/e2e`.
 - Inspect relevant desktop and mobile Playwright screenshots when developing visual features.
-- Run `npm run build`, `npm run test:unit`, and `npm run test:e2e` before claiming implementation work is complete.
+- Run `npm run verify` (lint, typecheck, unit tests with coverage, build, and Playwright) before claiming implementation work is complete. Use `npm run e2e:capture` for fast visual review while iterating, and `npm run e2e:baselines` only in a commit that reviews new baselines.
 - Keep generated artifacts out of git, including dependency folders, coverage, test results, and build output.
 
 ## UX Direction
@@ -59,6 +63,6 @@
 
 - Use short Conventional Commit messages.
 - Keep commit scope focused.
-- Prefer ASCII characters in source and docs unless non-ASCII text is necessary.
+- Prefer ASCII characters in source and docs unless non-ASCII text is necessary. UI glyphs live in `src/main/presentation/glyphs.ts` as escapes.
 - Keep root docs concise and human-facing.
 - Put AI steering, milestone specs, planning, and health notes under `project/`.

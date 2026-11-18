@@ -1,56 +1,72 @@
 import type {
   FactionId,
   GameState,
-  ScenarioDefinition,
+  Scenario,
+  VictoryCondition,
   VictoryProgress,
   VictoryResult
 } from "./types";
 
-export function victoryProgress(
-  scenario: ScenarioDefinition,
-  state: GameState
-): readonly VictoryProgress[] {
+export function victoryThresholds(scenario: Scenario): { readonly cities: number; readonly territories: number } {
+  const territories = scenario.territories.filter((territory) => territory.countsForVictory).length;
+  const cities = scenario.cities.filter((city) => city.countsForVictory).length;
+  return {
+    cities: Math.ceil(cities * scenario.victory.cityShare),
+    territories: Math.ceil(territories * scenario.victory.territoryShare)
+  };
+}
+
+export function victoryProgress(scenario: Scenario, state: GameState): readonly VictoryProgress[] {
+  const thresholds = victoryThresholds(scenario);
   const eligibleTerritories = scenario.territories.filter((territory) => territory.countsForVictory);
   const eligibleCities = scenario.cities.filter((city) => city.countsForVictory);
-  const territoryThreshold = Math.ceil(eligibleTerritories.length * 0.51);
-  const cityThreshold = Math.ceil(eligibleCities.length * 0.75);
 
   return scenario.factions.map((faction) => ({
     citiesControlled: eligibleCities.filter((city) => state.cityControl[city.id] === faction.id).length,
-    cityThreshold,
+    cityThreshold: thresholds.cities,
     factionId: faction.id,
     territoriesControlled: eligibleTerritories.filter((territory) => {
       const control = state.control[territory.id];
-      return control.kind === "controlled" && control.factionId === faction.id;
+      return control?.kind === "controlled" && control.factionId === faction.id;
     }).length,
-    territoryThreshold
+    territoryThreshold: thresholds.territories
   }));
 }
 
-export function evaluateVictory(progress: readonly VictoryProgress[]): VictoryResult | undefined {
-  const qualifying = progress.filter(
-    (entry) =>
-      entry.territoriesControlled >= entry.territoryThreshold ||
-      entry.citiesControlled >= entry.cityThreshold
-  );
+function meets(entry: VictoryProgress, condition: VictoryCondition): boolean {
+  return condition === "cities"
+    ? entry.citiesControlled >= entry.cityThreshold
+    : entry.territoriesControlled >= entry.territoryThreshold;
+}
 
-  if (qualifying.length === 0) {
+function score(entry: VictoryProgress, condition: VictoryCondition): number {
+  return condition === "cities" ? entry.citiesControlled : entry.territoriesControlled;
+}
+
+/**
+ * A faction qualifies by meeting either threshold. Among qualifiers, the scenario's tie-break
+ * order picks the leader; a tie that survives every tie-break is a shared victory.
+ */
+export function evaluateVictory(
+  progress: readonly VictoryProgress[],
+  tieBreak: readonly VictoryCondition[]
+): VictoryResult | undefined {
+  let leaders = progress.filter((entry) => meets(entry, "cities") || meets(entry, "territories"));
+  if (leaders.length === 0) {
     return undefined;
   }
 
-  const bestCities = Math.max(...qualifying.map((entry) => entry.citiesControlled));
-  const cityLeaders = qualifying.filter((entry) => entry.citiesControlled === bestCities);
-  const bestTerritories = Math.max(...cityLeaders.map((entry) => entry.territoriesControlled));
-  const winners = cityLeaders.filter((entry) => entry.territoriesControlled === bestTerritories);
-  const factionIds = winners.map((entry) => entry.factionId);
-
-  if (factionIds.length > 1) {
-    return { condition: "shared", factionIds };
+  for (const condition of tieBreak) {
+    const best = Math.max(...leaders.map((entry) => score(entry, condition)));
+    leaders = leaders.filter((entry) => score(entry, condition) === best);
   }
 
-  const winner = winners[0] as VictoryProgress;
-  const condition =
-    winner.citiesControlled >= winner.cityThreshold ? "cities" : "territories";
-
-  return { condition, factionIds: factionIds as readonly FactionId[] };
+  const factionIds: readonly FactionId[] = leaders.map((entry) => entry.factionId);
+  const [winner] = leaders;
+  if (leaders.length > 1 || winner === undefined) {
+    return { condition: "shared", factionIds };
+  }
+  const condition = tieBreak.find((candidate) => meets(winner, candidate))
+    ?? (meets(winner, "cities") ? "cities" : "territories");
+  return { condition, factionIds };
 }

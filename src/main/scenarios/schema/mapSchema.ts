@@ -1,0 +1,63 @@
+import { z } from "zod";
+
+/**
+ * Map package schema (spec version 1). Presentation data only: the engine never reads it.
+ * All coordinates are in `viewBox` space; packages are pre-registered to that space by their
+ * build pipeline, so the renderer applies no projection.
+ */
+
+const slug = z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Ids are lowercase kebab-case.");
+const point = { x: z.number(), y: z.number() };
+const rect = z.strictObject({ x: z.number(), y: z.number(), width: z.number().positive(), height: z.number().positive() });
+const assetPath = z
+  .string()
+  .regex(/^[\w./-]+\.(svg|png|jpg|webp)$/, "Asset paths are repository-relative .svg, .png, .jpg, or .webp files.")
+  .meta({ description: "Repository-relative path to a local asset. Runtime map services are not allowed." });
+const color = z.string().regex(/^#[0-9a-fA-F]{6}$/);
+
+export const mapSchema = z
+  .strictObject({
+    $schema: z.string().optional(),
+    specVersion: z.literal(1),
+    id: slug,
+    viewBox: rect.meta({ description: "Coordinate space for geometry, anchors, and labels." }),
+    focus: rect.meta({ description: "Area framed by the camera when a game starts." }),
+    background: color.meta({ description: "Fill for space outside the terrain layers; relief layers fade into it at their edges." }),
+    geometry: z.strictObject({
+      svg: assetPath,
+      stripSelectors: z.array(z.string().min(1)).default([])
+    }),
+    terrain: z
+      .strictObject({
+        layers: z
+          .array(z.strictObject({
+            image: assetPath.meta({ description: "Baked relief image with square texels." }),
+            bounds: rect.meta({ description: "Area the image covers, in view box units." })
+          }))
+          .min(1)
+          .meta({ description: "Relief images, coarsest first; later layers draw over earlier ones." })
+      })
+      .optional()
+      .meta({ description: "Optional relief, pre-registered to the view box. Without it the renderer draws flat region fills." }),
+    regions: z
+      .record(z.string().min(1), z.strictObject({ territoryId: slug }))
+      .meta({ description: "SVG element id to territory id. Several regions may share one territory." }),
+    territories: z.record(
+      slug,
+      z.strictObject({
+        unitAnchor: z.strictObject(point),
+        label: z.strictObject({ ...point, tier: z.enum(["overview", "detail"]) }),
+        shape: z
+          .strictObject({ kind: z.literal("circle"), ...point, r: z.number().positive() })
+          .optional()
+          .meta({ description: "Drawn and hit-tested when the territory has no SVG region." })
+      })
+    ),
+    cities: z.record(slug, z.strictObject({ ...point, tier: z.enum(["overview", "detail"]) })),
+    contextLabels: z.array(z.strictObject({ text: z.string().min(1), ...point })),
+    unitSymbols: z.record(slug, assetPath).meta({ description: "Unit type id to symbol SVG." }),
+    attribution: z.array(z.strictObject({ text: z.string().min(1), url: z.url().optional() })).min(1)
+  })
+  .meta({ title: "Spanish Diplomacy map package", description: "Presentation data interpreted by the map renderer." });
+
+export type MapDocument = z.infer<typeof mapSchema>;

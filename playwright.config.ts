@@ -1,5 +1,10 @@
 import { defineConfig, devices } from "@playwright/test";
 
+// E2E_PORT lets a long-running dev server be reused across runs (and lets parallel
+// checkouts avoid each other's servers).
+const port = Number(process.env["E2E_PORT"] ?? "5173");
+const baseURL = `http://127.0.0.1:${String(port)}`;
+
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: true,
@@ -9,20 +14,25 @@ export default defineConfig({
     ["list"],
     ["html", { open: "never", outputFolder: "build/e2e/playwright-report" }]
   ],
+  snapshotPathTemplate: "e2e/baselines/{projectName}/{arg}{ext}",
+  expect: {
+    toHaveScreenshot: { animations: "disabled", maxDiffPixelRatio: 0.002, threshold: 0.2 }
+  },
   use: {
-    baseURL: "http://127.0.0.1:5173",
-    screenshot: "on",
-    trace: "on"
+    baseURL: `${baseURL}/assets/`,
+    screenshot: "only-on-failure",
+    trace: "retain-on-failure"
   },
   webServer: {
-    command: "npm run dev",
-    url: "http://127.0.0.1:5173/assets/",
+    command: `npx vite --host 127.0.0.1 --port ${String(port)} --strictPort --mode e2e`,
+    url: `${baseURL}/assets/`,
     reuseExistingServer: !process.env["CI"]
   },
   projects: [
-    {
-      name: "chromium",
-      use: { ...devices["Desktop Chrome"] }
-    }
+    { name: "chromium", use: { ...devices["Desktop Chrome"], viewport: { height: 800, width: 1440 } } },
+    { name: "firefox", use: { ...devices["Desktop Firefox"], viewport: { height: 800, width: 1440 } } },
+    { name: "webkit", use: { ...devices["Desktop Safari"], viewport: { height: 800, width: 1440 } } },
+    { name: "mobile-chromium", use: { ...devices["Pixel 7"] } },
+    { name: "mobile-webkit", use: { ...devices["iPhone 14"] } }
   ]
 });

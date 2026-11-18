@@ -6,7 +6,7 @@ export const notificationMiddleware = createListenerMiddleware<RootState>();
 
 notificationMiddleware.startListening({
   matcher: isRejected,
-  effect: async (action, api) => {
+  effect: (action, api) => {
     api.dispatch(addErrorNotification(action.error.message ?? "Unexpected application error."));
   }
 });

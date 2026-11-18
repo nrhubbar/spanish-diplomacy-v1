@@ -23,7 +23,7 @@ export default defineConfig({
   build: {
     // Three.js is isolated behind the campaign-map dynamic import (132 kB gzip).
     chunkSizeWarningLimit: 550,
-    rollupOptions: {
+    rolldownOptions: {
       input: "assets/index.html"
     },
     outDir: "build/dist",

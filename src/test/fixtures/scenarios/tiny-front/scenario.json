@@ -1,0 +1,47 @@
+{
+  "$schema": "../../../../main/scenarios/schema/scenario.schema.json",
+  "specVersion": 1,
+  "id": "tiny-front",
+  "name": "Tiny Front (test fixture)",
+  "snapshotLabel": "Day 1",
+  "ruleset": "m2-movement",
+  "map": "./map.json",
+  "victory": { "territoryShare": 0.6, "cityShare": 1, "tieBreak": ["territories", "cities"] },
+  "unitTypes": [{ "id": "foot", "name": "Foot" }],
+  "factions": [
+    {
+      "id": "red", "name": "Red League", "abbreviation": "RED", "color": "#b03a2e",
+      "motivation": "Hold the west and take the harbor.", "defaultActor": "local-human",
+      "objectiveTerritoryIds": ["harbor", "isle"]
+    },
+    {
+      "id": "blue", "name": "Blue Union", "abbreviation": "BLU", "color": "#2e5f9a",
+      "motivation": "Push west from the harbor.", "defaultActor": "computer",
+      "objectiveTerritoryIds": ["westfold", "highlands"]
+    }
+  ],
+  "territories": [
+    { "id": "westfold", "name": "Westfold", "countsForVictory": true, "initialControl": { "kind": "controlled", "factionId": "red" } },
+    { "id": "highlands", "name": "Highlands", "countsForVictory": true, "initialControl": { "kind": "controlled", "factionId": "red" } },
+    { "id": "harbor", "name": "Harbor", "countsForVictory": true, "initialControl": { "kind": "controlled", "factionId": "blue" } },
+    { "id": "lowlands", "name": "Lowlands", "countsForVictory": true, "initialControl": { "kind": "controlled", "factionId": "blue" } },
+    { "id": "isle", "name": "Isle", "countsForVictory": true, "initialControl": { "kind": "contested", "factionIds": ["red", "blue"] } }
+  ],
+  "connections": [
+    { "between": ["westfold", "highlands"], "kind": "land" },
+    { "between": ["highlands", "harbor"], "kind": "land" },
+    { "between": ["harbor", "lowlands"], "kind": "land" },
+    { "between": ["lowlands", "westfold"], "kind": "land" },
+    { "between": ["harbor", "isle"], "kind": "sea", "label": "Narrows" }
+  ],
+  "cities": [
+    { "id": "west-town", "name": "West Town", "territoryId": "westfold", "countsForVictory": true, "initialController": "red" },
+    { "id": "port-town", "name": "Port Town", "territoryId": "harbor", "countsForVictory": true, "initialController": "blue" }
+  ],
+  "units": [
+    { "id": "red-guard", "name": "Red Guard", "factionId": "red", "type": "foot", "formationKind": "regiment", "approximateStrength": 500, "territoryId": "westfold", "cityId": "west-town", "sources": [{ "sourceId": "fixture" }] },
+    { "id": "red-rangers", "name": "Red Rangers", "factionId": "red", "type": "foot", "formationKind": "battalion", "territoryId": "highlands", "sources": [{ "sourceId": "fixture" }] },
+    { "id": "blue-marines", "name": "Blue Marines", "factionId": "blue", "type": "foot", "formationKind": "battalion", "approximateStrength": 400, "territoryId": "harbor", "cityId": "port-town", "sources": [{ "sourceId": "fixture" }] }
+  ],
+  "sources": [{ "id": "fixture", "title": "Invented test data" }]
+}

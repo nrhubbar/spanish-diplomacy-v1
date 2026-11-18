@@ -1,16 +1,1 @@
-declare module "*.scss";
-
-declare module "*.png" {
-  const url: string;
-  export default url;
-}
-
-declare module "*.jpg" {
-  const url: string;
-  export default url;
-}
-
-declare module "*.svg?raw" {
-  const source: string;
-  export default source;
-}
+/// <reference types="vite/client" />

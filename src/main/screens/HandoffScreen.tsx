@@ -1,49 +1,30 @@
 import type { JSX } from "react";
-import { Navigate, useNavigate } from "react-router";
-import { useAppDispatch, useAppSelector } from "../hooks";
-import {
-  beginPlanning,
-  selectActiveFaction,
-  selectActorKind,
-  selectGamePhase,
-  selectHandoffFromFaction,
-  selectTurnDate
-} from "../state/gameSlice";
+import { requireFaction } from "../engine/lookup";
+import { useAppDispatch, useRegistry, useSessionIn } from "../hooks";
+import { turnLabel } from "../presentation/text";
+import { beginPlanning } from "../state/gameSlice";
 
+/** Private handoff between people sharing the device. Shows no orders. */
 export function HandoffScreen(): JSX.Element {
   const dispatch = useAppDispatch();
-  const navigate = useNavigate();
-  const activeFaction = useAppSelector(selectActiveFaction);
-  const actorKind = useAppSelector(selectActorKind);
-  const fromFaction = useAppSelector(selectHandoffFromFaction);
-  const phase = useAppSelector(selectGamePhase);
-  const turnDate = useAppSelector(selectTurnDate);
-
-  if (phase === "planning") return <Navigate to="/orders" replace />;
-  if (phase === "resolution") return <Navigate to="/resolution" replace />;
-  if (phase === "game-over") return <Navigate to="/game-over" replace />;
-  if (phase !== "handoff") return <Navigate to={phase === "idle" ? "/" : "/setup"} replace />;
-
-  if (actorKind !== "local-human") return <Navigate to="/setup" replace />;
+  const registry = useRegistry();
+  const session = useSessionIn("handoff");
+  const { scenario } = registry.require(session.game.scenarioId);
+  const next = requireFaction(scenario, session.factionId);
+  const from = session.fromFactionId === undefined ? undefined : requireFaction(scenario, session.fromFactionId);
 
   return (
-    <main className="screen handoff-screen" aria-labelledby="handoff-title">
-      <p className="screen-kicker">{turnDate}</p>
-      <h1 id="handoff-title">Pass to {activeFaction.name}</h1>
+    <main className="screen card-screen handoff-screen" aria-labelledby="handoff-title">
+      <p className="screen-kicker">{turnLabel(scenario, session.game.state.turnNumber)}</p>
+      <h1 id="handoff-title">{`Pass to ${next.name}`}</h1>
       <p className="screen-copy">
-        {fromFaction === undefined
-          ? `When the ${activeFaction.name} commander has the device, begin planning.`
-          : `${fromFaction.name} has submitted its orders. Pass the device before continuing.`}
+        {from === undefined
+          ? `When the ${next.name} player has the device, begin planning.`
+          : `${from.name} has submitted its orders. Pass the device to the ${next.name} player.`}
       </p>
-      <button
-        type="button"
-        onClick={() => {
-          dispatch(beginPlanning());
-          navigate("/orders");
-        }}
-      >
-        {fromFaction === undefined ? `Begin ${activeFaction.name} Orders` : `Continue to ${activeFaction.name}`}
-      </button>
+      <div className="action-row">
+        <button onClick={() => { dispatch(beginPlanning()); }} type="button">{`Continue to ${next.name}`}</button>
+      </div>
     </main>
   );
 }

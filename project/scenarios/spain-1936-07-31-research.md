@@ -2,7 +2,7 @@
 
 ## Purpose And Accuracy Standard
 
-This note records the historical basis and game-scale abstractions used by `milestone2Scenario.ts`.
+This note records the historical basis and game-scale abstractions used by the scenario package `src/main/scenarios/spain-1936-07-31/` (`scenario.json` for rules data, `map.json` for presentation).
 
 The scenario uses 31 July 1936 as one coherent snapshot. Historical control in the first weeks of the war changed quickly and did not follow today's autonomous-community borders. The current SVG cannot draw provincial borders, so regions with material divided control are explicitly marked contested and city control records the important local exceptions.
 
@@ -45,7 +45,6 @@ The northern and southern insurgent commands were cooperating parts of the same 
 | Murcia | Republican | High; includes the Cartagena naval base at game scale. |
 | Ceuta | Southern insurgent | High; part of the African bridgehead. |
 | Melilla | Southern insurgent | High; the uprising began in Spanish Morocco. |
-| Canarias | Southern insurgent | High. |
 
 No faction begins at the victory threshold. Contested territories do not count toward the 51 percent territorial condition.
 
@@ -61,17 +60,27 @@ The prewar regiment list and Republican/insurgent zone assignment in `nafziger-1
 
 | Operational command | Representative starting formations |
 |---|---|
-| Republican Government | Wad-Ras No. 1, Covadonga No. 4, Otumba No. 9, Guadalajara No. 10, Badajoz No. 13, Alcantara No. 14, Sevilla No. 34 at Cartagena, Vitoria No. 8 at Malaga, and an Asturian workers militia token at Gijon. |
+| Republican Government | Wad-Ras No. 1, Covadonga No. 4, Otumba No. 9, Guadalajara No. 10, Badajoz No. 13, Alcantara No. 14, Sevilla No. 34 at Cartagena, Vitoria No. 8 at Malaga, an Asturian workers militia token at Gijon, a Basque loyalist column at Bilbao, and a Santander loyalist column. |
 | Northern Insurgent Command | Zamora No. 29, San Marcial No. 22, San Quintin No. 25, America No. 23, Aragon No. 17, Gerona No. 18, La Victoria No. 28, Milan No. 32 at Oviedo, and a Simancas barracks detachment at Gijon. |
-| Southern Insurgent Command | Granada No. 6, Lepanto No. 5, Cadiz No. 33, a Spanish Legion detachment, a Regulares detachment, and Canarias No. 39. |
+| Southern Insurgent Command | Granada No. 6, Lepanto No. 5, Cadiz No. 33, a Spanish Legion detachment, and a Regulares detachment. |
 
 The Asturian militia and detachment tokens are game-scale groupings. Prewar barracks location is not treated as proof that a complete regiment was available for field movement. Future research may replace representative tokens with a more detailed post-uprising order of battle without changing the engine model.
 
 ## Known Limitations
 
 - The modern-region SVG cannot show 1936 provincial front lines precisely.
-- Spanish Morocco is represented through Ceuta and Melilla rather than a complete protectorate map.
+- Spanish Morocco is represented through Ceuta and Melilla rather than a complete protectorate map. Both connect to Andalucia by sea (the Strait of Gibraltar and the Alboran Sea), and the Balearics connect to Catalunya and Valencia. Sea connections are ordinary single-step moves under the `m2-movement` ruleset; naval rules are deferred.
 - Naval and air forces are not yet modeled.
 - Political groups inside the Republican coalition and insurgent coalition are aggregated into operational commands.
 - The resolver still uses Milestone 1 deterministic movement/bounce rules; formation names and approximate strengths do not yet alter combat.
 - Recruitment, reinforcements, and income are explicitly deferred to Milestone 3.
+
+## Revision 5 Changes (18 November 2026)
+
+These scenario decisions were made under the Milestone 2 Revision 5 defaults (OD-1 and OD-3). Each needs historical sign-off before release.
+
+- **Canarias out of scope.** The Canary Islands and the Canarias No. 39 regiment were removed from the playable scenario. They had no map geometry and no route to the mainland, so the regiment could never act. Their insurgent alignment is not in doubt; they are simply outside the operational map at this scale.
+- **Northern coast garrisons.** Two representative tokens were added: a *Basque Loyalist Column* at Bilbao and a *Santander Loyalist Column*. The scenario previously left Pais Vasco and Cantabria, both loyal in July 1936, with no Republican formation at all, so computer players took them unopposed on turn 1 of every game. Like the existing Asturian militia token, these are game-scale groupings, not specific regiments. They are cited to the broad control sources (`warwick-timeline`) and the garrison baseline (`nafziger-1936`) without page references, and their unit records say that individual formation identities need review. Strengths (700 and 650) are placeholders in line with the other tokens, not claims.
+- **Per-formation sources.** Every unit now carries its own `sources` list in `scenario.json` (previously one shared pair). Page or table references are blank where the research does not yet provide them; adding them is the remaining OD-3 work.
+- **Dangling references removed.** The Legion and Regulares tokens referred to cities `ceuta` and `melilla`, which were never defined; the Canarias regiment referred to `las-palmas`. The loader now rejects such references, so these were removed. The two detachments stand at their territory anchors.
+- **Starting thresholds re-checked.** With 18 territories (10 needed for a territorial victory) and 25 cities (19 needed), no faction starts at a threshold (loader rule L9).
