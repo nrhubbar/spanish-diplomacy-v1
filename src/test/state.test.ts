@@ -6,8 +6,8 @@ import {
   chooseMoveDestination,
   enterSetup,
   removeDraftOrder,
-  runComputerTurn,
   selectActiveFaction,
+  selectAllAvailableUnitsInTerritory,
   selectDraftOrders,
   selectGamePhase,
   selectSubmissionStatus,
@@ -30,11 +30,10 @@ describe("game state orchestration", () => {
     expect(store.getState().game.assignments.north).toBe("local-human");
   });
 
-  it("runs a mixed game through private handoff, independent draft orders, AI, and resolution", () => {
+  it("runs a mixed game directly through planning, AI, and resolution", () => {
     const store = createAppStore();
     store.dispatch(startNewGame({ republic: "local-human", north: "computer", south: "computer" }));
-    expect(selectGamePhase(store.getState())).toBe("handoff");
-    store.dispatch(beginPlanning());
+    expect(selectGamePhase(store.getState())).toBe("planning");
     store.dispatch(selectTerritory("madrid"));
     store.dispatch(selectUnit("rep-wad-ras-1"));
     store.dispatch(chooseMoveAction());
@@ -45,7 +44,7 @@ describe("game state orchestration", () => {
     expect(selectGamePhase(store.getState())).toBe("resolution");
     expect(selectSubmissionStatus(store.getState()).every((status) => status.ready)).toBe(true);
     store.dispatch(startNextTurn());
-    expect(selectGamePhase(store.getState())).toBe("handoff");
+    expect(selectGamePhase(store.getState())).toBe("planning");
     expect(store.getState().game.turnNumber).toBe(2);
     expect(store.getState().game.history).toHaveLength(1);
   });
@@ -60,12 +59,11 @@ describe("game state orchestration", () => {
     expect(selectSubmissionStatus(store.getState())[0]).toMatchObject({ ready: true });
   });
 
-  it("gates an all-computer game behind an explicit action", () => {
+  it("runs all computer commanders through the normal submission gateway", () => {
     const store = createAppStore();
     store.dispatch(startNewGame({ republic: "computer", north: "computer", south: "computer" }));
-    expect(selectGamePhase(store.getState())).toBe("handoff");
-    expect(selectSubmissionStatus(store.getState()).some((status) => status.ready)).toBe(false);
-    store.dispatch(runComputerTurn());
+    expect(["resolution", "game-over"]).toContain(selectGamePhase(store.getState()));
+    expect(selectSubmissionStatus(store.getState()).every((status) => status.ready)).toBe(true);
     expect(["resolution", "game-over"]).toContain(selectGamePhase(store.getState()));
   });
 
@@ -88,6 +86,36 @@ describe("game state orchestration", () => {
     expect(selectDraftOrders(store.getState())).toHaveLength(2);
     store.dispatch(removeDraftOrder("rep-wad-ras-1"));
     expect(selectDraftOrders(store.getState())).toHaveLength(1);
+  });
+
+  it("selects every available formation and prevents a second order for one unit", () => {
+    const store = createAppStore();
+    store.dispatch(startNewGame({ republic: "local-human", north: "computer", south: "computer" }));
+    store.dispatch(selectTerritory("madrid"));
+    store.dispatch(selectAllAvailableUnitsInTerritory());
+    expect(store.getState().game.selectedUnitIds.length).toBeGreaterThan(1);
+    store.dispatch(chooseMoveAction());
+    store.dispatch(chooseMoveDestination("castilla-la-mancha"));
+    store.dispatch(addDraftMove());
+    const orderedUnitId = selectDraftOrders(store.getState())[0]!.unitId;
+    store.dispatch(selectUnit(orderedUnitId));
+    expect(store.getState().game.selectedUnitIds).toHaveLength(0);
+    expect(store.getState().game.validationMessage).toContain("planned order");
+  });
+
+  it("reports select-all edge cases", () => {
+    const store = createAppStore();
+    store.dispatch(startNewGame({ republic: "local-human", north: "computer", south: "computer" }));
+    store.dispatch(selectAllAvailableUnitsInTerritory());
+    expect(store.getState().game.validationMessage).toContain("territory");
+    store.dispatch(selectTerritory("madrid"));
+    store.dispatch(selectAllAvailableUnitsInTerritory());
+    store.dispatch(chooseMoveAction());
+    store.dispatch(chooseMoveDestination("castilla-la-mancha"));
+    store.dispatch(addDraftMove());
+    store.dispatch(selectTerritory("madrid"));
+    store.dispatch(selectAllAvailableUnitsInTerritory());
+    expect(store.getState().game.validationMessage).toContain("already has an order");
   });
 
   it("uses saved assignments when starting without a payload and describes hold submissions after reveal", () => {
@@ -135,7 +163,6 @@ describe("game state orchestration", () => {
   it("keeps invalid phase commands and malformed drafts safely contained", () => {
     const store = createAppStore();
     store.dispatch(beginPlanning());
-    store.dispatch(runComputerTurn());
     store.dispatch(startNextTurn());
     store.dispatch(submitCurrentOrders());
     expect(selectGamePhase(store.getState())).toBe("idle");

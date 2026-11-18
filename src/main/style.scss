@@ -35,7 +35,7 @@ body {
 }
 
 .game-screen {
-  width: min(100%, 76rem);
+  width: min(100%, 82rem);
 }
 
 .setup-screen {
@@ -121,19 +121,154 @@ button:disabled {
 }
 
 .iberia-map-section {
-  width: min(100%, 38rem);
+  width: min(100%, 42rem);
   margin-top: 1.5rem;
+}
+
+.campaign-board {
+  position: absolute;
+  isolation: isolate;
+  inset: 0;
+  overflow: hidden;
+  background:
+    linear-gradient(90deg, rgb(25 12 7 / 32%), transparent 10% 88%, rgb(25 12 7 / 34%)),
+    repeating-linear-gradient(4deg, #704127 0 3px, #61361f 3px 7px, #7a482a 7px 11px, #5d321d 11px 15px);
+  box-shadow:
+    inset 0 0 0 5px rgb(37 20 12 / 50%),
+    inset 0 0 28px rgb(20 10 5 / 70%);
+  perspective: 850px;
+  perspective-origin: 50% 40%;
+}
+
+.campaign-board::after {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  pointer-events: none;
+  content: "";
+  background: radial-gradient(circle at 50% 45%, transparent 52%, rgb(18 9 5 / 30%) 100%);
+}
+
+.campaign-board-notepad,
+.campaign-board-pencil,
+.campaign-board-cigar {
+  position: absolute;
+  z-index: 3;
+  display: block;
+  pointer-events: none;
+}
+
+.campaign-board-notepad {
+  top: 0.55rem;
+  right: 1.1rem;
+  width: 27%;
+  height: 3.35rem;
+  border: 1px solid #a69370;
+  border-top: 0.42rem solid #3e3125;
+  border-radius: 2px;
+  background:
+    repeating-linear-gradient(#f2ead5 0 13px, #b6c2bf 13px 14px),
+    #f2ead5;
+  box-shadow: 0 5px 9px rgb(27 13 7 / 42%);
+  transform: rotate(4deg);
+}
+
+.campaign-board-pencil {
+  top: 1.35rem;
+  right: 7%;
+  width: 19%;
+  height: 0.42rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #2b2118 0 7%, #cfaa39 7% 82%, #d9c4a0 82% 92%, #3d3026 92%);
+  box-shadow: 0 2px 3px rgb(27 13 7 / 45%);
+  transform: rotate(-8deg);
+}
+
+.campaign-board-cigar {
+  bottom: 0.85rem;
+  left: 1.1rem;
+  width: 20%;
+  height: 0.68rem;
+  border: 1px solid #32170d;
+  border-radius: 70% 25% 25% 70%;
+  background: linear-gradient(90deg, #2b160f 0 4%, #8d4322 7% 64%, #c5a342 64% 73%, #713519 73% 96%, #d6d0bc 100%);
+  box-shadow: 0 4px 6px rgb(27 13 7 / 48%);
+  transform: rotate(-7deg);
+}
+
+.campaign-board-cigar::after {
+  position: absolute;
+  right: -0.35rem;
+  bottom: -0.25rem;
+  width: 1.5rem;
+  height: 1.25rem;
+  border-radius: 50%;
+  content: "";
+  background: radial-gradient(ellipse, rgb(205 199 181 / 54%), transparent 68%);
+  filter: blur(2px);
 }
 
 .iberia-map {
   position: relative;
   width: 100%;
-  aspect-ratio: 225 / 176;
+  aspect-ratio: 15 / 16;
   overflow: hidden;
-  border: 1px solid #241d18;
-  background: #dce6e9;
+  border: 1px solid #2a170e;
+  border-radius: 14px;
+  background: #5d321d;
+  box-shadow:
+    inset 0 0 0 5px rgb(37 20 12 / 50%),
+    0 1.2rem 2.4rem rgb(34 20 11 / 24%);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  overscroll-behavior: contain;
 }
 
+.iberia-map-surface {
+  position: absolute;
+  z-index: 2;
+  top: 10%;
+  left: 6%;
+  width: 88%;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  border: 2px solid #332318;
+  border-radius: 7px;
+  background: #a8bcc1;
+  box-shadow:
+    0 1px 0 #d3b982,
+    0 18px 24px rgb(25 13 7 / 58%),
+    0 4px 0 #24140d;
+  transform: perspective(820px) rotateX(14deg) rotateZ(-0.55deg) scale(0.985);
+  transform-origin: 50% 48%;
+  transform-style: preserve-3d;
+}
+
+.iberia-map:active {
+  cursor: grabbing;
+}
+
+.iberia-map:focus-visible {
+  outline: 3px solid #2e5f87;
+  outline-offset: 3px;
+}
+
+.iberia-map-viewport {
+  position: absolute;
+  inset: 0;
+  transform-origin: 50% 50%;
+  will-change: transform;
+}
+
+.iberia-map-plane {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  transform-origin: 50% 50%;
+}
+
+.iberia-map-terrain,
 .iberia-map-art,
 .iberia-map-art > svg,
 .iberia-map-overlay {
@@ -144,31 +279,75 @@ button:disabled {
   height: 100%;
 }
 
+.iberia-map-terrain {
+  z-index: 0;
+  overflow: hidden;
+  background: #8a9695;
+  filter: grayscale(0.38) sepia(0.12) saturate(0.78) brightness(0.9) contrast(1.07);
+}
+
+.iberia-terrain-fallback,
+.iberia-webgl-canvas,
+.iberia-neutral-surroundings {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.iberia-neutral-surroundings {
+  z-index: 2;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.iberia-terrain-fallback {
+  object-fit: cover;
+  opacity: 1;
+  transition: opacity 180ms ease;
+}
+
+.iberia-webgl-canvas {
+  opacity: 0;
+  transition: opacity 180ms ease;
+}
+
+.iberia-map-terrain[data-renderer="webgl"] .iberia-terrain-fallback {
+  opacity: 0;
+}
+
+.iberia-map-terrain[data-renderer="webgl"] .iberia-webgl-canvas {
+  opacity: 1;
+}
+
 .iberia-map-art {
+  z-index: 1;
   overflow: hidden;
 }
 
 .iberia-map-art [data-country="spain"] {
-  stroke: #665b4c !important;
-  stroke-width: 1 !important;
+  stroke: rgb(50 43 35 / 84%) !important;
+  stroke-width: 0.9 !important;
   vector-effect: non-scaling-stroke;
 }
 
 .iberia-map-art [data-country="portugal"] {
-  fill: #aeb3b5 !important;
-  stroke: #aeb3b5 !important;
-  stroke-width: 1.5 !important;
+  fill: rgb(127 130 128 / 42%) !important;
+  stroke: rgb(76 80 78 / 72%) !important;
+  stroke-width: 1.1 !important;
   pointer-events: none !important;
 }
 
 .iberia-map-art [data-country="gibraltar"] {
-  fill: #81878a !important;
-  stroke: #81878a !important;
+  fill: rgb(97 101 101 / 55%) !important;
+  stroke: #555959 !important;
   pointer-events: none !important;
 }
 
 .iberia-map-art [data-territory-id] {
   fill: var(--region-color) !important;
+  fill-opacity: 0.42;
   cursor: pointer;
   outline: none;
   transition:
@@ -177,24 +356,31 @@ button:disabled {
     stroke 120ms ease;
 }
 
+.iberia-map-art [data-territory-id="islas-baleares"] {
+  fill-opacity: 0.66;
+}
+
 .iberia-map-art [data-territory-id]:hover {
-  filter: brightness(1.06);
+  filter: brightness(1.1) drop-shadow(0 0 1px rgb(255 250 240 / 65%));
 }
 
 .iberia-map-art [data-legal-destination="true"] {
-  filter: brightness(1.08) saturate(1.1);
-  stroke: #4f7c59 !important;
-  stroke-width: 3 !important;
+  filter: brightness(1.08) drop-shadow(0 0 1px rgb(224 246 247 / 85%));
+  stroke: #2e7b82 !important;
+  stroke-dasharray: 4 2 !important;
+  stroke-width: 2.5 !important;
 }
 
 .iberia-map-art [data-selected-origin="true"] {
-  stroke: #2e2923 !important;
-  stroke-width: 3 !important;
+  filter: brightness(1.09) drop-shadow(0 0 1.8px rgb(238 191 83 / 85%));
+  stroke: #efbf53 !important;
+  stroke-width: 2.8 !important;
 }
 
 .iberia-map-art [data-selected-destination="true"] {
-  stroke: #3f6f4c !important;
-  stroke-width: 3 !important;
+  filter: brightness(1.13) drop-shadow(0 0 2px rgb(238 191 83 / 90%));
+  stroke: #efbf53 !important;
+  stroke-width: 3.2 !important;
 }
 
 .iberia-map-art [data-territory-id]:focus-visible {
@@ -209,10 +395,15 @@ button:disabled {
 }
 
 .iberia-country-label {
-  fill: #565b5d;
-  font-size: 7px;
+  fill: #404541;
+  paint-order: stroke;
+  stroke: rgb(231 226 207 / 74%);
+  stroke-width: 1.1;
+  font-size: 4.2px;
   font-weight: 700;
+  letter-spacing: 0.08em;
   opacity: 0.9;
+  text-transform: uppercase;
 }
 
 .iberia-region-label rect {
@@ -223,30 +414,32 @@ button:disabled {
 
 .iberia-region-label text {
   fill: #241d18;
-  font-size: 6px;
+  font-size: 3.9px;
   font-weight: 700;
 }
 
 .nato-unit-counter {
   position: absolute;
   z-index: 3;
-  width: clamp(1.8rem, 7%, 3rem);
-  min-height: 0;
+  width: 1.48rem;
+  min-height: 1rem;
+  aspect-ratio: 1.45 / 1;
   margin: 0;
   padding: 0;
-  border: 2px solid #241d18;
-  border-radius: 3px;
+  border: 1px solid color-mix(in srgb, var(--faction-color) 62%, #241d18);
+  border-radius: 2px;
   color: #241d18;
-  background: #fffaf0;
-  box-shadow: 0 2px 5px rgb(36 29 24 / 25%);
+  background: color-mix(in srgb, var(--faction-color) 19%, #fffaf0);
+  box-shadow: 0 1px 3px rgb(36 29 24 / 35%);
   line-height: 0;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%) scale(var(--unit-compensation));
+  transform-origin: center;
 }
 
 .nato-unit-counter:hover {
-  background: #fffaf0;
+  background: color-mix(in srgb, var(--faction-color) 26%, #fffaf0);
   box-shadow: 0 3px 8px rgb(36 29 24 / 35%);
-  transform: translate(-50%, -50%) scale(1.04);
+  transform: translate(-50%, -50%) scale(calc(var(--unit-compensation) * 1.05));
 }
 
 .iberia-map-choosing-destination .nato-unit-counter {
@@ -256,28 +449,122 @@ button:disabled {
 
 .nato-unit-counter:focus-visible,
 .nato-unit-counter-selected {
-  outline: 3px solid #3f6f4c;
-  outline-offset: 2px;
+  outline: 2px solid #efbf53;
+  outline-offset: 1px;
+  box-shadow: 0 0 0 2px rgb(51 41 30 / 65%), 0 0 9px rgb(239 191 83 / 75%);
 }
 
-.nato-unit-counter span:first-child,
+.nato-unit-symbol,
 .nato-unit-svg {
   display: block;
   width: 100%;
   height: auto;
 }
 
+.nato-unit-symbol {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.nato-unit-designation,
+.nato-unit-strength,
 .nato-unit-abbreviation {
   position: absolute;
-  right: 2px;
-  bottom: 1px;
-  padding: 1px 2px;
-  border-radius: 2px;
-  color: #241d18;
+  z-index: 1;
+  padding: 0 1px;
+  border-radius: 1px;
+  color: #18130f;
   background: rgb(255 250 240 / 82%);
-  font-size: 0.42rem;
+  font-size: 0.35rem;
   font-weight: 900;
+  line-height: 1.05;
+}
+
+.iberia-map[data-semantic-level="overview"] .nato-unit-designation,
+.iberia-map[data-semantic-level="overview"] .nato-unit-strength,
+.iberia-map[data-semantic-level="overview"] .nato-unit-abbreviation {
+  display: none;
+}
+
+.iberia-map[data-semantic-level="detail"] .nato-unit-designation,
+.iberia-map[data-semantic-level="detail"] .nato-unit-strength,
+.iberia-map[data-semantic-level="detail"] .nato-unit-abbreviation {
+  background: rgb(255 250 240 / 92%);
+  font-size: 0.38rem;
+}
+
+.nato-unit-designation {
+  top: 1px;
+  left: 1px;
+}
+
+.nato-unit-strength {
+  top: 1px;
+  right: 1px;
+}
+
+.nato-unit-abbreviation {
+  left: 1px;
+  bottom: 1px;
+}
+
+.nato-unit-counter-ordered,
+.nato-unit-counter-ordered:disabled {
+  opacity: 0.84;
+  filter: saturate(0.72);
+}
+
+.nato-unit-order-badge {
+  position: absolute;
+  z-index: 2;
+  right: -0.28rem;
+  bottom: -0.28rem;
+  display: grid;
+  width: 0.7rem;
+  height: 0.7rem;
+  place-items: center;
+  border: 1px solid #fffaf0;
+  border-radius: 50%;
+  color: #fff;
+  background: #175d3a;
+  font-size: 0.5rem;
   line-height: 1;
+}
+
+.map-zoom-controls {
+  position: absolute;
+  z-index: 8;
+  right: 0.55rem;
+  bottom: 0.55rem;
+  display: flex;
+  overflow: hidden;
+  border: 1px solid #51463a;
+  border-radius: 5px;
+  background: rgb(255 250 240 / 94%);
+  box-shadow: 0 2px 8px rgb(36 29 24 / 25%);
+}
+
+.map-zoom-controls button {
+  min-width: 2rem;
+  min-height: 2rem;
+  margin: 0;
+  padding: 0 0.45rem;
+  border: 0;
+  border-right: 1px solid #9b8b72;
+  border-radius: 0;
+  color: #241d18;
+  background: transparent;
+  font-size: 0.78rem;
+}
+
+.map-zoom-controls button:last-child {
+  border-right: 0;
+}
+
+.map-zoom-controls button:hover:not(:disabled) {
+  color: #fffaf0;
+  background: #51463a;
 }
 
 .map-legend {
@@ -313,17 +600,23 @@ button:disabled {
 }
 
 .map-city circle {
-  stroke: #fffaf0;
-  stroke-width: 0.7;
+  stroke: #241d18;
+  stroke-width: 0.45;
+  vector-effect: non-scaling-stroke;
+  paint-order: stroke;
 }
 
 .map-city text {
   fill: #241d18;
   paint-order: stroke;
   stroke: rgb(255 250 240 / 92%);
-  stroke-width: 1.2;
-  font-size: 3.3px;
+  stroke-width: 0.9;
+  font-size: 3.7px;
   font-weight: 800;
+}
+
+.iberia-map[data-semantic-level="overview"] .map-city-secondary text {
+  display: none;
 }
 
 .map-legend-portugal {
@@ -331,33 +624,57 @@ button:disabled {
 }
 
 .map-order-arrow {
+  color: #6ec5cf;
   stroke: currentColor;
-  stroke-width: 2.5;
+  stroke-width: 1.8;
+  stroke-linecap: round;
   vector-effect: non-scaling-stroke;
 }
 
-.map-bounce-marker,
-.map-skull-marker {
-  paint-order: stroke;
+.map-planned-order-arrow {
+  color: #75cbd4;
+  opacity: 0.78;
+  stroke: currentColor;
+  stroke-dasharray: 5 4;
+  stroke-linecap: round;
+  stroke-width: 1.25;
+  vector-effect: non-scaling-stroke;
+}
+
+.map-outcome-icon circle,
+.map-outcome-icon > path:first-child {
+  fill: #fffaf0;
+  stroke: #241d18;
+  stroke-width: 0.65;
+  vector-effect: non-scaling-stroke;
+}
+
+.map-outcome-icon > path:last-child,
+.map-bounce-icon path {
+  fill: none;
+  stroke: #241d18;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 0.85;
+  vector-effect: non-scaling-stroke;
+}
+
+.map-disband-icon > path:first-child {
+  fill: #a9433a;
   stroke: #fffaf0;
-  stroke-width: 2;
-  text-anchor: middle;
-  font-size: 9px;
-  font-weight: 900;
 }
 
-.map-bounce-marker {
-  fill: #241d18;
+.map-disband-icon > path:last-child {
+  stroke: #fffaf0;
 }
 
-.map-skull-marker {
-  fill: #9f2525;
-  font-size: 5px;
+.map-bounce-icon circle {
+  fill: #d9a44a;
 }
 
 .game-layout {
   display: grid;
-  grid-template-columns: minmax(20rem, 38rem) minmax(16rem, 1fr);
+  grid-template-columns: minmax(0, 40rem) minmax(17rem, 1fr);
   gap: 1.5rem;
   align-items: start;
 }
@@ -369,6 +686,15 @@ button:disabled {
   border: 1px solid #9b8b72;
   border-radius: 8px;
   background: #fffaf0;
+}
+
+.order-panel {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.order-panel p {
+  max-width: 100%;
 }
 
 .order-panel h2 {
@@ -443,15 +769,6 @@ button:disabled {
   letter-spacing: 0.08em;
 }
 
-.historical-note {
-  max-width: none;
-  padding: 0.9rem 1rem;
-  border-left: 4px solid #9b8b72;
-  color: #51463a;
-  background: #f3ead8;
-  font-size: 0.9rem;
-}
-
 .handoff-screen {
   position: relative;
   overflow: hidden;
@@ -471,20 +788,6 @@ button:disabled {
   margin-left: auto;
 }
 
-.privacy-mark,
-.privacy-chip {
-  display: inline-flex;
-  width: auto;
-  padding: 0.35rem 0.65rem;
-  border: 1px solid #7d2f2a;
-  border-radius: 999px;
-  color: #7d2f2a;
-  font-size: 0.72rem;
-  font-weight: 900;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
 .screen-heading-row {
   display: flex;
   gap: 1rem;
@@ -495,6 +798,29 @@ button:disabled {
 .screen-heading-row h1 {
   font-family: Georgia, "Times New Roman", serif;
   font-size: clamp(2.25rem, 6vw, 4.5rem);
+}
+
+.compact-button {
+  min-height: 2.25rem;
+  margin-top: 0;
+}
+
+.settings-panel {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  border: 1px solid #c7b99f;
+  border-radius: 6px;
+  background: #fffdf7;
+}
+
+.settings-panel h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.settings-panel p {
+  margin-top: 0.5rem;
+  font-size: 1rem;
 }
 
 .territory-heading {
@@ -550,6 +876,31 @@ button:disabled {
   margin-top: 0.2rem;
   color: #756858;
   font-weight: 500;
+}
+
+.formation-button > span {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.formation-button-ordered:disabled {
+  border-color: #7da083;
+  opacity: 0.78;
+}
+
+.formation-order-status {
+  padding: 0.15rem 0.35rem;
+  border-radius: 999px;
+  color: #244b31;
+  background: #dcebdc;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+}
+
+.select-all-button {
+  margin: 0.4rem 0 0;
 }
 
 .draft-orders {
@@ -661,12 +1012,60 @@ button:disabled {
     grid-template-columns: 1fr;
   }
 
+  .campaign-board-notepad {
+    right: 0.5rem;
+    width: 32%;
+    height: 2.7rem;
+  }
+
+  .campaign-board-pencil {
+    top: 0.85rem;
+    right: 5%;
+  }
+
+  .campaign-board-cigar {
+    bottom: 0.8rem;
+    left: 0.55rem;
+  }
+
+  .iberia-map-surface {
+    transform: perspective(760px) rotateX(10deg) rotateZ(-0.4deg) scale(0.99);
+  }
+
   .faction-setup-grid {
     grid-template-columns: 1fr;
   }
 
   .screen-heading-row {
     display: block;
+  }
+}
+
+@media (max-width: 520px) {
+  #app {
+    padding: 0.5rem;
+  }
+
+  .screen {
+    padding: 1rem;
+  }
+
+  .nato-unit-counter {
+    width: 1.1rem;
+    min-height: 0.75rem;
+  }
+
+  .nato-unit-order-badge {
+    right: -0.2rem;
+    bottom: -0.2rem;
+    width: 0.55rem;
+    height: 0.55rem;
+    font-size: 0.4rem;
+  }
+
+  .map-legend {
+    gap: 0.4rem 0.7rem;
+    font-size: 0.7rem;
   }
 }
 
@@ -725,4 +1124,25 @@ button:disabled {
 .notification p {
   margin-top: 0.5rem;
   font-size: 1rem;
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
 }

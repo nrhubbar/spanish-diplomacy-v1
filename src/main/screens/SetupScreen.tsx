@@ -6,9 +6,9 @@ import { milestone2Scenario } from "../scenarios/milestone2Scenario";
 import { selectAssignments, setActorKind, startNewGame } from "../state/gameSlice";
 
 const actorOptions: readonly { readonly label: string; readonly value: ActorKind; readonly disabled?: boolean }[] = [
-  { label: "Local Player", value: "local-human" },
-  { label: "Computer Player", value: "computer" },
-  { disabled: true, label: "Online Player — coming later", value: "online-human" }
+  { label: "At this device", value: "local-human" },
+  { label: "Computer commander", value: "computer" },
+  { disabled: true, label: "Remote player — coming later", value: "online-human" }
 ];
 
 export function SetupScreen(): JSX.Element {
@@ -21,7 +21,7 @@ export function SetupScreen(): JSX.Element {
       <p className="screen-kicker">Campaign setup · {milestone2Scenario.snapshotLabel}</p>
       <h1 id="setup-title">Choose the commanders</h1>
       <p className="screen-copy">
-        Assign each operational command to someone at this device or to the computer. Locked orders stay private until every command is ready.
+        Assign each operational command to someone at this device or to a computer commander.
       </p>
       <div className="faction-setup-grid">
         {milestone2Scenario.factions.map((faction) => (
@@ -42,12 +42,12 @@ export function SetupScreen(): JSX.Element {
           </article>
         ))}
       </div>
-      <p className="historical-note">
-        This scenario separates the cooperating northern and southern insurgent commands to create three playable roles. Deployment is a researched game-scale interpretation, not a claim that they were independent states.
-      </p>
-      <button type="button" onClick={() => { dispatch(startNewGame(assignments)); navigate("/handoff"); }}>
-        Start Campaign
-      </button>
+      <div className="action-row">
+        <button className="secondary-button" type="button" onClick={() => navigate("/")}>Back to home</button>
+        <button type="button" onClick={() => { dispatch(startNewGame(assignments)); navigate("/handoff"); }}>
+          Start Campaign
+        </button>
+      </div>
     </main>
   );
 }

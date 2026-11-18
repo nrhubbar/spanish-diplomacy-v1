@@ -1,12 +1,13 @@
-import type { CSSProperties, JSX, KeyboardEvent, MouseEvent } from "react";
-import { useMemo } from "react";
-import iberiaSvgSource from "../../../assets/maps/iberia.svg?raw";
+import type { CSSProperties, JSX, KeyboardEvent, MouseEvent, PointerEvent } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import iberiaSvgSource from "../../../assets/maps/iberia-registered.svg?raw";
 import infantrySvgSource from "../../../assets/icons/nato/infantry.svg?raw";
 import type {
   FactionDefinition,
   FactionId,
   CityDefinition,
   CityId,
+  MoveOrder,
   TerritoryId,
   TerritoryControl,
   TurnOutcome,
@@ -20,6 +21,27 @@ import {
   territoryAnchors,
   type IberiaRegion
 } from "../maps/iberiaRegions";
+import {
+  clampMapCamera,
+  initialMapCamera,
+  mapCameraConfig,
+  mapSemanticLevel,
+  panMapCamera,
+  renderedMapScale,
+  zoomMapCamera,
+  type MapCamera
+} from "./mapCamera";
+import {
+  compactUnitStrength,
+  mapAssetCompensation,
+  mapKeyboardIntent,
+  mapPresentationConfig,
+  iberiaMapProjectionTransform,
+  projectMapCoordinate,
+  unitDesignation,
+  unitMarkerPosition
+} from "./mapPresentation";
+import { WebGLTerrain } from "./WebGLTerrain";
 
 interface IberiaMapProps {
   readonly cities?: readonly CityDefinition[];
@@ -29,6 +51,7 @@ interface IberiaMapProps {
   readonly legalDestinationIds: readonly TerritoryId[];
   readonly onSelectTerritory: (territoryId: TerritoryId) => void;
   readonly onSelectUnit: (unitId: UnitId) => void;
+  readonly plannedOrders?: readonly MoveOrder[];
   readonly resolutionOutcomes?: readonly TurnOutcome[];
   readonly selectedDestinationId: TerritoryId | undefined;
   readonly selectedFromTerritoryId: TerritoryId | undefined;
@@ -42,13 +65,18 @@ interface PositionedUnit {
 }
 
 const mapViewBox = {
-  height: 176,
+  height: 225,
   width: 225,
   x: 238,
-  y: 535
+  y: 515
 } as const;
 
 const uncontrolledColor = "#d8c59d";
+const overviewCityIds = new Set(["barcelona", "bilbao", "madrid", "seville", "valencia", "zaragoza"]);
+const unitAnchorOverrides: Partial<Record<TerritoryId, { readonly x: number; readonly y: number }>> = {
+  ceuta: { x: 337.7, y: 709.1 },
+  melilla: { x: 368.6, y: 721.9 }
+};
 
 export function IberiaMap({
   cities = [],
@@ -58,12 +86,24 @@ export function IberiaMap({
   legalDestinationIds,
   onSelectTerritory,
   onSelectUnit,
+  plannedOrders = [],
   resolutionOutcomes = [],
   selectedDestinationId,
   selectedFromTerritoryId,
   selectedUnitIds,
   units
 }: IberiaMapProps): JSX.Element {
+  const mapRef = useRef<HTMLDivElement>(null);
+  const activePointers = useRef(new Map<number, { x: number; y: number }>());
+  const dragStart = useRef<{ pointerX: number; pointerY: number; view: MapCamera } | undefined>(undefined);
+  const pinchStart = useRef<{
+    centerX: number;
+    centerY: number;
+    distance: number;
+    view: MapCamera;
+  } | undefined>(undefined);
+  const movedDuringPointer = useRef(false);
+  const [view, setView] = useState<MapCamera>(initialMapCamera);
   const mapMarkup = useMemo(
     () =>
       prepareIberiaMapMarkup(
@@ -81,6 +121,33 @@ export function IberiaMap({
       territoryColor(control[region.territoryId], factions)
     ])
   ) as CSSProperties;
+  const renderedScale = renderedMapScale(view);
+  const semanticLevel = mapSemanticLevel(view.scale);
+  const unitCompensation = mapAssetCompensation(
+    renderedScale,
+    mapPresentationConfig.unitCompensationExponent
+  );
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (map === null) return;
+
+    const handleWheel = (event: globalThis.WheelEvent): void => {
+      event.preventDefault();
+      event.stopPropagation();
+      const bounds = map.getBoundingClientRect();
+      setView((current) => zoomMapCamera(
+        current,
+        current.scale * Math.exp(-event.deltaY * 0.002),
+        event.clientX - bounds.left,
+        event.clientY - bounds.top,
+        bounds
+      ));
+    };
+
+    map.addEventListener("wheel", handleWheel, { passive: false });
+    return () => map.removeEventListener("wheel", handleWheel);
+  }, []);
 
   function selectTerritoryFromTarget(target: EventTarget | null): void {
     const territoryId = territoryIdFromTarget(target as Element);
@@ -90,31 +157,179 @@ export function IberiaMap({
     }
   }
 
+  function updateZoom(nextScale: number, clientX?: number, clientY?: number): void {
+    const bounds = mapRef.current?.getBoundingClientRect();
+    if (bounds === undefined) return;
+    const focusX = clientX === undefined ? bounds.width / 2 : clientX - bounds.left;
+    const focusY = clientY === undefined ? bounds.height / 2 : clientY - bounds.top;
+    setView((current) => zoomMapCamera(current, nextScale, focusX, focusY, bounds));
+  }
+
+  function panBy(deltaX: number, deltaY: number): void {
+    const bounds = mapRef.current?.getBoundingClientRect();
+    if (bounds === undefined) return;
+    setView((current) => panMapCamera(current, deltaX, deltaY, bounds));
+  }
+
+  /* v8 ignore start -- pointer capture and multi-touch are exercised in Playwright's browser integration suite */
+  function handlePointerDown(event: PointerEvent<HTMLDivElement>): void {
+    if ((event.target as Element).closest(".map-zoom-controls, .nato-unit-counter") !== null) return;
+    activePointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    movedDuringPointer.current = false;
+    if (activePointers.current.size === 1) {
+      dragStart.current = { pointerX: event.clientX, pointerY: event.clientY, view };
+    } else if (activePointers.current.size === 2) {
+      const [first, second] = [...activePointers.current.values()] as [
+        { x: number; y: number },
+        { x: number; y: number }
+      ];
+      pinchStart.current = {
+        centerX: (first.x + second.x) / 2,
+        centerY: (first.y + second.y) / 2,
+        distance: Math.hypot(first.x - second.x, first.y - second.y),
+        view
+      };
+    }
+  }
+
+  function handlePointerMove(event: PointerEvent<HTMLDivElement>): void {
+    if (!activePointers.current.has(event.pointerId)) return;
+    activePointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    const bounds = mapRef.current?.getBoundingClientRect();
+    if (bounds === undefined) return;
+
+    if (activePointers.current.size === 2 && pinchStart.current !== undefined) {
+      const [first, second] = [...activePointers.current.values()] as [
+        { x: number; y: number },
+        { x: number; y: number }
+      ];
+      const distance = Math.hypot(first.x - second.x, first.y - second.y);
+      const start = pinchStart.current;
+      const nextScale = start.view.scale * (distance / Math.max(start.distance, 1));
+      setView(zoomMapCamera(
+        start.view,
+        nextScale,
+        start.centerX - bounds.left,
+        start.centerY - bounds.top,
+        bounds
+      ));
+      movedDuringPointer.current = true;
+      return;
+    }
+
+    const start = dragStart.current;
+    if (activePointers.current.size === 1 && start !== undefined) {
+      const deltaX = event.clientX - start.pointerX;
+      const deltaY = event.clientY - start.pointerY;
+      if (Math.hypot(deltaX, deltaY) > 4) {
+        event.currentTarget.setPointerCapture?.(event.pointerId);
+        movedDuringPointer.current = true;
+      }
+      setView(clampMapCamera(
+        { ...start.view, x: start.view.x + deltaX, y: start.view.y + deltaY },
+        bounds
+      ));
+    }
+  }
+
+  function handlePointerEnd(event: PointerEvent<HTMLDivElement>): void {
+    activePointers.current.delete(event.pointerId);
+    pinchStart.current = undefined;
+    const remaining = [...activePointers.current.values()][0];
+    dragStart.current = remaining === undefined
+      ? undefined
+      : { pointerX: remaining.x, pointerY: remaining.y, view };
+  }
+  /* v8 ignore stop */
+
   return (
-    <section aria-label="Iberia campaign map" className="iberia-map-section">
+    <section className="iberia-map-section">
       <div
+        aria-describedby="iberia-map-instructions"
+        aria-keyshortcuts="W A S D ArrowUp ArrowDown ArrowLeft ArrowRight + - 0"
+        aria-label="Iberia campaign map"
         className={legalDestinationIds.length > 0 ? "iberia-map iberia-map-choosing-destination" : "iberia-map"}
-        onClick={(event: MouseEvent<HTMLDivElement>) => selectTerritoryFromTarget(event.target)}
+        data-semantic-level={semanticLevel}
+        onClick={(event: MouseEvent<HTMLDivElement>) => {
+          if (movedDuringPointer.current) {
+            movedDuringPointer.current = false;
+            return;
+          }
+          selectTerritoryFromTarget(event.target);
+        }}
         onKeyDown={(event: KeyboardEvent<HTMLDivElement>) => {
-          if (event.key === "Enter" || event.key === " ") {
-            event.preventDefault();
-            selectTerritoryFromTarget(event.target);
+          const intent = mapKeyboardIntent(event.key);
+          if (intent === undefined) return;
+          event.preventDefault();
+          switch (intent.kind) {
+            case "select":
+              selectTerritoryFromTarget(event.target);
+              break;
+            case "pan":
+              panBy(intent.deltaX, intent.deltaY);
+              break;
+            case "zoom-in":
+              updateZoom(view.scale + mapCameraConfig.zoomStep);
+              break;
+            case "zoom-out":
+              updateZoom(view.scale - mapCameraConfig.zoomStep);
+              break;
+            case "reset":
+              setView(initialMapCamera);
           }
         }}
+        onPointerCancel={handlePointerEnd}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerEnd}
+        ref={mapRef}
+        role="group"
         style={mapColors}
+        tabIndex={0}
       >
-        <div className="iberia-map-art" dangerouslySetInnerHTML={{ __html: mapMarkup }} />
-        <MapOverlay cities={cities} cityControl={cityControl} factions={factions} outcomes={resolutionOutcomes} />
-        {positionedUnits.map(({ stackIndex, unit }) => (
-          <NatoUnitCounter
-            faction={factionById(factions, unit.factionId)}
-            isSelected={selectedUnitIds.includes(unit.id)}
-            key={unit.id}
-            onSelectUnit={onSelectUnit}
-            stackIndex={stackIndex}
-            unit={unit}
-          />
-        ))}
+        <span className="visually-hidden" id="iberia-map-instructions">
+          Drag or use W A S D to pan. Pinch, scroll, or use plus and minus to zoom. Press zero to reset the view.
+        </span>
+        <div
+          className="iberia-map-viewport"
+          data-camera-x={Math.round(view.x)}
+          data-camera-y={Math.round(view.y)}
+          style={{
+            "--map-scale": renderedScale,
+            "--unit-compensation": unitCompensation,
+            transform: `translate(${view.x}px, ${view.y}px) scale(${renderedScale})`
+          } as CSSProperties}
+        >
+          <div className="campaign-board">
+            <span aria-hidden="true" className="campaign-board-notepad" />
+            <span aria-hidden="true" className="campaign-board-pencil" />
+            <span aria-hidden="true" className="campaign-board-cigar" />
+            <div className="iberia-map-surface">
+              <div className="iberia-map-plane">
+                <WebGLTerrain />
+                <div className="iberia-map-art" dangerouslySetInnerHTML={{ __html: mapMarkup }} />
+                <MapOverlay cities={cities} cityControl={cityControl} factions={factions} mapScale={renderedScale} outcomes={resolutionOutcomes} plannedOrders={plannedOrders} />
+                {positionedUnits.map(({ stackIndex, unit }) => (
+                  <NatoUnitCounter
+                    faction={factionById(factions, unit.factionId)}
+                    hasOrder={plannedOrders.some((order) => order.unitId === unit.id)}
+                    isSelected={selectedUnitIds.includes(unit.id)}
+                    key={unit.id}
+                    onSelectUnit={onSelectUnit}
+                    stackIndex={stackIndex}
+                    unit={unit}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="map-zoom-controls" aria-label="Map zoom controls" role="group">
+          <button aria-label="Zoom out" disabled={view.scale <= mapCameraConfig.minScale} onClick={() => updateZoom(view.scale - mapCameraConfig.zoomStep)} type="button">−</button>
+          <button aria-label="Reset map view" onClick={() => setView(initialMapCamera)} type="button">{Math.round(view.scale * 100)}%</button>
+          <button aria-label="Zoom in" disabled={view.scale >= mapCameraConfig.maxScale} onClick={() => updateZoom(view.scale + mapCameraConfig.zoomStep)} type="button">+</button>
+        </div>
+        <span aria-live="polite" className="visually-hidden">Map zoom {Math.round(view.scale * 100)} percent</span>
       </div>
       <MapLegend factions={factions} />
     </section>
@@ -125,11 +340,17 @@ interface MapOverlayProps {
   readonly cities: readonly CityDefinition[];
   readonly cityControl: Partial<Record<CityId, FactionId>>;
   readonly factions: readonly FactionDefinition[];
+  readonly mapScale: number;
   readonly outcomes: readonly TurnOutcome[];
+  readonly plannedOrders: readonly MoveOrder[];
 }
 
-function MapOverlay({ cities, cityControl, factions, outcomes }: MapOverlayProps): JSX.Element {
+function MapOverlay({ cities, cityControl, factions, mapScale, outcomes, plannedOrders }: MapOverlayProps): JSX.Element {
   const featuredRegions = Object.entries(iberiaRegions).filter(([, region]) => region.showLabel);
+  const labelCompensation = mapAssetCompensation(
+    mapScale,
+    mapPresentationConfig.labelCompensationExponent
+  );
 
   return (
     <svg
@@ -139,34 +360,79 @@ function MapOverlay({ cities, cityControl, factions, outcomes }: MapOverlayProps
     >
       <defs>
         <marker id="iberia-arrowhead" markerHeight="5" markerWidth="5" orient="auto" refX="4" refY="2.5">
-          <path d="M 0 0 L 5 2.5 L 0 5 Z" fill="context-stroke" />
+          <path d="M 0 0 L 5 2.5 L 0 5 Z" fill="#75cbd4" />
         </marker>
       </defs>
-      <text className="iberia-country-label" textAnchor="middle" x="270" y="625">
-        Portugal
-      </text>
+      <MapCountryLabel label="Portugal" mapScale={mapScale} x={300} y={630.5} />
+      <MapCountryLabel label="France" mapScale={mapScale} x={406.8} y={520.9} />
+      <MapCountryLabel label="Morocco" mapScale={mapScale} x={403} y={727} />
       {featuredRegions.map(([regionId, region]) => (
-        <MapRegionLabel key={regionId} region={region} />
+        <MapRegionLabel key={regionId} mapScale={mapScale} region={region} />
       ))}
       {cities.map((city) => (
-        <g className="map-city" key={city.id} transform={`translate(${city.x} ${city.y})`}>
-          <circle fill={cityColor(cityControl[city.id], factions)} r="1.8" />
-          <text textAnchor={city.x > 410 ? "end" : "start"} x={city.x > 410 ? -3 : 3} y="1.4">{city.name}</text>
-        </g>
+        <MapCity
+          city={city}
+          controller={cityControl[city.id]}
+          factions={factions}
+          key={city.id}
+          labelCompensation={labelCompensation}
+        />
       ))}
-      <OrderAnnotations factions={factions} outcomes={outcomes} />
+      <OrderAnnotations mapScale={mapScale} outcomes={outcomes} plannedOrders={plannedOrders} />
     </svg>
   );
 }
 
-function MapRegionLabel({ region }: { readonly region: IberiaRegion }): JSX.Element {
-  const width = Math.max(30, region.name.length * 4.2);
-  const x = region.anchor.x;
-  const y = region.anchor.y - 13;
+function MapCity({
+  city,
+  controller,
+  factions,
+  labelCompensation
+}: {
+  readonly city: CityDefinition;
+  readonly controller: FactionId | undefined;
+  readonly factions: readonly FactionDefinition[];
+  readonly labelCompensation: number;
+}): JSX.Element {
+  const position = projectMapCoordinate(city);
+  return (
+    <g
+      className={overviewCityIds.has(city.id) ? "map-city" : "map-city map-city-secondary"}
+      transform={`translate(${position.x} ${position.y}) scale(${labelCompensation})`}
+    >
+      <circle fill={cityColor(controller, factions)} r="1.8" />
+      <text textAnchor={position.x > 410 ? "end" : "start"} x={position.x > 410 ? -3 : 3} y="1.4">{city.name}</text>
+    </g>
+  );
+}
+
+function MapCountryLabel({ label, mapScale, project = false, x, y }: { readonly label: string; readonly mapScale: number; readonly project?: boolean; readonly x: number; readonly y: number }): JSX.Element {
+  const compensation = mapAssetCompensation(
+    mapScale,
+    mapPresentationConfig.labelCompensationExponent
+  );
+  const position = project ? projectMapCoordinate({ x, y }) : { x, y };
 
   return (
-    <g className="iberia-region-label" transform={`translate(${x} ${y})`}>
-      <rect height="11" rx="2" width={width} x={width / -2} y="-7.5" />
+    <g className="iberia-country-label" transform={`translate(${position.x} ${position.y}) scale(${compensation})`}>
+      <text textAnchor="middle">{label}</text>
+    </g>
+  );
+}
+
+function MapRegionLabel({ mapScale, region }: { readonly mapScale: number; readonly region: IberiaRegion }): JSX.Element {
+  const width = Math.max(19, region.name.length * 2.8);
+  const position = projectMapCoordinate(region.anchor);
+  const x = position.x;
+  const y = position.y - 13;
+  const compensation = mapAssetCompensation(
+    mapScale,
+    mapPresentationConfig.labelCompensationExponent
+  );
+
+  return (
+    <g className="iberia-region-label" transform={`translate(${x} ${y}) scale(${compensation})`}>
+      <rect height="7" rx="1.4" width={width} x={width / -2} y="-5" />
       <text textAnchor="middle" x="0" y="0">
         {region.name}
       </text>
@@ -175,21 +441,36 @@ function MapRegionLabel({ region }: { readonly region: IberiaRegion }): JSX.Elem
 }
 
 interface OrderAnnotationsProps {
-  readonly factions: readonly FactionDefinition[];
+  readonly mapScale: number;
   readonly outcomes: readonly TurnOutcome[];
+  readonly plannedOrders: readonly MoveOrder[];
 }
 
-function OrderAnnotations({ factions, outcomes }: OrderAnnotationsProps): JSX.Element {
+function OrderAnnotations({ mapScale, outcomes, plannedOrders }: OrderAnnotationsProps): JSX.Element {
   return (
     <g className="map-annotations">
+      {plannedOrders.map((order) => {
+        const from = projectMapCoordinate(territoryAnchors[order.from]);
+        const to = projectMapCoordinate(territoryAnchors[order.to]);
+        return (
+          <line
+            className="map-planned-order-arrow"
+            key={`${order.unitId}-planned`}
+            markerEnd="url(#iberia-arrowhead)"
+            x1={from.x}
+            x2={to.x}
+            y1={from.y}
+            y2={to.y}
+          />
+        );
+      })}
       {outcomes.flatMap((outcome) => {
         if (outcome.kind === "no-move" || outcome.kind === "invalid-order") {
           return [];
         }
 
-        const from = territoryAnchors[outcome.order.from];
-        const to = territoryAnchors[outcome.order.to];
-        const faction = factionById(factions, outcome.order.factionId);
+        const from = projectMapCoordinate(territoryAnchors[outcome.order.from]);
+        const to = projectMapCoordinate(territoryAnchors[outcome.order.to]);
         const midpoint = {
           x: (from.x + to.x) / 2,
           y: (from.y + to.y) / 2
@@ -200,30 +481,40 @@ function OrderAnnotations({ factions, outcomes }: OrderAnnotationsProps): JSX.El
             className="map-order-arrow"
             key={`${outcome.order.unitId}-arrow`}
             markerEnd="url(#iberia-arrowhead)"
-            style={{ color: faction.color }}
             x1={from.x}
             x2={to.x}
             y1={from.y}
             y2={to.y}
           />,
-          outcome.kind === "bounced-move" ? (
-            <text className="map-bounce-marker" key={`${outcome.order.unitId}-bounce`} x={midpoint.x} y={midpoint.y}>
-              x
-            </text>
-          ) : null,
-          outcome.kind === "disbanded-move" ? (
-            <text className="map-skull-marker" key={`${outcome.order.unitId}-skull`} x={midpoint.x} y={midpoint.y}>
-              skull
-            </text>
-          ) : null
+          outcome.kind === "bounced-move" ? <BounceMarker key={`${outcome.order.unitId}-bounce`} mapScale={mapScale} x={midpoint.x} y={midpoint.y} /> : null,
+          outcome.kind === "disbanded-move" ? <DisbandMarker key={`${outcome.order.unitId}-disband`} mapScale={mapScale} x={midpoint.x} y={midpoint.y} /> : null
         ];
       })}
     </g>
   );
 }
 
+function BounceMarker({ mapScale, x, y }: { readonly mapScale: number; readonly x: number; readonly y: number }): JSX.Element {
+  return (
+    <g className="map-outcome-icon map-bounce-icon" transform={`translate(${x} ${y}) scale(${mapAssetCompensation(mapScale, 1)})`}>
+      <circle r="4.5" />
+      <path d="M -2.8 -1 L -0.4 -1 L -1.6 -2.2 M 2.8 1 L 0.4 1 L 1.6 2.2" />
+    </g>
+  );
+}
+
+function DisbandMarker({ mapScale, x, y }: { readonly mapScale: number; readonly x: number; readonly y: number }): JSX.Element {
+  return (
+    <g className="map-outcome-icon map-disband-icon" transform={`translate(${x} ${y}) scale(${mapAssetCompensation(mapScale, 1)})`}>
+      <path d="M 0 -5 L 1.4 -2.7 L 4 -3.5 L 3.2 -0.9 L 5 1 L 2.3 1.5 L 1.5 4.2 L 0 2.2 L -1.5 4.2 L -2.3 1.5 L -5 1 L -3.2 -0.9 L -4 -3.5 L -1.4 -2.7 Z" />
+      <path d="M -1.8 -1.8 L 1.8 1.8 M 1.8 -1.8 L -1.8 1.8" />
+    </g>
+  );
+}
+
 interface NatoUnitCounterProps {
   readonly faction: FactionDefinition;
+  readonly hasOrder: boolean;
   readonly isSelected: boolean;
   readonly onSelectUnit: (unitId: UnitId) => void;
   readonly stackIndex: number;
@@ -232,31 +523,44 @@ interface NatoUnitCounterProps {
 
 function NatoUnitCounter({
   faction,
+  hasOrder,
   isSelected,
   onSelectUnit,
   stackIndex,
   unit
 }: NatoUnitCounterProps): JSX.Element {
   const iconMarkup = useMemo(() => prepareNatoIconMarkup(infantrySvgSource, faction.color), [faction.color]);
-  const anchor = territoryAnchors[unit.territoryId];
-  const column = stackIndex % 3;
-  const row = Math.floor(stackIndex / 3);
-  const left = ((anchor.x - mapViewBox.x) / mapViewBox.width) * 100 + column * 2.4;
-  const top = ((anchor.y - mapViewBox.y) / mapViewBox.height) * 100 + row * 3.2;
+  const anchor = unitAnchorOverrides[unit.territoryId]
+    ?? projectMapCoordinate(territoryAnchors[unit.territoryId]);
+  const markerPosition = unitMarkerPosition(anchor, stackIndex, mapViewBox);
+  const classNames = [
+    "nato-unit-counter",
+    isSelected ? "nato-unit-counter-selected" : "",
+    hasOrder ? "nato-unit-counter-ordered" : ""
+  ].filter(Boolean).join(" ");
+  const designation = unitDesignation(unit.displayName);
 
   return (
     <button
-      aria-label={unit.displayName}
-      className={isSelected ? "nato-unit-counter nato-unit-counter-selected" : "nato-unit-counter"}
+      aria-label={`${unit.displayName}, strength ${unit.strength}${hasOrder ? ", order assigned" : ""}`}
+      className={classNames}
+      disabled={hasOrder}
       onClick={(event) => {
         event.stopPropagation();
         onSelectUnit(unit.id);
       }}
-      style={{ left: `${left}%`, top: `${top}%` }}
+      style={{
+        "--faction-color": faction.color,
+        left: `${markerPosition.leftPercent}%`,
+        top: `${markerPosition.topPercent}%`
+      } as CSSProperties}
       type="button"
     >
-      <span aria-hidden="true" dangerouslySetInnerHTML={{ __html: iconMarkup }} />
+      <span className="nato-unit-designation" aria-hidden="true">{designation}</span>
+      <span className="nato-unit-symbol" aria-hidden="true" dangerouslySetInnerHTML={{ __html: iconMarkup }} />
+      <span className="nato-unit-strength" aria-hidden="true">{compactUnitStrength(unit.strength)}</span>
       <span className="nato-unit-abbreviation">{faction.abbreviation}</span>
+      {hasOrder ? <span className="nato-unit-order-badge" aria-hidden="true">✓</span> : null}
     </button>
   );
 }
@@ -280,7 +584,7 @@ function MapLegend({ factions }: { readonly factions: readonly FactionDefinition
       </li>
       <li>
         <span className="map-legend-swatch map-legend-portugal" />
-        Portugal
+        Neutral surroundings
       </li>
     </ul>
   );
@@ -306,14 +610,15 @@ function prepareIberiaMapMarkup(
 
   documentNode.querySelector("metadata")?.remove();
   documentNode.querySelector("#svg-background")?.remove();
-  documentNode.querySelector("#map-group")?.removeAttribute("transform");
+  documentNode.querySelector("#map-group")?.setAttribute("transform", iberiaMapProjectionTransform);
   documentNode.querySelector("#legend-svg")?.remove();
   documentNode.querySelector("#credit-text-svg")?.remove();
   documentNode.querySelector("#sidemap")?.remove();
   documentNode.querySelectorAll("script, foreignObject").forEach((element) => element.remove());
 
   Object.entries(iberiaRegions).forEach(([regionId, region]) => {
-    const regionElement = documentNode.getElementById(regionId) as unknown as SVGElement;
+    const regionElement = documentNode.getElementById(regionId) as unknown as SVGElement | null;
+    if (regionElement === null) return;
 
     regionElement.setAttribute("aria-label", region.name);
     regionElement.setAttribute("data-country", region.country);
@@ -345,6 +650,10 @@ function prepareIberiaMapMarkup(
     title.textContent = region.name;
     regionElement.prepend(title);
   });
+
+  for (const insetId of ["ES63", "ES64", "ES70", "PT20", "PT30", "Gibraltar"]) {
+    documentNode.getElementById(insetId)?.remove();
+  }
 
   return new XMLSerializer().serializeToString(root);
 }

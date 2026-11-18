@@ -3,7 +3,6 @@ import { Navigate, useNavigate } from "react-router";
 import { useAppDispatch, useAppSelector } from "../hooks";
 import {
   beginPlanning,
-  runComputerTurn,
   selectActiveFaction,
   selectActorKind,
   selectGamePhase,
@@ -23,31 +22,27 @@ export function HandoffScreen(): JSX.Element {
   if (phase === "planning") return <Navigate to="/orders" replace />;
   if (phase === "resolution") return <Navigate to="/resolution" replace />;
   if (phase === "game-over") return <Navigate to="/game-over" replace />;
-  if (phase !== "handoff") return <Navigate to="/setup" replace />;
+  if (phase !== "handoff") return <Navigate to={phase === "idle" ? "/" : "/setup"} replace />;
 
-  const allComputer = actorKind === "computer";
+  if (actorKind !== "local-human") return <Navigate to="/setup" replace />;
 
   return (
     <main className="screen handoff-screen" aria-labelledby="handoff-title">
       <p className="screen-kicker">{turnDate}</p>
-      <p className="privacy-mark" aria-hidden="true">PRIVATE ORDERS</p>
-      <h1 id="handoff-title">{allComputer ? "Computer commanders are ready" : `Pass to ${activeFaction.name}`}</h1>
+      <h1 id="handoff-title">Pass to {activeFaction.name}</h1>
       <p className="screen-copy">
-        {allComputer
-          ? "Run one complete computer turn. The game will stop at resolution so you stay in control of the pace."
-          : fromFaction === undefined
-            ? `When the ${activeFaction.name} player is ready, begin their private planning phase.`
-            : `${fromFaction.name} has locked its orders. Hand over the device before continuing.`}
+        {fromFaction === undefined
+          ? `When the ${activeFaction.name} commander has the device, begin planning.`
+          : `${fromFaction.name} has submitted its orders. Pass the device before continuing.`}
       </p>
       <button
         type="button"
         onClick={() => {
-          if (allComputer) dispatch(runComputerTurn());
-          else dispatch(beginPlanning());
-          navigate(allComputer ? "/resolution" : "/orders");
+          dispatch(beginPlanning());
+          navigate("/orders");
         }}
       >
-        {allComputer ? "Run Computer Turn" : fromFaction === undefined ? `Begin ${activeFaction.name} Orders` : `Continue to ${activeFaction.name}`}
+        {fromFaction === undefined ? `Begin ${activeFaction.name} Orders` : `Continue to ${activeFaction.name}`}
       </button>
     </main>
   );

@@ -7,6 +7,7 @@ import { GameOverScreen } from "./screens/GameOverScreen";
 import { HandoffScreen } from "./screens/HandoffScreen";
 import { SetupScreen } from "./screens/SetupScreen";
 import { StartScreen } from "./screens/StartScreen";
+import { SettingsScreen } from "./screens/SettingsScreen";
 
 export function App(): JSX.Element {
   return (
@@ -14,6 +15,7 @@ export function App(): JSX.Element {
       <Routes>
         <Route path="/" element={<StartScreen />} />
         <Route path="/setup" element={<SetupScreen />} />
+        <Route path="/settings" element={<SettingsScreen />} />
         <Route path="/handoff" element={<HandoffScreen />} />
         <Route path="/orders" element={<OrderSubmissionScreen />} />
         <Route path="/resolution" element={<ResolutionScreen />} />

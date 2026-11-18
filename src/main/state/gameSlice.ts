@@ -89,11 +89,16 @@ const gameSlice = createSlice({
         return;
       }
 
-      const orders = buildMoveOrders(state, state.selectedDestinationId);
-      const withoutSelectedUnits = state.draftOrders.filter(
-        (order) => !state.selectedUnitIds.includes(order.unitId)
+      const alreadyOrdered = state.selectedUnitIds.find((unitId) =>
+        state.draftOrders.some((order) => order.unitId === unitId)
       );
-      state.draftOrders = [...withoutSelectedUnits, ...orders];
+      if (alreadyOrdered !== undefined) {
+        state.validationMessage = "A formation can only receive one order per turn.";
+        return;
+      }
+
+      const orders = buildMoveOrders(state, state.selectedDestinationId);
+      state.draftOrders = [...state.draftOrders, ...orders];
       clearSelection(state);
     },
     beginPlanning: (state) => {
@@ -142,14 +147,29 @@ const gameSlice = createSlice({
       state.phase = "setup";
       state.validationMessage = undefined;
     },
+    exitGame: (state) => {
+      const nextState = createInitialGameState();
+      Object.assign(state, {
+        activeFactionId: factionOrder[0] as FactionId,
+        cityControl: nextState.cityControl,
+        control: nextState.control,
+        draftAction: undefined,
+        draftOrders: [],
+        handoffFromFactionId: undefined,
+        history: [],
+        phase: "idle" as GamePhase,
+        resolution: undefined,
+        selectedDestinationId: undefined,
+        selectedFromTerritoryId: undefined,
+        selectedUnitIds: [],
+        submittedOrders: {},
+        turnNumber: nextState.turnNumber,
+        units: nextState.units,
+        validationMessage: undefined
+      });
+    },
     removeDraftOrder: (state, action: PayloadAction<UnitId>) => {
       state.draftOrders = state.draftOrders.filter((order) => order.unitId !== action.payload);
-    },
-    runComputerTurn: (state) => {
-      if (state.phase !== "handoff" || hasLocalPlayer(state.assignments)) {
-        return;
-      }
-      processActors(state);
     },
     selectTerritory: (state, action: PayloadAction<TerritoryId>) => {
       state.selectedFromTerritoryId = action.payload;
@@ -163,10 +183,37 @@ const gameSlice = createSlice({
         ? undefined
         : "No friendly formations are available in that territory.";
     },
+    selectAllAvailableUnitsInTerritory: (state) => {
+      if (state.selectedFromTerritoryId === undefined) {
+        state.validationMessage = "Select a territory first.";
+        return;
+      }
+
+      const orderedUnitIds = new Set(state.draftOrders.map((order) => order.unitId));
+      const availableUnitIds = Object.values(state.units)
+        .filter(
+          (unit) =>
+            unit.factionId === state.activeFactionId &&
+            unit.territoryId === state.selectedFromTerritoryId &&
+            !orderedUnitIds.has(unit.id)
+        )
+        .map((unit) => unit.id);
+
+      state.selectedUnitIds = availableUnitIds;
+      state.selectedDestinationId = undefined;
+      state.draftAction = undefined;
+      state.validationMessage = availableUnitIds.length === 0
+        ? "Every available formation here already has an order."
+        : undefined;
+    },
     selectUnit: (state, action: PayloadAction<UnitId>) => {
       const unit = state.units[action.payload];
       if (unit === undefined || unit.factionId !== state.activeFactionId) {
         state.validationMessage = "Select one of your own formations.";
+        return;
+      }
+      if (state.draftOrders.some((order) => order.unitId === unit.id)) {
+        state.validationMessage = "Remove this formation's planned order before assigning another.";
         return;
       }
 
@@ -212,9 +259,7 @@ const gameSlice = createSlice({
         validationMessage: undefined
       });
 
-      if (hasLocalPlayer(assignments)) {
-        processActors(state);
-      }
+      processActors(state);
     },
     startNextTurn: (state) => {
       if (state.phase !== "resolution") {
@@ -230,9 +275,7 @@ const gameSlice = createSlice({
       state.turnNumber += 1;
       clearSelection(state);
 
-      if (hasLocalPlayer(state.assignments)) {
-        processActors(state);
-      }
+      processActors(state);
     },
     submitCurrentOrders: (state) => {
       if (state.phase !== "planning") {
@@ -255,8 +298,9 @@ export const {
   chooseMoveAction,
   chooseMoveDestination,
   enterSetup,
+  exitGame,
   removeDraftOrder,
-  runComputerTurn,
+  selectAllAvailableUnitsInTerritory,
   selectTerritory,
   selectUnit,
   setActorKind,
@@ -297,7 +341,7 @@ function processActors(state: GameSliceState): void {
     state.activeFactionId = nextFactionId;
     const kind = state.assignments[nextFactionId];
     if (kind === "local-human") {
-      state.phase = "handoff";
+      state.phase = requiresLocalHandoff(state.assignments) ? "handoff" : "planning";
       return;
     }
     if (kind === "online-human") {
@@ -340,8 +384,8 @@ function archiveResolution(state: GameSliceState): void {
   }
 }
 
-function hasLocalPlayer(assignments: AssignmentRecord): boolean {
-  return Object.values(assignments).includes("local-human");
+function requiresLocalHandoff(assignments: AssignmentRecord): boolean {
+  return Object.values(assignments).filter((kind) => kind === "local-human").length > 1;
 }
 
 function clearSelection(state: GameSliceState): void {

@@ -1,6 +1,7 @@
 import type { JSX } from "react";
 import { Navigate } from "react-router";
 import { IberiaMap } from "../components/IberiaMap";
+import { ExitGameButton } from "../components/ExitGameButton";
 import type { TerritoryId } from "../engine/types";
 import { useAppDispatch, useAppSelector } from "../hooks";
 import { milestone2Scenario } from "../scenarios/milestone2Scenario";
@@ -11,6 +12,7 @@ import {
   chooseMoveDestination,
   removeDraftOrder,
   selectActiveFaction,
+  selectAllAvailableUnitsInTerritory,
   selectCanAddMove,
   selectCityControl,
   selectControl,
@@ -49,11 +51,15 @@ export function OrderSubmissionScreen(): JSX.Element {
   const validationMessage = useAppSelector(selectValidationMessage);
   const territoryUnits = units.filter((unit) => unit.territoryId === selectedFromTerritoryId);
   const territoryCities = milestone2Scenario.cities.filter((city) => city.territoryId === selectedFromTerritoryId);
+  const orderedUnitIds = new Set(draftOrders.map((order) => order.unitId));
+  const availableTerritoryUnits = territoryUnits.filter(
+    (unit) => unit.factionId === activeFaction.id && !orderedUnitIds.has(unit.id)
+  );
 
   if (phase === "handoff") return <Navigate to="/handoff" replace />;
   if (phase === "resolution") return <Navigate to="/resolution" replace />;
   if (phase === "game-over") return <Navigate to="/game-over" replace />;
-  if (phase !== "planning") return <Navigate to="/setup" replace />;
+  if (phase !== "planning") return <Navigate to={phase === "idle" ? "/" : "/setup"} replace />;
 
   function selectMapTerritory(territoryId: TerritoryId): void {
     if (draftAction === "move") {
@@ -68,12 +74,12 @@ export function OrderSubmissionScreen(): JSX.Element {
     <main className="screen game-screen" aria-labelledby="orders-title">
       <div className="screen-heading-row">
         <div>
-          <p className="screen-kicker">{turnDate} · Local Player</p>
+          <p className="screen-kicker">{turnDate} · At this device</p>
           <h1 id="orders-title">{activeFaction.name}</h1>
         </div>
-        <p className="privacy-chip">Orders are private</p>
+        <ExitGameButton />
       </div>
-      <p className="screen-copy">Select individual formations, add their moves, then lock the complete order set.</p>
+      <p className="screen-copy">Select formations, plan one move for each, then submit the complete order set.</p>
       <div className="game-layout">
         <IberiaMap
           cities={milestone2Scenario.cities}
@@ -83,6 +89,7 @@ export function OrderSubmissionScreen(): JSX.Element {
           legalDestinationIds={legalDestinationIds}
           onSelectTerritory={selectMapTerritory}
           onSelectUnit={(unitId) => dispatch(selectUnit(unitId))}
+          plannedOrders={draftOrders}
           selectedDestinationId={selectedDestinationId}
           selectedFromTerritoryId={selectedFromTerritoryId}
           selectedUnitIds={selectedUnitIds}
@@ -95,20 +102,34 @@ export function OrderSubmissionScreen(): JSX.Element {
               <p className="territory-heading">{territoryName(selectedFromTerritoryId)}</p>
               {territoryCities.length > 0 ? <p className="territory-cities">Cities: {territoryCities.map((city) => city.name).join(", ")}</p> : null}
               {territoryUnits.length === 0 ? <p>No formations present.</p> : (
-                <ul className="formation-list">
-                  {territoryUnits.map((unit) => (
-                    <li key={unit.id}>
-                      <button
-                        className={selectedUnitIds.includes(unit.id) ? "formation-button formation-button-selected" : "formation-button"}
-                        disabled={unit.factionId !== activeFaction.id}
-                        onClick={() => dispatch(selectUnit(unit.id))}
-                        type="button"
-                      >
-                        <span>{unit.displayName}</span><small>{unit.formationKind} · {unit.strength} personnel</small>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
+                <>
+                  <button
+                    className="text-button select-all-button"
+                    disabled={availableTerritoryUnits.length === 0}
+                    onClick={() => dispatch(selectAllAvailableUnitsInTerritory())}
+                    type="button"
+                  >
+                    Select all available
+                  </button>
+                  <ul className="formation-list">
+                    {territoryUnits.map((unit) => {
+                      const hasOrder = orderedUnitIds.has(unit.id);
+                      return (
+                        <li key={unit.id}>
+                          <button
+                            className={`${selectedUnitIds.includes(unit.id) ? "formation-button formation-button-selected" : "formation-button"}${hasOrder ? " formation-button-ordered" : ""}`}
+                            disabled={unit.factionId !== activeFaction.id || hasOrder}
+                            onClick={() => dispatch(selectUnit(unit.id))}
+                            type="button"
+                          >
+                            <span>{unit.displayName}{hasOrder ? <strong className="formation-order-status">Ordered</strong> : null}</span>
+                            <small>{unit.formationKind} · {unit.strength} personnel</small>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </>
               )}
               <button type="button" disabled={selectedUnitIds.length === 0} onClick={() => dispatch(chooseMoveAction())}>Move selected</button>
             </>
