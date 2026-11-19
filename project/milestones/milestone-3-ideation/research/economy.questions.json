@@ -1,0 +1,199 @@
+[
+  {
+    "id": "Q-RECR-1",
+    "idea": 1,
+    "text": "Which recruitment model should Milestone 3 use?",
+    "multi": false,
+    "options": [
+      { "label": "Recruit and Replenish orders paid from resources (Option B)", "recommended": true, "rationale": "Gives both actions the owner asked for, keeps one order per army, and puts every cost and site in scenario data." },
+      { "label": "Diplomacy-style free builds when objectives exceed armies (Option A)" },
+      { "label": "A replacement-point pool spent in a replacement phase, as in Paths of Glory (Option C)" },
+      { "label": "Automatic recovery of men in friendly territory, no cost (Option D)" },
+      { "label": "Drop this idea or defer it" }
+    ]
+  },
+  {
+    "id": "Q-RECR-2",
+    "idea": 1,
+    "text": "Where may a faction recruit new armies?",
+    "multi": false,
+    "options": [
+      { "label": "Territories tagged for recruitment in scenario data, controlled and uncontested, one new army per territory per turn", "recommended": true, "rationale": "Works today: Ceuta, Melilla, La Rioja and the Baleares have no city, and there is no capital field yet." },
+      { "label": "Only at a named capital city per territory (a new capitalCityId field)" },
+      { "label": "At any controlled city" },
+      { "label": "Only at the faction's starting (home) sites, as in Diplomacy" }
+    ]
+  },
+  {
+    "id": "Q-RECR-3",
+    "idea": 1,
+    "text": "How long does a new army take to train?",
+    "multi": false,
+    "options": [
+      { "label": "Per unit type in data: militia 1 turn, infantry, security forces and colonial veterans 2 turns", "recommended": true, "rationale": "Simple, data-driven, and reflects that militia columns formed in days while regiments needed cadres." },
+      { "label": "Every type arrives at the end of the turn it is ordered" },
+      { "label": "Per type, and longer for stronger types (up to 4 turns for colonial veterans)" }
+    ]
+  },
+  {
+    "id": "Q-RECR-4",
+    "idea": 1,
+    "text": "How should faster militia recruitment for some factions (owner idea 8) work?",
+    "multi": false,
+    "options": [
+      { "label": "By place: a territory's recruitment entry can shorten militia training there (for example Navarra, Catalunya, Madrid)", "recommended": true, "rationale": "Requetes and union militias were local; a place tag changes hands with the ground and needs no faction rule." },
+      { "label": "By faction: a faction modifier makes that faction's militia train one turn faster everywhere" },
+      { "label": "No difference between factions" }
+    ]
+  },
+  {
+    "id": "Q-RECR-5",
+    "idea": 1,
+    "text": "When do replenished men arrive, and what does the army do that turn?",
+    "multi": false,
+    "options": [
+      { "label": "The army holds (no entrenching), men arrive after battles and control; the order fails with a refund if the army fought a meeting or territory battle, retreated, or was destroyed, but standing battles in shared territories do not cancel it", "recommended": true, "rationale": "No same-turn combat surprises and attacks stay worthwhile, while armies in shared Asturias and Andalucia can still refill." },
+      { "label": "As above, but any battle cancels it, standing battles included (armies in Asturias and Andalucia could almost never replenish)" },
+      { "label": "Men arrive before battles, so they fight that turn" },
+      { "label": "Men arrive after battles even if the army fought" }
+    ]
+  },
+  {
+    "id": "Q-RECR-6",
+    "idea": 1,
+    "text": "How much should replenishing cost compared with recruiting a new army?",
+    "multi": false,
+    "options": [
+      { "label": "Replenishing costs half as much per value point as recruiting new, capped at half the army's establishment per turn", "recommended": true, "rationale": "Rewards keeping veteran armies alive, as Strategic Command reportedly does, without instant full recovery." },
+      { "label": "The same price per point either way" },
+      { "label": "Replenishing costs only Manpower; recruiting costs Funds and Manpower" }
+    ]
+  },
+  {
+    "id": "Q-RECR-7",
+    "idea": 1,
+    "text": "Can a destroyed or surrendered army be rebuilt?",
+    "multi": false,
+    "options": [
+      { "label": "No: it stays gone; a fresh Recruit replaces it with a new id", "recommended": true, "rationale": "Keeps the half of M25 that makes destruction matter and keeps unit ids stable for replay." },
+      { "label": "Yes: rebuild the named army at full recruit cost at a recruitment site" },
+      { "label": "Yes, but only historical named formations listed in the scenario" }
+    ]
+  },
+  {
+    "id": "Q-ECON-1",
+    "idea": 2,
+    "text": "Which resource set should Milestone 3 use?",
+    "multi": false,
+    "options": [
+      { "label": "Funds and Manpower, with production capacity as a per-site build limit (Option B)", "recommended": true, "rationale": "Two counters, matches the owner's city and rural split and the Republic's men-versus-arms history." },
+      { "label": "Funds only (Option A)" },
+      { "label": "Funds, Manpower and Materiel (Option C)" },
+      { "label": "Funds, Manpower, Oil, Food and Political capital (Option D)" },
+      { "label": "Drop this idea or defer it" }
+    ]
+  },
+  {
+    "id": "Q-ECON-2",
+    "idea": 2,
+    "text": "Which of the owner's optional resources should Milestone 3 add as separate counters? Choose all that apply.",
+    "multi": true,
+    "options": [
+      { "label": "None: fold oil and food into Funds and foreign aid; defer political capital, research and action points", "recommended": true, "rationale": "Each one needs upkeep rules or an event system and the owner hedged on all of them." },
+      { "label": "Oil, consumed by units each turn" },
+      { "label": "Food, consumed by armies and cities" },
+      { "label": "Political capital, spent on events or foreign aid" },
+      { "label": "Action points per turn (coordinate with idea 6)" },
+      { "label": "Research points" }
+    ]
+  },
+  {
+    "id": "Q-ECON-3",
+    "idea": 2,
+    "text": "How should foreign aid enter the economy?",
+    "multi": false,
+    "options": [
+      { "label": "A per-faction aid schedule in scenario data: Republic starts with a gold treasury, the insurgent commands receive aid on credit per turn", "recommended": true, "rationale": "Moscow gold and Axis and Texaco credit were decisive and give a data-only balance lever." },
+      { "label": "No foreign aid: income comes only from the map" },
+      { "label": "Aid as events or cards, deferred to a later milestone" }
+    ]
+  },
+  {
+    "id": "Q-ECON-4",
+    "idea": 2,
+    "text": "Where does income come from?",
+    "multi": false,
+    "options": [
+      { "label": "Cities and rural ground, each with its own yield, at the smallest place that exists (city, sub-region, or territory)", "recommended": true, "rationale": "Works before and after sub-partitioning (idea 7) and gives the owner's city versus rural split." },
+      { "label": "Cities only, like Diplomacy supply centres" },
+      { "label": "Territories only, like Axis and Allies" }
+    ]
+  },
+  {
+    "id": "Q-ECON-5",
+    "idea": 2,
+    "text": "What does a contested territory pay before sub-partitioning exists?",
+    "multi": false,
+    "options": [
+      { "label": "Its cities pay their controllers; its rural yield pays nobody", "recommended": true, "rationale": "Simple and rewards clearing a territory; measured Southern income is 5 Funds under it." },
+      { "label": "Its rural yield is split evenly among the factions present" },
+      { "label": "Nothing at all, cities included (the old draft's rule)" }
+    ]
+  },
+  {
+    "id": "Q-ECON-6",
+    "idea": 2,
+    "text": "What happens to unspent resources?",
+    "multi": false,
+    "options": [
+      { "label": "They carry over without limit", "recommended": true, "rationale": "Easiest to explain; the computer player is told not to hoard, and saving for a big recruit is a real choice." },
+      { "label": "They carry over up to a cap per faction" },
+      { "label": "They are lost each turn, as Paths of Glory replacement points are" }
+    ]
+  },
+  {
+    "id": "Q-ECON-7",
+    "idea": 2,
+    "text": "What can players see of each other's economy?",
+    "multi": false,
+    "options": [
+      { "label": "Balances and income public after each turn; planned spending secret until reveal", "recommended": true, "rationale": "Matches the old draft and the simultaneous-orders model without adding fog of war." },
+      { "label": "Everything public, including planned spending" },
+      { "label": "Opponents' balances hidden too" }
+    ]
+  },
+  {
+    "id": "Q-MIS-a-1",
+    "idea": "mismatch-a",
+    "text": "What should the two new economic actions be called, given that M11 Reinforcement already means a move into friendly ground?",
+    "multi": false,
+    "options": [
+      { "label": "Recruit (new army) and Replenish (restore men); keep M11 Reinforcement unchanged", "recommended": true, "rationale": "Neither word can be read as a move, and the engine's reinforcement-arrived outcome stays valid." },
+      { "label": "Raise (new army) and Replace (restore men)" },
+      { "label": "Recruit and Refit" },
+      { "label": "Rename M11 to Redeploy and use Reinforce for restoring men" }
+    ]
+  },
+  {
+    "id": "Q-MIS-b-1",
+    "idea": "mismatch-b",
+    "text": "How should the new ruleset relax M25 (no recovery of men)?",
+    "multi": false,
+    "options": [
+      { "label": "Replace M25 with M28 Replenish in the new ruleset; destroyed armies stay gone; m2-strength keeps M25", "recommended": true, "rationale": "Reuses strength and fullStrength as they are and keeps the existing ruleset reproducible." },
+      { "label": "Change M25 inside m2-strength itself" },
+      { "label": "Allow both replenishing and rebuilding destroyed armies" }
+    ]
+  },
+  {
+    "id": "Q-MIS-b-2",
+    "idea": "mismatch-b",
+    "text": "Does a Replenish order also restore a demoralized army's morale?",
+    "multi": false,
+    "options": [
+      { "label": "No: only rest recovers morale (M23); a replenishing army does not rest that turn", "recommended": true, "rationale": "Keeps men and morale as separate levers, so the player chooses between recovering and refilling." },
+      { "label": "Yes: replenishment also clears demoralization" },
+      { "label": "Demoralized armies cannot replenish at all" }
+    ]
+  }
+]

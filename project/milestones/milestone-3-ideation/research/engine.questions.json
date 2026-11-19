@@ -1,0 +1,193 @@
+[
+  {
+    "id": "Q-HARN-1",
+    "idea": 11,
+    "text": "How should the headless harness run?",
+    "multi": false,
+    "options": [
+      { "label": "A command-line tool (npm run sim) bundled by Vite, running games across worker threads and writing JSON, CSV, and an HTML report", "recommended": true, "rationale": "No new dependency, same module resolution as the app, and reports that can be compared run to run." },
+      { "label": "The same command-line tool run through tsx, with no build step" },
+      { "label": "Inside Vitest only, with seeds split across several soak files" },
+      { "label": "Drop this idea or defer it" }
+    ]
+  },
+  {
+    "id": "Q-HARN-2",
+    "idea": 11,
+    "text": "Which run sizes should be standard?",
+    "multi": false,
+    "options": [
+      { "label": "200 games in every npm test (as today), 1000 games on demand with npm run sim", "recommended": true, "rationale": "200 games (about 103 decided) catch large imbalances (a 13 percent share of decided games spans 8 to 21 percent); 1000 games narrow it to about +/- 3 points and take seconds." },
+      { "label": "Only 10-game smoke runs in npm test; 200 and 1000 on demand" },
+      { "label": "1000 games in every npm test" }
+    ]
+  },
+  {
+    "id": "Q-HARN-3",
+    "idea": 11,
+    "text": "Which metrics must the first harness report carry? Choose all that apply.",
+    "multi": true,
+    "options": [
+      { "label": "Recommended set: win share per faction with 95 percent intervals, decided and freeze rates, game-length distribution, battles per turn and results by odds column, losses per faction, first-turn moves", "recommended": true, "rationale": "Answers the open balance questions (freezes, the Southern command) and checks the combat table behaves as designed." },
+      { "label": "Per-territory capture counts for a map heat view" },
+      { "label": "Economy per faction per turn (income, spending, stockpile, recruits), once the economy exists" },
+      { "label": "Computer-player behaviour: share of armies that never move, offensives started and abandoned" }
+    ]
+  },
+  {
+    "id": "Q-HARN-4",
+    "idea": 11,
+    "text": "Should harness results fail the build?",
+    "multi": false,
+    "options": [
+      { "label": "Keep today's guards (no early wins, no abandonments, determinism) as failures; report balance numbers with intervals without failing", "recommended": true, "rationale": "Balance moves with every rule change; failing the build on it would force tuning loops the owner ruled out (P3)." },
+      { "label": "Also fail the build when the freeze rate exceeds its budget" },
+      { "label": "Fail the build on any faction's share leaving a target band" },
+      { "label": "Never fail the build on the soak; report only" }
+    ]
+  },
+  {
+    "id": "Q-HARN-5",
+    "idea": 11,
+    "text": "How should we compare rule variants (A/B)?",
+    "multi": false,
+    "options": [
+      { "label": "Variants are small JSON patches over the scenario (for example digging-in cap 2), run on the same seeds as the baseline, with the difference and its interval reported", "recommended": true, "rationale": "Paired seeds cut dice noise, and patches never change the shipped scenario." },
+      { "label": "Variants are full copies of the scenario package" },
+      { "label": "No A/B support; compare separate runs by eye" }
+    ]
+  },
+  {
+    "id": "Q-HARN-6",
+    "idea": 11,
+    "text": "Which computer opponents should the harness pit against each other?",
+    "multi": false,
+    "options": [
+      { "label": "Today's computer player on every side, with a per-faction AI profile (weights) that a variant can change", "recommended": true, "rationale": "Separates rule balance from AI quality and lets us test whether the Southern weakness is the AI or the board." },
+      { "label": "Also a random-legal player as a baseline (plan.md section 12.2)" },
+      { "label": "Today's computer player only, no profiles" }
+    ]
+  },
+  {
+    "id": "Q-HARN-7",
+    "idea": 11,
+    "text": "Where should the harness report be read?",
+    "multi": false,
+    "options": [
+      { "label": "A generated HTML page in build/sim/ next to summary.json and games.csv", "recommended": true, "rationale": "Readable in the morning without tools; the JSON and CSV feed any deeper analysis." },
+      { "label": "Console summary and JSON only" },
+      { "label": "A developer screen inside the game" }
+    ]
+  },
+  {
+    "id": "Q-DATA-1",
+    "idea": 13,
+    "text": "Where should the line between data and code sit?",
+    "multi": false,
+    "options": [
+      { "label": "Parameters in data; named rule modules in code, selected by data, each with its own spec rules and tests", "recommended": true, "rationale": "Honours the north star and the 'no premature abstraction' principle; matches Wesnoth and Ludii, and keeps rules testable (Revision 6 section 1.6)." },
+      { "label": "Rules as data: formulas, triggers, and effect scripts in JSON" },
+      { "label": "Keep Milestone 3 mechanics in code; move things to data only when a second game mode needs them" }
+    ]
+  },
+  {
+    "id": "Q-DATA-2",
+    "idea": 13,
+    "text": "How should the Spain game's data files be laid out?",
+    "multi": false,
+    "options": [
+      { "label": "One file per scenario: src/main/scenarios/spain-1936-07-31/scenario.json plays the role of spain-civil-war-scenario.json, gaining a rules section (modules, unit types, combat, resources, weather, AI, calendar); split into a shared game-mode file when a second start date is planned", "recommended": true, "rationale": "One file holds everything, as the owner expects, with no loader change; the split later is mechanical because the loader composes files into one Scenario." },
+      { "label": "Split now: src/main/modes/spain-civil-war/mode.json (rules and board, the owner's file) shared by starts/1936-07-31.json and later 1937 and 1938 starts" },
+      { "label": "Rename to the owner's literal name, src/main/scenarios/spain-civil-war/spain-civil-war-scenario.json (the loader glob for */scenario.json changes)" },
+      { "label": "One scenario file that extends a shared rules file and overrides parts of it" }
+    ]
+  },
+  {
+    "id": "Q-DATA-3",
+    "idea": 13,
+    "text": "Should computer-player weights move into the scenario data?",
+    "multi": false,
+    "options": [
+      { "label": "Yes: named AI profiles in data, one per faction, holding today's computerWeights, offensiveWeights, stakeWeights, and victoryAlarm numbers; the strategy logic stays in code", "recommended": true, "rationale": "They are already plain numbers; in data the harness can A/B them per faction, as Paradox scripts AI weights." },
+      { "label": "Yes, and let data choose among several coded strategies per faction" },
+      { "label": "No: keep them as code constants" }
+    ]
+  },
+  {
+    "id": "Q-DATA-4",
+    "idea": 13,
+    "text": "How should unit special effects (artillery roll bonus, bombing a town) be expressed?",
+    "multi": false,
+    "options": [
+      { "label": "Data names an effect kind from a coded list and gives its numbers, for example roll-bonus-per-points with per 3, bonus 1", "recommended": true, "rationale": "The Wesnoth pattern: each kind is tested once and reused by every era." },
+      { "label": "Free-form formulas in data" },
+      { "label": "Code per unit type" }
+    ]
+  },
+  {
+    "id": "Q-DATA-5",
+    "idea": 13,
+    "text": "How much should Milestone 3 design for future eras?",
+    "multi": false,
+    "options": [
+      { "label": "Check each new module on paper against one other era (WW1 is the closest), and build nothing for other eras yet", "recommended": true, "rationale": "Catches Spain-only assumptions cheaply while the owner says other game types come later." },
+      { "label": "Build a small second test scenario in another era to prove the engine" },
+      { "label": "Design only for Spain; generalise when a second era starts" }
+    ]
+  },
+  {
+    "id": "Q-DATA-6",
+    "idea": 13,
+    "text": "Should the turn calendar (start date and 14-day turns) become scenario data now?",
+    "multi": false,
+    "options": [
+      { "label": "Yes: a calendar block with start date and turn length in days, shown on the turn banner", "recommended": true, "rationale": "Weather by month needs a date, and other eras use other turn lengths." },
+      { "label": "Only if the weather idea is accepted" },
+      { "label": "No: keep turns numbered without dates" }
+    ]
+  },
+  {
+    "id": "Q-MIS-d-1",
+    "idea": "mismatch-d",
+    "text": "How should the new rules be named in scenario data?",
+    "multi": false,
+    "options": [
+      { "label": "ruleset m3-modular plus a rules object that picks one named module per area (dice, economy, recruitment, weather, supply, movement, partition); m2-strength kept as a preset", "recommended": true, "rationale": "Avoids one id per combination, lets a scenario take only what it needs, and lets the harness compare m2 and m3 rules." },
+      { "label": "A single new id, m3-economy, that includes every Milestone 3 rule" },
+      { "label": "One ruleset id per combination of rules" }
+    ]
+  },
+  {
+    "id": "Q-MIS-d-2",
+    "idea": "mismatch-d",
+    "text": "How should the scenario spec version change?",
+    "multi": false,
+    "options": [
+      { "label": "Bump to spec version 2, migrate both packages (Spain, tiny-front) in one commit, and drop version 1", "recommended": true, "rationale": "Only two packages and no saved games exist, so keeping version 1 would be cost without users." },
+      { "label": "Bump to version 2 and keep loading version 1 packages" },
+      { "label": "Stay on version 1 and add only optional fields" }
+    ]
+  },
+  {
+    "id": "Q-MIS-e-1",
+    "idea": "mismatch-e",
+    "text": "Should Milestone 3 add Diplomacy-style support orders (Revision 5 OD-9)?",
+    "multi": false,
+    "options": [
+      { "label": "Not in Milestone 3: measure the freeze rate with recruitment and the other new rules through the harness first, then decide", "recommended": true, "rationale": "Combined attacks from several origins (M17) already give most of what a support does; a second order type adds rules and UI." },
+      { "label": "Yes, add support orders in Milestone 3" },
+      { "label": "Drop support orders for good" }
+    ]
+  },
+  {
+    "id": "Q-MIS-e-2",
+    "idea": "mismatch-e",
+    "text": "What balance targets should Milestone 3 aim at?",
+    "multi": false,
+    "options": [
+      { "label": "Over 1000 games: freeze rate at or under 20 percent, and every faction winning at least 20 percent of decided games; report misses to the owner rather than tuning in a loop", "recommended": true, "rationale": "Gives the harness a stated target, which simulation balancing needs, without forcing equal shares on a historical asymmetry; at 1000 games a share is known to about +/- 3 points." },
+      { "label": "Equal shares: each faction 25 to 42 percent of decided games" },
+      { "label": "No targets; keep reporting numbers only (as P3 in Milestone 2)" }
+    ]
+  }
+]

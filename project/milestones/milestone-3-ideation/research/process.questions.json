@@ -1,0 +1,96 @@
+[
+  {
+    "id": "Q-PROC-1",
+    "idea": 10,
+    "text": "Should Milestone 3 add a CI gate (GitHub Actions), and what should it run?",
+    "multi": false,
+    "options": [
+      { "label": "Lint, typecheck, unit tests (with the soak), spec:check, and build on every push to an integration branch and every pull request to main; main protected by it", "recommended": true, "rationale": "Rev 5 D30 and D63 show red commits, and the repo has no CI; lint, typecheck, and unit took about 15 s locally (build not timed), so a run likely costs a few minutes." },
+      { "label": "The same, plus Chromium e2e without the visual baseline spec" },
+      { "label": "The same, plus every browser and the visual baselines (needs Linux baselines)" },
+      { "label": "Drop this idea or defer it" }
+    ]
+  },
+  {
+    "id": "Q-PROC-2",
+    "idea": 10,
+    "text": "In Rev 7 (D34) you waived the final verify and production smoke. With CI in place, CI would be the check that still runs when you waive the local verify. How should final checks work in Milestone 3?",
+    "multi": false,
+    "options": [
+      { "label": "You can still waive the local verify and smoke test, but the squash to main goes through a pull request that CI must pass", "recommended": true, "rationale": "Keeps your choice to skip the slow local pass while guaranteeing an independent check on every commit that reaches main." },
+      { "label": "The local verify and production smoke are always required; no waivers" },
+      { "label": "Keep today's practice: the integrator runs checks locally and you may waive them" }
+    ]
+  },
+  {
+    "id": "Q-PROC-3",
+    "idea": 10,
+    "text": "How should Milestone 3 work be split into streams?",
+    "multi": false,
+    "options": [
+      { "label": "A short contract stream first (types, schema, loader, ruleset id, pure maths), then one vertical slice per idea (engine, data, UI, and tests together)", "recommended": true, "rationale": "Rev 6 D5 shows contract-first works; Rev 6 D42 and D52 show layer-split streams had to land together or broke only after merging." },
+      { "label": "Contract first, then streams by layer (engine, presentation, data, art) as in Rev 6" },
+      { "label": "No contract stream; independent per-idea streams from the start, as in Rev 7" },
+      { "label": "One agent working through the steps in sequence" }
+    ]
+  },
+  {
+    "id": "Q-PROC-4",
+    "idea": 10,
+    "text": "How many workstreams should run at once in a Milestone 3 revision?",
+    "multi": false,
+    "options": [
+      { "label": "3 or 4, with hotspot files (CampaignMap.tsx, planning.ts, types.ts, the schema) owned by one stream each and split before the parallel phase", "recommended": true, "rationale": "Rev 7 ran 4 streams with 1 textual conflict; Claude Code's own guidance starts teams at 3 to 5, and your review time is the bottleneck." },
+      { "label": "5 to 8, as in Rev 6" },
+      { "label": "2" },
+      { "label": "1 (sequential)" }
+    ]
+  },
+  {
+    "id": "Q-PROC-5",
+    "idea": 10,
+    "text": "Should each stream get an independent, read-only reviewer agent before it hands off?",
+    "multi": false,
+    "options": [
+      { "label": "Yes: one reviewer per stream that reads the diff against the tasks decisions that stream owns, reports only correctness gaps, and skips style", "recommended": true, "rationale": "Rev 7 needed 9 fix-ups at integration across 4 merges, and the rubric is self-scored (R13 scored 5 with the verify waived); a fresh reviewer has not seen the author's reasoning." },
+      { "label": "One reviewer pass over the whole revision, at the end" },
+      { "label": "Drop this idea or defer it" }
+    ]
+  },
+  {
+    "id": "Q-PROC-6",
+    "idea": 10,
+    "text": "Some follow-ups have rolled over for three revisions (files over 200 lines, manual accessibility checks, OD-3 historical sign-off, the initial-chunk budget). How should Milestone 3 handle them?",
+    "multi": false,
+    "options": [
+      { "label": "All three: split the hotspot files (CampaignMap.tsx, planning.ts, useMapCamera.ts, combat.ts) in the first M3 contract stream; schedule or formally defer the person-only checks (screen reader, 200 percent zoom, OD-3); move owner-owned budgets (freeze rate, chunk size) into one file a gate reads", "recommended": true, "rationale": "The over-200 list grew from 3 to 5 files, CampaignMap.tsx (227, 230, 236 lines) was the Rev 7 conflict file, agents cannot do person-only checks, and Rev 6 D62 shows an agent raising its own budget." },
+      { "label": "Only split the hotspot files" },
+      { "label": "Only schedule or formally defer the person-only checks" },
+      { "label": "Drop the 200-line target and the manual checks from the Definition of Done" },
+      { "label": "Keep carrying them as follow-ups" }
+    ]
+  },
+  {
+    "id": "Q-PROC-7",
+    "idea": 10,
+    "text": "How should the research report and your answers feed the tasks document?",
+    "multi": false,
+    "options": [
+      { "label": "A full ideation report for each milestone, a few direct questions for small revisions (as in Rev 7), and your answers saved as JSON next to the questions so the tasks decisions table is generated from them", "recommended": true, "rationale": "Rev 6's Rec and Changed table made answers traceable; Rev 7's light path saved time; storing answers as data removes a manual transcription step." },
+      { "label": "A full research report for every revision" },
+      { "label": "Keep today's flow, with answers transcribed by hand" },
+      { "label": "Drop this idea or defer it" }
+    ]
+  },
+  {
+    "id": "Q-PROC-8",
+    "idea": 10,
+    "text": "Should the repository get a short CLAUDE.md plus a few enforced hooks?",
+    "multi": false,
+    "options": [
+      { "label": "Yes: a CLAUDE.md of under about 60 lines (commands, ports, gate-on-exit-codes, baseline and ASCII rules, where decisions live), a Stop hook running typecheck and lint, and a hook blocking baseline edits outside the integrator", "recommended": true, "rationale": "Today the shared rules are restated in each tasks doc and plan.md is 1,148 lines; Anthropic advises a short CLAUDE.md and hooks for rules with no exceptions." },
+      { "label": "CLAUDE.md only, no hooks" },
+      { "label": "Drop this idea or defer it" }
+    ]
+  }
+]

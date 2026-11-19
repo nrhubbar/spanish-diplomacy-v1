@@ -1,0 +1,178 @@
+[
+  {
+    "id": "Q-TIMER-1",
+    "idea": 3,
+    "text": "Which turn-timer values should the setup screen offer?",
+    "multi": false,
+    "options": [
+      { "label": "Off, 1, 5, 10 min now; 30 min and 1 h shown disabled as online play (coming later)", "recommended": true, "rationale": "On a shared PC clocks run one after another, so 30 min or 1 h per player makes turns of hours; those suit remote play." },
+      { "label": "All six values (Off, 1, 5, 10, 30 min, 1 h) available now" },
+      { "label": "Off, 5, 10 min only; add the rest with online play" },
+      { "label": "Drop this idea or defer it to online play" }
+    ]
+  },
+  {
+    "id": "Q-TIMER-2",
+    "idea": 3,
+    "text": "On a shared PC, when does a player's clock run?",
+    "multi": false,
+    "options": [
+      { "label": "Only on their own planning screen; it starts when they press Continue on the handoff screen", "recommended": true, "rationale": "The handoff screen shows no map, so stopping the clock there costs nothing and is fair to whoever must walk over to the device." },
+      { "label": "From the moment their handoff screen appears" },
+      { "label": "Untimed handoff, but the clock starts by itself after 60 seconds on the handoff screen" },
+      { "label": "One shared clock for the whole turn, split across all local players" }
+    ]
+  },
+  {
+    "id": "Q-TIMER-3",
+    "idea": 3,
+    "text": "When a player's time runs out, what gets submitted?",
+    "multi": false,
+    "options": [
+      { "label": "The orders already planned; every other army holds (entrench or rest); a half-built order is dropped", "recommended": true, "rationale": "This is exactly what End Turn does today, matches 'autosubmitted', and matches webDiplomacy's saved-orders rule." },
+      { "label": "Nothing: every army holds (Diplomacy no-orders style)" },
+      { "label": "The computer player plans the armies that have no order" },
+      { "label": "One grace extension per game (the clock restarts once), then the planned orders" }
+    ]
+  },
+  {
+    "id": "Q-TIMER-4",
+    "idea": 3,
+    "text": "Can a timed game be paused?",
+    "multi": false,
+    "options": [
+      { "label": "Yes: a Pause button covers the map like the handoff screen and keeps the same remaining time", "recommended": true, "rationale": "Real interruptions happen at a shared PC; hiding the map stops pause from being a free planning extension." },
+      { "label": "Yes, but a limited number of pauses per player per game" },
+      { "label": "Yes, and the map stays visible while paused" },
+      { "label": "No pause" }
+    ]
+  },
+  {
+    "id": "Q-TIMER-5",
+    "idea": 3,
+    "text": "Does unused time carry over to later turns?",
+    "multi": false,
+    "options": [
+      { "label": "No: every turn gets the full time again", "recommended": true, "rationale": "Simplest to explain and test; no bank state to show." },
+      { "label": "Yes: unused time rolls over, as in Polytopia Live games" },
+      { "label": "Chess-clock style: a game-long bank plus a fixed increment each turn (Fischer)" }
+    ]
+  },
+  {
+    "id": "Q-TIMER-6",
+    "idea": 3,
+    "text": "Should turn 1 get extra time, since it includes reading the Briefing?",
+    "multi": false,
+    "options": [
+      { "label": "Yes: turn 1 gets double the chosen time", "recommended": true, "rationale": "A 1 or 5 minute clock is tight when the player is also reading the objective and the first-turn hint." },
+      { "label": "No: every turn has the same time" },
+      { "label": "Turn 1 is always untimed" }
+    ]
+  },
+  {
+    "id": "Q-TIMER-7",
+    "idea": 3,
+    "text": "What should players see about running out of time? Choose all that apply.",
+    "multi": true,
+    "options": [
+      { "label": "Countdown chip on the planning screen, warnings at 1 minute and 10 seconds, and a line in the turn results saying whose time ran out and how many armies held", "recommended": true, "rationale": "Public timeouts explain surprising holds without revealing any orders." },
+      { "label": "A sound at 10 seconds" },
+      { "label": "A visible lock-status row showing which players are still planning, as plan.md section 4 describes" },
+      { "label": "A count of each player's timeouts so far this game" }
+    ]
+  },
+  {
+    "id": "Q-WX-1",
+    "idea": 12,
+    "text": "Should Milestone 3 include weather, and in which form?",
+    "multi": false,
+    "options": [
+      { "label": "Yes: seasonal weather tables for each climate zone, rolled each turn and shown before planning", "recommended": true, "rationale": "Guadalajara, Teruel, and the postponed Catalonia offensive show weather mattered, mostly in winter, and Spain's climates differ too much for one roll." },
+      { "label": "Yes, but one weather roll per turn for all of Spain" },
+      { "label": "A fixed seasonal rule with no roll (for example, winter attacks -1 in the interior and north)" },
+      { "label": "Drop this idea or defer it until movement points (idea 6) and aircraft (idea 8) exist" }
+    ]
+  },
+  {
+    "id": "Q-WX-2",
+    "idea": 12,
+    "text": "How many weather zones?",
+    "multi": false,
+    "options": [
+      { "label": "Four zones: Cantabrian, Meseta (interior and Aragon), Mediterranean, South (Andalucia, Extremadura, Ceuta, Melilla)", "recommended": true, "rationale": "Each matches a distinct climate in the AEMET normals while keeping only four badges on the map." },
+      { "label": "Three zones: North, Interior, South" },
+      { "label": "Every territory rolls its own weather" },
+      { "label": "One zone for all of Spain" }
+    ]
+  },
+  {
+    "id": "Q-WX-3",
+    "idea": 12,
+    "text": "When do players learn the weather?",
+    "multi": false,
+    "options": [
+      { "label": "The turn's weather is rolled before planning and shown; the next turn's odds are shown as a forecast", "recommended": true, "rationale": "Weather becomes a planning input rather than a surprise, and the odds come straight from the public table." },
+      { "label": "This turn's weather and next turn's actual weather are both known" },
+      { "label": "Only a forecast is shown; the actual weather is rolled during resolution and may differ" },
+      { "label": "Weather is revealed only in the turn results" }
+    ]
+  },
+  {
+    "id": "Q-WX-4",
+    "idea": 12,
+    "text": "Which weather outcomes should exist?",
+    "multi": false,
+    "options": [
+      { "label": "Clear, Hot, Rain, Mud, Snow, Severe cold", "recommended": true, "rationale": "Covers every effect seen in the Spanish record (Ebro heat, Guadalajara mud and sleet, Teruel snow and cold); with the soft effect set Hot and Rain show on the map but change no rule until ideas 6 and 8." },
+      { "label": "Clear, Rain, Mud, Snow (no Hot, no Severe cold)" },
+      { "label": "Good and Bad only, as in some board wargames" }
+    ]
+  },
+  {
+    "id": "Q-WX-5",
+    "idea": 12,
+    "text": "Which weather effects should Milestone 3 implement? Choose all that apply.",
+    "multi": true,
+    "options": [
+      { "label": "A named attack-roll modifier for the battle's zone, plus no digging-in gain in Snow and Severe cold; air and movement effects wait for ideas 8 and 6", "recommended": true, "rationale": "These attach to rules that exist today (M14, M22); every move is one connection, so movement costs have nothing to change yet." },
+      { "label": "Aircraft grounded in Mud and Snow, except from cities with paved airfields (needs aircraft, idea 8)" },
+      { "label": "Movement costs doubled in Mud and Snow (needs movement points, idea 6)" },
+      { "label": "Sea connections (Strait, Baleares) closed in storms" },
+      { "label": "Armies that move in Severe cold lose men to frostbite" },
+      { "label": "Defenders' works also weakened in Mud" }
+    ]
+  },
+  {
+    "id": "Q-WX-6",
+    "idea": 12,
+    "text": "How strong should the attack modifiers be (on today's d6 scale)?",
+    "multi": false,
+    "options": [
+      { "label": "Soft: Hot 0, Rain 0, Mud -1, Snow -1, Severe cold -2", "recommended": true, "rationale": "The game already freezes 58 percent of the time; soft values hurt attacks only in real winter weather. Hot and Rain are display-only until ideas 6 and 8 land, and can be raised after a harness run." },
+      { "label": "Standard: Hot -1, Rain -1, Mud -2, Snow -2, Severe cold -2" },
+      { "label": "Decide only from balance-harness results (idea 11)" }
+    ]
+  },
+  {
+    "id": "Q-WX-7",
+    "idea": 12,
+    "text": "Should the game show a calendar date for every turn?",
+    "multi": false,
+    "options": [
+      { "label": "Yes: two-week turns from 31 July 1936, shown as a date range (Turn 5, 25 Sep to 8 Oct 1936); a turn's month is its midpoint's month", "recommended": true, "rationale": "Weather odds need a month, and dates let players connect turns to history (Guadalajara is turns 16-17)." },
+      { "label": "Show only the month and season, not exact dates" },
+      { "label": "Keep the date on turn 1 only (today's rule B15) and track the month internally" }
+    ]
+  },
+  {
+    "id": "Q-WX-8",
+    "idea": 12,
+    "text": "Should the tables be purely random, or follow the historical weather?",
+    "multi": false,
+    "options": [
+      { "label": "Purely random from the seasonal tables, seeded per game", "recommended": true, "rationale": "Keeps one generic mechanism; a scripted 1937-38 Teruel winter would be scenario-specific code or data with no other use yet." },
+      { "label": "Random, but force known historical events (for example the Teruel blizzard of 31 Dec 1937 to 3 Jan 1938)" },
+      { "label": "Fully scripted historical weather for every turn" }
+    ]
+  }
+]
