@@ -1,6 +1,6 @@
 # m3r1-map-provinces progress
 
-## CP1: vendored source and geometry (commit b04b0b9)
+## CP1: vendored source and geometry (commits b04b0b9, then the attribution and comment fix after it)
 
 **Done**
 - `npm run maps:fetch -- provinces` vendors geoBoundaries gbOpen ESP ADM2 (simplified), revision `9469f09` (the same as ADM1), verbatim to `scripts/sources/geoboundaries/geoBoundaries-ESP-ADM2_simplified.geojson`. Its SHA-256 (`40a12d32...`) is in `manifest.json` under `provinces`. Before writing, the fetch checks three things:
@@ -24,7 +24,13 @@
 **Decisions**
 1. ADM2 never supplies an outer edge. Every sub-territory's outer edges are its region's rings, vertex for vertex; ADM2 only decides which side of an internal line a point is on. The reason: ADM2 (INE) and ADM1 (IGN) disagree by up to several km, and ADM2's own shared borders are not fully shared.
 2. The regions, the relief and the checksums of the existing assets are unchanged, byte for byte.
-3. The province data's licence is "INE Data License", not CC BY 4.0. It is credited as geoBoundaries (CC BY 4.0) with source data from INE.
+3. The province data's licence is not CC BY 4.0, as the brief assumed. The geoBoundaries metadata names the "National Institute of Statistics (INE) Data License", which points to the INE legal notice. Its reuse section allows reuse, commercial or not, if four conditions are met:
+   - the source is cited ("Elaboracion propia con datos extraidos del sitio web del INE: www.ine.es");
+   - the date is given;
+   - the meaning of the data is not distorted;
+   - nothing implies that the INE endorses the reuse.
+
+   The Settings attribution now carries that citation, still in the single entry that mentions geoBoundaries, which `app.test.tsx` expects to find once.
 4. Oviedo is the concejo of Oviedo (187 km2), closed inside `asturias`.
 5. Madrid follows municipal groups:
    - `guadarrama` is the Sierra Norte plus the Sierra de Guadarrama and El Escorial, so it includes Somosierra. D8 says "north-west"; this is read as the whole Sierra front.
@@ -34,6 +40,7 @@
 7. Baleares: each island takes its capital's part, and islets join the nearest island.
 8. Capital points move to the nearest point at least 0.3 km inside their part. The largest move is 0.64 km.
 9. Generated names in the JSON are ASCII with `\u` escapes, as before.
+10. The paths are not inline in `map.json`; they live in a separate SVG that loads lazily. This differs from the ownership note "sub-territory geometry in map.json". The reason: `map.json` is imported eagerly, so inline paths would add about 176 KB to the initial chunk.
 
 **Checks**
 - `npm run maps:build` exit 0, run twice; `map.json` is byte-identical between the runs.

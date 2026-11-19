@@ -270,8 +270,8 @@ const document = {
 await writeFile(mapUrl, asciiJson(document));
 await writeFile(new URL(outputs.subTerritories, root), subTerritorySvg);
 console.log(`wrote ${config.mapDocument} and ${outputs.subTerritories}`);
-// `--package-only` rewrites map.json without re-baking the relief, for iterating on labels. Only
-// the full build checks the relief registration and the asset checksums.
+// `--package-only` rewrites map.json and the sub-territory SVG without re-baking the relief, for
+// iterating on labels. Only the full build checks the relief registration and the asset checksums.
 if (process.argv.includes("--package-only")) process.exit(0);
 
 

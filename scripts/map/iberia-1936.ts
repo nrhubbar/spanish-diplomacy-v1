@@ -206,7 +206,7 @@ export const art = {
 /** Map credits shown on the Settings screen (`attribution` in map.json). */
 export const attribution: readonly { readonly text: string; readonly url?: string }[] = [
   {
-    text: "Administrative boundaries adapted from geoBoundaries gbOpen (CC BY 4.0); source boundary data from the Instituto Geografico Nacional, Spain (regions and municipalities), and the Instituto Nacional de Estadistica, Spain (provinces).",
+    text: "Administrative boundaries adapted from geoBoundaries gbOpen (CC BY 4.0); source boundary data for regions and municipalities from the Instituto Geografico Nacional, Spain. Provinces: Elaboraci\u00f3n propia con datos extra\u00eddos del sitio web del INE: www.ine.es (2018 boundaries).",
     url: "https://www.geoboundaries.org/"
   },
   {
