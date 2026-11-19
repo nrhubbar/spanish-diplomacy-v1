@@ -18,16 +18,36 @@ afterEach(() => {
   for (const folder of folders.splice(0)) rmSync(folder, { force: true, recursive: true });
 });
 
-/** A worker thread stood in by the real worker code on this thread, over an in-memory port. */
+/** Seeds in the order the stand-in workers finished them. */
+const finished: number[] = [];
+/** Replies waiting to be released, all at once and highest seed first. */
+const held: { readonly deliver: () => void; readonly seed: number }[] = [];
+
+function release(): void {
+  for (const reply of held.splice(0).sort((a, b) => b.seed - a.seed)) {
+    finished.push(reply.seed);
+    reply.deliver();
+  }
+}
+
+/**
+ * A worker thread stood in by the real worker code on this thread, over an in-memory port.
+ * Replies posted in the same tick are held and released highest seed first, so with several
+ * workers the games finish out of order, deterministically.
+ */
 function inProcessWorker(setup: WorkerSetup): PoolWorker<GameTask, GameLine> {
   let toWorker: (message: ToWorker<GameTask>) => void = () => undefined;
   let toPool: (message: FromWorker<GameLine>) => void = () => undefined;
   serveWorker(setup, sources, {
     on: (_event, listener) => { toWorker = listener; },
-    postMessage: (message) => { setTimeout(() => { toPool(message); }, 0); }
+    postMessage: (message) => {
+      if (held.length === 0) setTimeout(release, 0);
+      held.push({ deliver: () => { toPool(message); }, seed: message.kind === "result" ? message.result.seed : 0 });
+    }
   });
   return {
     onError: () => undefined,
+    onExit: () => undefined,
     onMessage: (listener) => { toPool = listener; },
     post: (message) => { toWorker(message); },
     terminate: () => Promise.resolve(0)
@@ -80,12 +100,16 @@ describe("sim command line", () => {
     expect(run.out.join("")).toContain("cap/with-blunders vs baseline/with-blunders (4 seeds)");
   });
 
-  it("gives the same summary whatever the worker count", async () => {
+  it("writes the same files whatever the worker count and the order games finish in", async () => {
     const out = tempOut();
-    const read = (name: string) => readFileSync(join(out, name, "summary.json"), "utf8");
+    const read = (name: string, file: string) => readFileSync(join(out, name, file), "utf8");
     await runCli(["--scenario", "tiny-front", "--seeds", "1-5", "--blunders", "with", "--workers", "1", "--run", "one", "--out", out], io().io);
+    finished.length = 0;
     await runCli(["--scenario", "tiny-front", "--seeds", "1-5", "--blunders", "with", "--workers", "4", "--run", "four", "--out", out], io().io);
-    expect(read("four")).toBe(read("one"));
+    // With four workers, later seeds finish first.
+    expect(finished).toEqual([4, 3, 2, 1, 5]);
+    expect(read("four", "summary.json")).toBe(read("one", "summary.json"));
+    expect(read("four", "games.jsonl")).toBe(read("one", "games.jsonl"));
   });
 
   it("prints help and exits 2 on bad input, before playing anything", async () => {
@@ -144,7 +168,7 @@ describe("sim command line", () => {
     const summary = JSON.parse(readFileSync(join(out, "r", "summary.json"), "utf8")) as Summary;
     expect(text).toContain("this run plays without them");
     expect(formatSummary({ ...summary, blunders: "both" }, "x")).toContain("with and without play alike");
-    expect(formatSummary({ ...summary, blunderControl: "scenario" }, "x")).not.toContain("blunder rate");
+    expect(formatSummary({ ...summary, blunderControl: "scenario" }, "x")).not.toContain("blunder chance");
     expect(text).toContain("stalled: 5 or more quiet turns");
     expect(runStamp(new Date("2026-01-02T03:04:05.678Z"))).toBe("20260102-030405");
   });

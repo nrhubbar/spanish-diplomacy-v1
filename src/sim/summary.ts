@@ -59,6 +59,8 @@ export interface RunMetrics {
   readonly sanity: {
     /** S3: objectives walked away from with no loss and no retreat. */
     readonly abandonments: number;
+    /** S3 checks made (faction-turns holding an objective); 0 would mean S3 was never tested. */
+    readonly objectiveChecks: number;
     /** S1: games won before turn 4. */
     readonly earlyWins: number;
     readonly earlyWinRate: Interval | null;
@@ -167,7 +169,8 @@ export function summarize(input: readonly GameLine[], factionIds: readonly strin
       abandonments: lines.reduce((sum, line) => sum + line.abandonments, 0),
       earlyWinRate: wilson(earlyWins, games),
       earlyWins,
-      longestQuiet: distribution(lines.map((line) => line.longestQuiet))
+      longestQuiet: distribution(lines.map((line) => line.longestQuiet)),
+      objectiveChecks: lines.reduce((sum, line) => sum + line.objectiveChecks, 0)
     },
     sharedVictories: decidedLines.filter((line) => line.winners.length > 1).length,
     stalled,

@@ -7,6 +7,8 @@ export type FromWorker<Result> =
 /** The part of a worker thread the pool uses, so tests can stand one in. */
 export interface PoolWorker<Task, Result> {
   onError(listener: (error: Error) => void): void;
+  /** The thread stopped, with its exit code. */
+  onExit(listener: (code: number) => void): void;
   onMessage(listener: (message: FromWorker<Result>) => void): void;
   post(message: ToWorker<Task>): void;
   terminate(): Promise<unknown>;
@@ -15,7 +17,8 @@ export interface PoolWorker<Task, Result> {
 /**
  * Hands tasks to `size` workers one at a time, the next task going to whichever worker
  * finishes first. Results come back in task order whatever the finishing order. The first
- * failure stops every worker and rejects.
+ * failure stops every worker and rejects; so does a worker that exits with a game unfinished,
+ * which would otherwise leave the run waiting for ever.
  */
 export async function runPool<Task, Result>(
   tasks: readonly Task[],
@@ -36,18 +39,22 @@ export async function runPool<Task, Result>(
         failed = true;
         reject(error);
       };
-      const feed = (worker: PoolWorker<Task, Result>, slot: { index: number }) => {
+      const feed = (worker: PoolWorker<Task, Result>, slot: { busy: boolean; index: number }) => {
         const task = tasks[next];
         if (task === undefined) return;
+        slot.busy = true;
         slot.index = next;
         next += 1;
         worker.post({ kind: "task", task });
       };
       for (let count = 0; count < Math.max(1, Math.min(size, tasks.length)); count += 1) {
         const worker = spawn();
-        const slot = { index: -1 };
+        const slot = { busy: false, index: -1 };
         workers.push(worker);
         worker.onError(fail);
+        worker.onExit((code) => {
+          if (slot.busy) fail(new Error(`A worker thread exited (code ${code}) with game ${slot.index + 1} of ${tasks.length} unfinished.`));
+        });
         worker.onMessage((message) => {
           if (failed) return;
           if (message.kind === "failed") {
@@ -55,6 +62,7 @@ export async function runPool<Task, Result>(
             return;
           }
           results[slot.index] = message.result;
+          slot.busy = false;
           done += 1;
           onProgress?.(done, tasks.length);
           if (done === tasks.length) resolve();

@@ -24,7 +24,7 @@ npm run sim -- --games 1000 --variant src/sim/variants/digging-in-cap-2.json --r
 | `--run NAME` | a UTC time stamp | The run folder's name. |
 | `--out DIR` | `build/sim` | The output folder. |
 
-The exit code is 0 when the run is done, 2 for bad arguments, variant files or scenario data (reported before any game is played), and 1 for a failure during play.
+The exit code is 0 when the run is done, 2 for bad arguments, variant files or scenario data (reported before any game is played), and 1 for a failure during play. A game that throws, or a worker thread that exits with a game unfinished, stops the whole run with that error; the run never waits on a lost thread.
 
 Standard sizes (H2): `npm test` runs a 10-game smoke run (`src/test/sim/smoke.test.ts`). Runs of 200 and 1000 games are on demand.
 
@@ -57,10 +57,11 @@ The console prints a few ASCII lines per cell and per comparison. There is no HT
 | `winners`, `victory` | Winning faction ids (more than one for a shared victory) and the victory condition. |
 | `battlesByTurn` | Battles fought on each turn, turn 1 first. |
 | `battles` | Battle counts by odds column, then by result: `battles[column][result]`. |
-| `losses` | Per faction, `men` lost in battle and `units` that left the board (destroyed, surrendered or disbanded). |
+| `losses` | Per faction, from the board before and after each turn, matched by unit id. `units` counts units that left the board (destroyed, surrendered or disbanded). `men` is the men of those units plus each remaining unit's drop in men. Units that appear during the game (reinforcements, recruits) are counted neither way, and a unit's gain in men never offsets another's loss. |
 | `firstTurnRoutes` | Per faction, the turn-1 orders as `from>to` routes. |
-| `longestQuiet` | The longest run of turns in which no territory changed hands. |
+| `longestQuiet` | The longest run of quiet turns. A turn is quiet when no territory changed hands, comparing territory-level control before and after the turn, over the scenario's territory ids only. Sub-territory or city changes do not break a quiet stretch. Battles do not either, which keeps Revision 7's S2 meaning. |
 | `abandonments` | S3 events (see the sanity metrics). |
+| `objectiveChecks` | S3 checks made: the faction-turns on which a faction held an objective. |
 
 ### `summary.json`
 
@@ -85,7 +86,8 @@ Every interval is `{ value, low, high }`, rounded to 4 decimal places. It is `nu
 | `battles.byColumn` | For each odds column: battles, their share of all battles, and the count of each result. |
 | `losses[faction]` | Men and units lost, in total and per game. |
 | `firstTurn[faction]` | The mean number of turn-1 orders, and the 10 most common routes with the games and share of games that used them. |
-| `sanity.abandonments` | S3: a faction left every objective it held with no unit lost and no army retreated. |
+| `sanity.abandonments` | S3: a faction left every objective it held with no unit lost and no army retreated. It is judged from unit positions against the scenario's territory ids. A unit standing anywhere else, or an objective that is not a territory, stops the run with an error, so S3 cannot pass by matching nothing. |
+| `sanity.objectiveChecks` | The total of `objectiveChecks`. The smoke test requires it to be above 0, so S3 is known to have been tested. |
 | `sanity.earlyWins`, `earlyWinRate` | S1: games won before turn 4. |
 | `sanity.longestQuiet` | The distribution of `longestQuiet`. |
 | `sharedVictories` | Decided games with more than one winner. |
@@ -103,7 +105,7 @@ For each seed the harness takes the difference, subject minus baseline, in:
 - whether it stalled;
 - the turns played.
 
-A comparison reports the mean difference with a 95% normal interval (`mean +- 1.96 * sd / sqrt(n)`). Pairing on seeds removes the spread from game to game that both runs share. Rate differences are fractions, so the console shows them as percentage points.
+A comparison reports the mean difference with a 95% Student-t interval: `mean +- t(0.975, n - 1) * sd / sqrt(n)`, where `sd` is the sample standard deviation of the differences. With fewer than 2 pairs the comparison is `null`, since no spread can be measured. Pairing on seeds removes the spread from game to game that both runs share. Rate differences are fractions, so the console shows them as percentage points.
 
 ## Variant patches (H4)
 
@@ -132,13 +134,27 @@ A variant is a JSON file. It is either an object, or a bare patch array, which t
 
 ## Blunders (H6)
 
-The computer player's blunder rate is a scenario value, expected at `/ai/blunderRate` and owned by `m3r1-contract`. The harness's seam is `blunderRatePointer` in `src/sim/engine.ts`, which the integrator sets when the value lands. Until then:
+The computer player's blunder chance is a scenario value, expected at `/ai/blunderChance` and owned by `m3r1-contract`. The harness's seam is `blunderChancePointer` in `src/sim/engine.ts`, which the integrator sets when the value lands. Until then:
 
 - `blunderControl` is `pending`;
 - with and without blunders play alike, so `--blunders` defaults to `without` and a run is not doubled;
 - the console says so.
 
-When the pointer is set, `blunderControl` becomes `scenario`. A cell without blunders then replaces the rate with 0, after the variant's own patch, and `--blunders` defaults to `both`, so every report carries both settings.
+When the pointer is set, `blunderControl` becomes `scenario`. A cell without blunders then sets the chance to 0 with a JSON Patch `add` after the variant's own patch. `add` works whether or not the scenario states the chance; it needs `/ai` to exist. and `--blunders` defaults to `both`, so every report carries both settings.
+
+## Re-check at the contract merge
+
+Everything the harness reads from the game goes through `src/sim/engine.ts`. Most bookkeeping comes from the board before and after each turn: units by id, their territory and men, and territory control. These places still read the engine's outcome kinds or result fields, because nothing on the board records them:
+
+| Where | What it reads | Used for |
+|---|---|---|
+| `battleColumn` (`engine.ts`), `playGame` (`game.ts`) | outcomes of kind `battle`: `column` and `result` | `battlesByTurn`, `battles` (results by odds column) |
+| `retreatedUnits` (`game.ts`) | `battle.retreats` and `bounced-move.retreatedTo` | S3: an army driven out has not abandoned its objective |
+| `orderRoute` (`engine.ts`), `playGame` | `result.submittedOrders` (`from`, `to`, `factionId`) | `firstTurnRoutes` |
+| `playGame` | `result.victory` (`factionIds`, `condition`) | winners and the decided or freeze end |
+| `territoryControlKey` (`engine.ts`) | `state.control[territoryId]` | quiet turns (S2) |
+| `objectivesOf` (`engine.ts`) | `faction.objectiveTerritoryIds` | S3 |
+| `defaultScenarioId`, `loadScenario`, `playComputerGame` | the registry and the submission coordinator | loading and playing |
 
 ## Targets (H7)
 

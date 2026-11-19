@@ -28,17 +28,41 @@ export function wilson(successes: number, trials: number): Interval | null {
   return { high: round(Math.min(1, centre + half)), low: round(Math.max(0, centre - half)), value: round(p) };
 }
 
+/** Student's t quantile for a two-sided 95 percent interval, by degrees of freedom 1 to 30. */
+const t95Table = [
+  12.7062, 4.3027, 3.1824, 2.7764, 2.5706, 2.4469, 2.3646, 2.306, 2.2622, 2.2281,
+  2.201, 2.1788, 2.1604, 2.1448, 2.1314, 2.1199, 2.1098, 2.1009, 2.093, 2.086,
+  2.0796, 2.0739, 2.0687, 2.0639, 2.0595, 2.0555, 2.0518, 2.0484, 2.0452, 2.0423
+] as const;
+
+/**
+ * Student's t quantile for a two-sided 95 percent interval with `df` degrees of freedom: a
+ * table to 30, then the Cornish-Fisher expansion around the normal quantile, which is within
+ * 1e-4 of the exact value from there on.
+ */
+export function t95(df: number): number {
+  if (!Number.isInteger(df) || df < 1) throw new RangeError(`t95 needs a whole number of degrees of freedom, not ${df}.`);
+  const tabled = t95Table[df - 1];
+  if (tabled !== undefined) return tabled;
+  const z = z95;
+  return z
+    + (z ** 3 + z) / (4 * df)
+    + (5 * z ** 5 + 16 * z ** 3 + 3 * z) / (96 * df ** 2)
+    + (3 * z ** 7 + 19 * z ** 5 + 17 * z ** 3 - 15 * z) / (384 * df ** 3)
+    + (79 * z ** 9 + 776 * z ** 7 + 1482 * z ** 5 - 1920 * z ** 3 - 945 * z) / (92160 * df ** 4);
+}
+
 /**
  * The mean of paired differences (variant minus baseline, one per seed) with a 95 percent
- * normal interval. Pairing on seeds removes the seed-to-seed spread both runs share. Null when
- * there are no pairs.
+ * Student-t interval on n - 1 degrees of freedom. Pairing on seeds removes the seed-to-seed
+ * spread both runs share. Null below two pairs, where no spread can be measured.
  */
 export function pairedDifference(differences: readonly number[]): Interval | null {
   const count = differences.length;
-  if (count === 0) return null;
+  if (count < 2) return null;
   const mean = differences.reduce((sum, value) => sum + value, 0) / count;
-  const variance = count < 2 ? 0 : differences.reduce((sum, value) => sum + (value - mean) ** 2, 0) / (count - 1);
-  const half = z95 * Math.sqrt(variance / count);
+  const variance = differences.reduce((sum, value) => sum + (value - mean) ** 2, 0) / (count - 1);
+  const half = t95(count - 1) * Math.sqrt(variance / count);
   return { high: round(mean + half), low: round(mean - half), value: round(mean) };
 }
 

@@ -17,6 +17,7 @@ function spawn(setup: WorkerSetup): PoolWorker<GameTask, GameLine> {
   const worker = new Worker(fileURLToPath(import.meta.url), { workerData: setup });
   return {
     onError: (listener) => worker.on("error", listener),
+    onExit: (listener) => worker.on("exit", listener),
     onMessage: (listener) => worker.on("message", (message: FromWorker<GameLine>) => { listener(message); }),
     post: (message) => { worker.postMessage(message); },
     terminate: () => worker.terminate()

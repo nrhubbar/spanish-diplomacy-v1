@@ -28,7 +28,7 @@ export const usage = `Usage: npm run sim -- [options]
   --turns N          turn limit; a game still running after it is a freeze (default ${defaultTurnLimit})
   --variant FILE     a JSON patch variant, played on the same seeds as the baseline (repeatable)
   --blunders MODE    with, without or both (default: without while blunders are pending
-                     in the computer player, both once the scenario sets a blunder rate)
+                     in the computer player, both once the scenario sets a blunder chance)
   --scenario ID      scenario id (default: the only shipped scenario)
   --workers N        worker threads (default: one per core, less one)
   --run NAME         run folder name under the output folder (default: a time stamp)

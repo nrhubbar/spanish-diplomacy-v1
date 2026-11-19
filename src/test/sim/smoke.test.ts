@@ -43,6 +43,8 @@ describe("harness smoke run on the shipped scenario", () => {
   });
 
   it("never abandons every objective without losing a unit or being driven out (S3)", () => {
+    // S3 must have been tested at all: factions held objectives on some turns.
+    expect(cell?.metrics.sanity.objectiveChecks).toBeGreaterThan(0);
     expect(cell?.metrics.sanity.abandonments).toBe(0);
   });
 

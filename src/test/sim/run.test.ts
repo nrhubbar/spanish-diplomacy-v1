@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { fixtureSources } from "../fixtures/scenarios/fixtureSources";
-import { loadScenario, scenarioSources } from "../../sim/engine";
-import { playGame } from "../../sim/game";
-import { PatchError } from "../../sim/patch";
+import { loadScenario, objectivesOf, scenarioSources, territoryIdsOf } from "../../sim/engine";
+import { assertInTerritories, playGame } from "../../sim/game";
+import { applyPatch, PatchError } from "../../sim/patch";
 import {
   baselineName,
   blunderControl,
@@ -12,6 +12,7 @@ import {
   cellsOf,
   defaultBlunderMode,
   orderLines,
+  prepare,
   type RunPlan,
   runInProcess,
   seedRanges,
@@ -41,6 +42,25 @@ describe("harness core on the tiny-front fixture", () => {
     expect(line.end === "decided").toBe(line.winners.length > 0);
     expect(line.end === "decided" ? line.victory : "none").toBeDefined();
     if (line.end === "freeze") expect(line.turns).toBe(30);
+  });
+
+  it("reads losses, control and S3 from the board, and fails loudly where it cannot match a unit or objective", () => {
+    const scenario = loadScenario(sources, "tiny-front");
+    const line = playGame({ blunders: true, scenario, turnLimit: 30, variant: baselineName }, 2);
+    // Tiny-front's objectives start in enemy hands, so S3 is checked only once one is taken.
+    expect(line.objectiveChecks).toBeGreaterThanOrEqual(0);
+    for (const losses of Object.values(line.losses)) expect(losses.men).toBeGreaterThanOrEqual(losses.units);
+    const without = (territoryId: string) => ({
+      ...scenario,
+      index: { ...scenario.index, territories: new Map([...scenario.index.territories].filter(([id]) => id !== territoryId)) }
+    });
+    // A unit standing somewhere that is not a territory (for example a sub-territory id).
+    const piece = { factionId: "red", strength: 100, territoryId: "westfold-north" };
+    expect(() => { assertInTerritories([["red-guard", piece]], territoryIdsOf(scenario)); })
+      .toThrow(/Unit "red-guard" stands in "westfold-north", which is not a territory/);
+    expect(() => { assertInTerritories([["red-guard", { ...piece, territoryId: "westfold" }]], territoryIdsOf(scenario)); }).not.toThrow();
+    // An objective that is not a territory.
+    expect(() => objectivesOf(without("harbor"))).toThrow(/Faction "red" has objectives that are not territories: harbor/);
   });
 
   it("stops at the turn limit and calls a game still running a freeze", () => {
@@ -109,14 +129,34 @@ describe("harness core on the tiny-front fixture", () => {
     expect(blunderComparison?.winShare["red"]).toEqual({ high: 0, low: 0, value: 0 });
   });
 
-  it("leaves a seam for the blunder rate: pending plays without, a pointer turns blunders off by patch", () => {
+  it("leaves a seam for the blunder chance: pending plays without, a pointer turns blunders off by patch", () => {
     expect(blunderControl()).toBe("pending");
-    expect(blunderControl("/ai/blunderRate")).toBe("scenario");
+    expect(blunderControl("/ai/blunderChance")).toBe("scenario");
     expect(defaultBlunderMode("pending")).toBe("without");
     expect(defaultBlunderMode("scenario")).toBe("both");
     expect(blunderPatch(false)).toEqual([]);
-    expect(blunderPatch(true, "/ai/blunderRate")).toEqual([]);
-    expect(blunderPatch(false, "/ai/blunderRate")).toEqual([{ op: "replace", path: "/ai/blunderRate", value: 0 }]);
+    expect(blunderPatch(true, "/ai/blunderChance")).toEqual([]);
+    const off = blunderPatch(false, "/ai/blunderChance");
+    expect(off).toEqual([{ op: "add", path: "/ai/blunderChance", value: 0 }]);
+    // `add` sets the chance whether or not the scenario states it.
+    expect(applyPatch({ ai: { blunderChance: 0.01, profiles: {} } }, off)).toEqual({ ai: { blunderChance: 0, profiles: {} } });
+    expect(applyPatch({ ai: { profiles: {} } }, off)).toEqual({ ai: { blunderChance: 0, profiles: {} } });
+  });
+
+  it("collects factions across every cell, so a variant that adds one is reported", () => {
+    const red = (loadScenario(sources, "tiny-front").factions.find((faction) => faction.id === "red"));
+    const plan = tinyPlan({
+      seeds: [1],
+      variants: [{
+        name: "green",
+        patch: [
+          { op: "add", path: "/factions/-", value: { ...red, abbreviation: "GRN", color: "#2e8b57", id: "green", name: "Green" } },
+          { op: "test", path: "/territories/3/id", value: "lowlands" },
+          { op: "replace", path: "/territories/3/initialControl", value: { factionId: "green", kind: "controlled" } }
+        ]
+      }]
+    });
+    expect(prepare(sources, plan)).toEqual(["red", "blue", "green"]);
   });
 
   it("rejects a bad patch, a patched scenario that fails validation, and an unknown scenario", () => {

@@ -34,7 +34,7 @@ export function formatSummary(summary: Summary, dir: string): string {
   ];
   if (summary.blunderControl === "pending") {
     const effect = summary.blunders === "without" ? "this run plays without them" : "with and without play alike";
-    out.push(`note: the computer player has no blunder rate yet (pending); ${effect}.`);
+    out.push(`note: the computer player has no blunder chance yet (pending); ${effect}.`);
   }
   out.push("freeze: no winner by the turn limit. stalled: 5 or more quiet turns in a row (Revision 7's S2).");
   for (const cell of summary.cells) {

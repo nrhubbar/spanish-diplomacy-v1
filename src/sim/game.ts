@@ -1,11 +1,21 @@
-import { battleColumn, objectivesOf, orderRoute, playComputerGame, type Scenario, type TurnOutcome } from "./engine";
+import {
+  battleColumn,
+  objectivesOf,
+  orderRoute,
+  playComputerGame,
+  type PlayedTurn,
+  type Scenario,
+  territoryControlKey,
+  territoryIdsOf,
+  type TurnOutcome
+} from "./engine";
 
 /** A game won before this turn is an early win (S1). */
 export const earlyWinTurn = 4;
 
 /** One faction's losses in one game. */
 export interface FactionLosses {
-  /** Men lost in battle. */
+  /** Men lost: the drop in men of units still on the board, plus the men of units that left it. */
   readonly men: number;
   /** Units that left the board: destroyed, surrendered or disbanded. */
   readonly units: number;
@@ -25,6 +35,8 @@ export interface GameLine {
   /** Turn-1 orders per faction, as `from>to` routes in submission order. */
   readonly firstTurnRoutes: Readonly<Record<string, readonly string[]>>;
   readonly losses: Readonly<Record<string, FactionLosses>>;
+  /** S3 checks made: turns on which a faction held an objective, summed over factions. Never 0 in a real game. */
+  readonly objectiveChecks: number;
   /** The longest run of turns in which no territory changed hands. */
   readonly longestQuiet: number;
   readonly seed: number;
@@ -52,16 +64,46 @@ function retreatedUnits(outcomes: readonly TurnOutcome[]): ReadonlySet<string> {
   }));
 }
 
-/** Plays one seeded all-computer game and records everything the summary needs. */
+/** A unit as the bookkeeping reads it: owner, place and men. */
+export interface Piece {
+  readonly factionId: string;
+  readonly strength: number;
+  readonly territoryId: string;
+}
+
+function piecesOf(state: PlayedTurn["before"]): ReadonlyMap<string, Piece> {
+  return new Map(Object.values(state.units).map((unit) => [unit.id as string, unit]));
+}
+
+/**
+ * Every unit must stand in one of the scenario's territories, or S3 and the losses would be
+ * judged against the wrong places and could pass without testing anything.
+ */
+export function assertInTerritories(pieces: Iterable<readonly [string, Piece]>, territories: ReadonlySet<string>): void {
+  for (const [id, piece] of pieces) {
+    if (!territories.has(piece.territoryId)) {
+      throw new Error(`Unit "${id}" stands in "${piece.territoryId}", which is not a territory of the scenario; re-check the harness's S3 and control reading.`);
+    }
+  }
+}
+
+/**
+ * Plays one seeded all-computer game and records everything the summary needs. Losses,
+ * control and S3 are read from the board before and after each turn, not from outcome kinds,
+ * so they keep their meaning when the turn becomes a phase pipeline. Battles, retreats and
+ * turn-1 orders still come from the turn's outcomes (see the spec's re-check list).
+ */
 export function playGame(setup: GameSetup, seed: number): GameLine {
   const { scenario } = setup;
   const factionIds = scenario.factions.map((faction) => faction.id as string);
   const objectives = objectivesOf(scenario);
+  const territories = territoryIdsOf(scenario);
   const battles: Record<string, Record<string, number>> = {};
   const battlesByTurn: number[] = [];
   const losses = Object.fromEntries(factionIds.map((id) => [id, { men: 0, units: 0 }]));
   let firstTurnRoutes: Record<string, string[]> = {};
   let abandonments = 0;
+  let objectiveChecks = 0;
   let quiet = 0;
   let longestQuiet = 0;
   let turns = 0;
@@ -71,41 +113,55 @@ export function playGame(setup: GameSetup, seed: number): GameLine {
   playComputerGame(scenario, seed, setup.turnLimit, ({ before, result, turn }) => {
     turns = turn;
     const after = result.finalState;
-    const factionOf = (unitId: string): string | undefined => before.units[unitId as keyof typeof before.units]?.factionId;
+    const was = piecesOf(before);
+    const now = piecesOf(after);
+    assertInTerritories([...was, ...now], territories);
+
     let fought = 0;
     for (const outcome of result.outcomes) {
       if (outcome.kind !== "battle") continue;
       fought += 1;
       const column = (battles[battleColumn(outcome)] ??= {});
       column[outcome.result] = (column[outcome.result] ?? 0) + 1;
-      for (const loss of outcome.losses) {
-        const owner = factionOf(loss.unitId);
-        const tally = owner === undefined ? undefined : losses[owner];
-        if (tally !== undefined) tally.men += loss.men;
-      }
     }
     battlesByTurn.push(fought);
-    for (const unit of Object.values(before.units)) {
-      const tally = losses[unit.factionId];
-      if (!(unit.id in after.units) && tally !== undefined) tally.units += 1;
+
+    // Losses by id: a unit that left the board is lost whole, a unit still on it lost its drop
+    // in men. Units that appeared this turn (reinforcements, recruits) are neither.
+    const lost = new Set<string>();
+    for (const [id, piece] of was) {
+      const tally = losses[piece.factionId];
+      if (tally === undefined) continue;
+      const remaining = now.get(id);
+      if (remaining === undefined) {
+        lost.add(id);
+        tally.units += 1;
+        tally.men += piece.strength;
+      } else {
+        tally.men += Math.max(0, piece.strength - remaining.strength);
+      }
     }
+
     if (turn === 1) {
       firstTurnRoutes = Object.fromEntries(factionIds.map((id) => [id, [] as string[]]));
       for (const order of result.submittedOrders) firstTurnRoutes[order.factionId]?.push(orderRoute(order));
     }
-    quiet = result.controlChanges.length === 0 ? quiet + 1 : 0;
+    const changed = [...territories].some((id) => territoryControlKey(before, id) !== territoryControlKey(after, id));
+    quiet = changed ? 0 : quiet + 1;
     longestQuiet = Math.max(longestQuiet, quiet);
 
-    // Driven out is not abandoned: an army that retreated (M21) left under fire.
+    // S3. Driven out is not abandoned: an army that retreated (M21) left under fire.
     const retreated = retreatedUnits(result.outcomes);
     for (const factionId of factionIds) {
       const held = objectives.get(factionId) ?? new Set<string>();
-      const holds = (units: typeof before.units) =>
-        Object.values(units).some((unit) => unit.factionId === factionId && held.has(unit.territoryId));
-      const count = (units: typeof before.units) => Object.values(units).filter((unit) => unit.factionId === factionId).length;
-      const lostUnits = count(after.units) < count(before.units);
-      const drivenOut = Object.values(before.units).some((unit) => unit.factionId === factionId && retreated.has(unit.id));
-      if (holds(before.units) && !holds(after.units) && !lostUnits && !drivenOut) abandonments += 1;
+      const holds = (pieces: ReadonlyMap<string, Piece>) =>
+        [...pieces.values()].some((piece) => piece.factionId === factionId && held.has(piece.territoryId));
+      if (!holds(was)) continue;
+      objectiveChecks += 1;
+      const own = [...was].filter(([, piece]) => piece.factionId === factionId).map(([id]) => id);
+      const lostUnits = own.some((id) => lost.has(id));
+      const drivenOut = own.some((id) => retreated.has(id));
+      if (!holds(now) && !lostUnits && !drivenOut) abandonments += 1;
     }
     if (result.victory !== undefined) {
       winners = [...result.victory.factionIds];
@@ -122,6 +178,7 @@ export function playGame(setup: GameSetup, seed: number): GameLine {
     firstTurnRoutes,
     longestQuiet,
     losses,
+    objectiveChecks,
     seed,
     turns,
     variant: setup.variant,

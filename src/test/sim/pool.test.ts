@@ -3,6 +3,7 @@ import { type FromWorker, type PoolWorker, runPool, type ToWorker } from "../../
 
 interface FakeOptions {
   readonly crashOn?: number;
+  readonly exitOn?: number;
   readonly failOn?: number;
   readonly delay: (task: number) => number;
 }
@@ -15,18 +16,22 @@ function fakeWorkers(options: FakeOptions) {
     spawned += 1;
     let onMessage: (message: FromWorker<string>) => void = () => undefined;
     let onError: (error: Error) => void = () => undefined;
+    let onExit: (code: number) => void = () => undefined;
     return {
       onError: (listener) => { onError = listener; },
+      onExit: (listener) => { onExit = listener; },
       onMessage: (listener) => { onMessage = listener; },
       post: ({ task }: ToWorker<number>) => {
         setTimeout(() => {
           if (task === options.crashOn) onError(new Error("worker crashed"));
+          else if (task === options.exitOn) onExit(3);
           else if (task === options.failOn) onMessage({ kind: "failed", message: `task ${task} failed` });
           else onMessage({ kind: "result", result: `t${task}` });
         }, options.delay(task));
       },
       terminate: () => {
         terminated.push(id);
+        onExit(1);
         return Promise.resolve(0);
       }
     };
@@ -59,5 +64,11 @@ describe("worker pool", () => {
     expect(failing.terminated).toHaveLength(2);
     const crashing = fakeWorkers({ crashOn: 0, delay: () => 0 });
     await expect(runPool([0, 1], 2, crashing.spawn)).rejects.toThrow("worker crashed");
+  });
+
+  it("rejects instead of hanging when a worker exits with a game unfinished", async () => {
+    const exiting = fakeWorkers({ delay: () => 0, exitOn: 1 });
+    await expect(runPool([0, 1, 2], 2, exiting.spawn)).rejects.toThrow("A worker thread exited (code 3) with game 2 of 3 unfinished.");
+    expect(exiting.terminated).toHaveLength(2);
   });
 });

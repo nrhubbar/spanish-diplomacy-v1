@@ -20,11 +20,11 @@ export function scenarioSources(): readonly PackageSources[] {
 }
 
 /**
- * H6 seam: the JSON Pointer of the computer player's blunder rate in `scenario.json`. It is
- * owned by `m3r1-contract` and expected at `/ai/blunderRate`; the integrator sets it here when
+ * H6 seam: the JSON Pointer of the computer player's blunder chance in `scenario.json`. It is
+ * owned by `m3r1-contract` and expected at `/ai/blunderChance`; the integrator sets it here when
  * that lands. While it is undefined, blunders are "pending": both settings play alike.
  */
-export const blunderRatePointer: string | undefined = undefined;
+export const blunderChancePointer: string | undefined = undefined;
 
 /**
  * The scenario a run plays when none is named: the only playable package in `sources`. With
@@ -96,9 +96,24 @@ export function playComputerGame(scenario: Scenario, seed: number, turnLimit: nu
   }
 }
 
-/** Each faction's objective territories, which it must not walk away from (S3). */
+/** The scenario's territory ids, from its index: the level that units stand in and S2 and S3 judge. */
+export function territoryIdsOf(scenario: Scenario): ReadonlySet<string> {
+  return new Set<string>(scenario.index.territories.keys());
+}
+
+/** Each faction's objective territories, which it must not walk away from (S3). Every id must be a territory. */
 export function objectivesOf(scenario: Scenario): ReadonlyMap<string, ReadonlySet<string>> {
-  return new Map(scenario.factions.map((faction) => [faction.id as string, new Set<string>(faction.objectiveTerritoryIds)]));
+  const territories = territoryIdsOf(scenario);
+  return new Map(scenario.factions.map((faction) => {
+    const unknown = faction.objectiveTerritoryIds.filter((id) => !territories.has(id));
+    if (unknown.length > 0) throw new Error(`Faction "${faction.id}" has objectives that are not territories: ${unknown.join(", ")}.`);
+    return [faction.id, new Set<string>(faction.objectiveTerritoryIds)];
+  }));
+}
+
+/** Who holds a territory in a state, as a comparable key. Territory level only: never a sub-territory or a city. */
+export function territoryControlKey(state: PlayedTurn["before"], territoryId: string): string {
+  return JSON.stringify(state.control[territoryId as keyof typeof state.control] ?? null);
 }
 
 /** A battle's odds column as a stable key; the d20 rules may name columns differently. */

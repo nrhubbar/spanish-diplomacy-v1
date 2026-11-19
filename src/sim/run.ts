@@ -1,4 +1,4 @@
-import { blunderRatePointer, loadScenario, type PackageSources, type Scenario } from "./engine";
+import { blunderChancePointer, loadScenario, type PackageSources, type Scenario } from "./engine";
 import { type GameLine, playGame } from "./game";
 import { applyPatch, type PatchOperation } from "./patch";
 import { type Comparison, compare, type RunMetrics, summarize } from "./summary";
@@ -38,10 +38,10 @@ export interface GameTask {
   readonly seed: number;
 }
 
-/** H6: "scenario" once the blunder rate is in scenario data, "pending" until then. */
+/** H6: "scenario" once the blunder chance is in scenario data, "pending" until then. */
 export type BlunderControl = "pending" | "scenario";
 
-export function blunderControl(pointer: string | undefined = blunderRatePointer): BlunderControl {
+export function blunderControl(pointer: string | undefined = blunderChancePointer): BlunderControl {
   return pointer === undefined ? "pending" : "scenario";
 }
 
@@ -53,9 +53,12 @@ export function defaultBlunderMode(control: BlunderControl = blunderControl()): 
   return control === "pending" ? "without" : "both";
 }
 
-/** The patch that turns blunders off: the scenario's blunder rate set to 0. Empty with blunders on or while pending. */
-export function blunderPatch(blunders: boolean, pointer: string | undefined = blunderRatePointer): readonly PatchOperation[] {
-  return blunders || pointer === undefined ? [] : [{ op: "replace", path: pointer, value: 0 }];
+/**
+ * The patch that turns blunders off: the scenario's blunder chance set to 0. JSON Patch `add`
+ * sets the member whether or not the scenario states it. Empty with blunders on or while pending.
+ */
+export function blunderPatch(blunders: boolean, pointer: string | undefined = blunderChancePointer): readonly PatchOperation[] {
+  return blunders || pointer === undefined ? [] : [{ op: "add", path: pointer, value: 0 }];
 }
 
 export function blunderSettings(mode: BlunderMode): readonly boolean[] {
@@ -129,7 +132,7 @@ export interface CellSummary {
 export interface Summary {
   /**
    * H6: whether the blunder setting reaches the game yet. "pending" until the computer
-   * player's blunder rate exists in scenario data; until then both settings play alike.
+   * player's blunder chance exists in scenario data; until then both settings play alike.
    */
   readonly blunderControl: BlunderControl;
   readonly blunders: BlunderMode;
@@ -190,10 +193,13 @@ export interface RunResult {
   readonly summary: Summary;
 }
 
-/** Validates every cell's scenario up front and returns the faction ids, before any game is played. */
+/**
+ * Validates every cell's scenario up front, before any game is played, and returns every
+ * faction id across all cells (a variant may add one), in order of first appearance.
+ */
 export function prepare(sources: readonly PackageSources[], plan: RunPlan): readonly string[] {
   const scenarios = cellsOf(plan).map((cell) => cellScenario(sources, plan, cell));
-  return (scenarios[0]?.factions ?? []).map((faction) => faction.id as string);
+  return [...new Set(scenarios.flatMap((scenario) => scenario.factions.map((faction) => faction.id as string)))];
 }
 
 /** Runs a whole plan on this thread: the smoke test's path, and the core every worker shares. */
