@@ -53,3 +53,20 @@ This log records the decisions and assumptions made while carrying out `mileston
 H7's 15 percent target is measured as **freeze**, because the owner's goal is games that end. "Stalled" stays in every report so results compare with Revision 7, which measured 58 percent.
 
 **D10. AI data pointers.** The blunder chance is `/ai/blunderChance` (H6's word), and the per-faction profiles are `/ai/profiles/<factionId>`, a record keyed by faction id (E7). Both the contract and the harness use these.
+
+**D11. Province data licence.** The ADM2 province boundaries vendored from geoBoundaries (revision `9469f09`) come from Spain's statistics office (INE), under the INE Data License, not CC BY 4.0 as the tasks assumed. INE allows reuse, commercial or not, on these conditions:
+- the source is cited and the date given;
+- the meaning is not distorted;
+- nothing implies INE endorses the reuse.
+
+`assets/maps/ATTRIBUTION.md` quotes the terms. The Settings attribution carries the required citation and the 2018 date. The Madrid split lines were traced from geoBoundaries ADM3 municipal borders (IGN, CC BY 4.0), which the existing IGN credit covers. Reported to the owner.
+
+**D12. Sub-territory splits as drawn (P9, D8):**
+- **Oviedo** is the municipality, about 187 km², an island inside `asturias`. It is the pocket held from 19 July to October 1936.
+- **Madrid** splits at Talamanca de Jarama:
+  - `guadarrama` is the Sierra Norte, the Sierra de Guadarrama and El Escorial: 62 municipalities, about 2,070 km². This is wider than D8's "north-west": it takes the whole Sierra front, Somosierra included.
+  - `henares` is the Henares valley and the Jarama-Henares plain around Alcala: 26 municipalities, about 870 km².
+  - `madrid` is the city, the west and the south.
+- **Baleares** splits by island. Formentera goes with `ibiza`; Cabrera and Dragonera go with `mallorca`.
+
+The outer edges of all sub-territories are the region rings, vertex for vertex. The paths are in a lazily loaded `assets/maps/iberia-sub-territories.svg`, so the initial chunk does not grow.
