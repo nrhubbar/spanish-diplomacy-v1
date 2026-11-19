@@ -1,6 +1,6 @@
 import { z } from "zod";
 import {
-  citationSchema,
+  basisShape,
   resourcesSchema,
   shareSchema,
   slugSchema,
@@ -97,7 +97,7 @@ export const modularUnitTypeSchema = z.strictObject({
     .strictObject({ range: positiveWholeSchema, missions: z.array(airMissionSchema).min(1) })
     .optional()
     .meta({ description: "Range in territories and missions. Required for air types, absent otherwise (L17)." }),
-  basis: textSchema.optional().meta({ description: "Design note or source summary for the type's numbers." })
+  ...basisShape
 });
 
 export const subTerritorySchema = z.strictObject({
@@ -110,9 +110,8 @@ export const subTerritorySchema = z.strictObject({
   buildings: z.array(slugSchema).default([]),
   rail: wholeSchema.max(3),
   port: wholeSchema.max(2),
-  sources: z.array(citationSchema).default([]),
-  note: textSchema.optional().meta({ description: "Design note for numbers no source gives. A sub-territory needs sources or a note (L18)." })
-});
+  ...basisShape
+}).meta({ description: "A sub-territory needs sources or a note (L18)." });
 
 export const subTerritoryBordersSchema = z
   .array(z.tuple([slugSchema, slugSchema]))
@@ -125,7 +124,8 @@ export const developmentSchema = z.strictObject({
   yieldPerLevel: positiveWholeSchema,
   maxLevel: positiveWholeSchema,
   cityOnly: z.boolean().default(false),
-  upgrade: z.strictObject(buildCostShape)
+  upgrade: z.strictObject(buildCostShape),
+  ...basisShape
 });
 
 export const buildingSchema = z.strictObject({
@@ -135,7 +135,8 @@ export const buildingSchema = z.strictObject({
   capitalOnly: z.boolean().default(false),
   cityOnly: z.boolean().default(false),
   upgradeOf: slugSchema.optional(),
-  effects: z.array(buildingEffectSchema).default([])
+  effects: z.array(buildingEffectSchema).default([]),
+  ...basisShape
 });
 
 const improvementSchema = z.strictObject({ ...buildCostShape, maxLevel: positiveWholeSchema });
@@ -143,16 +144,19 @@ const improvementSchema = z.strictObject({ ...buildCostShape, maxLevel: positive
 export const improvementsSchema = z.strictObject({
   rail: improvementSchema,
   port: improvementSchema,
-  railDamageOnContest: wholeSchema.meta({ description: "$8: rail levels lost in attacker-held sub-territories when a territory becomes contested." })
+  railDamageOnContest: wholeSchema.meta({ description: "$8: rail levels lost in attacker-held sub-territories when a territory becomes contested." }),
+  ...basisShape
 });
 
 export const recruitmentSchema = z.strictObject({
   maxPerTerritory: positiveWholeSchema,
   replenishCostShare: shareSchema.meta({ description: "Replenish price per value point, as a share of the Recruit price per point." }),
-  replenishShare: shareSchema.meta({ description: "Most men a Replenish order restores per turn, as a share of establishment." })
+  replenishShare: shareSchema.meta({ description: "Most men a Replenish order restores per turn, as a share of establishment." }),
+  ...basisShape
 });
 
 export const movementSchema = z.strictObject({
   landingsPerPortLevel: positiveWholeSchema,
-  railRangePerLevel: positiveWholeSchema
+  railRangePerLevel: positiveWholeSchema,
+  ...basisShape
 });

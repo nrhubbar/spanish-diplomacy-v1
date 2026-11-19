@@ -30,7 +30,7 @@ All ids are lowercase kebab-case (`[a-z0-9]+(-[a-z0-9]+)*`) and are never shown 
 | `victory.cityShare` | 0-1 | Share of victory-eligible cities that wins (rounded up). |
 | `victory.tieBreak` | list of `cities` / `territories` | Order in which qualifying factions are compared. |
 | `combat` | see below | The numbers of the d6 battle rules: results table, below-1:1 rule, digging in, demoralization, faction modifiers. Required under both rulesets while `d6-table` is the only implemented dice module (decision CT-3 in `project/milestones/m3r1-progress/contract.md`). |
-| `ai` | `{ blunderChance, profiles[] }` | E7, H6: computer-player profiles (see "AI profiles") and the chance, 0 to 1, that one computer order is a blunder. |
+| `ai` | `{ blunderChance, profiles[], sources?, note? }` | E7, H6: computer-player profiles (see "AI profiles") and the chance, 0 to 1, that one computer order is a blunder. |
 | `unitTypes[]` | `{ id, name, attack, defence }` | Unit types. `attack` and `defence` are positive whole numbers: the values of a full-strength army of the type (C4). Symbols come from the map package. |
 | `factions[]` | see below | At least two. |
 | `territories[]` | see below | At least two. |
@@ -67,6 +67,8 @@ The shipped table is the prototype's, corrected so each odds step is exactly one
 
 Every block below is optional in the schema; the loader requires each one that a selected module reads (L15). Ids of sub-territories, resources, development tracks, buildings, grades, weather outcomes, seasons, zones, traits and generals are each their own namespace.
 
+Every block and catalogue entry that carries numbers (`ai`, unit types, sub-territories, development tracks, buildings, `improvements`, `recruitment`, `movement`, `d20`, `weather`, `calendar`, `air`, `generals`) takes the same two optional fields: `sources` (citations, as on units) and `note` (a design note for numbers no source gives). Every number in data has one or the other; sub-territories must (L18).
+
 | Field | Type | Meaning |
 |---|---|---|
 | `rules` | `{ dice, economy, recruitment, weather, movement, partition, air }` | E2: one module name per area. See "Rule modules". |
@@ -93,7 +95,7 @@ Every block below is optional in the schema; the loader requires each one that a
 
 Sub-territory: `id`, `name`, `territoryId`, `terrain` (`open`, `mountain`, `swamp`), `startHolder` (P1: the holder on the start date, whatever the territory's controller), `development` (`{ [trackId]: level }`), `buildings` (ids), `rail` (0-3), `port` (0-2), and `sources` and/or `note` (every number has a source or a design note, L18).
 
-Unit type: `id`, `name`, `kind` (`ground`, `air`, `general`), `attack` and `defence` (whole numbers, 0 or more), `symbol` (the NATO APP-6A function: `infantry`, `militia`, `security`, `artillery`, `cavalry`, `armour`, `transport`, `air-defence`, `fixed-wing`, `headquarters`; the map package still names the drawn asset), `orders` (the unit order kinds it may take: `move`, `withdraw`, `replenish`, `air-mission`, `sack`), `effects[]`, optional `recruit: { cost, establishment, trainingTurns, requires[], factionIds? }`, `air: { range, missions[] }` for air types only (L17), and an optional `basis` note. Unit effects (E6): `roll-bonus-per-points { role, per, bonus, max, exceptWeather[] }`, `cannot-attack-alone`, `transport { carries }`, `mobile`, `raid-defence { roll }`, `trains-in-contested`, `command-bonus { roll }`, `rally`, `battle-support { roll }`.
+Unit type: `id`, `name`, `kind` (`ground`, `air`, `general`), `attack` and `defence` (whole numbers, 0 or more), `symbol` (the NATO APP-6A function: `infantry`, `militia`, `security`, `artillery`, `cavalry`, `armour`, `transport`, `air-defence`, `fixed-wing`, `headquarters`; the map package still names the drawn asset), `orders` (the unit order kinds it may take: `move`, `withdraw`, `replenish`, `air-mission`, `sack`), `effects[]`, optional `recruit: { cost, establishment, trainingTurns, requires[], factionIds? }`, `air: { range, missions[] }` for air types only (L17), and `sources` and `note`. Unit effects (E6): `roll-bonus-per-points { role, per, bonus, max, exceptWeather[] }`, `cannot-attack-alone`, `transport { carries }`, `mobile`, `raid-defence { roll }`, `trains-in-contested`, `command-bonus { roll }`, `rally`, `battle-support { roll }`.
 
 d20: `grades[]` (`{ id, name, attacker: { lossPercent, demoralized }, defender: { lossPercent, demoralized, weakestDestroyed }, ground }`, with `lossPercent` 0, 10, 20, 35 or 100, `demoralized` `none`, `half` or `all`, and `ground` 0, 1, 2 or `all`), `table` (7 odds columns by 21 modified scores, 0 to 20, of grade ids), `modifiers` (`worksPerTurn`, `worksMax`, `belowOneToOnePenalty`, `barricades`, `fatigued`, `amphibious`), `fatigue` (`fatiguedLevel`, `demoralizedLevel`), `breakUpShare`, and `factionModifiers[]` (as in `combat`).
 

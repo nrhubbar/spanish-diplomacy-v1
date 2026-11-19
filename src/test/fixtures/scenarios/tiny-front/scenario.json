@@ -34,7 +34,8 @@
         "stakes": { "city": 2, "objective": 5, "territory": 4 },
         "victoryAlarm": { "perStep": 0.5, "steps": 4 }
       }
-    ]
+    ],
+    "note": "Fixture values: the Revision 7 computer player's constants, shared by both factions, and no blunders."
   },
   "unitTypes": [{ "id": "foot", "name": "Foot", "attack": 4, "defence": 5 }],
   "factions": [

@@ -334,6 +334,34 @@
                 ],
                 "additionalProperties": false
               }
+            },
+            "sources": {
+              "default": [],
+              "description": "Citations for the numbers.",
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "sourceId": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                    "description": "Stable kebab-case identifier. Never shown to players."
+                  },
+                  "reference": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "sourceId"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "note": {
+              "description": "Design note for numbers no source gives.",
+              "type": "string",
+              "minLength": 1
             }
           },
           "required": [
@@ -1120,6 +1148,34 @@
                 ],
                 "additionalProperties": false
               }
+            },
+            "sources": {
+              "default": [],
+              "description": "Citations for the numbers.",
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "sourceId": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                    "description": "Stable kebab-case identifier. Never shown to players."
+                  },
+                  "reference": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "sourceId"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "note": {
+              "description": "Design note for numbers no source gives.",
+              "type": "string",
+              "minLength": 1
             }
           },
           "required": [
@@ -1650,8 +1706,31 @@
                 ],
                 "additionalProperties": false
               },
-              "basis": {
-                "description": "Design note or source summary for the type's numbers.",
+              "sources": {
+                "default": [],
+                "description": "Citations for the numbers.",
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "sourceId": {
+                      "type": "string",
+                      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                      "description": "Stable kebab-case identifier. Never shown to players."
+                    },
+                    "reference": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "sourceId"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "note": {
+                "description": "Design note for numbers no source gives.",
                 "type": "string",
                 "minLength": 1
               }
@@ -2042,6 +2121,7 @@
               },
               "sources": {
                 "default": [],
+                "description": "Citations for the numbers.",
                 "type": "array",
                 "items": {
                   "type": "object",
@@ -2063,7 +2143,7 @@
                 }
               },
               "note": {
-                "description": "Design note for numbers no source gives. A sub-territory needs sources or a note (L18).",
+                "description": "Design note for numbers no source gives.",
                 "type": "string",
                 "minLength": 1
               }
@@ -2077,7 +2157,8 @@
               "rail",
               "port"
             ],
-            "additionalProperties": false
+            "additionalProperties": false,
+            "description": "A sub-territory needs sources or a note (L18)."
           }
         },
         "subTerritoryBorders": {
@@ -2189,6 +2270,34 @@
                   "turns"
                 ],
                 "additionalProperties": false
+              },
+              "sources": {
+                "default": [],
+                "description": "Citations for the numbers.",
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "sourceId": {
+                      "type": "string",
+                      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                      "description": "Stable kebab-case identifier. Never shown to players."
+                    },
+                    "reference": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "sourceId"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "note": {
+                "description": "Design note for numbers no source gives.",
+                "type": "string",
+                "minLength": 1
               }
             },
             "required": [
@@ -2378,6 +2487,34 @@
                     }
                   ]
                 }
+              },
+              "sources": {
+                "default": [],
+                "description": "Citations for the numbers.",
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "sourceId": {
+                      "type": "string",
+                      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                      "description": "Stable kebab-case identifier. Never shown to players."
+                    },
+                    "reference": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "sourceId"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "note": {
+                "description": "Design note for numbers no source gives.",
+                "type": "string",
+                "minLength": 1
               }
             },
             "required": [
@@ -2469,6 +2606,34 @@
               "minimum": 0,
               "maximum": 9007199254740991,
               "description": "$8: rail levels lost in attacker-held sub-territories when a territory becomes contested."
+            },
+            "sources": {
+              "default": [],
+              "description": "Citations for the numbers.",
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "sourceId": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                    "description": "Stable kebab-case identifier. Never shown to players."
+                  },
+                  "reference": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "sourceId"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "note": {
+              "description": "Design note for numbers no source gives.",
+              "type": "string",
+              "minLength": 1
             }
           },
           "required": [
@@ -2497,6 +2662,34 @@
               "minimum": 0,
               "maximum": 1,
               "description": "Most men a Replenish order restores per turn, as a share of establishment."
+            },
+            "sources": {
+              "default": [],
+              "description": "Citations for the numbers.",
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "sourceId": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                    "description": "Stable kebab-case identifier. Never shown to players."
+                  },
+                  "reference": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "sourceId"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "note": {
+              "description": "Design note for numbers no source gives.",
+              "type": "string",
+              "minLength": 1
             }
           },
           "required": [
@@ -2518,6 +2711,34 @@
               "type": "integer",
               "exclusiveMinimum": 0,
               "maximum": 9007199254740991
+            },
+            "sources": {
+              "default": [],
+              "description": "Citations for the numbers.",
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "sourceId": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                    "description": "Stable kebab-case identifier. Never shown to players."
+                  },
+                  "reference": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "sourceId"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "note": {
+              "description": "Design note for numbers no source gives.",
+              "type": "string",
+              "minLength": 1
             }
           },
           "required": [
@@ -2803,6 +3024,34 @@
                 ],
                 "additionalProperties": false
               }
+            },
+            "sources": {
+              "default": [],
+              "description": "Citations for the numbers.",
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "sourceId": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                    "description": "Stable kebab-case identifier. Never shown to players."
+                  },
+                  "reference": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "sourceId"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "note": {
+              "description": "Design note for numbers no source gives.",
+              "type": "string",
+              "minLength": 1
             }
           },
           "required": [
@@ -3035,7 +3284,31 @@
                 "additionalProperties": false
               }
             },
-            "basis": {
+            "sources": {
+              "default": [],
+              "description": "Citations for the numbers.",
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "sourceId": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                    "description": "Stable kebab-case identifier. Never shown to players."
+                  },
+                  "reference": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "sourceId"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "note": {
+              "description": "Design note for numbers no source gives.",
               "type": "string",
               "minLength": 1
             }
@@ -3082,6 +3355,34 @@
             "turnsPerYear": {
               "type": "number",
               "const": 24
+            },
+            "sources": {
+              "default": [],
+              "description": "Citations for the numbers.",
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "sourceId": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                    "description": "Stable kebab-case identifier. Never shown to players."
+                  },
+                  "reference": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "sourceId"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "note": {
+              "description": "Design note for numbers no source gives.",
+              "type": "string",
+              "minLength": 1
             }
           },
           "required": [
@@ -3130,6 +3431,34 @@
               "type": "integer",
               "exclusiveMinimum": 0,
               "maximum": 9007199254740991
+            },
+            "sources": {
+              "default": [],
+              "description": "Citations for the numbers.",
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "sourceId": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                    "description": "Stable kebab-case identifier. Never shown to players."
+                  },
+                  "reference": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "sourceId"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "note": {
+              "description": "Design note for numbers no source gives.",
+              "type": "string",
+              "minLength": 1
             }
           },
           "required": [
@@ -3270,6 +3599,34 @@
                 "additionalProperties": false
               },
               "description": "U5: each faction's commanders in roster order, 3 to 5 per faction (L21)."
+            },
+            "sources": {
+              "default": [],
+              "description": "Citations for the numbers.",
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "sourceId": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                    "description": "Stable kebab-case identifier. Never shown to players."
+                  },
+                  "reference": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "sourceId"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "note": {
+              "description": "Design note for numbers no source gives.",
+              "type": "string",
+              "minLength": 1
             }
           },
           "required": [

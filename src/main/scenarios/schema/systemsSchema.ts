@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { citationSchema, factionModifierSchema, positiveWholeSchema, shareSchema, slugSchema, textSchema, wholeSchema } from "./coreSchema.ts";
+import { basisShape, citationSchema, factionModifierSchema, positiveWholeSchema, shareSchema, slugSchema, textSchema, wholeSchema } from "./coreSchema.ts";
 
 /**
  * Milestone 3 systems with their own blocks: the d20 battle rules, weather, the calendar, air,
@@ -42,7 +42,8 @@ export const d20Schema = z
     }),
     fatigue: z.strictObject({ fatiguedLevel: positiveWholeSchema, demoralizedLevel: positiveWholeSchema }),
     breakUpShare: shareSchema.meta({ description: "D6: a unit below this share of its full strength is destroyed." }),
-    factionModifiers: z.array(factionModifierSchema).default([])
+    factionModifiers: z.array(factionModifierSchema).default([]),
+    ...basisShape
   })
   .meta({ description: "The d20 battle rules (the d20-graded dice module)." });
 
@@ -74,13 +75,14 @@ export const weatherSchema = z
         })
       )
       .min(1),
-    basis: textSchema.optional()
+    ...basisShape
   })
   .meta({ description: "T2: one d20 roll a turn, read against each zone's seasonal table." });
 
 export const calendarSchema = z.strictObject({
   start: z.strictObject({ year: z.number().int(), month: monthSchema, half: z.enum(["early", "late"]) }),
-  turnsPerYear: z.literal(24)
+  turnsPerYear: z.literal(24),
+  ...basisShape
 });
 
 export const raidOutcomeSchema = z.enum(["air-eliminated", "nothing-hit", "income-cut", "building-hit"]);
@@ -88,7 +90,8 @@ export const raidOutcomeSchema = z.enum(["air-eliminated", "nothing-hit", "incom
 export const airSchema = z.strictObject({
   raidTable: z.array(z.strictObject({ outcome: raidOutcomeSchema, upTo: z.number().int().min(1).max(20) })).min(1),
   interceptRoll: signedRoll.negative(),
-  reconTurns: positiveWholeSchema
+  reconTurns: positiveWholeSchema,
+  ...basisShape
 });
 
 export const traitEffectSchema = z.discriminatedUnion("kind", [
@@ -100,7 +103,8 @@ export const generalsSchema = z.strictObject({
   traits: z.array(z.strictObject({ id: slugSchema, name: textSchema, effects: z.array(traitEffectSchema).min(1) })),
   roster: z
     .array(z.strictObject({ id: slugSchema, name: textSchema, factionId: slugSchema, trait: slugSchema, sources: z.array(citationSchema).min(1) }))
-    .meta({ description: "U5: each faction's commanders in roster order, 3 to 5 per faction (L21)." })
+    .meta({ description: "U5: each faction's commanders in roster order, 3 to 5 per faction (L21)." }),
+  ...basisShape
 });
 
 const weight = z.number();
@@ -132,6 +136,7 @@ export const aiSchema = z
           victoryAlarm: z.strictObject({ perStep: weight, steps: wholeSchema })
         })
       )
-      .min(1)
+      .min(1),
+    ...basisShape
   })
   .meta({ description: "E7: named computer-player profiles; each faction names one." });

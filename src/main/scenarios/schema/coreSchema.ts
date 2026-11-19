@@ -18,6 +18,15 @@ export const textSchema = z.string().min(1);
 
 export const citationSchema = z.strictObject({ sourceId: slugSchema, reference: textSchema.optional() });
 
+/**
+ * Where a block's numbers come from: every number in data has a source or a design note. The
+ * same two fields, `sources` and `note`, are used on every block and entry that carries numbers.
+ */
+export const basisShape = {
+  sources: z.array(citationSchema).default([]).meta({ description: "Citations for the numbers." }),
+  note: textSchema.optional().meta({ description: "Design note for numbers no source gives." })
+};
+
 /** An amount of each resource, keyed by resource id. */
 export const resourcesSchema = z
   .record(slugSchema, wholeSchema)

@@ -1,6 +1,6 @@
 # `m3r1-contract` progress
 
-## CP1: types and schema (commit `ec8fc98`)
+## CP1: types and schema (commits `ec8fc98`, and the follow-up that adds CT-16 and CT-17)
 
 **Done.**
 - `engine/types.ts` is now a barrel over `engine/types/{rules,effects,scenario,economy,systems,package,state,orders,outcomes}.ts`; imports elsewhere are unchanged. New branded ids are in `engine/ids.ts`.
@@ -29,7 +29,10 @@
 - CT-14. The map spec is bumped to version 2 with no new fields. `m3r1-map-provinces` owns the sub-territory geometry fields in `mapSchema.ts`, so I left them alone to avoid a conflict. The shape I propose: optional `subTerritories: { [D8 id]: { path, label: { x, y }, capital: { x, y } } }`, where `path` is closed SVG path data in view box units. L10 would gain "every scenario sub-territory has a map entry".
 - CT-15. The schema is split into parts with `.ts` import extensions so `node scripts/build-schemas.ts` still runs unchanged. The generated JSON Schema is now 3307 lines, because each ruleset variant inlines the shared parts.
 
-**Checks** (gated on exit codes): `npm run lint` passed, `npm run typecheck` passed, `npm run test:unit` passed (29 files, 548 tests; coverage 98.79 statements, 94.67 branches, 99.12 functions, 99.48 lines; the soak bands and determinism hold), `npm run build` passed, `npm run spec:build` regenerated both schemas. E2E was not run: no UI changed.
+- CT-16. One noun for where numbers come from. Every block and catalogue entry that carries numbers takes optional `sources` (citations) and `note` (design note), the same pair sub-territories use. Unit types and weather no longer use `basis`. The loader checks every cited source (L3). Both packages' `ai` blocks carry a note: today's Revision 7 constants, and the blunder chance from H6 and Q-MR-33.
+- CT-17. The "no scenario knowledge in code" guard now skips only scenario package folders (those holding a `scenario.json`), so the moved loader checks under `scenarios/loader/` are guarded again. It also collects sub-territory, resource, development, building and general ids. Consequence for CP2 and the slices: Spain's catalogue ids must not equal string literals in code. For example, use `artillery-group` rather than `artillery`, which is also a symbol name.
+
+**Checks** (gated on exit codes): `npm run lint` passed, `npm run typecheck` passed, `npm run test:unit` passed (29 files, 551 tests after the follow-up; coverage 98.79 statements, 94.67 branches, 99.12 functions, 99.48 lines; the soak bands and determinism hold), `npm run build` passed, `npm run spec:build` regenerated both schemas. E2E was not run: no UI changed.
 
 **Files outside my list that I touched**, each a small wiring change for the union:
 - `src/main/presentation/text.ts`: one line for `rejected-order`;

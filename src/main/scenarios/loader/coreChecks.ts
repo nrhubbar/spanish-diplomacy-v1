@@ -19,6 +19,7 @@ export function checkCore(document: ScenarioDocument, issues: Issues): void {
   const sources = idSet(document.sources);
   const profiles = idSet(document.ai.profiles);
 
+  issues.cited("ai", document.ai, sources);
   document.factions.forEach((faction, index) => {
     faction.objectiveTerritoryIds.forEach((id) => { issues.ref(`factions[${index}].objectiveTerritoryIds`, id, territories, "territory"); });
     issues.ref(`factions[${index}].aiProfile`, faction.aiProfile, profiles, "AI profile");

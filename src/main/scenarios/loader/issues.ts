@@ -6,6 +6,8 @@ export interface Issues {
   /** L3: `id` names a known record of `kind`. */
   ref(path: string, id: string, known: ReadonlySet<string> | ReadonlyMap<string, unknown>, kind: string): void;
   add(issue: string): void;
+  /** L3: every citation of a block's `sources` names a known source. */
+  cited(path: string, block: { readonly sources: readonly { readonly sourceId: string }[] } | undefined, known: ReadonlySet<string>): void;
 }
 
 export function createIssues(): Issues {
@@ -13,6 +15,11 @@ export function createIssues(): Issues {
   return {
     list,
     add: (issue) => { list.push(issue); },
+    cited: (path, block, known) => {
+      for (const source of block?.sources ?? []) {
+        if (!known.has(source.sourceId)) list.push(`${path}.sources: unknown source "${source.sourceId}" (L3)`);
+      }
+    },
     ref: (path, id, known, kind) => {
       if (!known.has(id)) list.push(`${path}: unknown ${kind} "${id}" (L3)`);
     },

@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
@@ -170,15 +170,17 @@ describe("no scenario knowledge in code", () => {
   const sourceFiles = (directory: string): string[] =>
     readdirSync(directory).flatMap((entry) => {
       const path = join(directory, entry);
-      if (statSync(path).isDirectory()) return /scenarios$/.test(path) ? sourceFiles(path).filter((file) => !/scenarios\/[^/]+\//.test(file.replace(/^.*src\/main\//, ""))) : sourceFiles(path);
+      // A scenario package folder (it holds a scenario.json) may name its own ids, in its plugin.
+      if (statSync(path).isDirectory()) return existsSync(join(path, "scenario.json")) ? [] : sourceFiles(path);
       return /\.(ts|tsx)$/.test(path) ? [path] : [];
     });
 
-  it("never mentions a faction, territory, city, unit, or region id", () => {
+  it("never mentions a faction, territory, city, unit, region, or Milestone 3 catalogue id", () => {
     const ids = new Set<string>();
     for (const summary of testRegistry().list()) {
       const { map, scenario } = testRegistry().require(summary.id);
-      for (const collection of [scenario.factions, scenario.territories, scenario.cities, scenario.units, scenario.unitTypes]) {
+      const systems = [scenario.subTerritories, scenario.resources, scenario.development, scenario.buildings, scenario.generals];
+      for (const collection of [scenario.factions, scenario.territories, scenario.cities, scenario.units, scenario.unitTypes, ...systems]) {
         for (const item of collection) ids.add(item.id);
       }
       for (const regionId of map.regions.keys()) ids.add(regionId);
