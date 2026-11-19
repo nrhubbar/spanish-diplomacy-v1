@@ -84,10 +84,24 @@
   - Baseline wins of decided games: Republic 50, Northern command 40, Southern command 10.
   - With a works cap of 2: decided 75 percent; freezes 25; stalled 35.
   - Paired difference: freezes -25.0 points [-53.0, +3.0], stalled -25.0 [-49.1, -0.9], Republic win share +20.0 [+2.0, +38.0].
-- `node build/sim-cli/sim.mjs --games 200`: 1.3 s.
-  - Decided 55.5 percent; freezes 44.5 percent [37.8, 51.4]; stalled 58.5 percent, against Revision 7's 58.
+- Parity with the deleted soak: `node build/sim-cli/sim.mjs --games 200 --turns 30` reproduces the soak's recorded Revision 7 numbers exactly.
+  - Seeds 1-200 at 30 turns.
+  - 116 stalled (58.0 percent); 103 decided.
+  - Wins: Republic 42, Northern command 48, Southern command 13; no shared victories.
+  - No early wins (S1) and no abandonments (S3).
+- `node build/sim-cli/sim.mjs --games 200` at the default 66 turns: 1.3 s.
+  - Decided 55.5 percent; freezes 44.5 percent [37.8, 51.4]; stalled 58.5 percent.
   - Wins of decided games: Republic 40.5, Northern command 47.8, Southern command 11.7.
   - No abandonments and no early wins.
+- `npm run build`: exit 0.
+- `E2E_PORT=5303 npm run test:e2e`: exit 0, 101 passed and 39 skipped.
+- Axe does not apply: this stream has no screens.
+
+**Notes for the integrator:**
+- The example variant targets the spec-v1 path `/combat/diggingIn/max`, and no test loads it. Repoint it if the combat block moves at the contract merge.
+- H7 is documented but not evaluated by the harness. Which freeze measure applies is the integrator's call, and the budgets file belongs to the contract (H8).
+- There are two merge seams: `blunderRatePointer` in `src/sim/engine.ts` (expected `/ai/blunderRate`), and `/ai/profiles/<factionId>` for the AI profiles.
+- At the contract merge, also check the adapter functions in `src/sim/engine.ts` (`playComputerGame`, `objectivesOf`, `battleColumn`, `orderRoute`) against the new order union and battle outcome.
 
 **Outside my ownership:**
 - `vitest.config.ts`: the coverage include (CP1), the exclude that drops `src/sim/test/**`, and the `testTimeout` comment.
