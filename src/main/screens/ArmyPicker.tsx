@@ -2,10 +2,11 @@ import { type JSX, useId } from "react";
 import { requireFaction, requireUnitDefinition, requireUnitType } from "../engine/lookup";
 import type { Scenario, UnitState } from "../engine/types";
 import { useAppDispatch } from "../hooks";
-import { armyFigures, demoralizedRule } from "../presentation/army";
+import { armyFigures, demoralizedRule, orderStatus } from "../presentation/army";
 import { glyphs } from "../presentation/glyphs";
 import { clearUnitSelection, selectAllAvailableUnits, toggleUnitSelection } from "../state/gameSlice";
-import type { PlanningSession } from "../state/planning";
+import { orderKindsFor, orderOf, type PlanningSession } from "../state/planning";
+import { territoryName } from "../presentation/text";
 import { ArmyLine } from "./ArmyLine";
 import { OrderCommand } from "./OrderCommand";
 
@@ -20,8 +21,8 @@ export function ArmyPicker({ own, scenario, session }: ArmyPickerProps): JSX.Ele
   const dispatch = useAppDispatch();
   const headingId = useId();
   const { draft, game } = session;
-  const ordered = new Set(draft.orders.map((order) => order.unitId));
-  const available = own.filter((unit) => !ordered.has(unit.id));
+  const moves = new Map(draft.orders.map((order) => [order.unitId, order]));
+  const available = own.filter((unit) => !moves.has(unit.id));
   const selectedCount = draft.selectedUnitIds.length;
   const choosingDestination = draft.stage?.step === "choose-destination";
   const shakenSelected = own.some((unit) => unit.morale.demoralized && draft.selectedUnitIds.includes(unit.id));
@@ -30,18 +31,19 @@ export function ArmyPicker({ own, scenario, session }: ArmyPickerProps): JSX.Ele
     <div className="army-picker">
       <div className="army-picker-header">
         <h4 id={headingId}>Your armies</h4>
-        <span className="selection-count">{available.length === 0 ? "All have orders" : `${String(selectedCount)} of ${String(available.length)} selected`}</span>
+        <span className="selection-count">{available.length === 0 && selectedCount === 0 ? "All moving" : `${String(selectedCount)} of ${String(own.length)} selected`}</span>
       </div>
       <ul aria-labelledby={headingId} className="formation-list">
         {own.map((unit) => {
           const definition = requireUnitDefinition(scenario, unit.id);
-          const isOrdered = ordered.has(unit.id);
+          const move = moves.get(unit.id);
+          const order = move === undefined ? orderStatus[orderOf(session, unit)] : `Moving to ${territoryName(scenario, move.to)}`;
           return (
             <li key={unit.id}>
               <button
                 aria-pressed={draft.selectedUnitIds.includes(unit.id)}
                 className="formation-button"
-                data-ordered={isOrdered}
+                data-ordered={move !== undefined}
                 disabled={choosingDestination}
                 onClick={() => dispatch(toggleUnitSelection(unit.id))}
                 type="button"
@@ -49,7 +51,7 @@ export function ArmyPicker({ own, scenario, session }: ArmyPickerProps): JSX.Ele
                 <span aria-hidden="true" className="formation-check" />
                 <span className="formation-name">{definition.name}</span>
                 <span className="formation-meta">
-                  {[requireUnitType(scenario, definition.type).name, isOrdered ? "order planned" : undefined].filter(Boolean).join(` ${glyphs.dot} `)}
+                  {`${requireUnitType(scenario, definition.type).name} ${glyphs.dot} ${order}`}
                 </span>
                 <ArmyLine factionColor={requireFaction(scenario, unit.factionId).color} figures={armyFigures(scenario, game.state, unit)} />
               </button>
@@ -60,14 +62,19 @@ export function ArmyPicker({ own, scenario, session }: ArmyPickerProps): JSX.Ele
       {shakenSelected ? <p className="pane-note" data-tone="demoralized">{demoralizedRule(scenario)}</p> : null}
       {choosingDestination ? null : (
         <>
-          {available.length === 0 ? null : (
+          {available.length === 0 && selectedCount === 0 ? null : (
             // Always enabled: disabling the control just used would drop keyboard focus.
             <div className="selection-tools">
               <button className="text-button" onClick={() => dispatch(selectAllAvailableUnits())} type="button">Select all</button>
               <button className="text-button" onClick={() => dispatch(clearUnitSelection())} type="button">Clear</button>
             </div>
           )}
-          <OrderCommand availableCount={available.length} menuOpen={draft.stage?.step === "choose-order"} selectedCount={selectedCount} />
+          <OrderCommand
+            availableCount={available.length}
+            kinds={orderKindsFor(session)}
+            menuOpen={draft.stage?.step === "choose-order"}
+            selectedCount={selectedCount}
+          />
         </>
       )}
     </div>

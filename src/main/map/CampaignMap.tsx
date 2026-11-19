@@ -14,11 +14,12 @@ import { MapPane, type PaneContent, type PaneLayout, paneLayoutFor, paneWidthFor
 import { prepareGeometry, type PreparedGeometry } from "./markup";
 import { type ScreenRect, visibleContextLabels } from "./placement";
 import { TerrainLayer } from "./TerrainLayer";
+import { useFocusRescue } from "./useFocusRescue";
 import { useMapCamera } from "./useMapCamera";
 import { type MapBriefing, usePaneView } from "./usePaneView";
 import { VectorLayer } from "./VectorLayer";
 import { visibleWater } from "./waterLabels";
-import type { MapView } from "./view";
+import { highlightedTerritoryId, type MapView } from "./view";
 
 interface CampaignMapProps {
   readonly assets: MapAssets;
@@ -45,6 +46,7 @@ export function CampaignMap({ assets, briefing, game, onTerrainFallback, pane, s
     const value = target.closest("[data-territory-id]")?.getAttribute("data-territory-id");
     const territory = scenario.territories.find((candidate) => candidate.id === value);
     if (territory !== undefined) view.onSelectTerritory?.(territory.id);
+    else view.onSelectNothing?.();
   }, [scenario, view]);
 
   const {
@@ -66,6 +68,7 @@ export function CampaignMap({ assets, briefing, game, onTerrainFallback, pane, s
   const paneOpen = paneView.isOpen(layout);
   const paneContent = paneView.content;
   const level = semanticLevel(camera.zoom);
+  const focusRescue = useFocusRescue(highlightedTerritoryId(view));
 
   return (
     <section
@@ -85,6 +88,8 @@ export function CampaignMap({ assets, briefing, game, onTerrainFallback, pane, s
         onClick={(event) => {
           if (!consumeDrag()) selectFrom(event.target);
         }}
+        onBlur={focusRescue.onBlur}
+        onFocus={focusRescue.onFocus}
         onKeyDown={onKeyDown}
         onPointerCancel={onPointerCancel}
         onPointerDown={onPointerDown}
@@ -97,7 +102,7 @@ export function CampaignMap({ assets, briefing, game, onTerrainFallback, pane, s
         tabIndex={0}
       >
         <span className="visually-hidden" id="map-instructions">
-          Drag or use W, A, S, and D to pan. Scroll, pinch, or use plus and minus to zoom. Press zero to reset the view.
+          Drag, or hold W, A, S, and D or the arrow keys, to pan. Scroll, pinch, or use plus and minus to zoom. Press zero to reset the view.
           Tab to a territory and press Enter to select it.
         </span>
         {measured ? (
@@ -152,8 +157,9 @@ function MapLayers({ assets, bounds, camera, game, geometry, layout, level, onTe
   const toScreen = (point: { readonly x: number; readonly y: number }) => mapToScreen(point, camera, viewport, bounds);
   const place = (rect: MapRect): MapRect => ({ ...toScreen(rect), height: rect.height * scale, width: rect.width * scale });
   const landLabels = labelObstacles(scenarioPackage, level, toScreen, viewport.height, layout);
-  const counterLayout = layoutCounters(game, map, level, toScreen, landLabels, {
-    ...(view.selectedTerritoryId === undefined ? {} : { expandedTerritoryId: view.selectedTerritoryId }),
+  const expandedTerritoryId = highlightedTerritoryId(view);
+  const counterLayout = layoutCounters(game, map, camera.zoom, toScreen, landLabels, {
+    ...(expandedTerritoryId === undefined ? {} : { expandedTerritoryId }),
     narrow: layout === "sheet"
   });
   const { height, width } = counterLayout.metrics;

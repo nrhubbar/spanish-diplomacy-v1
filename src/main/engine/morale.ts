@@ -8,10 +8,11 @@ export interface MoraleResolution {
 }
 
 /**
- * M23 (C6), at the end of the turn: a demoralized army was quiet when it had no move order, did
- * not retreat, and was not demoralized this turn (`unquiet` lists every army that was not). One
- * quiet turn is enough: the army recovers and is reported as recovered. Any other turn restarts
- * its count, so `quietTurns` is 0 whenever an army is demoralized. Outcomes are in scenario order.
+ * M23 (C6), at the end of the turn: a demoralized army rested when it had no move order (its
+ * standing order is Rest, O2), did not retreat, and was not demoralized this turn (`unquiet`
+ * lists every army that did not rest). One turn of rest is enough: the army recovers and is
+ * reported as recovered. Any other turn restarts its count, so `quietTurns` is 0 whenever an
+ * army is demoralized. Outcomes are in scenario order.
  */
 export function recoverMorale(scenario: Scenario, armies: Armies, unquiet: ReadonlySet<UnitId>): MoraleResolution {
   const order = unitOrder(scenario);

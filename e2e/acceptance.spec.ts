@@ -1,5 +1,5 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, type Page, test } from "@playwright/test";
+import { expect, type Locator, type Page, test } from "@playwright/test";
 import sharp from "sharp";
 import { zoomFullyOn } from "./mapCamera";
 
@@ -74,7 +74,7 @@ test("plays a mixed local and computer turn straight through to the results", as
   await expectAccessible(page);
   await selectTerritory(page, "castilla-la-mancha");
   await pane(page, "Orders");
-  await expect(orders.getByRole("heading", { name: "Planned orders (4)" })).toBeVisible();
+  await expect(orders.getByRole("list", { name: "Planned moves (4)" })).toBeVisible();
   await page.getByRole("button", { name: "End Turn" }).filter({ visible: true }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Turn resolution" })).toBeVisible();
   await mapReady(page);
@@ -93,6 +93,48 @@ test("plays a mixed local and computer turn straight through to the results", as
   await page.getByRole("button", { name: "Start Next Turn" }).filter({ visible: true }).click();
   await mapReady(page);
   await expect(page.getByText(/^Turn 2/)).toBeVisible();
+});
+
+/** A2: an odds "i" opens and closes its one sentence by click and by keyboard, and stays accessible open. */
+async function exerciseOddsInfo(page: Page, scope: Locator, name: string): Promise<void> {
+  const info = scope.getByRole("button", { name });
+  // The note the button controls: a phone's hidden pane body holds a second copy of the text.
+  const note = page.locator(`[id="${await info.getAttribute("aria-controls") ?? ""}"]`);
+  await expect(note).toHaveText(/real odds may differ/);
+  await expect(note).toBeHidden();
+  await info.click();
+  await expect(info).toHaveAttribute("aria-expanded", "true");
+  await expect(note).toBeVisible();
+  await expectAccessible(page);
+  await info.click();
+  await expect(note).toBeHidden();
+  await info.focus();
+  await page.keyboard.press("Enter");
+  await expect(note).toBeVisible();
+  await page.keyboard.press("Space");
+  await expect(info).toHaveAttribute("aria-expanded", "false");
+  await expect(note).toBeHidden();
+}
+
+test("marks the odds approximate and explains them behind the i (A1, A2)", async ({ isMobile, page }) => {
+  await openSetup(page);
+  await page.getByRole("button", { name: "Start Campaign" }).click();
+  await mapReady(page);
+  await selectTerritory(page, "madrid");
+  await orderMove(page);
+  // Madrid's armies would meet the Northern command in Castilla y Le\u00f3n.
+  await expect(page.locator('.odds-layer .odds-chip[data-territory-id="castilla-y-leon"]')).toHaveText(/^\u2248 \d+:\d+ \u00b7 \d+%$/);
+  // A phone's sheet stays collapsed while a destination is chosen, so the list shows on wider
+  // screens and a phone reaches the same "i" in the sheet's bar.
+  const choosing = page.getByRole("complementary", { name: "Orders" });
+  if (!isMobile) {
+    await expect(choosing.getByRole("button", { name: /Castilla y Le\u00f3n.*Approximately \d+:\d+, \d+ percent to take it/ })).toBeVisible();
+  }
+  await exerciseOddsInfo(page, choosing, "About the destination odds");
+  await selectTerritory(page, "castilla-y-leon");
+  const orders = await pane(page, "Orders");
+  await expect(orders.locator(".planned-odds").first()).toHaveText(/^Approx\. \d+:\d+ \u00b7 \d+%/);
+  await exerciseOddsInfo(page, orders, "About the planned odds");
 });
 
 test("opens the Briefing on turn 1, toggles it with the i control, and stays accessible (B1, B4)", async ({ page }) => {
@@ -193,7 +235,7 @@ test("plays a turn with the keyboard alone (B3)", async ({ page }) => {
   // Focus lands on the visible Cancel control instead of being lost with the Move button.
   await expect(page.locator(":focus")).toHaveText(/^Cancel/);
   await selectTerritory(page, "castilla-la-mancha");
-  await expect((await pane(page, "Orders")).getByRole("heading", { name: "Planned orders (4)" })).toBeVisible();
+  await expect((await pane(page, "Orders")).getByRole("list", { name: "Planned moves (4)" })).toBeVisible();
   await page.getByRole("button", { name: "Zoom in" }).focus();
   await page.keyboard.press("Enter");
   await expect(page.getByText("Map zoom 125 percent")).toBeAttached();

@@ -9,7 +9,7 @@ import type { PreparedGeometry } from "./markup";
 import { contextLabelType } from "./placement";
 import { RouteLayer } from "./RouteLayer";
 import { routeCurve } from "./routes";
-import type { MapView } from "./view";
+import { highlightedTerritoryId, type MapView } from "./view";
 import { RiverLayer, WaterLabelLayer } from "./WaterLayer";
 import type { VisibleWater } from "./waterLabels";
 
@@ -46,6 +46,7 @@ export function VectorLayer({ contextLabels, game, geometry, level, map, scenari
   const factionColor = (id: FactionId): string => requireFaction(scenario, id).color;
   const anchor = (id: TerritoryId) => territoryAnchor(map, id);
   const showDetail = level !== "overview";
+  const highlighted = highlightedTerritoryId(view);
 
   return (
     <svg
@@ -91,7 +92,7 @@ export function VectorLayer({ contextLabels, game, geometry, level, map, scenari
       <g className="map-highlights" aria-hidden="true">
         {view.changedTerritoryIds.map((id) => <Highlight geometry={geometry} key={`changed-${id}`} kind="changed" map={map} territoryId={id} />)}
         {view.destinationIds.map((id) => <Highlight geometry={geometry} key={`destination-${id}`} kind="destination" map={map} territoryId={id} />)}
-        {view.selectedTerritoryId === undefined ? null : <Highlight geometry={geometry} kind="origin" map={map} territoryId={view.selectedTerritoryId} />}
+        {highlighted === undefined ? null : <Highlight geometry={geometry} kind="origin" map={map} territoryId={highlighted} />}
       </g>
       <g className="map-sea-lanes" aria-hidden="true">
         {scenario.connections.filter((connection) => connection.kind === "sea").map((connection) => {

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { battleStreamTag, rollDie, seededBattleDice } from "../main/engine/dice";
 import { deriveSeed, seededRandom } from "../main/engine/random";
+import { standingOrder } from "../main/engine/orders";
 import { initialGameState, resolveTurn } from "../main/engine/resolution";
 import type { GameState, Scenario, TurnResolutionResult } from "../main/engine/types";
 import { demoralizedAttackReason, legalDestinations, validateMoveOrder } from "../main/engine/validation";
@@ -63,6 +64,41 @@ describe("M22 digging in (C7)", () => {
 
     const allLeave = play(pair.scenario, pair.state, [move("blue", "b1", "harbor", "isle"), move("blue", "b2", "harbor", "lowlands")]);
     expect(allLeave.finalState.fortification[territory("harbor")]).toBeUndefined();
+  });
+
+  describe("needs an entrencher: a healthy army of the holder that stayed (O3)", () => {
+    const works = { fortification: { [territory("harbor")]: { factionId: faction("blue"), level: 1 } } };
+
+    it("digs in when one healthy army stays and another moves out", () => {
+      const { scenario, state } = battlefield(tiny(), [a("b1", "blue", "harbor"), a("b2", "blue", "harbor")]);
+      const result = play(scenario, state, [move("blue", "b2", "harbor", "isle")]);
+      expect(result.finalState.fortification[territory("harbor")]).toEqual({ factionId: "blue", level: 1 });
+    });
+
+    it("does not dig in when the only armies that stayed are demoralized", () => {
+      const { scenario, state } = battlefield(tiny(), [a("b1", "blue", "harbor", { demoralized: true }), a("b2", "blue", "harbor")], { state: works });
+      const result = play(scenario, state, [move("blue", "b2", "harbor", "isle")]);
+      expect(result.finalState.fortification[territory("harbor")]).toEqual({ factionId: "blue", level: 1 });
+      // Resting still recovers the army (M23), so it can entrench next turn.
+      expect(armyIn(result.finalState, "b1").morale).toEqual({ demoralized: false, quietTurns: 0 });
+      const [next] = hold(scenario, result.finalState, 1);
+      expect(next?.finalState.fortification[territory("harbor")]).toEqual({ factionId: "blue", level: 2 });
+    });
+
+    it("keeps the level when every army there moved, even if others arrived", () => {
+      const { scenario, state } = battlefield(tiny(), [a("b1", "blue", "harbor"), a("b2", "blue", "isle")], { state: works });
+      const result = play(scenario, state, [move("blue", "b1", "harbor", "isle"), move("blue", "b2", "isle", "harbor")]);
+      expect(at(result, "b2")).toBe("harbor");
+      expect(result.finalState.fortification[territory("harbor")]).toEqual({ factionId: "blue", level: 1 });
+    });
+
+    it("does not count an army disbanded for an impossible order", () => {
+      const { scenario, state } = battlefield(tiny(), [a("b1", "blue", "harbor", { demoralized: true }), a("b2", "blue", "harbor")], { state: works });
+      // Harbor and Westfold are not connected, so b2 is disbanded; only the demoralized b1 stays.
+      const result = play(scenario, state, [move("blue", "b2", "harbor", "westfold")]);
+      expect(result.finalState.units[unit("b2")]).toBeUndefined();
+      expect(result.finalState.fortification[territory("harbor")]).toEqual({ factionId: "blue", level: 1 });
+    });
   });
 
   it("is lost to the faction that takes the territory, which starts from nothing", () => {
@@ -350,5 +386,12 @@ describe("turn invariants over seeded computer games", () => {
         expect(works.level).toBeLessThanOrEqual(spain().combat.diggingIn.max);
       }
     }
+  });
+});
+
+describe("standing orders: Entrench and Rest (O1, O2, O5)", () => {
+  it("entrenches a healthy army and rests a demoralized one", () => {
+    expect(standingOrder({ morale: { demoralized: false, quietTurns: 0 } })).toBe("entrench");
+    expect(standingOrder({ morale: { demoralized: true, quietTurns: 0 } })).toBe("rest");
   });
 });

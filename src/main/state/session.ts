@@ -1,3 +1,4 @@
+import type { StandingOrder } from "../engine/orders";
 import type {
   ActorKind,
   FactionId,
@@ -29,8 +30,11 @@ export interface GameRecord {
   readonly state: GameState;
 }
 
-/** Every order type the engine accepts. Milestone 2 has only moves. */
-export type OrderKind = MoveOrder["kind"];
+/**
+ * Every order an army can have (O1): a move, or the standing order it follows without one,
+ * Entrench when healthy and Rest when demoralized. Only moves are submitted (O5).
+ */
+export type OrderKind = MoveOrder["kind"] | StandingOrder;
 
 /**
  * Where the player is in giving an order to the selected armies: choosing the order type,
@@ -38,7 +42,7 @@ export type OrderKind = MoveOrder["kind"];
  */
 export type OrderStage =
   | { readonly step: "choose-order" }
-  | { readonly orderKind: OrderKind; readonly step: "choose-destination" };
+  | { readonly orderKind: MoveOrder["kind"]; readonly step: "choose-destination" };
 
 /** The current local player's private working set. */
 export interface Draft {

@@ -1,6 +1,17 @@
 import type { Armies } from "./board";
-import type { GameState, InvalidOrderOutcome, MoveOrder, Scenario, UnitId } from "./types";
+import type { GameState, InvalidOrderOutcome, MoveOrder, Scenario, UnitId, UnitState } from "./types";
 import { validateMoveOrder } from "./validation";
+
+/** The orders an army follows when it has no move order. They are derived, never submitted (O5). */
+export type StandingOrder = "entrench" | "rest";
+
+/**
+ * O1, O2, O5: an army without a move order entrenches when it is healthy (M22) and rests when it
+ * is demoralized (M23). A demoralized army can never entrench.
+ */
+export function standingOrder(unit: Pick<UnitState, "morale">): StandingOrder {
+  return unit.morale.demoralized ? "rest" : "entrench";
+}
 
 /** M1, M9, M23: orders validate against the start-of-turn state; every order of a unit ordered twice is invalid. */
 export function partitionOrders(

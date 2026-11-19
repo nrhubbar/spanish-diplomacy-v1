@@ -155,6 +155,9 @@ describe("Briefing view", () => {
     expect(within(briefing).getByRole("heading", { name: "How battles work" })).toBeVisible();
     expect(within(briefing).getByText(/an attack and a defence value/)).toBeVisible();
     expect(within(briefing).getByText(/up to 3\./)).toBeVisible();
+    expect(within(briefing).getByText(/Every army has one order each turn: Move, Entrench, or Rest\./)).toBeVisible();
+    expect(within(briefing).getByText(/Armies that move do not dig in/)).toBeVisible();
+    expect(within(briefing).getByText(/cannot attack\. It cannot entrench either: it rests/)).toBeVisible();
     expect(within(briefing).getByText(/Example: two infantry regiment armies attack with 8 against one with defence 6, dug in \+1\. That is 1:1 odds: 17% to take the territory\. A third army makes it 12 against 6, 2:1 odds: 33%\./)).toBeVisible();
     expect(within(briefing).getByRole("heading", { name: "Map controls" })).toBeVisible();
     // Reading content with no controls: the body is a tab stop so the keyboard can scroll it.

@@ -6,11 +6,12 @@ import { armyFigures } from "../presentation/army";
 import type { DestinationEstimate } from "../presentation/odds";
 import { controlDescription, factionName, route, territoryName, unitName } from "../presentation/text";
 import { cancelOrderStage, removePlannedOrder } from "../state/gameSlice";
-import type { PlanningSession } from "../state/planning";
+import { orderCounts, type PlanningSession } from "../state/planning";
 import { ArmyLine } from "./ArmyLine";
 import { ArmyPicker } from "./ArmyPicker";
 import { DestinationChoices } from "./DestinationChoices";
 import { armies } from "./OrderCommand";
+import { PlannedOddsInfo, PlannedOrderOdds } from "./PlannedOrderOdds";
 
 /**
  * Moves keyboard focus to a control as it appears, so focus is not lost when the button that
@@ -53,24 +54,37 @@ export function OrderBuilder({ estimates, scenario, session }: BuilderProps & { 
         {draft.feedback === undefined ? null : <p className="inline-feedback" role="status">{draft.feedback}</p>}
       </section>
       <section aria-labelledby="planned-orders-title" className="pane-section">
-        <h3 id="planned-orders-title">{`Planned orders (${String(draft.orders.length)})`}</h3>
+        <h3 id="planned-orders-title">Your orders</h3>
+        <OrderSummary session={session} />
         {draft.orders.length === 0 ? (
-          <p className="pane-hint">No orders yet. Armies without orders hold their ground.</p>
+          <p className="pane-hint">No moves yet. Armies without a move entrench, or rest while demoralized.</p>
         ) : (
-          <ul className="order-list">
+          <ul aria-label={`Planned moves (${String(draft.orders.length)})`} className="order-list">
             {draft.orders.map((order) => (
               <li key={order.unitId}>
                 <span>
                   <span className="order-unit">{unitName(scenario, order.unitId)}</span>
                   <span className="order-route">{route(scenario, order)}</span>
+                  <PlannedOrderOdds scenario={scenario} session={session} territoryId={order.to} />
                 </span>
                 <button aria-label={`Remove order for ${unitName(scenario, order.unitId)}`} className="text-button" onClick={() => dispatch(removePlannedOrder(order.unitId))} type="button">Remove</button>
               </li>
             ))}
           </ul>
         )}
+        <PlannedOddsInfo scenario={scenario} session={session} />
       </section>
     </>
+  );
+}
+
+/** O1: every army has one order, so the counts add up to all of the player's armies. */
+function OrderSummary({ session }: { readonly session: PlanningSession }): JSX.Element {
+  const counts = orderCounts(session);
+  return (
+    <p className="pane-meta order-summary">
+      {`${String(counts.move)} moving, ${String(counts.entrench)} entrenching, ${String(counts.rest)} resting`}
+    </p>
   );
 }
 

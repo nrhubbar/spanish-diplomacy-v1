@@ -2,15 +2,14 @@ import { describe, expect, it } from "vitest";
 import { soak } from "./soakRun";
 import { spain, tiny } from "./support";
 
-// Revision 5, section 8.4, re-baselined for Revision 6: the battle rules, the 35 researched
-// armies, and the computer player with offensives (staging toward a target, stall pressure).
-// Seeds 1-200, 30 turns. Measured: S1 1 early win (0.5 percent; budget 5: met), S2 139 of 200
-// games have a five-turn freeze (70 percent; budget 20: missed), S3 0 abandonments (met), and
-// 79 games decided (Republic 70, Northern command 4, Southern command 5; mean length 14 turns).
-// The odds-only player before offensives froze in 200 of 200 games and decided none. There is
-// no balance target in Milestone 2 (P3): the S2 miss is reported to the owner, not tuned. The
-// bands record the picture, so a change in rules, data, or the computer player prompts a
-// re-baseline.
+// Revision 5, section 8.4, re-baselined for Revision 7: the battle rules with standing orders
+// (only an entrenching army digs a territory in, O3), the 35 researched armies, and the computer
+// player with offensives. Seeds 1-200, 30 turns. Measured: S1 0 early wins (budget 5 percent:
+// met), S2 116 of 200 games have a five-turn freeze (58 percent; budget 20: missed), S3 0
+// abandonments (met), and 103 games decided (Republic 42, Northern command 48, Southern command
+// 13). Revision 6 measured 70 percent freezes and 79 decided games (Republic 70). There is no
+// balance target in Milestone 2 (P3): the S2 miss is reported to the owner, not tuned. The bands
+// record the picture, so a change in rules, data, or the computer player prompts a re-baseline.
 describe("computer player soak", () => {
   const spainRun = soak(spain(), 200, 30);
 
@@ -27,10 +26,10 @@ describe("computer player soak", () => {
   });
 
   it("records the freeze rate and balance (S2: budget 20 percent; missed, reported under P3)", () => {
-    expect(spainRun.freezes / spainRun.games).toBeGreaterThan(0.6);
-    expect(spainRun.freezes / spainRun.games).toBeLessThan(0.8);
-    expect(spainRun.decided / spainRun.games).toBeGreaterThan(0.3);
-    expect(spainRun.decided / spainRun.games).toBeLessThan(0.5);
+    expect(spainRun.freezes / spainRun.games).toBeGreaterThan(0.48);
+    expect(spainRun.freezes / spainRun.games).toBeLessThan(0.68);
+    expect(spainRun.decided / spainRun.games).toBeGreaterThan(0.42);
+    expect(spainRun.decided / spainRun.games).toBeLessThan(0.62);
     expect(Object.keys(spainRun.wins).sort()).toEqual(["north", "republic", "south"]);
   });
 

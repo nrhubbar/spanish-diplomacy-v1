@@ -1,4 +1,4 @@
-import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { JSX } from "react";
 import { Provider } from "react-redux";
@@ -63,10 +63,15 @@ describe("application flow", () => {
     await user.click(region("galicia"));
     expect(within(pane).getByText(/not connected to Madrid/)).toBeVisible();
     await user.click(region("castilla-la-mancha"));
-    expect(within(pane).getByRole("heading", { name: "Planned orders (4)" })).toBeVisible();
+    expect(within(pane).getByRole("list", { name: "Planned moves (4)" })).toBeVisible();
+    expect(within(pane).getByText(/^4 moving, \d+ entrenching, 0 resting$/)).toBeVisible();
     expect(document.querySelectorAll('[data-route-kind="planned"]')).toHaveLength(1);
     await user.click(within(pane).getByRole("button", { name: /Remove order for Wad-Ras/ }));
-    expect(within(pane).getByRole("heading", { name: "Planned orders (3)" })).toBeVisible();
+    expect(within(pane).getByRole("list", { name: "Planned moves (3)" })).toBeVisible();
+    expect(within(pane).getByRole("button", { name: /Wad-Ras/ })).toHaveTextContent(/Entrenching/);
+    // The map counters name each of the player's armies' orders too.
+    expect(screen.getByRole("button", { name: /^Wad-Ras Infantry Regiment No\. 1, Republican Government, .*, entrenching$/ })).toBeVisible();
+    expect(screen.getAllByRole("button", { name: /^[^,]+, Republican Government, .*, moving$/ })).toHaveLength(3);
 
     await user.click(within(pane).getByRole("button", { name: "End Turn" }));
     // The route follows the session in an effect, so the results screen can take a moment.
@@ -84,6 +89,8 @@ describe("application flow", () => {
   it("selects every army by default and lets the player unselect before ordering", async () => {
     const { user } = renderApp();
     await startDefaultGame(user);
+    // Individual counters show from 125% zoom (Z1).
+    await user.click(screen.getByRole("button", { name: "Zoom in" }));
     await user.click(screen.getByRole("button", { name: /Guadalajara Infantry Regiment No. 10/ }));
     const pane = screen.getByRole("complementary", { name: "Orders" });
     const armies = within(pane).getByRole("list", { name: "Your armies" });
@@ -130,7 +137,7 @@ describe("application flow", () => {
     expect(screen.getByText("Planned move")).toBeVisible();
   });
 
-  it("explains a territory whose armies all have orders", async () => {
+  it("explains a territory whose armies are all moving", async () => {
     const { user } = renderApp();
     await startDefaultGame(user);
     await user.click(region("madrid"));
@@ -138,9 +145,9 @@ describe("application flow", () => {
     await user.click(within(pane).getByRole("button", { name: "Give Selected Armies Order" }));
     await user.click(within(pane).getByRole("button", { name: "Move" }));
     await user.click(region("castilla-la-mancha"));
-    expect(within(pane).getByText("All have orders")).toBeVisible();
+    expect(within(pane).getByText("All moving")).toBeVisible();
     expect(within(pane).queryByRole("button", { name: "Select all" })).not.toBeInTheDocument();
-    expect(within(pane).getByRole("button", { name: "Give Selected Armies Order" })).toHaveAccessibleDescription(/Every army here has an order/);
+    expect(within(pane).getByRole("button", { name: "Give Selected Armies Order" })).toHaveAccessibleDescription(/Every army here is moving/);
   });
 
   it("hands the device between local players without revealing orders, then shows the results", async () => {
@@ -272,8 +279,9 @@ describe("campaign map interaction", () => {
     fireEvent.keyDown(map, { key: "+" });
     expect(map).toHaveAttribute("data-semantic-level", "operational");
     const before = map.getAttribute("data-camera-x");
-    fireEvent.keyDown(map, { key: "d" });
-    expect(map.getAttribute("data-camera-x")).not.toBe(before);
+    fireEvent.keyDown(map, { code: "KeyD", key: "d" });
+    await waitFor(() => { expect(map.getAttribute("data-camera-x")).not.toBe(before); });
+    fireEvent.keyUp(map, { code: "KeyD", key: "d" });
     fireEvent.keyDown(map, { key: "0" });
     expect(screen.getByText("Map zoom 100 percent")).toBeInTheDocument();
     fireEvent.keyDown(map, { key: "-" });
@@ -290,6 +298,8 @@ describe("campaign map interaction", () => {
   it("selects territories with Enter but leaves Enter on counters to the button (B3)", async () => {
     const { user } = renderApp();
     await startDefaultGame(user);
+    // Individual counters show from 125% zoom (Z1).
+    await user.click(screen.getByRole("button", { name: "Zoom in" }));
     fireEvent.keyDown(region("valencia"), { key: "Enter" });
     expect(screen.getByRole("heading", { name: "Valencia" })).toBeVisible();
     const counter = screen.getByRole("button", { name: /Wad-Ras Infantry Regiment No. 1/ });

@@ -1,6 +1,6 @@
-import type { JSX } from "react";
+import { type JSX, useEffect, useRef } from "react";
 import { requireFaction } from "../engine/lookup";
-import type { Scenario, TurnOutcome, TurnResolutionResult } from "../engine/types";
+import type { Scenario, TerritoryId, TurnOutcome, TurnResolutionResult } from "../engine/types";
 import { glyphs } from "../presentation/glyphs";
 import { medallionMarkup } from "../presentation/outcomeArt";
 import type { OutcomeKey } from "../presentation/outcomes";
@@ -8,6 +8,7 @@ import { outcomeText } from "../presentation/outcomeText";
 import { cssVariables } from "../presentation/style";
 import { controllerName, describeOutcomeGroup, factionName, groupOutcomes, route, territoryName, unitName } from "../presentation/text";
 import type { RevealedOrders } from "../state/selectors";
+import { eventsAt, revealInPane } from "./report/focus";
 
 /** U5: which territories changed hands this turn. */
 export function TerritoryChanges({ result, scenario }: { readonly result: TurnResolutionResult; readonly scenario: Scenario }): JSX.Element {
@@ -27,6 +28,45 @@ export function TerritoryChanges({ result, scenario }: { readonly result: TurnRe
         </ul>
       )}
     </section>
+  );
+}
+
+interface FocusNoteProps {
+  /** Whether the focused place has battle cards, which then tell its story instead. */
+  readonly battle: boolean;
+  readonly focusedTerritoryId: TerritoryId | undefined;
+  readonly result: TurnResolutionResult;
+  readonly scenario: Scenario;
+}
+
+/**
+ * F1: the top of the turn report when a place is focused on the map. A place without a battle
+ * gets a short note of what happened there. The region is always present and polite, so a
+ * keyboard player on the map hears the answer without leaving it.
+ */
+export function FocusNote({ battle, focusedTerritoryId, result, scenario }: FocusNoteProps): JSX.Element {
+  const note = useRef<HTMLElement>(null);
+  const shown = focusedTerritoryId !== undefined && !battle;
+  useEffect(() => {
+    if (shown && note.current !== null) revealInPane(note.current);
+  }, [focusedTerritoryId, shown]);
+  const name = focusedTerritoryId === undefined ? "" : territoryName(scenario, focusedTerritoryId);
+  const events = focusedTerritoryId === undefined || battle ? [] : eventsAt(scenario, result, focusedTerritoryId);
+  return (
+    <div className="focus-status" role="status">
+      {focusedTerritoryId === undefined ? null : battle ? (
+        <span className="visually-hidden">{`${name}: its battle is shown below.`}</span>
+      ) : (
+        <section aria-label={`What happened in ${name}`} className="pane-section focus-note" ref={note}>
+          <h3>{name}</h3>
+          {events.length === 0 ? (
+            <p className="pane-hint">{`Nothing happened in ${name} this turn.`}</p>
+          ) : (
+            <ul>{events.map((line) => <li key={line}>{line}</li>)}</ul>
+          )}
+        </section>
+      )}
+    </div>
   );
 }
 

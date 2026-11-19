@@ -18,7 +18,7 @@ export interface BattleExample {
 /**
  * The Briefing's worked example (B2), computed by the engine from the scenario's own data so it
  * can never disagree with a real battle: armies of the scenario's first unit type attack one of
- * the same type that has dug in for one turn, first two of them and then three.
+ * the same type that has entrenched for one turn, first two of them and then three.
  */
 export function battleExample(scenario: Scenario): BattleExample | undefined {
   const type = scenario.unitTypes[0];

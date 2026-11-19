@@ -1,6 +1,20 @@
 import { armyValue } from "../engine/combat";
 import { requireFaction, requireUnitDefinition, requireUnitType } from "../engine/lookup";
-import type { GameState, Scenario, UnitState } from "../engine/types";
+import type { StandingOrder } from "../engine/orders";
+import type { GameState, MoveOrder, Scenario, UnitState } from "../engine/types";
+
+/** An army's one order this turn (O1): a move, or the standing order it follows without one (O5). */
+export type ArmyOrder = MoveOrder["kind"] | StandingOrder;
+
+/** What an army with each order is doing, in the player's words. */
+export const orderStatus: Readonly<Record<ArmyOrder, string>> = {
+  entrench: "Entrenching",
+  move: "Moving",
+  rest: "Resting"
+};
+
+/** Order types in the order the menu, the summary, and accessible names list them. */
+export const armyOrders: readonly ArmyOrder[] = ["move", "entrench", "rest"];
 
 /**
  * What a counter or an army row shows: the values that fight now (C5), the type's full values,
@@ -71,14 +85,26 @@ export function figuresDescription(figures: ArmyFigures): string {
   ].join(", ");
 }
 
-/** A counter's accessible name: the army, its faction, its figures, and whether it has an order. */
-export function counterLabel(scenario: Scenario, figures: ArmyFigures, unit: UnitState, ordered: boolean): string {
+/**
+ * A counter's accessible name: the army, its faction, its figures, and, for the planning player's
+ * own armies, its order ("moving", "entrenching", or "resting"). Elsewhere `order` is undefined.
+ */
+export function counterLabel(scenario: Scenario, figures: ArmyFigures, unit: UnitState, order: ArmyOrder | undefined): string {
   return [
     requireUnitDefinition(scenario, unit.id).name,
     requireFaction(scenario, unit.factionId).name,
     figuresDescription(figures),
-    ...(ordered ? ["order planned"] : [])
+    ...(order === undefined ? [] : [orderStatus[order].toLowerCase()])
   ].join(", ");
+}
+
+/** The orders of a group's armies, for its accessible name: "3 moving, 1 entrenching". */
+export function groupOrdersDescription(orders: readonly ArmyOrder[]): string {
+  return armyOrders
+    .map((kind) => ({ count: orders.filter((order) => order === kind).length, kind }))
+    .filter(({ count }) => count > 0)
+    .map(({ count, kind }) => `${String(count)} ${orderStatus[kind].toLowerCase()}`)
+    .join(", ");
 }
 
 /** Why a demoralized army may not attack, in the player's terms (C6, M23). */

@@ -93,14 +93,14 @@ describe("gestures", () => {
 
 describe("keyboard (B3)", () => {
   it("maps keys to intents", () => {
-    expect(mapKeyIntent("w")).toEqual({ deltaX: 0, deltaY: 60, kind: "pan" });
-    expect(mapKeyIntent("ArrowRight")).toEqual({ deltaX: -60, deltaY: 0, kind: "pan" });
+    expect(mapKeyIntent("w")).toEqual({ direction: "up", kind: "pan" });
+    expect(mapKeyIntent("ArrowRight")).toEqual({ direction: "right", kind: "pan" });
     expect(["+", "-", "0", "Enter", "Escape"].map((key) => mapKeyIntent(key)?.kind)).toEqual(["zoom-in", "zoom-out", "reset", "select", undefined]);
   });
 
   it("leaves Enter and Space to native controls and every key to editable fields", () => {
     const select = { kind: "select" } as const;
-    const pan = { deltaX: 1, deltaY: 0, kind: "pan" } as const;
+    const pan = { direction: "left", kind: "pan" } as const;
     expect(shouldHandleMapKey(select, "native-control")).toBe(false);
     expect(shouldHandleMapKey(pan, "native-control")).toBe(true);
     expect(shouldHandleMapKey(pan, "editable")).toBe(false);

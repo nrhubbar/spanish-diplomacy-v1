@@ -42,7 +42,8 @@ export function placeOddsPlaques(
 }
 
 /**
- * C15: odds on the highlighted destinations, as plaques by each territory's name. They are
+ * C15: odds on the highlighted destinations, as plaques by each territory's name, marked
+ * approximate (A2). They are
  * decorative and let clicks through to the map; the Orders pane lists the same odds for
  * keyboard and screen-reader players.
  */

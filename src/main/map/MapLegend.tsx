@@ -29,7 +29,7 @@ export function legendEntries(scenario: Scenario, game: GameState, view: MapView
 const labels: Readonly<Record<string, string>> = {
   bounced: "Bounced move",
   contested: "Contested",
-  "destination-odds": "Possible destination: odds and chance to take it",
+  "destination-odds": "Possible destination: approximate odds and chance to take it",
   destination: "Possible destination",
   disbanded: "Army lost or surrendered",
   moved: "Completed move",

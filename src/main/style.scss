@@ -617,6 +617,16 @@ select {
   opacity: 0.85;
 }
 
+// Names, cities, sea lanes, routes, and their medallions only decorate: a click on one reaches
+// the territory beneath, so it never reads as a click on empty map (F1).
+.map-sea-lanes,
+.map-context-labels,
+.map-territory-labels,
+.map-cities,
+.map-routes {
+  pointer-events: none;
+}
+
 .map-context-labels text {
   fill: rgb(46 44 40 / 55%);
   font-family: var(--serif);
@@ -1612,6 +1622,27 @@ select {
   transform: rotate(45deg);
 }
 
+// Entrench: the low bank of an earthwork. Rest: a hollow ring.
+.order-choice[data-order-kind="entrench"] .order-choice-icon {
+  height: 0.45rem;
+  border: 2.5px solid var(--ink-soft);
+  border-bottom: 0;
+  border-radius: 0.45rem 0.45rem 0 0;
+}
+
+.order-choice[data-order-kind="rest"] .order-choice-icon {
+  width: 0.9rem;
+  height: 0.9rem;
+  margin-inline: 0.35rem;
+  border: 2.5px solid var(--ink-soft);
+  border-radius: 50%;
+}
+
+.order-choice[data-order-kind="entrench"] .order-choice-icon::after,
+.order-choice[data-order-kind="rest"] .order-choice-icon::after {
+  display: none;
+}
+
 .order-choice-description {
   grid-column: 2;
   color: var(--ink-soft);
@@ -1953,6 +1984,81 @@ select {
   margin-bottom: 0.6rem;
 }
 
+// A2: the circled "i" beside a set of odds, and the one sentence it opens. The button keeps a
+// 28 px target for touch; the note reads as a margin note on the pane's paper.
+.odds-info-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+
+  > * {
+    margin-top: 0;
+  }
+}
+
+.odds-info-button {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 1.75rem;
+  min-height: 1.75rem;
+  padding: 0;
+  border: 1.5px solid var(--ink);
+  border-radius: 50%;
+  color: var(--ink);
+  background: var(--paper);
+  font-family: var(--serif);
+  font-size: 0.9rem;
+  font-style: italic;
+  font-weight: 700;
+  line-height: 1;
+}
+
+// A tap leaves touch screens "hovering", so hover feedback is added only where a pointer can
+// hover; the open state always shows.
+.odds-info-button:hover:not(:disabled) {
+  color: var(--ink);
+  background: var(--paper);
+}
+
+.odds-info-button[aria-expanded="true"],
+.odds-info-button[aria-expanded="true"]:hover:not(:disabled) {
+  color: var(--paper);
+  background: var(--ink);
+}
+
+@media (hover: hover) {
+  .odds-info-button:hover:not(:disabled) {
+    color: var(--paper);
+    background: var(--ink);
+  }
+}
+
+// On a phone the destination "i" sits in the collapsed sheet's bar (A2); its note opens upward.
+.map-pane-bar-focus .odds-info {
+  flex: 1;
+  min-width: 0;
+
+  .odds-info-note {
+    font-weight: 400;
+  }
+}
+
+.odds-info-note {
+  margin: 0.35rem 0 0;
+  padding: 0.35rem 0.55rem;
+  border-left: 3px solid var(--ink-soft);
+  border-radius: 4px;
+  color: var(--ink-soft);
+  background: rgb(255 255 255 / 55%);
+  font-size: 0.82rem;
+}
+
+.order-list .planned-odds {
+  justify-self: start;
+  margin-top: 0.2rem;
+}
+
 .destination-list {
   display: grid;
   gap: 0.35rem;
@@ -2101,6 +2207,31 @@ select {
 
 .battle-card[open] .battle-card-heading::after {
   transform: rotate(45deg);
+}
+
+// F1: the card of the place focused on the map, ringed in the map's selection gold.
+.battle-card {
+  scroll-margin-block: 0.75rem;
+}
+
+.battle-card[data-focused="true"] {
+  border-color: #7a5a06;
+  box-shadow:
+    0 0 0 2px var(--gold),
+    0 0 10px 2px rgb(217 165 32 / 55%);
+}
+
+// F1: what happened at a focused place without a battle, above the rest of the report.
+.focus-note {
+  border-bottom: 1px solid rgb(36 29 24 / 15%);
+  scroll-margin-block: 0.75rem;
+
+  ul {
+    display: grid;
+    gap: 0.35rem;
+    margin: 0.4rem 0 0;
+    padding-left: 1.1rem;
+  }
 }
 
 .battle-card-body {

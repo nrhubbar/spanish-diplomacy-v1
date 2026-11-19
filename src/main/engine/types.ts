@@ -152,7 +152,7 @@ export interface CombatRules {
   readonly belowOneToOne: { readonly kind: "halving"; readonly rollPenalty: number };
   /** Multiplier applied to a demoralized army's values (C6). */
   readonly demoralizationFactor: number;
-  /** Defence roll bonus gained per quiet turn, and its cap (C7). */
+  /** Defence roll bonus a held territory gains each turn one of its holder's armies entrenches, and its cap (C7, O3). */
   readonly diggingIn: { readonly max: number; readonly perTurn: number };
   readonly factionModifiers: readonly FactionModifier[];
   /** `table[column][row]`: seven odds columns (below 1:1, then 1:1 to 6:1) by seven rows (modified roll 0 to 6). */
@@ -187,10 +187,10 @@ export interface Scenario {
   readonly victory: VictoryRules;
 }
 
-/** C6: a demoralized army fights at reduced values and recovers after a quiet turn. */
+/** C6: a demoralized army fights at reduced values and recovers after a turn of rest (O4). */
 export interface Morale {
   readonly demoralized: boolean;
-  /** Complete quiet turns since the army was last demoralized. Zero while not demoralized. */
+  /** Complete turns of rest since the army was last demoralized. Zero while not demoralized. */
   readonly quietTurns: number;
 }
 
@@ -283,7 +283,7 @@ export interface ReinforcementArrivedOutcome {
   readonly order: MoveOrder;
 }
 
-/** C6: a demoralized army recovered after a quiet turn. */
+/** C6: a demoralized army recovered after a turn of rest (O4). */
 export interface RecoveredOutcome {
   readonly factionId: FactionId;
   readonly kind: "recovered";

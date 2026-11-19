@@ -139,12 +139,14 @@ describe("planning with strength and morale (C5, C6, C15)", () => {
   it("prints values, men, and status on counters and in the army list", async () => {
     const { user } = renderSession(planning(), "/orders");
     await screen.findByRole("application", { name: /map/ });
+    // Individual counters show from 125% zoom (Z1).
+    await user.click(screen.getByRole("button", { name: "Zoom in" }));
     const counter = screen.getByRole("button", { name: /^Covadonga Infantry Regiment No. 4, Republican Government/ });
     // A scenario-given designation wins over the derived one; otherwise the name is abbreviated.
     expect(document.querySelector('[data-unit-id="rep-durruti-column"] .unit-counter-designation')?.textContent).toBe("DURR");
     expect(counter.querySelector(".unit-counter-designation")?.textContent).toBe("C4");
     expect(counter).toHaveAccessibleName(
-      "Covadonga Infantry Regiment No. 4, Republican Government, attack 1, defence 2 (full 4-6), 370 of 550 men, demoralized, cannot attack, dug in +2"
+      "Covadonga Infantry Regiment No. 4, Republican Government, attack 1, defence 2 (full 4-6), 370 of 550 men, demoralized, cannot attack, dug in +2, resting"
     );
     expect(counter.querySelector(".unit-counter-current")?.textContent).toBe("1-2");
     expect(counter.querySelector(".unit-counter-full")?.textContent).toBe("4-6");
@@ -162,6 +164,8 @@ describe("planning with strength and morale (C5, C6, C15)", () => {
   it("shows the odds at every destination and lets the pane choose one", async () => {
     const { user } = renderSession(planning(), "/orders");
     await screen.findByRole("application", { name: /map/ });
+    // Individual counters show from 125% zoom (Z1).
+    await user.click(screen.getByRole("button", { name: "Zoom in" }));
     await user.click(screen.getByRole("button", { name: /^Wad-Ras Infantry Regiment No. 1/ }));
     const pane = screen.getByRole("complementary", { name: "Orders" });
     await user.click(within(pane).getByRole("button", { name: "Clear" }));
@@ -169,20 +173,70 @@ describe("planning with strength and morale (C5, C6, C15)", () => {
     await user.click(within(pane).getByRole("button", { name: "Give Selected Armies Order" }));
     await user.click(within(pane).getByRole("button", { name: "Move" }));
     const list = within(pane).getByRole("list", { name: "Destinations" });
-    const battle = within(list).getByRole("button", { name: /Battle at 1:\d+: \d+% to take it/ });
+    const battle = within(list).getByRole("button", { name: /Approximately 1:\d+, \d+ percent to take it/ });
     expect(battle).toHaveTextContent(/Attack 4 against defence \d+/);
     expect(within(list).getByRole("button", { name: /Reinforcement: it always arrives/ })).toBeVisible();
     expect(document.querySelectorAll(".odds-layer .odds-chip")).toHaveLength(2);
     expect(document.querySelector('.odds-layer .odds-chip[data-territory-id="castilla-la-mancha"]')?.textContent).toBe("Reinforce");
 
     await user.click(within(list).getByRole("button", { name: /Reinforcement/ }));
-    expect(within(pane).getByRole("heading", { name: "Planned orders (1)" })).toBeVisible();
+    expect(within(pane).getByRole("list", { name: "Planned moves (1)" })).toBeVisible();
     expect(document.querySelector(".odds-layer")).toBeNull();
+  });
+
+  it("combines planned moves into the odds and says why they are approximate (A1, A2)", async () => {
+    const session: Session = {
+      draft: { orders: [move("republic", "rep-castilla-3", "extremadura", "castilla-y-leon")], selectedUnitIds: [] },
+      factionId: faction("republic"),
+      game: record(shakenMadrid()),
+      phase: "planning"
+    };
+    const { user } = renderSession(session, "/orders");
+    await screen.findByRole("application", { name: /map/ });
+    // Individual counters show from 125% zoom (Z1).
+    await user.click(screen.getByRole("button", { name: "Zoom in" }));
+    const pane = screen.getByRole("complementary", { name: "Orders" });
+    // The planned attack shows the odds of everything ordered there.
+    expect(pane.querySelector(".order-list .planned-odds")).toHaveTextContent(/^Approx\. 1:\d+ \u00b7 \d+%Approximately 1:\d+, \d+ percent to take it\.$/);
+    expect(within(pane).getByRole("button", { name: "About the planned odds" })).toHaveAttribute("aria-expanded", "false");
+
+    await user.click(screen.getByRole("button", { name: /^Wad-Ras Infantry Regiment No. 1/ }));
+    await user.click(within(pane).getByRole("button", { name: "Clear" }));
+    await user.click(within(pane).getByRole("button", { name: /^Wad-Ras Infantry Regiment No. 1/ }));
+    await user.click(within(pane).getByRole("button", { name: "Give Selected Armies Order" }));
+    await user.click(within(pane).getByRole("button", { name: "Move" }));
+    const list = within(pane).getByRole("list", { name: "Destinations" });
+    // Wad-Ras (attack 4) joins Castilla No. 3 (attack 4), already ordered there.
+    const battle = within(list).getByRole("button", { name: /Castilla y Le\u00f3n/ });
+    expect(battle).toHaveTextContent(/Attack 8 against defence \d+/);
+    expect(battle).toHaveAccessibleName(/Approximately \d+:\d+, \d+ percent to take it\./);
+    expect(document.querySelector('.odds-layer .odds-chip[data-territory-id="castilla-y-leon"]')?.textContent).toMatch(/^\u2248 \d+:\d+ \u00b7 \d+%$/);
+
+    const info = within(pane).getByRole("button", { name: "About the destination odds" });
+    const note = document.getElementById(info.getAttribute("aria-controls") ?? "");
+    expect(note).toHaveTextContent("The defender may reinforce, or another faction may attack too, so the real odds may differ.");
+    const expectOpen = (open: boolean) => {
+      expect(info).toHaveAttribute("aria-expanded", String(open));
+      if (open) expect(note).toBeVisible();
+      else expect(note).not.toBeVisible();
+    };
+    expectOpen(false);
+    await user.click(info);
+    expectOpen(true);
+    await user.click(info);
+    expectOpen(false);
+    info.focus();
+    await user.keyboard("{Enter}");
+    expectOpen(true);
+    await user.keyboard(" ");
+    expectOpen(false);
   });
 
   it("closes hostile destinations to a demoralized army and says why", async () => {
     const { user } = renderSession(planning(), "/orders");
     await screen.findByRole("application", { name: /map/ });
+    // Individual counters show from 125% zoom (Z1).
+    await user.click(screen.getByRole("button", { name: "Zoom in" }));
     await user.click(screen.getByRole("button", { name: /^Covadonga Infantry Regiment No. 4/ }));
     const pane = screen.getByRole("complementary", { name: "Orders" });
     await user.click(within(pane).getByRole("button", { name: "Give Selected Armies Order" }));

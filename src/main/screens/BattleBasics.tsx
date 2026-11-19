@@ -21,8 +21,12 @@ export function BattleBasics({ scenario }: { readonly scenario: Scenario }): JSX
           Moving into a territory another faction holds starts a battle. Your armies attacking it fight together, even from
           different territories, and the odds of attack against defence, with a roll of the die, decide the result.
         </li>
-        <li>{`Armies that hold quietly dig in: each turn shifts the die ${String(diggingIn.perTurn)} in the defenders' favour, up to ${String(diggingIn.max)}.`}</li>
-        <li>{`A demoralized army fights at ${weakened} and cannot attack until it spends a turn without moving.`}</li>
+        <li>Every army has one order each turn: Move, Entrench, or Rest. An army you do not move entrenches, or rests if it is demoralized.</li>
+        <li>
+          {`Entrenching armies dig the territory in: each turn shifts the die ${String(diggingIn.perTurn)} in the defenders' favour, up to ${String(diggingIn.max)}. `}
+          Armies that move do not dig in, and a battle in the territory stops the digging for that turn.
+        </li>
+        <li>{`A demoralized army fights at ${weakened} and cannot attack. It cannot entrench either: it rests, and recovers after one turn of rest.`}</li>
         <li>Attrition costs men for good, from the strongest armies first. Demoralization passes with rest and falls on the weakest first.</li>
         <li>Moving into a territory your faction controls is a reinforcement: it always arrives.</li>
       </ul>

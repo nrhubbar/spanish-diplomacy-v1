@@ -1,11 +1,11 @@
 import { type JSX, useMemo } from "react";
 import { requireFaction, requireUnitDefinition } from "../engine/lookup";
 import type { GameState, Scenario, TerritoryId } from "../engine/types";
-import { armyFigures, counterLabel, groupFigures, groupLabel } from "../presentation/army";
+import { armyFigures, counterLabel, groupFigures, groupLabel, groupOrdersDescription } from "../presentation/army";
 import { territoryName } from "../presentation/text";
 import type { MapPackage, MapPoint } from "../scenarios/loader";
 import { territoryAnchor } from "./anchors";
-import type { SemanticLevel } from "./camera";
+import { type SemanticLevel, semanticLevel } from "./camera";
 import { armyItems, type CounterItem, groupedItems } from "./counterItems";
 import { GroupCounter } from "./GroupCounter";
 import { type CounterMetrics, placeCounterStacks, type ScreenRect } from "./placement";
@@ -41,6 +41,12 @@ export function crowdedDisplacement(metrics: CounterMetrics): number {
   return 3 * metrics.height;
 }
 
+/**
+ * Z1: below this camera zoom (the 125% the zoom readout shows), every faction's armies in a
+ * territory share one summed counter, whatever the room on screen.
+ */
+export const individualCountersFromZoom = 1.25;
+
 export interface CounterLayout {
   readonly compact: boolean;
   readonly items: readonly CounterItem[];
@@ -50,22 +56,24 @@ export interface CounterLayout {
 }
 
 export interface LayoutOptions {
-  /** The selected territory, whose armies always show one by one. */
+  /** The selected or focused territory, whose armies always show one by one (Z2). */
   readonly expandedTerritoryId?: TerritoryId;
   /** A phone-width map: the overview is compact from the start. */
   readonly narrow: boolean;
 }
 
 /**
- * Where every counter goes at this zoom level. Each army sits at its city or its territory's
- * anchor, and stacks avoid each other and the obstacles. Below the detail zoom, when a stack
- * would be pushed far from its territory (and always at a phone's overview), each faction's
- * armies in a territory share one compact counter at the territory's anchor instead.
+ * Where every counter goes at this camera zoom. Each army sits at its city or its territory's
+ * anchor, and stacks avoid each other and the obstacles. Below `individualCountersFromZoom`
+ * each faction's armies in a territory always share one compact counter at the territory's
+ * anchor (Z1). From there up to the detail zoom they share one only when a stack would be
+ * pushed far from its territory, and always at a phone's overview. The expanded territory
+ * always shows its armies one by one (Z2).
  */
 export function layoutCounters(
   game: GameState,
   map: MapPackage,
-  level: SemanticLevel,
+  zoom: number,
   toScreen: (point: MapPoint) => MapPoint,
   obstacles: readonly ScreenRect[],
   { expandedTerritoryId, narrow }: LayoutOptions
@@ -81,10 +89,11 @@ export function layoutCounters(
     metrics,
     obstacles
   );
+  const level = semanticLevel(zoom);
   const individual = armyItems(game);
   const metrics = counterMetrics[level];
   if (level === "detail") return { compact: false, items: individual, metrics, positions: place(individual, metrics, false).positions };
-  const spread = narrow && level === "overview" ? undefined : place(individual, metrics, false);
+  const spread = zoom < individualCountersFromZoom || (narrow && level === "overview") ? undefined : place(individual, metrics, false);
   if (spread !== undefined && spread.maxDisplacement <= crowdedDisplacement(metrics)) {
     return { compact: false, items: individual, metrics, positions: spread.positions };
   }
@@ -117,12 +126,16 @@ export function CounterLayer({ game, layout, level, scenario, unitSymbols, view 
           const onSelectTerritory = view.onSelectTerritory;
           const ordered = item.units.filter((unit) => view.orderedUnitIds.has(unit.id)).length;
           const label = groupLabel(faction.name, territoryName(scenario, item.territoryId), figures);
+          const orders = groupOrdersDescription(item.units.flatMap((unit) => {
+            const order = view.unitOrders?.get(unit.id);
+            return order === undefined ? [] : [order];
+          }));
           return (
             <GroupCounter
               factionColor={faction.color}
               figures={figures}
               key={item.key}
-              label={ordered === 0 ? label : `${label}, ${String(ordered)} with orders planned`}
+              label={orders === "" ? label : `${label}, ${orders}`}
               metrics={metrics}
               onSelect={onSelectTerritory === undefined ? undefined : () => { onSelectTerritory(item.territoryId); }}
               ordered={ordered === item.units.length}
@@ -140,7 +153,7 @@ export function CounterLayer({ game, layout, level, scenario, unitSymbols, view 
             factionColor={requireFaction(scenario, unit.factionId).color}
             figures={figures}
             key={item.key}
-            label={counterLabel(scenario, figures, unit, ordered)}
+            label={counterLabel(scenario, figures, unit, view.unitOrders?.get(unit.id))}
             metrics={metrics}
             designation={definition.designation}
             name={definition.name}

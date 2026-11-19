@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { initialGameState } from "../main/engine/resolution";
 import type { GameState } from "../main/engine/types";
-import { CounterLayer, compactMetrics, counterMetrics, crowdedDisplacement, layoutCounters } from "../main/map/CounterLayer";
+import { CounterLayer, compactMetrics, counterMetrics, crowdedDisplacement, individualCountersFromZoom, layoutCounters } from "../main/map/CounterLayer";
 import { armyItems, groupedItems, itemTerritory } from "../main/map/counterItems";
 import { placeCounterStacks } from "../main/map/placement";
 import { staticMapView } from "../main/map/view";
@@ -53,18 +53,49 @@ describe("compact counters", () => {
   it("is compact on a phone's overview, stays individual at the detail zoom, and reacts to crowding", () => {
     const game = initialGameState(spain());
     const map = spainMap();
-    const narrow = layoutCounters(game, map, "overview", squeeze, [], { narrow: true });
+    const narrow = layoutCounters(game, map, 1.25, squeeze, [], { narrow: true });
     expect(narrow.compact).toBe(true);
     expect(narrow.metrics).toBe(compactMetrics.overview);
     expect(narrow.items.length).toBeLessThan(Object.keys(game.units).length);
     expect(narrow.positions.size).toBe(narrow.items.length);
-    expect(layoutCounters(game, map, "detail", squeeze, [], { narrow: true }).compact).toBe(false);
-    const roomy = layoutCounters(game, map, "overview", spread, [], { narrow: false });
+    expect(layoutCounters(game, map, 2.1, squeeze, [], { narrow: true }).compact).toBe(false);
+    const roomy = layoutCounters(game, map, 1.25, spread, [], { narrow: false });
     expect(roomy.compact).toBe(false);
     expect(roomy.metrics).toBe(counterMetrics.overview);
-    expect(layoutCounters(game, map, "operational", squeeze, [], { narrow: false }).compact).toBe(true);
-    const expanded = layoutCounters(game, map, "overview", squeeze, [], { expandedTerritoryId: territory("madrid"), narrow: true });
+    expect(layoutCounters(game, map, 1.45, squeeze, [], { narrow: false }).compact).toBe(true);
+    const expanded = layoutCounters(game, map, 1.25, squeeze, [], { expandedTerritoryId: territory("madrid"), narrow: true });
     expect(expanded.items.filter((item) => itemTerritory(item) === "madrid").every((item) => item.kind === "army")).toBe(true);
+  });
+
+  it("sums every stack below 125% zoom and keeps today's rules from there (Z1)", () => {
+    const game = initialGameState(spain());
+    const map = spainMap();
+    const armies = Object.keys(game.units).length;
+    const at = (zoom: number) => layoutCounters(game, map, zoom, spread, [], { narrow: false });
+    expect(individualCountersFromZoom).toBe(1.25);
+    for (const zoom of [1, 1.24]) {
+      const summed = at(zoom);
+      expect(summed.compact).toBe(true);
+      expect(summed.metrics).toBe(compactMetrics.overview);
+      expect(summed.items).toEqual(groupedItems(game, undefined));
+      expect(summed.items.length).toBeLessThan(armies);
+    }
+    // With room to spare, 125% and the operational level show every army one by one.
+    for (const [zoom, metrics] of [[1.25, counterMetrics.overview], [1.45, counterMetrics.operational]] as const) {
+      const individual = at(zoom);
+      expect(individual.compact).toBe(false);
+      expect(individual.metrics).toBe(metrics);
+      expect(individual.items).toHaveLength(armies);
+    }
+  });
+
+  it("splits the expanded territory into armies below 125% zoom (Z2)", () => {
+    const game = initialGameState(spain());
+    const layout = layoutCounters(game, spainMap(), 1, spread, [], { expandedTerritoryId: territory("madrid"), narrow: false });
+    expect(layout.compact).toBe(true);
+    const madrid = layout.items.filter((item) => itemTerritory(item) === "madrid");
+    expect(madrid.map((item) => item.kind)).toEqual(["army", "army", "army", "army"]);
+    expect(layout.items.find((item) => item.key === "group:asturias:north")?.kind).toBe("group");
   });
 
   it("measures how far crowding pushes a stack", () => {
@@ -79,7 +110,7 @@ describe("compact counters", () => {
 
   it("draws a group with its total, count, and badges, and opens it by selecting the territory", async () => {
     const game = shakenCovadonga();
-    const layout = layoutCounters(game, spainMap(), "overview", squeeze, [], { narrow: true });
+    const layout = layoutCounters(game, spainMap(), 1, squeeze, [], { narrow: true });
     const onSelectTerritory = vi.fn();
     const ordered = Object.values(game.units).filter((unit) => unit.territoryId === "madrid").map((unit) => unit.id);
     render(
@@ -89,11 +120,11 @@ describe("compact counters", () => {
         level="overview"
         scenario={spain()}
         unitSymbols={new Map()}
-        view={{ ...staticMapView, onSelectTerritory, orderedUnitIds: new Set(ordered) }}
+        view={{ ...staticMapView, onSelectTerritory, orderedUnitIds: new Set(ordered), unitOrders: new Map(ordered.map((id) => [id, "move"])) }}
       />
     );
     const group = screen.getByRole("button", { name: /^Republican Government, 4 armies in Madrid/ });
-    expect(group).toHaveAccessibleName(/1 demoralized, dug in \+2, 4 with orders planned$/);
+    expect(group).toHaveAccessibleName(/1 demoralized, dug in \+2, 4 moving$/);
     expect(group).toHaveAttribute("data-ordered", "true");
     expect(group.querySelector(".unit-counter-current")?.textContent).toBe("12-18");
     expect(group.querySelector(".unit-counter-count")?.textContent).toBe("\u00d74");

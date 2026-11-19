@@ -51,7 +51,7 @@ Combat (`combat`), every field required:
 |---|---|---|
 | `table` | 7 lists of 7 results | `table[column][row]`. Columns are the odds: 0 is below 1:1, then 1:1 to 6:1. Rows are the modified roll, 0 to 6 (M15). Results are the seven keys of M16. |
 | `belowOneToOne` | `{ kind: "halving", rollPenalty }` | Below 1:1 the attacker's roll takes `rollPenalty` (a whole number, 0 or more) for each halving of the odds (M14). |
-| `diggingIn` | `{ perTurn, max }` | Defence roll bonus gained per quiet turn, and its cap; positive whole numbers (M22). |
+| `diggingIn` | `{ perTurn, max }` | Defence roll bonus gained per turn of entrenching, and its cap; positive whole numbers (M22). |
 | `demoralizationFactor` | above 0, at most 1 | Multiplier for a demoralized army's values (M12). |
 | `factionModifiers[]` | `{ id, name, factionId, when, attack?, defence? }` | Named roll bonuses for one faction (M24). `name` is shown in battle breakdowns. `when` is `holds-controlled-city`. `attack` and `defence` are whole numbers, 0 or more, default 0; at least one is above 0. |
 
@@ -167,11 +167,16 @@ The last three are the attacker's successes; the chance to take a territory is t
 - With nowhere to go, the army surrenders: it is destroyed and reported as surrendered.
 - Armies in a battle report their retreat or surrender in its battle outcome. An army whose entry bounced without a battle (M19) reports it in its move outcome: a bounced move names where it fell back (`retreatedTo`), and a surrender is a disbanded move naming the faction that took its origin. Head-on bounces (M20) defend their origin, so any retreat of theirs is reported by the battle there.
 
-**M22. Digging in (C7).** A faction holds a territory when it controls it and has an army there. At the end of each turn, a territory held by the same faction at the start and at the end of the turn, where no battle was fought, gains `diggingIn.perTurn` levels of works for that faction, up to `diggingIn.max`. A territory that was fought over keeps its level. Works are removed when their faction no longer holds the territory. Meeting battles (M20) are fought on the road, not in a territory. The works give the defenders their level as a defence modifier (M14) whenever the works' faction is among the defenders, except in head-on (M20), entry (M19), and standing (M27) battles.
+**M22. Digging in (C7).** Every army has exactly one order each turn: Move, Entrench, or Rest. Entrench and Rest are not submitted: an army without a move order entrenches when it is healthy and rests when it is demoralized (M23), so submissions stay lists of move orders (M1). A demoralized army can never entrench. A faction holds a territory when it controls it and has an army there. At the end of each turn, a territory gains `diggingIn.perTurn` levels of works for its holder, up to `diggingIn.max`, when:
+- the same faction held it at the start and at the end of the turn;
+- no battle was fought there; and
+- at least one of the holder's armies entrenched there: it was there and not demoralized at the start of the turn, had no valid move order, and is still there at the end.
+
+Otherwise the territory keeps its level, so a territory that was fought over, or whose only armies moved or rested, gains nothing. Works are removed when their faction no longer holds the territory. Meeting battles (M20) are fought on the road, not in a territory. The works give the defenders their level as a defence modifier (M14) whenever the works' faction is among the defenders, except in head-on (M20), entry (M19), and standing (M27) battles.
 
 **M23. Morale (C6).**
 - A demoralized army fights at `demoralizationFactor` times its values (M12) and cannot attack: it may move only into a territory where no army of another faction stands at the start of the turn. Any other move is an impossible order (M9); planning and computer players offer only the allowed destinations.
-- An army is quiet in a turn when it had no move order, did not retreat, and was not demoralized that turn. At the end of each turn, a demoralized army that was quiet recovers and is reported as recovered: one quiet turn is enough. A demoralized army that moves restarts its count, and a new demoralization restarts it too, so `quietTurns` stays 0 while an army is demoralized.
+- A demoralized army without a move order rests (M22). It has rested in a turn when it had no move order, did not retreat, and was not demoralized that turn. At the end of each turn, a demoralized army that rested recovers and is reported as recovered: one turn of rest is enough. A demoralized army that moves restarts its count, and a new demoralization restarts it too, so `quietTurns` stays 0 while an army is demoralized.
 
 **M24. Faction modifiers (C17).** A faction modifier adds its `attack` to the roll when its faction attacks and subtracts its `defence` when its faction is among the defenders, while its condition holds. `holds-controlled-city`: the battle territory contains at least one city the faction controlled at the start of the turn. The Spain scenario's "Popular resistance" (Republic, +1 defence) is one; battle breakdowns name it like any other modifier.
 

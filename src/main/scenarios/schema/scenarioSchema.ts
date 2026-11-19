@@ -46,7 +46,7 @@ const combatSchema = z
       .meta({ description: "Below 1:1 the attacker's roll takes rollPenalty for each halving of the odds." }),
     diggingIn: z
       .strictObject({ perTurn: combatValueSchema, max: combatValueSchema })
-      .meta({ description: "Defence roll bonus gained per quiet turn, up to max." }),
+      .meta({ description: "Defence roll bonus a territory gains, up to max, each turn its holder keeps it without a battle while at least one of the holder's armies there entrenches (is healthy and has no move order)." }),
     demoralizationFactor: z
       .number()
       .gt(0)

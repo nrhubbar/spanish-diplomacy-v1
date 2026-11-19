@@ -2,6 +2,7 @@
  * Every non-ASCII glyph the UI renders, written as escapes so source stays ASCII (R13).
  */
 export const glyphs = {
+  approx: "\u2248",
   arrow: "\u2192",
   check: "\u2713",
   close: "\u00d7",

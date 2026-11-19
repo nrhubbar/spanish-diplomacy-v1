@@ -25,10 +25,11 @@ import {
 import { loadMapAssets } from "../main/state/mapAssetsSlice";
 import { isPathAllowed, paths, routeForSession } from "../main/state/routing";
 import { selectRevealedOrders, selectSubmissionStatus } from "../main/state/selectors";
+import { chooseOrder, orderCounts, orderKindsFor, orderOf, type PlanningSession } from "../main/state/planning";
 import type { GameRecord, Session } from "../main/state/session";
 import { createAppStore } from "../main/state/store";
 import { initialGameState } from "../main/engine/resolution";
-import { faction, spain, spainId, territory, testRegistry, testStore, tiny, tinyId, unit } from "./support";
+import { armyIn, faction, spain, spainId, territory, testRegistry, testStore, tiny, tinyId, unit } from "./support";
 
 function startWith(assignments: Record<string, ActorKind>, scenarioId: ScenarioId = spainId, seed = 11) {
   const store = testStore();
@@ -281,10 +282,11 @@ describe("planning drafts", () => {
     expect(store.getState().notifications.notifications).toEqual([]);
     store.dispatch(clickMapTerritory(territory("castilla-y-leon")));
     expect(draftOf(store).selectedUnitIds).toEqual([]);
+    // A moving army can be selected again to change its order.
     store.dispatch(toggleUnitSelection(unit("rep-wad-ras-1")));
-    expect(feedback()).toContain("Remove this army's planned order");
+    expect(draftOf(store)).toMatchObject({ selectedTerritoryId: "madrid", selectedUnitIds: ["rep-wad-ras-1"] });
     store.dispatch(clickMapTerritory(territory("madrid")));
-    expect(feedback()).toContain("already has an order");
+    expect(feedback()).toContain("Every army here is moving");
     store.dispatch(clearUnitSelection());
     expect(feedback()).toBeUndefined();
   });
@@ -296,6 +298,87 @@ describe("planning drafts", () => {
     expect(draftOf(store).stage).toEqual({ orderKind: "move", step: "choose-destination" });
     store.dispatch(clickMapTerritory(territory("isle")));
     expect(draftOf(store).feedback).toContain("not connected");
+  });
+});
+
+describe("standing orders: Entrench and Rest (O1-O5)", () => {
+  const planningOf = (store: ReturnType<typeof testStore>): PlanningSession => {
+    const current = session(store);
+    if (current.phase !== "planning") throw new Error(`Expected planning, got ${current.phase}`);
+    return current;
+  };
+  /** The planning session with some of its armies demoralized. */
+  const shaken = (planning: PlanningSession, ids: readonly string[]): PlanningSession => {
+    const units = { ...planning.game.state.units };
+    for (const id of ids) {
+      const current = units[unit(id)];
+      if (current !== undefined) units[unit(id)] = { ...current, morale: { demoralized: true, quietTurns: 0 } };
+    }
+    return { ...planning, game: { ...planning.game, state: { ...planning.game.state, units } } };
+  };
+  const scenario = spain();
+  const republicArmies = Object.values(initialGameState(scenario).units).filter((army) => army.factionId === "republic");
+
+  it("gives every army without a move its standing order: healthy armies entrench, demoralized ones rest", () => {
+    const planning = planningOf(startWith({}));
+    expect(orderCounts(planning)).toEqual({ entrench: republicArmies.length, move: 0, rest: 0 });
+    const tired = shaken(planning, ["rep-otumba-9"]);
+    expect(orderOf(tired, armyIn(tired.game.state, "rep-otumba-9"))).toBe("rest");
+    expect(orderOf(tired, armyIn(tired.game.state, "rep-guadalajara-10"))).toBe("entrench");
+    expect(orderCounts(tired)).toEqual({ entrench: republicArmies.length - 1, move: 0, rest: 1 });
+  });
+
+  it("selects armies that entrench by default, and offers Entrench to healthy armies only", () => {
+    const store = startWith({});
+    store.dispatch(clickMapTerritory(territory("valencia")));
+    const planning = planningOf(store);
+    expect(planning.draft.selectedUnitIds).toEqual(["rep-otumba-9", "rep-guadalajara-10"]);
+    expect(orderKindsFor(planning)).toEqual(["move", "entrench"]);
+    expect(chooseOrder(scenario, planning, "rest").draft.feedback).toBe("Only demoralized armies rest.");
+  });
+
+  it("offers Rest to demoralized armies only, and never lets them entrench", () => {
+    const store = startWith({});
+    store.dispatch(clickMapTerritory(territory("valencia")));
+    const tired = shaken(planningOf(store), ["rep-otumba-9"]);
+    // A mixed selection is offered Move only: Rest is never offered to a healthy army.
+    expect(orderKindsFor(tired)).toEqual(["move"]);
+    const restOnly = { ...tired, draft: { ...tired.draft, selectedUnitIds: [unit("rep-otumba-9")] } };
+    expect(orderKindsFor(restOnly)).toEqual(["move", "rest"]);
+    expect(chooseOrder(scenario, restOnly, "entrench").draft.feedback).toContain("Demoralized armies cannot entrench");
+    expect(chooseOrder(scenario, restOnly, "rest").draft).toMatchObject({ feedback: "1 army will rest.", orders: [] });
+  });
+
+  it("cancels a move with Entrench, replaces it with another Move, and returns to Entrench when cleared", () => {
+    const store = startWith({});
+    store.dispatch(clickMapTerritory(territory("valencia")));
+    store.dispatch(chooseOrderKind("move"));
+    store.dispatch(clickMapTerritory(territory("castilla-la-mancha")));
+    expect(orderCounts(planningOf(store)).move).toBe(2);
+
+    // A moving army can be selected; Move again replaces its order rather than adding one.
+    store.dispatch(toggleUnitSelection(unit("rep-otumba-9")));
+    store.dispatch(chooseOrderKind("move"));
+    store.dispatch(clickMapTerritory(territory("catalunya")));
+    expect(planningOf(store).draft.orders.map((order) => [order.unitId, order.to])).toEqual([
+      ["rep-guadalajara-10", "castilla-la-mancha"],
+      ["rep-otumba-9", "catalunya"]
+    ]);
+
+    store.dispatch(toggleUnitSelection(unit("rep-otumba-9")));
+    store.dispatch(toggleOrderMenu());
+    store.dispatch(chooseOrderKind("entrench"));
+    expect(planningOf(store).draft).toEqual({
+      feedback: "1 army will entrench.",
+      orders: [{ factionId: "republic", from: "valencia", kind: "move", to: "castilla-la-mancha", unitId: "rep-guadalajara-10" }],
+      selectedTerritoryId: "valencia",
+      selectedUnitIds: ["rep-otumba-9"]
+    });
+
+    store.dispatch(removePlannedOrder(unit("rep-guadalajara-10")));
+    const cleared = planningOf(store);
+    expect(cleared.draft.orders).toEqual([]);
+    expect(orderCounts(cleared)).toEqual({ entrench: republicArmies.length, move: 0, rest: 0 });
   });
 });
 

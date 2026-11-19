@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { initialGameState } from "../main/engine/resolution";
-import { battleResults, type BattleOutcome, type GameState, type Scenario } from "../main/engine/types";
+import { battleResults, type BattleOutcome, type GameState, type MoveOrder, type Scenario } from "../main/engine/types";
 import { legendEntries } from "../main/map/MapLegend";
 import { placeOddsPlaques } from "../main/map/DestinationOddsLayer";
 import { battleRoutes, groupRoutes } from "../main/map/routes";
@@ -8,6 +8,7 @@ import { staticMapView } from "../main/map/view";
 import {
   armyFigures,
   counterLabel,
+  groupOrdersDescription,
   demoralizedRule,
   figuresDescription,
   menLabel,
@@ -19,11 +20,13 @@ import { battleSummary, cardFlavor, columnLabel, flavorSeed, flavorValues, forma
 import { ruleNote } from "../main/presentation/battleRules";
 import {
   chanceTone,
+  type DestinationEstimate,
   destinationEstimates,
   modifierName,
   modifierPhrase,
   oddsSummary,
   percent,
+  plannedEstimates,
   signed
 } from "../main/presentation/odds";
 import { artLevel } from "../main/presentation/outcomeArt";
@@ -42,7 +45,7 @@ import {
   surrenderAfterBattle,
   threeSidedAssault
 } from "./battleFixtures";
-import { armyIn, faction, move, spain, territory, tiny, unit, withUnits } from "./support";
+import { armyIn, battlefield, faction, move, spain, territory, tiny, unit, unitType, withUnits } from "./support";
 
 function shaken(state: GameState, id: string, change: Partial<GameState["units"][keyof GameState["units"]]> = {}): GameState {
   const current = armyIn(state, id);
@@ -69,8 +72,11 @@ describe("army figures (C4, C5, C6)", () => {
     const figures = armyFigures(scenario, half, armyIn(half, "rep-covadonga-4"));
     expect(figures).toMatchObject({ attack: 1, defence: 2, dugIn: 2, reduced: true, strength: 370 });
     expect(figuresDescription(figures)).toBe("attack 1, defence 2 (full 4-6), 370 of 550 men, demoralized, cannot attack, dug in +2");
-    expect(counterLabel(scenario, figures, armyIn(half, "rep-covadonga-4"), true))
-      .toBe("Covadonga Infantry Regiment No. 4, Republican Government, attack 1, defence 2 (full 4-6), 370 of 550 men, demoralized, cannot attack, dug in +2, order planned");
+    expect(counterLabel(scenario, figures, armyIn(half, "rep-covadonga-4"), "rest"))
+      .toBe("Covadonga Infantry Regiment No. 4, Republican Government, attack 1, defence 2 (full 4-6), 370 of 550 men, demoralized, cannot attack, dug in +2, resting");
+    expect(counterLabel(scenario, full, armyIn(state, "rep-wad-ras-1"), undefined)).toBe("Wad-Ras Infantry Regiment No. 1, Republican Government, attack 4, defence 6, 550 of 550 men");
+    expect(groupOrdersDescription(["entrench", "move", "rest", "move"])).toBe("2 moving, 1 entrenching, 1 resting");
+    expect(groupOrdersDescription([])).toBe("");
   });
 
   it("shows works only to the faction that dug them", () => {
@@ -104,11 +110,72 @@ describe("destination odds (C15)", () => {
     const battleEstimate = estimates.get(territory("castilla-y-leon"));
     expect(battleEstimate?.kind).toBe("battle");
     if (battleEstimate?.kind !== "battle") throw new Error("expected a battle");
-    expect(oddsSummary(battleEstimate)).toEqual({ chip: `${battleEstimate.oddsLabel} \u00b7 ${percent(battleEstimate.takeChance)}`, sentence: expect.stringContaining("to take it"), tone: chanceTone(battleEstimate.takeChance) });
+    expect(oddsSummary(battleEstimate)).toEqual({
+      chip: `\u2248 ${battleEstimate.oddsLabel} \u00b7 ${percent(battleEstimate.takeChance)}`,
+      label: `Approx. ${battleEstimate.oddsLabel} \u00b7 ${percent(battleEstimate.takeChance)}`,
+      sentence: `Approximately ${battleEstimate.oddsLabel}, ${String(Math.round(battleEstimate.takeChance * 100))} percent to take it.`,
+      tone: chanceTone(battleEstimate.takeChance)
+    });
     const empty = withUnits(scenario, [["rep-wad-ras-1", "republic", "madrid"]]);
     expect(destinationEstimates(scenario, empty, faction("republic"), [unit("rep-wad-ras-1")], [territory("castilla-y-leon")]).get(territory("castilla-y-leon")))
       .toEqual({ kind: "unopposed" });
     expect(destinationEstimates(scenario, state, faction("republic"), [], [territory("castilla-y-leon")]).size).toBe(0);
+  });
+
+  describe("combined attackers (A1)", () => {
+    const one = [unitType("one", 1, 1)];
+    const { scenario, state } = battlefield(tiny(), [
+      { faction: "red", id: "r1", territory: "highlands", type: "one" },
+      { faction: "red", id: "r2", territory: "isle", type: "one" },
+      { faction: "blue", id: "b1", territory: "harbor", type: "one" },
+      { faction: "blue", id: "b2", territory: "lowlands", type: "one" }
+    ], { types: one });
+    const harbor = territory("harbor");
+    const oddsAt = (selected: readonly string[], planned: readonly MoveOrder[]) => {
+      const estimate = destinationEstimates(scenario, state, faction("red"), selected.map(unit), [harbor], planned).get(harbor);
+      if (estimate?.kind !== "battle") throw new Error("expected a battle");
+      return [estimate.oddsLabel, estimate.attacker.armies.map((army) => army.unitId)];
+    };
+
+    it("reads one army at 1 against 1 as 1:1", () => {
+      expect(oddsAt(["r1"], [])).toEqual(["1:1", [unit("r1")]]);
+    });
+
+    it("adds a planned move from another territory to the same destination", () => {
+      expect(oddsAt(["r1"], [move("red", "r2", "isle", "harbor")])).toEqual(["2:1", [unit("r1"), unit("r2")]]);
+      // A move elsewhere sends nobody here.
+      expect(oddsAt(["r1"], [move("red", "r2", "isle", "lowlands")])[0]).toBe("1:1");
+    });
+
+    it("counts an army already in a planned order once when it is selected again", () => {
+      expect(oddsAt(["r1"], [move("red", "r1", "highlands", "harbor"), move("red", "r2", "isle", "harbor")])).toEqual(["2:1", [unit("r1"), unit("r2")]]);
+    });
+
+    it("moves a re-selected army's weight to its new destination, as Move replaces its order", () => {
+      const lowlands = territory("lowlands");
+      const attackers = (estimate: DestinationEstimate | undefined) => (estimate?.kind === "battle" ? estimate.attacker.armies.map((army) => army.unitId) : []);
+      // r1 and r2 are planned into the harbor, and r1 is selected again to go elsewhere.
+      const planned = [move("red", "r1", "highlands", "harbor"), move("red", "r2", "isle", "harbor")];
+      const choosing = destinationEstimates(scenario, state, faction("red"), [unit("r1")], [harbor, lowlands], planned);
+      expect(attackers(choosing.get(harbor))).toEqual([unit("r1"), unit("r2")]);
+      expect(attackers(choosing.get(lowlands))).toEqual([unit("r1")]);
+      // Move replaces r1's order (planning), so the harbor's planned odds drop it.
+      const replaced = plannedEstimates(scenario, state, faction("red"), [move("red", "r2", "isle", "harbor"), move("red", "r1", "highlands", "lowlands")]);
+      expect(attackers(replaced.get(harbor))).toEqual([unit("r2")]);
+      expect(attackers(replaced.get(lowlands))).toEqual([unit("r1")]);
+    });
+
+    it("combines the planned moves into each destination for the planned orders", () => {
+      const planned = plannedEstimates(scenario, state, faction("red"), [
+        move("red", "r1", "highlands", "harbor"),
+        move("red", "r2", "isle", "harbor"),
+        move("blue", "b1", "harbor", "lowlands")
+      ]);
+      expect([...planned.keys()]).toEqual([harbor]);
+      const estimate = planned.get(harbor);
+      expect(estimate?.kind === "battle" && oddsSummary(estimate)).toMatchObject({ chip: "\u2248 2:1 \u00b7 33%", label: "Approx. 2:1 \u00b7 33%", sentence: "Approximately 2:1, 33 percent to take it." });
+      expect(plannedEstimates(scenario, state, faction("red"), []).size).toBe(0);
+    });
   });
 
   it("words every kind of estimate and modifier", () => {

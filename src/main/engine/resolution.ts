@@ -84,7 +84,7 @@ export function resolveTurn(
   const finalState: GameState = {
     cityControl,
     control,
-    fortification: digIn(scenario, state, { armies: morale.armies, control }, foughtIn),
+    fortification: digIn(scenario, state, { armies: morale.armies, control }, foughtIn, new Set(origins.keys())),
     turnNumber: state.turnNumber,
     units: morale.armies
   };

@@ -1,18 +1,23 @@
 import type { Armies } from "./board";
-import type { FactionId, Fortification, GameState, Scenario, TerritoryId } from "./types";
+import { standingOrder } from "./orders";
+import type { FactionId, Fortification, GameState, Scenario, TerritoryId, UnitId } from "./types";
 
 /**
  * M22 (C7), at the end of the turn. A faction holds a territory when it controls it and has an
  * army there. A territory held by the same faction at the start and at the end of the turn,
- * where no battle was fought, gains `diggingIn.perTurn` levels for that faction, up to
- * `diggingIn.max`. A territory that was fought over keeps its level. Works are removed when
- * their faction no longer holds the territory.
+ * where no battle was fought and at least one of the holder's armies entrenched, gains
+ * `diggingIn.perTurn` levels for that faction, up to `diggingIn.max`. Otherwise it keeps its
+ * level. Works are removed when their faction no longer holds the territory.
+ *
+ * An army entrenched when it was there and healthy at the start of the turn, had no valid move
+ * order (`moved` lists the armies that had one), and is still there at the end (M23, O3).
  */
 export function digIn(
   scenario: Scenario,
   start: GameState,
   end: { readonly armies: Armies; readonly control: GameState["control"] },
-  foughtIn: ReadonlySet<TerritoryId>
+  foughtIn: ReadonlySet<TerritoryId>,
+  moved: ReadonlySet<UnitId>
 ): GameState["fortification"] {
   const { max, perTurn } = scenario.combat.diggingIn;
   const fortification: Record<TerritoryId, Fortification> = {};
@@ -23,7 +28,9 @@ export function digIn(
     }
     const works = start.fortification[id];
     const level = works?.factionId === holder ? works.level : 0;
-    const quiet = holder === holderOf(start.control, start.units, id) && !foughtIn.has(id);
+    const quiet = holder === holderOf(start.control, start.units, id) && !foughtIn.has(id)
+      && Object.values(start.units).some((unit) => unit.territoryId === id && unit.factionId === holder
+        && !moved.has(unit.id) && standingOrder(unit) === "entrench" && end.armies[unit.id]?.territoryId === id);
     const next = quiet ? Math.min(max, level + perTurn) : level;
     if (next > 0) {
       fortification[id] = { factionId: holder, level: next };

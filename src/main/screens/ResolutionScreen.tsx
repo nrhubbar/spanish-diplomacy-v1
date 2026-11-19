@@ -1,4 +1,5 @@
-import { type JSX, useMemo } from "react";
+import { type JSX, useCallback, useMemo, useState } from "react";
+import type { TerritoryId, UnitState } from "../engine/types";
 import { GameHeader } from "../components/GameHeader";
 import { useAppDispatch, useRegistry, useSessionIn } from "../hooks";
 import type { MapView } from "../map/view";
@@ -10,7 +11,9 @@ import { selectRevealedOrders } from "../state/selectors";
 import type { Session } from "../state/session";
 import { MapScreenFrame } from "./MapScreenFrame";
 import { BattleReport } from "./report/BattleReport";
-import { OutcomeSummary, RevealedOrdersPanel, TerritoryChanges, VictoryProgressPanel } from "./ResultPanels";
+import { FocusNote, OutcomeSummary, RevealedOrdersPanel, TerritoryChanges, VictoryProgressPanel } from "./ResultPanels";
+import { battleKeysAt } from "./report/focus";
+import { groupBattles } from "../presentation/battle";
 
 type ResultSession = Extract<Session, { readonly phase: "resolution" | "game-over" }>;
 
@@ -29,14 +32,29 @@ function Results({ session }: { readonly session: ResultSession }): JSX.Element 
   const dispatch = useAppDispatch();
   const { scenario } = useRegistry().require(session.game.scenarioId);
   const { game, result } = session;
+  // F1: local UI state, never game state. Clicking the focused place again, or empty map, clears it.
+  const [focused, setFocused] = useState<TerritoryId | undefined>(undefined);
+  const focus = useCallback((territoryId: TerritoryId) => {
+    setFocused((current) => (current === territoryId ? undefined : territoryId));
+  }, []);
+  const clearFocus = useCallback(() => { setFocused(undefined); }, []);
   const view = useMemo<MapView>(() => ({
     changedTerritoryIds: result.controlChanges.map((change) => change.territoryId),
     destinationIds: [],
+    ...(focused === undefined ? {} : { focusedTerritoryId: focused }),
+    onSelectNothing: clearFocus,
+    onSelectTerritory: focus,
+    onSelectUnit: (unit: UnitState) => { focus(unit.territoryId); },
     orderedUnitIds: new Set(),
     outcomes: result.outcomes,
     plannedOrders: [],
-    selectedUnitIds: new Set()
-  }), [result]);
+    // The focused place's armies read as pressed, so pressing one again says it clears the focus.
+    selectedUnitIds: new Set(Object.values(game.state.units).filter((unit) => unit.territoryId === focused).map((unit) => unit.id))
+  }), [clearFocus, focus, focused, game.state, result]);
+  const focusedBattle = useMemo(
+    () => focused !== undefined && battleKeysAt(groupBattles(result.outcomes), focused).length > 0,
+    [focused, result.outcomes]
+  );
   const victory = result.victory;
   const winners = victory === undefined ? "" : listNames(victory.factionIds.map((id) => factionName(scenario, id)));
   const over = session.phase === "game-over";
@@ -50,15 +68,18 @@ function Results({ session }: { readonly session: ResultSession }): JSX.Element 
       header={<GameHeader kicker={`${turnLabel(scenario, game.state.turnNumber)} ${glyphs.dot} ${over ? "Campaign concluded" : "Orders revealed"}`} title={title} />}
       label={title}
       pane={{
+        // A focused place opens a collapsed pane, so the player sees its card or note.
+        ...(focused === undefined ? {} : { attentionKey: focused }),
         body: (
           <>
+            <FocusNote battle={focusedBattle} focusedTerritoryId={focused} result={result} scenario={scenario} />
             {over && victory !== undefined ? (
               <section className="pane-section victory-callout">
                 <p>{`${winners} ${victory.factionIds.length > 1 ? "share the victory" : "won"} ${conditionText[victory.condition]}.`}</p>
               </section>
             ) : null}
             <TerritoryChanges result={result} scenario={scenario} />
-            <BattleReport result={result} scenario={scenario} seed={game.seed} />
+            <BattleReport focusedTerritoryId={focused} result={result} scenario={scenario} seed={game.seed} />
             <OutcomeSummary result={result} scenario={scenario} />
             <VictoryProgressPanel result={result} scenario={scenario} />
             <RevealedOrdersPanel revealed={selectRevealedOrders(session)} scenario={scenario} />

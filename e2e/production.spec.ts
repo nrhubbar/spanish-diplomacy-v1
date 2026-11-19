@@ -16,6 +16,8 @@ test("the production build plays without test fixtures or console errors", async
   await page.getByRole("button", { name: "Start Campaign" }).click();
   await expect(page.locator(".map-vector")).toBeVisible();
   await expect(page.locator(".terrain-layer")).toHaveAttribute("data-renderer", "webgl", { timeout: 15000 });
+  // Every army shows its own counter from 125% zoom (Z1).
+  await page.getByRole("button", { name: "Zoom in" }).click();
   await expect(page.locator(".unit-counter")).toHaveCount(35);
   await page.getByRole("button", { name: "End Turn" }).filter({ visible: true }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Turn resolution" })).toBeVisible();

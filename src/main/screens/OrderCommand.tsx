@@ -1,12 +1,13 @@
 import { type JSX, useId } from "react";
 import { useAppDispatch } from "../hooks";
 import { chooseOrderKind, toggleOrderMenu } from "../state/gameSlice";
-import { orderKinds } from "../state/planning";
 import type { OrderKind } from "../state/session";
 
 /** Player-facing name and one-line explanation for each order type. */
 const orderLabels: Readonly<Record<OrderKind, { readonly description: string; readonly label: string }>> = {
-  move: { description: "March to a neighboring territory.", label: "Move" }
+  entrench: { description: "Stay and dig in. Only healthy armies entrench.", label: "Entrench" },
+  move: { description: "March to a neighboring territory.", label: "Move" },
+  rest: { description: "Stay and recover. Demoralized armies rest instead of entrenching.", label: "Rest" }
 };
 
 export function armies(count: number): string {
@@ -19,14 +20,16 @@ function revealWhenShown(element: HTMLElement | null): void {
 }
 
 interface OrderCommandProps {
-  /** Armies in the territory that still have no order. */
+  /** Armies in the territory that have no move order. */
   readonly availableCount: number;
+  /** The order types offered for the selected armies, in menu order. */
+  readonly kinds: readonly OrderKind[];
   readonly menuOpen: boolean;
   readonly selectedCount: number;
 }
 
 /** "Give Selected Armies Order" and, once open, the order types it offers. */
-export function OrderCommand({ availableCount, menuOpen, selectedCount }: OrderCommandProps): JSX.Element {
+export function OrderCommand({ availableCount, kinds, menuOpen, selectedCount }: OrderCommandProps): JSX.Element {
   const dispatch = useAppDispatch();
   const ids = useId();
   const hintId = `${ids}-hint`;
@@ -49,12 +52,12 @@ export function OrderCommand({ availableCount, menuOpen, selectedCount }: OrderC
       </button>
       {selectedCount === 0 ? (
         <p className="pane-hint" id={hintId}>
-          {availableCount === 0 ? "Every army here has an order. Remove one below to change it." : "Select at least one army to give an order."}
+          {availableCount === 0 ? "Every army here is moving. Select one to change its order." : "Select at least one army to give an order."}
         </p>
       ) : null}
       {menuOpen ? (
         <div aria-label={`Order for ${armies(selectedCount)}`} className="order-menu" id={menuId} ref={revealWhenShown} role="group">
-          {orderKinds.map((kind) => (
+          {kinds.map((kind) => (
             // The whole card is the button's hit area; the description stays outside its name.
             <div className="order-choice" data-order-kind={kind} key={kind}>
               <span aria-hidden="true" className="order-choice-icon" />

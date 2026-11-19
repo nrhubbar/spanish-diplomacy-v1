@@ -132,7 +132,7 @@
             "max"
           ],
           "additionalProperties": false,
-          "description": "Defence roll bonus gained per quiet turn, up to max."
+          "description": "Defence roll bonus a territory gains, up to max, each turn its holder keeps it without a battle while at least one of the holder's armies there entrenches (is healthy and has no move order)."
         },
         "demoralizationFactor": {
           "type": "number",
