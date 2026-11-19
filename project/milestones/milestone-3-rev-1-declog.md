@@ -45,3 +45,11 @@ This log records the decisions and assumptions made while carrying out `mileston
 - Madrid splits into three: `madrid` (the capital, with the city and the south), `guadarrama` (the Sierra to the north-west) and `henares` (the Henares valley to the east, Alcala).
 - Baleares is `mallorca` (its capital), `menorca` and `ibiza`.
 - `m3r1-map-provinces` draws the splits; `m3r1-contract` writes the data for those ids.
+
+**D9. Which stall measure H7 uses.** The harness reports two:
+- "freeze": no winner by the turn limit (66 turns);
+- "stalled": 5 or more quiet turns in a row, Revision 7's S2.
+
+H7's 15 percent target is measured as **freeze**, because the owner's goal is games that end. "Stalled" stays in every report so results compare with Revision 7, which measured 58 percent.
+
+**D10. AI data pointers.** The blunder chance is `/ai/blunderChance` (H6's word), and the per-faction profiles are `/ai/profiles/<factionId>`, a record keyed by faction id (E7). Both the contract and the harness use these.
