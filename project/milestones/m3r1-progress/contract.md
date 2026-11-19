@@ -1,6 +1,6 @@
 # `m3r1-contract` progress
 
-## CP1: types and schema (commits `ec8fc98`, and the follow-up that adds CT-16 and CT-17)
+## CP1: types and schema (commits `ec8fc98` and `66a7d8e`, which adds CT-16 and CT-17)
 
 **Done.**
 - `engine/types.ts` is now a barrel over `engine/types/{rules,effects,scenario,economy,systems,package,state,orders,outcomes}.ts`; imports elsewhere are unchanged. New branded ids are in `engine/ids.ts`.
