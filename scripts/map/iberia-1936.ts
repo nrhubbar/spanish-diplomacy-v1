@@ -153,8 +153,21 @@ export const contextLabels: readonly (GeoPoint & { readonly text: string })[] = 
 
 type Rgb = readonly [number, number, number];
 
+/**
+ * The scenario package folder this map belongs to: the one path to change when the package moves.
+ * The pipeline regenerates its `map.json`, reads its `scenario.json` connections, and writes the
+ * sub-territory topology beside them.
+ */
+export const scenarioPackage = "src/main/scenarios/spain-1936-07-31/";
+
 /** The package document whose coordinates the pipeline regenerates. */
-export const mapDocument = "src/main/scenarios/spain-1936-07-31/map.json";
+export const mapDocument = `${scenarioPackage}map.json`;
+
+/** The scenario document whose connections the sub-territory topology covers (read only). */
+export const scenarioDocument = `${scenarioPackage}scenario.json`;
+
+/** Generated sub-territory topology for the scenario package (see project/specs/map-package.md). */
+export const topologyDocument = `${scenarioPackage}sub-territory-topology.json`;
 
 /**
  * Relief art direction (Milestone 2 Revision 4): neutral sandstone, olive, muted green, and

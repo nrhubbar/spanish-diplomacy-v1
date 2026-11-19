@@ -219,7 +219,8 @@ async function fetchProvinces(): Promise<object> {
     revision: geoBoundaries.revision,
     url,
     features: names.length,
-    boundarySource: metadata["boundarySource"],
+    // The upstream metadata drops the accented letter ("Estadstica"); restore it.
+    boundarySource: metadata["boundarySource"]?.replace("Estadstica", "Estad\u00edstica"),
     boundaryLicense: metadata["boundaryLicense"],
     boundaryYear: metadata["boundaryYear"]
   };
@@ -264,5 +265,7 @@ const refreshed: Record<string, unknown> = {};
 for (const [name, fetchSource] of Object.entries(sources)) {
   if (selected.includes(name)) refreshed[name] = { retrieved, ...await fetchSource() };
 }
-await writeFile(manifestUrl, `${JSON.stringify({ ...previous, ...refreshed }, null, 2)}\n`);
+// Characters outside ASCII are written as \u escapes, like every generated package file.
+const manifestText = JSON.stringify({ ...previous, ...refreshed }, null, 2).replace(/[^\x20-\x7e\n]/g, (character) => `\\u${character.charCodeAt(0).toString(16).padStart(4, "0")}`);
+await writeFile(manifestUrl, `${manifestText}\n`);
 console.log("wrote scripts/sources/manifest.json");

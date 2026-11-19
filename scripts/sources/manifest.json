@@ -366,7 +366,7 @@
     "revision": "9469f09592ced973a3448cf66b6100b741b64c0d",
     "url": "https://media.githubusercontent.com/media/wmgeolab/geoBoundaries/9469f09592ced973a3448cf66b6100b741b64c0d/releaseData/gbOpen/ESP/ADM2/geoBoundaries-ESP-ADM2_simplified.geojson",
     "features": 52,
-    "boundarySource": "El Instituto Nacional de Estadstica",
+    "boundarySource": "El Instituto Nacional de Estad\u00edstica",
     "boundaryLicense": "National Institute of Statistics (INE) Data License",
     "boundaryYear": "2018"
   }

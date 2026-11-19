@@ -156,3 +156,14 @@ export const partition = { cellSize: 0.125, tolerance: 0.25 } as const;
 
 /** Largest allowed difference between a province's built area and its projected ADM2 area. */
 export const provinceAreaTolerance = 0.03;
+
+/**
+ * Topology measures, in km: boundary points within `contact` of another sub-territory's boundary
+ * are shared border (region borders are simplified separately, so neighbours across a territory
+ * border sit up to about half a kilometre apart). A boundary point is coast when every probe at
+ * the `seaProbes` distances straight out from it is in the sea; Natural Earth's neighbouring
+ * countries and geoBoundaries leave gaps up to several km wide between them (along the
+ * Portuguese border rivers, for example), which the longer probes cross. Neighbours share at least `minimumBorder`, which leaves out corner touches; a
+ * port needs at least `minimumCoast` of coast.
+ */
+export const topology = { contact: 0.75, minimumBorder: 2, minimumCoast: 5, seaProbes: [0.5, 1, 2, 3, 4, 6, 8], step: 0.25 } as const;
