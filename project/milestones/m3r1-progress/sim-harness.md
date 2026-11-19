@@ -24,7 +24,7 @@
 2. Only `src/sim/engine.ts` imports from `src/main/**`. Scenario packages come from `scenarioSources()`, which returns the app's `builtInSources`, so a moved scenario folder is followed without change. The default scenario id is the single constant `defaultScenarioId`, which becomes `spanish-civil-war-1936` at the contract merge.
 3. A freeze is a game that reaches the turn limit with no winner. The soak's "five quiet turns" rule is now only a recorded metric (`longestQuiet`).
 4. A shared victory credits each of its k winners 1/k, so win shares sum to the number of decided games.
-5. `summary.json` is deterministic. It has no time stamp, games are sorted by seed, and it is the same for any worker count; a test checks 1 worker against 4. The time stamp appears only in the default run folder name.
+5. `summary.json` is deterministic. It has no time stamp, games are sorted by seed, and it is the same for any worker count. A unit test compares 1 in-process worker with 4. With the built bundle, real threads (seeds 1-30 on 1 thread and on 9 threads) give byte-identical `summary.json` and `games.jsonl`. The time stamp appears only in the default run folder name.
 6. Map art is stubbed in the sim bundle, because the loader checks only that asset paths exist (L11).
 7. `--blunders` defaults to `both`, so every report carries both settings (H6). `summary.blunderControl` is `"pending"` until the blunder chance exists in scenario data. Until then both settings play alike, and the console says so.
 8. Tests live in `src/sim/test/`. `src/sim/**` is added to the coverage include, with `cli.ts` (the thread glue) and the tests excluded.
@@ -38,7 +38,13 @@
   - Wins of decided games: Republic 50 percent, Northern command 40, Southern command 10.
   - 0.46 battles per turn; no abandonments and no early wins.
 
+**Missing APIs (for the integrator):**
+- AI profile per faction (H4). The weights are code constants in `ai/computerPlayer.ts`, `ai/offensive.ts` and `ai/assessment.ts`, and `generateComputerSubmission` takes no profile, so a variant cannot change one yet. It can once E7 puts the profiles in `scenario.json` and the computer player reads them from the scenario. The patch path then works with no harness change. Open question: which stream wires the computer player to read them.
+- Blunder chance (H6). The harness needs the chance's JSON Pointer in `scenario.json` from whichever stream adds it. "Without blunders" then sets that pointer to 0 in `cellScenario` (`src/sim/run.ts`), and `blunderControl` becomes `"scenario"`.
+
 **Outside my ownership:** `vitest.config.ts`, one line: `src/sim/**` is added to the coverage include.
+
+**Note:** variants (CP2 scope) are already built and tested on tiny-front, but have not yet been run against Spain through the bundled CLI.
 
 **Next (CP2):**
 - Replace the 200-game soak with a 10-game smoke run through `runInProcess`.
