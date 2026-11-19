@@ -1,0 +1,590 @@
+<title>Milestone 3 UX Options</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,500;8..60,700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a design-review dossier. Sticky index on the left (top bar on phones), one reading column, widgets and questions as set-off "cards on the table". */
+:root {
+  --bg: #e6dfcd;          /* table canvas, from the app's --canvas */
+  --paper: #fbf6ea;       /* reading sheet, the app's --paper */
+  --surface: #f4eddc;     /* widget card */
+  --surface-2: #ebe2cc;   /* inset rows, table heads */
+  --ink: #241d18;
+  --ink-soft: #5b4d40;
+  --line: #c9bba0;
+  --accent: #7d2f2a;      /* oxblood, the app's --accent */
+  --accent-ink: #fbf6ea;
+  --gold: #b8891a;
+  --route: #1f3550;
+  --good: #2f7d4f;
+  --bad: #9e2b2b;
+  --warn: #b5730f;
+  --rep: #b1493f;
+  --nic: #a3841f;
+  --sic: #665089;
+  --c1: #7a1f1a; --c2: #b5483c; --c3: #d99a6c; --c4: #cbbf9f; --c5: #7d9bb5; --c6: #3f6a90; --c7: #1f3550;
+  --serif: "Source Serif 4", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --shadow: 0 1px 0 rgb(36 29 24 / 8%), 0 6px 18px rgb(36 29 24 / 8%);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #17120e; --paper: #221a14; --surface: #2b221a; --surface-2: #352a20;
+    --ink: #efe5d2; --ink-soft: #c2b29b; --line: #4d3f31; --accent: #d9897e; --accent-ink: #1b1410;
+    --gold: #e0b54a; --route: #9cb7d6; --good: #6fc08f; --bad: #e07a72; --warn: #e5a54a;
+    --rep: #d9786d; --nic: #d9b84a; --sic: #a88fd1;
+    --c1: #e07a72; --c2: #c9665b; --c3: #b98a63; --c4: #6f6555; --c5: #5f86a8; --c6: #7fa6cc; --c7: #b5cfe8;
+    --shadow: 0 1px 0 rgb(0 0 0 / 30%), 0 6px 18px rgb(0 0 0 / 30%);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #17120e; --paper: #221a14; --surface: #2b221a; --surface-2: #352a20;
+  --ink: #efe5d2; --ink-soft: #c2b29b; --line: #4d3f31; --accent: #d9897e; --accent-ink: #1b1410;
+  --gold: #e0b54a; --route: #9cb7d6; --good: #6fc08f; --bad: #e07a72; --warn: #e5a54a;
+  --rep: #d9786d; --nic: #d9b84a; --sic: #a88fd1;
+  --c1: #e07a72; --c2: #c9665b; --c3: #b98a63; --c4: #6f6555; --c5: #5f86a8; --c6: #7fa6cc; --c7: #b5cfe8;
+  --shadow: 0 1px 0 rgb(0 0 0 / 30%), 0 6px 18px rgb(0 0 0 / 30%);
+  color-scheme: dark;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 72px; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 var(--sans); -webkit-font-smoothing: antialiased; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+a { color: var(--route); text-underline-offset: 2px; }
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+h1, h2, h3, h4 { font-family: var(--serif); line-height: 1.2; text-wrap: balance; margin: 0; }
+code, kbd { font-family: var(--mono); font-size: 0.86em; background: var(--surface-2); padding: 0.05em 0.3em; border-radius: 3px; }
+
+.shell { display: grid; grid-template-columns: 270px minmax(0, 1fr); gap: 28px; max-width: 1180px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 24px 64px; }
+.toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); align-self: start; max-height: calc(100vh - 32px); overflow: auto;
+  background: var(--paper); border: 1px solid var(--line); border-radius: 6px; padding: 14px 14px 16px; font-size: 0.86rem; }
+.toc h2 { font-size: 1rem; margin-bottom: 6px; }
+.toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; }
+.toc li.group { margin-top: 10px; font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-soft); font-weight: 600; }
+.toc a { display: flex; justify-content: space-between; gap: 8px; padding: 3px 6px; border-radius: 4px; text-decoration: none; color: var(--ink); }
+.toc a:hover { background: var(--surface-2); }
+.toc a.active { background: var(--surface-2); box-shadow: inset 2px 0 0 var(--accent); }
+.toc .count { font-family: var(--mono); font-size: 0.72rem; color: var(--ink-soft); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.answerbox { display: grid; gap: 8px; padding-bottom: 12px; margin-bottom: 10px; border-bottom: 1px solid var(--line); }
+.progress-text { font-family: var(--mono); font-size: 0.8rem; font-variant-numeric: tabular-nums; }
+.progress-track { height: 6px; background: var(--surface-2); border-radius: 3px; overflow: hidden; }
+.progress-fill { height: 100%; width: 0; background: var(--accent); transition: width 0.2s; }
+.btn { font: 600 0.86rem var(--sans); border: 1px solid var(--ink); background: var(--accent); color: var(--accent-ink); border-radius: 5px; padding: 8px 12px; cursor: pointer; min-height: 38px; }
+.btn.secondary { background: transparent; color: var(--ink); border-color: var(--line); font-weight: 500; }
+.btn-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.copy-status { font-size: 0.78rem; color: var(--good); min-height: 1.1em; }
+.copy-fallback { width: 100%; min-height: 140px; font: 0.75rem/1.4 var(--mono); }
+.mobile-bar { display: none; }
+
+main { min-width: 0; display: grid; gap: 22px; }
+.sheet { background: var(--paper); border: 1px solid var(--line); border-radius: 6px; padding: 28px clamp(16px, 4vw, 44px) 32px; box-shadow: var(--shadow); min-width: 0; }
+.sheet > * + * { margin-top: 0.9rem; }
+.masthead .eyebrow, .eyebrow { font: 600 0.72rem var(--sans); letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
+.masthead h1 { font-size: clamp(1.9rem, 4.5vw, 2.7rem); }
+.masthead .meta { font-family: var(--mono); font-size: 0.8rem; color: var(--ink-soft); display: flex; flex-wrap: wrap; gap: 6px 18px; }
+.group-head { padding: 6px 4px 0; }
+.group-head h2 { font-size: 1.05rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-soft); font-family: var(--sans); font-weight: 600; }
+.group-head p { color: var(--ink-soft); font-size: 0.92rem; max-width: 70ch; }
+.sheet h2 { font-size: clamp(1.4rem, 3vw, 1.8rem); }
+.sheet h2 .idea-no { font-family: var(--mono); font-size: 0.8em; color: var(--accent); margin-right: 0.4em; }
+.sheet h3 { font-size: 1.12rem; margin-top: 1.6rem; padding-top: 0.9rem; border-top: 1px solid var(--line); }
+.sheet h4 { font-size: 1rem; margin-top: 1.2rem; }
+.sheet p, .sheet li { max-width: 72ch; }
+.sheet ul, .sheet ol { padding-left: 1.25rem; }
+.sheet li + li { margin-top: 0.25rem; }
+.sheet blockquote { margin: 0; padding: 8px 14px; border-left: 3px solid var(--gold); background: var(--surface); font-family: var(--serif); font-style: italic; }
+.summary-line { font-family: var(--serif); font-size: 1.12rem; }
+.table-wrap, .w-scroll { overflow-x: auto; max-width: 100%; -webkit-overflow-scrolling: touch; }
+.sheet table, .w-table { border-collapse: collapse; width: 100%; font-size: 0.88rem; }
+.sheet th, .sheet td, .w-table th, .w-table td { border-bottom: 1px solid var(--line); padding: 6px 8px; text-align: left; vertical-align: top; }
+.sheet th, .w-table th { background: var(--surface-2); font-weight: 600; }
+.sheet td:first-child { min-width: 9rem; }
+.recommend { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--good); padding: 10px 14px; border-radius: 4px; }
+
+figure.mockup { margin: 1rem 0 0; }
+figure.mockup img { display: block; width: 100%; height: auto; border: 1px solid var(--line); border-radius: 4px; background: var(--surface-2); }
+figure.mockup figcaption { font-size: 0.8rem; color: var(--ink-soft); margin-top: 6px; }
+.missing { font-size: 0.85rem; color: var(--ink-soft); background: var(--surface-2); padding: 10px 12px; border-radius: 4px; border: 1px dashed var(--line); }
+
+/* Widgets */
+.widget { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 14px 16px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; font-size: 0.9rem; min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
+.widget > *, .w-row > *, .w-grid > * { min-width: 0; max-width: 100%; }
+.widget svg, .widget canvas { max-width: 100%; height: auto; }
+.widget h4, .widget h5 { margin: 0; font-family: var(--serif); }
+.w-row { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
+.w-label { font-weight: 600; font-size: 0.82rem; color: var(--ink-soft); }
+.w-out { font-family: var(--mono); font-weight: 500; background: var(--paper); border: 1px solid var(--line); border-radius: 4px; padding: 1px 7px; font-variant-numeric: tabular-nums; }
+.w-note { font-size: 0.78rem; color: var(--ink-soft); }
+.w-bar-track { background: var(--surface-2); border-radius: 3px; height: 14px; overflow: hidden; min-width: 60px; flex: 1; }
+.w-bar { height: 100%; background: var(--accent); min-width: 1px; }
+.w-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+.w-card { background: var(--paper); border: 1px solid var(--line); border-radius: 4px; padding: 8px 10px; min-width: 0; }
+.widget select, .widget input[type=number], .widget input[type=text] { font: inherit; color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 4px; padding: 4px 6px; min-height: 34px; max-width: 100%; }
+.widget input[type=range] { accent-color: var(--accent); max-width: 100%; }
+.widget button { font: 500 0.84rem var(--sans); color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 4px; padding: 5px 10px; cursor: pointer; min-height: 34px; }
+.widget button[aria-pressed="true"], .widget button.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.widget label { display: inline-flex; align-items: center; gap: 6px; }
+.widget-error { color: var(--bad); font-size: 0.85rem; }
+
+/* Questions */
+.questions { display: grid; gap: 12px; }
+.q { border: 1px solid var(--line); border-radius: 6px; background: var(--surface); padding: 12px 14px 14px; margin: 0; min-width: 0; }
+.q.answered { border-left: 4px solid var(--good); }
+.q legend { display: contents; }
+.q .q-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; margin-bottom: 8px; }
+.q .q-id { font-family: var(--mono); font-size: 0.74rem; background: var(--paper); border: 1px solid var(--line); border-radius: 3px; padding: 0 6px; color: var(--ink-soft); }
+.q .q-text { font-weight: 600; flex: 1 1 260px; }
+.q .q-ctx { font-size: 0.84rem; color: var(--ink-soft); margin: 0 0 8px; max-width: 72ch; }
+.q .opt > span { min-width: 0; overflow-wrap: anywhere; }
+.phone-row { display: flex; flex-wrap: wrap; gap: 16px; }
+.phone-row figure.mockup { flex: 0 1 280px; margin: 0; }
+figure.mockup figcaption ul { margin: 0.2rem 0 0; padding-left: 1.1rem; }
+figure.mockup img { cursor: zoom-in; }
+.q .q-multi { font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--route); border: 1px solid currentColor; border-radius: 3px; padding: 0 5px; }
+.q .opt { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; align-items: start; padding: 6px 8px; border-radius: 4px; cursor: pointer; }
+.q .opt:hover { background: var(--surface-2); }
+.q .opt input { margin-top: 4px; accent-color: var(--accent); width: 17px; height: 17px; }
+.q .opt .rec { color: var(--good); font-weight: 600; font-size: 0.82rem; margin-left: 4px; }
+.q .opt .why { grid-column: 2; font-size: 0.8rem; color: var(--ink-soft); }
+.q textarea { width: 100%; margin-top: 8px; min-height: 2.4rem; font: 0.86rem var(--sans); color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 4px; padding: 6px 8px; resize: vertical; }
+.q .notes-label { font-size: 0.76rem; color: var(--ink-soft); display: block; margin-top: 6px; }
+
+.sources ol { font-size: 0.82rem; overflow-wrap: anywhere; }
+.diagram { overflow-x: auto; }
+.diagram svg { display: block; min-width: 640px; width: 100%; height: auto; }
+.diagram svg text { fill: var(--ink); font-family: var(--sans); font-size: 12px; }
+.diagram .node { fill: var(--paper); stroke: var(--good); stroke-width: 1.2; }
+.diagram .node.later { fill: var(--surface-2); stroke: var(--ink-soft); stroke-dasharray: 4 3; }
+.diagram .edge { fill: none; stroke: var(--ink-soft); stroke-width: 1.4; }
+.diagram .arrowhead { fill: var(--ink-soft); }
+.diagram .band { fill: var(--surface-2); stroke: var(--line); }
+.diagram svg text.col { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; fill: var(--ink-soft); }
+.pill { display: inline-block; font: 600 0.72rem var(--sans); letter-spacing: 0.04em; padding: 1px 7px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface-2); }
+.pill.m3 { background: var(--good); color: var(--paper); border-color: var(--good); }
+.pill.later { background: var(--surface-2); }
+.pill.drop { color: var(--bad); border-color: var(--bad); }
+
+@media (max-width: 900px) {
+  html { scroll-padding-top: 64px; }
+  .shell { grid-template-columns: minmax(0, 1fr); gap: 16px; padding-block: 0 48px; }
+  .toc { position: static; max-height: none; display: none; }
+  .toc.open { display: block; position: fixed; inset: calc(env(safe-area-inset-top, 0px) + 56px) 0 0; z-index: 20; border-radius: 0; overflow: auto;
+    padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .mobile-bar { display: flex; position: sticky; top: env(safe-area-inset-top, 0px); z-index: 15; align-items: center; justify-content: space-between; gap: 10px;
+    background: var(--paper); border-bottom: 1px solid var(--line); margin: 0 calc(-1 * max(16px, env(safe-area-inset-left, 0px))); padding: 8px max(16px, env(safe-area-inset-right, 0px)) 8px max(16px, env(safe-area-inset-left, 0px)); }
+  .mobile-bar .progress-text { font-size: 0.75rem; }
+  .sheet { padding: 20px 16px 24px; }
+}
+</style>
+
+<div class="shell">
+  <div class="mobile-bar">
+    <button class="btn secondary" id="toc-toggle" type="button" aria-expanded="false" aria-controls="toc">Contents</button>
+    <span class="progress-text" data-progress-text>0 of 0 answered</span>
+    <button class="btn" type="button" data-copy>Copy my answers</button>
+  </div>
+  <nav class="toc" id="toc" aria-label="Contents">
+    <div class="answerbox">
+      <h2>Your answers</h2>
+      <span class="progress-text" data-progress-text>0 of 0 answered</span>
+      <div class="progress-track" aria-hidden="true"><div class="progress-fill" id="progress-fill"></div></div>
+      <div class="btn-row">
+        <button class="btn" type="button" data-copy>Copy my answers</button>
+        <button class="btn secondary" type="button" id="fill-rec">Use recommended for blanks</button>
+      </div>
+      <div class="btn-row">
+        <button class="btn secondary" type="button" id="clear-all">Clear all</button>
+        <button class="btn secondary" type="button" id="clear-confirm" hidden>Yes, clear every answer</button>
+      </div>
+      <div class="copy-status" id="copy-status" role="status" aria-live="polite"></div>
+      <div class="w-note" id="remote-status">Answers save in this browser. Use Copy my answers to send them to the team.</div>
+      <textarea class="copy-fallback" id="copy-fallback" hidden readonly aria-label="Your answers as Markdown"></textarea>
+    </div>
+    <h2>Contents</h2>
+    <ol>
+<li><a href="#interpret"><span>First, five readings of your answers</span><span class="count" data-toc-idea="interpret"></span></a></li>
+<li><a href="#header"><span>Header: date, timer, resources, readiness</span><span class="count" data-toc-idea="header"></span></a></li>
+<li><a href="#subterr"><span>Sub-territories on the map</span><span class="count" data-toc-idea="subterr"></span></a></li>
+<li><a href="#pane"><span>The territory pane: units, builds and recruiting</span><span class="count" data-toc-idea="pane"></span></a></li>
+<li><a href="#recruit"><span>Recruiting</span><span class="count" data-toc-idea="recruit"></span></a></li>
+<li><a href="#move"><span>Moving units: weather, terrain, rail and odds</span><span class="count" data-toc-idea="move"></span></a></li>
+<li><a href="#rail"><span>Rail</span><span class="count" data-toc-idea="rail"></span></a></li>
+<li><a href="#battle"><span>Battle results on the d20</span><span class="count" data-toc-idea="battle"></span></a></li>
+<li><a href="#air"><span>Air</span><span class="count" data-toc-idea="air"></span></a></li>
+<li><a href="#setup"><span>Setup: the turn timer</span><span class="count" data-toc-idea="setup"></span></a></li>
+<li><a href="#phone"><span>What the phone captures show</span><span class="count" data-toc-idea="phone"></span></a></li>
+<li><a href="#singles"><span>Single designs to approve</span><span class="count" data-toc-idea="singles"></span></a></li>
+<li><a href="#notmocked"><span>Not mocked in this pass</span><span class="count"></span></a></li>
+</ol>
+  </nav>
+  <main id="main">
+    <section class="sheet masthead-sheet" id="intro">
+<header class="masthead">
+<p class="eyebrow">Milestone 3 · Step 3 of 4 · UI pass</p>
+<h1>Milestone 3 UX Options</h1>
+<p class="meta"><span>19 Nov 2026</span><span>Captured from the running app (Revision 7 build)</span><span>Sources: <code>ux-pass/</code> on branch <code>m3-ideation</code></span></p>
+</header>
+
+<p class="summary-line">Each image is a screenshot of the real app with the new UI added on top, using the app's own styles. All the images share one mock world, so every option is shown next to the other new features.</p>
+
+<p><strong>How these were made.</strong></p>
+<ul>
+<li>A script starts the game, adds the mock UI to the live map and the Orders pane, and captures each option at 1440 × 800 (desktop) and as a Pixel 7 (phone).</li>
+<li>The province borders are real (geoBoundaries ADM2, in the map&#39;s own projection). Baleares is split by island. The Asturias and Madrid splits are not drawn.</li>
+<li>The mock world is <strong>Turn 7, Late October 1936, from the Republic&#39;s seat</strong>, drawn over the real turn-1 armies.</li>
+<li><strong>The battle images sit on whatever turn 1 actually resolved,</strong> so their battles differ from one capture to the next.</li>
+<li><strong>Every number is example data:</strong> costs, yields, odds and weather.</li>
+</ul>
+<p><strong>Defaults.</strong> Each image changes one feature and leaves the rest at these defaults:</p>
+<ul>
+<li>resources in the header;</li>
+<li>sub-territories shown only where a territory is contested;</li>
+<li>every rail line drawn;</li>
+<li>the tabbed territory pane;</li>
+<li>the list-style recruitment panel.</li>
+</ul>
+<figure class="mockup"><a href="../images/ux-world.webp" target="_blank" rel="noopener" title="Open full size"><img src="../images/ux-world.webp" alt="The mock world: header with timer, Funds and Manpower, readiness chips; map with rail and contested provinces; Cataluña's pane with Units, Build and Recruit tabs"></a><figcaption>The mock world at its defaults. Header: timer, Funds and Manpower, and readiness chips (the computer players are always ready). Map: rail, and provinces drawn in Asturias, Aragón, Extremadura, Baleares and Andalucía. Pane: Cataluña with its weather and next turn's forecast, its income, and three tabs.</figcaption></figure>
+</section>
+<section class="sheet" id="interpret">
+<h2>First, five readings of your answers</h2>
+<p>The stack designs below depend on these readings. Correct any that are wrong before judging the images.</p>
+<div class="questions" data-idea="interpret"></div>
+</section>
+<section class="sheet" id="header">
+<h2>Header: date, timer, resources, readiness</h2>
+<ul>
+<li><strong>The date</strong> reads &quot;Turn 7 · Late October 1936&quot;.</li>
+<li><strong>The timer</strong> is the dark chip.</li>
+<li><strong>Readiness:</strong> the faction chips show who is planning and who is ready. Computer players are always ready.</li>
+<li><strong>Short names:</strong> on desktop the chips switch to REP, NIC and SIC, so everything fits on one line.</li>
+</ul>
+<figure class="mockup"><a href="../images/ux-header-a.webp" target="_blank" rel="noopener" title="Open full size"><img src="../images/ux-header-a.webp" alt="Option A: Funds and Manpower chips in the header beside the timer"></a><figcaption><b>A.</b> Funds and Manpower in the header, each with next turn's income. They are always visible, on every screen.</figcaption></figure>
+<figure class="mockup"><a href="../images/ux-header-b.webp" target="_blank" rel="noopener" title="Open full size"><img src="../images/ux-header-b.webp" alt="Option B: Funds and Manpower as a ledger at the top of the Orders pane"></a><figcaption><b>B.</b> Only the timer stays in the header; the balances sit at the top of the pane. The header is lighter, but the balances disappear whenever the pane is hidden.</figcaption></figure>
+
+<div class="questions" data-idea="header"></div>
+</section>
+<section class="sheet" id="subterr">
+<h2>Sub-territories on the map</h2>
+<figure class="mockup"><a href="../images/ux-subterr-a.webp" target="_blank" rel="noopener" title="Open full size"><img src="../images/ux-subterr-a.webp" alt="Option A: contested territories show province fills in each holder's colour with faint diagonal lines"></a><figcaption><b>A. Provinces only where contested.</b> In a contested territory, each province takes its holder's colour, and faint diagonal lines keep the "contested" cue. Territories held whole stay one clean colour.</figcaption></figure>
+<figure class="mockup"><a href="../images/ux-subterr-a-zoom.webp" target="_blank" rel="noopener" title="Open full size"><img src="../images/ux-subterr-a-zoom.webp" alt="Option A zoomed on Andalucía: province names, capital star, Republican Málaga, Jaén and Almería"></a><figcaption>A, zoomed on Andalucía: province names and the capital's star appear. Málaga, Jaén and Almería are Republican; the other five provinces are Southern.</figcaption></figure>
+<figure class="mockup"><a href="../images/ux-subterr-b.webp" target="_blank" rel="noopener" title="Open full size"><img src="../images/ux-subterr-b.webp" alt="Option B: faint dotted province borders everywhere, fills where contested"></a><figcaption><b>B. Provinces everywhere.</b> As A, plus faint dotted province borders inside every territory. You can see where development lives, at the cost of more lines.</figcaption></figure>
+<figure class="mockup"><a href="../images/ux-subterr-c.webp" target="_blank" rel="noopener" title="Open full size"><img src="../images/ux-subterr-c.webp" alt="Option C: today's hatch kept, with a small split bar under each contested territory's name"></a><figcaption><b>C. Keep today's hatch.</b> Contested territories keep their stripes and gain a small bar showing the split. Provinces appear only when you zoom in on a territory (next image).</figcaption></figure>
+<figure class="mockup"><a href="../images/ux-subterr-c-zoom.webp" target="_blank" rel="noopener" title="Open full size"><img src="../images/ux-subterr-c-zoom.webp" alt="Option C zoomed: provinces and a heavy front line between holders"></a><figcaption>C, zoomed in: the provinces appear, and a heavy line marks the front where the two holders meet.</figcaption></figure>
+
+<div class="questions" data-idea="subterr"></div>
+</section>
+<section class="sheet" id="pane">
+<h2>The territory pane: units, builds and recruiting</h2>
+<p>Your note asked for options. A territory now has three things to order: its units, each sub-territory&#39;s build queue, and recruiting at the capital.</p>
+<figure class="mockup"><a href="../images/ux-pane-a-units.webp" target="_blank" rel="noopener" title="Open full size"><img src="../images/ux-pane-a-units.webp" alt="Option A: tabs Units, Build, Recruit; Units tab with a general, fatigue and demoralized pills, and a unit in training"></a><figcaption><b>A. Tabs:</b> Units, Build and Recruit. The Units tab shows a general, a fatigued unit, a demoralized unit, and a regiment in training (dashed).</figcaption></figure>
+<figure class="mockup"><a href="../images/ux-pane-a-build.webp" target="_blank" rel="noopener" title="Open full size"><img src="../images/ux-pane-a-build.webp" alt="Option A Build tab: sub-territory cards with development pips, buildings and queues"></a><figcaption>A, the Build tab: one card per sub-territory showing:
+<ul>
+<li>development levels (Industry, Farms, Mines, Rail, Port);</li>
+<li>buildings;</li>
+<li>the queue: the build in progress has a bar, and the next one waits.</li>
+</ul></figcaption></figure>
+<figure class="mockup"><a href="../images/ux-pane-b.webp" target="_blank" rel="noopener" title="Open full size"><img src="../images/ux-pane-b.webp" alt="Option B: one scroll with Units, Sub-territories and Recruit sections"></a><figcaption><b>B. One scroll</b> with sections that open and close. Everything is in one place, but the pane gets long.</figcaption></figure>
+<figure class="mockup"><a href="../images/ux-pane-c.webp" target="_blank" rel="noopener" title="Open full size"><img src="../images/ux-pane-c.webp" alt="Option C: sub-territory cards first with Build and Recruit buttons, units below"></a><figcaption><b>C. Sub-territories first.</b> Each card has its own Build button, and the capital's card also has Recruit. Units come below. The economy leads, and the armies are further down.</figcaption></figure>
+<div class="phone-row"><figure class="mockup"><a href="../images/ux-phone-pane-a.webp" target="_blank" rel="noopener" title="Open full size"><img src="../images/ux-phone-pane-a.webp" alt="Phone, option A: bottom sheet with tabs"></a><figcaption>Phone, A: the tabs fit, but the sheet shows about one card.</figcaption></figure><figure class="mockup"><a href="../images/ux-phone-pane-b.webp" target="_blank" rel="noopener" title="Open full size"><img src="../images/ux-phone-pane-b.webp" alt="Phone, option B: bottom sheet with sections"></a><figcaption>Phone, B: sections in a short sheet mean a lot of scrolling.</figcaption></figure></div>
+
+<div class="questions" data-idea="pane"></div>
+
+<h3>Focusing one sub-territory</h3>
+<figure class="mockup"><a href="../images/ux-pane-focus.webp" target="_blank" rel="noopener" title="Open full size"><img src="../images/ux-pane-focus.webp" alt="Zoomed on Cataluña with Barcelona outlined; the pane shows Barcelona with a back link, its card, and build options"></a><figcaption>Zoom in and click Barcelona: the same pane, focused on it, with "← Cataluña" to go back. Below its card, "Add to the queue" lists what it can build. Options that can't be built say why (for example, "max level is 3").</figcaption></figure>
+
+<div class="questions" data-idea="focus"></div>
+</section>
+<section class="sheet" id="recruit">
+<h2>Recruiting</h2>
+<p>Every unit type is listed. A type you can&#39;t train yet is greyed out and says what it needs; hovering adds the details.</p>
+<figure class="mockup"><a href="../images/ux-recruit-a.webp" target="_blank" rel="noopener" title="Open full size"><img src="../images/ux-recruit-a.webp" alt="Option A: a list of unit types with values, costs, quantity steppers, locked rows with reasons, and a hover tooltip"></a><figcaption><b>A. List.</b> Each row shows values, cost, training time and a quantity. Locked rows give the reason inline. The basket line shows what this turn costs and what is left.</figcaption></figure>
+<figure class="mockup"><a href="../images/ux-recruit-b.webp" target="_blank" rel="noopener" title="Open full size"><img src="../images/ux-recruit-b.webp" alt="Option B: a grid of unit type cards, locked ones dimmed with a lock"></a><figcaption><b>B. Grid of cards.</b> Compact and easy to scan by symbol. Costs and reasons appear on hover or tap.</figcaption></figure>
+<div class="phone-row"><figure class="mockup"><a href="../images/ux-phone-recruit-a.webp" target="_blank" rel="noopener" title="Open full size"><img src="../images/ux-phone-recruit-a.webp" alt="Phone: recruitment list in the bottom sheet"></a><figcaption>Phone, A: the list is readable, but the locked reasons wrap.</figcaption></figure></div>
+
+<div class="questions" data-idea="recruit"></div>
+</section>
+<section class="sheet" id="move">
+<h2>Moving units: weather, terrain, rail and odds</h2>
+<p>Four units are leaving Madrid; under the new rule, units leaving one territory with the same order form one army for the turn. A summary at the top shows the army and its moves left. Each destination shows its weather; the map chips show it too.</p>
+<figure class="mockup"><a href="../images/ux-move-a.webp" target="_blank" rel="noopener" title="Open full size"><img src="../images/ux-move-a.webp" alt="Option A: destination rows with weather, mountain entry and fatigue chips; rail destinations added"></a><figcaption><b>A. Chips on every destination:</b>
+<ul>
+<li>weather;</li>
+<li>"Mountain entry (Ávila) · last move";</li>
+<li>"Fatigued −2 on 1 unit";</li>
+<li>rail destinations ("By rail · Reinforce" to Valencia, "Rail, then attack" to Aragón), drawn as dashed lines on the map.</li>
+</ul></figcaption></figure>
+<figure class="mockup"><a href="../images/ux-move-b.webp" target="_blank" rel="noopener" title="Open full size"><img src="../images/ux-move-b.webp" alt="Option B: the focused destination opens a card listing every modifier and the forecast"></a><figcaption><b>B. A card for the destination you hover over or tap.</b> It lists every modifier and its value: odds, the below-1:1 penalty, fatigue, the general, weather, and the chance to take ground. It also says that mountain entry ends the move, and gives next turn's forecast.</figcaption></figure>
+<div class="phone-row"><figure class="mockup"><a href="../images/ux-phone-move-a.webp" target="_blank" rel="noopener" title="Open full size"><img src="../images/ux-phone-move-a.webp" alt="Phone: while choosing a destination the sheet folds away; odds chips carry weather"></a><figcaption>Phone: while you choose a destination, the sheet folds away (as it does today). So on a phone, the map chips are where weather and rail must show.</figcaption></figure></div>
+
+<div class="questions" data-idea="move"></div>
+</section>
+<section class="sheet" id="rail">
+<h2>Rail</h2>
+<p>Rail belongs to sub-territories, as you asked:</p>
+<ul>
+<li><strong>Stations:</strong> each province with rail has a station square; bigger squares are higher levels.</li>
+<li><strong>Lines:</strong> adjacent rail provinces join with a thin curve. Level 2 and up get cross-ties and a heavier line.</li>
+</ul>
+<figure class="mockup"><a href="../images/ux-rail-a.webp" target="_blank" rel="noopener" title="Open full size"><img src="../images/ux-rail-a.webp" alt="Option A: every rail connection drawn at overview"></a><figcaption><b>A. Every line, always.</b> Complete, but busy at full-map zoom.</figcaption></figure>
+<figure class="mockup"><a href="../images/ux-rail-a-zoom.webp" target="_blank" rel="noopener" title="Open full size"><img src="../images/ux-rail-a-zoom.webp" alt="Option A at operational zoom over the Meseta"></a><figcaption>A at operational zoom, which reads well at this scale.</figcaption></figure>
+<figure class="mockup"><a href="../images/ux-rail-b.webp" target="_blank" rel="noopener" title="Open full size"><img src="../images/ux-rail-b.webp" alt="Option B: only level 2 and 3 lines at overview"></a><figcaption><b>B. Main lines only at full-map zoom</b> (levels 2–3); every line once you zoom in.</figcaption></figure>
+<figure class="mockup"><a href="../images/ux-rail-c.webp" target="_blank" rel="noopener" title="Open full size"><img src="../images/ux-rail-c.webp" alt="Option C: rail hidden until units are selected; the Republic's reachable network shown in blue"></a><figcaption><b>C. On demand.</b> Rail is hidden until you select units; then the network they can ride (provinces your faction holds) lights up in blue.</figcaption></figure>
+
+<div class="questions" data-idea="rail"></div>
+</section>
+<section class="sheet" id="battle">
+<h2>Battle results on the d20</h2>
+<p>Only the column for this battle&#39;s odds is shown, as you asked. The die, every modifier and the final score come first.</p>
+<figure class="mockup"><a href="../images/ux-battle-a.webp" target="_blank" rel="noopener" title="Open full size"><img src="../images/ux-battle-a.webp" alt="Option A: a 20-cell strip coloured by grade with the score outlined"></a><figcaption><b>A. Strip.</b> Twenty cells coloured by grade, with the score outlined and a key underneath. You see the spread at a glance, but you have to decode the colours.</figcaption></figure>
+<figure class="mockup"><a href="../images/ux-battle-b.webp" target="_blank" rel="noopener" title="Open full size"><img src="../images/ux-battle-b.webp" alt="Option B: grade bands with score ranges and their effects, the hit band outlined"></a><figcaption><b>B. Bands.</b> One row per grade: its score range, its name, and what it does. The band that was hit is outlined.</figcaption></figure>
+<figure class="mockup"><a href="../images/ux-battle-icon.webp" target="_blank" rel="noopener" title="Open full size"><img src="../images/ux-battle-icon.webp" alt="Hovering a battle icon on the map shows a tooltip naming the result"></a><figcaption>Your missing note: hovering over a battle icon on the map names its result (here "Defender demoralized"), and clicking opens the battle card.</figcaption></figure>
+
+<div class="questions" data-idea="battle"></div>
+</section>
+<section class="sheet" id="air">
+<h2>Air</h2>
+<figure class="mockup"><a href="../images/ux-air-a.webp" target="_blank" rel="noopener" title="Open full size"><img src="../images/ux-air-a.webp" alt="Option A: aircraft counters at airfields, range ring, raid arrow to Sevilla, mission buttons in the pane"></a><figcaption><b>A. Counters on the map.</b> Aircraft sit at their airfields:
+<ul>
+<li>selecting one shows its range ring and mission buttons;</li>
+<li>a raid shows its target, its modifiers and the four outcome chances;</li>
+<li>a red arrow on the map marks the raid on Sevilla.</li>
+</ul></figcaption></figure>
+<figure class="mockup"><a href="../images/ux-air-b.webp" target="_blank" rel="noopener" title="Open full size"><img src="../images/ux-air-b.webp" alt="Option B: an Air list in the pane with every aircraft's mission"></a><figcaption><b>B. One Air list</b> with every aircraft and its mission; arrows on the map show where each one goes. Assigning missions is quicker, and you see less of where each aircraft can reach.</figcaption></figure>
+
+<div class="questions" data-idea="air"></div>
+</section>
+<section class="sheet" id="setup">
+<h2>Setup: the turn timer</h2>
+<figure class="mockup"><a href="../images/ux-setup-timer.webp" target="_blank" rel="noopener" title="Open full size"><img src="../images/ux-setup-timer.webp" alt="Setup screen with a Turn timer choice: Off, 1, 5, 10 minutes, and 30 min and 1 h disabled as online"></a><figcaption>Setup screen: a turn timer with Off, 1, 5 and 10 minutes. 30 minutes and 1 hour are shown greyed out, for online play later. One line explains how the timer works.</figcaption></figure>
+
+<div class="questions" data-idea="setup"></div>
+</section>
+<section class="sheet" id="phone">
+<h2>What the phone captures show</h2>
+<ul>
+<li><strong>The header takes three rows:</strong> the timer and the two resources, then the readiness chips.</li>
+<li><strong>The territory sheet shows about one card</strong> below the territory header.</li>
+<li><strong>Choosing a destination folds the sheet away,</strong> so the map chips carry all of the move information.</li>
+</ul>
+<div class="questions" data-idea="phone"></div>
+</section>
+<section class="sheet" id="singles">
+<h2>Single designs to approve</h2>
+<p>Each of these has one design in the images above.</p>
+<div class="questions" data-idea="singles"></div>
+</section>
+<section class="sheet" id="notmocked">
+<h2>Not mocked in this pass</h2>
+<ul>
+<li><strong>The hot-seat handoff screen.</strong> With balances hidden, it must not show the previous player&#39;s Funds. That needs no new design.</li>
+<li><strong>Generals:</strong> the roster screen and the sacking order. Only the general badge on a unit appears above.</li>
+<li><strong>Recon results:</strong> the enemy balances and queues a recon flight reveals.</li>
+<li><strong>The simulation harness output.</strong> It is JSON only, so there is no UI.</li>
+</ul>
+
+</section>
+
+  </main>
+</div>
+
+<script id="questions-data" type="application/json">[{"id":"Q-UX-I1","idea":"interpret","text":"Units are the lasting pieces, and an army is whatever leaves one territory with the same order that turn. Men, morale and fatigue belong to each unit, and there is no Organize order. Is that right?","options":[{"label":"Yes","recommended":true},{"label":"No (explain in the notes)"}],"groupTitle":"Readings of your answers"},{"id":"Q-UX-I2","idea":"interpret","text":"A general is attached to one unit and gives his +1 and his rally to whatever army that unit is in that turn, with at most one general's bonus per side. Is that right?","options":[{"label":"Yes","recommended":true},{"label":"No (explain in the notes)"}],"groupTitle":"Readings of your answers"},{"id":"Q-UX-I3","idea":"interpret","text":"Interception (Q-MR-16): if an enemy army enters a territory your units are passing through, your units stop at the first such territory and defend there as a reinforcement. Only the last step can attack. Is that right?","options":[{"label":"Yes","recommended":true},{"label":"No (explain in the notes)"}],"groupTitle":"Readings of your answers"},{"id":"Q-UX-I4","idea":"interpret","text":"City barricades (+1 on the d20) stack with the Republic's Popular resistance (+3 on the d20). Is that right?","options":[{"label":"Yes, they stack","recommended":true},{"label":"No: Popular resistance replaces barricades for the Republic"}],"groupTitle":"Readings of your answers"},{"id":"Q-UX-I5","idea":"interpret","text":"Weather: one d20 roll a turn, read against each zone's table. \"Winter\" for closing the sea means December, January and February. Is that right?","options":[{"label":"Yes","recommended":true},{"label":"Yes, but winter is November to March"},{"label":"No (explain in the notes)"}],"groupTitle":"Readings of your answers"},{"id":"Q-UX-01","idea":"header","text":"Where should Funds and Manpower live?","options":[{"label":"A: chips in the header, each with next turn's income","recommended":true,"rationale":"You check balances while planning moves, so they belong where the pane can't hide them."},{"label":"B: a ledger at the top of the Orders pane"},{"label":"Both: short chips in the header, with a detailed income breakdown in the pane"}],"groupTitle":"Header"},{"id":"Q-UX-02","idea":"subterr","text":"How should the full map show sub-territories?","options":[{"label":"A: provinces only in contested territories, with faint diagonal lines; names and capital stars appear on zoom","recommended":true,"rationale":"Your note keeps the player's mind at territory scale. Sub-territories show only where they matter, which is the contested ground."},{"label":"B: faint province borders everywhere, fills where contested"},{"label":"C: keep today's hatch with a split bar; provinces and a front line only when zoomed in"}],"groupTitle":"Sub-territories on the map"},{"id":"Q-UX-03","idea":"pane","text":"How should the territory pane hold units, builds and recruiting?","options":[{"label":"A: tabs (Units, Build, Recruit), opening on Units","recommended":true,"rationale":"Each job stays short and it works on a phone sheet. Moving units, the most frequent job, is still one click away."},{"label":"B: one scroll with sections that open and close"},{"label":"C: sub-territory cards first, with units below"}],"groupTitle":"Territory pane"},{"id":"Q-UX-04","idea":"focus","text":"Is the focused sub-territory view right (zoom in and click a sub-territory; the same pane, with a link back)?","options":[{"label":"Yes, as shown","recommended":true},{"label":"Yes, but also let me focus a sub-territory from its card in the Build tab without zooming"},{"label":"No: show a small card over the map instead of changing the pane"}],"groupTitle":"Focused sub-territory"},{"id":"Q-UX-05","idea":"recruit","text":"Which recruitment layout?","options":[{"label":"A: a list with values, cost, training time and quantity; locked types say why inline, and hovering gives details","recommended":true,"rationale":"The reason a type is locked is readable without hovering, which phones can't do."},{"label":"B: a grid of cards; costs and reasons on hover or tap"}],"groupTitle":"Recruiting"},{"id":"Q-UX-06","idea":"move","text":"How should move destinations show weather, terrain, fatigue and rail?","options":[{"label":"Both: chips on every destination (A), plus the full breakdown card for the one you hover over or tap (B)","recommended":true,"rationale":"The chips let you compare destinations at a glance, and the card explains the odds."},{"label":"A only: chips on every destination"},{"label":"B only: the card for the hovered destination"}],"groupTitle":"Moving units"},{"id":"Q-UX-07","idea":"move","text":"Is the \"Army leaving Madrid\" summary right (units, attack, moves left, and why trucks do or don't add a move)?","options":[{"label":"Yes","recommended":true},{"label":"Yes, but also show it on the map next to the selected units"},{"label":"No: leave it out"}],"groupTitle":"Moving units"},{"id":"Q-UX-08","idea":"rail","text":"How should rail show on the map?","options":[{"label":"B, plus C: main lines at full-map zoom and every line when zoomed in; when you select units, the network they can ride lights up","recommended":true,"rationale":"A quiet overview, full detail when you zoom in, and the rail you can use right now when you need it."},{"label":"A: every line, always"},{"label":"B: main lines at full-map zoom, every line when zoomed in"},{"label":"C: hidden until units are selected"}],"groupTitle":"Rail"},{"id":"Q-UX-09","idea":"battle","text":"How should the battle card show the d20 column?","options":[{"label":"B: bands with score ranges and their effects, the hit band outlined","recommended":true,"rationale":"It says what each result does in words; the strip needs a colour key."},{"label":"A: a 20-cell strip coloured by grade"},{"label":"Both: the strip, with the bands one click away"}],"groupTitle":"Battle results"},{"id":"Q-UX-10","idea":"air","text":"How should you give aircraft their missions?","options":[{"label":"A: counters at their airfields on the map; select one to set its mission, with its range ring","recommended":true},{"label":"B: an Air list in the pane with every aircraft's mission"},{"label":"Both: counters on the map, plus an Air list for setting several at once"}],"groupTitle":"Air"},{"id":"Q-UX-11","idea":"setup","text":"Is the setup timer choice right?","options":[{"label":"Yes","recommended":true},{"label":"Yes, but as a dropdown like the player choices"},{"label":"Change it (notes)"}],"groupTitle":"Setup timer"},{"id":"Q-UX-12","idea":"phone","text":"How should the phone header get its space back?","options":[{"label":"One compact row: timer · Funds · Manpower, then the readiness chips; tap a chip for detail","recommended":true},{"label":"Move the timer and resources into the sheet's header"},{"label":"Leave it as shown"}],"groupTitle":"Phone"},{"id":"Q-UX-13","idea":"singles","multi":true,"text":"Which single designs do you approve as shown? Tick all that apply; say what to change for the rest in the notes.","options":[{"label":"Battle icon tooltip naming the result","recommended":true},{"label":"Weather pill and next turn's forecast in the territory pane","recommended":true},{"label":"A weather symbol on the odds chips on the map","recommended":true},{"label":"The date as \"Turn 7 · Late October 1936\"","recommended":true},{"label":"Readiness on the faction chips (planning / ready)","recommended":true},{"label":"Unit pills: general, Fatigue n, Demoralized; units in training shown dashed","recommended":true},{"label":"Sub-territory cards: development pips, buildings, queue with progress bars","recommended":true}],"groupTitle":"Single designs"}]</script>
+<script>
+
+</script>
+<script>
+(function () {
+  "use strict";
+  var KEY = "m3-ux-answers-v1";
+  var questions = [];
+  try { questions = JSON.parse(document.getElementById("questions-data").textContent); } catch (e) { questions = []; }
+  var byId = {};
+  questions.forEach(function (q) { byId[q.id] = q; });
+  var answers = {};
+  try { var raw = window.localStorage.getItem(KEY); if (raw) answers = JSON.parse(raw) || {}; } catch (e) { answers = {}; }
+  var remote = null, remoteTimer = null;
+  function remoteStatus(text) { var s = document.getElementById("remote-status"); if (s) s.textContent = text; }
+  function pushRemote() {
+    if (!remote) return;
+    clearTimeout(remoteTimer);
+    remoteTimer = setTimeout(function () {
+      var n = 0; questions.forEach(function (q) { if (isAnswered(q.id)) n += 1; });
+      remote.set({ answers: answers, answered: n, total: questions.length, updatedAt: new Date().toISOString() }).then(
+        function () { remoteStatus("Saved to this artifact for the team."); },
+        function (e) { if (e && (e.code === "invalid_argument" || e.code === "revoked" || e.code === "not_granted")) { remote = null; remoteStatus("Saved in this browser only. Use Copy my answers to send them."); } });
+    }, 1200);
+  }
+  function save() { try { window.localStorage.setItem(KEY, JSON.stringify(answers)); } catch (e) { /* storage unavailable: answers live in the page only */ } pushRemote(); }
+  function isAnswered(id) { var a = answers[id]; return !!(a && a.choices && a.choices.length); }
+
+  function el(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
+
+  function renderQuestion(q) {
+    var fs = el("fieldset", "q"); fs.id = q.id; fs.setAttribute("data-qid", q.id);
+    var lg = el("legend"); var head = el("div", "q-head");
+    head.appendChild(el("span", "q-id", q.id));
+    head.appendChild(el("span", "q-text", q.text));
+    if (q.multi) head.appendChild(el("span", "q-multi", "Choose all that apply"));
+    lg.appendChild(head); if (q.context) lg.appendChild(el("p", "q-ctx", q.context)); fs.appendChild(lg);
+    var type = q.multi ? "checkbox" : "radio";
+    (q.options || []).forEach(function (o, i) {
+      var lab = el("label", "opt");
+      var inp = document.createElement("input"); inp.type = type; inp.name = q.id; inp.value = String(i); inp.id = q.id + "-o" + i;
+      var txt = el("span"); txt.appendChild(document.createTextNode(o.label));
+      if (o.recommended) txt.appendChild(el("span", "rec", "(Recommended)"));
+      lab.appendChild(inp); lab.appendChild(txt);
+      if (o.rationale) lab.appendChild(el("span", "why", o.rationale));
+      fs.appendChild(lab);
+      inp.addEventListener("change", function () { readQuestion(fs, q); });
+    });
+    var nl = el("label", "notes-label", "Other / notes"); nl.htmlFor = q.id + "-notes";
+    var ta = document.createElement("textarea"); ta.id = q.id + "-notes"; ta.rows = 1; ta.placeholder = "Optional: another option, a condition, or a reason";
+    ta.addEventListener("input", function () { readQuestion(fs, q); });
+    fs.appendChild(nl); fs.appendChild(ta);
+    applyAnswer(fs, q);
+    return fs;
+  }
+  function applyAnswer(fs, q) {
+    var a = answers[q.id] || {};
+    var chosen = (a.choices || []).map(String);
+    Array.prototype.forEach.call(fs.querySelectorAll("input"), function (inp) { inp.checked = chosen.indexOf(inp.value) >= 0; });
+    var ta = fs.querySelector("textarea"); if (ta) ta.value = a.notes || "";
+    fs.classList.toggle("answered", isAnswered(q.id));
+  }
+  function readQuestion(fs, q) {
+    var choices = [];
+    Array.prototype.forEach.call(fs.querySelectorAll("input"), function (inp) { if (inp.checked) choices.push(Number(inp.value)); });
+    var notes = fs.querySelector("textarea").value;
+    if (!choices.length && !notes.trim()) delete answers[q.id]; else answers[q.id] = { choices: choices, notes: notes };
+    fs.classList.toggle("answered", isAnswered(q.id));
+    save(); updateProgress();
+  }
+
+  var groups = {};
+  questions.forEach(function (q) { var k = String(q.idea); (groups[k] = groups[k] || []).push(q); });
+  Array.prototype.forEach.call(document.querySelectorAll(".questions[data-idea]"), function (box) {
+    var list = groups[box.getAttribute("data-idea")] || [];
+    if (!list.length) { box.appendChild(el("p", "missing", "No questions were drafted for this item.")); return; }
+    list.forEach(function (q) { box.appendChild(renderQuestion(q)); });
+  });
+
+  function updateProgress() {
+    var n = 0; questions.forEach(function (q) { if (isAnswered(q.id)) n += 1; });
+    var label = n + " of " + questions.length + " answered";
+    Array.prototype.forEach.call(document.querySelectorAll("[data-progress-text]"), function (s) { s.textContent = label; });
+    var fill = document.getElementById("progress-fill"); if (fill) fill.style.width = (questions.length ? (100 * n / questions.length) : 0) + "%";
+    Array.prototype.forEach.call(document.querySelectorAll("[data-toc-idea]"), function (c) {
+      var list = [];
+      c.getAttribute("data-toc-idea").split(",").forEach(function (k) { list = list.concat(groups[k] || []); });
+      var m = 0; list.forEach(function (q) { if (isAnswered(q.id)) m += 1; });
+      c.textContent = list.length ? (m + "/" + list.length) : "";
+    });
+  }
+
+  function answersMarkdown() {
+    var lines = ["# Milestone 3 UX options answers", ""];
+    var n = 0; questions.forEach(function (q) { if (isAnswered(q.id) || (answers[q.id] && answers[q.id].notes)) n += 1; });
+    lines.push("Answered " + n + " of " + questions.length + " questions. Copied " + new Date().toISOString().slice(0, 10) + ".", "");
+    var currentIdea = null;
+    questions.forEach(function (q) {
+      var a = answers[q.id]; if (!a) return;
+      if (q.idea !== currentIdea) { currentIdea = q.idea; lines.push("## " + (q.groupTitle || ("Idea " + q.idea)), ""); }
+      var picked = (a.choices || []).map(function (i) { var o = q.options[i]; return o ? o.label + (o.recommended ? " (Recommended)" : "") : "?"; });
+      lines.push("- **" + q.id + "** " + q.text);
+      lines.push("  - Answer: " + (picked.length ? picked.join("; ") : "(no option chosen)"));
+      if (a.notes && a.notes.trim()) lines.push("  - Notes: " + a.notes.trim().replace(/\s*\n\s*/g, " / "));
+    });
+    var blanks = questions.filter(function (q) { return !answers[q.id]; }).map(function (q) { return q.id; });
+    if (blanks.length) { lines.push("", "## Unanswered", "", blanks.join(", ")); }
+    return lines.join("\n") + "\n";
+  }
+  var status = document.getElementById("copy-status");
+  var fallback = document.getElementById("copy-fallback");
+  function showFallback(text) {
+    fallback.hidden = false; fallback.value = text; fallback.focus(); fallback.select();
+    status.textContent = "Copying is blocked here. The answers are selected below: copy them by hand.";
+  }
+  Array.prototype.forEach.call(document.querySelectorAll("[data-copy]"), function (b) {
+    b.addEventListener("click", function () {
+      var text = answersMarkdown();
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(function () { status.textContent = "Copied as Markdown. Paste it into the chat or the tasks doc."; fallback.hidden = true; },
+            function () { showFallback(text); });
+        } else { showFallback(text); }
+      } catch (e) { showFallback(text); }
+      if (window.matchMedia("(max-width: 900px)").matches) { document.getElementById("toc").classList.add("open"); document.getElementById("toc-toggle").setAttribute("aria-expanded", "true"); }
+    });
+  });
+  document.getElementById("fill-rec").addEventListener("click", function () {
+    var filled = 0;
+    questions.forEach(function (q) {
+      if (isAnswered(q.id)) return;
+      var picks = []; (q.options || []).forEach(function (o, i) { if (o.recommended && (q.multi || picks.length === 0)) picks.push(i); });
+      if (!picks.length) return;
+      var prev = answers[q.id] || { notes: "" };
+      answers[q.id] = { choices: picks, notes: prev.notes || "" }; filled += 1;
+    });
+    save();
+    Array.prototype.forEach.call(document.querySelectorAll("fieldset.q"), function (fs) { applyAnswer(fs, byId[fs.getAttribute("data-qid")]); });
+    updateProgress(); status.textContent = filled + " blank questions set to the recommended option. Review and change any you disagree with.";
+  });
+  var clearAll = document.getElementById("clear-all"), clearConfirm = document.getElementById("clear-confirm");
+  clearAll.addEventListener("click", function () { clearConfirm.hidden = !clearConfirm.hidden; });
+  clearConfirm.addEventListener("click", function () {
+    answers = {}; save(); clearConfirm.hidden = true;
+    Array.prototype.forEach.call(document.querySelectorAll("fieldset.q"), function (fs) { applyAnswer(fs, byId[fs.getAttribute("data-qid")]); });
+    updateProgress(); status.textContent = "All answers cleared.";
+  });
+  var toggle = document.getElementById("toc-toggle"), toc = document.getElementById("toc");
+  toggle.addEventListener("click", function () { var open = toc.classList.toggle("open"); toggle.setAttribute("aria-expanded", open ? "true" : "false"); });
+  Array.prototype.forEach.call(toc.querySelectorAll("ol a"), function (a) { a.addEventListener("click", function () { toc.classList.remove("open"); toggle.setAttribute("aria-expanded", "false"); }); });
+
+  // Widgets
+  Array.prototype.forEach.call(document.querySelectorAll(".widget[data-widget]"), function (w) {
+    var fn = window.M3W && window.M3W[w.getAttribute("data-widget")];
+    if (typeof fn !== "function") { w.appendChild(el("p", "widget-error", "This widget is not available.")); return; }
+    try { fn(w); } catch (e) { w.appendChild(el("p", "widget-error", "This widget failed to start: " + (e && e.message))); }
+  });
+
+  // Active section in the contents
+  var links = Array.prototype.slice.call(toc.querySelectorAll("ol a[href^='#']"));
+  if ("IntersectionObserver" in window) {
+    var map = {}; links.forEach(function (a) { map[a.getAttribute("href").slice(1)] = a; });
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) { if (en.isIntersecting && map[en.target.id]) { links.forEach(function (l) { l.classList.remove("active"); }); map[en.target.id].classList.add("active"); } });
+    }, { rootMargin: "-10% 0px -80% 0px" });
+    Object.keys(map).forEach(function (id) { var t = document.getElementById(id); if (t) io.observe(t); });
+  }
+  updateProgress();
+
+  // Optional: when this page runs as a claude.ai Artifact with storage, also keep answers there.
+  try {
+    if (window.claude && typeof window.claude.use === "function") {
+      Promise.all([window.claude.use("db"), window.claude.use("user")]).then(function (r) {
+        var db = r[0], user = r[1];
+        if (!db || !user) return null;
+        return user.id().then(function (uid) {
+          if (!uid) return null;
+          var ref; try { ref = db.doc("answers/" + uid); } catch (e) { return null; }
+          return ref.get().then(function (snap) {
+            remote = ref;
+            var d = snap.exists ? snap.data() : null;
+            if (d && d.answers && !Object.keys(answers).length) {
+              answers = d.answers;
+              try { window.localStorage.setItem(KEY, JSON.stringify(answers)); } catch (e) { /* ignore */ }
+              Array.prototype.forEach.call(document.querySelectorAll("fieldset.q"), function (fs) { applyAnswer(fs, byId[fs.getAttribute("data-qid")]); });
+              updateProgress();
+            }
+            remoteStatus("Answers save to this artifact for the team, and to this browser.");
+          });
+        });
+      }).catch(function () { /* no shared storage: browser only */ });
+    }
+  } catch (e) { /* no runtime */ }
+})();
+</script>
