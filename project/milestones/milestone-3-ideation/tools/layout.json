@@ -1,0 +1,130 @@
+[
+  {
+    "kind": "intro",
+    "id": "top",
+    "title": "Overview",
+    "file": "intro.md"
+  },
+  {
+    "kind": "group",
+    "title": "Platform first",
+    "intro": "The harness, the data model, and the way we build decide how cheaply every later idea can be tried and measured."
+  },
+  {
+    "kind": "idea",
+    "n": 11
+  },
+  {
+    "kind": "idea",
+    "n": 13
+  },
+  {
+    "kind": "idea",
+    "n": 10
+  },
+  {
+    "kind": "group",
+    "title": "The map underneath",
+    "intro": "Sub-regions are the floor that cities, rail, and resource collection stand on."
+  },
+  {
+    "kind": "idea",
+    "n": 7
+  },
+  {
+    "kind": "idea",
+    "n": 4
+  },
+  {
+    "kind": "idea",
+    "n": 5
+  },
+  {
+    "kind": "group",
+    "title": "Economy",
+    "intro": "What players earn, and what they spend it on."
+  },
+  {
+    "kind": "idea",
+    "n": 2
+  },
+  {
+    "kind": "idea",
+    "n": 1
+  },
+  {
+    "kind": "group",
+    "title": "Armies and battle",
+    "intro": "The die, the results ladder, the units, and how far armies can go."
+  },
+  {
+    "kind": "idea",
+    "n": 9
+  },
+  {
+    "kind": "idea",
+    "n": 8
+  },
+  {
+    "kind": "idea",
+    "n": 6
+  },
+  {
+    "kind": "group",
+    "title": "Time",
+    "intro": "The calendar and the clock."
+  },
+  {
+    "kind": "idea",
+    "n": 12
+  },
+  {
+    "kind": "idea",
+    "n": 3
+  },
+  {
+    "kind": "group",
+    "title": "Putting it together"
+  },
+  {
+    "kind": "part",
+    "id": "sequencing",
+    "title": "Sequencing and dependencies",
+    "file": "sequencing.md",
+    "questions": [
+      "sequencing"
+    ]
+  },
+  {
+    "kind": "part",
+    "id": "cut",
+    "title": "Milestone 3 cut",
+    "file": "cut.md"
+  },
+  {
+    "kind": "part",
+    "id": "tensions",
+    "title": "Tensions and risks",
+    "file": "tensions.md",
+    "questions": [
+      "tensions",
+      "mismatch-a",
+      "mismatch-b",
+      "mismatch-c",
+      "mismatch-d",
+      "mismatch-e"
+    ]
+  },
+  {
+    "kind": "part",
+    "id": "assumptions",
+    "title": "Assumptions",
+    "file": "assumptions.md"
+  },
+  {
+    "kind": "sources",
+    "id": "sources",
+    "title": "Sources",
+    "file": "sources.md"
+  }
+]

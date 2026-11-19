@@ -1,0 +1,54 @@
+{
+  "current-planning": {
+    "caption": "Today: the planning screen at main d7f3006, captured with npm run e2e:capture (desktop Chromium).",
+    "alt": "Current planning screen with the parchment map of Spain, faction washes, counters, and the in-map orders pane."
+  },
+  "current-resolution": {
+    "caption": "Today: the turn results screen with battle cards.",
+    "alt": "Current resolution screen with the turn report."
+  },
+  "setup-timer": {
+    "caption": "Mockup (idea 3): a Turn timer setting on the setup screen and a countdown beside End Turn. Values are illustrative; the research recommends Off, 1, 5, 10 min now, with 30 min and 1 h shown as online-only.",
+    "alt": "Setup screen with a Turn timer select and a countdown chip."
+  },
+  "planning-resources": {
+    "caption": "Mockup (ideas 1 and 2): a resource bar (Funds, Manpower, optional Materiel), a Recruit menu with cost, training turns and site, and Replenish on a depleted regiment. Numbers are illustrative and untuned.",
+    "alt": "Planning pane with a resource bar and a recruit menu."
+  },
+  "city-build": {
+    "caption": "Mockup (idea 4): a city panel with garrison, yields, and build options. The research recommends four buildings (Depot, Workshop, Fortifications, Port); the mockup's fact sheet also shows an AA battery and rail depot as later options.",
+    "alt": "City panel for a major city with yields and build options."
+  },
+  "partition-map": {
+    "caption": "Mockup (idea 7): Andalucia split into its eight provinces with faction washes, drawn schematically over the real map; province shapes are hand-drawn. The pane says moves count province to province, which is the deferred option: the research recommends that moves and battles stay on territories for now.",
+    "alt": "Andalucia divided into eight schematic provinces with faction colours."
+  },
+  "rail-lane": {
+    "caption": "Mockup (idea 5): rail lines drawn as hatched track with a capacity badge and a rail move arrow distinct from road moves. Capacities are illustrative.",
+    "alt": "Map with hatched rail lines, a capacity badge, and a rail move arrow."
+  },
+  "unit-counters": {
+    "caption": "Mockup (idea 8): today's counters beside proposed new types in each faction colour. The research recommends adding artillery now and deferring tanks, cavalry, and AA; aircraft become abstract wings rather than counters.",
+    "alt": "Sheet of NATO-style counters for existing and proposed unit types."
+  },
+  "general-chip": {
+    "caption": "Mockup (idea 8): a commander chip on a stack, shown as initials in a medallion. The mockup shows a +1 roll effect; the research recommends display-only chips, with no rules effect. Miaja is shown at Madrid on turn 1; historically he took command there in November 1936.",
+    "alt": "Counter stack with a commander medallion chip and an info card."
+  },
+  "d20-battle-card": {
+    "caption": "Mockup (idea 9): today's battle card extended with a d20 roll, modifiers, and a graded result ladder showing where the result landed. Numbers are illustrative. The research's ladder works differently: score = roll + 3 x odds column, with today's modifiers tripled (dug in at +3 becomes +9). The mockup shows a plain 1 to 20 row.",
+    "alt": "Battle card with a d20 roll breakdown and a graded outcome ladder."
+  },
+  "weather-badge": {
+    "caption": "Mockup (idea 12): a weather badge in the planning header and a per-zone forecast with effects. Effects shown are illustrative; the research recommends a soft set (Mud -1, Snow -1, Severe cold -2, no digging in during snow or cold). Turn 11 is 18 to 31 December 1936 under two-week turns from 31 July.",
+    "alt": "Planning header with a weather badge and a forecast panel."
+  },
+  "movement-exhaustion": {
+    "caption": "Mockup (idea 6): fatigue pips and a movement allowance on a planned multi-step route. The research recommends one move per turn with exhaustion through morale, so the movement readout illustrates the deferred option.",
+    "alt": "Counters with fatigue pips on a multi-step route."
+  },
+  "harness-report": {
+    "caption": "Mockup (idea 11): example output of a proposed npm run sim command and its HTML summary. Numbers are based on today's soak and are labelled as example output.",
+    "alt": "Terminal output and a summary card with win shares and intervals."
+  }
+}
