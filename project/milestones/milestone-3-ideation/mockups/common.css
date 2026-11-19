@@ -1,0 +1,192 @@
+/* Mockup helpers layered on app.css (compiled verbatim from src/main/style.scss). */
+
+html,
+body {
+  margin: 0;
+  overflow: hidden;
+  background: var(--canvas);
+}
+
+.stage {
+  position: relative;
+  overflow: hidden;
+}
+
+.base {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: block;
+}
+
+.abs {
+  position: absolute;
+}
+
+/* "Mockup - illustrative": quiet, in a corner. */
+.mock-mark {
+  position: absolute;
+  z-index: 50;
+  padding: 2px 8px;
+  border: 1px solid rgb(36 29 24 / 25%);
+  border-radius: 999px;
+  color: rgb(36 29 24 / 62%);
+  background: rgb(251 246 234 / 80%);
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+}
+
+/* An opaque replacement for the Orders pane body, sized to today's pane at 1440 x 800. */
+.pane-cover {
+  position: absolute;
+  top: 92px;
+  left: 996px;
+  width: 415px;
+  height: 678px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid rgb(36 29 24 / 28%);
+  border-radius: 10px;
+  background: #ece7dc;
+  box-shadow: 0 0.75rem 2rem rgb(20 14 10 / 30%);
+}
+
+.pane-cover .map-pane-body {
+  flex: 1;
+  overflow: hidden;
+}
+
+.pane-cover .pane-section:first-child {
+  padding-top: 0.2rem;
+}
+
+/* New UI pieces, drawn with the app's tokens. */
+.new-tag {
+  display: inline-block;
+  margin-left: 0.35rem;
+  padding: 0 0.35rem;
+  border-radius: 3px;
+  color: var(--paper);
+  background: var(--accent);
+  font-family: var(--sans);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  vertical-align: 0.15rem;
+  text-transform: uppercase;
+}
+
+.res-bar {
+  display: grid;
+  grid-template-columns: 1fr 1.25fr 1fr;
+  gap: 0.35rem;
+}
+
+.res-cell {
+  padding: 0.35rem 0.5rem 0.4rem;
+  border: 1px solid rgb(36 29 24 / 22%);
+  border-radius: 6px;
+  background: var(--paper);
+}
+
+.res-label {
+  color: var(--ink-soft);
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.res-value {
+  font-size: 1.05rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.res-delta {
+  margin-left: 0.2rem;
+  color: var(--success);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.res-cell[data-optional="true"] {
+  border-style: dashed;
+  color: rgb(36 29 24 / 50%);
+  background: rgb(251 246 234 / 55%);
+
+  .res-delta {
+    color: rgb(47 125 79 / 55%);
+  }
+}
+
+.res-optional {
+  margin-left: 0.25rem;
+  padding: 0 0.3rem;
+  border: 1px dotted rgb(36 29 24 / 45%);
+  border-radius: 3px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: lowercase;
+  vertical-align: 0.1rem;
+}
+
+.mini-symbol {
+  display: inline-flex;
+  flex: none;
+  width: 21px;
+  height: 14px;
+
+  svg {
+    width: 100%;
+    height: 100%;
+  }
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.12rem 0.55rem;
+  border: 1px solid rgb(36 29 24 / 28%);
+  border-radius: 999px;
+  background: var(--paper);
+  font-size: 0.76rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.progress {
+  height: 0.38rem;
+  border-radius: 3px;
+  background: linear-gradient(to right, var(--gold) var(--p), rgb(36 29 24 / 15%) 0);
+}
+
+.hatch-note {
+  color: var(--ink-soft);
+  font-family: var(--serif);
+  font-size: 0.8rem;
+  font-style: italic;
+}
+
+/* A general's medallion: initials in a faction-ringed disc. */
+.general {
+  display: inline-grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  border: 2px solid var(--paper);
+  border-radius: 50%;
+  color: var(--paper);
+  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--faction-color) 70%, #fff), var(--faction-color) 60%, color-mix(in srgb, var(--faction-color) 70%, #000));
+  box-shadow: 0 0 0 1.5px var(--ink), 0 1px 3px rgb(0 0 0 / 45%);
+  font-family: var(--serif);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}

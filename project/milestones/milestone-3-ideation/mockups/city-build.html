@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="mock-size" content="1440x800">
+<meta name="mock-out" content="1200">
+<title>city-build</title>
+<link rel="stylesheet" href="app.css">
+<link rel="stylesheet" href="common.css">
+<script src="common.js"></script>
+<style>
+  .yields { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.45rem; }
+  .yields .chip b { color: var(--success); }
+  .garrison h4 { display: flex; justify-content: space-between; margin-top: 0.55rem !important; }
+  .garrison h4 span { color: var(--ink-soft); font-family: var(--sans); font-size: 0.72rem; font-weight: 650; }
+  .g-row { display: grid; grid-template-columns: auto 1fr auto; gap: 0.45rem; align-items: center; padding: 0.18rem 0; font-size: 0.8rem; border-bottom: 1px dotted rgb(36 29 24 / 20%); }
+  .g-row b { font-variant-numeric: tabular-nums; }
+  .g-row small { color: var(--ink-soft); font-size: 0.72rem; }
+  .build { display: grid; gap: 0.28rem; margin-top: 0.4rem; }
+  .b-row { display: grid; grid-template-columns: 1.7rem 1fr auto; column-gap: 0.5rem; align-items: center; padding: 0.3rem 0.5rem; border: 1px solid rgb(36 29 24 / 30%); border-radius: 6px; background: var(--paper); }
+  .b-row[data-state="building"] { border-color: #7a5a06; background: var(--gold-wash); }
+  .b-name { font-family: var(--serif); font-weight: 700; font-size: 0.92rem; line-height: 1.15; }
+  .b-cost { grid-column: 2; color: var(--ink-soft); font-size: 0.72rem; line-height: 1.25; }
+  .b-icon { grid-row: span 2; width: 1.6rem; height: 1.6rem; color: var(--ink); }
+  .b-act { grid-row: span 2; min-height: 1.7rem; padding: 0 0.6rem; font-size: 0.74rem; font-weight: 700; color: var(--ink); background: #fffdf7; border-color: rgb(36 29 24 / 45%); }
+  .b-row .progress { grid-column: 2; margin-top: 0.2rem; }
+  .bracket { position: absolute; z-index: 4; height: 20px; border: 2px solid var(--ink); border-top: 0; border-radius: 0 0 6px 6px; }
+  .bracket span { position: absolute; left: 50%; top: 9px; transform: translateX(-50%); padding: 1px 6px; border: 1px solid var(--ink); border-radius: 4px; background: var(--paper); font: 800 10.5px var(--sans); letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; }
+  .bracket[data-kind="city"] { border-color: var(--accent); }
+  .bracket[data-kind="city"] span { color: var(--paper); background: var(--accent); border-color: var(--accent); }
+  .site { position: absolute; z-index: 5; display: flex; align-items: center; gap: 4px; padding: 2px 7px 2px 3px; border: 1.5px solid var(--ink); border-radius: 999px; background: var(--gold-wash); font: 800 11px var(--sans); box-shadow: 0 1px 3px rgb(0 0 0 / 35%); }
+  .site svg { width: 18px; height: 18px; }
+</style>
+</head>
+<body>
+<div class="stage" style="width:1440px;height:800px">
+  <img class="base" src="base/detail-madrid.webp" alt="">
+  <div class="bracket" style="left:566px;top:522px;width:117px"><span>Countryside</span></div>
+  <div class="bracket" data-kind="city" style="left:690px;top:522px;width:118px"><span>In the city</span></div>
+  <div class="site" style="left:700px;top:418px"><svg viewBox="0 0 20 20" fill="none" stroke="#241d18" stroke-width="1.6" stroke-linejoin="round"><path d="M3 17V8h3v2h2V8h4v2h2V8h3v9z" fill="#fffaf0"/><path d="M2 17h16" /></svg>Fortifications 1/2</div>
+  <div id="pane"></div>
+  <div id="mark"></div>
+</div>
+<script>
+const icon = {
+  barracks: '<svg class="b-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M3 11l9-6 9 6v9H3z"/><path d="M9 20v-5h6v5"/></svg>',
+  workshop: '<svg class="b-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M3 20V10l5 3V10l5 3V10l5 3V5h3v15z"/></svg>',
+  fort: '<svg class="b-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M4 20V9h3v3h3V9h4v3h3V9h3v11z"/></svg>',
+  aa: '<svg class="b-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 18a8 8 0 0 1 16 0" stroke-width="2.2"/><circle cx="12" cy="15" r="2" fill="currentColor"/></svg>',
+  rail: '<svg class="b-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 3L5 21M16 3l3 18"/><path d="M6.6 7h10.8M6 11.5h12M5.4 16h13.2" stroke-width="2"/></svg>'
+};
+const g = (type, name, values, men) => `<div class="g-row"><span class="mini-symbol" data-symbol="${type}:rep"></span><span>${name}</span><span><b>${values}</b> <small>${men}</small></span></div>`;
+const b = (key, name, cost, act, state, progress) => `<div class="b-row" data-state="${state}">${icon[key]}<span class="b-name">${name}</span>${act}<span class="b-cost">${cost}</span>${progress ? `<div class="progress" style="--p:50%"></div>` : ""}</div>`;
+const build = (label) => `<button class="b-act" type="button">${label}</button>`;
+const body = `
+<section class="pane-section" style="padding-top:0">
+  <div class="screen-kicker" style="font-size:0.7rem">City &middot; capital of Madrid territory <span class="new-tag">new</span></div>
+  <p class="pane-meta" style="margin-top:0.1rem">Republican Government &middot; its countryside adds Manpower +400</p>
+  <div class="yields"><span class="chip">Funds <b>+4</b></span><span class="chip">Manpower <b>+800</b></span><span class="chip">Works cap 3</span></div>
+</section>
+<section class="pane-section garrison" style="padding-top:0.3rem">
+  <h4>In the city <span>holds the city if the countryside falls</span></h4>
+  ${g("security", "Madrid Assault and Civil Guards", "3-5", "3000")}
+  ${g("militia", "Madrid Sierra Columns", "3-4", "5000")}
+  <h4>In the countryside <span>fights for the territory</span></h4>
+  ${g("infantry", "Wad-Ras Infantry Regiment No. 1", "4-6", "550")}
+  ${g("infantry", "Covadonga Infantry Regiment No. 4", "4-6", "550")}
+</section>
+<section class="pane-section" style="padding-top:0.45rem">
+  <h3 style="display:flex;justify-content:space-between;align-items:baseline">Build in Madrid <span class="selection-count">one project at a time</span></h3>
+  <div class="build">
+    ${b("fort", "Fortifications", "+1 works cap &middot; 5 Funds &middot; 2 turns", `<span class="chip" style="grid-row:span 2">1 of 2 turns</span>`, "building", true)}
+    ${b("barracks", "Barracks", "2 recruits a turn &middot; 6 Funds &middot; 2 turns", build("Queue"), "", false)}
+    ${b("workshop", "Workshop", "Materiel +2 &middot; 8 Funds &middot; 3 turns", build("Queue"), "", false)}
+    ${b("aa", "AA battery", "Bombing -2 &middot; 6 Funds, 2 Materiel &middot; 2 turns", build("Queue"), "", false)}
+    ${b("rail", "Rail depot", "Rail capacity +1 &middot; 7 Funds &middot; 3 turns", build("Queue"), "", false)}
+  </div>
+</section>`;
+document.getElementById("pane").innerHTML = pane({ title: "Madrid", toggle: "Close city", body });
+document.getElementById("mark").innerHTML = mark("top:28px;right:120px");
+</script>
+</body>
+</html>

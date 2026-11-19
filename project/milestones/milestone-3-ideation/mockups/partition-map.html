@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="mock-size" content="1440x800">
+<meta name="mock-out" content="1200">
+<title>partition-map</title>
+<link rel="stylesheet" href="app.css">
+<link rel="stylesheet" href="common.css">
+<script src="common.js"></script>
+<style>
+  .overlay { position: absolute; left: 0; top: 0; z-index: 3; }
+  .prov { stroke: none; }
+  .prov-border { fill: none; stroke: #241d18; stroke-width: 1.3; stroke-dasharray: 5 3; opacity: 0.8; }
+  .terr-border { fill: none; stroke: #241d18; stroke-width: 1.6; }
+  .city text { fill: var(--ink); font: 650 12.5px var(--sans); paint-order: stroke; stroke: rgb(251 246 234 / 92%); stroke-width: 3.5px; stroke-linejoin: round; }
+  .prov-label { fill: #2b221c; font: italic 700 11px var(--serif); letter-spacing: 0.08em; paint-order: stroke; stroke: rgb(251 246 234 / 85%); stroke-width: 3px; stroke-linejoin: round; text-transform: uppercase; }
+  .terr-label { fill: #2b221c; font: 700 14px var(--serif); font-variant: small-caps; paint-order: stroke; stroke: rgb(251 246 234 / 88%); stroke-width: 3.5px; }
+  .legend-card { position: absolute; left: 600px; top: 676px; z-index: 6; width: 372px; padding: 0.5rem 0.7rem; border: 1px solid rgb(36 29 24 / 30%); border-radius: 8px; background: rgb(251 246 234 / 94%); box-shadow: 0 4px 14px rgb(20 14 10 / 25%); font-size: 0.8rem; }
+  .legend-card b { font-family: var(--serif); font-size: 0.98rem; }
+  .sw { display: inline-block; width: 14px; height: 10px; margin-right: 4px; border: 1px solid var(--ink); vertical-align: -1px; }
+  .strip { display: flex; height: 12px; margin-top: 0.4rem; border: 1px solid var(--ink); border-radius: 3px; overflow: hidden; }
+  .strip i { flex: 1; border-left: 1px solid rgb(251 246 234 / 80%); }
+  .p-table { width: 100%; margin-top: 0.5rem; border-collapse: collapse; font-size: 0.8rem; }
+  .p-table th { padding: 0.2rem 0; color: var(--ink-soft); font-size: 0.66rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; text-align: left; }
+  .p-table td { padding: 0.24rem 0; border-top: 1px dotted rgb(36 29 24 / 22%); }
+  .p-table td:last-child, .p-table th:last-child { text-align: right; }
+  .holder { display: inline-flex; align-items: center; gap: 0.3rem; font-weight: 700; }
+  .holder::before { content: ""; width: 0.7rem; height: 0.7rem; border: 1px solid var(--ink); border-radius: 2px; background: var(--c); }
+  .holder[data-c="both"]::before { background: repeating-linear-gradient(45deg, #b1493f 0 3px, #665089 3px 6px); }
+</style>
+</head>
+<body>
+<div class="stage" style="width:1440px;height:800px">
+  <img class="base" src="base/operational.webp" alt="">
+  <svg class="overlay" width="1440" height="800" viewBox="0 0 1440 800">
+    <defs>
+      <pattern id="contested" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+        <rect width="5" height="10" fill="#b1493f"/><rect x="5" width="5" height="10" fill="#665089"/>
+      </pattern>
+      <clipPath id="map"><rect x="17" y="78" width="1406" height="705" rx="8"/></clipPath>
+    </defs>
+    <g clip-path="url(#map)">
+      <g opacity="0.62">
+        <polygon class="prov" fill="url(#contested)" points="82,645 80,600 90,580 127,542 150,555 145,610 140,660 120,655"/>
+        <polygon class="prov" fill="#665089" points="150,555 180,565 200,555 232,552 240,600 250,640 270,670 270,705 240,700 200,690 165,680 150,665 140,660 145,610"/>
+        <polygon class="prov" fill="#665089" points="165,680 200,690 240,700 270,705 262,772 250,790 220,760 200,730 175,715"/>
+        <polygon class="prov" fill="#665089" points="232,552 250,527 270,500 290,487 315,500 330,507 335,560 340,620 345,670 320,680 270,670 250,640 240,600"/>
+        <polygon class="prov" fill="#b1493f" points="270,670 320,680 345,670 370,690 385,712 350,715 325,730 280,760 262,772 270,705"/>
+        <polygon class="prov" fill="#b1493f" points="330,507 345,517 360,527 400,522 435,520 480,515 500,522 515,540 500,560 470,600 430,615 380,625 340,620 335,560"/>
+        <polygon class="prov" fill="#665089" points="340,620 380,625 430,615 470,600 500,560 480,620 470,680 460,708 400,710 385,712 370,690 345,670"/>
+        <polygon class="prov" fill="#b1493f" points="500,560 515,540 540,580 565,605 585,630 550,700 500,710 460,708 470,680 480,620"/>
+      </g>
+      <!-- Granada: only the city holds for the Southern command; the province around it is besieged. -->
+      <circle cx="415" cy="660" r="26" fill="none" stroke="#665089" stroke-width="3" stroke-dasharray="3 3"/>
+      <g class="prov-border">
+        <path d="M150,555 145,610 140,660"/>
+        <path d="M165,680 200,690 240,700 270,705"/>
+        <path d="M232,552 240,600 250,640 270,670 270,705 262,772"/>
+        <path d="M270,670 320,680 345,670 370,690 385,712"/>
+        <path d="M330,507 335,560 340,620 345,670"/>
+        <path d="M340,620 380,625 430,615 470,600 500,560 515,540"/>
+        <path d="M500,560 480,620 470,680 460,708"/>
+      </g>
+      <polyline class="terr-border" points="82,645 80,600 90,580 127,542 150,555 180,565 200,555 232,552 250,527 270,500 290,487 315,500 330,507 345,517 360,527 400,522 435,520 480,515 500,522 515,540 540,580 565,605 585,630"/>
+      <g class="prov-label" text-anchor="middle">
+        <text x="112" y="618">Huelva</text>
+        <text x="178" y="590">Sevilla</text>
+        <text x="216" y="752">C&aacute;diz</text>
+        <text x="288" y="532">C&oacute;rdoba</text>
+        <text x="300" y="742">M&aacute;laga</text>
+        <text x="425" y="566">Ja&eacute;n</text>
+        <text x="440" y="694">Granada</text>
+        <text x="530" y="660">Almer&iacute;a</text>
+      </g>
+      <g class="city">
+        <circle cx="206" cy="630" r="4" fill="#665089" stroke="#241d18" stroke-width="1.3"/><text x="214" y="634">Sevilla</text>
+        <circle cx="315" cy="578" r="4" fill="#665089" stroke="#241d18" stroke-width="1.3"/><text x="323" y="582">C&oacute;rdoba</text>
+        <circle cx="415" cy="658" r="4" fill="#665089" stroke="#241d18" stroke-width="1.3"/><text x="423" y="662">Granada</text>
+        <circle cx="343" cy="707" r="4" fill="#b1493f" stroke="#241d18" stroke-width="1.3"/><text x="351" y="711">M&aacute;laga</text>
+        <circle cx="178" cy="722" r="4" fill="#665089" stroke="#241d18" stroke-width="1.3"/><text x="186" y="726">C&aacute;diz</text>
+        <circle cx="104" cy="652" r="4" fill="#fbf6ea" stroke="#241d18" stroke-width="1.3"/><text x="58" y="672">Huelva</text>
+        <circle cx="392" cy="588" r="4" fill="#b1493f" stroke="#241d18" stroke-width="1.3"/><text x="400" y="592">Ja&eacute;n</text>
+        <circle cx="512" cy="702" r="4" fill="#b1493f" stroke="#241d18" stroke-width="1.3"/><text x="520" y="706">Almer&iacute;a</text>
+      </g>
+    </g>
+  </svg>
+  <div class="counter-layer" data-level="operational" id="counters" style="z-index:4"></div>
+  <div class="legend-card">
+    <b>Andaluc&iacute;a: contested</b> &middot; SIC 4 of 8 provinces
+    <div style="margin-top:0.25rem"><span class="sw" style="background:#665089"></span>SIC &nbsp; <span class="sw" style="background:#b1493f"></span>Republic &nbsp; <span class="sw" style="background:repeating-linear-gradient(45deg,#b1493f 0 3px,#665089 3px 6px)"></span>contested</div>
+    <div class="hatch-note" style="margin-top:0.2rem">Schematic province shapes (dashed borders), not to survey.</div>
+  </div>
+  <div id="pane"></div>
+  <div id="mark"></div>
+</div>
+<script>
+document.getElementById("counters").innerHTML = [
+  counter({ f: "sic", type: "infantry", des: "G6", x: 153, y: 637, w: 52, h: 41 }),
+  counter({ f: "sic", type: "colonial", des: "AOA", x: 212, y: 637, w: 52, h: 41 }),
+  counter({ f: "sic", type: "infantry", des: "L5", x: 356, y: 640, w: 52, h: 41 }),
+  counter({ f: "rep", type: "infantry", des: "V8", x: 317, y: 717, w: 52, h: 41 }),
+  counter({ f: "sic", type: "infantry", des: "C33", x: 152, y: 731, w: 52, h: 41 })
+].join("");
+const row = (name, c, holder, yieldText) => `<tr><td>${name}</td><td><span class="holder" data-c="${c}" style="--c:${c === "sic" ? "#665089" : "#b1493f"}">${holder}</span></td><td>${yieldText}</td></tr>`;
+const body = `
+<section class="pane-section" style="padding-top:0">
+  <div class="screen-kicker" style="font-size:0.7rem">Territory &middot; split by battle <span class="new-tag">new</span></div>
+  <p class="pane-meta" style="margin-top:0.1rem">Contested: Southern Insurgent Command holds 4 of 8 provinces, the Republic 3, Huelva is disputed.</p>
+  <div class="strip"><i style="background:#665089;border:0"></i><i style="background:#665089"></i><i style="background:#665089"></i><i style="background:#665089"></i><i style="background:repeating-linear-gradient(45deg,#b1493f 0 3px,#665089 3px 6px)"></i><i style="background:#b1493f"></i><i style="background:#b1493f"></i><i style="background:#b1493f"></i></div>
+  <table class="p-table">
+    <tr><th>Province</th><th>Held by</th><th>Yield</th></tr>
+    ${row("Sevilla", "sic", "SIC", "Funds +2")}
+    ${row("C&aacute;diz", "sic", "SIC", "Funds +1")}
+    ${row("C&oacute;rdoba (west)", "sic", "SIC", "Manpower +300")}
+    ${row("Granada (city only)", "sic", "SIC", "Funds +1")}
+    ${row("M&aacute;laga", "rep", "REP", "Funds +1")}
+    ${row("Ja&eacute;n", "rep", "REP", "Manpower +300")}
+    ${row("Almer&iacute;a", "rep", "REP", "Manpower +200")}
+    ${row("Huelva", "both", "contested", "none")}
+  </table>
+</section>
+<section class="pane-section">
+  <h4 style="margin-top:0">What the split changes</h4>
+  <ul class="plain-list" style="margin-top:0.3rem;font-size:0.8rem;color:var(--ink-soft);display:grid;gap:0.25rem">
+    <li>Each side collects only its own provinces' yield.</li>
+    <li>Moves are counted province to province, split or not.</li>
+    <li>A battle result of "gives ground" hands over one province.</li>
+  </ul>
+</section>`;
+document.getElementById("pane").innerHTML = pane({ title: "Andaluc\u00eda", body });
+document.getElementById("mark").innerHTML = mark("top:28px;right:120px");
+</script>
+</body>
+</html>

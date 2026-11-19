@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="mock-size" content="1440x800">
+<meta name="mock-out" content="1200">
+<title>movement-exhaustion</title>
+<link rel="stylesheet" href="app.css">
+<link rel="stylesheet" href="common.css">
+<script src="common.js"></script>
+<style>
+  .overlay { position: absolute; left: 0; top: 0; z-index: 3; }
+  .route-halo { fill: none; stroke: rgb(251 246 234 / 88%); stroke-width: 7; stroke-linecap: round; }
+  .route-line { fill: none; stroke: #1f3550; stroke-width: 3; stroke-dasharray: 9 6; stroke-linecap: round; }
+  .route-ghost { fill: none; stroke: #9e2b2b; stroke-width: 2.5; stroke-dasharray: 2 5; stroke-linecap: round; opacity: 0.85; }
+  .step { position: absolute; z-index: 6; display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px 2px 2px; border: 1.5px solid var(--ink); border-radius: 999px; background: var(--paper); font: 800 11.5px var(--sans); white-space: nowrap; box-shadow: 0 1px 3px rgb(0 0 0 / 35%); }
+  .step i { display: grid; width: 18px; height: 18px; place-items: center; border-radius: 50%; color: var(--paper); background: #1f3550; font-style: normal; font-size: 10.5px; }
+  .step[data-ghost="true"] { border-style: dashed; border-color: #9e2b2b; color: #9e2b2b; background: rgb(251 246 234 / 92%); }
+  .step[data-ghost="true"] i { background: #9e2b2b; }
+  .pips { position: absolute; left: -7px; bottom: -8px; display: flex; gap: 2px; padding: 2px 3px; border: 1.4px solid #fffaf0; border-radius: 3px; background: #241d18; filter: drop-shadow(0 1px 1px rgb(0 0 0 / 35%)); }
+  .pips b { width: 5px; height: 5px; border-radius: 50%; border: 1px solid #fffaf0; }
+  .pips b[data-on="true"] { background: #e3a33a; border-color: #e3a33a; }
+  .mp { display: flex; gap: 4px; margin-top: 0.3rem; }
+  .mp i { flex: 1; height: 12px; border: 1.5px solid var(--ink); border-radius: 2px; }
+  .mp i[data-on="true"] { background: #1f3550; }
+  .mp i[data-ghost="true"] { border-style: dashed; border-color: #9e2b2b; }
+  .fat { display: flex; gap: 4px; margin-top: 0.3rem; }
+  .fat i { flex: 1; height: 12px; border: 1.5px solid var(--ink); border-radius: 2px; }
+  .fat i[data-on="true"] { background: #e3a33a; }
+  .leg-list { display: grid; gap: 0.25rem; margin: 0.35rem 0 0; padding: 0; list-style: none; font-size: 0.8rem; }
+  .leg-list li { display: grid; grid-template-columns: 1.4rem 1fr auto; gap: 0.4rem; align-items: center; padding: 0.2rem 0; border-bottom: 1px dotted rgb(36 29 24 / 22%); }
+  .leg-list li i { display: grid; width: 18px; height: 18px; place-items: center; border-radius: 50%; color: var(--paper); background: #1f3550; font-style: normal; font-size: 10.5px; font-weight: 800; }
+  .leg-list li[data-ghost="true"] { color: #9e2b2b; }
+  .leg-list li[data-ghost="true"] i { background: #9e2b2b; }
+</style>
+</head>
+<body>
+<div class="stage" style="width:1440px;height:800px">
+  <img class="base" src="base/detail.webp" alt="">
+  <svg class="overlay" width="1440" height="800" viewBox="0 0 1440 800">
+    <defs><marker id="h" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="3.4" markerHeight="3.4" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1f3550"/></marker></defs>
+    <path d="M268,310 C300,380 380,440 470,450 C560,458 640,420 700,365" class="route-halo"/>
+    <path d="M268,310 C300,380 380,440 470,450 C560,458 640,420 700,365" class="route-line" marker-end="url(#h)"/>
+    <path d="M712,372 C720,450 700,520 650,560" class="route-ghost"/>
+    <circle cx="470" cy="450" r="5" fill="#1f3550" stroke="#fbf6ea" stroke-width="2"/>
+  </svg>
+  <div class="counter-layer" data-level="detail" id="counters" style="z-index:5"></div>
+  <div class="step" style="left:400px;top:462px"><i>1</i>Castilla-La Mancha <span style="color:var(--ink-soft);font-weight:650">1 move</span></div>
+  <div class="step" style="left:590px;top:330px"><i>2</i>Valencia <span style="color:var(--ink-soft);font-weight:650">1 move</span></div>
+  <div class="step" data-ghost="true" style="left:574px;top:582px"><i>3</i>Murcia: would exhaust</div>
+  <div id="pane"></div>
+  <div id="mark"></div>
+</div>
+<script>
+const pips = (n, of = 3) => `<span class="pips">${Array.from({ length: of }, (_, i) => `<b data-on="${i < n}"></b>`).join("")}</span>`;
+document.getElementById("counters").innerHTML = [
+  counter({ f: "rep", type: "infantry", des: "WR1", values: "3-5", full: "4-6", men: "550/550", x: 237, y: 247, w: 56, h: 56, selected: true, ordered: true, extra: pips(2) }),
+  counter({ f: "rep", type: "infantry", des: "C4", men: "550/550", x: 300, y: 247, w: 56, h: 56, ordered: true, extra: pips(0) }),
+  counter({ f: "rep", type: "security", des: "MAA", men: "3000/3000", x: 362, y: 247, w: 56, h: 56, ordered: true, extra: pips(1) }),
+  counter({ f: "rep", type: "militia", des: "SIER", men: "5000/5000", x: 425, y: 247, w: 56, h: 56, ordered: true, extra: pips(0) })
+].join("");
+const body = `
+<section class="pane-section" style="padding-top:0">
+  <h3>Madrid</h3>
+  <p class="pane-meta" style="margin-top:0.1rem">Held by Republican Government</p>
+  <div class="formation-button" aria-pressed="true" style="margin-top:0.5rem;--strength-share:1"><span class="formation-check"></span>
+    <span><span class="formation-name" style="display:block;font-weight:700">Wad-Ras Infantry Regiment No. 1</span><span class="formation-meta">Infantry regiment &middot; Moving, 2 steps</span>
+    <div class="army-line"><span class="army-line-values"><strong>3-5</strong><s>4-6</s></span><span class="army-line-strength"><span class="army-line-bar"></span>550/550 men</span></div></span></div>
+</section>
+<section class="pane-section">
+  <h4 style="margin-top:0;display:flex;justify-content:space-between">Moves 2 of 3 <span class="new-tag" style="margin-left:auto">new</span></h4>
+  <div class="mp"><i data-on="true"></i><i data-on="true"></i><i></i></div>
+  <p class="pane-meta">Friendly territory costs 1, enemy or contested costs 2. One move left, at a price.</p>
+  <h4>Fatigue: tired, &minus;1 value</h4>
+  <div class="fat"><i data-on="true"></i><i data-on="true"></i><i></i></div>
+  <p class="pane-meta">Two weeks of marching. Fights at 3-5 until it rests; a third step would exhaust it (&minus;2).</p>
+  <h4>Planned route</h4>
+  <ul class="leg-list">
+    <li><i>1</i><span>Madrid &rarr; Castilla-La Mancha</span><span>1 move</span></li>
+    <li><i>2</i><span>Castilla-La Mancha &rarr; Valencia</span><span>1 move</span></li>
+    <li data-ghost="true"><i>3</i><span>Valencia &rarr; Murcia</span><span>exhausts</span></li>
+  </ul>
+</section>`;
+document.getElementById("pane").innerHTML = pane({ body });
+document.getElementById("mark").innerHTML = mark("top:28px;right:120px");
+</script>
+</body>
+</html>
