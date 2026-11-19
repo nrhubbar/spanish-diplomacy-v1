@@ -58,7 +58,7 @@
 - `project/specs/map-package.md`.
 - Unit tests.
 
-## CP2: topology, schema and tests (commit 8f50062)
+## CP2: topology, schema and tests (commits 8f50062, then the city lookup after it)
 
 **Done**
 - `scripts/map/topology.ts` measures, from the built geometry:
@@ -99,13 +99,20 @@
     - barcelona to mallorca (168 km);
     - alicante to ibiza (84 km).
     The contract may prefer other historical ports: valencia for the Valencia crossing, malaga for Melilla.
-14. The topology file also carries suggested names and measurements, which the contract can ignore.
+14. The topology file also carries suggested names, the measurements, and `cities: { cityId: subTerritoryId }`: the part each map city stands in, for `cities[].subTerritoryId` (L16). Every scenario city lands in its own territory; Oviedo is in `oviedo` and Gijon in `asturias`. The contract can ignore the names and measurements.
 15. Cross-territory borders equal the scenario's 29 land connections exactly, so no connection is missing or extra.
 
 **Checks**
 - `npm run maps:build` exit 0. Two runs gave identical `map.json`, topology and assets; all 5 checksums match; the relief and region files are unchanged.
 - `npm run maps:fetch -- provinces` reproduces `manifest.json` byte for byte.
-- `lint` 0, `typecheck` 0, `test:unit` 0 (29 files, 509 tests; coverage 98.64 statements, 94.95 branches).
+- `lint` 0, `typecheck` 0, `test:unit` 0 (29 files, 510 tests; coverage 98.64 statements, 94.95 branches).
+- `npm run build` 0. The sub-territory SVG is its own lazy chunk (180 KB, 49 KB gzip), and `map.json` grew from 30.9 to 42.8 KB.
+- `E2E_PORT=5302` e2e on chromium and mobile-chromium: exit 0, 51 passed and 5 skipped, with no baseline diffs.
+- Run in the contract worktree at `ea8b0cb`, against its schemas:
+  - `subTerritoryBorders` parses with `subTerritoryBordersSchema`;
+  - all 33 of its Spain connections match the topology's `between`/`kind` order and parse with `entry` added;
+  - its 55 sub-territory ids all appear in the topology.
+  - Its `builtInSources.ts` still loads only `map.json` and `scenario.json` per folder, so the topology file is not bundled.
 
 **Next**
 - Hand-off.
