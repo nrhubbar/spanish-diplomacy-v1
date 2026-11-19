@@ -50,3 +50,45 @@
 - Replace the 200-game soak with a 10-game smoke run through `runInProcess`.
 - Write `project/specs/sim-harness.md`.
 - Report the missing AI-profile API: the weights are code constants (E7).
+
+## CP2: smoke run, stall measure, blunder seam, docs
+
+**Done:**
+- H2: `npm test` now runs a 10-game smoke run, `src/test/sim/smoke.test.ts`. It plays the shipped scenario for 66 turns through `runInProcess`, the core that `npm run sim` uses.
+  - It checks structure, determinism (same seeds, same summary), S1 (at most 5 percent early wins) and S3 (no abandonments).
+  - It has no freeze or win bands.
+  - `src/test/soak.test.ts` and `soakRun.ts` are deleted.
+  - The harness unit tests moved from `src/sim/test/` to `src/test/sim/`, following coding-principles.
+- No scenario ids in code. `defaultScenarioId(sources)` picks the only playable package in `builtInSources`; with none or several, `--scenario` is required and the error lists the ids.
+- The stall measure: `stalled` and `stalledRate` (5 or more quiet turns in a row, Revision 7's S2) appear beside `freezes` and `freezeRate` (no winner by the turn limit). Both are in each cell's metrics, the comparisons and the console.
+- The blunder seam (H6): `blunderRatePointer` in `src/sim/engine.ts`, expected at `/ai/blunderRate`.
+  - While it is undefined, `blunderControl` is `"pending"` and `--blunders` defaults to `without`.
+  - Once it is set, `blunderControl` is `"scenario"`, `--blunders` defaults to `both`, and a cell without blunders gets a `replace` of the rate with 0 after the variant's patch.
+- `project/specs/sim-harness.md`: running the harness, its outputs, the patch format, the metrics, the two stall measures, comparisons, the blunder seam and the expected AI-profile pointer (`/ai/profiles/<factionId>`).
+- An example variant: `src/sim/variants/digging-in-cap-2.json`.
+
+**Decisions (continuing CP1's numbering):**
+9. Decision 7 is superseded: while blunders are pending, the default is `without` (supervisor). A run that asks for `both` still plays both, and the console says the two play alike.
+10. Decision 8 is superseded: the tests live in `src/test/sim/`.
+11. "Stalled" counts any game with a quiet stretch of 5 turns or more, decided or not. It is computed from each game's `longestQuiet`. The declog records which measure H7 uses.
+12. The profiles (E7) and the blunder rate belong to `m3r1-contract`; the integrator wires both. Today a patch to `/ai/...` fails validation ("Unrecognized key: ai"), which is reported before any game is played.
+
+**Checks:**
+- `npm run lint`: exit 0.
+- `npm run typecheck`: exit 0.
+- `npm test`: exit 0. 33 files and 514 tests; coverage 98.8 percent statements and 94.4 percent branches.
+- ASCII check on every file I own: clean.
+- Real threads: seeds 1-30 with the variant, on 1 thread and on 9 threads, give byte-identical `summary.json` and `games.jsonl`.
+- `npm run sim -- --games 20 --variant src/sim/variants/digging-in-cap-2.json --run cp2-20`: 40 games, without blunders.
+  - Baseline: decided 50 percent [29.9, 70.1]; freezes 50 percent; stalled 60 percent; median length 14.5.
+  - Baseline wins of decided games: Republic 50, Northern command 40, Southern command 10.
+  - With a works cap of 2: decided 75 percent; freezes 25; stalled 35.
+  - Paired difference: freezes -25.0 points [-53.0, +3.0], stalled -25.0 [-49.1, -0.9], Republic win share +20.0 [+2.0, +38.0].
+- `node build/sim-cli/sim.mjs --games 200`: 1.3 s.
+  - Decided 55.5 percent; freezes 44.5 percent [37.8, 51.4]; stalled 58.5 percent, against Revision 7's 58.
+  - Wins of decided games: Republic 40.5, Northern command 47.8, Southern command 11.7.
+  - No abandonments and no early wins.
+
+**Outside my ownership:**
+- `vitest.config.ts`: the coverage include (CP1), the exclude that drops `src/sim/test/**`, and the `testTimeout` comment.
+- `src/test/setup.ts`: one comment that mentioned the soak.
