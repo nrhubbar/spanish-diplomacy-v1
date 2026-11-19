@@ -1,5 +1,5 @@
 import type { JSX } from "react";
-import { battleResults, type GameState, type Scenario } from "../engine/types";
+import { battleResults, type GameState, isD6Battle, type Scenario } from "../engine/types";
 import { medallionMarkup } from "../presentation/outcomeArt";
 import { type OutcomeKey, outcomeKeys } from "../presentation/outcomes";
 import { outcomeText } from "../presentation/outcomeText";
@@ -10,7 +10,7 @@ import { WorksBadge } from "./WorksBadge";
 export function legendEntries(scenario: Scenario, game: GameState, view: MapView): readonly string[] {
   const controls = Object.values(game.control);
   const routeKinds = new Set(view.outcomes.map((outcome) => outcome.kind));
-  const results = new Set(view.outcomes.flatMap((outcome) => (outcome.kind === "battle" ? [outcome.result] : [])));
+  const results = new Set(view.outcomes.flatMap((outcome) => (isD6Battle(outcome) ? [outcome.result] : [])));
   const units = Object.values(game.units);
   return [
     ...(controls.some((control) => control.kind === "contested") ? ["contested"] : []),

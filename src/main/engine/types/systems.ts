@@ -1,4 +1,4 @@
-import type { AiProfileId, FactionId, GeneralId, GradeId, SeasonId, TraitId, WeatherId, WeatherZoneId } from "../ids";
+import type { FactionId, GeneralId, GradeId, SeasonId, TraitId, WeatherId, WeatherZoneId } from "../ids";
 import type { TraitEffect, WeatherEffect } from "./effects";
 import type { FactionModifier, SourceCitation } from "./scenario";
 
@@ -128,7 +128,7 @@ export interface GeneralDefinition {
   readonly traitId: TraitId;
 }
 
-/** E7: a computer player's weights. The strategy logic stays in code. */
+/** E7: a computer player's weights for one faction. The strategy logic stays in code. */
 export interface AiProfile {
   readonly computer: {
     readonly approachObjective: number;
@@ -138,7 +138,6 @@ export interface AiProfile {
     readonly enemyLoss: number;
     readonly ownLoss: number;
   };
-  readonly id: AiProfileId;
   readonly offensive: {
     readonly focus: number;
     readonly oddsTieBreak: number;
@@ -155,5 +154,6 @@ export interface AiProfile {
 export interface AiRules {
   /** H6: chance that one computer order is a blunder, rolled from the blunder stream. */
   readonly blunderChance: number;
-  readonly profiles: readonly AiProfile[];
+  /** E7: one profile per faction, keyed by faction id. */
+  readonly profiles: Readonly<Record<FactionId, AiProfile>>;
 }

@@ -1,13 +1,12 @@
 import { m2StrengthRules } from "../../engine/types";
 import type {
-  AiProfile,
-  AiProfileId,
   CityDefinition,
   CityId,
   CombatRules,
   ConnectionDefinition,
   FactionDefinition,
   FactionId,
+  GeneralId,
   Neighbor,
   Scenario,
   ScenarioId,
@@ -37,7 +36,6 @@ export function indexScenario(document: ScenarioDocument): Scenario {
     const extra = modularFactions.get(faction.id);
     return {
       abbreviation: faction.abbreviation,
-      aiProfileId: faction.aiProfile as AiProfileId,
       briefing: { firstTurnHint: faction.briefing.firstTurnHint, objective: faction.briefing.objective },
       color: faction.color,
       defaultActor: faction.defaultActor,
@@ -74,7 +72,7 @@ export function indexScenario(document: ScenarioDocument): Scenario {
       ...(extra?.subTerritoryId === undefined ? {} : { subTerritoryId: extra.subTerritoryId as SubTerritoryId })
     };
   });
-  const units = document.units.map((unit): UnitDefinition => ({
+  const units = document.units.map((unit, index): UnitDefinition => ({
     factionId: unit.factionId as FactionId,
     formationKind: unit.formationKind,
     fullStrength: unit.fullStrength,
@@ -86,7 +84,8 @@ export function indexScenario(document: ScenarioDocument): Scenario {
     type: unit.type as UnitTypeId,
     ...(unit.cityId === undefined ? {} : { cityId: unit.cityId as CityId }),
     ...(unit.historicalNote === undefined ? {} : { historicalNote: unit.historicalNote }),
-    ...(unit.designation === undefined ? {} : { designation: unit.designation })
+    ...(unit.designation === undefined ? {} : { designation: unit.designation }),
+    ...(modular?.units[index]?.generalId === undefined ? {} : { generalId: modular.units[index].generalId as GeneralId })
   }));
   const unitTypes = indexUnitTypes(document);
   const combat: CombatRules = {
@@ -105,7 +104,6 @@ export function indexScenario(document: ScenarioDocument): Scenario {
       ...(entry === undefined ? {} : { entry: entry as [SubTerritoryId, SubTerritoryId] })
     };
   });
-  const profiles = new Map(document.ai.profiles.map((profile): [string, AiProfile] => [profile.id, { ...profile, id: profile.id as AiProfileId }]));
 
   const neighbors = new Map<TerritoryId, Neighbor[]>(territories.map((territory) => [territory.id, []]));
   for (const connection of connections) {
@@ -118,7 +116,7 @@ export function indexScenario(document: ScenarioDocument): Scenario {
 
   return {
     ...parts.scenario,
-    ai: { blunderChance: document.ai.blunderChance, profiles: [...profiles.values()] },
+    ai: { blunderChance: document.ai.blunderChance, profiles: document.ai.profiles },
     cities,
     combat,
     connections,
@@ -126,7 +124,6 @@ export function indexScenario(document: ScenarioDocument): Scenario {
     id: document.id as ScenarioId,
     index: {
       ...parts.index,
-      aiProfiles: new Map(factions.map((faction) => [faction.id, profiles.get(faction.aiProfileId) as AiProfile])),
       cities: new Map(cities.map((city) => [city.id, city])),
       citiesByTerritory,
       factions: new Map(factions.map((faction) => [faction.id, faction])),

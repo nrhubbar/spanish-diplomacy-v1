@@ -20,7 +20,7 @@ import { arrowHead, groupRoutes, pointOnCurve, routeCurve, shortenCurve } from "
 import { terrainFrustum, terrainRenderMetrics } from "../main/map/terrainRendering";
 import { staticMapView } from "../main/map/view";
 import { initialGameState, resolveTurn } from "../main/engine/resolution";
-import { type BattleOutcome, type BouncedMoveOutcome, isMoveOrder } from "../main/engine/types";
+import { type D6BattleOutcome, type BouncedMoveOutcome, isMoveOrder } from "../main/engine/types";
 import {
   bounceReason,
   controlDescription,
@@ -290,7 +290,8 @@ describe("player-facing text", () => {
     const scenario = tiny();
     const army = (unitId: string, factionId: string, from: string, value: number) =>
       ({ factionId: faction(factionId), from: territory(from), unitId: unit(unitId), value });
-    const battle: BattleOutcome = {
+    const battle: D6BattleOutcome = {
+      dice: "d6",
       attacker: { armies: [army("red-guard", "red", "westfold", 4), army("red-rangers", "red", "highlands", 3)], value: 7 },
       attackerFactionId: faction("red"),
       column: 1,

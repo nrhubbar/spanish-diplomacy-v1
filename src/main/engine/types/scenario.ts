@@ -1,8 +1,8 @@
 import type {
-  AiProfileId,
   BuildingId,
   CityId,
   FactionId,
+  GeneralId,
   SourceId,
   SubTerritoryId,
   TerritoryId,
@@ -30,8 +30,6 @@ export interface FactionBriefing {
 
 export interface FactionDefinition {
   readonly abbreviation: string;
-  /** E7: the computer player's weights for this faction. */
-  readonly aiProfileId: AiProfileId;
   readonly briefing: FactionBriefing;
   readonly color: string;
   readonly defaultActor: ActorKind;
@@ -132,6 +130,8 @@ export interface UnitDefinition {
   readonly designation?: string;
   readonly factionId: FactionId;
   readonly formationKind: FormationKind;
+  /** U5: the roster entry a general unit stands for. Present exactly on units of a `general` type. */
+  readonly generalId?: GeneralId;
   /** Men at full establishment; the type's values apply at this strength. */
   readonly fullStrength: number;
   readonly historicalNote?: string;

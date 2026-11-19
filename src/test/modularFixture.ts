@@ -37,6 +37,10 @@ export function modularScenario(): Json {
     territories: (base["territories"] as Json[]).map((territory) => ({ ...territory, capitalSubTerritoryId: capitals[territory["id"] as string], weatherZone: "plains" })),
     connections: (base["connections"] as Json[]).map((connection) => ({ ...connection, entry: (connection["between"] as string[]).map((id) => capitals[id]) })),
     cities: (base["cities"] as Json[]).map((city) => ({ ...city, subTerritoryId: capitals[city["territoryId"] as string] })),
+    units: [
+      ...(base["units"] as Json[]),
+      { id: "red-staff", name: "Red Staff", factionId: "red", type: "staff", formationKind: "other", strength: 50, fullStrength: 50, territoryId: "westfold", generalId: "red-1", sources: [{ sourceId: "fixture" }] }
+    ],
     unitTypes: [
       { id: "foot", name: "Foot", attack: 4, defence: 5, kind: "ground", symbol: "infantry", orders: ["move", "withdraw", "replenish"], recruit: { cost: { funds: 4, manpower: 2 }, establishment: 400, trainingTurns: 2, requires: ["barracks"] } },
       { id: "guns", name: "Guns", attack: 3, defence: 2, kind: "ground", symbol: "artillery", orders: ["move"], effects: [{ kind: "roll-bonus-per-points", role: "attack", per: 3, bonus: 1, max: 3, exceptWeather: ["mud"] }, { kind: "cannot-attack-alone" }] },

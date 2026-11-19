@@ -23,7 +23,7 @@ export function initialSystems(scenario: Scenario): SystemState {
   const generals: Record<FactionId, GeneralsState> = {};
   for (const faction of scenario.factions) {
     if (faction.startingStock !== undefined) treasuries[faction.id] = faction.startingStock;
-    if (scenario.generals.length > 0) generals[faction.id] = { nextIndex: 0 };
+    if (scenario.generals.length > 0) generals[faction.id] = { nextIndex: 0, pending: [] };
   }
   return { generals, raidCuts: [], raised: {}, reveals: [], subTerritories, training: [], treasuries };
 }

@@ -3,7 +3,6 @@
  * split stays an implementation detail.
  */
 export type {
-  AiProfileId,
   BuildingId,
   CityId,
   DevelopmentId,

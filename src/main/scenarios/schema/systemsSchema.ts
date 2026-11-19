@@ -113,9 +113,9 @@ export const aiSchema = z
   .strictObject({
     blunderChance: shareSchema.meta({ description: "H6: chance that one computer order is a blunder." }),
     profiles: z
-      .array(
+      .record(
+        slugSchema,
         z.strictObject({
-          id: slugSchema,
           computer: z.strictObject({
             approachObjective: weight,
             bouncedLastTurn: weight,
@@ -136,7 +136,7 @@ export const aiSchema = z
           victoryAlarm: z.strictObject({ perStep: weight, steps: wholeSchema })
         })
       )
-      .min(1),
+      .meta({ description: "E7: one profile per faction, keyed by faction id (L23)." }),
     ...basisShape
   })
-  .meta({ description: "E7: named computer-player profiles; each faction names one." });
+  .meta({ description: "E7, H6: the computer players' weights per faction, and the blunder chance." });

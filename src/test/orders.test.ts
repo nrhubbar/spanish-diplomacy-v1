@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { initialGameState, resolveTurn } from "../main/engine/resolution";
-import { isMoveOrder, isUnitOrder, type Order, type UnitTypeId } from "../main/engine/types";
+import { isD6Battle, isMoveOrder, isUnitOrder, type Order, type TurnOutcome, type UnitTypeId } from "../main/engine/types";
 import { unavailableOrderReason, validateSubmission } from "../main/engine/validation";
+import { isSystemOutcome } from "../main/presentation/systemText";
 import { describeOutcome } from "../main/presentation/text";
 import { faction, move, territory, tiny, unit } from "./support";
 
@@ -50,5 +51,21 @@ describe("the flat order union (E8)", () => {
     expect(result.outcomes.some((outcome) => outcome.kind === "successful-move")).toBe(true);
     expect(validateSubmission(scenario, state, faction("red"), { factionId: faction("red"), orders: [rail] })).toEqual({ ok: false, reason: unavailableOrderReason });
     expect(validateSubmission(scenario, state, faction("red"), { factionId: faction("red"), orders: [recruit] })).toEqual({ ok: false, reason: unavailableOrderReason });
+  });
+});
+
+describe("outcomes of the Milestone 3 systems", () => {
+  it("gives every system outcome a placeholder report line", () => {
+    for (const kind of ["weather-rolled", "training-started", "build-queued", "raid", "general-died", "withdrew", "income"]) {
+      const outcome = { kind } as unknown as TurnOutcome;
+      expect(isSystemOutcome(outcome)).toBe(true);
+      expect(describeOutcome(tiny(), outcome)).toMatch(/\.$/);
+    }
+  });
+
+  it("keeps d20 battles out of the d6 report until the d20 module lands", () => {
+    const d20 = { attacker: { armies: [], value: 0 }, defender: { armies: [], value: 0 }, dice: "d20", kind: "battle", site: { kind: "assault", occupation: { kind: "held" }, territoryId: territory("harbor") } } as unknown as TurnOutcome;
+    expect(isD6Battle(d20)).toBe(false);
+    expect(describeOutcome(tiny(), d20)).toBe("Battle for Harbor.");
   });
 });

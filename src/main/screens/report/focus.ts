@@ -1,3 +1,4 @@
+import { isSystemOutcome } from "../../presentation/systemText";
 import type { Scenario, TerritoryId, TurnOutcome, TurnResolutionResult } from "../../engine/types";
 import type { BattleGroup } from "../../presentation/battle";
 import { glyphs } from "../../presentation/glyphs";
@@ -17,6 +18,7 @@ export function battleKeysAt(groups: readonly BattleGroup[], territoryId: Territ
 
 /** Whether an outcome other than a battle happened at a territory: a move in, out, or back to it, or a recovery there. */
 function happenedAt(outcome: TurnOutcome, territoryId: TerritoryId): boolean {
+  if (isSystemOutcome(outcome)) return false;
   switch (outcome.kind) {
     case "battle":
     case "no-move":

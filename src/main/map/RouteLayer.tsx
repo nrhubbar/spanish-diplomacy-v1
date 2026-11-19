@@ -1,5 +1,5 @@
 import type { JSX } from "react";
-import type { BattleOutcome, BattleResult, FactionId, TerritoryId, TurnOutcome } from "../engine/types";
+import { type BattleResult, type D6BattleOutcome, type FactionId, isD6Battle, type TerritoryId, type TurnOutcome } from "../engine/types";
 import { affectedFaction, battleKind } from "../presentation/battle";
 import { medallionMarkup } from "../presentation/outcomeArt";
 import type { MapPoint } from "../scenarios/loader";
@@ -38,9 +38,9 @@ export function RouteLayer({ anchor, factionColor, unit, view }: RouteLayerProps
 }
 
 /** M27 battles, fought where the armies stood; they have no route, so they are marked in place. */
-function standingBattles(outcomes: readonly TurnOutcome[]): readonly { readonly battle: BattleOutcome; readonly territoryId: TerritoryId }[] {
+function standingBattles(outcomes: readonly TurnOutcome[]): readonly { readonly battle: D6BattleOutcome; readonly territoryId: TerritoryId }[] {
   return outcomes.flatMap((outcome) =>
-    outcome.kind === "battle" && outcome.site.kind !== "meeting" && battleKind(outcome) === "standing"
+    isD6Battle(outcome) && outcome.site.kind !== "meeting" && battleKind(outcome) === "standing"
       ? [{ battle: outcome, territoryId: outcome.site.territoryId }]
       : []);
 }

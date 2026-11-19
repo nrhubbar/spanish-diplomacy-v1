@@ -1,3 +1,4 @@
+import { describeSystemOutcome, isSystemOutcome } from "./systemText";
 import { requireFaction, requireTerritory, requireUnitDefinition } from "../engine/lookup";
 import type {
   BounceCause,
@@ -75,6 +76,7 @@ export function groupOutcomes(outcomes: readonly TurnOutcome[]): readonly Outcom
 }
 
 function unitIdsOf(outcome: TurnOutcome): UnitId[] {
+  if (isSystemOutcome(outcome)) return [];
   switch (outcome.kind) {
     case "no-move":
       return outcome.unitId === undefined ? [] : [outcome.unitId];
@@ -143,6 +145,7 @@ export function describeOutcome(scenario: Scenario, outcome: TurnOutcome, outcom
 /** One report line for a group: the faction first, then what its formations did together. */
 export function describeOutcomeGroup(scenario: Scenario, group: OutcomeGroup, outcomes: readonly TurnOutcome[] = []): string {
   const { outcome } = group;
+  if (isSystemOutcome(outcome)) return describeSystemOutcome(outcome);
   if (outcome.kind === "no-move") {
     return outcome.unitId === undefined
       ? `${factionName(scenario, outcome.factionId)} had no armies to order.`
@@ -159,7 +162,7 @@ export function describeOutcomeGroup(scenario: Scenario, group: OutcomeGroup, ou
     const place = outcome.site.kind === "meeting"
       ? `on the road between ${listNames(outcome.site.between.map((id) => territoryName(scenario, id)))}`
       : `for ${territoryName(scenario, outcome.site.territoryId)}`;
-    return `Battle ${place}: ${outcomeText[outcome.result].title}.`;
+    return outcome.dice === "d6" ? `Battle ${place}: ${outcomeText[outcome.result].title}.` : `Battle ${place}.`;
   }
   const { order } = outcome;
   const actor = factionName(scenario, order.factionId);

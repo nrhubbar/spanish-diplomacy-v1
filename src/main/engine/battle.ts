@@ -3,7 +3,7 @@ import type { Armies, Combatant } from "./board";
 import { type BattleOdds, battleOdds, battleSide, type DieFace, faceFor } from "./combat";
 import type {
   ArmyLoss,
-  BattleOutcome,
+  D6BattleOutcome,
   BattleSide,
   BattleSite,
   CombatModifier,
@@ -84,7 +84,7 @@ export interface PendingBattle {
 }
 
 /** C14: the full record of one battle. */
-export function battleOutcome(battle: FoughtBattle, site: BattleSite, report: BattleReport): BattleOutcome {
+export function battleOutcome(battle: FoughtBattle, site: BattleSite, report: BattleReport): D6BattleOutcome {
   return {
     attacker: battle.attacker,
     attackerFactionId: battle.engagement.attackerFactionId,
@@ -92,6 +92,7 @@ export function battleOutcome(battle: FoughtBattle, site: BattleSite, report: Ba
     defender: battle.defender,
     demoralizedUnitIds: report.demoralizedUnitIds,
     die: battle.face.die,
+    dice: "d6",
     kind: "battle",
     losses: report.losses,
     modifiers: battle.odds.modifiers,

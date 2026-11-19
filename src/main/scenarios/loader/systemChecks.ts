@@ -5,6 +5,7 @@ import { bandsCoverD20, idSet, type Issues } from "./issues";
 export function checkSystems(document: ModularScenarioDocument, issues: Issues): void {
   checkWeather(document, issues);
   checkGenerals(document, issues);
+  checkGeneralUnits(document, issues);
   checkD20(document, issues);
   if (document.air !== undefined && !bandsCoverD20(document.air.raidTable)) {
     issues.add("air.raidTable: bands must rise and end at 20 (L25)");
@@ -62,6 +63,26 @@ function checkGenerals(document: ModularScenarioDocument, issues: Issues): void 
     if (count < 3 || count > 5) issues.add(`generals.roster: "${faction.id}" has ${String(count)} generals; each faction needs 3 to 5 (L21)`);
     if (faction.seatTerritoryId === undefined) issues.add(`factions[${index}]: "${faction.id}" needs a seatTerritoryId (L21)`);
     else issues.ref(`factions[${index}].seatTerritoryId`, faction.seatTerritoryId, territories, "territory");
+  });
+}
+
+/** L21: a unit of a general type is exactly one roster general of its own faction, and no other unit names one. */
+function checkGeneralUnits(document: ModularScenarioDocument, issues: Issues): void {
+  const roster = new Map((document.generals?.roster ?? []).map((general) => [general.id, general]));
+  const generalTypes = new Set(document.unitTypes.filter((type) => type.kind === "general").map((type) => type.id));
+  const fielded = new Set<string>();
+  document.units.forEach((unit, index) => {
+    const path = `units[${index}]`;
+    if (unit.generalId === undefined) {
+      if (generalTypes.has(unit.type)) issues.add(`${path}: "${unit.id}" is a general and needs a generalId (L21)`);
+      return;
+    }
+    const general = roster.get(unit.generalId);
+    if (general === undefined) issues.ref(`${path}.generalId`, unit.generalId, roster, "general");
+    else if (general.factionId !== unit.factionId) issues.add(`${path}.generalId: "${unit.generalId}" serves another faction (L21)`);
+    if (!generalTypes.has(unit.type)) issues.add(`${path}: only units of a general type name a generalId (L21)`);
+    if (fielded.has(unit.generalId)) issues.add(`${path}.generalId: "${unit.generalId}" is fielded twice (L21)`);
+    fielded.add(unit.generalId);
   });
 }
 

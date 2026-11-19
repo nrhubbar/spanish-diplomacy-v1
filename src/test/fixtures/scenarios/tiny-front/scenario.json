@@ -26,23 +26,28 @@
   },
   "ai": {
     "blunderChance": 0,
-    "profiles": [
-      {
-        "id": "fixture-staff",
+    "profiles": {
+      "red": {
+        "computer": { "approachObjective": 1.5, "bouncedLastTurn": -4, "caution": 0.5, "demoralizedShare": 0.25, "enemyLoss": 0.5, "ownLoss": 0.75 },
+        "offensive": { "reach": 3, "oddsTieBreak": 0.02, "staging": 2, "focus": 1, "stallStep": 1, "stallCap": 4 },
+        "stakes": { "city": 2, "objective": 5, "territory": 4 },
+        "victoryAlarm": { "perStep": 0.5, "steps": 4 }
+      },
+      "blue": {
         "computer": { "approachObjective": 1.5, "bouncedLastTurn": -4, "caution": 0.5, "demoralizedShare": 0.25, "enemyLoss": 0.5, "ownLoss": 0.75 },
         "offensive": { "reach": 3, "oddsTieBreak": 0.02, "staging": 2, "focus": 1, "stallStep": 1, "stallCap": 4 },
         "stakes": { "city": 2, "objective": 5, "territory": 4 },
         "victoryAlarm": { "perStep": 0.5, "steps": 4 }
       }
-    ],
-    "note": "Fixture values: the Revision 7 computer player's constants, shared by both factions, and no blunders."
+    },
+    "note": "Fixture values: the Revision 7 computer player's constants, one profile per faction, and no blunders."
   },
   "unitTypes": [{ "id": "foot", "name": "Foot", "attack": 4, "defence": 5 }],
   "factions": [
     {
       "id": "red", "name": "Red League", "abbreviation": "RED", "color": "#b03a2e",
       "motivation": "Hold the west and take the harbor.", "defaultActor": "local-human",
-      "objectiveTerritoryIds": ["harbor", "isle"], "aiProfile": "fixture-staff",
+      "objectiveTerritoryIds": ["harbor", "isle"],
       "briefing": {
         "objective": "Hold the west and take the harbor. Win by holding 3 of 5 territories or both towns.",
         "firstTurnHint": "Scouts report Blue Union marines holding Port Town, and the Lowlands road is open. Do we march on the Lowlands now, or keep the Guard home until the Rangers can join it?"
@@ -51,7 +56,7 @@
     {
       "id": "blue", "name": "Blue Union", "abbreviation": "BLU", "color": "#2e5f9a",
       "motivation": "Push west from the harbor.", "defaultActor": "computer",
-      "objectiveTerritoryIds": ["westfold", "highlands"], "aiProfile": "fixture-staff",
+      "objectiveTerritoryIds": ["westfold", "highlands"],
       "briefing": {
         "objective": "Push west from the harbor. Win by holding 3 of 5 territories or both towns.",
         "firstTurnHint": "Red League patrols have been seen on the Highlands road. Do we keep the marines in Port Town, or cross the Narrows and claim the Isle first?"

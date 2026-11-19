@@ -100,7 +100,6 @@ export const factionShape = {
   motivation: textSchema,
   defaultActor: z.enum(["local-human", "computer"]),
   objectiveTerritoryIds: z.array(slugSchema),
-  aiProfile: slugSchema.meta({ description: "The AI profile (ai.profiles) the computer player uses for this faction." }),
   briefing: z
     .strictObject({
       objective: textSchema.meta({ description: "What the faction is fighting for and how it wins. Shown in the Briefing." }),

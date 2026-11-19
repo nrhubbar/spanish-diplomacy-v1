@@ -1,21 +1,22 @@
 import type { BattleDice } from "../main/engine/dice";
 import { initialGameState, resolveTurn } from "../main/engine/resolution";
-import type {
-  BattleOutcome,
-  CityId,
-  FactionId,
-  GameState,
-  MoveOrder,
-  PlayerSubmission,
-  Scenario,
-  ScenarioId,
-  TerritoryId,
-  TurnResolutionResult,
-  UnitDefinition,
-  UnitId,
-  UnitState,
-  UnitTypeDefinition,
-  UnitTypeId
+import {
+  type D6BattleOutcome,
+  isD6Battle,
+  type CityId,
+  type FactionId,
+  type GameState,
+  type MoveOrder,
+  type PlayerSubmission,
+  type Scenario,
+  type ScenarioId,
+  type TerritoryId,
+  type TurnResolutionResult,
+  type UnitDefinition,
+  type UnitId,
+  type UnitState,
+  type UnitTypeDefinition,
+  type UnitTypeId
 } from "../main/engine/types";
 import { builtInSources } from "../main/scenarios/builtInSources";
 import { createScenarioRegistry, type ScenarioRegistry } from "../main/scenarios/registry";
@@ -174,6 +175,6 @@ export function play(scenario: Scenario, state: GameState, orders: readonly Move
   return resolveTurn(scenario, state, submissionsOf(orders), 1, dice);
 }
 
-export function battlesOf(result: TurnResolutionResult): readonly BattleOutcome[] {
-  return result.outcomes.filter((outcome): outcome is BattleOutcome => outcome.kind === "battle");
+export function battlesOf(result: TurnResolutionResult): readonly D6BattleOutcome[] {
+  return result.outcomes.filter(isD6Battle);
 }

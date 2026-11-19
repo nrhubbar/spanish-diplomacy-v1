@@ -116,6 +116,7 @@ export function resolveTurn(
       ...morale.recovered
     ],
     progress,
+    subTerritoryChanges: [],
     submittedOrders,
     ...(victory === undefined ? {} : { victory })
   };

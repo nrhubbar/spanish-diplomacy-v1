@@ -10,19 +10,18 @@ export function checkCore(document: ScenarioDocument, issues: Issues): void {
   issues.unique("territories", document.territories);
   issues.unique("unitTypes", document.unitTypes);
   issues.unique("units", document.units);
-  issues.unique("ai.profiles", document.ai.profiles);
 
   const factions = idSet(document.factions);
   const territories = idSet(document.territories);
   const cities = new Map(document.cities.map((city) => [city.id, city]));
   const unitTypes = idSet(document.unitTypes);
   const sources = idSet(document.sources);
-  const profiles = idSet(document.ai.profiles);
 
   issues.cited("ai", document.ai, sources);
+  for (const id of Object.keys(document.ai.profiles)) issues.ref("ai.profiles", id, factions, "faction");
   document.factions.forEach((faction, index) => {
     faction.objectiveTerritoryIds.forEach((id) => { issues.ref(`factions[${index}].objectiveTerritoryIds`, id, territories, "territory"); });
-    issues.ref(`factions[${index}].aiProfile`, faction.aiProfile, profiles, "AI profile");
+    if (document.ai.profiles[faction.id] === undefined) issues.add(`ai.profiles: missing a profile for "${faction.id}" (L23)`);
   });
   document.territories.forEach((territory, index) => {
     const control = territory.initialControl;

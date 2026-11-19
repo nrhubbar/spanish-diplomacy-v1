@@ -27,7 +27,7 @@ function play(scenario: Scenario, state: GameState, orders: readonly MoveOrder[]
 /** Outcome kind (and bounce cause) per ordered unit, in a compact readable form. */
 function resultOf(result: TurnResolutionResult, unitId: string): string {
   const outcome = result.outcomes.find((candidate): candidate is Extract<TurnOutcome, { order: MoveOrder }> =>
-    candidate.kind !== "rejected-order" && "order" in candidate && candidate.order.unitId === unitId);
+    "order" in candidate && "from" in candidate.order && candidate.order.kind === "move" && candidate.order.unitId === unitId);
   if (outcome === undefined) {
     const ordered = result.submittedOrders.some((order) => "unitId" in order && order.unitId === unitId);
     const fought = battlesOf(result).some((battle) => battle.attacker.armies.some((army) => army.unitId === unitId));

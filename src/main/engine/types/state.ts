@@ -3,6 +3,7 @@ import type {
   CityId,
   DevelopmentId,
   FactionId,
+  GeneralId,
   SubTerritoryId,
   TerritoryId,
   UnitId,
@@ -79,7 +80,7 @@ export interface TrainingItem {
 }
 
 /** R6: a unit raised in play has no scenario definition, so the state carries it. */
-export type RaisedUnitDefinition = Pick<UnitDefinition, "factionId" | "fullStrength" | "id" | "name" | "type">;
+export type RaisedUnitDefinition = Pick<UnitDefinition, "factionId" | "fullStrength" | "generalId" | "id" | "name" | "type">;
 
 /** T2: this turn's weather. The forecast (T3) is derived from next turn's season tables. */
 export interface WeatherState {
@@ -88,10 +89,20 @@ export interface WeatherState {
   readonly roll: number;
 }
 
+/** D7: a replacement general on his way, after a death or a sacking. */
+export interface PendingGeneral {
+  /** The turn at whose end he appears in the faction's seat territory. */
+  readonly arrivesOnTurn: number;
+  readonly factionId: FactionId;
+  readonly generalId: GeneralId;
+}
+
 /** U5: where each faction is in its roster of generals. */
 export interface GeneralsState {
   /** Index into the faction's roster of the next general to bring in. */
   readonly nextIndex: number;
+  /** Replacements due, in the order they were called. */
+  readonly pending: readonly PendingGeneral[];
 }
 
 /** U4: what a recon flight showed a viewer, until the end of `untilTurn`. */

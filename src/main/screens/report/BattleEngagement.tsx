@@ -1,6 +1,6 @@
 import type { JSX } from "react";
 import { requireFaction } from "../../engine/lookup";
-import type { BattleOutcome, Scenario } from "../../engine/types";
+import type { D6BattleOutcome, Scenario } from "../../engine/types";
 import { affectedFaction } from "../../presentation/battle";
 import { medallionMarkup } from "../../presentation/outcomeArt";
 import { outcomeText } from "../../presentation/outcomeText";
@@ -10,7 +10,7 @@ import { BattleRoll } from "./BattleRoll";
 import { BattleSides } from "./BattleSides";
 
 interface BattleEngagementProps {
-  readonly battle: BattleOutcome;
+  readonly battle: D6BattleOutcome;
   /** True on cards with several attacks, where each attack is headed by its result. */
   readonly labelled: boolean;
   readonly scenario: Scenario;

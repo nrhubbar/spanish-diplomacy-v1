@@ -52,6 +52,10 @@ export function checkMap(document: ScenarioDocument, map: MapDocument, assetPath
     if (!assetPaths.has(asset)) issues.push(`map: asset "${asset}" not found (L11)`);
   }
   issues.push(...checkWater(map));
+  const entries = (map as { readonly subTerritories?: { readonly entries: MapSubTerritoryEntries } }).subTerritories?.entries;
+  if (entries !== undefined) {
+    issues.push(...checkSubTerritoryMap(document.ruleset === "m3-modular" ? document.subTerritories : [], entries));
+  }
   return issues;
 }
 
@@ -83,4 +87,27 @@ export function indexMap(document: MapDocument): MapPackage {
     viewBox: document.viewBox,
     ...indexWater(document)
   };
+}
+
+/** The map's sub-territory entries (shape owned by `m3r1-map-provinces`), as far as the loader checks them. */
+export type MapSubTerritoryEntries = Readonly<Record<string, { readonly territoryId: string }>>;
+
+/**
+ * L10: the map's sub-territory entries and the scenario's sub-territories match one to one, in
+ * the same territories. TODO(integrator, at the map-provinces merge): read `map.subTerritories`
+ * through its schema and require it for partitioned packages.
+ */
+export function checkSubTerritoryMap(
+  subTerritories: readonly { readonly id: string; readonly territoryId: string }[],
+  entries: MapSubTerritoryEntries
+): readonly string[] {
+  const known = new Set(subTerritories.map((sub) => sub.id));
+  return [
+    ...subTerritories.flatMap((sub) => {
+      const entry = entries[sub.id];
+      if (entry === undefined) return [`map.subTerritories.entries: missing "${sub.id}" (L10)`];
+      return entry.territoryId === sub.territoryId ? [] : [`map.subTerritories.entries.${sub.id}: territory "${entry.territoryId}" is not "${sub.territoryId}" (L10)`];
+    }),
+    ...Object.keys(entries).filter((id) => !known.has(id)).map((id) => `map.subTerritories.entries.${id}: unknown sub-territory (L10)`)
+  ];
 }

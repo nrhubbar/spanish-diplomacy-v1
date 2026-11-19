@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { initialGameState } from "../main/engine/resolution";
-import { battleResults, type BattleOutcome, type GameState, type MoveOrder, type Scenario } from "../main/engine/types";
+import { battleResults, type D6BattleOutcome, type GameState, type MoveOrder, type Scenario } from "../main/engine/types";
 import { legendEntries } from "../main/map/MapLegend";
 import { placeOddsPlaques } from "../main/map/DestinationOddsLayer";
 import { battleRoutes, groupRoutes } from "../main/map/routes";
@@ -52,7 +52,7 @@ function shaken(state: GameState, id: string, change: Partial<GameState["units"]
   return { ...state, units: { ...state.units, [current.id]: { ...current, morale: { demoralized: true, quietTurns: 0 }, ...change } } };
 }
 
-function group(outcomes: readonly BattleOutcome[]) {
+function group(outcomes: readonly D6BattleOutcome[]) {
   const [first] = groupBattles(outcomes);
   if (first === undefined) throw new Error("no group");
   return first;

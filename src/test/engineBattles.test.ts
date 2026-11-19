@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { estimateAttack, tableResult, tableRow } from "../main/engine/combat";
-import type { BattleOutcome, GameState, Scenario, TurnOutcome, TurnResolutionResult } from "../main/engine/types";
+import type { D6BattleOutcome, GameState, Scenario, TurnOutcome, TurnResolutionResult } from "../main/engine/types";
 import {
   type ArmySpec,
   battlefield,
@@ -23,7 +23,7 @@ import {
 const a = (id: string, factionId: string, where: string, extra: Partial<ArmySpec> = {}): ArmySpec => ({ faction: factionId, id, territory: where, ...extra });
 const at = (result: TurnResolutionResult, id: string) => result.finalState.units[unit(id)]?.territoryId;
 const armyOf = (result: TurnResolutionResult, id: string) => result.finalState.units[unit(id)];
-const only = (result: TurnResolutionResult): BattleOutcome => {
+const only = (result: TurnResolutionResult): D6BattleOutcome => {
   const [battle, ...rest] = battlesOf(result);
   if (battle === undefined || rest.length > 0) throw new Error(`Expected one battle, got ${String(battlesOf(result).length)}.`);
   return battle;

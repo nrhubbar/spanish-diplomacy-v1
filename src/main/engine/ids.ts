@@ -23,4 +23,3 @@ export type WeatherZoneId = Brand<string, "WeatherZoneId">;
 export type SeasonId = Brand<string, "SeasonId">;
 export type GeneralId = Brand<string, "GeneralId">;
 export type TraitId = Brand<string, "TraitId">;
-export type AiProfileId = Brand<string, "AiProfileId">;

@@ -45,7 +45,6 @@ const sharedShape = {
   victory: victorySchema,
   combat: combatSchema,
   ai: aiSchema,
-  units: z.array(unitSchema),
   sources: z.array(sourceSchema)
 };
 
@@ -53,6 +52,7 @@ const m2StrengthSchema = z
   .strictObject({
     ...sharedShape,
     ruleset: z.literal("m2-strength").meta({ description: "The Milestone 2 preset: the d6 table and none of the Milestone 3 systems." }),
+    units: z.array(unitSchema),
     unitTypes: z.array(z.strictObject(unitTypeShape)).min(1),
     factions: z.array(z.strictObject(factionShape)).min(2),
     territories: z.array(z.strictObject(territoryShape)).min(2),
@@ -66,6 +66,11 @@ const m3ModularSchema = z
     ...sharedShape,
     ruleset: z.literal("m3-modular").meta({ description: "Rules chosen per area by the rules object." }),
     rules: rulesSchema,
+    units: z.array(
+      unitSchema.extend({
+        generalId: slugSchema.optional().meta({ description: "U5: the roster general this unit is. Required exactly on units of a general type (L21)." })
+      })
+    ),
     unitTypes: z.array(modularUnitTypeSchema).min(1),
     factions: z
       .array(

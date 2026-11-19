@@ -3,6 +3,8 @@ import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
+import { scenarioBlocks } from "../main/engine/modules";
+import * as engineWords from "../main/engine/types";
 import { checkGeometry, loadPackage, PackageValidationError } from "../main/scenarios/loader";
 import { builtInSources } from "../main/scenarios/builtInSources";
 import { createScenarioRegistry } from "../main/scenarios/registry";
@@ -166,6 +168,18 @@ describe("loader rules", () => {
 });
 
 /** Section 5.10: code contains no scenario-specific identifiers; scenario folders are reached only through the registry. */
+/** Every string in the engine's exported word lists, such as `unitSymbols` and `builtInModules`. */
+function codedWords(): ReadonlySet<string> {
+  const words = new Set<string>(scenarioBlocks);
+  const collect = (value: unknown): void => {
+    if (typeof value === "string") words.add(value);
+    else if (Array.isArray(value)) value.forEach(collect);
+    else if (typeof value === "object" && value !== null) Object.values(value).forEach(collect);
+  };
+  for (const value of Object.values(engineWords)) if (typeof value !== "function") collect(value);
+  return words;
+}
+
 describe("no scenario knowledge in code", () => {
   const sourceFiles = (directory: string): string[] =>
     readdirSync(directory).flatMap((entry) => {
@@ -185,6 +199,9 @@ describe("no scenario knowledge in code", () => {
       }
       for (const regionId of map.regions.keys()) ids.add(regionId);
     }
+    // The engine's coded word lists (symbols, effect kinds, module names, ...) are vocabulary, not
+    // scenario knowledge, so a data id may equal one of them.
+    for (const word of codedWords()) ids.delete(word);
     const offenders = sourceFiles("src/main").flatMap((file) => {
       const text = readFileSync(file, "utf8");
       return [...ids].filter((id) => new RegExp(`["'\`]${id}["'\`]`).test(text)).map((id) => `${file}: "${id}"`);

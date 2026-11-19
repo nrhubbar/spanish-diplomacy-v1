@@ -208,16 +208,15 @@
               "description": "H6: chance that one computer order is a blunder."
             },
             "profiles": {
-              "minItems": 1,
-              "type": "array",
-              "items": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string",
+                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                "description": "Stable kebab-case identifier. Never shown to players."
+              },
+              "additionalProperties": {
                 "type": "object",
                 "properties": {
-                  "id": {
-                    "type": "string",
-                    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
-                    "description": "Stable kebab-case identifier. Never shown to players."
-                  },
                   "computer": {
                     "type": "object",
                     "properties": {
@@ -326,14 +325,14 @@
                   }
                 },
                 "required": [
-                  "id",
                   "computer",
                   "offensive",
                   "stakes",
                   "victoryAlarm"
                 ],
                 "additionalProperties": false
-              }
+              },
+              "description": "E7: one profile per faction, keyed by faction id (L23)."
             },
             "sources": {
               "default": [],
@@ -369,7 +368,38 @@
             "profiles"
           ],
           "additionalProperties": false,
-          "description": "E7: named computer-player profiles; each faction names one."
+          "description": "E7, H6: the computer players' weights per faction, and the blunder chance."
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                "description": "Stable kebab-case identifier. Never shown to players."
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1
+              },
+              "url": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "required": [
+              "id",
+              "title"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "ruleset": {
+          "type": "string",
+          "const": "m2-strength",
+          "description": "The Milestone 2 preset: the d6 table and none of the Milestone 3 systems."
         },
         "units": {
           "type": "array",
@@ -473,37 +503,6 @@
             "additionalProperties": false
           }
         },
-        "sources": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "id": {
-                "type": "string",
-                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
-                "description": "Stable kebab-case identifier. Never shown to players."
-              },
-              "title": {
-                "type": "string",
-                "minLength": 1
-              },
-              "url": {
-                "type": "string",
-                "format": "uri"
-              }
-            },
-            "required": [
-              "id",
-              "title"
-            ],
-            "additionalProperties": false
-          }
-        },
-        "ruleset": {
-          "type": "string",
-          "const": "m2-strength",
-          "description": "The Milestone 2 preset: the d6 table and none of the Milestone 3 systems."
-        },
         "unitTypes": {
           "minItems": 1,
           "type": "array",
@@ -584,11 +583,6 @@
                   "description": "Stable kebab-case identifier. Never shown to players."
                 }
               },
-              "aiProfile": {
-                "type": "string",
-                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
-                "description": "The AI profile (ai.profiles) the computer player uses for this faction."
-              },
               "briefing": {
                 "type": "object",
                 "properties": {
@@ -619,7 +613,6 @@
               "motivation",
               "defaultActor",
               "objectiveTerritoryIds",
-              "aiProfile",
               "briefing"
             ],
             "additionalProperties": false
@@ -803,9 +796,9 @@
         "victory",
         "combat",
         "ai",
-        "units",
         "sources",
         "ruleset",
+        "units",
         "unitTypes",
         "factions",
         "territories",
@@ -1022,16 +1015,15 @@
               "description": "H6: chance that one computer order is a blunder."
             },
             "profiles": {
-              "minItems": 1,
-              "type": "array",
-              "items": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string",
+                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                "description": "Stable kebab-case identifier. Never shown to players."
+              },
+              "additionalProperties": {
                 "type": "object",
                 "properties": {
-                  "id": {
-                    "type": "string",
-                    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
-                    "description": "Stable kebab-case identifier. Never shown to players."
-                  },
                   "computer": {
                     "type": "object",
                     "properties": {
@@ -1140,14 +1132,14 @@
                   }
                 },
                 "required": [
-                  "id",
                   "computer",
                   "offensive",
                   "stakes",
                   "victoryAlarm"
                 ],
                 "additionalProperties": false
-              }
+              },
+              "description": "E7: one profile per faction, keyed by faction id (L23)."
             },
             "sources": {
               "default": [],
@@ -1183,7 +1175,89 @@
             "profiles"
           ],
           "additionalProperties": false,
-          "description": "E7: named computer-player profiles; each faction names one."
+          "description": "E7, H6: the computer players' weights per faction, and the blunder chance."
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                "description": "Stable kebab-case identifier. Never shown to players."
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1
+              },
+              "url": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "required": [
+              "id",
+              "title"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "ruleset": {
+          "type": "string",
+          "const": "m3-modular",
+          "description": "Rules chosen per area by the rules object."
+        },
+        "rules": {
+          "type": "object",
+          "properties": {
+            "dice": {
+              "type": "string",
+              "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+              "description": "Stable kebab-case identifier. Never shown to players."
+            },
+            "economy": {
+              "type": "string",
+              "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+              "description": "Stable kebab-case identifier. Never shown to players."
+            },
+            "recruitment": {
+              "type": "string",
+              "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+              "description": "Stable kebab-case identifier. Never shown to players."
+            },
+            "weather": {
+              "type": "string",
+              "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+              "description": "Stable kebab-case identifier. Never shown to players."
+            },
+            "movement": {
+              "type": "string",
+              "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+              "description": "Stable kebab-case identifier. Never shown to players."
+            },
+            "partition": {
+              "type": "string",
+              "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+              "description": "Stable kebab-case identifier. Never shown to players."
+            },
+            "air": {
+              "type": "string",
+              "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+              "description": "Stable kebab-case identifier. Never shown to players."
+            }
+          },
+          "required": [
+            "dice",
+            "economy",
+            "recruitment",
+            "weather",
+            "movement",
+            "partition",
+            "air"
+          ],
+          "additionalProperties": false,
+          "description": "One named rule module per area. Built-in modules are listed in scenario-package.md; a scenario plugin may register more (L14)."
         },
         "units": {
           "type": "array",
@@ -1271,6 +1345,11 @@
               "historicalNote": {
                 "type": "string",
                 "minLength": 1
+              },
+              "generalId": {
+                "description": "U5: the roster general this unit is. Required exactly on units of a general type (L21).",
+                "type": "string",
+                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
               }
             },
             "required": [
@@ -1286,88 +1365,6 @@
             ],
             "additionalProperties": false
           }
-        },
-        "sources": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "id": {
-                "type": "string",
-                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
-                "description": "Stable kebab-case identifier. Never shown to players."
-              },
-              "title": {
-                "type": "string",
-                "minLength": 1
-              },
-              "url": {
-                "type": "string",
-                "format": "uri"
-              }
-            },
-            "required": [
-              "id",
-              "title"
-            ],
-            "additionalProperties": false
-          }
-        },
-        "ruleset": {
-          "type": "string",
-          "const": "m3-modular",
-          "description": "Rules chosen per area by the rules object."
-        },
-        "rules": {
-          "type": "object",
-          "properties": {
-            "dice": {
-              "type": "string",
-              "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
-              "description": "Stable kebab-case identifier. Never shown to players."
-            },
-            "economy": {
-              "type": "string",
-              "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
-              "description": "Stable kebab-case identifier. Never shown to players."
-            },
-            "recruitment": {
-              "type": "string",
-              "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
-              "description": "Stable kebab-case identifier. Never shown to players."
-            },
-            "weather": {
-              "type": "string",
-              "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
-              "description": "Stable kebab-case identifier. Never shown to players."
-            },
-            "movement": {
-              "type": "string",
-              "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
-              "description": "Stable kebab-case identifier. Never shown to players."
-            },
-            "partition": {
-              "type": "string",
-              "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
-              "description": "Stable kebab-case identifier. Never shown to players."
-            },
-            "air": {
-              "type": "string",
-              "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
-              "description": "Stable kebab-case identifier. Never shown to players."
-            }
-          },
-          "required": [
-            "dice",
-            "economy",
-            "recruitment",
-            "weather",
-            "movement",
-            "partition",
-            "air"
-          ],
-          "additionalProperties": false,
-          "description": "One named rule module per area. Built-in modules are listed in scenario-package.md; a scenario plugin may register more (L14)."
         },
         "unitTypes": {
           "minItems": 1,
@@ -1790,11 +1787,6 @@
                   "description": "Stable kebab-case identifier. Never shown to players."
                 }
               },
-              "aiProfile": {
-                "type": "string",
-                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
-                "description": "The AI profile (ai.profiles) the computer player uses for this faction."
-              },
               "briefing": {
                 "type": "object",
                 "properties": {
@@ -1844,7 +1836,6 @@
               "motivation",
               "defaultActor",
               "objectiveTerritoryIds",
-              "aiProfile",
               "briefing"
             ],
             "additionalProperties": false
@@ -3645,10 +3636,10 @@
         "victory",
         "combat",
         "ai",
-        "units",
         "sources",
         "ruleset",
         "rules",
+        "units",
         "unitTypes",
         "factions",
         "territories",

@@ -125,6 +125,25 @@ export function modifierName(modifier: CombatModifier): string {
       return "Odds beyond 6:1";
     case "odds-halving":
       return `Odds below 1:1 (${String(modifier.halvings)} ${modifier.halvings === 1 ? "halving" : "halvings"})`;
+    // TODO(m3r1-d20-combat, m3r1-air-generals): names for the d20 modifiers.
+    case "general":
+      return "General";
+    case "trait":
+      return "General's trait";
+    case "barricades":
+      return "City barricades";
+    case "unit-bonus":
+      return "Supporting arms";
+    case "fatigue":
+      return "Fatigued";
+    case "weather":
+      return "Weather";
+    case "amphibious":
+      return "Amphibious assault";
+    case "air-support":
+      return "Air support";
+    case "building":
+      return "Fortifications";
   }
 }
 

@@ -15,6 +15,7 @@ import {
   weatherEffectKinds
 } from "../main/engine/types";
 import { loadPackage, PackageValidationError, type ScenarioPackage } from "../main/scenarios/loader";
+import { checkSubTerritoryMap } from "../main/scenarios/loader/map";
 import { airMissionSchema, buildingEffectSchema, ruleAreaNames, terrainSchema, unitEffectSchema, unitKindSchema, unitOrderKindSchema, unitSymbolSchema } from "../main/scenarios/schema/modularSchema";
 import { raidOutcomeSchema, traitEffectSchema, weatherEffectSchema } from "../main/scenarios/schema/systemsSchema";
 import { type Json, modularMap, modularScenario } from "./modularFixture";
@@ -69,7 +70,7 @@ describe("spec version 2 contract", () => {
     expect(scenario.connections[0]?.entry).toEqual(["west-town-quarter", "highlands"]);
     expect(scenario.factions[0]).toMatchObject({ seatTerritoryId: "westfold", startingStock: { funds: 10, manpower: 5 } });
     expect(scenario.index.generalsByFaction.get(scenario.factions[1]!.id)?.map((general) => general.id)).toEqual(["blue-1", "blue-2", "blue-3"]);
-    expect(scenario.index.aiProfiles.get(scenario.factions[0]!.id)?.stakes.objective).toBe(5);
+    expect(scenario.ai.profiles[scenario.factions[0]!.id]?.stakes.objective).toBe(5);
     expect(scenario.unitTypes.map((type) => type.kind)).toEqual(["ground", "ground", "air", "general"]);
     expect(scenario.unitTypes[0]?.recruit).toMatchObject({ establishment: 400, requires: ["barracks"], trainingTurns: 2 });
     expect(scenario.d20?.table[6]?.[20]).toBe("driven-out");
@@ -84,7 +85,7 @@ describe("spec version 2 contract", () => {
     const state = initialGameState(scenario);
     expect(state.subTerritories["port-quarter" as never]).toEqual({ buildings: ["barracks"], development: { industry: 2 }, holder: "blue", port: 2, queue: [], rail: 1 });
     expect(state.treasuries["red" as never]).toEqual({ funds: 10, manpower: 5 });
-    expect(state.generals["blue" as never]).toEqual({ nextIndex: 0 });
+    expect(state.generals["blue" as never]).toEqual({ nextIndex: 0, pending: [] });
     expect(state).toMatchObject({ raidCuts: [], raised: {}, reveals: [], training: [] });
   });
 
@@ -153,7 +154,13 @@ describe("m3-modular loader rules", () => {
     ["L22 fatigue out of order", (s: Json) => { block(block(s, "d20"), "fatigue")["fatiguedLevel"] = 3; }, "fatiguedLevel must be below demoralizedLevel (L22)"],
     ["L22 works step above the cap", (s: Json) => { block(block(s, "d20"), "modifiers")["worksPerTurn"] = 10; }, "worksPerTurn cannot exceed worksMax (L22)"],
     ["L22 d20 modifier for an unknown faction", (s: Json) => { list(block(s, "d20")["factionModifiers"])[0]!["factionId"] = "green"; }, "unknown faction \"green\""],
-    ["L23 unknown AI profile", (s: Json) => { list(s["factions"])[0]!["aiProfile"] = "genius"; }, "unknown AI profile \"genius\" (L3)"],
+    ["L23 faction without a profile", (s: Json) => { delete block(block(s, "ai"), "profiles")["red"]; }, "ai.profiles: missing a profile for \"red\" (L23)"],
+    ["L23 profile for an unknown faction", (s: Json) => { block(block(s, "ai"), "profiles")["green"] = block(block(s, "ai"), "profiles")["red"]; }, "ai.profiles: unknown faction \"green\" (L3)"],
+    ["L21 general unit without a roster entry", (s: Json) => { delete list(s["units"])[3]!["generalId"]; }, "is a general and needs a generalId (L21)"],
+    ["L21 unknown general", (s: Json) => { list(s["units"])[3]!["generalId"] = "napoleon"; }, "unknown general \"napoleon\""],
+    ["L21 general of another faction", (s: Json) => { list(s["units"])[3]!["generalId"] = "blue-1"; }, "serves another faction (L21)"],
+    ["L21 general id on a line unit", (s: Json) => { list(s["units"])[0]!["generalId"] = "red-2"; }, "only units of a general type name a generalId (L21)"],
+    ["L21 general fielded twice", (s: Json) => { list(s["units"]).push({ ...list(s["units"])[3]!, id: "red-staff-2" }); }, "\"red-1\" is fielded twice (L21)"],
     ["L24 faction without a stock", (s: Json) => { delete list(s["factions"])[0]!["startingStock"]; }, "needs a startingStock (L24)"],
     ["L24 unknown resource", (s: Json) => { list(s["factions"])[0]!["startingStock"] = { gold: 5 }; }, "unknown resource \"gold\""],
     ["L24 track of an unknown resource", (s: Json) => { list(s["development"])[0]!["resource"] = "food"; }, "unknown resource \"food\""],
@@ -172,9 +179,27 @@ describe("m3-modular loader rules", () => {
       delete s["weather"];
       delete s["air"];
       delete s["generals"];
+      s["units"] = list(s["units"]).filter((entry) => entry["generalId"] === undefined);
       for (const territory of list(s["territories"])) delete territory["weatherZone"];
       for (const faction of list(s["factions"])) delete faction["seatTerritoryId"];
       list(list(s["unitTypes"])[1]!["effects"])[0]!["exceptWeather"] = [];
     })).toBe("");
+  });
+});
+
+describe("map sub-territory entries (L10)", () => {
+  const subs = [{ id: "west-hills", territoryId: "westfold" }, { id: "isle", territoryId: "isle" }];
+
+  it("match the scenario's sub-territories one to one, in the same territories", () => {
+    expect(checkSubTerritoryMap(subs, { isle: { territoryId: "isle" }, "west-hills": { territoryId: "westfold" } })).toEqual([]);
+    expect(checkSubTerritoryMap(subs, { "west-hills": { territoryId: "harbor" }, atlantis: { territoryId: "isle" } })).toEqual([
+      "map.subTerritories.entries.west-hills: territory \"harbor\" is not \"westfold\" (L10)",
+      "map.subTerritories.entries: missing \"isle\" (L10)",
+      "map.subTerritories.entries.atlantis: unknown sub-territory (L10)"
+    ]);
+  });
+
+  it("indexes a general unit's roster entry (U5)", () => {
+    expect(load().scenario.index.units.get("red-staff" as never)?.generalId).toBe("red-1");
   });
 });

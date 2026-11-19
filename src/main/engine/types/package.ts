@@ -33,7 +33,6 @@ import type {
   VictoryRules
 } from "./scenario";
 import type {
-  AiProfile,
   AiRules,
   AirRules,
   CalendarRules,
@@ -44,7 +43,6 @@ import type {
 } from "./systems";
 
 export interface ScenarioIndex {
-  readonly aiProfiles: ReadonlyMap<FactionId, AiProfile>;
   readonly buildings: ReadonlyMap<BuildingId, BuildingDefinition>;
   readonly cities: ReadonlyMap<CityId, CityDefinition>;
   readonly citiesByTerritory: ReadonlyMap<TerritoryId, readonly CityDefinition[]>;
