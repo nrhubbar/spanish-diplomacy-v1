@@ -12,8 +12,8 @@ export default defineConfig({
       provider: "v8",
       reporter: ["text-summary", "text", "html"],
       reportsDirectory: "build/coverage",
-      include: ["src/main/**/*.{ts,tsx}"],
-      exclude: ["src/main/main.tsx", "src/main/**/*.json"],
+      include: ["src/main/**/*.{ts,tsx}", "src/sim/**/*.ts"],
+      exclude: ["src/main/main.tsx", "src/main/**/*.json", "src/sim/cli.ts", "src/sim/test/**"],
       thresholds: {
         branches: 93,
         functions: 92,
