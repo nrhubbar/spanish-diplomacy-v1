@@ -1,0 +1,270 @@
+[
+  {
+    "id": "Q-UNIT-1",
+    "idea": 8,
+    "text": "Which new unit types should Milestone 3 add to today's four? Choose all that apply.",
+    "multi": true,
+    "options": [
+      { "label": "Artillery group, plus air as faction air wings (not counters)", "recommended": true, "rationale": "Artillery and air are the two arms with clear historical weight in Spain; abstract air avoids muddying the map." },
+      { "label": "Cavalry (Nationalist only; the 1st Cavalry Division formed in November 1937)" },
+      { "label": "Tanks (T-26, Panzer I, CV-33; few and rarely decisive)" },
+      { "label": "Anti-air as a unit (the 88 mm mostly served as anti-tank artillery)" },
+      { "label": "Aircraft as map counters split into recon, fighter, and bomber" },
+      { "label": "Drop this idea or defer it" }
+    ]
+  },
+  {
+    "id": "Q-UNIT-2",
+    "idea": 8,
+    "text": "How should artillery's special effect work?",
+    "multi": false,
+    "options": [
+      { "label": "Owner's rule on the d20 scale: value counts, +1 per 3 artillery points, capped at +3, no attack by artillery alone", "recommended": true, "rationale": "On a d20, +1 is a third of an odds column, so the rule is meaningful without counting the guns twice." },
+      { "label": "Owner's rule literally, on today's d6 (+1 per 3 points is a whole odds column)" },
+      { "label": "Artillery counts as attack value only, no roll bonus" },
+      { "label": "Roll bonus only; artillery adds nothing to the odds" },
+      { "label": "Drop this idea or defer it" }
+    ]
+  },
+  {
+    "id": "Q-UNIT-3",
+    "idea": 8,
+    "text": "How should air power be represented?",
+    "multi": false,
+    "options": [
+      { "label": "Faction air wings from a scenario schedule, each assigned per turn to support a battle, intercept, or bomb a city", "recommended": true, "rationale": "Captures the airlift-era and Condor Legion impact with one new order kind and no new counters." },
+      { "label": "Aircraft counters on the map with recon, fighter, and bomber roles" },
+      { "label": "A fixed per-faction battle modifier from data, with no player decision" },
+      { "label": "Drop this idea or defer it" }
+    ]
+  },
+  {
+    "id": "Q-UNIT-4",
+    "idea": 8,
+    "text": "What should bombing a town do?",
+    "multi": false,
+    "options": [
+      { "label": "A small, one-turn yield cut in one city (proposal: -25 percent), blunted by a city AA defence", "recommended": true, "rationale": "Barcelona in March 1938 shows bombing hurt but did not break a city; a small temporary effect matches that." },
+      { "label": "A lasting cut until the city is repaired with money" },
+      { "label": "No economic effect; air only supports battles" },
+      { "label": "Drop this idea or defer it" }
+    ]
+  },
+  {
+    "id": "Q-UNIT-5",
+    "idea": 8,
+    "text": "How should training time be set?",
+    "multi": false,
+    "options": [
+      { "label": "Per-type trainingTurns with per-faction overrides (e.g. militia 1 turn for the Republic, 2 for others; infantry 3; artillery 4)", "recommended": true, "rationale": "Matches the owner's 'some factions recruit militia faster' as plain unit data, with no code per faction." },
+      { "label": "Every recruit arrives next turn; types differ only in cost" },
+      { "label": "Per-type trainingTurns, the same for every faction" },
+      { "label": "Drop this idea or defer it" }
+    ]
+  },
+  {
+    "id": "Q-UNIT-6",
+    "idea": 8,
+    "text": "How many special effects may one unit type carry?",
+    "multi": false,
+    "options": [
+      { "label": "At most one, stated in one line on the counter tooltip and named in battle breakdowns", "recommended": true, "rationale": "Keeps 'lets not muddy this too much' enforceable and every effect visible where it fights." },
+      { "label": "Several per type, as each type needs" },
+      { "label": "None; new types differ only in their attack and defence values" }
+    ]
+  },
+  {
+    "id": "Q-GEN-1",
+    "idea": 8,
+    "text": "Should generals appear, and with what effect?",
+    "multi": false,
+    "options": [
+      { "label": "Display-only commander chips on factions and named armies (Franco, Mola, Rojo, Miaja), no rules effect", "recommended": true, "rationale": "Gives players the 'Francisco commands the purple' cue at almost no rules cost." },
+      { "label": "Generals attached to armies with one small effect (e.g. +2 on the d20 once per turn)" },
+      { "label": "Leader counters that limit which armies can act (Hannibal style)" },
+      { "label": "Drop this idea or defer it" }
+    ]
+  },
+  {
+    "id": "Q-GEN-2",
+    "idea": 8,
+    "text": "Should commanders change on historical dates?",
+    "multi": false,
+    "options": [
+      { "label": "Yes, scripted by turn in scenario data (Mola to Davila at about turn 22), display only", "recommended": true, "rationale": "One fromTurn/untilTurn pair per commander teaches the history with no rules weight." },
+      { "label": "No, keep the 1936 commanders all game" },
+      { "label": "Yes, and tie it to events such as a random chance of loss" }
+    ]
+  },
+  {
+    "id": "Q-D20-1",
+    "idea": 9,
+    "text": "Which die and result set should combat use?",
+    "multi": false,
+    "options": [
+      { "label": "d20 with an 11-grade ladder and faded losses", "recommended": true, "rationale": "The only option that gives idea 7 a graded 'how much ground' signal while keeping today's take chance per column." },
+      { "label": "d20 with today's seven results (more granularity, data-only change)" },
+      { "label": "Keep the d6 and only fade the losses" },
+      { "label": "2d6 bell curve" },
+      { "label": "Drop this idea or defer it" }
+    ]
+  },
+  {
+    "id": "Q-D20-2",
+    "idea": 9,
+    "text": "How many graded results should the ladder have?",
+    "multi": false,
+    "options": [
+      { "label": "11, from attacker routed to defender destroyed, including gives ground (1 sub-region) and pushed back (2)", "recommended": true, "rationale": "Enough to grade ground for idea 7, few enough to read in a battle report." },
+      { "label": "9 (merge stalled with shaken, and routed with destroyed)" },
+      { "label": "7, as today" },
+      { "label": "13 or more" }
+    ]
+  },
+  {
+    "id": "Q-D20-3",
+    "idea": 9,
+    "text": "How should the d20 table be written in scenario data?",
+    "multi": false,
+    "options": [
+      { "label": "A ladder of grades with minimum scores plus a column step (score = clamped roll + 3 x column)", "recommended": true, "rationale": "11 lines of data instead of 147 cells, and it keeps today's one-step-per-column property." },
+      { "label": "An explicit 7 x 21 table like today's table[column][row]" },
+      { "label": "Both: the ladder in data, expanded to a table at load for display" }
+    ]
+  },
+  {
+    "id": "Q-D20-4",
+    "idea": 9,
+    "text": "How should casualties fade?",
+    "multi": false,
+    "options": [
+      { "label": "Each grade costs a share of each army's men (10, 20, or 35 percent); outright destruction only on the top grade, surrender, or below 25 percent strength", "recommended": true, "rationale": "Proportional and easy to explain; armies wear down instead of vanishing." },
+      { "label": "Keep today's attrition: losses worth the opposing side's value" },
+      { "label": "Step losses: each army loses one or two fixed steps" }
+    ]
+  },
+  {
+    "id": "Q-D20-5",
+    "idea": 9,
+    "text": "How should demoralization fade?",
+    "multi": false,
+    "options": [
+      { "label": "Each grade demoralizes none, half, or all of a side's value, weakest armies first, as today", "recommended": true, "rationale": "Reuses M16's existing share rule; only the share changes per grade." },
+      { "label": "Every grade that demoralizes hits every army on the side" },
+      { "label": "Replace demoralization with fatigue hits on a 0-3 track" }
+    ]
+  },
+  {
+    "id": "Q-D20-6",
+    "idea": 9,
+    "text": "What happens to today's roll modifiers (works +1 to +3, Popular resistance, the below-1:1 penalty) on the d20?",
+    "multi": false,
+    "options": [
+      { "label": "Restate them in d20 units in the new ruleset's data (x3: works +3 per turn up to +9)", "recommended": true, "rationale": "Keeps their weight; left at +1, works at +3 would drop from 50 to 15 percent of a d20." },
+      { "label": "Keep them at today's sizes, so they matter much less" },
+      { "label": "Add a single modifierScale field and keep today's numbers" }
+    ]
+  },
+  {
+    "id": "Q-D20-7",
+    "idea": 9,
+    "text": "What should partial-ground grades (gives ground, pushed back) do where sub-regions do not apply?",
+    "multi": false,
+    "options": [
+      { "label": "Act as a stalemate: both lose men, no ground changes, and both bounce in head-on battles", "recommended": true, "rationale": "Keeps the ladder valid whether or not idea 7 lands, and in M19, M20, and M27 battles." },
+      { "label": "Count them as the defender driven out" },
+      { "label": "Remove them from the ladder when partitioning is off" }
+    ]
+  },
+  {
+    "id": "Q-MOVE-1",
+    "idea": 6,
+    "text": "How far should an army move per turn?",
+    "multi": false,
+    "options": [
+      { "label": "Keep one move per turn now; add a sub-region allowance per type only if idea 7 lands", "recommended": true, "rationale": "Yague's columns covered about one territory per two-week turn; points only matter on a finer grid." },
+      { "label": "Movement points per type now, on today's territories" },
+      { "label": "A faction-wide action point budget for moves and attacks" },
+      { "label": "Drop this idea or defer it" }
+    ]
+  },
+  {
+    "id": "Q-MOVE-2",
+    "idea": 6,
+    "text": "How should exhaustion work?",
+    "multi": false,
+    "options": [
+      { "label": "Offensive exhaustion: attacking in N turns running demoralizes the army; one quiet turn recovers it", "recommended": true, "rationale": "Reuses M23 morale, adds one counter and one data field, and no third value multiplier." },
+      { "label": "A fatigue track 0-3 with a value penalty at 2 and demoralization at 3" },
+      { "label": "Attrition rolls for long moves or mountain crossings (Hannibal style)" },
+      { "label": "Drop this idea or defer it" }
+    ]
+  },
+  {
+    "id": "Q-MOVE-3",
+    "idea": 6,
+    "text": "How should exhausted armies recover?",
+    "multi": false,
+    "options": [
+      { "label": "Any turn without a move order, the same trigger that already entrenches or rests (M22, M23)", "recommended": true, "rationale": "Submissions stay lists of move orders; no new Rest order to learn." },
+      { "label": "An explicit Rest order" },
+      { "label": "Only in a friendly city or a supplied territory" }
+    ]
+  },
+  {
+    "id": "Q-MOVE-4",
+    "idea": 6,
+    "text": "How many consecutive attack turns before an army is exhausted?",
+    "multi": false,
+    "options": [
+      { "label": "3 turns (six weeks), as one scenario value", "recommended": true, "rationale": "Close to the 1936 drive on Madrid, which paused after three to four turns of advance (about 3.5 turns from early August to 21 September)." },
+      { "label": "2 turns" },
+      { "label": "4 turns" },
+      { "label": "Per unit type (e.g. colonial 4, militia 2)" }
+    ]
+  },
+  {
+    "id": "Q-MOVE-5",
+    "idea": 6,
+    "text": "Should defending also count toward exhaustion?",
+    "multi": false,
+    "options": [
+      { "label": "No, only attacking tires an army", "recommended": true, "rationale": "Keeps static fronts stable and puts the cost of tempo on the attacker." },
+      { "label": "Yes, every battle fought counts" },
+      { "label": "Only battles with a bad result for that army" }
+    ]
+  },
+  {
+    "id": "Q-MOVE-6",
+    "idea": 6,
+    "text": "Should Milestone 3 add action points (a limited number of armies that may act each turn)?",
+    "multi": false,
+    "options": [
+      { "label": "No, drop action points", "recommended": true, "rationale": "Activation limits change the simultaneous 'every army may move' game and add a resource the owner hedged on." },
+      { "label": "Yes, a per-faction activation budget from scenario data" },
+      { "label": "Yes, but only as a limit on attacks, not moves" }
+    ]
+  },
+  {
+    "id": "Q-MIS-b-11",
+    "idea": "mismatch-b",
+    "text": "With faded casualties, how should men, morale, and exhaustion combine on one army?",
+    "multi": false,
+    "options": [
+      { "label": "Men are the only lasting damage (restored by money); morale and exhaustion are temporary and recover by resting; no third value multiplier", "recommended": true, "rationale": "Each effect has one cause and one cure, and values stay type x strength x morale as today." },
+      { "label": "Add a fatigue multiplier on top of strength and morale" },
+      { "label": "Make demoralization last until the army is restored with money" }
+    ]
+  },
+  {
+    "id": "Q-MIS-b-12",
+    "idea": "mismatch-b",
+    "text": "Below what strength should a worn-down army break up?",
+    "multi": false,
+    "options": [
+      { "label": "25 percent of fullStrength", "recommended": true, "rationale": "Stops remnants lingering at value 1 once losses fade, and gives restore orders a deadline." },
+      { "label": "10 percent of fullStrength" },
+      { "label": "Never; only the minimum value of 1 applies, as today" }
+    ]
+  }
+]

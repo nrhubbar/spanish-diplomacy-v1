@@ -1,0 +1,247 @@
+[
+  {
+    "id": "Q-PART-1",
+    "idea": 7,
+    "text": "Which sub-regions should a territory split into?",
+    "multi": false,
+    "options": [
+      { "label": "1936 provinces, with scenario overrides: Baleares as its three islands, Asturias in 2, Madrid in 3 (about 55 sub-regions)", "recommended": true, "rationale": "Historical borders straight from the data, and the overrides cover the two contested territories and Madrid that provinces alone cannot split." },
+      { "label": "Pure 1936 provinces (48; Asturias, Baleares and Madrid never split)" },
+      { "label": "NUTS3 as published (52; Baleares splits, Asturias and Madrid never split)" },
+      { "label": "Fewer merged zones, at most 5 per territory as plan.md section 9.2 says (about 35)" },
+      { "label": "Drop this idea or defer it" }
+    ]
+  },
+  {
+    "id": "Q-PART-2",
+    "idea": 7,
+    "text": "Should armies move between sub-regions, or should sub-regions only decide control and income?",
+    "multi": false,
+    "options": [
+      { "label": "Hybrid: orders and battles stay on the 18 territories; sub-regions decide control, cities, income and supply", "recommended": true, "rationale": "Gives the contested-front and income effect at about a third of the cost, and keeps the data ready for full sub-region movement later." },
+      { "label": "Full sub-region movement now, every army on one of about 55 sub-regions (needs idea 6 multi-step movement)" },
+      { "label": "Sub-regions only while a territory is split; unified territories move as today" }
+    ]
+  },
+  {
+    "id": "Q-PART-3",
+    "idea": 7,
+    "text": "When a graded battle result says k sub-regions change hands, which ones go?",
+    "multi": false,
+    "options": [
+      { "label": "Automatic: the defender's sub-regions bordering the attack's origin, taking the one with the most attacker-held neighbours each time; ties by scenario order", "recommended": true, "rationale": "Deterministic, explainable in one line, and grows a contiguous front from the side the attack came from." },
+      { "label": "The attacker names target sub-regions in its order, in priority order" },
+      { "label": "Seeded random choice among the bordering sub-regions" }
+    ]
+  },
+  {
+    "id": "Q-PART-4",
+    "idea": 7,
+    "text": "How do two factions fight inside a partitioned territory?",
+    "multi": false,
+    "options": [
+      { "label": "An explicit Push order (a move order to its own territory) attacks the enemy zone; otherwise armies dig in and the front holds", "recommended": true, "rationale": "Stable, holdable fronts are what partitioning is for; today's automatic M27 battle every turn would grind every split territory." },
+      { "label": "Keep M27 automatic standing battles every turn, with the graded result moving sub-regions" },
+      { "label": "Both: automatic battles unless both sides entrench" }
+    ]
+  },
+  {
+    "id": "Q-PART-5",
+    "idea": 7,
+    "text": "How does a partitioned territory count toward the territory victory share?",
+    "multi": false,
+    "options": [
+      { "label": "It counts for nobody until one faction holds every sub-region (as contested territories do today)", "recommended": true, "rationale": "No change to M10 or the victory thresholds, and it rewards finishing a territory." },
+      { "label": "It counts for the faction holding most of its sub-regions" },
+      { "label": "Victory counts sub-regions instead of territories (new thresholds needed)" }
+    ]
+  },
+  {
+    "id": "Q-PART-6",
+    "idea": 7,
+    "text": "Where do defenders go when the sub-region they stood in is taken?",
+    "multi": false,
+    "options": [
+      { "label": "They fall back into the nearest sub-region of the same territory their faction still holds; if none, they retreat under M21", "recommended": true, "rationale": "Keeps the territory contested instead of emptying it, which is the point of a partial result." },
+      { "label": "They always retreat out of the territory under M21" },
+      { "label": "Armies in a lost sub-region are destroyed" }
+    ]
+  },
+  {
+    "id": "Q-PART-7",
+    "idea": 7,
+    "text": "How should the Spain scenario start on 31 July 1936?",
+    "multi": false,
+    "options": [
+      { "label": "Already partitioned: each sub-region goes to the holder of its provincial capital, with hand overrides where that misleads (Aragon's Republican east); for example Andalucia 5 Southern, 3 Republic", "recommended": true, "rationale": "Close to the 1936 map and turns contested flags into real fronts; the capital rule alone would hand all of Aragon to the Northern command." },
+      { "label": "Keep today's contested flags and let the first battles create the splits" },
+      { "label": "Partitioned, but with each sub-region assigned by researched countryside control rather than its capital" }
+    ]
+  },
+  {
+    "id": "Q-PART-8",
+    "idea": 7,
+    "text": "When an army moves into a partitioned territory where its own faction already has a zone, does it fight?",
+    "multi": false,
+    "options": [
+      { "label": "It attacks if an enemy sub-region borders the territory it came from; otherwise it joins its own zone as a reinforcement", "recommended": true, "rationale": "The front you meet is the one facing your approach, and the attack's origin then feeds the split rule; today's M11 would make every such move a non-fighting reinforcement." },
+      { "label": "It always joins its own zone; only a Push order from inside fights" },
+      { "label": "The player chooses: reinforce the zone or attack the enemy zone" }
+    ]
+  },
+  {
+    "id": "Q-RAIL-1",
+    "idea": 5,
+    "text": "How should rail move armies?",
+    "multi": false,
+    "options": [
+      { "label": "Lines with a level (0 to 3) that sets per-line capacity (armies per turn) and range; the weakest segment caps a route", "recommended": true, "rationale": "Shows the bottleneck the owner asked for (Madrid-Valencia) and makes junction cities worth taking." },
+      { "label": "One rail-point pool per faction per turn, as in Paths of Glory strategic redeployment; lines only gate where" },
+      { "label": "Rail carries supply only, not armies (HOI4 style)" },
+      { "label": "Drop this idea or defer it" }
+    ]
+  },
+  {
+    "id": "Q-RAIL-2",
+    "idea": 5,
+    "text": "Can an army arrive by rail into a battle?",
+    "multi": false,
+    "options": [
+      { "label": "No: rail moves only into ground its faction controls with no enemy army, like an M11 reinforcement", "recommended": true, "rationale": "Matches the history (rail redeployed reserves, trucks led assaults) and Paths of Glory, and keeps validation on the start-of-turn state." },
+      { "label": "Yes: the last step may attack, at a penalty" },
+      { "label": "Yes, with no penalty" }
+    ]
+  },
+  {
+    "id": "Q-RAIL-3",
+    "idea": 5,
+    "text": "Can players build and upgrade rail?",
+    "multi": false,
+    "options": [
+      { "label": "Build and upgrade one level at a time, paying Funds over several turns, on a connection whose both ends you hold", "recommended": true, "rationale": "The owner asked for it, 18xx shows one-step upgrades read well, and the 1938 Torrejon-Tarancon line shows building took many turns." },
+      { "label": "Upgrade existing 1936 lines only; no new lines" },
+      { "label": "Fixed 1936 network; no building" }
+    ]
+  },
+  {
+    "id": "Q-RAIL-4",
+    "idea": 5,
+    "text": "What happens to a line when its end changes hands?",
+    "multi": false,
+    "options": [
+      { "label": "It drops one level (demolition) and the new holder can repair it", "recommended": true, "rationale": "Gives rail a front-line cost without tracking rolling stock, and gives building orders a use." },
+      { "label": "Nothing; the new holder uses it at once" },
+      { "label": "It is destroyed and must be rebuilt" }
+    ]
+  },
+  {
+    "id": "Q-RAIL-5",
+    "idea": 5,
+    "text": "Should the engine model track gauge now?",
+    "multi": false,
+    "options": [
+      { "label": "No; add an optional gauge field later, for a WW1 or WW2 scenario", "recommended": true, "rationale": "Spain's main network was one broad gauge; the only break was at the French border, which only matters for foreign aid." },
+      { "label": "Yes: an optional gauge per line, plus transshipment cost at a break" }
+    ]
+  },
+  {
+    "id": "Q-RAIL-6",
+    "idea": 5,
+    "text": "Should rail affect supply in Milestone 3?",
+    "multi": false,
+    "options": [
+      { "label": "No; supply traces through controlled ground only, and rail-borne supply waits for Milestone 4", "recommended": true, "rationale": "Keeps both new systems small and separately testable." },
+      { "label": "Yes: supply traced beyond N steps must use rail" }
+    ]
+  },
+  {
+    "id": "Q-CITY-1",
+    "idea": 4,
+    "text": "Where do armies stand relative to cities?",
+    "multi": false,
+    "options": [
+      { "label": "In the territory (in their faction's zone under idea 7); drop cityId from units; a city is a feature of its sub-region", "recommended": true, "rationale": "Exactly the owner's request, and cityId is display-only today, so no rule is lost." },
+      { "label": "Keep cityId as display placement only (status quo)" },
+      { "label": "A city is a separate garrison point armies can enter and be besieged in" }
+    ]
+  },
+  {
+    "id": "Q-CITY-2",
+    "idea": 4,
+    "text": "Which city buildings should Milestone 3 offer? Choose all that apply.",
+    "multi": true,
+    "options": [
+      { "label": "Depot, Workshop, Fortifications, Port", "recommended": true, "rationale": "Each one maps onto a system Milestone 3 already has or adds: recruitment, Funds, works, and sea moves." },
+      { "label": "Airfield (only if idea 8 adds aircraft)" },
+      { "label": "Rail yard (only if idea 5 lands)" },
+      { "label": "Hospital (faster replenishment)" },
+      { "label": "Drop this idea or defer it" }
+    ]
+  },
+  {
+    "id": "Q-CITY-3",
+    "idea": 4,
+    "text": "How do builds work?",
+    "multi": false,
+    "options": [
+      { "label": "One build at a time per city, paid at reveal, finished after its turns, refunded if the city is lost first", "recommended": true, "rationale": "Same hidden-order pipeline as recruitment, one queue slot per city, and nothing to micromanage." },
+      { "label": "Builds finish instantly" },
+      { "label": "Several builds at once per city" }
+    ]
+  },
+  {
+    "id": "Q-CITY-4",
+    "idea": 4,
+    "text": "What happens to buildings when a city is captured?",
+    "multi": false,
+    "options": [
+      { "label": "Captured, one level down", "recommended": true, "rationale": "Makes cities prizes without letting a raid erase a turn's investment entirely." },
+      { "label": "Captured intact" },
+      { "label": "Destroyed" }
+    ]
+  },
+  {
+    "id": "Q-CITY-5",
+    "idea": 4,
+    "text": "Should besieged cities (Oviedo, the Toledo Alcazar) get a rule of their own?",
+    "multi": false,
+    "options": [
+      { "label": "No new rule: a city's sub-region gives its defender +1, and a surrounded city is cut off from supply (mismatch c)", "recommended": true, "rationale": "Most of a siege falls out of sub-regions plus supply; a separate siege battle type is a second combat system." },
+      { "label": "Yes: a Here I Stand-style siege where a city keeps its holder until a successful assault" },
+      { "label": "Drop this idea or defer it" }
+    ]
+  },
+  {
+    "id": "Q-CITY-6",
+    "idea": 4,
+    "text": "Should sea connections require a controlled port at each end?",
+    "multi": false,
+    "options": [
+      { "label": "Yes, with a balance check: test it against the Southern command's 13 percent win share before shipping", "recommended": true, "rationale": "It fixes D32 (the whole Army of Africa crossing on turn 1) historically, but Malaga being Republican would block Melilla's crossing." },
+      { "label": "Yes, unconditionally" },
+      { "label": "No; sea moves stay ordinary moves (status quo)" }
+    ]
+  },
+  {
+    "id": "Q-MIS-c-1",
+    "idea": "mismatch-c",
+    "text": "Does Milestone 3 need supply at all?",
+    "multi": false,
+    "options": [
+      { "label": "Smallest version: trace through own ground (and own ports by sea) to a scenario-tagged source city; affects income and recruitment only", "recommended": true, "rationale": "Covers all three uses in the old draft with one breadth-first search a turn, and models besieged cities." },
+      { "label": "Drop the word: income and recruitment need control only" },
+      { "label": "Full supply with combat penalties and attrition" }
+    ]
+  },
+  {
+    "id": "Q-MIS-c-2",
+    "idea": "mismatch-c",
+    "text": "Which cities are supply sources?",
+    "multi": false,
+    "options": [
+      { "label": "Scenario-tagged list (for Spain: major ports, rail hubs, and Ceuta and Melilla)", "recommended": true, "rationale": "Data, not code; lets the cut-off Republican north stay supplied through Bilbao and Gijon." },
+      { "label": "Every controlled city" },
+      { "label": "Only each faction's capital" }
+    ]
+  }
+]
