@@ -5,7 +5,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { containsPoint, type Point, poleOfInaccessibility, ringArea } from "../../scripts/map/geometry.ts";
 import { mapDocument, projection as projectionDefinition, scenarioDocument, topologyDocument } from "../../scripts/map/iberia-1936.ts";
-import { subTerritories as subTerritoryConfig, topology as topologyOptions } from "../../scripts/map/iberia-1936-sub-territories.ts";
+import { entryOverrides, seaLinks, subTerritories as subTerritoryConfig, topology as topologyOptions } from "../../scripts/map/iberia-1936-sub-territories.ts";
 import { evenOddArea } from "../../scripts/map/partition.ts";
 import { lambertConformalConic } from "../../scripts/map/projection.ts";
 import { mapSchema } from "../main/scenarios/schema/mapSchema";
@@ -25,13 +25,17 @@ interface Topology {
   readonly subTerritoryBorders: readonly (readonly [string, string])[];
   readonly connections: readonly { readonly between: readonly [string, string]; readonly kind: string; readonly entry: readonly [string, string] }[];
   readonly cities: Readonly<Record<string, string>>;
-  readonly measurements: { readonly coastKm: Readonly<Record<string, number>>; readonly borderKm: readonly { readonly between: readonly [string, string]; readonly km: number }[] };
+  readonly measurements: {
+    readonly coastKm: Readonly<Record<string, number>>;
+    readonly borderKm: readonly { readonly between: readonly [string, string]; readonly km: number; readonly sea?: boolean }[];
+    readonly connectionKm: readonly { readonly entry: readonly [string, string]; readonly km: number; readonly rule: string; readonly reason?: string }[];
+  };
 }
 
 const map = mapSchema.parse(JSON.parse(readFileSync(mapDocument, "utf8")));
 const scenario = JSON.parse(readFileSync(scenarioDocument, "utf8")) as {
   territories: { id: string }[];
-  connections: { between: [string, string]; kind: string }[];
+  connections: { between: [string, string]; kind: string; entry?: [string, string] }[];
   cities: { id: string; territoryId: string }[];
 };
 const topology = JSON.parse(readFileSync(topologyDocument, "utf8")) as Topology;
@@ -181,21 +185,28 @@ describe("sub-territory topology", () => {
       expect(adjacency.get(b)?.has(a)).toBe(true);
     }
     expect(topology.measurements.borderKm.map((border) => border.between)).toEqual(topology.subTerritoryBorders);
-    for (const border of topology.measurements.borderKm) expect(border.km).toBeGreaterThanOrEqual(topologyOptions.minimumBorder);
+    for (const border of topology.measurements.borderKm) if (border.sea !== true) expect(border.km).toBeGreaterThanOrEqual(topologyOptions.minimumBorder);
   });
 
-  it("joins the sub-territories of every mainland territory into one piece", () => {
+  it("links the islands by sea, inside their territory only", () => {
+    const sea = topology.measurements.borderKm.filter((border) => border.sea === true).map((border) => border.between);
+    expect(sea).toEqual(seaLinks.map((link) => link.between));
+    expect(sea).toEqual([["mallorca", "menorca"], ["mallorca", "ibiza"]]);
+    for (const [a, b] of sea) expect(territoryOf(a)).toBe(territoryOf(b));
+  });
+
+  it("joins the sub-territories of every territory into one connected graph", () => {
     for (const territory of scenario.territories) {
       const ids = Object.keys(entries).filter((id) => territoryOf(id) === territory.id);
-      if (territory.id === "islas-baleares") continue;
       const reached = new Set([ids[0]]);
       for (const id of reached) for (const next of adjacency.get(id ?? "") ?? []) if (territoryOf(next) === territory.id) reached.add(next);
       expect(reached.size, territory.id).toBe(ids.length);
     }
-    for (const island of ["mallorca", "menorca", "ibiza", "ceuta", "melilla"]) expect(adjacency.has(island), island).toBe(false);
+    for (const enclave of ["ceuta", "melilla"]) expect(adjacency.has(enclave), enclave).toBe(false);
   });
 
   it("borders across territories exactly where the scenario has land connections", () => {
+    // Sea links stay inside a territory, so every crossing pair is a land border.
     const crossing = new Set(topology.subTerritoryBorders
       .filter(([a, b]) => territoryOf(a) !== territoryOf(b))
       .map(([a, b]) => [territoryOf(a), territoryOf(b)].sort().join("|")));
@@ -204,7 +215,9 @@ describe("sub-territory topology", () => {
   });
 
   it("names the entry sub-territories of every scenario connection, in between order", () => {
-    expect(topology.connections.map(({ between, kind }) => ({ between, kind }))).toEqual(scenario.connections.map(({ between, kind }) => ({ between, kind })));
+    // The scenario's connections, field for field, but for `entry`: a straight comparison.
+    const withoutEntry = (connection: object): object => Object.fromEntries(Object.entries(connection).filter(([key]) => key !== "entry"));
+    expect(topology.connections.map(withoutEntry)).toEqual(scenario.connections.map(withoutEntry));
     for (const connection of topology.connections) {
       const [a, b] = connection.entry;
       expect(territoryOf(a), connection.between.join("-")).toBe(connection.between[0]);
@@ -212,6 +225,21 @@ describe("sub-territory topology", () => {
       if (connection.kind === "land") expect(adjacency.get(a)?.has(b), connection.between.join("-")).toBe(true);
       else for (const port of connection.entry) expect(topology.measurements.coastKm[port], port).toBeGreaterThanOrEqual(topologyOptions.minimumCoast);
     }
+  });
+
+  it("uses every entry override, and the derived rule elsewhere", () => {
+    const overridden = topology.measurements.connectionKm.filter((measure) => measure.rule === "override");
+    expect(overridden).toHaveLength(entryOverrides.length);
+    for (const measure of overridden) expect(measure.reason?.length ?? 0).toBeGreaterThan(0);
+    const entry = (a: string, b: string): readonly string[] | undefined =>
+      topology.connections.find((connection) => [...connection.between].sort().join("|") === [a, b].sort().join("|"))?.entry;
+    expect(entry("castilla-la-mancha", "extremadura")).toEqual(["toledo", "caceres"]);
+    expect(entry("extremadura", "andalucia")).toEqual(["badajoz", "sevilla"]);
+    expect(entry("andalucia", "melilla")).toEqual(["malaga", "melilla"]);
+    expect(entry("valencia", "islas-baleares")).toEqual(["valencia", "mallorca"]);
+    expect(entry("andalucia", "ceuta")).toEqual(["cadiz", "ceuta"]);
+    expect(entry("catalunya", "islas-baleares")).toEqual(["barcelona", "mallorca"]);
+    for (const measure of topology.measurements.connectionKm.filter((candidate) => candidate.rule !== "override")) expect(["longest-border", "closest-coasts"]).toContain(measure.rule);
   });
 
   it("puts every city in a sub-territory of its own territory", () => {

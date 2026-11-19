@@ -749,6 +749,14 @@
     [
       "almeria",
       "murcia"
+    ],
+    [
+      "mallorca",
+      "menorca"
+    ],
+    [
+      "mallorca",
+      "ibiza"
     ]
   ],
   "connections": [
@@ -892,7 +900,7 @@
       "kind": "land",
       "entry": [
         "la-rioja",
-        "soria"
+        "burgos"
       ]
     },
     {
@@ -990,7 +998,7 @@
       ],
       "kind": "land",
       "entry": [
-        "albacete",
+        "cuenca",
         "valencia"
       ]
     },
@@ -1023,8 +1031,8 @@
       ],
       "kind": "land",
       "entry": [
-        "ciudad-real",
-        "badajoz"
+        "toledo",
+        "caceres"
       ]
     },
     {
@@ -1035,7 +1043,7 @@
       "kind": "land",
       "entry": [
         "badajoz",
-        "cordoba"
+        "sevilla"
       ]
     },
     {
@@ -1077,6 +1085,7 @@
         "ceuta"
       ],
       "kind": "sea",
+      "label": "Strait of Gibraltar",
       "entry": [
         "cadiz",
         "ceuta"
@@ -1088,8 +1097,9 @@
         "melilla"
       ],
       "kind": "sea",
+      "label": "Alboran Sea",
       "entry": [
-        "almeria",
+        "malaga",
         "melilla"
       ]
     },
@@ -1099,6 +1109,7 @@
         "islas-baleares"
       ],
       "kind": "sea",
+      "label": "Balearic Sea",
       "entry": [
         "barcelona",
         "mallorca"
@@ -1110,9 +1121,10 @@
         "islas-baleares"
       ],
       "kind": "sea",
+      "label": "Balearic Sea",
       "entry": [
-        "alicante",
-        "ibiza"
+        "valencia",
+        "mallorca"
       ]
     }
   ],
@@ -1970,6 +1982,22 @@
           "murcia"
         ],
         "km": 104.6
+      },
+      {
+        "between": [
+          "mallorca",
+          "menorca"
+        ],
+        "km": 36.6,
+        "sea": true
+      },
+      {
+        "between": [
+          "mallorca",
+          "ibiza"
+        ],
+        "km": 80.6,
+        "sea": true
       }
     ],
     "coastKm": {
@@ -2035,231 +2063,272 @@
           "lugo",
           "asturias"
         ],
-        "km": 156.1
+        "km": 156.1,
+        "rule": "longest-border"
       },
       {
         "entry": [
           "lugo",
           "leon"
         ],
-        "km": 79.5
+        "km": 79.5,
+        "rule": "longest-border"
       },
       {
         "entry": [
           "asturias",
           "cantabria"
         ],
-        "km": 58.7
+        "km": 58.7,
+        "rule": "longest-border"
       },
       {
         "entry": [
           "asturias",
           "leon"
         ],
-        "km": 254
+        "km": 254,
+        "rule": "longest-border"
       },
       {
         "entry": [
           "cantabria",
           "bizkaia"
         ],
-        "km": 73.6
+        "km": 73.6,
+        "rule": "longest-border"
       },
       {
         "entry": [
           "cantabria",
           "burgos"
         ],
-        "km": 163
+        "km": 163,
+        "rule": "longest-border"
       },
       {
         "entry": [
           "gipuzkoa",
           "navarra"
         ],
-        "km": 97.2
+        "km": 97.2,
+        "rule": "longest-border"
       },
       {
         "entry": [
           "alava",
           "la-rioja"
         ],
-        "km": 87
+        "km": 87,
+        "rule": "longest-border"
       },
       {
         "entry": [
           "alava",
           "burgos"
         ],
-        "km": 262.3
+        "km": 262.3,
+        "rule": "longest-border"
       },
       {
         "entry": [
           "navarra",
           "la-rioja"
         ],
-        "km": 148.3
+        "km": 148.3,
+        "rule": "longest-border"
       },
       {
         "entry": [
           "navarra",
           "zaragoza"
         ],
-        "km": 219.5
+        "km": 219.5,
+        "rule": "longest-border"
       },
       {
         "entry": [
           "la-rioja",
           "zaragoza"
         ],
-        "km": 8.1
+        "km": 8.1,
+        "rule": "longest-border"
       },
       {
         "entry": [
           "la-rioja",
-          "soria"
+          "burgos"
         ],
-        "km": 160.5
+        "km": 153.5,
+        "rule": "override",
+        "reason": "The Ebro valley road and railway from Logrono to Haro and Miranda de Ebro, not the Cameros passes into Soria."
       },
       {
         "entry": [
           "zaragoza",
           "soria"
         ],
-        "km": 151.5
+        "km": 151.5,
+        "rule": "longest-border"
       },
       {
         "entry": [
           "teruel",
           "guadalajara"
         ],
-        "km": 87.5
+        "km": 87.5,
+        "rule": "longest-border"
       },
       {
         "entry": [
           "teruel",
           "castellon"
         ],
-        "km": 223.6
+        "km": 223.6,
+        "rule": "longest-border"
       },
       {
         "entry": [
           "huesca",
           "lleida"
         ],
-        "km": 217.8
+        "km": 217.8,
+        "rule": "longest-border"
       },
       {
         "entry": [
           "guadarrama",
           "segovia"
         ],
-        "km": 97.2
+        "km": 97.2,
+        "rule": "longest-border"
       },
       {
         "entry": [
           "madrid",
           "toledo"
         ],
-        "km": 285.5
+        "km": 285.5,
+        "rule": "longest-border"
       },
       {
         "entry": [
           "soria",
           "guadalajara"
         ],
-        "km": 159.6
+        "km": 159.6,
+        "rule": "longest-border"
       },
       {
         "entry": [
           "salamanca",
           "caceres"
         ],
-        "km": 160.1
+        "km": 160.1,
+        "rule": "longest-border"
       },
       {
         "entry": [
-          "albacete",
+          "cuenca",
           "valencia"
         ],
-        "km": 149.4
+        "km": 134.3,
+        "rule": "override",
+        "reason": "The Madrid-Valencia road through Motilla to Requena, the Republic's lifeline."
       },
       {
         "entry": [
           "albacete",
           "murcia"
         ],
-        "km": 196
+        "km": 196,
+        "rule": "longest-border"
       },
       {
         "entry": [
           "ciudad-real",
           "jaen"
         ],
-        "km": 186.4
+        "km": 186.4,
+        "rule": "longest-border"
       },
       {
         "entry": [
-          "ciudad-real",
-          "badajoz"
+          "toledo",
+          "caceres"
         ],
-        "km": 171
+        "km": 129.3,
+        "rule": "override",
+        "reason": "The Tajo valley road from Navalmoral to Talavera, the Army of Africa's march on Madrid."
       },
       {
         "entry": [
           "badajoz",
-          "cordoba"
+          "sevilla"
         ],
-        "km": 128.4
+        "km": 104.3,
+        "rule": "override",
+        "reason": "The Sevilla-Merida road and railway (the Via de la Plata), the column route of August 1936."
       },
       {
         "entry": [
           "tarragona",
           "castellon"
         ],
-        "km": 50.5
+        "km": 50.5,
+        "rule": "longest-border"
       },
       {
         "entry": [
           "alicante",
           "murcia"
         ],
-        "km": 115.2
+        "km": 115.2,
+        "rule": "longest-border"
       },
       {
         "entry": [
           "almeria",
           "murcia"
         ],
-        "km": 104.6
+        "km": 104.6,
+        "rule": "longest-border"
       },
       {
         "entry": [
           "cadiz",
           "ceuta"
         ],
-        "km": 16.8
+        "km": 16.8,
+        "rule": "override",
+        "reason": "Algeciras-Ceuta, the Strait crossing of the July 1936 airlift and convoy."
       },
       {
         "entry": [
-          "almeria",
+          "malaga",
           "melilla"
         ],
-        "km": 152.5
+        "km": 175.2,
+        "rule": "override",
+        "reason": "The Malaga-Melilla ferry line (the closest coasts would give Almeria)."
       },
       {
         "entry": [
           "barcelona",
           "mallorca"
         ],
-        "km": 167.7
+        "km": 167.7,
+        "rule": "override",
+        "reason": "The Barcelona-Palma line."
       },
       {
         "entry": [
-          "alicante",
-          "ibiza"
+          "valencia",
+          "mallorca"
         ],
-        "km": 83.7
+        "km": 214,
+        "rule": "override",
+        "reason": "The Valencia-Palma line (the closest coasts would give Alicante-Ibiza)."
       }
     ]
   }

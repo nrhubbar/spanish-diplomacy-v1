@@ -4,6 +4,7 @@
 // region borders; only the lines inside a territory come from the data below.
 
 import type { GeoPoint } from "./iberia-1936.ts";
+import type { EntryOverride, SeaLink } from "./topology.ts";
 
 /** A longitude/latitude pair, WGS 84 decimal degrees. */
 export type LonLat = readonly [number, number];
@@ -167,3 +168,31 @@ export const provinceAreaTolerance = 0.03;
  * port needs at least `minimumCoast` of coast.
  */
 export const topology = { contact: 0.75, minimumBorder: 2, minimumCoast: 5, seaProbes: [0.5, 1, 2, 3, 4, 6, 8], step: 0.25 } as const;
+
+/**
+ * Connection entries chosen by hand, by territory id, where the geometric rule (longest shared
+ * border, or closest coasts) would miss the road, railway, or ferry line armies used in 1936-39.
+ * Every other connection keeps the derived entry; the build checks each override (known ids, on
+ * the right side, bordering for land, coastal for sea).
+ */
+export const entryOverrides: readonly EntryOverride[] = [
+  // Sea: the regular steamer lines of the 1930s, from ports of level 2 where there is a choice.
+  { entry: { andalucia: "cadiz", ceuta: "ceuta" }, reason: "Algeciras-Ceuta, the Strait crossing of the July 1936 airlift and convoy." },
+  { entry: { andalucia: "malaga", melilla: "melilla" }, reason: "The Malaga-Melilla ferry line (the closest coasts would give Almeria)." },
+  { entry: { catalunya: "barcelona", "islas-baleares": "mallorca" }, reason: "The Barcelona-Palma line." },
+  { entry: { valencia: "valencia", "islas-baleares": "mallorca" }, reason: "The Valencia-Palma line (the closest coasts would give Alicante-Ibiza)." },
+  // Land: the main roads and railways where the longest shared border misleads.
+  { entry: { "castilla-la-mancha": "toledo", extremadura: "caceres" }, reason: "The Tajo valley road from Navalmoral to Talavera, the Army of Africa's march on Madrid." },
+  { entry: { andalucia: "sevilla", extremadura: "badajoz" }, reason: "The Sevilla-Merida road and railway (the Via de la Plata), the column route of August 1936." },
+  { entry: { "la-rioja": "la-rioja", "castilla-y-leon": "burgos" }, reason: "The Ebro valley road and railway from Logrono to Haro and Miranda de Ebro, not the Cameros passes into Soria." },
+  { entry: { "castilla-la-mancha": "cuenca", valencia: "valencia" }, reason: "The Madrid-Valencia road through Motilla to Requena, the Republic's lifeline." }
+];
+
+/**
+ * Sea links inside a territory, written into `subTerritoryBorders` like land borders, so that the
+ * islands form one connected graph for the partition and path rules (P3, P6).
+ */
+export const seaLinks: readonly SeaLink[] = [
+  { between: ["mallorca", "menorca"], reason: "The Palma-Mahon line; Menorca has no other link." },
+  { between: ["mallorca", "ibiza"], reason: "The Palma-Ibiza line." }
+];

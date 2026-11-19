@@ -27,8 +27,10 @@ export interface TopologyOptions {
 
 export interface Border {
   readonly between: readonly [string, string];
-  /** Shared border length: the mean of what each side measures. */
+  /** Shared border length (the mean of what each side measures), or for a sea link the crossing. */
   readonly length: number;
+  /** A sea link between islands of one territory, not a land border. */
+  readonly sea?: true;
 }
 
 export interface Connection {
@@ -129,45 +131,119 @@ export function measureTopology(parts: readonly TopologyPart[], neutral: readonl
   return { borders, coast, coastPoints };
 }
 
+/** The shortest distance between two parts' coasts (sampled), or Infinity when either has none. */
+export function coastDistance(topology: Topology, a: string, b: string): number {
+  let closest = Infinity;
+  for (const point of topology.coastPoints.get(a) ?? []) {
+    for (const other of topology.coastPoints.get(b) ?? []) closest = Math.min(closest, Math.hypot(other.x - point.x, other.y - point.y));
+  }
+  return closest;
+}
+
 /**
- * The entry sub-territories of every connection, in `between` order. Land: the pair across the
- * two territories with the longest shared border. Sea: the pair of coastal sub-territories (at
- * least `minimumCoast` of coast) whose coasts come closest.
+ * A chosen entry for one connection: the sub-territory entered in each territory, by territory id,
+ * and why (a road, railway, or ferry line the geometric rule would miss).
+ */
+export interface EntryOverride {
+  readonly entry: Readonly<Record<string, string>>;
+  readonly reason: string;
+}
+
+export interface ChosenEntry extends ConnectionEntry {
+  /** `override`, or the rule that chose it: `longest-border` (land) or `closest-coasts` (sea). */
+  readonly rule: "override" | "longest-border" | "closest-coasts";
+  readonly reason?: string;
+}
+
+/**
+ * The entry sub-territories of every connection, in `between` order. An override wins when one is
+ * given for the connection's two territories; otherwise land takes the pair across the two
+ * territories with the longest shared border, and sea the pair of coastal sub-territories (at
+ * least `minimumCoast` of coast) whose coasts come closest. Overrides must name a sub-territory
+ * of each side, bordering for land and coastal for sea, and match a connection.
  */
 export function connectionEntries(
   parts: readonly TopologyPart[],
   topology: Topology,
   connections: readonly Connection[],
-  minimumCoast: number
-): ConnectionEntry[] {
+  minimumCoast: number,
+  overrides: readonly EntryOverride[] = []
+): ChosenEntry[] {
   const territoryOf = new Map(parts.map((part) => [part.id, part.territoryId]));
-  return connections.map((connection): ConnectionEntry => {
+  const isCoastal = (id: string): boolean => (topology.coast.get(id) ?? 0) >= minimumCoast;
+  const borderLength = (a: string, b: string): number | undefined => topology.borders
+    .find((border) => (border.between[0] === a && border.between[1] === b) || (border.between[0] === b && border.between[1] === a))?.length;
+  const used = new Set<EntryOverride>();
+  const result = connections.map((connection): ChosenEntry => {
     const [first, second] = connection.between;
+    const label = `${connection.kind} connection ${first} - ${second}`;
+    const override = overrides.find((candidate) => {
+      const territories = Object.keys(candidate.entry).sort();
+      return territories.length === 2 && territories[0] === [first, second].sort()[0] && territories[1] === [first, second].sort()[1];
+    });
+    if (override !== undefined) {
+      used.add(override);
+      const a = override.entry[first] ?? "";
+      const b = override.entry[second] ?? "";
+      for (const [territoryId, id] of [[first, a], [second, b]] as const) {
+        if (!territoryOf.has(id)) throw new Error(`Entry override for ${label} names unknown sub-territory "${id}".`);
+        if (territoryOf.get(id) !== territoryId) throw new Error(`Entry override for ${label}: "${id}" is not in ${territoryId}.`);
+      }
+      if (connection.kind === "land") {
+        const length = borderLength(a, b);
+        if (length === undefined) throw new Error(`Entry override for ${label}: ${a} and ${b} do not share a border.`);
+        return { entry: [a, b], length, reason: override.reason, rule: "override" };
+      }
+      for (const id of [a, b]) if (!isCoastal(id)) throw new Error(`Entry override for ${label}: ${id} has no coast for a port.`);
+      return { entry: [a, b], length: coastDistance(topology, a, b), reason: override.reason, rule: "override" };
+    }
     if (connection.kind === "land") {
-      let best: ConnectionEntry | undefined;
+      let best: ChosenEntry | undefined;
       for (const border of topology.borders) {
         const [a, b] = border.between;
         const pair = territoryOf.get(a) === first && territoryOf.get(b) === second ? [a, b] as const
           : territoryOf.get(b) === first && territoryOf.get(a) === second ? [b, a] as const : undefined;
-        if (pair !== undefined && (best === undefined || border.length > best.length)) best = { entry: pair, length: border.length };
+        if (pair !== undefined && (best === undefined || border.length > best.length)) best = { entry: pair, length: border.length, rule: "longest-border" };
       }
       if (best === undefined) throw new Error(`Land connection ${first} - ${second} has no sub-territories sharing a border.`);
       return best;
     }
-    const coastal = (territoryId: string): string[] => parts
-      .filter((part) => part.territoryId === territoryId && (topology.coast.get(part.id) ?? 0) >= minimumCoast)
-      .map((part) => part.id);
-    let best: ConnectionEntry | undefined;
+    const coastal = (territoryId: string): string[] => parts.filter((part) => part.territoryId === territoryId && isCoastal(part.id)).map((part) => part.id);
+    let best: ChosenEntry | undefined;
     for (const a of coastal(first)) {
       for (const b of coastal(second)) {
-        let closest = Infinity;
-        for (const point of topology.coastPoints.get(a) ?? []) {
-          for (const other of topology.coastPoints.get(b) ?? []) closest = Math.min(closest, Math.hypot(other.x - point.x, other.y - point.y));
-        }
-        if (best === undefined || closest < best.length) best = { entry: [a, b], length: closest };
+        const closest = coastDistance(topology, a, b);
+        if (best === undefined || closest < best.length) best = { entry: [a, b], length: closest, rule: "closest-coasts" };
       }
     }
     if (best === undefined) throw new Error(`Sea connection ${first} - ${second} has no coastal sub-territory on both sides.`);
     return best;
+  });
+  const unused = overrides.filter((override) => !used.has(override));
+  if (unused.length > 0) throw new Error(`Entry overrides match no connection: ${unused.map((override) => Object.keys(override.entry).join(" - ")).join("; ")}.`);
+  return result;
+}
+
+/** A sea link between two coastal sub-territories of one territory (islands), and why. */
+export interface SeaLink {
+  readonly between: readonly [string, string];
+  readonly reason: string;
+}
+
+/**
+ * Borders by sea inside a territory, so its sub-territories form one connected graph (islands).
+ * Each joins two coastal sub-territories of the same territory that share no land border; its
+ * length is the sea crossing between their coasts.
+ */
+export function seaLinkBorders(parts: readonly TopologyPart[], topology: Topology, links: readonly SeaLink[], minimumCoast: number): Border[] {
+  const territoryOf = new Map(parts.map((part) => [part.id, part.territoryId]));
+  return links.map(({ between: [a, b] }): Border => {
+    for (const id of [a, b]) {
+      if (!territoryOf.has(id)) throw new Error(`Sea link names unknown sub-territory "${id}".`);
+      if ((topology.coast.get(id) ?? 0) < minimumCoast) throw new Error(`Sea link ${a} - ${b}: ${id} has no coast.`);
+    }
+    if (territoryOf.get(a) !== territoryOf.get(b)) throw new Error(`Sea link ${a} - ${b} joins two territories; use a scenario connection.`);
+    if (topology.borders.some((border) => border.between.includes(a) && border.between.includes(b))) throw new Error(`Sea link ${a} - ${b} duplicates a land border.`);
+    return { between: [a, b], length: coastDistance(topology, a, b), sea: true };
   });
 }

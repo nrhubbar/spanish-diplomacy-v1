@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { containsPoint, type Point, ringArea } from "../../scripts/map/geometry.ts";
 import { evenOddArea, partitionRegion } from "../../scripts/map/partition.ts";
 import { buildSubTerritories } from "../../scripts/map/subTerritories.ts";
-import { connectionEntries, measureTopology } from "../../scripts/map/topology.ts";
+import { connectionEntries, measureTopology, seaLinkBorders } from "../../scripts/map/topology.ts";
 
 const square = (x: number, y: number, width: number, height = width): Point[] => [{ x, y }, { x: x + width, y }, { x: x + width, y: y + height }, { x, y: y + height }];
 const options = { cellSize: 0.125, tolerance: 0.25 };
@@ -105,6 +105,32 @@ describe("measureTopology and connectionEntries", () => {
     expect(entries[1]?.length).toBeCloseTo(30, 0);
     expect(() => connectionEntries(parts, topology, [{ between: ["A", "C"], kind: "land" }], 3)).toThrow("no sub-territories sharing a border");
     expect(() => connectionEntries(parts, topology, [{ between: ["A", "C"], kind: "sea" }], 1000)).toThrow("no coastal sub-territory");
+  });
+
+  it("takes an override over the derived entry, and checks it", () => {
+    const land = [{ between: ["B", "A"], kind: "land" }] as const;
+    const chosen = connectionEntries(parts, topology, land, 3, [{ entry: { A: "a1", B: "b1" }, reason: "the old road" }]);
+    expect(chosen[0]).toMatchObject({ entry: ["b1", "a1"], reason: "the old road", rule: "override" });
+    expect(connectionEntries(parts, topology, land, 3)[0]?.rule).toBe("longest-border");
+    const sea = connectionEntries(parts, topology, [{ between: ["A", "C"], kind: "sea" }], 3, [{ entry: { A: "a2", C: "c1" }, reason: "ferry" }]);
+    expect(sea[0]?.entry).toEqual(["a2", "c1"]);
+    expect(() => connectionEntries(parts, topology, land, 3, [{ entry: { A: "zz", B: "b1" }, reason: "" }])).toThrow("unknown sub-territory");
+    expect(() => connectionEntries(parts, topology, land, 3, [{ entry: { A: "b1", B: "a1" }, reason: "" }])).toThrow("is not in");
+    expect(() => connectionEntries(parts, topology, [{ between: ["A", "C"], kind: "land" }], 3, [{ entry: { A: "a1", C: "c1" }, reason: "" }])).toThrow("do not share a border");
+    expect(() => connectionEntries(parts, topology, [{ between: ["A", "C"], kind: "sea" }], 1000, [{ entry: { A: "a1", C: "c1" }, reason: "" }])).toThrow("no coast for a port");
+    expect(() => connectionEntries(parts, topology, land, 3, [{ entry: { A: "a1", C: "c1" }, reason: "" }])).toThrow("match no connection");
+  });
+
+  it("adds sea links inside a territory, and checks them", () => {
+    const islands = [...parts, { id: "c2", rings: [square(20, 40, 5)], territoryId: "C" }];
+    const islandTopology = measureTopology(islands, neutral, topologyOptions);
+    const [link] = seaLinkBorders(islands, islandTopology, [{ between: ["c1", "c2"], reason: "ferry" }], 3);
+    expect(link).toMatchObject({ between: ["c1", "c2"], sea: true });
+    expect(link?.length).toBeCloseTo(15, 0);
+    expect(() => seaLinkBorders(islands, islandTopology, [{ between: ["c1", "zz"], reason: "" }], 3)).toThrow("unknown sub-territory");
+    expect(() => seaLinkBorders(islands, islandTopology, [{ between: ["a1", "c1"], reason: "" }], 3)).toThrow("joins two territories");
+    expect(() => seaLinkBorders(islands, islandTopology, [{ between: ["a1", "a2"], reason: "" }], 3)).toThrow("duplicates a land border");
+    expect(() => seaLinkBorders(islands, islandTopology, [{ between: ["c1", "c2"], reason: "" }], 1000)).toThrow("has no coast");
   });
 });
 
