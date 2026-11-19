@@ -117,3 +117,53 @@
 **Next**
 - Hand-off.
 - At merge, the integrator moves `scenarioPackage` to the contract's folder, and the contract copies `subTerritoryBorders` and `connections[].entry` into `scenario.json`.
+
+## CP3: entry overrides and island links (reviewer gaps)
+
+**Done**
+- `entryOverrides` (in `scripts/map/iberia-1936-sub-territories.ts`) are per-connection entries, keyed by territory id, each with its reason. Where one exists it replaces the derived rule. Each override is checked:
+  - both ids are known;
+  - each sits on its own side;
+  - land pairs share a border, and sea pairs are both coastal;
+  - the override matches a connection.
+- `seaLinks` `mallorca`-`menorca` and `mallorca`-`ibiza` are written into `subTerritoryBorders`, and marked `sea: true` in `measurements.borderKm` together with the crossing distance. Every territory's sub-territories now form one connected graph, and the test that skipped Baleares now covers it.
+- The topology file's `connections[]` are the scenario's own connection objects, unchanged except for `entry`, so they match `scenario.json` field for field. `measurements.connectionKm` records the rule behind each entry (`override`, `longest-border`, `closest-coasts`) and the reason.
+
+**Decisions**
+16. Sea overrides follow the 1930s steamer lines:
+    - `cadiz`-`ceuta` (Algeciras);
+    - `malaga`-`melilla`;
+    - `barcelona`-`mallorca`;
+    - `valencia`-`mallorca`.
+    I pinned all four, even where the closest-coasts rule already agreed, so a geometry change cannot flip them.
+17. Land overrides:
+    - `toledo`-`caceres`: the Tajo valley road from Navalmoral to Talavera, the Army of Africa's march on Madrid.
+    - `sevilla`-`badajoz`: the Sevilla-Merida road and railway on the Via de la Plata, the column route of August 1936.
+    - `la-rioja`-`burgos`: the Ebro valley road and railway from Logrono to Haro and Miranda. The longest border went into Soria over the Cameros passes.
+    - `cuenca`-`valencia`: the Madrid-Valencia road through Motilla to Requena, the Republic's lifeline. The longest border went through Albacete.
+18. Every other land entry already follows the main 1936 route, so none is overridden. The routes:
+    - `lugo`-`leon`: the Galician mainline through Monforte and Ponferrada;
+    - `asturias`-`leon`: the Pajares railway;
+    - `alava`-`burgos`: Vitoria-Miranda;
+    - `gipuzkoa`-`navarra`: Mola's 1936 front;
+    - `navarra`-`zaragoza`: Tudela;
+    - `zaragoza`-`soria`: the Madrid-Zaragoza railway at Arcos de Jalon;
+    - `soria`-`guadalajara`: Siguenza and Medinaceli;
+    - `teruel`-`castellon`: the Central de Aragon railway through Segorbe;
+    - `huesca`-`lleida`: Fraga, on the Zaragoza-Lleida road;
+    - `guadarrama`-`segovia`: the passes;
+    - `madrid`-`toledo`;
+    - `salamanca`-`caceres`: the Via de la Plata;
+    - `ciudad-real`-`jaen`: Despenaperras;
+    - `albacete`-`murcia`: Hellin;
+    - `alicante`-`murcia`;
+    - `almeria`-`murcia`: the Lorca coast road and the Lorca-Baza railway;
+    - `tarragona`-`castellon`: the coast road;
+    - `cantabria`-`burgos`: the Escudo road (Reinosa via Palencia is the other route);
+    - `teruel`-`guadalajara`: Molina;
+    - `la-rioja`-`zaragoza`: the only border.
+
+**Checks**
+- `npm run maps:build` exit 0. Two runs gave identical output, all 5 checksums match, and the relief and region files are unchanged.
+- `lint`, `typecheck`, `test:unit` and `build` all exit 0 (29 files, 514 tests).
+- `E2E_PORT=5302` e2e on chromium and mobile-chromium: exit 0, 51 passed and 5 skipped.
