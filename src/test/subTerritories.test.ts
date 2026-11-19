@@ -24,11 +24,16 @@ interface Topology {
   readonly subTerritories: readonly { readonly id: string; readonly territoryId: string; readonly name: string }[];
   readonly subTerritoryBorders: readonly (readonly [string, string])[];
   readonly connections: readonly { readonly between: readonly [string, string]; readonly kind: string; readonly entry: readonly [string, string] }[];
+  readonly cities: Readonly<Record<string, string>>;
   readonly measurements: { readonly coastKm: Readonly<Record<string, number>>; readonly borderKm: readonly { readonly between: readonly [string, string]; readonly km: number }[] };
 }
 
 const map = mapSchema.parse(JSON.parse(readFileSync(mapDocument, "utf8")));
-const scenario = JSON.parse(readFileSync(scenarioDocument, "utf8")) as { territories: { id: string }[]; connections: { between: [string, string]; kind: string }[] };
+const scenario = JSON.parse(readFileSync(scenarioDocument, "utf8")) as {
+  territories: { id: string }[];
+  connections: { between: [string, string]; kind: string }[];
+  cities: { id: string; territoryId: string }[];
+};
 const topology = JSON.parse(readFileSync(topologyDocument, "utf8")) as Topology;
 const subTerritoryMap = map.subTerritories;
 if (subTerritoryMap === undefined) throw new Error("map.json has no sub-territories");
@@ -207,6 +212,13 @@ describe("sub-territory topology", () => {
       if (connection.kind === "land") expect(adjacency.get(a)?.has(b), connection.between.join("-")).toBe(true);
       else for (const port of connection.entry) expect(topology.measurements.coastKm[port], port).toBeGreaterThanOrEqual(topologyOptions.minimumCoast);
     }
+  });
+
+  it("puts every city in a sub-territory of its own territory", () => {
+    expect(Object.keys(topology.cities).sort()).toEqual(scenario.cities.map((city) => city.id).sort());
+    for (const city of scenario.cities) expect(territoryOf(topology.cities[city.id] ?? ""), city.id).toBe(city.territoryId);
+    expect(topology.cities["oviedo"]).toBe("oviedo");
+    expect(topology.cities["gijon"]).toBe("asturias");
   });
 
   it("finds coast only where there is sea", () => {

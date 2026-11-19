@@ -1116,6 +1116,33 @@
       ]
     }
   ],
+  "cities": {
+    "a-coruna": "a-coruna",
+    "oviedo": "oviedo",
+    "gijon": "asturias",
+    "santander": "cantabria",
+    "bilbao": "bizkaia",
+    "san-sebastian": "gipuzkoa",
+    "pamplona": "navarra",
+    "burgos": "burgos",
+    "valladolid": "valladolid",
+    "salamanca": "salamanca",
+    "zaragoza": "zaragoza",
+    "teruel": "teruel",
+    "barcelona": "barcelona",
+    "madrid": "madrid",
+    "toledo": "toledo",
+    "badajoz": "badajoz",
+    "valencia": "valencia",
+    "albacete": "albacete",
+    "alicante": "alicante",
+    "cartagena": "murcia",
+    "seville": "sevilla",
+    "cordoba": "cordoba",
+    "granada": "granada",
+    "malaga": "malaga",
+    "cadiz": "cadiz"
+  },
   "measurements": {
     "borderKm": [
       {
