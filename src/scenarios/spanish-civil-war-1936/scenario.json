@@ -2978,7 +2978,7 @@
       "name": "C\u00e1ceres",
       "territoryId": "extremadura",
       "terrain": "open",
-      "startHolder": "south",
+      "startHolder": "north",
       "development": {
         "farms": 2
       },
@@ -2988,9 +2988,12 @@
       "sources": [
         {
           "sourceId": "ubc-july-map"
+        },
+        {
+          "sourceId": "nafziger-1936"
         }
       ],
-      "note": "Nationalist on 31 July (Q-PART-9). Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "Nationalist on 31 July (Q-PART-9). It lay in the VII Organic Division (Valladolid) and rose under Mola, so it starts with the Northern command (nafziger-1936). Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
     },
     {
       "id": "barcelona",

@@ -51,3 +51,11 @@ export interface GroundedOutcome {
   readonly order: AirMissionOrder;
   readonly reason: string;
 }
+
+/** Every outcome of this area. Adding a kind here is all the union needs. */
+export type AirTurnOutcome =
+  | RaidFlownOutcome
+  | ReconFlownOutcome
+  | InterceptionOutcome
+  | SupportFlownOutcome
+  | GroundedOutcome;

@@ -101,16 +101,11 @@ export interface Retreat {
   readonly unitId: UnitId;
 }
 
-/** What one d20 grade did to one unit (D2, D6). */
-export interface UnitGradeEffect {
-  readonly demoralized: boolean;
-  /** D6, "Defender broken": the unit was destroyed. */
-  readonly destroyed: boolean;
-  readonly menLost: number;
-  readonly unitId: UnitId;
-}
-
-/** What every battle reports, whichever dice module rolled it. */
+/**
+ * What every battle reports, whichever dice module rolled it. `losses` (men lost and units
+ * destroyed, per unit) and `demoralizedUnitIds` are the one record of what a battle did to
+ * units, for d6 and d20 alike; the harness reads them.
+ */
 interface BattleCommon {
   readonly attacker: BattleSide;
   readonly attackerFactionId: FactionId;
@@ -148,8 +143,6 @@ export interface D20BattleOutcome extends BattleCommon {
   readonly ground: 0 | 1 | 2 | "all";
   /** The table score used: the die plus every modifier, clamped to 0..20. */
   readonly score: number;
-  /** Per-unit losses and demoralization, attacker and defender alike. */
-  readonly unitEffects: readonly UnitGradeEffect[];
 }
 
 /** A battle, by the dice module that rolled it. */

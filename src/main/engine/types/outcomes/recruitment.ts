@@ -58,3 +58,12 @@ export interface ReplenishCancelledOutcome {
   readonly reason: string;
   readonly refund: Resources;
 }
+
+/** Every outcome of this area. Adding a kind here is all the union needs. */
+export type RecruitmentTurnOutcome =
+  | TrainingStartedOutcome
+  | TrainingPausedOutcome
+  | TrainingCompletedOutcome
+  | TrainingRefundedOutcome
+  | ReplenishAppliedOutcome
+  | ReplenishCancelledOutcome;

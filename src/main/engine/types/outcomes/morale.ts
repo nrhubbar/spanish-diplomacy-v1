@@ -27,3 +27,8 @@ export interface FatigueOutcome {
   readonly kind: "fatigue";
   readonly unitId: UnitId;
 }
+
+/** Every outcome of this area. Adding a kind here is all the union needs. */
+export type MoraleTurnOutcome =
+  | RalliedOutcome
+  | FatigueOutcome;

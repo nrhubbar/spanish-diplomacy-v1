@@ -26,3 +26,9 @@ export interface TimeRanOutOutcome {
   readonly heldUnitCount: number;
   readonly kind: "time-ran-out";
 }
+
+/** Every outcome of this area. Adding a kind here is all the union needs. */
+export type WeatherTurnOutcome =
+  | WeatherRolledOutcome
+  | FrostbiteOutcome
+  | TimeRanOutOutcome;

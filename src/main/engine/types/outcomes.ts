@@ -2,19 +2,12 @@ import type { CityId, FactionId, TerritoryId } from "../ids";
 import type { Order } from "./orders";
 import type { TerritoryControl, VictoryCondition } from "./scenario";
 import type { GameState } from "./state";
-import type { InterceptionOutcome, GroundedOutcome, RaidFlownOutcome, ReconFlownOutcome, SupportFlownOutcome } from "./outcomes/air";
+import type { AirTurnOutcome } from "./outcomes/air";
 import type { BattleOutcome } from "./outcomes/battle";
-import type { PathSurrenderOutcome, RailDamagedOutcome, SubTerritoryChange, WithdrewOutcome } from "./outcomes/contested";
-import type {
-  BuildCompletedOutcome,
-  BuildForfeitedOutcome,
-  BuildProgressedOutcome,
-  BuildQueuedOutcome,
-  BuildRefundedOutcome,
-  IncomeOutcome
-} from "./outcomes/economy";
-import type { GeneralDiedOutcome, GeneralSackedOutcome, ReplacementArrivedOutcome, ReplacementDueOutcome } from "./outcomes/generals";
-import type { FatigueOutcome, RalliedOutcome, RecoveredOutcome } from "./outcomes/morale";
+import type { ContestedTurnOutcome, SubTerritoryChange } from "./outcomes/contested";
+import type { EconomyTurnOutcome } from "./outcomes/economy";
+import type { GeneralsTurnOutcome } from "./outcomes/generals";
+import type { MoraleTurnOutcome, RecoveredOutcome } from "./outcomes/morale";
 import type {
   BouncedMoveOutcome,
   DisbandedMoveOutcome,
@@ -24,19 +17,12 @@ import type {
   RejectedOrderOutcome,
   SuccessfulMoveOutcome
 } from "./outcomes/moves";
-import type {
-  ReplenishAppliedOutcome,
-  ReplenishCancelledOutcome,
-  TrainingCompletedOutcome,
-  TrainingPausedOutcome,
-  TrainingRefundedOutcome,
-  TrainingStartedOutcome
-} from "./outcomes/recruitment";
-import type { FrostbiteOutcome, TimeRanOutOutcome, WeatherRolledOutcome } from "./outcomes/weather";
+import type { RecruitmentTurnOutcome } from "./outcomes/recruitment";
+import type { WeatherTurnOutcome } from "./outcomes/weather";
 
 /**
- * Every turn outcome, joined in one place. Each slice owns the detail of its area's file under
- * `outcomes/`; adding a kind there and here is the only shared edit.
+ * Every turn outcome, joined in one place. Each slice owns its area's file under `outcomes/`,
+ * and adding a kind to that file's union is the only edit it needs.
  */
 
 export * from "./outcomes/air";
@@ -61,37 +47,15 @@ export type MilestoneTwoOutcome =
   | RecoveredOutcome
   | BattleOutcome;
 
-/** Outcomes of the Milestone 3 systems, by area. */
+/** Outcomes of the Milestone 3 systems: one union per area file. */
 export type SystemOutcome =
-  | WeatherRolledOutcome
-  | FrostbiteOutcome
-  | TimeRanOutOutcome
-  | TrainingStartedOutcome
-  | TrainingPausedOutcome
-  | TrainingCompletedOutcome
-  | TrainingRefundedOutcome
-  | ReplenishAppliedOutcome
-  | ReplenishCancelledOutcome
-  | BuildQueuedOutcome
-  | BuildProgressedOutcome
-  | BuildCompletedOutcome
-  | BuildForfeitedOutcome
-  | BuildRefundedOutcome
-  | IncomeOutcome
-  | WithdrewOutcome
-  | PathSurrenderOutcome
-  | RailDamagedOutcome
-  | RaidFlownOutcome
-  | ReconFlownOutcome
-  | InterceptionOutcome
-  | SupportFlownOutcome
-  | GroundedOutcome
-  | GeneralDiedOutcome
-  | GeneralSackedOutcome
-  | ReplacementDueOutcome
-  | ReplacementArrivedOutcome
-  | RalliedOutcome
-  | FatigueOutcome;
+  | WeatherTurnOutcome
+  | RecruitmentTurnOutcome
+  | EconomyTurnOutcome
+  | ContestedTurnOutcome
+  | AirTurnOutcome
+  | GeneralsTurnOutcome
+  | MoraleTurnOutcome;
 
 export type TurnOutcome = MilestoneTwoOutcome | SystemOutcome;
 

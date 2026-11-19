@@ -33,7 +33,7 @@ describe("the Spanish Civil War package (spec v2, m3-modular)", () => {
     const state = initialGameState(scenario);
     const holder = (id: string) => state.subTerritories[id as SubTerritoryId]?.holder;
     expect([holder("alava"), holder("bizkaia"), holder("oviedo"), holder("asturias"), holder("huesca"), holder("caceres")])
-      .toEqual(["north", "republic", "north", "republic", "republic", "south"]);
+      .toEqual(["north", "republic", "north", "republic", "republic", "north"]);
   });
 
   it("gives every faction a treasury, a seat, an AI profile and a roster of 3 to 5 generals", () => {

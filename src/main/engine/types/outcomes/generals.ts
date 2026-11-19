@@ -35,3 +35,10 @@ export interface ReplacementArrivedOutcome {
   readonly territoryId: TerritoryId;
   readonly unitId: UnitId;
 }
+
+/** Every outcome of this area. Adding a kind here is all the union needs. */
+export type GeneralsTurnOutcome =
+  | GeneralDiedOutcome
+  | GeneralSackedOutcome
+  | ReplacementDueOutcome
+  | ReplacementArrivedOutcome;

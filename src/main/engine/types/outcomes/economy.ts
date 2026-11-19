@@ -61,3 +61,12 @@ export interface IncomeOutcome {
   /** The sub-territories whose yield a raid cut this turn. */
   readonly cutSubTerritoryIds: readonly SubTerritoryId[];
 }
+
+/** Every outcome of this area. Adding a kind here is all the union needs. */
+export type EconomyTurnOutcome =
+  | BuildQueuedOutcome
+  | BuildProgressedOutcome
+  | BuildCompletedOutcome
+  | BuildForfeitedOutcome
+  | BuildRefundedOutcome
+  | IncomeOutcome;

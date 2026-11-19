@@ -43,3 +43,9 @@ export interface SubTerritoryChange {
   readonly cause: SubTerritoryChangeCause;
   readonly subTerritoryId: SubTerritoryId;
 }
+
+/** Every outcome of this area. Adding a kind here is all the union needs. */
+export type ContestedTurnOutcome =
+  | WithdrewOutcome
+  | PathSurrenderOutcome
+  | RailDamagedOutcome;
