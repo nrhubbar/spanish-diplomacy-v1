@@ -75,10 +75,14 @@ export const regionSources: Readonly<Record<string, string>> = {
 };
 
 /**
- * Playable land that is not a bound region: drawn in the relief like the regions, so the
- * enclaves read as Spanish territory under their circle shapes.
+ * Playable land that is not a bound region, by territory id and geoBoundaries ADM1 `shapeName`:
+ * drawn in the relief like the regions, so the enclaves read as Spanish territory under their
+ * circle shapes, and the land of their sub-territories.
  */
-export const playableExtras: readonly string[] = ["Ciudad Aut\u00f3noma de Ceuta", "Ciudad Aut\u00f3noma de Melilla"];
+export const playableExtras: Readonly<Record<string, string>> = {
+  ceuta: "Ciudad Aut\u00f3noma de Ceuta",
+  melilla: "Ciudad Aut\u00f3noma de Melilla"
+};
 
 /** Rivers are vendored for this longitude/latitude extent: the Peninsula and the Balearics. */
 export const riverExtent = { east: 4.6, north: 44, south: 35.8, west: -9.8 } as const;
@@ -202,7 +206,7 @@ export const art = {
 /** Map credits shown on the Settings screen (`attribution` in map.json). */
 export const attribution: readonly { readonly text: string; readonly url?: string }[] = [
   {
-    text: "Administrative boundaries adapted from geoBoundaries gbOpen (CC BY 4.0); source boundary data from the Instituto Geografico Nacional, Spain.",
+    text: "Administrative boundaries adapted from geoBoundaries gbOpen (CC BY 4.0); source boundary data from the Instituto Geografico Nacional, Spain (regions and municipalities), and the Instituto Nacional de Estadistica, Spain (provinces).",
     url: "https://www.geoboundaries.org/"
   },
   {

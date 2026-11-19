@@ -4,13 +4,13 @@ Every file in this directory ships with the game. Their SHA-256 checksums are in
 
 ## How the files are made
 
-All four files come from one script, `scripts/build-map.ts` (`npm run maps:build`), which runs offline from the vendored sources and then checks the outputs against `checksums.json`. It also rewrites every coordinate in `src/main/scenarios/spain-1936-07-31/map.json` (view box, focus, unit anchors, labels, cities, enclave circles, context labels, rivers, and water labels) from the same geography. `node scripts/build-map.ts --package-only` rewrites only `map.json`, for iterating on labels; only the full build checks registration and checksums.
+All five files come from one script, `scripts/build-map.ts` (`npm run maps:build`), which runs offline from the vendored sources and then checks the outputs against `checksums.json`. It also rewrites every coordinate in `src/main/scenarios/spain-1936-07-31/map.json` (view box, focus, unit anchors, labels, cities, enclave circles, sub-territory label and capital points, context labels, rivers, and water labels) from the same geography. `node scripts/build-map.ts --package-only` rewrites only `map.json`, for iterating on labels; only the full build checks registration and checksums.
 
 - **One projection.** Region polygons, neighbouring countries, rivers, the elevation model, cities, and labels all pass through the same spherical Lambert conformal conic (standard parallels 37N and 43N, origin 40N 3W, map units in kilometres). Nothing is fitted to an existing picture.
 - **Registered by construction.** The relief's land/sea edge is rasterized from the exact SVG path data written to `iberia-regions.svg`, so coastlines and borders in the relief and in the vector layer are the same lines. The build fails if a sample of points either side of the region edges disagrees with the baked land mask (`registration:` in its log), or if any river vertex lies off the region polygons or off the baked land mask (`river registration:`); the unit test "puts every river vertex inside a region" checks the shipped `map.json` against the shipped SVG, and the e2e test "draws the relief coastline exactly under the region coastline at full zoom" checks the rendered result in every browser.
 - **Reproducible.** The build uses sharp/libvips (pinned in `package.json`), not a browser, so the same sources reproduce the same bytes. On 18 November 2026 two consecutive builds on macOS produced identical files.
 
-`npm run maps:fetch` (`scripts/fetch-map-sources.ts`) is the only map script that uses the network. It re-downloads the elevation and Natural Earth inputs, records every upstream file's SHA-256 in `scripts/sources/manifest.json`, and rewrites the vendored derivatives; review the diff before committing. `npm run maps:fetch -- rivers` (or `elevation`, `neutralLand`) refreshes only the named sources.
+`npm run maps:fetch` (`scripts/fetch-map-sources.ts`) is the only map script that uses the network. It re-downloads the elevation, Natural Earth, and geoBoundaries province inputs, records every upstream file's SHA-256 in `scripts/sources/manifest.json`, and rewrites the vendored files; review the diff before committing. `npm run maps:fetch -- rivers` (or `elevation`, `neutralLand`, `provinces`) refreshes only the named sources.
 
 ## `iberia-regions.svg`
 
@@ -21,6 +21,24 @@ Runtime territory geometry and interaction mask (regions `ES11` ... `ES62`).
 - License: Creative Commons Attribution 4.0 International (CC BY 4.0)
 - Attribution: (c) geoBoundaries; source boundary data from the Instituto Geografico Nacional, Spain
 - Changes: projected, simplified (Douglas-Peucker, 0.25 km tolerance; islets under 0.4 km2 dropped), assigned stable region ids, serialized to 0.1 km
+
+## `iberia-sub-territories.svg`
+
+Runtime sub-territory geometry: one path per sub-territory, its element id the sub-territory id (the 1936 provinces, Baleares by island, Asturias in two and Madrid in three; 55 in all). `map.json` binds each to its territory and gives its label and capital points.
+
+- Outer edges: each territory's own region rings from `iberia-regions.svg` (above), vertex for vertex, so sub-territory borders agree with the region borders. Ceuta and Melilla use the same ADM1 land as the relief.
+- Province borders inside a territory: geoBoundaries gbOpen Spain ADM2 (simplified), pinned to revision `9469f09` like ADM1: https://github.com/wmgeolab/geoBoundaries/tree/9469f09/releaseData/gbOpen/ESP/ADM2
+  - Vendored copy: `scripts/sources/geoboundaries/geoBoundaries-ESP-ADM2_simplified.geojson` (SHA-256 `40a12d32651a352b59bc88447432421ab80e2d950deb6f552efbae907f7232c2`, equal to the repository's Git LFS object id; checked before use). 52 features: the 50 provinces, Ceuta, and Melilla.
+  - License: geoBoundaries is released under Creative Commons Attribution 4.0 International (CC BY 4.0). The geoBoundaries metadata for this layer names its source as the Instituto Nacional de Estadistica (INE), Spain, under the INE data licence, which allows reuse with the source cited.
+  - Attribution: (c) geoBoundaries; source boundary data from the Instituto Nacional de Estadistica, Spain
+- Hand-drawn splits (`scripts/map/iberia-1936-sub-territories.ts`): lines that follow municipal boundaries traced from geoBoundaries gbOpen Spain ADM3 (municipalities, source Instituto Geografico Nacional, CC BY 4.0, revision `9469f09`), simplified (Douglas-Peucker, 0.3 km) and rounded to 0.001 degree. ADM3 is not vendored; the lines are.
+  - `oviedo`: the municipality (concejo) of Oviedo; `asturias`: the rest of the province.
+  - `guadarrama`: the Sierra Norte (La Acebeda, Alameda del Valle, El Atazar, Berzosa del Lozoya, El Berrueco, Braojos, Buitrago del Lozoya, Bustarviejo, Cabanillas de la Sierra, La Cabrera, Canencia, Cervera de Buitrago, Garganta de los Montes, Gargantilla del Lozoya y Pinilla de Buitrago, Gascones, La Hiruela, Horcajo de la Sierra-Aoslos, Horcajuelo de la Sierra, Lozoya, Lozoyuela-Navas-Sieteiglesias, Madarcos, Montejo de la Sierra, Navalafuente, Navarredonda y San Mames, Patones, Pinilla del Valle, Pinuecar-Gandullas, Pradena del Rincon, Puebla de la Sierra, Puentes Viejas, Rascafria, Reduena, Robledillo de la Jara, Robregordo, La Serna del Monte, Somosierra, Torrelaguna, Torremocha de Jarama, Valdemanco, El Vellon, Venturada, Villavieja del Lozoya) and the Sierra de Guadarrama (Alpedrete, Becerril de la Sierra, El Boalo, Cercedilla, Collado Mediano, Collado Villalba, El Escorial, Guadalix de la Sierra, Guadarrama, Manzanares el Real, Miraflores de la Sierra, Los Molinos, Moralzarzal, Navacerrada, San Lorenzo de El Escorial, Santa Maria de la Alameda, Soto del Real, Zarzalejo, and the shared lands of Los Baldios and El Redeguelo).
+  - `henares`: the Henares valley and the Jarama-Henares plain (Ajalvir, Alcala de Henares, Algete, Anchuelo, Camarma de Esteruelas, Cobena, Corpa, Daganzo de Arriba, Fresno de Torote, Fuente el Saz de Jarama, Los Santos de la Humosa, Meco, Paracuellos de Jarama, Pezuela de las Torres, Ribatejada, San Fernando de Henares, Santorcaz, Talamanca de Jarama, Torrejon de Ardoz, Torres de la Alameda, Valdeavero, Valdeolmos-Alalpardo, Valdepielagos, Valdetorres de Jarama, Valverde de Alcala, Villalbilla).
+  - `madrid`: every other municipality of the province: the city, the west, and the south.
+  - Baleares is one province in the source: each island takes the part of its capital's island, and islets join the nearest island (Formentera Ibiza; Cabrera and Dragonera Mallorca).
+- Changes: projected; internal lines found on a 0.125 km grid labelled from the provinces (or split lines), traced, simplified once each (Douglas-Peucker, 0.25 km, keeping the points where three parts meet) and cut at the region edges; serialized to 0.1 km. The build fails if the parts of a territory do not add up to its region's area, if a province's part differs from its ADM2 area by more than 3 percent, or if two internal lines cross.
+- Capital points: the chief town of each sub-territory, from the same Wikipedia coordinates as the cities (below; retrieved 19 November 2026 for the towns not in the city list), moved inward when the simplified coast leaves the town outside.
 
 ## Relief: `iberia-relief-detail.webp`, `iberia-relief-margin.webp`, and `iberia-relief-overview.webp`
 
@@ -60,7 +78,7 @@ Vector rivers drawn over the relief: the eight main rivers and 22 major tributar
 
 ## City and enclave positions
 
-Cities, Ceuta, and Melilla are placed from WGS 84 coordinates listed in `scripts/map/iberia-1936.ts`: the coordinates of each city's English Wikipedia article, read through the MediaWiki API on 18 November 2026 and rounded to 0.001 degree.
+Cities, Ceuta, and Melilla are placed from WGS 84 coordinates listed in `scripts/map/iberia-1936.ts`: the coordinates of each city's English Wikipedia article, read through the MediaWiki API on 18 November 2026 and rounded to 0.001 degree. Sub-territory capitals in `scripts/map/iberia-1936-sub-territories.ts` reuse them, and add the other provincial capitals, Gijon, Collado Villalba, Alcala de Henares, Palma, Mahon, and Ibiza, read the same way on 19 November 2026.
 
 ## Removed sources
 

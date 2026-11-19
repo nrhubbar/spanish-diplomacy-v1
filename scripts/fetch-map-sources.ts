@@ -1,4 +1,4 @@
-// Downloads and vendors the elevation, neutral-land, and river sources that `npm run maps:build` reads.
+// Downloads and vendors the elevation, neutral-land, river, and province sources that `npm run maps:build` reads.
 // This is the only map script that uses the network; run it deliberately (`npm run maps:fetch`)
 // and review the resulting changes under scripts/sources/. Every upstream file's SHA-256 is
 // recorded so the vendored derivatives can be traced back byte for byte.
@@ -15,6 +15,10 @@
 //
 // Rivers: Natural Earth 1:10m rivers and lake centrelines and its Europe supplement (public
 // domain), cut to the Iberian river extent with the same rounding.
+//
+// Provinces: geoBoundaries gbOpen ESP ADM2 (simplified), pinned to the revision of the vendored
+// ADM1 file and kept verbatim. The repository stores it with Git LFS, so it comes from the media
+// host and is checked against the LFS pointer's SHA-256 and for the expected 52 provinces.
 import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import sharp from "sharp";
@@ -30,6 +34,12 @@ const naturalEarth = {
   revision: "f1890d9f152c896d250a77557a5751a93d494776",
   tag: "v5.1.2",
   url: `${naturalEarthRoot}/geojson/ne_10m_admin_0_countries.geojson`
+};
+const geoBoundaries = {
+  revision: "9469f09592ced973a3448cf66b6100b741b64c0d",
+  /** Git LFS media host for the release files; `pointerRoot` serves the LFS pointers. */
+  mediaRoot: "https://media.githubusercontent.com/media/wmgeolab/geoBoundaries/9469f09592ced973a3448cf66b6100b741b64c0d/releaseData/gbOpen/ESP",
+  pointerRoot: "https://raw.githubusercontent.com/wmgeolab/geoBoundaries/9469f09592ced973a3448cf66b6100b741b64c0d/releaseData/gbOpen/ESP"
 };
 const projection = lambertConformalConic(projectionDefinition);
 const sha256 = (bytes: Uint8Array): string => createHash("sha256").update(bytes).digest("hex");
@@ -181,6 +191,40 @@ async function fetchRivers(): Promise<object> {
   return { file, sha256: sha256(Buffer.from(output)), revision: naturalEarth.revision, tag: naturalEarth.tag, upstream, extent: riverExtent };
 }
 
+/**
+ * Provinces: geoBoundaries gbOpen ESP ADM2, vendored byte for byte. Before it is trusted the file
+ * must match its Git LFS pointer and hold the 50 provinces plus Ceuta and Melilla.
+ */
+async function fetchProvinces(): Promise<object> {
+  const path = "ADM2/geoBoundaries-ESP-ADM2_simplified.geojson";
+  const url = `${geoBoundaries.mediaRoot}/${path}`;
+  const bytes = await download(url);
+  const pointer = (await download(`${geoBoundaries.pointerRoot}/${path}`)).toString("utf8");
+  const oid = /^oid sha256:([0-9a-f]{64})$/m.exec(pointer)?.[1];
+  if (oid === undefined) throw new Error(`${path}: the repository no longer serves a Git LFS pointer for it.`);
+  if (sha256(bytes) !== oid) throw new Error(`${url}: SHA-256 ${sha256(bytes)} does not match the LFS pointer's ${oid}.`);
+  const collection = JSON.parse(bytes.toString("utf8")) as { features: { properties: Record<string, unknown> }[] };
+  const names = collection.features.map((feature) => String(feature.properties["shapeName"]));
+  const types = new Set(collection.features.map((feature) => String(feature.properties["shapeType"])));
+  if (names.length !== 52 || types.size !== 1 || !types.has("ADM2") || !names.includes("Ceuta") || !names.includes("Melilla")) {
+    throw new Error(`${path}: expected the 50 provinces plus Ceuta and Melilla, found ${String(names.length)} features (${[...types].join(", ")}).`);
+  }
+  const metadata = JSON.parse((await download(`${geoBoundaries.mediaRoot}/ADM2/geoBoundaries-ESP-ADM2-metaData.json`)).toString("utf8")) as Record<string, string>;
+  const file = "scripts/sources/geoboundaries/geoBoundaries-ESP-ADM2_simplified.geojson";
+  await writeFile(new URL(file, root), bytes);
+  console.log(`${file}: ${String(names.length)} provinces`);
+  return {
+    file,
+    sha256: oid,
+    revision: geoBoundaries.revision,
+    url,
+    features: names.length,
+    boundarySource: metadata["boundarySource"],
+    boundaryLicense: metadata["boundaryLicense"],
+    boundaryYear: metadata["boundaryYear"]
+  };
+}
+
 const sources = {
   elevation: async (): Promise<object> => {
     await mkdir(new URL("scripts/sources/dem/", root), { recursive: true });
@@ -199,11 +243,15 @@ const sources = {
   rivers: async (): Promise<object> => {
     await mkdir(new URL("scripts/sources/naturalearth/", root), { recursive: true });
     return fetchRivers();
+  },
+  provinces: async (): Promise<object> => {
+    await mkdir(new URL("scripts/sources/geoboundaries/", root), { recursive: true });
+    return fetchProvinces();
   }
 } as const;
 
-// `npm run maps:fetch` refreshes every source; `npm run maps:fetch -- rivers` refreshes only the
-// named ones and keeps the other manifest entries as they are.
+// `npm run maps:fetch` refreshes every source; `npm run maps:fetch -- rivers` (or `provinces`)
+// refreshes only the named ones and keeps the other manifest entries as they are.
 const known = Object.keys(sources);
 const requested = process.argv.slice(2);
 const unknown = requested.filter((name) => !known.includes(name));
