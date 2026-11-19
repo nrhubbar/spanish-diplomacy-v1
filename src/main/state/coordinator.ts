@@ -1,4 +1,5 @@
 import { generateComputerSubmission } from "../ai/computerPlayer";
+import { rollStream } from "../engine/dice";
 import { deriveSeed, seededRandom } from "../engine/random";
 import { resolveTurn } from "../engine/resolution";
 import type { FactionId, PlayerSubmission, Scenario } from "../engine/types";
@@ -28,6 +29,7 @@ export function advance(scenario: Scenario, game: GameRecord, fromFactionId?: Fa
     const random = seededRandom(deriveSeed(current.seed, current.state.turnNumber, index));
     const previousOutcomes = current.history.at(-1)?.outcomes;
     const submission = generateComputerSubmission(scenario, current.state, faction.id, random, {
+      blunder: rollStream(current.seed, "blunder", current.state.turnNumber, index),
       history: current.history.map((entry) => entry.outcomes),
       ...(previousOutcomes === undefined ? {} : { previousOutcomes })
     });

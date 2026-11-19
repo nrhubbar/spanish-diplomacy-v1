@@ -1,14 +1,10 @@
-import { rollWeather } from "./phases/00-weather";
-import { flyAirMissions } from "./phases/02-air";
-import { moveInTransit } from "./phases/03-transit";
-import { fightMeetings } from "./phases/04-meetings";
-import { fightBattles } from "./phases/05-battles";
-import { settleOccupation } from "./phases/06-occupation";
-import { fightStandingBattles } from "./phases/07-standing";
-import { updateControl } from "./phases/08-control";
-import { updateMorale } from "./phases/09-morale";
-import { advanceQueues } from "./phases/10-training";
-import { collectIncome } from "./phases/11-income";
+import { airModules } from "./modules/air";
+import { diceModules } from "./modules/dice";
+import { economyModules } from "./modules/economy";
+import { movementModules } from "./modules/movement";
+import { partitionModules } from "./modules/partition";
+import { recruitmentModules } from "./modules/recruitment";
+import { weatherModules } from "./modules/weather";
 import type { Phase } from "./phases/draft";
 import { type RuleArea, ruleAreas } from "./types";
 
@@ -73,34 +69,15 @@ export interface ModuleRegistry {
   require(area: RuleArea, id: string): RuleModule;
 }
 
-// Today's rules, which the presets run (declog D3).
-const d6Steps = { battles: fightBattles, meetings: fightMeetings, morale: updateMorale, standing: fightStandingBattles };
-const singleStepSteps = { transit: moveInTransit };
-const partitionSteps = { control: updateControl, occupation: settleOccupation };
-
-/**
- * The engine's own modules. The first of each area is the `m2-strength` preset. Until its slice
- * lands, each Milestone 3 module runs its area's preset steps plus pass-through skeletons, so
- * selecting it changes nothing: TODO(m3r1-d20-combat) `d20-graded`, TODO(m3r1-movement-rail-ports)
- * `allowance`, TODO(m3r1-sub-territories) `provinces`, TODO(m3r1-economy-builds) `development`,
- * TODO(m3r1-recruit-replenish) `buildings`, TODO(m3r1-weather-timer) `seasonal-zones`,
- * TODO(m3r1-air-generals) `missions`.
- */
+/** The engine's own modules, one file per area under `modules/`; each slice edits only its area's file. */
 const builtIns: readonly RuleModule[] = [
-  { area: "dice", blocks: [], id: "d6-table", steps: d6Steps },
-  { area: "dice", blocks: ["d20"], id: "d20-graded", steps: d6Steps },
-  { area: "economy", blocks: [], id: "none", steps: {} },
-  { area: "economy", blocks: ["subTerritories", "resources", "development", "buildings", "improvements"], id: "development", steps: { income: collectIncome, training: advanceQueues } },
-  { area: "recruitment", blocks: [], id: "none", steps: {} },
-  { area: "recruitment", blocks: ["subTerritories", "resources", "buildings", "recruitment"], id: "buildings", steps: { training: advanceQueues } },
-  { area: "weather", blocks: [], id: "none", steps: {} },
-  { area: "weather", blocks: ["weather", "calendar"], id: "seasonal-zones", steps: { weather: rollWeather } },
-  { area: "movement", blocks: [], id: "single-step", steps: singleStepSteps },
-  { area: "movement", blocks: ["subTerritories", "movement"], id: "allowance", steps: singleStepSteps },
-  { area: "partition", blocks: [], id: "none", steps: partitionSteps },
-  { area: "partition", blocks: ["subTerritories"], id: "provinces", steps: partitionSteps },
-  { area: "air", blocks: [], id: "none", steps: {} },
-  { area: "air", blocks: ["air"], id: "missions", steps: { air: flyAirMissions } }
+  ...diceModules,
+  ...economyModules,
+  ...recruitmentModules,
+  ...weatherModules,
+  ...movementModules,
+  ...partitionModules,
+  ...airModules
 ];
 
 /** A registry of the built-in modules plus those the plugins register. A name may be registered once per area. */

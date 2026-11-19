@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { battleStreamTag, rollStream, rollStreamTags, seededRollStreams } from "../main/engine/dice";
 import { builtInModuleRegistry, createModuleRegistry, type RuleModule, turnSteps } from "../main/engine/modules";
-import { rollWeather } from "../main/engine/phases/00-weather";
-import { flyAirMissions } from "../main/engine/phases/02-air";
-import { advanceQueues } from "../main/engine/phases/10-training";
-import { collectIncome } from "../main/engine/phases/11-income";
-import { startDraft } from "../main/engine/phases/draft";
+import { weatherStep } from "../main/engine/phases/00-weather";
+import { airStep } from "../main/engine/phases/02-air";
+import { trainingStep } from "../main/engine/phases/10-training";
+import { incomeStep } from "../main/engine/phases/11-income";
+import { type Phase, startDraft } from "../main/engine/phases/draft";
 import { deriveSeed, seededRandom } from "../main/engine/random";
 import { initialGameState, resolveTurn } from "../main/engine/resolution";
 import { builtInModules, ruleAreas, type SystemOutcome } from "../main/engine/types";
@@ -18,7 +18,7 @@ const assetPaths = new Set(["src/test/fixtures/scenarios/tiny-front/geometry.svg
 
 /** A plugin air module that takes part in every step and records the order it ran in. */
 function recordingModule(log: string[]): RuleModule {
-  const steps = Object.fromEntries(turnSteps.map((step) => [step, (draft: Parameters<typeof rollWeather>[0]) => {
+  const steps = Object.fromEntries(turnSteps.map((step) => [step, (draft: Parameters<Phase>[0]) => {
     log.push(step);
     const event = { factionId: faction("red"), heldUnitCount: log.length, kind: "time-ran-out" } as SystemOutcome;
     return step === "income" ? { ...draft, events: [...draft.events, event] } : draft;
@@ -44,7 +44,11 @@ describe("the turn pipeline (section 2)", () => {
   it("keeps the Milestone 3 steps as pass-throughs until their slices land", () => {
     const scenario = tiny();
     const draft = startDraft({ dice: () => seededRandom(1), scenario, seed: 1, start: initialGameState(scenario), streams: seededRollStreams(1, 1), submissions: [] });
-    for (const phase of [rollWeather, flyAirMissions, advanceQueues, collectIncome]) expect(phase(draft)).toBe(draft);
+    for (const phase of [weatherStep, airStep, trainingStep, incomeStep]) expect(phase(draft)).toBe(draft);
+    const presets = new Set(ruleAreas.flatMap((area) => Object.values(builtInModuleRegistry.require(area, builtInModules[area][0]).steps)));
+    const skeletons = ruleAreas.flatMap((area) => Object.values(builtInModuleRegistry.require(area, builtInModules[area][1]).steps)).filter((part) => !presets.has(part));
+    expect(skeletons.length).toBeGreaterThan(5);
+    for (const part of skeletons) expect(part(draft)).toBe(draft);
   });
 
   it("plays a modular package exactly like its preset while the new modules are skeletons", () => {

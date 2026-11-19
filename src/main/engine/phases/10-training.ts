@@ -1,8 +1,7 @@
 import type { Phase } from "./draft";
 
 /**
- * Step 10 (R4, R7, $5, C8): training, replenishment arrivals and build queues advance; new units
- * appear. TODO(m3r1-recruit-replenish) and TODO(m3r1-economy-builds). Until then it passes the
- * draft through unchanged.
+ * Step 10 (R4, R7, $5, C8): training, replenishment arrivals and build queues advance. The engine has no part of its own here; the selected modules' parts run instead
+ * (recruitment, economy). A slice adds its part to its area's file under `engine/modules/`, not here.
  */
-export const advanceQueues: Phase = (draft) => draft;
+export const trainingStep: Phase = (draft) => draft;

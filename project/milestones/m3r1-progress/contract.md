@@ -189,3 +189,21 @@ I recorded the probe after the Caceres move: the soaks there equal the CP2 ones,
 - The UI slots: header, pane tabs, the sub-territory focus route, map layers.
 - `project/budgets.json` and its check.
 - Lazy registry, loader, Zod and packages, with non-eager globs for `scenario.json` and `map.json`, to bring the initial chunk under 155 kB.
+
+### CP3 follow-up (after review)
+
+- CT-41. Module files are split one per area under `engine/modules/` (`dice`, `economy`, `recruitment`, `weather`, `movement`, `partition`, `air`), joined in `engine/modules.ts`.
+  - Each Milestone 3 module has its own pass-through parts in its area's file, with the owning slice's TODO:
+    - economy: build purchases, build queues, income;
+    - recruitment: recruit purchases, replenishment, training;
+    - weather: the roll;
+    - air: missions, general changes, raid cuts.
+  - So no two slices share a part function or a row. The step files keep only the presets' parts, or, for steps 0, 2, 10 and 11, the engine's empty part as the home of the step's contract.
+  - The spec and `phases/pipeline.ts` now state the ordering rule: parts run in area order, each on the previous part's draft, so a rule that must shape an earlier part is read inside that part. For example, Snow blocking digging in is read by the d20 morale part from `systems.weather`.
+- CT-42. H6's blunder stream reaches the computer player. The coordinator passes `blunder: rollStream(seed, "blunder", turn, faction index)` in the optional `ComputerPlayerContext.blunder`, and planners read it as `context.memory.blunder`. Nothing reads it yet. No stream in `tasks` owns blunder logic in the computer player (the harness owns only its reporting), so the integrator should assign it.
+- CT-43. The probe is byte-identical again after the area split and the blunder wiring (sha256 `4687658c...`).
+- Files outside my list that I also touched: `src/main/state/coordinator.ts` (one line, the blunder stream) and `src/main/scenarios/builtInSources.ts` (the plugin glob).
+- Sim harness at `603e72d`, read-only: no CP3 hits.
+  - Workers get only the run plan and tasks, and load their scenario themselves, so the functions in `Scenario.modules` never cross `postMessage` or `workerData`.
+  - They use none of the removed or changed exports: the weight constants, `prizeFactor`, `knownModules`, `moduleBlocks`, or imports from inside `computerPlayer.ts`.
+  - `PackageSources.plugins` is optional.

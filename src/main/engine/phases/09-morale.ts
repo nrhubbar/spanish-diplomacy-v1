@@ -2,11 +2,7 @@ import { recoverMorale } from "../morale";
 import { digIn } from "../works";
 import type { Phase } from "./draft";
 
-/**
- * Step 9 (M22, M23): morale recovery and digging in. TODO(m3r1-d20-combat): fatigue (C6);
- * TODO(m3r1-recruit-replenish): Replenish morale; TODO(m3r1-air-generals): rallies and
- * general deaths; TODO(m3r1-weather-timer): no digging in in Snow, frostbite.
- */
+/** Step 9 (M22, M23): morale recovery and digging in. The d6 preset's part (`modules/dice.ts`). */
 export const updateMorale: Phase = (draft) => {
   const { scenario, start } = draft.input;
   const moved = draft.orders.origins.keys();

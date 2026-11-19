@@ -5,8 +5,8 @@ import type { Phase } from "./draft";
 /**
  * Step 1 (M1, M2, M9, M11): every order validates against the start-of-turn state. Impossible
  * moves disband their army; other failed orders are rejected. Valid moves are sorted into
- * reinforcements and advances. TODO(m3r1-economy-builds, m3r1-recruit-replenish): purchases are
- * paid here, and failures refunded, by their modules' step-1 parts.
+ * reinforcements and advances. Purchases are paid, and failures refunded, by the economy and
+ * recruitment modules' step-1 parts, which run after this.
  */
 export const revealOrders: Phase = (draft) => {
   const { scenario, start, submissions } = draft.input;
