@@ -133,3 +133,59 @@
   - I checked that nothing depends on the exact values.
   - No test reads Spain's borders, entries or city assignments. `spainData.test.ts` checks only the D8 ids, capitals, start holders and the system blocks.
   - The loader rules are generic. L16 checks that a city's sub-territory lies in the city's territory. L19 checks that a border joins two known, different sub-territories once, and that each entry lies on its own side of the connection. Neither rule requires an entry pair to be a border, so sea entries and the pipeline's overrides (`melilla`-`malaga`, `valencia`-`mallorca`, `badajoz`-`sevilla`) pass, and so do sea borders inside a territory (`mallorca`-`menorca`, `mallorca`-`ibiza`).
+
+## CP3: the engine skeleton (commits `8645500`, `693ea64`, `19b96e1`)
+
+**Done.**
+- Supervisor fold-ins:
+  - `SystemOutcome` joins one union per area file (`WeatherTurnOutcome`, `RecruitmentTurnOutcome`, `EconomyTurnOutcome`, `ContestedTurnOutcome`, `AirTurnOutcome`, `GeneralsTurnOutcome`, `MoraleTurnOutcome`), and the per-area report-line files key on those unions;
+  - d20 battles drop `unitEffects`;
+  - Caceres starts with the North.
+- `engine/phases/00-weather.ts` to `12-victory.ts`, one per section 2 step, run in order by `resolveTurn` through `phases/pipeline.ts`. `phases/draft.ts` holds the turn in progress and `phases/result.ts` assembles the report. `resolveTurn`'s signature is unchanged.
+- `engine/modules.ts`: `RuleModule` (area, id, data blocks, its parts of each step), `ScenarioPlugin`, `createModuleRegistry`, and the built-in modules. The loader checks L14 and L15 against the package's registry and resolves `Scenario.modules`. The scenario registry finds a `plugin.ts` beside `scenario.json` (glob `plugins` in `PackageSources`).
+- Seeded streams per roll kind (`rollStream`, `seededRollStreams`; tags for battle, weather, raid, general death and blunder). `TurnInput.streams` carries them to the phases.
+- `engine/visibility.ts`: `viewFor(scenario, state, viewer)`.
+- `ai/orders/<kind>.ts`: the move planner, moved unchanged from `computerPlayer.ts`, and one stub per other kind. `computerPlayer.ts` runs them in order on the faction's own view. The computer player reads `ai.profiles`, and the weight constants are gone.
+- Tests:
+  - `pipeline.test.ts`: step order, module parts, pass-through skeletons, skeleton equals preset, registry and plugins, streams;
+  - `visibility.test.ts`: hidden and revealed state, the planner stubs;
+  - updated AI tests, which now read profiles.
+
+**Decisions and assumptions.**
+- CT-33. A step is the engine's own part (reveal at step 1, victory at step 12) followed by each selected module's part, in `ruleAreas` order. Today's rules sit in the presets' parts:
+  - `d6-table`: meetings, battles, standing, morale and digging in;
+  - `single-step`: transit (reinforcements);
+  - partition `none`: occupation and retreats, control.
+  - Each Milestone 3 module runs its area's preset parts plus pass-through skeletons (weather, air, training, income), so Spain on `m3-modular` plays as before. A slice that lands replaces its module's parts; for example, `m3r1-d20-combat` gives `d20-graded` its own battle steps.
+- CT-34. Several modules may take part in one step (training: economy and recruitment; morale: dice, later recruitment and air). Parts run in area order, each on the previous part's draft. A plugin registers modules through the same `RuleModule` interface, and a name registered twice in an area is a package problem, not a crash.
+- CT-35. Milestone 3 events (`draft.events`) come after the recoveries, at the end of the outcome list, so the Milestone 2 order is unchanged. `subTerritoryChanges` comes from `draft.subTerritoryChanges`.
+- CT-36. Roll streams: the battle tag is the Milestone 2 one, so the d6 battle rolls do not move and nothing was re-baselined. Each new kind has its own ASCII tag, and computer-player tie-breaks keep `deriveSeed(seed, turn, faction index)`. The new planners must not draw from the move planner's `random`; the blunder stream is for H6.
+- CT-37. `viewFor` hides other factions' treasuries, queue items and training, and other factions' reveals. A territory revealed this turn (`untilTurn >= turnNumber`) shows everything of its holders. Under `m2-strength` it returns an equal state. Only the computer player uses it so far; the hidden-balance UI is `m3r1-economy-builds`'.
+- CT-38. Planners run in kind order (move, withdraw, replenish, recruit, build, air mission, sack), and each sees the orders already planned (`PlanningContext.planned`), so it can avoid ordering a unit twice.
+- CT-39. d20 battles record losses only in `losses` (men and destroyed, per unit) and `demoralizedUnitIds`, the same fields as d6. `UnitGradeEffect` is gone.
+- CT-40. Caceres starts with the Northern command: it was in the VII Organic Division (Valladolid) and rose under Mola (`nafziger-1936`, plus `ubc-july-map`). No loader rule ties sub-territory holders to territory control, so it loads. Extremadura's `initialControl` stays the Milestone 2 one (Republic and South) until `m3r1-sub-territories` derives control from holders, which would make it Republic and North.
+
+**How I proved that behaviour did not change.** I used a temporary probe test, kept out of the repo. It records:
+- `soak(spain(), 200, 30)` and `soak(tiny(), 50, 30)`;
+- a sha256 over `JSON.stringify` of every turn result of 40 seeded all-computer games of 30 turns per package, through the real coordinator.
+
+I recorded the probe after the Caceres move: the soaks there equal the CP2 ones, and only Spain's full-game hash moved, as expected, because `finalState.subTerritories` now holds Caceres for the North. The JSON file was byte-identical (`cmp`, sha256 `4687658c...`) at two points:
+- after the AI-profile wiring, the planner split and `viewFor`;
+- after the phase pipeline and module registry.
+
+**Checks** (gated on exit codes):
+- `npm run lint` passed.
+- `npm run typecheck` passed.
+- `npm run test:unit` passed: 32 files, 578 tests, with the soak bands and determinism. Coverage: 98.60 statements, 94.13 branches, 99.23 functions, 99.20 lines.
+- `npm run build` passed. The initial chunk is 167.45 kB gzip, over the 155 kB budget; CP4 makes the packages, loader and Zod lazy.
+- `npm run test:e2e` on chromium and mobile-chromium (`E2E_PORT=5301`): 51 passed, 5 skipped.
+
+**Files outside my list that I touched:**
+- `src/main/ai/**`: the planner split, the profile reads and the stubs;
+- AI tests.
+
+**Next: CP4.**
+- The hotspot splits (H9).
+- The UI slots: header, pane tabs, the sub-territory focus route, map layers.
+- `project/budgets.json` and its check.
+- Lazy registry, loader, Zod and packages, with non-eager globs for `scenario.json` and `map.json`, to bring the initial chunk under 155 kB.
