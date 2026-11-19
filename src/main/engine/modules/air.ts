@@ -1,5 +1,16 @@
 import type { RuleModule } from "../modules";
+import type { AirMissionOrder } from "../types";
 import type { Phase } from "../phases/draft";
+
+declare module "../phases/draft" {
+  interface TurnScratch {
+    /** The air area's turn-only data. TODO(m3r1-air-generals): shape it as the slice needs. */
+    readonly air?: {
+      /** D7: bombers flying battle support, set at step 2 and read by the battle parts. */
+      readonly support: readonly AirMissionOrder[];
+    };
+  }
+}
 
 /** TODO(m3r1-air-generals): recon, interception and raids from the `raid` stream; support missions recorded for the dice part to read (U2-U4, D7). */
 const flyAirMissions: Phase = (draft) => draft;

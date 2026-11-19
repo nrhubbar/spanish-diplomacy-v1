@@ -1,3 +1,4 @@
+import { hookedCombatModifiers } from "../hooks";
 import { citiesIn } from "../lookup";
 import type { BattleResult, CombatModifier, CombatRole, CombatRules, FactionId, FactionModifier, GameState, ModifierCondition, Scenario, TerritoryId } from "../types";
 import { dieFaces, isSuccessful, lastColumn, lastRow, requireSideValue } from "./values";
@@ -61,7 +62,8 @@ export interface BattleContext {
 
 /**
  * M14, M22, M24: the dug-in bonus, when the defenders include the faction the works belong
- * to, and every faction modifier whose condition holds in the start-of-turn state.
+ * to, every faction modifier whose condition holds in the start-of-turn state, and the
+ * selected modules' `combatModifiers` hooks.
  */
 export function situationalModifiers(scenario: Scenario, state: GameState, context: BattleContext): readonly CombatModifier[] {
   const modifiers: CombatModifier[] = [];
@@ -80,7 +82,7 @@ export function situationalModifiers(scenario: Scenario, state: GameState, conte
       modifiers.push(factionModifier(modifier, "defence", -modifier.defence));
     }
   }
-  return modifiers;
+  return [...modifiers, ...hookedCombatModifiers({ ...context, scenario, state })];
 }
 
 /** The net change to the attacker's die roll. */

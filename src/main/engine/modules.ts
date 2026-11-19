@@ -5,6 +5,7 @@ import { movementModules } from "./modules/movement";
 import { partitionModules } from "./modules/partition";
 import { recruitmentModules } from "./modules/recruitment";
 import { weatherModules } from "./modules/weather";
+import type { RuleHooks } from "./hooks";
 import type { Phase } from "./phases/draft";
 import { type RuleArea, ruleAreas } from "./types";
 
@@ -52,6 +53,8 @@ export type TurnStep = (typeof turnSteps)[number];
 export interface RuleModule {
   readonly area: RuleArea;
   readonly blocks: readonly ScenarioBlock[];
+  /** Answers to the cross-area questions (`hooks.ts`), collected across every selected module. */
+  readonly hooks?: RuleHooks;
   readonly id: string;
   /** The module's part of each step it takes part in. Steps run modules in `ruleAreas` order. */
   readonly steps: Partial<Readonly<Record<TurnStep, Phase>>>;

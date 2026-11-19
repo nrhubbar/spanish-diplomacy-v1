@@ -66,6 +66,8 @@ export interface TurnDraft {
   readonly meetings: MeetingResolution;
   readonly orders: RevealedOrders;
   readonly recovered: readonly RecoveredOutcome[];
+  /** Each area's turn-only data (`TurnScratch`). */
+  readonly scratch: TurnScratch;
   /** Returns, retreats and surrenders settled by steps 6 and 7 (M21). */
   readonly settled: readonly Settled[];
   /** Step 7's standing battles (M27). */
@@ -74,6 +76,15 @@ export interface TurnDraft {
   readonly systems: SystemState;
   readonly victory: { readonly progress: readonly VictoryProgress[]; readonly result?: VictoryResult };
 }
+
+/**
+ * Turn-only data a module passes between its own parts (bombers assigned at step 2 and read at
+ * step 5, a move's rail and sea legs). Each area declares its own key in its module file by
+ * declaration merging, `declare module "../phases/draft" { interface TurnScratch { ... } }`, so
+ * no slice edits this file. The draft starts with no keys set.
+ */
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type -- filled by declaration merging in engine/modules/<area>.ts
+export interface TurnScratch {}
 
 /** One step of the turn (section 2), or one module's part of it. */
 export type Phase = (draft: TurnDraft) => TurnDraft;
@@ -93,6 +104,7 @@ export function startDraft(input: TurnInput): TurnDraft {
     meetings: { armies: units, battles: [], bounced: [], continuing: [] },
     orders: { advances: [], invalid: [], origins: new Map(), reinforcements: [], rejected: [], valid: [] },
     recovered: [],
+    scratch: {},
     settled: [],
     standing: [],
     subTerritoryChanges: [],

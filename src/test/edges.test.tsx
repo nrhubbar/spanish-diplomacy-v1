@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { cleanup, render, renderHook, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Provider } from "react-redux";
@@ -204,7 +205,8 @@ describe("component edge cases", () => {
     const quiet = vi.spyOn(console, "error").mockImplementation(() => undefined);
     expect(() => renderHook(() => useRegistry())).toThrow("RegistryContext is missing");
     const store = testStore();
-    expect(() => renderHook(() => useSessionIn("planning"), { wrapper: ({ children }) => <Provider store={store}>{children}</Provider> })).toThrow("rendered during idle");
+    const wrapper = ({ children }: { readonly children: ReactNode }) => <Provider store={store}><RegistryContext value={testRegistry()}>{children}</RegistryContext></Provider>;
+    expect(() => renderHook(() => useSessionIn("planning"), { wrapper })).toThrow("rendered during idle");
     quiet.mockRestore();
   });
 

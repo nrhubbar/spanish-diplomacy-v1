@@ -1,4 +1,15 @@
 import type { RuleModule } from "../modules";
+import type { MoveLeg, UnitId } from "../types";
+
+declare module "../phases/draft" {
+  interface TurnScratch {
+    /** The movement area's turn-only data. TODO(m3r1-movement-rail-ports): shape it as the slice needs. */
+    readonly movement?: {
+      /** M4: each moving unit's legs, resolved at step 3. */
+      readonly legs: ReadonlyMap<UnitId, readonly MoveLeg[]>;
+    };
+  }
+}
 import { moveInTransit } from "../phases/03-transit";
 
 /** Today's single steps (M2, M11): the preset's part of step 3. */

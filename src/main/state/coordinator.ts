@@ -1,5 +1,6 @@
 import { generateComputerSubmission } from "../ai/computerPlayer";
 import { rollStream } from "../engine/dice";
+import { outcomesFor } from "../engine/visibility";
 import { deriveSeed, seededRandom } from "../engine/random";
 import { resolveTurn } from "../engine/resolution";
 import type { FactionId, PlayerSubmission, Scenario } from "../engine/types";
@@ -27,10 +28,12 @@ export function advance(scenario: Scenario, game: GameRecord, fromFactionId?: Fa
       throw new Error(`Faction "${faction.id}" has no supported actor (${String(kind)}).`);
     }
     const random = seededRandom(deriveSeed(current.seed, current.state.turnNumber, index));
-    const previousOutcomes = current.history.at(-1)?.outcomes;
+    // $6, U4: a computer player remembers only the outcomes its faction could see.
+    const seen = current.history.map((entry) => outcomesFor(scenario, current.state, entry.outcomes, faction.id));
+    const previousOutcomes = seen.at(-1);
     const submission = generateComputerSubmission(scenario, current.state, faction.id, random, {
       blunder: rollStream(current.seed, "blunder", current.state.turnNumber, index),
-      history: current.history.map((entry) => entry.outcomes),
+      history: seen,
       ...(previousOutcomes === undefined ? {} : { previousOutcomes })
     });
     current = lockSubmission(scenario, current, submission);

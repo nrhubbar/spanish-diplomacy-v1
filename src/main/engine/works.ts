@@ -1,4 +1,5 @@
 import type { Armies } from "./board";
+import { hookedCanDigIn } from "./hooks";
 import { standingOrder } from "./orders";
 import type { FactionId, Fortification, GameState, Scenario, TerritoryId, UnitId } from "./types";
 
@@ -10,7 +11,8 @@ import type { FactionId, Fortification, GameState, Scenario, TerritoryId, UnitId
  * level. Works are removed when their faction no longer holds the territory.
  *
  * An army entrenched when it was there and healthy at the start of the turn, had no valid move
- * order (`moved` lists the armies that had one), and is still there at the end (M23, O3).
+ * order (`moved` lists the armies that had one), and is still there at the end (M23, O3). The
+ * selected modules' `canDigIn` hooks may stop the works growing (T4: Snow).
  */
 export function digIn(
   scenario: Scenario,
@@ -30,7 +32,8 @@ export function digIn(
     const level = works?.factionId === holder ? works.level : 0;
     const quiet = holder === holderOf(start.control, start.units, id) && !foughtIn.has(id)
       && Object.values(start.units).some((unit) => unit.territoryId === id && unit.factionId === holder
-        && !moved.has(unit.id) && standingOrder(unit) === "entrench" && end.armies[unit.id]?.territoryId === id);
+        && !moved.has(unit.id) && standingOrder(unit) === "entrench" && end.armies[unit.id]?.territoryId === id)
+      && hookedCanDigIn({ factionId: holder, scenario, state: start, territoryId: id });
     const next = quiet ? Math.min(max, level + perTurn) : level;
     if (next > 0) {
       fortification[id] = { factionId: holder, level: next };
