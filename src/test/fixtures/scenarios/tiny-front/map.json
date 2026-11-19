@@ -1,5 +1,5 @@
 {
-  "$schema": "../../../../main/scenarios/schema/map.schema.json",
+  "$schema": "../../../../scenarios/map.schema.json",
   "specVersion": 2,
   "id": "tiny-front-map",
   "viewBox": { "x": 0, "y": 0, "width": 200, "height": 200 },

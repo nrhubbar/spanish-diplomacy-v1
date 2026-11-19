@@ -41,14 +41,14 @@ const modifier = (scenario: Json): Json => list(combat(scenario)["factionModifie
 describe("published specification", () => {
   it("keeps the committed JSON Schemas in sync with the Zod sources (spec:check)", () => {
     for (const [file, schema] of [["scenario.schema.json", scenarioSchema], ["map.schema.json", mapSchema]] as const) {
-      const committed: unknown = JSON.parse(readFileSync(`src/main/scenarios/schema/${file}`, "utf8"));
+      const committed: unknown = JSON.parse(readFileSync(`src/scenarios/${file}`, "utf8"));
       expect(committed, `${file} is stale; run npm run spec:build`).toEqual(JSON.parse(JSON.stringify(z.toJSONSchema(schema, { io: "input" }))));
     }
   });
 
   it("loads every registered package without problems", () => {
     expect(testRegistry().problems.map((problem) => problem.message)).toEqual([]);
-    expect(testRegistry().list().map((summary) => summary.id)).toEqual(["spain-1936-07-31", "tiny-front"]);
+    expect(testRegistry().list().map((summary) => summary.id)).toEqual(["spanish-civil-war-1936", "tiny-front"]);
     expect(createScenarioRegistry(builtInSources).problems).toEqual([]);
   });
 

@@ -189,7 +189,7 @@ describe("selectors and small helpers", () => {
     // The case under test is a loader that rejects with something other than an Error.
     // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors
     const store = createAppStore({ registry: { ...failing, loadAssets: () => Promise.reject("plain failure") } });
-    await store.dispatch(loadMapAssets("spain-1936-07-31" as never));
+    await store.dispatch(loadMapAssets("spanish-civil-war-1936" as never));
     expect(store.getState().notifications.notifications[0]?.message).toBe("The map for this scenario could not be loaded.");
     store.dispatch({ error: {}, meta: { arg: "x", requestId: "r", requestStatus: "rejected" }, payload: undefined, type: "other/thing/rejected" });
     expect(store.getState().notifications.notifications.at(-1)?.message).toBe("Unexpected application error.");

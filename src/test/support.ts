@@ -23,7 +23,7 @@ import { createScenarioRegistry, type ScenarioRegistry } from "../main/scenarios
 import { createAppStore } from "../main/state/store";
 import { fixtureSources } from "./fixtures/scenarios/fixtureSources";
 
-export const spainId = "spain-1936-07-31" as ScenarioId;
+export const spainId = "spanish-civil-war-1936" as ScenarioId;
 export const tinyId = "tiny-front" as ScenarioId;
 
 let sharedRegistry: ScenarioRegistry | undefined;

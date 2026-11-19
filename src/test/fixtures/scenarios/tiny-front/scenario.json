@@ -1,5 +1,5 @@
 {
-  "$schema": "../../../../main/scenarios/schema/scenario.schema.json",
+  "$schema": "../../../../scenarios/scenario.schema.json",
   "specVersion": 2,
   "id": "tiny-front",
   "name": "Tiny Front (test fixture)",

@@ -2,13 +2,13 @@
 
 A scenario package is the rules data for one playable scenario: factions, territories and how they connect, cities, units and their combat values, the combat rules' numbers, and victory parameters. The game engine interprets it; it contains no presentation. Its companion map package (`map-package.md`) holds everything visual.
 
-- Machine-readable schema: `src/main/scenarios/schema/scenario.schema.json` (JSON Schema draft 2020-12), generated from `scenarioSchema.ts` and its parts (`coreSchema.ts`, `modularSchema.ts`, `systemsSchema.ts`) by `npm run spec:build`. A unit test fails if the two drift. The schema has one variant per ruleset, so it states which blocks each ruleset takes.
+- Machine-readable schema: `src/scenarios/scenario.schema.json` (JSON Schema draft 2020-12), generated from `scenarioSchema.ts` and its parts (`coreSchema.ts`, `modularSchema.ts`, `systemsSchema.ts`) by `npm run spec:build`. A unit test fails if the two drift. The schema has one variant per ruleset, so it states which blocks each ruleset takes.
 - Version 1 is dropped: both packages were migrated in one commit (E1). A package with `specVersion: 1` fails to load.
-- Reference packages: `src/main/scenarios/spain-1936-07-31/` (shipped) and `src/test/fixtures/scenarios/tiny-front/` (minimal test fixture).
+- Reference packages: `src/scenarios/spanish-civil-war-1936/` (shipped, `m3-modular`) and `src/test/fixtures/scenarios/tiny-front/` (minimal test fixture, `m2-strength`). `src/scenarios/MANIFEST.md` describes the folder layout.
 
 ## Adding a scenario
 
-1. Create `src/main/scenarios/<scenario-id>/` with `scenario.json` and `map.json`. Start each file with the `$schema` line, so editors validate as you type.
+1. Create `src/scenarios/<scenario-id>/` with `scenario.json` and `map.json`. Start each file with the `$schema` line, so editors validate as you type.
 2. Put map assets anywhere under `assets/` and reference them by repository-relative path from `map.json`.
 3. Run `npm run test:unit`. The contract tests load every package and report each problem with its JSON path and rule id. A package that fails validation is left out of the game and reported in a notification; it never crashes the app.
 
@@ -30,7 +30,7 @@ All ids are lowercase kebab-case (`[a-z0-9]+(-[a-z0-9]+)*`) and are never shown 
 | `victory.cityShare` | 0-1 | Share of victory-eligible cities that wins (rounded up). |
 | `victory.tieBreak` | list of `cities` / `territories` | Order in which qualifying factions are compared. |
 | `combat` | see below | The numbers of the d6 battle rules: results table, below-1:1 rule, digging in, demoralization, faction modifiers. Required under both rulesets while `d6-table` is the only implemented dice module (decision CT-3 in `project/milestones/m3r1-progress/contract.md`). |
-| `ai` | `{ blunderChance, profiles[], sources?, note? }` | E7, H6: computer-player profiles (see "AI profiles") and the chance, 0 to 1, that one computer order is a blunder. |
+| `ai` | `{ blunderChance, profiles: { [factionId]: profile }, sources?, note? }` | E7, H6: one computer-player profile per faction (see "AI profiles"), and the chance, 0 to 1, that one computer order is a blunder. |
 | `unitTypes[]` | `{ id, name, attack, defence }` | Unit types. `attack` and `defence` are positive whole numbers: the values of a full-strength army of the type (C4). Symbols come from the map package. |
 | `factions[]` | see below | At least two. |
 | `territories[]` | see below | At least two. |
@@ -39,7 +39,7 @@ All ids are lowercase kebab-case (`[a-z0-9]+(-[a-z0-9]+)*`) and are never shown 
 | `units[]` | see below | Starting formations. |
 | `sources[]` | `{ id, title, url? }` | Source catalog for historical data. |
 
-Faction: `id`, `name`, `abbreviation` (1-4 characters, used on narrow screens), `color` (`#rrggbb`, the faction's identity color everywhere), `motivation` (one sentence on setup), `defaultActor` (`local-human` or `computer`), `objectiveTerritoryIds` (used by computer players), `aiProfile` (the id of its profile in `ai.profiles`), and `briefing: { objective, firstTurnHint }`.
+Faction: `id`, `name`, `abbreviation` (1-4 characters, used on narrow screens), `color` (`#rrggbb`, the faction's identity color everywhere), `motivation` (one sentence on setup), `defaultActor` (`local-human` or `computer`), `objectiveTerritoryIds` (used by computer players), and `briefing: { objective, firstTurnHint }`.
 
 Briefing: player-facing text shown in the in-map Briefing. `objective` says what the faction is fighting for and how it wins; if it states the victory numbers, they must match the thresholds the `victory` shares produce. `firstTurnHint` is shown on turn 1 only. It reads like an intelligence report and ends in a question: it gives the player ideas and a choice, never a move to copy. Neither field may mention balance or design intent.
 
@@ -61,7 +61,7 @@ The shipped table is the prototype's, corrected so each odds step is exactly one
 
 ### AI profiles
 
-`ai.profiles[]`: `{ id, computer, offensive, stakes, victoryAlarm }`, the weights of today's computer player (E7), one profile per faction by convention so a harness variant can change one side. `computer`: `approachObjective`, `bouncedLastTurn`, `caution`, `demoralizedShare`, `enemyLoss`, `ownLoss`. `offensive`: `reach`, `oddsTieBreak`, `staging`, `focus`, `stallStep`, `stallCap`. `stakes`: `city`, `objective`, `territory`. `victoryAlarm`: `perStep`, `steps`. The strategy logic stays in code.
+`ai.profiles` is keyed by faction id, one profile per faction (E7), so a harness variant patches `/ai/profiles/<factionId>`; the blunder chance is `/ai/blunderChance`. A profile is `{ computer, offensive, stakes, victoryAlarm }`, the weights of today's computer player. `computer`: `approachObjective`, `bouncedLastTurn`, `caution`, `demoralizedShare`, `enemyLoss`, `ownLoss`. `offensive`: `reach`, `oddsTieBreak`, `staging`, `focus`, `stallStep`, `stallCap`. `stakes`: `city`, `objective`, `territory`. `victoryAlarm`: `perStep`, `steps`. The strategy logic stays in code.
 
 ## Milestone 3 blocks (`m3-modular` only)
 
@@ -74,7 +74,8 @@ Every block and catalogue entry that carries numbers (`ai`, unit types, sub-terr
 | `rules` | `{ dice, economy, recruitment, weather, movement, partition, air }` | E2: one module name per area. See "Rule modules". |
 | `unitTypes[]` | see "Unit types" | W5: replaces the `m2-strength` unit type. |
 | `factions[].startingStock` | resource amounts | $7: the treasury on turn 1. Required when `resources` is not empty (L24). |
-| `factions[].seatTerritoryId` | territory id | D7: where a replacement general appears. Required with `generals` (L21). |
+| `factions[].seatTerritoryId` | territory id | D7: where a replacement general appears. Required with `generals` (L21). Factions also take `sources` and `note`. |
+| `units[].generalId` | general id | U5: the roster general a unit of a `general` type stands for (L21). |
 | `territories[].capitalSubTerritoryId` | sub-territory id | W3: the capital. Required with sub-territories (L16). |
 | `territories[].weatherZone` | zone id | T2. Required with `weather` (L20). |
 | `connections[].entry` | `[sub-territory id, sub-territory id]` | P8: the sub-territory entered on each side, in `between` order. Required with sub-territories (L19). |
@@ -117,6 +118,10 @@ Generals: `traits[]` (`{ id, name, effects[] }`, effects `roll-modifier { role, 
 
 The catalogue is `src/main/engine/modules.ts`. Until its owning stream lands, a module is a pass-through skeleton: selecting it changes nothing in resolution.
 
+### Outcomes
+
+A turn reports one flat list of outcomes (`TurnResolutionResult.outcomes`), plus `subTerritoryChanges` for every sub-territory that changed hands (by occupation, a battle's ground, or the contested sweep). The types are split by area under `src/main/engine/types/outcomes/` (moves, battle, morale, recruitment, economy, contested, air, generals, weather) and joined into one union in `types/outcomes.ts`. A battle is a `d6` or a `d20` variant: the d6 one has the die (1-6), the row (0-6) and a result; the d20 one has the die (1-20), the score (0-20), a grade id, the ground taken (0, 1, 2 or all) and per-unit losses and demoralization. Battle modifiers add `general`, `trait`, `barricades`, `unit-bonus` (artillery, tanks), `fatigue`, `weather`, `amphibious`, `air-support` and `building` to the Milestone 2 kinds.
+
 ## Validation rules
 
 The loader applies these when the app starts. Each failure names the JSON path and the rule.
@@ -132,7 +137,7 @@ The loader applies these when the app starts. Each failure names the JSON path a
 | L7 | Every territory has a connection, unless it is declared `isolated`; an isolated territory has none. |
 | L8 | Every faction starts with at least one unit or controlled territory. |
 | L9 | No faction starts at or above a victory threshold. |
-| L10 | The map package covers every territory, city, and unit type (see `map-package.md`). |
+| L10 | The map package covers every territory, city, and unit type (see `map-package.md`). When the map lists sub-territory entries, they match the scenario's sub-territories one to one, each in the same territory. |
 | L11 | Every asset the map package names exists. |
 | L12 | A unit's `strength` is no greater than its `fullStrength`. |
 | L13 | Every faction modifier changes something: its `attack` or `defence` is above 0. |
@@ -143,9 +148,9 @@ The loader applies these when the app starts. Each failure names the JSON path a
 | L18 | Every sub-territory has sources or a note; development levels are within their track's `maxLevel`, city-only tracks are above 0 only where a city stands; buildings exist, are listed once, respect `capitalOnly`, `cityOnly` and `upgradeOf`; rail and port are within the improvement caps. |
 | L19 | Sub-territory borders join two known, different sub-territories once; with sub-territories, every connection names an entry on each side, inside that side's territory. |
 | L20 | With `weather`: every territory names a known zone; seasons cover each month once; every zone has a table for each known season, rising to 20, naming known outcomes. |
-| L21 | With `generals`: traits and sources resolve; every faction has 3 to 5 generals and a known seat territory. |
+| L21 | With `generals`: traits and sources resolve; every faction has 3 to 5 generals and a known seat territory. Units of a `general` type, and only they, name a roster general of their own faction, each fielded once. |
 | L22 | `d20`: the table names known grades; `fatiguedLevel` is below `demoralizedLevel`; `worksPerTurn` is at most `worksMax`; d20 faction modifiers name known factions. |
-| L23 | Every faction names a known AI profile (reported as L3). |
+| L23 | `ai.profiles` has one profile for each faction and none for unknown factions. |
 | L24 | Every resource amount names a known resource; with resources, every faction has a `startingStock`. |
 | L25 | `air.raidTable` rises to 20. |
 

@@ -1826,6 +1826,34 @@
                 "description": "D7: where replacement generals appear. Required with generals (L21).",
                 "type": "string",
                 "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+              },
+              "sources": {
+                "default": [],
+                "description": "Citations for the numbers.",
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "sourceId": {
+                      "type": "string",
+                      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                      "description": "Stable kebab-case identifier. Never shown to players."
+                    },
+                    "reference": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "sourceId"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "note": {
+                "description": "Design note for numbers no source gives.",
+                "type": "string",
+                "minLength": 1
               }
             },
             "required": [

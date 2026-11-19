@@ -1,5 +1,6 @@
 import { z } from "zod";
 import {
+  basisShape,
   cityShape,
   combatSchema,
   connectionShape,
@@ -77,7 +78,8 @@ const m3ModularSchema = z
         z.strictObject({
           ...factionShape,
           startingStock: resourcesSchema.optional().meta({ description: "$7: treasury on turn 1. Required with an economy module (L15)." }),
-          seatTerritoryId: slugSchema.optional().meta({ description: "D7: where replacement generals appear. Required with generals (L21)." })
+          seatTerritoryId: slugSchema.optional().meta({ description: "D7: where replacement generals appear. Required with generals (L21)." }),
+          ...basisShape
         })
       )
       .min(2),

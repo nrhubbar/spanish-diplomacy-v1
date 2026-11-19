@@ -26,7 +26,7 @@ export function checkModular(document: ModularScenarioDocument, issues: Issues):
 /** L3: the sources every block and catalogue entry cites exist. */
 function checkBases(document: ModularScenarioDocument, issues: Issues): void {
   const sources = idSet(document.sources);
-  for (const name of ["unitTypes", "development", "buildings"] as const) {
+  for (const name of ["factions", "unitTypes", "development", "buildings"] as const) {
     document[name].forEach((entry, index) => { issues.cited(`${name}[${String(index)}]`, entry, sources); });
   }
   for (const name of ["improvements", "recruitment", "movement", "d20", "weather", "calendar", "air", "generals"] as const) {
