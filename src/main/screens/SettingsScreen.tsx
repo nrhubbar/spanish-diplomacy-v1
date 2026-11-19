@@ -1,5 +1,6 @@
 import type { JSX } from "react";
 import { useNavigate } from "react-router";
+import { MapControlsHelp } from "../components/MapControlsHelp";
 import { useRegistry, useSession } from "../hooks";
 import { routeForSession } from "../state/routing";
 
@@ -15,11 +16,7 @@ export function SettingsScreen(): JSX.Element {
       <p className="screen-copy">The game follows your browser and system preferences for motion, contrast, and text size.</p>
       <section className="settings-section" aria-labelledby="map-controls-title">
         <h2 id="map-controls-title">Map controls</h2>
-        <ul className="plain-list">
-          <li>Drag, or use W, A, S, and D or the arrow keys, to pan.</li>
-          <li>Scroll, pinch, or use + and the minus key to zoom. Press 0 to reset the view.</li>
-          <li>Tab to a territory or army and press Enter to select it.</li>
-        </ul>
+        <MapControlsHelp />
       </section>
       {registry.list().map((summary) => (
         <section className="settings-section" aria-label={`${summary.name} sources`} key={summary.id}>

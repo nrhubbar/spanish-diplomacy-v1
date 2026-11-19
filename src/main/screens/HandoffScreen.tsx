@@ -1,7 +1,7 @@
 import type { JSX } from "react";
 import { requireFaction } from "../engine/lookup";
 import { useAppDispatch, useRegistry, useSessionIn } from "../hooks";
-import { turnLabel } from "../presentation/text";
+import { turnLabel } from "../presentation/turn";
 import { beginPlanning } from "../state/gameSlice";
 
 /** Private handoff between people sharing the device. Shows no orders. */

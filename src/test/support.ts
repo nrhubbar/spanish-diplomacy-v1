@@ -1,14 +1,21 @@
-import { initialGameState } from "../main/engine/resolution";
+import type { BattleDice } from "../main/engine/dice";
+import { initialGameState, resolveTurn } from "../main/engine/resolution";
 import type {
+  BattleOutcome,
   CityId,
   FactionId,
   GameState,
   MoveOrder,
+  PlayerSubmission,
   Scenario,
   ScenarioId,
   TerritoryId,
+  TurnResolutionResult,
+  UnitDefinition,
   UnitId,
-  UnitState
+  UnitState,
+  UnitTypeDefinition,
+  UnitTypeId
 } from "../main/engine/types";
 import { builtInSources } from "../main/scenarios/builtInSources";
 import { createScenarioRegistry, type ScenarioRegistry } from "../main/scenarios/registry";
@@ -43,15 +50,127 @@ export function move(factionId: string, unitId: string, from: string, to: string
   return { factionId: faction(factionId), from: territory(from), kind: "move", to: territory(to), unitId: unit(unitId) };
 }
 
+/** Strength given to synthetic test armies whose ids are not in the scenario. */
+export const syntheticStrength = 100;
+
 export function withUnits(scenario: Scenario, units: readonly (readonly [string, string, string])[]): GameState {
   const base = initialGameState(scenario);
   const record: Record<UnitId, UnitState> = {};
   for (const [id, factionId, territoryId] of units) {
-    record[unit(id)] = { factionId: faction(factionId), id: unit(id), territoryId: territory(territoryId) };
+    record[unit(id)] = {
+      factionId: faction(factionId),
+      id: unit(id),
+      morale: { demoralized: false, quietTurns: 0 },
+      strength: scenario.index.units.get(unit(id))?.strength ?? syntheticStrength,
+      territoryId: territory(territoryId)
+    };
   }
   return { ...base, units: record };
 }
 
+/** The army's state, failing the test when it is absent. */
+export function armyIn(state: GameState, id: string): UnitState {
+  const found = state.units[unit(id)];
+  if (found === undefined) throw new Error(`No army "${id}" in this state.`);
+  return found;
+}
+
 export function testStore(preloadedState?: Parameters<typeof createAppStore>[0]["preloadedState"]) {
   return createAppStore({ registry: testRegistry(), ...(preloadedState === undefined ? {} : { preloadedState }) });
+}
+
+/** One army for `battlefield`. Synthetic ids get a definition of the given type and strength. */
+export interface ArmySpec {
+  readonly demoralized?: boolean;
+  readonly faction: string;
+  readonly fullStrength?: number;
+  readonly id: string;
+  readonly strength?: number;
+  readonly territory: string;
+  readonly type?: string;
+}
+
+/**
+ * A scenario and state holding exactly the given armies. Armies whose ids the scenario lacks
+ * are added to it (type "foot" by default, 100 men at full strength), so they can fight.
+ */
+export function battlefield(
+  base: Scenario,
+  armies: readonly ArmySpec[],
+  options: { readonly state?: Partial<GameState>; readonly types?: readonly UnitTypeDefinition[] } = {}
+): { readonly scenario: Scenario; readonly state: GameState } {
+  const unitTypes = [...base.unitTypes, ...(options.types ?? [])];
+  const known = new Map(base.units.map((definition) => [definition.id, definition]));
+  const definitions: UnitDefinition[] = armies.map((spec) => {
+    const existing = known.get(unit(spec.id));
+    const fullStrength = spec.fullStrength ?? existing?.fullStrength ?? syntheticStrength;
+    return {
+      factionId: faction(spec.faction),
+      formationKind: "regiment",
+      fullStrength,
+      id: unit(spec.id),
+      name: existing?.name ?? `Army ${spec.id}`,
+      sources: [],
+      strength: fullStrength,
+      territoryId: territory(spec.territory),
+      type: (spec.type ?? existing?.type ?? base.unitTypes[0]?.id ?? "foot") as UnitTypeId
+    };
+  });
+  const scenario: Scenario = {
+    ...base,
+    index: {
+      ...base.index,
+      unitTypes: new Map(unitTypes.map((type) => [type.id, type])),
+      units: new Map([...base.units, ...definitions].map((definition) => [definition.id, definition]))
+    },
+    unitTypes,
+    units: [...base.units.filter((definition) => !definitions.some((added) => added.id === definition.id)), ...definitions]
+  };
+  const start = initialGameState(base);
+  const units: Record<UnitId, UnitState> = {};
+  for (const spec of armies) {
+    const fullStrength = spec.fullStrength ?? known.get(unit(spec.id))?.fullStrength ?? syntheticStrength;
+    units[unit(spec.id)] = {
+      factionId: faction(spec.faction),
+      id: unit(spec.id),
+      morale: { demoralized: spec.demoralized ?? false, quietTurns: 0 },
+      strength: spec.strength ?? fullStrength,
+      territoryId: territory(spec.territory)
+    };
+  }
+  return { scenario, state: { ...start, units, ...options.state } };
+}
+
+export const unitType = (id: string, attack: number, defence: number): UnitTypeDefinition => ({ attack, defence, id: id as UnitTypeId, name: id });
+
+/**
+ * Loaded dice: battle `i` rolls `faces[i]`. Draws after the die (standing-battle tie-breaks)
+ * return `rest[i]` when given, else 0, which picks the first tied faction.
+ */
+export function loadedDice(faces: readonly number[], rest: readonly number[] = []): BattleDice {
+  return (index) => {
+    const face = faces[index];
+    if (face === undefined) throw new Error(`No loaded face for battle ${String(index)}.`);
+    let draws = 0;
+    return () => {
+      draws += 1;
+      return draws === 1 ? (face - 0.5) / 6 : rest[index] ?? 0;
+    };
+  };
+}
+
+/** One submission per faction, in first-seen order, so tests can list orders flat. */
+export function submissionsOf(orders: readonly MoveOrder[]): readonly PlayerSubmission[] {
+  const byFaction = new Map<string, MoveOrder[]>();
+  for (const order of orders) byFaction.set(order.factionId, [...(byFaction.get(order.factionId) ?? []), order]);
+  return [...byFaction].map(([factionId, factionOrders]) => ({ factionId: faction(factionId), orders: factionOrders }));
+}
+
+/** Resolves flat orders with loaded dice (or seed 1 when none are given). */
+export function play(scenario: Scenario, state: GameState, orders: readonly MoveOrder[], dice?: BattleDice): TurnResolutionResult {
+  return resolveTurn(scenario, state, submissionsOf(orders), 1, dice);
+}
+
+export function battlesOf(result: TurnResolutionResult): readonly BattleOutcome[] {
+  return result.outcomes.filter((outcome): outcome is BattleOutcome => outcome.kind === "battle");
 }

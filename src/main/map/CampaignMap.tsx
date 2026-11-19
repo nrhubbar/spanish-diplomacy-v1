@@ -1,23 +1,28 @@
-import { type JSX, useCallback, useMemo, useState } from "react";
+import { type JSX, useCallback, useMemo } from "react";
 import type { GameState } from "../engine/types";
 import type { MapRect, ScenarioPackage } from "../scenarios/loader";
 import type { MapAssets } from "../scenarios/registry";
-import { glyphs } from "../presentation/glyphs";
 import { cssVariables } from "../presentation/style";
 import { territoryName } from "../presentation/text";
-import { type Camera, type CameraBounds, cameraLimits, type Viewport, mapToScreen, pixelsPerUnit, semanticLevel, visibleRect } from "./camera";
-import { CounterLayer, counterMetrics, layoutCounters } from "./CounterLayer";
+import { type Camera, type CameraBounds, type Viewport, mapToScreen, pixelsPerUnit, semanticLevel, visibleRect } from "./camera";
+import { CounterLayer, layoutCounters } from "./CounterLayer";
+import { DestinationOddsLayer } from "./DestinationOddsLayer";
+import { mapTerritory } from "./anchors";
 import { MapLegend } from "./MapLegend";
-import { MapPane, type PaneContent, paneLayoutFor, paneWidthFor, sheetBarHeight } from "./MapPane";
+import { mapControlObstacles, MapControls } from "./MapControls";
+import { MapPane, type PaneContent, type PaneLayout, paneLayoutFor, paneWidthFor } from "./MapPane";
 import { prepareGeometry, type PreparedGeometry } from "./markup";
 import { type ScreenRect, visibleContextLabels } from "./placement";
 import { TerrainLayer } from "./TerrainLayer";
 import { useMapCamera } from "./useMapCamera";
+import { type MapBriefing, usePaneView } from "./usePaneView";
 import { VectorLayer } from "./VectorLayer";
+import { visibleWater } from "./waterLabels";
 import type { MapView } from "./view";
 
 interface CampaignMapProps {
   readonly assets: MapAssets;
+  readonly briefing?: MapBriefing;
   readonly game: GameState;
   readonly onTerrainFallback?: (reason: string) => void;
   readonly pane?: PaneContent;
@@ -26,19 +31,9 @@ interface CampaignMapProps {
 }
 
 /** Map package interpreter: terrain, vector geometry, counters, controls, and the details pane. */
-export function CampaignMap({ assets, game, onTerrainFallback, pane, scenarioPackage, view }: CampaignMapProps): JSX.Element {
+export function CampaignMap({ assets, briefing, game, onTerrainFallback, pane, scenarioPackage, view }: CampaignMapProps): JSX.Element {
   const { map, scenario } = scenarioPackage;
-  // undefined = follow the layout default: open as a side pane, collapsed as a mobile sheet.
-  const [paneChoice, setPaneChoice] = useState<boolean | undefined>(undefined);
-  const hasPane = pane !== undefined;
-  const insetsFor = useCallback((width: number) => {
-    const layoutHere = paneLayoutFor(width);
-    const openHere = paneChoice ?? layoutHere === "side";
-    if (!hasPane) return { bottom: 0, right: 0 };
-    return layoutHere === "side"
-      ? { bottom: 0, right: openHere ? paneWidthFor(width) : 0 }
-      : { bottom: sheetBarHeight, right: 0 };
-  }, [hasPane, paneChoice]);
+  const paneView = usePaneView(pane, briefing);
   const bounds = useMemo<CameraBounds>(() => ({ content: map.viewBox, focus: map.focus }), [map]);
   const geometry = useMemo(
     () => prepareGeometry(assets.geometrySvg, map, (id) => territoryName(scenario, id)),
@@ -65,20 +60,11 @@ export function CampaignMap({ assets, game, onTerrainFallback, pane, scenarioPac
     reset,
     viewport,
     zoomBy
-  } = useMapCamera(bounds, insetsFor, selectFrom);
+  } = useMapCamera(bounds, paneView.insetsFor, selectFrom);
   const layout = paneLayoutFor(viewport.width);
   const paneWidth = paneWidthFor(viewport.width);
-  const sheetFocused = layout === "sheet" && pane?.sheetFocus !== undefined;
-  const paneOpen = !sheetFocused && (paneChoice ?? layout === "side");
-  const attention = pane?.attentionKey;
-  const [seenAttention, setSeenAttention] = useState(attention);
-  if (attention !== seenAttention) {
-    // A new selection or message opens a collapsed pane so the player sees the response.
-    setSeenAttention(attention);
-    if (attention !== undefined && paneChoice !== true) setPaneChoice(true);
-  }
-
-
+  const paneOpen = paneView.isOpen(layout);
+  const paneContent = paneView.content;
   const level = semanticLevel(camera.zoom);
 
   return (
@@ -86,7 +72,7 @@ export function CampaignMap({ assets, game, onTerrainFallback, pane, scenarioPac
       aria-label="Campaign map"
       className="campaign-map"
       data-pane-layout={layout}
-      data-pane-open={pane !== undefined && paneOpen}
+      data-pane-open={paneContent !== undefined && paneOpen}
       style={cssVariables({ "--map-background": map.background, "--pane-width": `${String(paneWidth)}px` })}
     >
       <div
@@ -121,6 +107,7 @@ export function CampaignMap({ assets, game, onTerrainFallback, pane, scenarioPac
             camera={camera}
             game={game}
             geometry={geometry}
+            layout={layout}
             level={level}
             onTerrainFallback={onTerrainFallback}
             scenarioPackage={scenarioPackage}
@@ -129,16 +116,16 @@ export function CampaignMap({ assets, game, onTerrainFallback, pane, scenarioPac
           />
         ) : null}
       </div>
-      <div className="map-zoom" data-map-control="" role="group" aria-label="Zoom">
-        <button aria-label="Zoom in" disabled={(camera.zoom) >= cameraLimits.maxZoom} onClick={() => { zoomBy(cameraLimits.zoomStep); }} type="button">+</button>
-        <button aria-label={`${String(Math.round(camera.zoom * 100))}%, reset map view`} className="map-zoom-level" onClick={reset} type="button">{`${String(Math.round((camera.zoom) * 100))}%`}</button>
-        <button aria-label="Zoom out" disabled={(camera.zoom) <= cameraLimits.minZoom} onClick={() => { zoomBy(-cameraLimits.zoomStep); }} type="button">{glyphs.minus}</button>
-      </div>
-      <span aria-live="polite" className="visually-hidden">{`Map zoom ${String(Math.round((camera.zoom) * 100))} percent`}</span>
+      <MapControls
+        {...(briefing === undefined ? {} : { briefing: { onToggle: () => { paneView.toggleBriefing(paneOpen); }, shown: paneView.briefingShown } })}
+        onReset={reset}
+        onZoom={zoomBy}
+        zoom={camera.zoom}
+      />
       <MapLegend game={game} scenario={scenario} view={view} />
       {/* The pane waits for measurement so it never flashes in the wrong layout. */}
-      {pane === undefined || !measured ? null : (
-        <MapPane content={pane} layout={layout} onToggle={() => { setPaneChoice(!paneOpen); }} open={paneOpen} />
+      {paneContent === undefined || !measured ? null : (
+        <MapPane content={paneContent} layout={layout} onToggle={() => { paneView.togglePane(paneOpen); }} open={paneOpen} />
       )}
     </section>
   );
@@ -150,6 +137,7 @@ interface MapLayersProps {
   readonly camera: Camera;
   readonly game: GameState;
   readonly geometry: PreparedGeometry;
+  readonly layout: PaneLayout;
   readonly level: ReturnType<typeof semanticLevel>;
   readonly onTerrainFallback: ((reason: string) => void) | undefined;
   readonly scenarioPackage: ScenarioPackage;
@@ -157,15 +145,19 @@ interface MapLayersProps {
   readonly viewport: Viewport;
 }
 
-function MapLayers({ assets, bounds, camera, game, geometry, level, onTerrainFallback, scenarioPackage, view, viewport }: MapLayersProps): JSX.Element {
+function MapLayers({ assets, bounds, camera, game, geometry, layout, level, onTerrainFallback, scenarioPackage, view, viewport }: MapLayersProps): JSX.Element {
   const { map, scenario } = scenarioPackage;
   const scale = pixelsPerUnit(camera, viewport, bounds);
   const visible = visibleRect(camera, viewport, bounds);
   const toScreen = (point: { readonly x: number; readonly y: number }) => mapToScreen(point, camera, viewport, bounds);
   const place = (rect: MapRect): MapRect => ({ ...toScreen(rect), height: rect.height * scale, width: rect.width * scale });
-  const positions = layoutCounters(game, map, level, toScreen, labelObstacles(scenarioPackage, level, toScreen, viewport.height));
-  const { height, width } = counterMetrics[level];
-  const counters = [...positions.values()].map((position) => ({ ...position, height, width }));
+  const landLabels = labelObstacles(scenarioPackage, level, toScreen, viewport.height, layout);
+  const counterLayout = layoutCounters(game, map, level, toScreen, landLabels, {
+    ...(view.selectedTerritoryId === undefined ? {} : { expandedTerritoryId: view.selectedTerritoryId }),
+    narrow: layout === "sheet"
+  });
+  const { height, width } = counterLayout.metrics;
+  const counters = [...counterLayout.positions.values()].map((position) => ({ ...position, height, width }));
 
   return (
     <>
@@ -187,15 +179,27 @@ function MapLayers({ assets, bounds, camera, game, geometry, level, onTerrainFal
         unit={1 / scale}
         view={view}
         visible={visible}
+        water={visibleWater(map, {
+          level,
+          // landLabels already holds the fixed controls and legend for this layout.
+          obstacles: [...counters, ...landLabels],
+          scale,
+          toScreen,
+          // The open pane floats 0.75rem in from the edge, so names keep clear of its full width.
+          viewport: { height: viewport.height - viewport.insetBottom, width: viewport.width - viewport.insetRight - (viewport.insetRight > 0 ? 12 : 0) }
+        })}
       />
       <CounterLayer
         game={game}
+        layout={counterLayout}
         level={level}
-        positions={positions}
         scenario={scenario}
         unitSymbols={assets.unitSymbols}
         view={view}
       />
+      {view.destinationEstimates === undefined ? null : (
+        <DestinationOddsLayer counters={counters} estimates={view.destinationEstimates} labelAt={(id) => toScreen(mapTerritory(map, id).label)} />
+      )}
     </>
   );
 }
@@ -205,12 +209,10 @@ function labelObstacles(
   { map, scenario }: ScenarioPackage,
   level: ReturnType<typeof semanticLevel>,
   toScreen: (point: { readonly x: number; readonly y: number }) => { readonly x: number; readonly y: number },
-  height: number
+  height: number,
+  layout: PaneLayout
 ): readonly ScreenRect[] {
-  const rects: ScreenRect[] = [
-    { height: 132, width: 58, x: 0, y: 0 },
-    { height: 46, width: 120, x: 0, y: height - 46 }
-  ];
+  const rects: ScreenRect[] = [...mapControlObstacles(layout, height)];
   for (const city of scenario.cities) {
     const position = map.cities.get(city.id);
     if (position === undefined || (position.tier === "detail" && level === "overview")) continue;

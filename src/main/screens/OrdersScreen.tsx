@@ -5,8 +5,9 @@ import { GameHeader } from "../components/GameHeader";
 import { useAppDispatch, useRegistry, useSessionIn } from "../hooks";
 import type { MapView } from "../map/view";
 import { glyphs } from "../presentation/glyphs";
-import { turnLabel } from "../presentation/text";
-import { cancelOrderStage, clickMapTerritory, clickMapUnit, submitOrders } from "../state/gameSlice";
+import { destinationEstimates } from "../presentation/odds";
+import { turnLabel } from "../presentation/turn";
+import { cancelOrderStage, clickMapTerritory, clickMapUnit, endTurn } from "../state/gameSlice";
 import { type PlanningSession, selectedDestinations } from "../state/planning";
 import { selectSubmissionStatus } from "../state/selectors";
 import { MapScreenFrame } from "./MapScreenFrame";
@@ -23,8 +24,13 @@ function Orders({ scenario, session }: { readonly scenario: Scenario; readonly s
   const { draft, factionId, game } = session;
   const faction = requireFaction(scenario, factionId);
   const destinations = useMemo(() => selectedDestinations(scenario, session), [scenario, session]);
+  const estimates = useMemo(
+    () => destinationEstimates(scenario, game.state, factionId, draft.selectedUnitIds, destinations),
+    [destinations, draft.selectedUnitIds, factionId, game.state, scenario]
+  );
   const view = useMemo<MapView>(() => ({
     changedTerritoryIds: [],
+    ...(estimates.size === 0 ? {} : { destinationEstimates: estimates }),
     destinationIds: destinations,
     onSelectTerritory: (territoryId) => dispatch(clickMapTerritory(territoryId)),
     onSelectUnit: (unit: UnitState) => dispatch(clickMapUnit(unit.id)),
@@ -33,10 +39,11 @@ function Orders({ scenario, session }: { readonly scenario: Scenario; readonly s
     plannedOrders: draft.orders,
     selectedUnitIds: new Set(draft.selectedUnitIds),
     ...(draft.selectedTerritoryId === undefined ? {} : { selectedTerritoryId: draft.selectedTerritoryId })
-  }), [destinations, dispatch, draft]);
+  }), [destinations, dispatch, draft, estimates]);
 
   return (
     <MapScreenFrame
+      briefingFor={factionId}
       game={game.state}
       header={(
         <GameHeader
@@ -58,8 +65,8 @@ function Orders({ scenario, session }: { readonly scenario: Scenario; readonly s
               )
             }
           : {}),
-        body: <OrderBuilder scenario={scenario} session={session} />,
-        footer: <button className="primary-action" onClick={() => dispatch(submitOrders())} type="button">Submit Orders</button>,
+        body: <OrderBuilder estimates={estimates} scenario={scenario} session={session} />,
+        footer: <button className="primary-action" onClick={() => dispatch(endTurn())} type="button">End Turn</button>,
         title: "Orders"
       }}
       scenarioId={game.scenarioId}

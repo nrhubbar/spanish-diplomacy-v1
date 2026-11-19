@@ -64,7 +64,6 @@ export type Session =
       readonly phase: "handoff";
     }
   | { readonly draft: Draft; readonly factionId: FactionId; readonly game: GameRecord; readonly phase: "planning" }
-  | { readonly game: GameRecord; readonly phase: "ready-to-resolve" }
   | { readonly game: GameRecord; readonly phase: "resolution"; readonly result: TurnResolutionResult }
   | { readonly game: GameRecord; readonly phase: "game-over"; readonly result: TurnResolutionResult };
 

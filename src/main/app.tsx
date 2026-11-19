@@ -4,7 +4,6 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import { useAppDispatch, useSession } from "./hooks";
 import { NotificationShelf } from "./notifications/NotificationShelf";
 import { HandoffScreen } from "./screens/HandoffScreen";
-import { RevealScreen } from "./screens/RevealScreen";
 import { SettingsScreen } from "./screens/SettingsScreen";
 import { SetupScreen } from "./screens/SetupScreen";
 import { StartScreen } from "./screens/StartScreen";
@@ -68,7 +67,6 @@ export function App(): JSX.Element {
               <Route element={<SetupScreen />} path={paths.setup} />
               <Route element={<HandoffScreen />} path={paths.handoff} />
               <Route element={<OrdersScreen />} path={paths.orders} />
-              <Route element={<RevealScreen />} path={paths.reveal} />
               <Route element={<ResultsScreen />} path={paths.resolution} />
               <Route element={<ResultsScreen />} path={paths.gameOver} />
               <Route element={<Navigate replace to={paths.home} />} path="*" />

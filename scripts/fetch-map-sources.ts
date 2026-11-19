@@ -1,4 +1,4 @@
-// Downloads and vendors the elevation and neutral-land sources that `npm run maps:build` reads.
+// Downloads and vendors the elevation, neutral-land, and river sources that `npm run maps:build` reads.
 // This is the only map script that uses the network; run it deliberately (`npm run maps:fetch`)
 // and review the resulting changes under scripts/sources/. Every upstream file's SHA-256 is
 // recorded so the vendored derivatives can be traced back byte for byte.
@@ -12,19 +12,24 @@
 //
 // Neutral land: Natural Earth 1:10m Admin 0 countries (public domain), filtered to the countries
 // that intersect the overview extent, with coordinates rounded to 0.0001 degree (about 10 m).
+//
+// Rivers: Natural Earth 1:10m rivers and lake centrelines and its Europe supplement (public
+// domain), cut to the Iberian river extent with the same rounding.
 import { createHash } from "node:crypto";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import sharp from "sharp";
-import { excludedCountries, projection as projectionDefinition, terrain } from "./map/iberia-1936.ts";
+import { excludedCountries, projection as projectionDefinition, riverExtent, terrain } from "./map/iberia-1936.ts";
+import { type LineFeature, subsetLines } from "./map/lines.ts";
 import { lambertConformalConic, webMercatorPixel } from "./map/projection.ts";
 import type { Rect } from "./map/iberia-1936.ts";
 
 const root = new URL("../", import.meta.url);
 const terrariumRoot = "https://s3.amazonaws.com/elevation-tiles-prod/terrarium";
+const naturalEarthRoot = "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/f1890d9f152c896d250a77557a5751a93d494776";
 const naturalEarth = {
   revision: "f1890d9f152c896d250a77557a5751a93d494776",
   tag: "v5.1.2",
-  url: "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/f1890d9f152c896d250a77557a5751a93d494776/geojson/ne_10m_admin_0_countries.geojson"
+  url: `${naturalEarthRoot}/geojson/ne_10m_admin_0_countries.geojson`
 };
 const projection = lambertConformalConic(projectionDefinition);
 const sha256 = (bytes: Uint8Array): string => createHash("sha256").update(bytes).digest("hex");
@@ -154,17 +159,62 @@ async function fetchNeutralLand(bounds: Rect): Promise<object> {
   };
 }
 
-await mkdir(new URL("scripts/sources/dem/", root), { recursive: true });
-await mkdir(new URL("scripts/sources/naturalearth/", root), { recursive: true });
+/**
+ * Rivers: Natural Earth 1:10m rivers and lake centrelines plus its Europe supplement, each cut to
+ * the Iberian river extent (`subsetLines`) and joined into one vendored file.
+ */
+async function fetchRivers(): Promise<object> {
+  const upstream = [];
+  const features = [];
+  for (const layer of ["ne_10m_rivers_lake_centerlines", "ne_10m_rivers_europe"]) {
+    const url = `${naturalEarthRoot}/geojson/${layer}.geojson`;
+    const bytes = await download(url);
+    const collection = JSON.parse(bytes.toString("utf8")) as { features: LineFeature[] };
+    const kept = subsetLines(collection.features, riverExtent).map((feature) => ({ ...feature, properties: { ...feature.properties, layer } }));
+    features.push(...kept);
+    upstream.push({ url, sha256: sha256(bytes), features: kept.length });
+  }
+  const file = "scripts/sources/naturalearth/ne_10m_rivers-iberia.geojson";
+  const output = `${JSON.stringify({ type: "FeatureCollection", features })}\n`;
+  await writeFile(new URL(file, root), output);
+  console.log(`${file}: ${String(features.length)} river lines`);
+  return { file, sha256: sha256(Buffer.from(output)), revision: naturalEarth.revision, tag: naturalEarth.tag, upstream, extent: riverExtent };
+}
+
+const sources = {
+  elevation: async (): Promise<object> => {
+    await mkdir(new URL("scripts/sources/dem/", root), { recursive: true });
+    return {
+      source: `${terrariumRoot}/{z}/{x}/{y}.png`,
+      mosaics: [
+        await fetchElevation("terrarium-detail", terrain.master.bounds, terrain.master.demZoom),
+        await fetchElevation("terrarium-overview", terrain.overview.bounds, terrain.overview.demZoom)
+      ]
+    };
+  },
+  neutralLand: async (): Promise<object> => {
+    await mkdir(new URL("scripts/sources/naturalearth/", root), { recursive: true });
+    return fetchNeutralLand(terrain.overview.bounds);
+  },
+  rivers: async (): Promise<object> => {
+    await mkdir(new URL("scripts/sources/naturalearth/", root), { recursive: true });
+    return fetchRivers();
+  }
+} as const;
+
+// `npm run maps:fetch` refreshes every source; `npm run maps:fetch -- rivers` refreshes only the
+// named ones and keeps the other manifest entries as they are.
+const known = Object.keys(sources);
+const requested = process.argv.slice(2);
+const unknown = requested.filter((name) => !known.includes(name));
+if (unknown.length > 0) throw new Error(`Unknown source ${unknown.join(", ")}; choose from ${known.join(", ")}.`);
+const selected = requested.length === 0 ? known : requested;
+const manifestUrl = new URL("scripts/sources/manifest.json", root);
+const previous = selected.length === known.length ? {} : JSON.parse(await readFile(manifestUrl, "utf8")) as Record<string, unknown>;
 const retrieved = new Date().toISOString().slice(0, 10);
-const elevation = [
-  await fetchElevation("terrarium-detail", terrain.master.bounds, terrain.master.demZoom),
-  await fetchElevation("terrarium-overview", terrain.overview.bounds, terrain.overview.demZoom)
-];
-const land = await fetchNeutralLand(terrain.overview.bounds);
-await writeFile(new URL("scripts/sources/manifest.json", root), `${JSON.stringify({
-  retrieved,
-  elevation: { source: `${terrariumRoot}/{z}/{x}/{y}.png`, mosaics: elevation },
-  neutralLand: land
-}, null, 2)}\n`);
+const refreshed: Record<string, unknown> = {};
+for (const [name, fetchSource] of Object.entries(sources)) {
+  if (selected.includes(name)) refreshed[name] = { retrieved, ...await fetchSource() };
+}
+await writeFile(manifestUrl, `${JSON.stringify({ ...previous, ...refreshed }, null, 2)}\n`);
 console.log("wrote scripts/sources/manifest.json");

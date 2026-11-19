@@ -59,26 +59,29 @@ export const regionSources: Readonly<Record<string, string>> = {
   ES11: "Galicia",
   ES12: "Principado de Asturias",
   ES13: "Cantabria",
-  ES21: "País Vasco/Euskadi",
+  ES21: "Pa\u00eds Vasco/Euskadi",
   ES22: "Comunidad Foral de Navarra",
   ES23: "La Rioja",
-  ES24: "Aragón",
+  ES24: "Arag\u00f3n",
   ES30: "Comunidad de Madrid",
-  ES41: "Castilla y León",
+  ES41: "Castilla y Le\u00f3n",
   ES42: "Castilla-La Mancha",
   ES43: "Extremadura",
-  ES51: "Cataluña/Catalunya",
+  ES51: "Catalu\u00f1a/Catalunya",
   ES52: "Comunitat Valenciana",
   ES53: "Illes Balears",
-  ES61: "Andalucía",
-  ES62: "Región de Murcia"
+  ES61: "Andaluc\u00eda",
+  ES62: "Regi\u00f3n de Murcia"
 };
 
 /**
  * Playable land that is not a bound region: drawn in the relief like the regions, so the
  * enclaves read as Spanish territory under their circle shapes.
  */
-export const playableExtras: readonly string[] = ["Ciudad Autónoma de Ceuta", "Ciudad Autónoma de Melilla"];
+export const playableExtras: readonly string[] = ["Ciudad Aut\u00f3noma de Ceuta", "Ciudad Aut\u00f3noma de Melilla"];
+
+/** Rivers are vendored for this longitude/latitude extent: the Peninsula and the Balearics. */
+export const riverExtent = { east: 4.6, north: 44, south: 35.8, west: -9.8 } as const;
 
 /** Natural Earth ADM0_A3 codes left out of the neutral land (the playable country). */
 export const excludedCountries: readonly string[] = ["ESP"];
@@ -137,11 +140,11 @@ export const anchorOverrides: Readonly<Record<string, { readonly anchor?: GeoPoi
   navarra: { lift: 30 }
 };
 
-/** Neutral geography labels. */
+/** Neutral geography labels, in Spanish like every map label (W2). */
 export const contextLabels: readonly (GeoPoint & { readonly text: string })[] = [
   { latitude: 39.9, longitude: -8.2, text: "Portugal" },
-  { latitude: 43.75, longitude: 0.9, text: "France" },
-  { latitude: 34.6, longitude: -4.6, text: "Morocco" }
+  { latitude: 43.75, longitude: 0.9, text: "Francia" },
+  { latitude: 34.6, longitude: -4.6, text: "Marruecos" }
 ];
 
 type Rgb = readonly [number, number, number];
@@ -207,7 +210,7 @@ export const attribution: readonly { readonly text: string; readonly url?: strin
     url: "https://github.com/tilezen/joerd/blob/master/docs/attribution.md"
   },
   {
-    text: "Neighbouring countries from Natural Earth (public domain). Made with Natural Earth.",
+    text: "Neighbouring countries and rivers from Natural Earth (public domain). Made with Natural Earth.",
     url: "https://www.naturalearthdata.com/"
   },
   {

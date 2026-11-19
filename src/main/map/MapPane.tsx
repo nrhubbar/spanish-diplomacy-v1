@@ -4,6 +4,11 @@ export interface PaneContent {
   /** When this changes, a collapsed pane opens so the player sees the response. */
   readonly attentionKey?: string;
   readonly body: ReactNode;
+  /**
+   * Set for reading content with no controls of its own: the body becomes a tab stop so a
+   * keyboard user can scroll it.
+   */
+  readonly bodyFocusable?: boolean;
   readonly footer?: ReactNode;
   /**
    * On narrow screens, while defined, the sheet collapses to a bar showing this content so
@@ -63,7 +68,7 @@ export function MapPane({ content, layout, onToggle, open }: MapPaneProps): JSX.
         {collapsedSheet && content.sheetFocus === undefined && content.footer !== undefined ? <div className="map-pane-bar-action">{content.footer}</div> : null}
       </div>
       <div className="map-pane-panel" hidden={!open} id={bodyId}>
-        <div className="map-pane-body">{content.body}</div>
+        <div className="map-pane-body" {...(content.bodyFocusable === true ? { tabIndex: 0 } : {})}>{content.body}</div>
         {content.footer === undefined ? null : <div className="map-pane-footer">{content.footer}</div>}
       </div>
     </aside>

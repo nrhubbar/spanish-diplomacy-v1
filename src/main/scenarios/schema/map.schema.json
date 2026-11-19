@@ -311,6 +311,127 @@
         "additionalProperties": false
       }
     },
+    "rivers": {
+      "default": [],
+      "description": "Rivers: scenery drawn above the territory wash and below the borders. No rules effect.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "rank": {
+            "type": "string",
+            "enum": [
+              "main",
+              "tributary"
+            ],
+            "description": "main: drawn at every zoom and labelled; tributary: drawn from the operational zoom."
+          },
+          "path": {
+            "type": "string",
+            "pattern": "^(?:M-?(?:\\d+(?:\\.\\d+)?|\\.\\d+)(?: |(?=-))-?(?:\\d+(?:\\.\\d+)?|\\.\\d+)l-?(?:\\d+(?:\\.\\d+)?|\\.\\d+)(?: |(?=-))-?(?:\\d+(?:\\.\\d+)?|\\.\\d+)(?:(?: |(?=-))-?(?:\\d+(?:\\.\\d+)?|\\.\\d+)(?: |(?=-))-?(?:\\d+(?:\\.\\d+)?|\\.\\d+))*)+$",
+            "description": "The river's course on playable land, downstream."
+          },
+          "mouth": {
+            "description": "The final stretch into the sea, drawn tapering.",
+            "type": "string",
+            "pattern": "^(?:M-?(?:\\d+(?:\\.\\d+)?|\\.\\d+)(?: |(?=-))-?(?:\\d+(?:\\.\\d+)?|\\.\\d+)l-?(?:\\d+(?:\\.\\d+)?|\\.\\d+)(?: |(?=-))-?(?:\\d+(?:\\.\\d+)?|\\.\\d+)(?:(?: |(?=-))-?(?:\\d+(?:\\.\\d+)?|\\.\\d+)(?: |(?=-))-?(?:\\d+(?:\\.\\d+)?|\\.\\d+))*)+$"
+          },
+          "labelPath": {
+            "description": "Curve the name follows, west to east, from the operational zoom.",
+            "type": "string",
+            "pattern": "^(?:M-?(?:\\d+(?:\\.\\d+)?|\\.\\d+)(?: |(?=-))-?(?:\\d+(?:\\.\\d+)?|\\.\\d+)l-?(?:\\d+(?:\\.\\d+)?|\\.\\d+)(?: |(?=-))-?(?:\\d+(?:\\.\\d+)?|\\.\\d+)(?:(?: |(?=-))-?(?:\\d+(?:\\.\\d+)?|\\.\\d+)(?: |(?=-))-?(?:\\d+(?:\\.\\d+)?|\\.\\d+))*)+$"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "rank",
+          "path"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "waterLabels": {
+      "default": [],
+      "description": "Names of seas, gulfs, and bays: straight at a point, or along a curve.",
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "text": {
+                "type": "string",
+                "minLength": 1
+              },
+              "tier": {
+                "type": "string",
+                "enum": [
+                  "overview",
+                  "operational",
+                  "detail"
+                ],
+                "description": "overview: always shown; operational: from the operational zoom; detail: from the detail zoom."
+              },
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "text",
+              "tier",
+              "x",
+              "y"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "text": {
+                "type": "string",
+                "minLength": 1
+              },
+              "tier": {
+                "type": "string",
+                "enum": [
+                  "overview",
+                  "operational",
+                  "detail"
+                ],
+                "description": "overview: always shown; operational: from the operational zoom; detail: from the detail zoom."
+              },
+              "paths": {
+                "minItems": 1,
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^(?:M-?(?:\\d+(?:\\.\\d+)?|\\.\\d+)(?: |(?=-))-?(?:\\d+(?:\\.\\d+)?|\\.\\d+)l-?(?:\\d+(?:\\.\\d+)?|\\.\\d+)(?: |(?=-))-?(?:\\d+(?:\\.\\d+)?|\\.\\d+)(?:(?: |(?=-))-?(?:\\d+(?:\\.\\d+)?|\\.\\d+)(?: |(?=-))-?(?:\\d+(?:\\.\\d+)?|\\.\\d+))*)+$"
+                },
+                "description": "Curves the name may follow, in order of preference; the first that fits on screen is used."
+              }
+            },
+            "required": [
+              "text",
+              "tier",
+              "paths"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      }
+    },
     "unitSymbols": {
       "type": "object",
       "propertyNames": {

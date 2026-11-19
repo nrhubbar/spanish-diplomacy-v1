@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-12.5 -12.5 25 25">
+  <circle class="outcome-ring" r="11.5" fill="#5b4d40" stroke="#241d18" stroke-width="1.2"/>
+  <circle class="outcome-body" r="8.2" fill="#4e6f80" stroke="#fffaf0" stroke-width="1.4"/>
+  <g class="outcome-glyph" fill="none" stroke="#fffaf0" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M 0 -5.6 L 4.6 -3.9 V -0.2 C 4.6 2.8 2.7 4.8 0 5.8 C -2.7 4.8 -4.6 2.8 -4.6 -0.2 V -3.9 Z" fill="#fffaf0" stroke-width="1"/>
+    <path d="M 2.6 0 H -2.4 M -0.2 -2.3 L -2.5 0 L -0.2 2.3" stroke="#4e6f80" stroke-width="1.6"/>
+  </g>
+</svg>

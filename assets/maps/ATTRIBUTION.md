@@ -4,13 +4,13 @@ Every file in this directory ships with the game. Their SHA-256 checksums are in
 
 ## How the files are made
 
-All four files come from one script, `scripts/build-map.ts` (`npm run maps:build`), which runs offline from the vendored sources and then checks the outputs against `checksums.json`. It also rewrites every coordinate in `src/main/scenarios/spain-1936-07-31/map.json` (view box, focus, unit anchors, labels, cities, enclave circles, context labels) from the same geography.
+All four files come from one script, `scripts/build-map.ts` (`npm run maps:build`), which runs offline from the vendored sources and then checks the outputs against `checksums.json`. It also rewrites every coordinate in `src/main/scenarios/spain-1936-07-31/map.json` (view box, focus, unit anchors, labels, cities, enclave circles, context labels, rivers, and water labels) from the same geography. `node scripts/build-map.ts --package-only` rewrites only `map.json`, for iterating on labels; only the full build checks registration and checksums.
 
-- **One projection.** Region polygons, neighbouring countries, the elevation model, cities, and labels all pass through the same spherical Lambert conformal conic (standard parallels 37N and 43N, origin 40N 3W, map units in kilometres). Nothing is fitted to an existing picture.
-- **Registered by construction.** The relief's land/sea edge is rasterized from the exact SVG path data written to `iberia-regions.svg`, so coastlines and borders in the relief and in the vector layer are the same lines. The build fails if a sample of points either side of the region edges disagrees with the baked land mask (`registration:` in its log), and the e2e test "draws the relief coastline exactly under the region coastline at full zoom" checks the rendered result in every browser.
+- **One projection.** Region polygons, neighbouring countries, rivers, the elevation model, cities, and labels all pass through the same spherical Lambert conformal conic (standard parallels 37N and 43N, origin 40N 3W, map units in kilometres). Nothing is fitted to an existing picture.
+- **Registered by construction.** The relief's land/sea edge is rasterized from the exact SVG path data written to `iberia-regions.svg`, so coastlines and borders in the relief and in the vector layer are the same lines. The build fails if a sample of points either side of the region edges disagrees with the baked land mask (`registration:` in its log), or if any river vertex lies off the region polygons or off the baked land mask (`river registration:`); the unit test "puts every river vertex inside a region" checks the shipped `map.json` against the shipped SVG, and the e2e test "draws the relief coastline exactly under the region coastline at full zoom" checks the rendered result in every browser.
 - **Reproducible.** The build uses sharp/libvips (pinned in `package.json`), not a browser, so the same sources reproduce the same bytes. On 18 November 2026 two consecutive builds on macOS produced identical files.
 
-`npm run maps:fetch` (`scripts/fetch-map-sources.ts`) is the only map script that uses the network. It re-downloads the elevation and Natural Earth inputs, records every upstream file's SHA-256 in `scripts/sources/manifest.json`, and rewrites the vendored derivatives; review the diff before committing.
+`npm run maps:fetch` (`scripts/fetch-map-sources.ts`) is the only map script that uses the network. It re-downloads the elevation and Natural Earth inputs, records every upstream file's SHA-256 in `scripts/sources/manifest.json`, and rewrites the vendored derivatives; review the diff before committing. `npm run maps:fetch -- rivers` (or `elevation`, `neutralLand`) refreshes only the named sources.
 
 ## `iberia-regions.svg`
 
@@ -48,6 +48,15 @@ Baked shaded relief: a multi-directional hillshade (four lights, strongest from 
 - License: public domain (https://www.naturalearthdata.com/about/terms-of-use/). Credited as "Made with Natural Earth".
 - Vendored subset: `scripts/sources/naturalearth/ne_10m_admin_0_countries-subset.geojson` (SHA-256 `37250d6945edecee5ca6c766c047af32fb7b91c3e212fca61e1092668442dc23`): the 43 countries other than Spain that touch the overview area, coordinates rounded to 0.0001 degree
 - Use: neutral land only. Spain's own land comes from the geoBoundaries regions; texels within 1.5 km of both datasets on land are filled so the two boundary sources meet without a gap.
+
+## Rivers (in `map.json`)
+
+Vector rivers drawn over the relief: the eight main rivers and 22 major tributaries.
+
+- Source: Natural Earth 1:10m Physical Vectors, Rivers + lake centerlines and its Europe supplement, release `v5.1.2` (commit `f1890d9f152c896d250a77557a5751a93d494776`): https://github.com/nvkelso/natural-earth-vector ; upstream files `geojson/ne_10m_rivers_lake_centerlines.geojson` (SHA-256 `bb854a900ecbd3b408df46d5e16e3e0f974ba55993f9d8b5c26e855273c0905a`) and `geojson/ne_10m_rivers_europe.geojson` (SHA-256 `90712202ac46985812e90840df9acd5101599a9c649868d5bc55ee96c2fedd4c`), retrieved 18 November 2026
+- License: public domain (https://www.naturalearthdata.com/about/terms-of-use/). Credited as "Made with Natural Earth".
+- Vendored subset: `scripts/sources/naturalearth/ne_10m_rivers-iberia.geojson` (SHA-256 `8ba93cfd8ce0969fa4d818f2032e3618e8ab9b9d5f1fd86960b663e89602d419`): the 59 lines of both files with a vertex between 9.8W and 4.6E and between 35.8N and 44N, cut to that extent with one vertex kept either side, coordinates rounded to 0.0001 degree, and only the `name`, `name_en`, `name_es`, `featurecla`, `scalerank`, `min_zoom`, `rivernum`, and `ne_id` properties kept
+- Changes: rivers are chosen and named by `rivernum` in `scripts/map/iberia-1936-water.ts` (Natural Earth's own names are unreliable here, for example "Mio" for the Mino), joined where their pieces meet, turned to run downhill using the elevation model, clipped to the playable regions (stretches within 2.5 km of the Portuguese or French border are drawn just inside it; slivers between the two boundary datasets are bridged), simplified (Douglas-Peucker, 0.3 km for main rivers and 0.45 km for tributaries, never across the sea or a border), and serialized to 0.1 km. A river whose downstream end is near the sea gets a `mouth` stretch that tapers. River names and the 25 sea, gulf, and bay names are Castilian Spanish place names placed by hand from their WGS 84 positions.
 
 ## City and enclave positions
 

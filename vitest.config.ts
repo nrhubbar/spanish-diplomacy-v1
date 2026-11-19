@@ -5,6 +5,9 @@ export default defineConfig({
     environment: "jsdom",
     exclude: ["e2e/**", "node_modules/**", "build/**"],
     setupFiles: ["src/test/setup.ts"],
+    // Full user flows in jsdom, measured with coverage, share the CPU with the 200-game soak;
+    // under that load the 5 s default timed out tests that pass in a quiet run.
+    testTimeout: 15000,
     coverage: {
       provider: "v8",
       reporter: ["text-summary", "text", "html"],

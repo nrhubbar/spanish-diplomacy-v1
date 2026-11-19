@@ -20,17 +20,19 @@ import { arrowHead, groupRoutes, pointOnCurve, routeCurve, shortenCurve } from "
 import { terrainFrustum, terrainRenderMetrics } from "../main/map/terrainRendering";
 import { staticMapView } from "../main/map/view";
 import { initialGameState, resolveTurn } from "../main/engine/resolution";
+import type { BattleOutcome, BouncedMoveOutcome } from "../main/engine/types";
 import {
   bounceReason,
-  compactStrength,
   controlDescription,
   controllerName,
   describeOutcome,
+  describeOutcomeGroup,
+  groupOutcomes,
   listNames,
-  turnLabel,
   unitDesignation
 } from "../main/presentation/text";
-import { faction, move, spain, testRegistry, tiny, tinyId, withUnits } from "./support";
+import { turnLabel } from "../main/presentation/turn";
+import { faction, move, spain, territory, testRegistry, tiny, tinyId, unit, withUnits } from "./support";
 
 const bounds: CameraBounds = { content: { height: 200, width: 200, x: 0, y: 0 }, focus: { height: 100, width: 100, x: 50, y: 50 } };
 const viewport = { height: 400, insetBottom: 0, insetRight: 200, width: 600 };
@@ -151,13 +153,25 @@ describe("counter placement (V3, V4, V7)", () => {
     expect(intersects({ height: 20, width: 30, x: a?.x ?? 0, y: a?.y ?? 0 }, label)).toBe(false);
     expect(intersects({ height: 20, width: 30, x: a?.x ?? 0, y: a?.y ?? 0 }, { height: 20, width: 30, x: b?.x ?? 0, y: b?.y ?? 0 })).toBe(false);
   });
+
+  it("reaches further out on a crowded front, and covers as little as it can when nothing is free", () => {
+    // Everything within two stack widths of the anchor is taken; three widths out is free.
+    const crowd = { height: 400, width: 120, x: 20, y: -100 };
+    const far = placeCounters([{ anchor: { x: 100, y: 100 }, anchorKey: "k", id: "a" }], metrics, [crowd]).get("a");
+    expect(intersects({ height: 20, width: 30, x: far?.x ?? 0, y: far?.y ?? 0 }, crowd)).toBe(false);
+
+    // Only a sliver on the right is uncovered: the stack takes the slot overlapping least.
+    const walls = [{ height: 400, width: 125, x: 0, y: -100 }, { height: 400, width: 400, x: 140, y: -100 }];
+    const squeezed = placeCounters([{ anchor: { x: 100, y: 100 }, anchorKey: "k", id: "a" }], metrics, walls).get("a");
+    expect(squeezed?.x).toBeGreaterThan(100);
+  });
 });
 
 describe("routes (V10)", () => {
   it("groups identical routes and counts them", () => {
     const scenario = tiny();
     const state = withUnits(scenario, [["a", "red", "westfold"], ["b", "red", "westfold"], ["c", "blue", "harbor"]]);
-    const result = resolveTurn(scenario, state, [{ factionId: faction("red"), orders: [move("red", "a", "westfold", "lowlands"), move("red", "b", "westfold", "lowlands")] }]);
+    const result = resolveTurn(scenario, state, [{ factionId: faction("red"), orders: [move("red", "a", "westfold", "lowlands"), move("red", "b", "westfold", "lowlands")] }], 1);
     const groups = groupRoutes([move("red", "a", "westfold", "highlands")], result.outcomes);
     expect(groups.map((group) => [group.kind, group.count])).toEqual([["planned", 1], ["moved", 2]]);
   });
@@ -222,19 +236,25 @@ describe("markup and rendering helpers", () => {
     const scenario = spain();
     const state = initialGameState(scenario);
     expect(legendEntries(scenario, state, staticMapView)).toEqual(["contested", "sea"]);
-    const result = resolveTurn(scenario, state, [{ factionId: faction("republic"), orders: [move("republic", "rep-wad-ras-1", "madrid", "castilla-y-leon")] }]);
-    expect(legendEntries(scenario, state, { ...staticMapView, outcomes: result.outcomes, plannedOrders: result.submittedOrders })).toEqual(["contested", "sea", "planned", "bounced"]);
+    // Equal attacks meeting head-on bounce without a battle (M20); Spain's shared territories
+    // also fight their standing battles (M27), so their results join the legend.
+    const result = resolveTurn(scenario, state, [
+      { factionId: faction("republic"), orders: [move("republic", "rep-wad-ras-1", "madrid", "castilla-y-leon")] },
+      { factionId: faction("north"), orders: [move("north", "north-san-marcial-22", "castilla-y-leon", "madrid")] }
+    ], 1);
+    expect(legendEntries(scenario, state, { ...staticMapView, outcomes: result.outcomes, plannedOrders: result.submittedOrders })).toEqual(["contested", "sea", "planned", "bounced", "attacker-demoralized", "defender-demoralized"]);
   });
 });
 
 describe("player-facing text", () => {
   it("formats outcomes, causes, labels, and designations", () => {
     const scenario = tiny();
-    const state = withUnits(scenario, [["red-guard", "red", "westfold"], ["blue-marines", "blue", "harbor"], ["red-rangers", "red", "highlands"]]);
+    // Red Guard and Blue Marines both attack at 4, so they meet head-on and bounce (M20).
+    const state = withUnits(scenario, [["red-guard", "red", "highlands"], ["blue-marines", "blue", "harbor"], ["red-rangers", "red", "westfold"]]);
     const result = resolveTurn(scenario, state, [
-      { factionId: faction("red"), orders: [move("red", "red-rangers", "highlands", "harbor"), move("red", "red-guard", "westfold", "isle")] },
+      { factionId: faction("red"), orders: [move("red", "red-guard", "highlands", "harbor"), move("red", "red-rangers", "westfold", "isle")] },
       { factionId: faction("blue"), orders: [move("blue", "blue-marines", "harbor", "highlands")] }
-    ]);
+    ], 1);
     const text = result.outcomes.map((outcome) => describeOutcome(scenario, outcome)).join(" | ");
     expect(text).toContain("met Blue Union head-on");
     expect(text).toContain("impossible order");
@@ -250,7 +270,9 @@ describe("player-facing text", () => {
     expect(controllerName(scenario, { factionIds: [], kind: "contested" })).toBe("Contested");
     expect(unitDesignation("Wad-Ras Infantry Regiment No. 1")).toBe("WR1");
     expect(unitDesignation("Asturian Workers Militia")).toBe("AWM");
-    expect([compactStrength(undefined), compactStrength(740), compactStrength(1000), compactStrength(1500)]).toEqual(["", "740", "1k", "1.5k"]);
+    // Accented letters belong to their word, so "Arag\u00f3n" is one word, not "Arag" and "n".
+    expect(unitDesignation("Arag\u00f3n Infantry Regiment No. 17")).toBe("A17");
+    expect(unitDesignation("San Quint\u00edn Infantry Regiment No. 25")).toBe("SQ25");
   });
 
   it("describes a disbanded move", () => {
@@ -262,5 +284,44 @@ describe("player-facing text", () => {
       order: move("red", "red-rangers", "highlands", "harbor")
     });
     expect(text).toBe("Red League: Red Rangers was lost. It tried to move from Highlands to Harbor and bounced: held by Blue Union. Blue Union took Highlands.");
+  });
+
+  it("gives one-line headlines for battles and the m2-strength statuses", () => {
+    const scenario = tiny();
+    const army = (unitId: string, factionId: string, from: string, value: number) =>
+      ({ factionId: faction(factionId), from: territory(from), unitId: unit(unitId), value });
+    const battle: BattleOutcome = {
+      attacker: { armies: [army("red-guard", "red", "westfold", 4), army("red-rangers", "red", "highlands", 3)], value: 7 },
+      attackerFactionId: faction("red"),
+      column: 1,
+      defender: { armies: [army("blue-marines", "blue", "harbor", 5)], value: 5 },
+      demoralizedUnitIds: [],
+      die: 4,
+      kind: "battle",
+      losses: [],
+      modifiers: [],
+      oddsLabel: "1:1",
+      result: "both-demoralized",
+      retreats: [],
+      row: 4,
+      site: { kind: "assault", occupation: { kind: "held" }, territoryId: territory("harbor") },
+      surrenderedUnitIds: []
+    };
+    expect(describeOutcome(scenario, battle)).toBe("Battle for Harbor: Both sides demoralized.");
+    expect(describeOutcome(scenario, { ...battle, site: { between: [territory("harbor"), territory("highlands")], kind: "meeting" } }))
+      .toBe("Battle on the road between Harbor and Highlands: Both sides demoralized.");
+    expect(groupOutcomes([battle])[0]?.unitIds).toEqual(["red-guard", "red-rangers", "blue-marines"]);
+    const bounced: BouncedMoveOutcome = {
+      cause: { holdingFactionIds: [faction("blue")], kind: "held" },
+      kind: "bounced-move",
+      order: move("red", "red-rangers", "highlands", "harbor"),
+      retreatedTo: territory("westfold")
+    };
+    expect(describeOutcome(scenario, bounced)).toBe("Red League: Red Rangers tried to move from Highlands to Harbor and bounced: held by Blue Union. It fell back to Westfold.");
+    expect(describeOutcomeGroup(scenario, { outcome: bounced, unitIds: [unit("red-rangers"), unit("red-guard")] })).toContain("They fell back to Westfold.");
+    expect(describeOutcome(scenario, { factionId: faction("red"), kind: "recovered", territoryId: territory("westfold"), unitId: unit("red-guard") }))
+      .toBe("Red Guard recovered its morale in Westfold.");
+    expect(describeOutcome(scenario, { kind: "reinforcement-arrived", order: move("red", "red-rangers", "highlands", "westfold") }))
+      .toBe("Red League: Red Rangers moved from Highlands to Westfold as reinforcements.");
   });
 });

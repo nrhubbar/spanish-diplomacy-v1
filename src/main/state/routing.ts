@@ -6,7 +6,6 @@ export const paths = {
   home: "/",
   orders: "/orders",
   resolution: "/resolution",
-  reveal: "/reveal",
   settings: "/settings",
   setup: "/setup"
 } as const;
@@ -16,7 +15,6 @@ const phaseRoutes: Readonly<Record<Phase, string>> = {
   handoff: paths.handoff,
   idle: paths.home,
   planning: paths.orders,
-  "ready-to-resolve": paths.reveal,
   resolution: paths.resolution,
   setup: paths.setup
 };

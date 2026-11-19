@@ -28,15 +28,14 @@ export function advance(scenario: Scenario, game: GameRecord, fromFactionId?: Fa
     const random = seededRandom(deriveSeed(current.seed, current.state.turnNumber, index));
     const previousOutcomes = current.history.at(-1)?.outcomes;
     const submission = generateComputerSubmission(scenario, current.state, faction.id, random, {
+      history: current.history.map((entry) => entry.outcomes),
       ...(previousOutcomes === undefined ? {} : { previousOutcomes })
     });
     current = lockSubmission(scenario, current, submission);
   }
 
-  // Every faction is locked. People get an explicit reveal moment; all-computer games resolve.
-  return localPlayerCount(current.assignments) > 0
-    ? { game: current, phase: "ready-to-resolve" }
-    : resolve(scenario, current);
+  // Every faction is locked: the turn resolves at once (T1).
+  return resolve(scenario, current);
 }
 
 export function lockSubmission(scenario: Scenario, game: GameRecord, submission: PlayerSubmission): GameRecord {
@@ -52,7 +51,7 @@ export function resolve(scenario: Scenario, game: GameRecord): Session {
     const submission = game.locked[faction.id];
     return submission === undefined ? [] : [submission];
   });
-  const result = resolveTurn(scenario, game.state, submissions);
+  const result = resolveTurn(scenario, game.state, submissions, game.seed);
   const next: GameRecord = { ...game, state: result.finalState };
   return result.victory === undefined
     ? { game: next, phase: "resolution", result }

@@ -3,6 +3,7 @@ import { initialGameState } from "../engine/resolution";
 import type {
   CityDefinition,
   CityId,
+  CombatRules,
   FactionDefinition,
   FactionId,
   Neighbor,
@@ -13,11 +14,13 @@ import type {
   TerritoryId,
   UnitDefinition,
   UnitId,
+  UnitTypeDefinition,
   UnitTypeId
 } from "../engine/types";
 import { victoryProgress } from "../engine/victory";
 import { type MapDocument, mapSchema } from "./schema/mapSchema";
 import { type ScenarioDocument, scenarioSchema } from "./schema/scenarioSchema";
+import { checkWater, indexWater, type MapRiver, type WaterLabel } from "./water";
 
 export interface MapPoint {
   readonly x: number;
@@ -53,11 +56,13 @@ export interface MapPackage {
   readonly geometryPath: string;
   readonly id: string;
   readonly regions: ReadonlyMap<string, TerritoryId>;
+  readonly rivers: readonly MapRiver[];
   readonly stripSelectors: readonly string[];
   readonly terrain?: { readonly layers: readonly TerrainLayerSource[] };
   readonly territories: ReadonlyMap<TerritoryId, MapTerritory>;
   readonly unitSymbolPaths: ReadonlyMap<UnitTypeId, string>;
   readonly viewBox: MapRect;
+  readonly waterLabels: readonly WaterLabel[];
 }
 
 export interface ScenarioPackage {
@@ -83,7 +88,7 @@ export interface PackageInput {
   readonly scenarioPath: string;
 }
 
-/** Validates a scenario and its map (rules L1-L11 except SVG element checks) and indexes them. */
+/** Validates a scenario and its map (rules L1-L13 except SVG element checks) and indexes them. */
 export function loadPackage(input: PackageInput): ScenarioPackage {
   const scenarioResult = scenarioSchema.safeParse(input.scenarioDocument);
   if (!scenarioResult.success) {
@@ -127,6 +132,7 @@ function checkScenario(document: ScenarioDocument): readonly string[] {
   const issues: string[] = [];
   const collections = {
     cities: document.cities,
+    "combat.factionModifiers": document.combat.factionModifiers,
     factions: document.factions,
     sources: document.sources,
     territories: document.territories,
@@ -173,6 +179,9 @@ function checkScenario(document: ScenarioDocument): readonly string[] {
     ref(`${path}.factionId`, unit.factionId, factions, "faction");
     ref(`${path}.territoryId`, unit.territoryId, territories, "territory");
     ref(`${path}.type`, unit.type, unitTypes, "unit type");
+    if (unit.strength > unit.fullStrength) {
+      issues.push(`${path}.strength: ${String(unit.strength)} men exceeds fullStrength ${String(unit.fullStrength)} (L12)`);
+    }
     unit.sources.forEach((source) => { ref(`${path}.sources`, source.sourceId, sources, "source"); });
     if (unit.cityId !== undefined) {
       const city = cities.get(unit.cityId);
@@ -181,6 +190,14 @@ function checkScenario(document: ScenarioDocument): readonly string[] {
       } else if (city.territoryId !== unit.territoryId) {
         issues.push(`${path}.cityId: city "${unit.cityId}" is not in territory "${unit.territoryId}" (L4)`);
       }
+    }
+  });
+
+  document.combat.factionModifiers.forEach((modifier, index) => {
+    const path = `combat.factionModifiers[${index}]`;
+    ref(`${path}.factionId`, modifier.factionId, factions, "faction");
+    if ((modifier.attack ?? 0) === 0 && (modifier.defence ?? 0) === 0) {
+      issues.push(`${path}: "${modifier.id}" changes nothing; give it an attack or defence bonus (L13)`);
     }
   });
 
@@ -271,12 +288,14 @@ function checkMap(document: ScenarioDocument, map: MapDocument, assetPaths: Read
   for (const asset of assets) {
     if (!assetPaths.has(asset)) issues.push(`map: asset "${asset}" not found (L11)`);
   }
+  issues.push(...checkWater(map));
   return issues;
 }
 
 function indexScenario(document: ScenarioDocument): Scenario {
   const factions: FactionDefinition[] = document.factions.map((faction) => ({
     abbreviation: faction.abbreviation,
+    briefing: { firstTurnHint: faction.briefing.firstTurnHint, objective: faction.briefing.objective },
     color: faction.color,
     defaultActor: faction.defaultActor,
     id: faction.id as FactionId,
@@ -303,18 +322,40 @@ function indexScenario(document: ScenarioDocument): Scenario {
   const units: UnitDefinition[] = document.units.map((unit) => ({
     factionId: unit.factionId as FactionId,
     formationKind: unit.formationKind,
+    fullStrength: unit.fullStrength,
     id: unit.id as UnitId,
     name: unit.name,
     sources: unit.sources.map((source) => ({
       sourceId: source.sourceId as SourceId,
       ...(source.reference === undefined ? {} : { reference: source.reference })
     })),
+    strength: unit.strength,
     territoryId: unit.territoryId as TerritoryId,
     type: unit.type as UnitTypeId,
-    ...(unit.approximateStrength === undefined ? {} : { approximateStrength: unit.approximateStrength }),
     ...(unit.cityId === undefined ? {} : { cityId: unit.cityId as CityId }),
-    ...(unit.historicalNote === undefined ? {} : { historicalNote: unit.historicalNote })
+    ...(unit.historicalNote === undefined ? {} : { historicalNote: unit.historicalNote }),
+    ...(unit.designation === undefined ? {} : { designation: unit.designation })
   }));
+  const unitTypes: UnitTypeDefinition[] = document.unitTypes.map((type) => ({
+    attack: type.attack,
+    defence: type.defence,
+    id: type.id as UnitTypeId,
+    name: type.name
+  }));
+  const combat: CombatRules = {
+    belowOneToOne: document.combat.belowOneToOne,
+    demoralizationFactor: document.combat.demoralizationFactor,
+    diggingIn: document.combat.diggingIn,
+    factionModifiers: document.combat.factionModifiers.map((modifier) => ({
+      attack: modifier.attack ?? 0,
+      defence: modifier.defence ?? 0,
+      factionId: modifier.factionId as FactionId,
+      id: modifier.id,
+      name: modifier.name,
+      when: modifier.when
+    })),
+    table: document.combat.table
+  };
   const connections = document.connections.map((connection) => ({
     between: connection.between as [TerritoryId, TerritoryId],
     kind: connection.kind,
@@ -334,6 +375,7 @@ function indexScenario(document: ScenarioDocument): Scenario {
 
   return {
     cities,
+    combat,
     connections,
     factions,
     id: document.id as ScenarioId,
@@ -343,6 +385,7 @@ function indexScenario(document: ScenarioDocument): Scenario {
       factions: new Map(factions.map((faction) => [faction.id, faction])),
       neighbors,
       territories: new Map(territories.map((territory) => [territory.id, territory])),
+      unitTypes: new Map(unitTypes.map((type) => [type.id, type])),
       units: new Map(units.map((unit) => [unit.id, unit]))
     },
     name: document.name,
@@ -354,7 +397,7 @@ function indexScenario(document: ScenarioDocument): Scenario {
       ...(source.url === undefined ? {} : { url: source.url })
     })),
     territories,
-    unitTypes: document.unitTypes.map((type) => ({ id: type.id as UnitTypeId, name: type.name })),
+    unitTypes,
     units,
     victory: document.victory
   };
@@ -385,6 +428,7 @@ function indexMap(document: MapDocument): MapPackage {
       }
     ])),
     unitSymbolPaths: new Map(Object.entries(document.unitSymbols).map(([id, path]) => [id as UnitTypeId, path])),
-    viewBox: document.viewBox
+    viewBox: document.viewBox,
+    ...indexWater(document)
   };
 }

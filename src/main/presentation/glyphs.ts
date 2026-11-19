@@ -6,5 +6,6 @@ export const glyphs = {
   check: "\u2713",
   close: "\u00d7",
   dot: "\u00b7",
-  minus: "\u2212"
+  minus: "\u2212",
+  times: "\u00d7"
 } as const;

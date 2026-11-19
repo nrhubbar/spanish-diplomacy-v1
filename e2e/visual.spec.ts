@@ -41,8 +41,9 @@ test("planning at every zoom level", async ({ page }) => {
 
 test("resolution", async ({ page }) => {
   await startGame(page);
-  await page.getByRole("button", { name: "Submit Orders" }).filter({ visible: true }).click();
-  await page.getByRole("button", { name: "Reveal and Resolve" }).click();
+  await page.getByRole("button", { name: "End Turn" }).filter({ visible: true }).click();
+  // Start Next Turn appears under the pointer that pressed End Turn; keep hover out of the baseline.
+  await page.mouse.move(0, 0);
   await expect(page.locator(".terrain-layer")).toHaveAttribute("data-renderer", "webgl", { timeout: 15000 });
   await expect(page.locator(".terrain-layer")).toHaveAttribute("data-refined", "true", { timeout: 15000 });
   await expect(page).toHaveScreenshot("resolution.png");
@@ -60,5 +61,7 @@ test("flat-map fallback", async ({ page }) => {
   await page.getByRole("button", { name: "Start Campaign" }).click();
   await expect(page.locator(".map-vector")).toBeVisible();
   await expect(page.locator(".terrain-fallback")).toBeVisible();
+  // The flat images show while WebGL starts; wait for the fallback notice so the frame is settled.
+  await expect(page.getByRole("complementary", { name: "Notifications" })).toBeVisible();
   await expect(page).toHaveScreenshot("fallback.png", { mask: [page.locator(".notification-shelf")] });
 });

@@ -4,20 +4,45 @@
   "id": "tiny-front",
   "name": "Tiny Front (test fixture)",
   "snapshotLabel": "Day 1",
-  "ruleset": "m2-movement",
+  "ruleset": "m2-strength",
   "map": "./map.json",
   "victory": { "territoryShare": 0.6, "cityShare": 1, "tieBreak": ["territories", "cities"] },
-  "unitTypes": [{ "id": "foot", "name": "Foot" }],
+  "combat": {
+    "table": [
+      ["attacker-eliminated", "attacker-eliminated", "attacker-attrition", "attacker-demoralized", "both-demoralized", "both-demoralized", "defender-demoralized"],
+      ["attacker-eliminated", "attacker-attrition", "attacker-demoralized", "both-demoralized", "both-demoralized", "defender-demoralized", "defender-exchange"],
+      ["attacker-attrition", "attacker-demoralized", "both-demoralized", "both-demoralized", "defender-demoralized", "defender-exchange", "defender-eliminated"],
+      ["attacker-demoralized", "both-demoralized", "both-demoralized", "defender-demoralized", "defender-exchange", "defender-eliminated", "defender-eliminated"],
+      ["both-demoralized", "both-demoralized", "defender-demoralized", "defender-exchange", "defender-eliminated", "defender-eliminated", "defender-eliminated"],
+      ["both-demoralized", "defender-demoralized", "defender-exchange", "defender-eliminated", "defender-eliminated", "defender-eliminated", "defender-eliminated"],
+      ["defender-demoralized", "defender-exchange", "defender-eliminated", "defender-eliminated", "defender-eliminated", "defender-eliminated", "defender-eliminated"]
+    ],
+    "belowOneToOne": { "kind": "halving", "rollPenalty": 1 },
+    "diggingIn": { "perTurn": 1, "max": 2 },
+    "demoralizationFactor": 0.5,
+    "factionModifiers": [
+      { "id": "harbor-batteries", "name": "Harbor batteries", "factionId": "blue", "when": "holds-controlled-city", "defence": 1 }
+    ]
+  },
+  "unitTypes": [{ "id": "foot", "name": "Foot", "attack": 4, "defence": 5 }],
   "factions": [
     {
       "id": "red", "name": "Red League", "abbreviation": "RED", "color": "#b03a2e",
       "motivation": "Hold the west and take the harbor.", "defaultActor": "local-human",
-      "objectiveTerritoryIds": ["harbor", "isle"]
+      "objectiveTerritoryIds": ["harbor", "isle"],
+      "briefing": {
+        "objective": "Hold the west and take the harbor. Win by holding 3 of 5 territories or both towns.",
+        "firstTurnHint": "Scouts report Blue Union marines holding Port Town, and the Lowlands road is open. Do we march on the Lowlands now, or keep the Guard home until the Rangers can join it?"
+      }
     },
     {
       "id": "blue", "name": "Blue Union", "abbreviation": "BLU", "color": "#2e5f9a",
       "motivation": "Push west from the harbor.", "defaultActor": "computer",
-      "objectiveTerritoryIds": ["westfold", "highlands"]
+      "objectiveTerritoryIds": ["westfold", "highlands"],
+      "briefing": {
+        "objective": "Push west from the harbor. Win by holding 3 of 5 territories or both towns.",
+        "firstTurnHint": "Red League patrols have been seen on the Highlands road. Do we keep the marines in Port Town, or cross the Narrows and claim the Isle first?"
+      }
     }
   ],
   "territories": [
@@ -39,9 +64,9 @@
     { "id": "port-town", "name": "Port Town", "territoryId": "harbor", "countsForVictory": true, "initialController": "blue" }
   ],
   "units": [
-    { "id": "red-guard", "name": "Red Guard", "factionId": "red", "type": "foot", "formationKind": "regiment", "approximateStrength": 500, "territoryId": "westfold", "cityId": "west-town", "sources": [{ "sourceId": "fixture" }] },
-    { "id": "red-rangers", "name": "Red Rangers", "factionId": "red", "type": "foot", "formationKind": "battalion", "territoryId": "highlands", "sources": [{ "sourceId": "fixture" }] },
-    { "id": "blue-marines", "name": "Blue Marines", "factionId": "blue", "type": "foot", "formationKind": "battalion", "approximateStrength": 400, "territoryId": "harbor", "cityId": "port-town", "sources": [{ "sourceId": "fixture" }] }
+    { "id": "red-guard", "name": "Red Guard", "factionId": "red", "type": "foot", "formationKind": "regiment", "strength": 500, "fullStrength": 500, "territoryId": "westfold", "cityId": "west-town", "sources": [{ "sourceId": "fixture" }] },
+    { "id": "red-rangers", "name": "Red Rangers", "factionId": "red", "type": "foot", "formationKind": "battalion", "strength": 300, "fullStrength": 400, "territoryId": "highlands", "sources": [{ "sourceId": "fixture" }] },
+    { "id": "blue-marines", "name": "Blue Marines", "factionId": "blue", "type": "foot", "formationKind": "battalion", "strength": 400, "fullStrength": 400, "territoryId": "harbor", "cityId": "port-town", "sources": [{ "sourceId": "fixture" }] }
   ],
   "sources": [{ "id": "fixture", "title": "Invented test data" }]
 }

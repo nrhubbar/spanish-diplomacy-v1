@@ -36,7 +36,7 @@ import { openSetup } from "../main/state/gameSlice";
 import { MemoryRouter } from "react-router";
 import tinyMap from "./fixtures/scenarios/tiny-front/map.json";
 import tinyScenario from "./fixtures/scenarios/tiny-front/scenario.json";
-import { faction, move, spain, territory, testRegistry, testStore, tiny, tinyId, unit, withUnits } from "./support";
+import { faction, move, territory, testRegistry, testStore, tiny, tinyId, unit, withUnits } from "./support";
 
 type Json = Record<string, unknown>;
 
@@ -118,7 +118,7 @@ describe("engine and computer edge cases", () => {
   it("reports duplicate orders even when the counts are irregular", () => {
     const scenario = tiny();
     const state = withUnits(scenario, [["red-guard", "red", "westfold"]]);
-    const result = resolveTurn(scenario, state, [{ factionId: faction("red"), orders: [move("red", "red-guard", "westfold", "lowlands"), move("red", "red-guard", "westfold", "lowlands"), move("red", "red-guard", "westfold", "highlands")] }]);
+    const result = resolveTurn(scenario, state, [{ factionId: faction("red"), orders: [move("red", "red-guard", "westfold", "lowlands"), move("red", "red-guard", "westfold", "lowlands"), move("red", "red-guard", "westfold", "highlands")] }], 1);
     expect(result.outcomes.filter((outcome) => outcome.kind === "invalid-order")).toHaveLength(3);
   });
 
@@ -153,8 +153,8 @@ describe("selectors and small helpers", () => {
     const scenario = tiny();
     const game: GameRecord = { assignments: {}, history: [], locked: { [faction("red")]: { factionId: faction("red"), orders: [] } }, scenarioId: tinyId, seed: 1, state: initialGameState(scenario) };
     expect(selectSubmissionStatus(scenario, { phase: "idle" })).toEqual([]);
-    expect(selectSubmissionStatus(scenario, { game, phase: "ready-to-resolve" }).every((entry) => entry.ready)).toBe(true);
-    const result = resolveTurn(scenario, game.state, []);
+    const result = resolveTurn(scenario, game.state, [], 1);
+    expect(selectSubmissionStatus(scenario, { game, phase: "resolution", result }).every((entry) => entry.ready)).toBe(true);
     expect(selectRevealedOrders({ game, phase: "resolution", result })).toEqual([{ factionId: "red", orders: [] }]);
   });
 
@@ -167,12 +167,14 @@ describe("selectors and small helpers", () => {
     expect(placeCounters([{ anchor: { x: 0, y: 0 }, anchorKey: "a", id: "a" }], { gap: 2, height: 10, perRow: 2, width: 10 }, [wall]).get("a")).toEqual({ x: -5, y: 5 });
     expect(groupRoutes([], [{ factionId: faction("red"), kind: "no-move" }])).toEqual([]);
     expect(unitDesignation("Spanish Legion")).toBe("SL");
-    const scenario = spain();
-    const state = initialGameState(scenario);
-    const result = resolveTurn(scenario, withUnits(scenario, [["rep-wad-ras-1", "republic", "madrid"], ["north-zamora-29", "north", "castilla-y-leon"], ["north-aragon-17", "north", "aragon"]]), [
-      { factionId: faction("republic"), orders: [move("republic", "rep-wad-ras-1", "madrid", "castilla-la-mancha")] },
-      { factionId: faction("north"), orders: [move("north", "north-zamora-29", "castilla-y-leon", "madrid"), move("north", "north-aragon-17", "aragon", "castilla-la-mancha")] }
-    ]);
+    // Equal attacks tie entering the Isle (M19), Red takes the Harbor behind them, and Blue
+    // has nowhere to fall back, so its Marines surrender (M21).
+    const scenario = tiny();
+    const state = withUnits(scenario, [["red-guard", "red", "harbor"], ["blue-marines", "blue", "harbor"], ["red-rangers", "red", "highlands"], ["r3", "red", "lowlands"]]);
+    const result = resolveTurn(scenario, state, [
+      { factionId: faction("red"), orders: [move("red", "red-guard", "harbor", "isle"), move("red", "red-rangers", "highlands", "harbor")] },
+      { factionId: faction("blue"), orders: [move("blue", "blue-marines", "harbor", "isle")] }
+    ], 1);
     expect(legendEntries(scenario, state, { ...staticMapView, outcomes: result.outcomes })).toEqual(expect.arrayContaining(["moved", "disbanded"]));
   });
 
@@ -231,11 +233,12 @@ describe("component edge cases", () => {
   it("renders a map without a pane, with disbanded routes and an uncontrolled city", async () => {
     const pkg = testRegistry().require(tinyId);
     const assets = await testRegistry().loadAssets(tinyId);
-    const state = withUnits(pkg.scenario, [["red-rangers", "red", "highlands"], ["blue-marines", "blue", "harbor"], ["red-guard", "red", "westfold"]]);
+    // Equal attacks meeting head-on bounce without a battle (M20).
+    const state = withUnits(pkg.scenario, [["red-guard", "red", "highlands"], ["blue-marines", "blue", "harbor"], ["red-rangers", "red", "westfold"]]);
     const result = resolveTurn(pkg.scenario, state, [
-      { factionId: faction("red"), orders: [move("red", "red-rangers", "highlands", "harbor"), move("red", "red-guard", "westfold", "highlands")] },
-      { factionId: faction("blue"), orders: [] }
-    ]);
+      { factionId: faction("red"), orders: [move("red", "red-guard", "highlands", "harbor")] },
+      { factionId: faction("blue"), orders: [move("blue", "blue-marines", "harbor", "highlands")] }
+    ], 1);
     const game: GameState = { ...state, cityControl: {} };
     render(<CampaignMap assets={assets} game={game} scenarioPackage={pkg} view={{ ...staticMapView, outcomes: [...result.outcomes, ...result.outcomes] }} />);
     await screen.findByRole("application", { name: /map/ });
@@ -258,7 +261,7 @@ describe("component edge cases", () => {
   it("names a shared victory", async () => {
     const scenario = tiny();
     const state = initialGameState(scenario);
-    const result = { ...resolveTurn(scenario, state, []), victory: { condition: "shared" as const, factionIds: [faction("red"), faction("blue")] } };
+    const result = { ...resolveTurn(scenario, state, [], 1), victory: { condition: "shared" as const, factionIds: [faction("red"), faction("blue")] } };
     const store = testStore({ game: { session: { game: { assignments: {}, history: [], locked: {}, scenarioId: tinyId, seed: 1, state }, phase: "game-over", result } } });
     render(<Provider store={store}><RegistryContext value={testRegistry()}><MemoryRouter><ResultsScreen /></MemoryRouter></RegistryContext></Provider>);
     expect(screen.getByRole("heading", { level: 1, name: "Red League and Blue Union share victory" })).toBeVisible();

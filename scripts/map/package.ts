@@ -29,3 +29,12 @@ export function insideTerritory(rings: readonly Ring[], point: Point): boolean {
 export function hexColor(color: readonly [number, number, number]): string {
   return `#${color.map((channel) => Math.round(channel).toString(16).padStart(2, "0")).join("")}`;
 }
+
+/**
+ * Pretty-printed JSON with every character outside ASCII written as a `\u` escape, so generated
+ * package files keep the ASCII-only source rule while carrying accented names.
+ */
+export function asciiJson(value: unknown): string {
+  const text = JSON.stringify(value, null, 2).replace(/[^\x20-\x7e\n]/g, (character) => `\\u${character.charCodeAt(0).toString(16).padStart(4, "0")}`);
+  return `${text}\n`;
+}

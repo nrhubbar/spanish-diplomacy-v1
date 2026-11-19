@@ -16,3 +16,16 @@ Wikimedia Commons under
 
 The local filenames are shortened for application use. The SVG contents are
 otherwise unchanged from their downloaded source files.
+
+## Derived Symbols
+
+These are modified from `infantry.svg` above for this project and are shared
+under the same licence ([CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)).
+Each keeps the original frame and fill and adds one mark, drawn as a plain path
+so it reads at counter size without depending on fonts.
+
+| Local file | Change |
+| --- | --- |
+| `militia.svg` | The infantry cross drawn heavier and dashed, for irregular militia columns. |
+| `colonial.svg` | The infantry cross with a filled crescent in the upper field, for the Army of Africa's colonial veterans. |
+| `security.svg` | The infantry cross with a filled lozenge badge at the centre, for gendarmerie and police (security forces). |

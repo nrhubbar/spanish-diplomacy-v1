@@ -1,5 +1,6 @@
 import { combineReducers, configureStore } from "@reduxjs/toolkit";
 import type { ScenarioRegistry } from "../scenarios/registry";
+import { briefingSlice } from "./briefingSlice";
 import { createGameReducer } from "./gameSlice";
 import { mapAssetsSlice } from "./mapAssetsSlice";
 import { notificationMiddleware } from "./notificationMiddleware";
@@ -7,6 +8,7 @@ import { notificationReducer } from "./notificationSlice";
 
 export function createRootReducer(registry: ScenarioRegistry) {
   return combineReducers({
+    briefing: briefingSlice.reducer,
     game: createGameReducer({ registry }),
     mapAssets: mapAssetsSlice.reducer,
     notifications: notificationReducer

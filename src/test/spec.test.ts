@@ -33,6 +33,8 @@ function issuesFor(mutate: (scenario: Json, map: Json) => void): readonly string
 }
 
 const list = (value: unknown): Json[] => value as Json[];
+const combat = (scenario: Json): Json => scenario["combat"] as Json;
+const modifier = (scenario: Json): Json => list(combat(scenario)["factionModifiers"])[0]!;
 
 describe("published specification", () => {
   it("keeps the committed JSON Schemas in sync with the Zod sources (spec:check)", () => {
@@ -96,9 +98,40 @@ describe("loader rules", () => {
     ["L10 region bound to unknown territory", (_scenario: Json, map: Json) => { (map["regions"] as Json)["tf-ghost"] = { territoryId: "ghost" }; }, "unknown territory"],
     ["L10 territory without geometry", (_scenario: Json, map: Json) => { delete ((map["territories"] as Json)["isle"] as Json)["shape"]; }, "needs a bound SVG region"],
     ["L10 missing unit symbol", (_scenario: Json, map: Json) => { map["unitSymbols"] = {}; }, "unitSymbols"],
-    ["L11 missing asset", (_scenario: Json, map: Json) => { (map["geometry"] as Json)["svg"] = "assets/maps/missing.svg"; }, "(L11)"]
+    ["L11 missing asset", (_scenario: Json, map: Json) => { (map["geometry"] as Json)["svg"] = "assets/maps/missing.svg"; }, "(L11)"],
+    ["L1 unit type without values", (scenario: Json) => { delete list(scenario["unitTypes"])[0]!["attack"]; }, "unitTypes.0.attack"],
+    ["L1 zero unit type value", (scenario: Json) => { list(scenario["unitTypes"])[0]!["defence"] = 0; }, "unitTypes.0.defence"],
+    ["L1 fractional unit type value", (scenario: Json) => { list(scenario["unitTypes"])[0]!["attack"] = 2.5; }, "unitTypes.0.attack"],
+    ["L1 army without strength", (scenario: Json) => { delete list(scenario["units"])[0]!["strength"]; }, "units.0.strength"],
+    ["L1 army without full strength", (scenario: Json) => { delete list(scenario["units"])[0]!["fullStrength"]; }, "units.0.fullStrength"],
+    ["L1 designation too long", (scenario: Json) => { list(scenario["units"])[0]!["designation"] = "RANGE"; }, "units.0.designation"],
+    ["L1 lower-case designation", (scenario: Json) => { list(scenario["units"])[0]!["designation"] = "rr"; }, "units.0.designation"],
+    ["L1 retired approximateStrength", (scenario: Json) => { list(scenario["units"])[0]!["approximateStrength"] = 500; }, "approximateStrength"],
+    ["L1 missing combat block", (scenario: Json) => { delete scenario["combat"]; }, "combat"],
+    ["L1 table with six columns", (scenario: Json) => { list(combat(scenario)["table"]).pop(); }, "combat.table"],
+    ["L1 table column with six rows", (scenario: Json) => { (list(combat(scenario)["table"])[3] as unknown as string[]).pop(); }, "combat.table.3"],
+    ["L1 unknown result", (scenario: Json) => { (list(combat(scenario)["table"])[2] as unknown as string[])[4] = "attacker-routed"; }, "combat.table.2.4"],
+    ["L1 unknown below-1:1 rule", (scenario: Json) => { combat(scenario)["belowOneToOne"] = { kind: "none", rollPenalty: 1 }; }, "combat.belowOneToOne.kind"],
+    ["L1 zero digging-in step", (scenario: Json) => { combat(scenario)["diggingIn"] = { max: 3, perTurn: 0 }; }, "combat.diggingIn.perTurn"],
+    ["L1 demoralization factor above 1", (scenario: Json) => { combat(scenario)["demoralizationFactor"] = 1.5; }, "combat.demoralizationFactor"],
+    ["L1 demoralization factor of 0", (scenario: Json) => { combat(scenario)["demoralizationFactor"] = 0; }, "combat.demoralizationFactor"],
+    ["L1 unknown modifier condition", (scenario: Json) => { modifier(scenario)["when"] = "always"; }, "combat.factionModifiers.0.when"],
+    ["L1 negative modifier", (scenario: Json) => { modifier(scenario)["defence"] = -1; }, "combat.factionModifiers.0.defence"],
+    ["L2 duplicate modifier ids", (scenario: Json) => { list(combat(scenario)["factionModifiers"]).push(clone(modifier(scenario))); }, "combat.factionModifiers: duplicate id \"harbor-batteries\" (L2)"],
+    ["L3 army of an unknown type", (scenario: Json) => { list(scenario["units"])[0]!["type"] = "cavalry"; }, "unknown unit type \"cavalry\" (L3)"],
+    ["L3 modifier for an unknown faction", (scenario: Json) => { modifier(scenario)["factionId"] = "green"; }, "combat.factionModifiers[0].factionId: unknown faction \"green\" (L3)"],
+    ["L12 strength above full strength", (scenario: Json) => { list(scenario["units"])[0]!["strength"] = 501; }, "units[0].strength: 501 men exceeds fullStrength 500 (L12)"],
+    ["L13 modifier without effect", (scenario: Json) => { modifier(scenario)["defence"] = 0; }, "(L13)"]
   ])("rejects %s", (_name, mutate, expected) => {
     expect(issuesFor(mutate).join("\n")).toContain(expected);
+  });
+
+  it("accepts a full-strength army and a modifier that only helps the attacker", () => {
+    expect(issuesFor((scenario) => {
+      list(scenario["units"])[1]!["strength"] = 400;
+      delete modifier(scenario)["defence"];
+      modifier(scenario)["attack"] = 1;
+    })).toEqual([]);
   });
 
   it("checks that bound regions exist in the geometry", () => {

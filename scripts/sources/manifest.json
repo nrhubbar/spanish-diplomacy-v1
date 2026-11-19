@@ -333,5 +333,30 @@
       "south": 24.637143053189302,
       "west": -27.107199478226423
     }
+  },
+  "rivers": {
+    "retrieved": "2026-11-18",
+    "file": "scripts/sources/naturalearth/ne_10m_rivers-iberia.geojson",
+    "sha256": "8ba93cfd8ce0969fa4d818f2032e3618e8ab9b9d5f1fd86960b663e89602d419",
+    "revision": "f1890d9f152c896d250a77557a5751a93d494776",
+    "tag": "v5.1.2",
+    "upstream": [
+      {
+        "url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/f1890d9f152c896d250a77557a5751a93d494776/geojson/ne_10m_rivers_lake_centerlines.geojson",
+        "sha256": "bb854a900ecbd3b408df46d5e16e3e0f974ba55993f9d8b5c26e855273c0905a",
+        "features": 17
+      },
+      {
+        "url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/f1890d9f152c896d250a77557a5751a93d494776/geojson/ne_10m_rivers_europe.geojson",
+        "sha256": "90712202ac46985812e90840df9acd5101599a9c649868d5bc55ee96c2fedd4c",
+        "features": 42
+      }
+    ],
+    "extent": {
+      "east": 4.6,
+      "north": 44,
+      "south": 35.8,
+      "west": -9.8
+    }
   }
 }

@@ -35,13 +35,30 @@ async function orderMove(page: Page): Promise<void> {
   await expect(page.locator('[data-highlight="destination"]').first()).toBeAttached();
 }
 
+/**
+ * Selects an army from its map counter. On a phone's compact overview one counter stands for
+ * all of a faction's armies in a territory; activating it selects the territory, and with it
+ * every army there, which then show one by one.
+ */
+async function activateArmy(page: Page, army: RegExp, territory: string, how: "click" | "keyboard" = "click"): Promise<void> {
+  const counters = page.locator(".counter-layer");
+  const group = counters.getByRole("button", { name: new RegExp(`armies in ${territory}`) });
+  const target = await group.count() > 0 ? group.first() : counters.getByRole("button", { name: army }).first();
+  if (how === "click") {
+    await target.click();
+  } else {
+    await target.focus();
+    await page.keyboard.press("Enter");
+  }
+}
+
 async function expectAccessible(page: Page): Promise<void> {
   const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]).analyze();
   const serious = results.violations.filter((violation) => violation.impact === "serious" || violation.impact === "critical");
   expect(serious.map((violation) => `${violation.id}: ${violation.nodes.map((node) => node.target.join(" ")).join(", ")}`)).toEqual([]);
 }
 
-test("plays a mixed local and computer turn with a reveal step", async ({ page }) => {
+test("plays a mixed local and computer turn straight through to the results", async ({ page }) => {
   await openSetup(page);
   await expectAccessible(page);
   await page.getByRole("button", { name: "Start Campaign" }).click();
@@ -50,25 +67,52 @@ test("plays a mixed local and computer turn with a reveal step", async ({ page }
   await expectAccessible(page);
   await selectTerritory(page, "madrid");
   const orders = await pane(page, "Orders");
-  await expect(orders.getByText("2 of 2 selected")).toBeVisible();
+  await expect(orders.getByText("4 of 4 selected")).toBeVisible();
   await orders.getByRole("button", { name: "Give Selected Armies Order" }).click();
   await expectAccessible(page);
   await orders.getByRole("button", { exact: true, name: "Move" }).click();
   await expectAccessible(page);
   await selectTerritory(page, "castilla-la-mancha");
   await pane(page, "Orders");
-  await expect(orders.getByRole("heading", { name: "Planned orders (2)" })).toBeVisible();
-  await page.getByRole("button", { name: "Submit Orders" }).filter({ visible: true }).click();
-  await expect(page.getByRole("heading", { name: "All orders are locked" })).toBeVisible();
-  await expectAccessible(page);
-  await page.getByRole("button", { name: "Reveal and Resolve" }).click();
+  await expect(orders.getByRole("heading", { name: "Planned orders (4)" })).toBeVisible();
+  await page.getByRole("button", { name: "End Turn" }).filter({ visible: true }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Turn resolution" })).toBeVisible();
   await mapReady(page);
   const report = await pane(page, "Turn report");
   await expect(report.getByRole("heading", { name: "What happened" })).toBeVisible();
   await expectAccessible(page);
+  // Spain fights standing battles every turn (M27), so the first report always has battle cards
+  // with a rule explanation. Open every card and explanation and check the real report again.
+  await expect(report.locator("details.battle-card").first()).toBeVisible();
+  await expect(report.locator("details.battle-rule").first()).toBeAttached();
+  await report.locator("details.battle-card, details.battle-rule").evaluateAll((elements) => {
+    for (const element of elements) if (element instanceof HTMLDetailsElement) element.open = true;
+  });
+  await expect(report.locator("details.battle-rule").first()).toHaveAttribute("open", "");
+  await expectAccessible(page);
   await page.getByRole("button", { name: "Start Next Turn" }).filter({ visible: true }).click();
   await mapReady(page);
   await expect(page.getByText(/^Turn 2/)).toBeVisible();
+});
+
+test("opens the Briefing on turn 1, toggles it with the i control, and stays accessible (B1, B4)", async ({ page }) => {
+  await openSetup(page);
+  await page.getByRole("button", { name: "Start Campaign" }).click();
+  await mapReady(page);
+  const briefing = page.getByRole("complementary", { name: "Briefing" });
+  await expect(briefing.getByRole("heading", { name: "Objective" })).toBeVisible();
+  await expect(briefing.getByRole("heading", { name: "Intelligence report" })).toBeVisible();
+  await expect(briefing.getByRole("meter", { name: /^Territories: \d+ held, 10 of 18 needed$/ })).toBeAttached();
+  await expectAccessible(page);
+  const toggle = page.getByRole("button", { exact: true, name: "Briefing" });
+  await expect(toggle).toHaveAttribute("aria-pressed", "true");
+  await toggle.click();
+  await expect(toggle).toHaveAttribute("aria-pressed", "false");
+  await expect(page.getByRole("complementary", { name: "Orders" })).toBeAttached();
+  await toggle.click();
+  await expect(briefing).toBeVisible();
+  await selectTerritory(page, "madrid");
+  await expect((await pane(page, "Orders")).getByRole("heading", { name: "Madrid" })).toBeVisible();
 });
 
 test("passes the device privately between three local players", async ({ page }) => {
@@ -81,13 +125,12 @@ test("passes the device privately between three local players", async ({ page })
     await expectAccessible(page);
     await page.getByRole("button", { name: `Continue to ${name}` }).click();
     await mapReady(page);
-    await page.getByRole("button", { name: "Submit Orders" }).filter({ visible: true }).click();
+    await page.getByRole("button", { name: "End Turn" }).filter({ visible: true }).click();
     await expect(page.getByRole("heading", { name: `Pass to ${next}` })).toBeVisible();
     await expect(page.getByText(`${name} has submitted its orders`)).toBeVisible();
   }
   await page.getByRole("button", { name: "Continue to Southern Insurgent Command" }).click();
-  await page.getByRole("button", { name: "Submit Orders" }).filter({ visible: true }).click();
-  await page.getByRole("button", { name: "Reveal and Resolve" }).click();
+  await page.getByRole("button", { name: "End Turn" }).filter({ visible: true }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Turn resolution" })).toBeVisible();
 });
 
@@ -96,7 +139,7 @@ test("gives two colocated armies different destinations", async ({ page }) => {
   await page.getByRole("button", { name: "Start Campaign" }).click();
   await mapReady(page);
   const covadongaCounter = page.locator(".counter-layer").getByRole("button", { name: /Covadonga Infantry Regiment No. 4/ });
-  await page.locator(".counter-layer").getByRole("button", { name: /Wad-Ras Infantry Regiment No. 1/ }).click();
+  await activateArmy(page, /Wad-Ras Infantry Regiment No. 1/, "Madrid");
   await expect(covadongaCounter).toHaveAttribute("aria-pressed", "true");
   const armies = (await pane(page, "Orders")).getByRole("list", { name: "Your armies" });
   await armies.getByRole("button", { name: /Covadonga/ }).click();
@@ -107,21 +150,26 @@ test("gives two colocated armies different destinations", async ({ page }) => {
   await orderMove(page);
   await selectTerritory(page, "castilla-y-leon");
   const orders = await pane(page, "Orders");
-  await expect(orders.getByText(/Madrid . Castilla-La Mancha/)).toBeVisible();
-  await expect(orders.getByText(/Madrid . Castilla y Leon/)).toBeVisible();
+  await expect(orders.getByText(/Madrid . Castilla-La Mancha/).first()).toBeVisible();
+  await expect(orders.getByText(/Madrid . Castilla y Le\u00f3n/)).toBeVisible();
 });
 
 test("ends the fixture scenario in victory and blocks the next turn", async ({ page }) => {
   await openSetup(page);
   await page.getByLabel("Scenario").selectOption("tiny-front");
   await expect(page.getByRole("heading", { name: "Blue Union" })).toBeVisible();
+  // A second local player who holds keeps the outcome independent of computer play and dice.
+  await page.locator("#actor-blue").selectOption("local-human");
   await page.getByRole("button", { name: "Start Campaign" }).click();
+  await page.getByRole("button", { name: "Continue to Red League" }).click();
   await mapReady(page);
   await selectTerritory(page, "westfold");
   await orderMove(page);
   await selectTerritory(page, "lowlands");
-  await page.getByRole("button", { name: "Submit Orders" }).filter({ visible: true }).click();
-  await page.getByRole("button", { name: "Reveal and Resolve" }).click();
+  await page.getByRole("button", { name: "End Turn" }).filter({ visible: true }).click();
+  await page.getByRole("button", { name: "Continue to Blue Union" }).click();
+  await mapReady(page);
+  await page.getByRole("button", { name: "End Turn" }).filter({ visible: true }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Red League wins" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Start Next Turn" })).toHaveCount(0);
   await expectAccessible(page);
@@ -135,8 +183,7 @@ test("plays a turn with the keyboard alone (B3)", async ({ page }) => {
   await page.keyboard.press("Enter");
   await mapReady(page);
   const counter = page.getByRole("button", { name: /Wad-Ras Infantry Regiment No. 1/ }).first();
-  await counter.focus();
-  await page.keyboard.press("Enter");
+  await activateArmy(page, /Wad-Ras Infantry Regiment No. 1/, "Madrid", "keyboard");
   await expect(counter).toHaveAttribute("aria-pressed", "true");
   const orders = await pane(page, "Orders");
   await orders.getByRole("button", { name: "Give Selected Armies Order" }).focus();
@@ -146,13 +193,13 @@ test("plays a turn with the keyboard alone (B3)", async ({ page }) => {
   // Focus lands on the visible Cancel control instead of being lost with the Move button.
   await expect(page.locator(":focus")).toHaveText(/^Cancel/);
   await selectTerritory(page, "castilla-la-mancha");
-  await expect((await pane(page, "Orders")).getByRole("heading", { name: "Planned orders (2)" })).toBeVisible();
+  await expect((await pane(page, "Orders")).getByRole("heading", { name: "Planned orders (4)" })).toBeVisible();
   await page.getByRole("button", { name: "Zoom in" }).focus();
   await page.keyboard.press("Enter");
   await expect(page.getByText("Map zoom 125 percent")).toBeAttached();
-  await page.getByRole("button", { name: "Submit Orders" }).filter({ visible: true }).focus();
+  await page.getByRole("button", { name: "End Turn" }).filter({ visible: true }).focus();
   await page.keyboard.press("Enter");
-  await expect(page.getByRole("heading", { name: "All orders are locked" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Turn resolution" })).toBeVisible();
 });
 
 test("moves the Army of Africa across the Strait (B1, OD-7)", async ({ page }) => {
@@ -161,15 +208,17 @@ test("moves the Army of Africa across the Strait (B1, OD-7)", async ({ page }) =
   await page.locator("#actor-south").selectOption("local-human");
   await page.getByRole("button", { name: "Start Campaign" }).click();
   await mapReady(page);
-  await page.getByRole("button", { name: /Spanish Legion Detachment/ }).first().click();
+  // On a phone the turn-1 Briefing sheet covers Ceuta; close it first.
+  const hideBriefing = page.getByRole("button", { name: "Hide briefing" });
+  if (await hideBriefing.isVisible()) await hideBriefing.click();
+  await activateArmy(page, /Tercio Legion No\. 2 \(Banderas IV-VI\)/, "Ceuta");
   await orderMove(page);
   await expect(page.locator('[data-highlight="destination"][data-territory-highlight="andalucia"]')).toBeAttached();
   await selectTerritory(page, "andalucia");
-  await expect((await pane(page, "Orders")).getByText(/Ceuta . Andalucia/)).toBeVisible();
-  await page.getByRole("button", { name: "Submit Orders" }).filter({ visible: true }).click();
-  await page.getByRole("button", { name: "Reveal and Resolve" }).click();
+  await expect((await pane(page, "Orders")).getByText(/Ceuta . Andaluc\u00eda/).first()).toBeVisible();
+  await page.getByRole("button", { name: "End Turn" }).filter({ visible: true }).click();
   const report = await pane(page, "Turn report");
-  await expect(report.getByText(/Southern Insurgent Command: Spanish Legion Detachment (moved|tried to move) from Ceuta to Andalucia/).first()).toBeAttached();
+  await expect(report.getByText(/Southern Insurgent Command: Tercio Legion No\. 2 \(Banderas IV-VI\).* (moved|tried to move)( together)? from Ceuta to Andaluc\u00eda/).first()).toBeAttached();
   await expect(report.getByText(/impossible order/)).toHaveCount(0);
 });
 
@@ -264,11 +313,11 @@ test("draws the relief coastline exactly under the region coastline at full zoom
   await openSetup(page);
   await page.getByRole("button", { name: "Start Campaign" }).click();
   await expect(page.locator(".terrain-layer")).toHaveAttribute("data-refined", "true", { timeout: 15000 });
-  const hide = page.getByRole("button", { name: /Hide orders/ });
+  const hide = page.getByRole("button", { name: /Hide (orders|briefing)/ });
   if (await hide.isVisible()) await hide.click();
   await zoomFullyOn(page, "Valencia");
   // Leave only the relief visible; the vector layer keeps its geometry for the measurements.
-  await page.addStyleTag({ content: ".map-vector, .counter-layer, .map-pane, .map-legend, .map-zoom { visibility: hidden !important; }" });
+  await page.addStyleTag({ content: ".map-vector, .counter-layer, .map-pane, .map-legend, .map-controls { visibility: hidden !important; }" });
   await page.waitForTimeout(200);
 
   // Points 1.2 km either side of the bound regions' coastline, in screen pixels. A misregistration
@@ -345,7 +394,7 @@ test("reports missing terrain textures and keeps the game playable", async ({ pa
 });
 
 test("guards direct routes and keeps settings accessible", async ({ page }) => {
-  for (const path of ["./#/orders", "./#/handoff", "./#/reveal", "./#/resolution", "./#/game-over"]) {
+  for (const path of ["./#/orders", "./#/handoff", "./#/resolution", "./#/game-over"]) {
     await page.goto(path);
     await expect(page.getByRole("heading", { name: "Spanish Diplomacy" })).toBeVisible();
   }

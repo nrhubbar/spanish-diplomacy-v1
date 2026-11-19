@@ -3,11 +3,13 @@ import { GameHeader } from "../components/GameHeader";
 import { useAppDispatch, useRegistry, useSessionIn } from "../hooks";
 import type { MapView } from "../map/view";
 import { glyphs } from "../presentation/glyphs";
-import { listNames, factionName, turnLabel } from "../presentation/text";
+import { listNames, factionName } from "../presentation/text";
+import { turnLabel } from "../presentation/turn";
 import { openSetup, startNextTurn } from "../state/gameSlice";
 import { selectRevealedOrders } from "../state/selectors";
 import type { Session } from "../state/session";
 import { MapScreenFrame } from "./MapScreenFrame";
+import { BattleReport } from "./report/BattleReport";
 import { OutcomeSummary, RevealedOrdersPanel, TerritoryChanges, VictoryProgressPanel } from "./ResultPanels";
 
 type ResultSession = Extract<Session, { readonly phase: "resolution" | "game-over" }>;
@@ -56,6 +58,7 @@ function Results({ session }: { readonly session: ResultSession }): JSX.Element 
               </section>
             ) : null}
             <TerritoryChanges result={result} scenario={scenario} />
+            <BattleReport result={result} scenario={scenario} seed={game.seed} />
             <OutcomeSummary result={result} scenario={scenario} />
             <VictoryProgressPanel result={result} scenario={scenario} />
             <RevealedOrdersPanel revealed={selectRevealedOrders(session)} scenario={scenario} />

@@ -10,6 +10,9 @@ import type {
   ValidationResult
 } from "./types";
 
+/** M23 (C6): why a demoralized army may not enter where another faction stands. */
+export const demoralizedAttackReason = "A demoralized army cannot attack. It can move only into empty or friendly territory.";
+
 export function validateMoveOrder(
   scenario: Scenario,
   state: GameState,
@@ -31,6 +34,10 @@ export function validateMoveOrder(
   }
   if (!isNeighbor(scenario, order.from, order.to)) {
     return { ok: false, reason: "Destination is not connected to the unit's territory." };
+  }
+  // M23 (C6): a demoralized army cannot attack, so it may not enter where another faction stands.
+  if (unit.morale.demoralized && Object.values(state.units).some((other) => other.territoryId === order.to && other.factionId !== unit.factionId)) {
+    return { ok: false, reason: demoralizedAttackReason };
   }
   return { ok: true };
 }

@@ -10,7 +10,7 @@ A browser strategy game inspired by Diplomacy: every player plans orders in secr
 - **Create Game**, then assign each command to a local player or a computer player. Several people can share one device; the game hands it over privately between them.
 - Select a territory (or one of your armies) on the map. Every army there without an order is selected; click an army in the list or on the map to leave it out.
 - Choose **Give Selected Armies Order**, then **Move**, then click one of the territories with a shimmering gold border. **Cancel** backs out with the same armies still selected. Armies without orders hold.
-- **Submit Orders**. When every command has submitted, **Reveal and Resolve** shows what happened.
+- **End Turn**. When the last local player ends the turn, it resolves at once and the turn report shows what happened. **Start Next Turn** carries on.
 - Win by controlling 51 percent of the territories or 75 percent of the cities.
 - Map controls: drag or use W A S D to pan, scroll, pinch, or use + and - to zoom, and 0 to reset. Tab to a territory and press Enter to select it.
 

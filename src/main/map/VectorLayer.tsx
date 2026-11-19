@@ -10,6 +10,8 @@ import { contextLabelType } from "./placement";
 import { RouteLayer } from "./RouteLayer";
 import { routeCurve } from "./routes";
 import type { MapView } from "./view";
+import { RiverLayer, WaterLabelLayer } from "./WaterLayer";
+import type { VisibleWater } from "./waterLabels";
 
 interface VectorLayerProps {
   /** The neutral labels to draw, already checked against the screen edges and counters. */
@@ -23,6 +25,8 @@ interface VectorLayerProps {
   readonly scenario: Scenario;
   readonly view: MapView;
   readonly visible: MapRect;
+  /** The water names to draw, already checked against the screen edges and counters. */
+  readonly water: VisibleWater;
 }
 
 /** Stable region geometry; re-rendered only when the package changes, never on pan or zoom. */
@@ -30,7 +34,15 @@ const Geometry = memo(function Geometry({ markup }: { readonly markup: string })
   return <g className="map-geometry" dangerouslySetInnerHTML={{ __html: markup }} />;
 });
 
-export function VectorLayer({ contextLabels, game, geometry, level, map, scenario, unit, view, visible }: VectorLayerProps): JSX.Element {
+/**
+ * Region borders, drawn from the same outlines as the regions but in their own layer, so rivers
+ * can sit between the territory wash and the borders (R1).
+ */
+const Borders = memo(function Borders({ outlines }: { readonly outlines: PreparedGeometry["outlines"] }): JSX.Element {
+  return <g aria-hidden="true" className="map-borders" dangerouslySetInnerHTML={{ __html: [...outlines.values()].join("") }} />;
+});
+
+export function VectorLayer({ contextLabels, game, geometry, level, map, scenario, unit, view, visible, water }: VectorLayerProps): JSX.Element {
   const factionColor = (id: FactionId): string => requireFaction(scenario, id).color;
   const anchor = (id: TerritoryId) => territoryAnchor(map, id);
   const showDetail = level !== "overview";
@@ -74,6 +86,8 @@ export function VectorLayer({ contextLabels, game, geometry, level, map, scenari
           />
         ))}
       </g>
+      <RiverLayer level={level} rivers={map.rivers} unit={unit} />
+      <Borders outlines={geometry.outlines} />
       <g className="map-highlights" aria-hidden="true">
         {view.changedTerritoryIds.map((id) => <Highlight geometry={geometry} key={`changed-${id}`} kind="changed" map={map} territoryId={id} />)}
         {view.destinationIds.map((id) => <Highlight geometry={geometry} key={`destination-${id}`} kind="destination" map={map} territoryId={id} />)}
@@ -93,6 +107,7 @@ export function VectorLayer({ contextLabels, game, geometry, level, map, scenari
           );
         })}
       </g>
+      <WaterLabelLayer unit={unit} water={water} />
       <g className="map-context-labels" aria-hidden="true">
         {contextLabels.map((label) => (
           <text fontSize={contextLabelType.fontSize * unit} key={label.text} letterSpacing={contextLabelType.letterSpacing * unit} textAnchor="middle" x={label.x} y={label.y}>{label.text.toUpperCase()}</text>

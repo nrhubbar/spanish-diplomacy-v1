@@ -13,6 +13,13 @@ export interface GeoJsonPolygonal {
   readonly coordinates: unknown;
 }
 
+/** The item at `index`; throws instead of returning undefined, for indices known to be in range. */
+export function item<Item>(list: readonly Item[], index: number): Item {
+  const value = list[index];
+  if (value === undefined) throw new Error(`No item at index ${String(index)} of ${String(list.length)}`);
+  return value;
+}
+
 /** Every ring (outer and holes) of a Polygon or MultiPolygon, as GeoJSON positions. */
 export function polygonRings(geometry: GeoJsonPolygonal): Position[][] {
   if (geometry.type === "Polygon") return geometry.coordinates as Position[][];
@@ -137,11 +144,12 @@ export function poleOfInaccessibility(rings: readonly Ring[], precision: number)
 }
 
 /**
- * Compact SVG path data for closed rings: points are rounded to `decimals` first, then written
- * as an absolute move followed by relative line steps between the rounded points, so the
- * shorter encoding describes exactly the same (rounded) outline.
+ * Compact SVG path data for a polyline: points are rounded to `decimals` first, then written as
+ * an absolute move followed by relative line steps between the rounded points, so the shorter
+ * encoding describes exactly the same (rounded) line. `dropRepeats` skips steps that round to
+ * nothing.
  */
-export function pathData(rings: readonly Ring[], decimals: number): string {
+export function relativePath(points: Ring, decimals: number, dropRepeats = false): string {
   const unit = 10 ** decimals;
   const format = (steps: number): string => {
     const fixed = (steps / unit).toFixed(decimals);
@@ -153,18 +161,23 @@ export function pathData(rings: readonly Ring[], decimals: number): string {
     const second = format(y);
     return `${format(x)}${second.startsWith("-") ? "" : " "}${second}`;
   };
+  const steps = points.map((point) => ({ x: Math.round(point.x * unit), y: Math.round(point.y * unit) }));
+  const [first, ...rest] = steps;
+  if (first === undefined) return "";
+  let previous = first;
+  const moves = rest.flatMap((point) => {
+    if (dropRepeats && point.x === previous.x && point.y === previous.y) return [];
+    const step = pair(point.x - previous.x, point.y - previous.y);
+    previous = point;
+    return [step];
+  });
+  return `M${pair(first.x, first.y)}l${moves.join(" ").replace(/ -/g, "-")}`;
+}
+
+/** Compact SVG path data for closed rings (see `relativePath`); rings under three points are skipped. */
+export function pathData(rings: readonly Ring[], decimals: number): string {
   return rings
     .filter((ring) => ring.length >= 3)
-    .map((ring) => {
-      const steps = ring.map((point) => ({ x: Math.round(point.x * unit), y: Math.round(point.y * unit) }));
-      const [first, ...rest] = steps as [Point, ...Point[]];
-      let previous = first;
-      const moves = rest.map((point) => {
-        const step = pair(point.x - previous.x, point.y - previous.y);
-        previous = point;
-        return step;
-      });
-      return `M${pair(first.x, first.y)}l${moves.join(" ").replace(/ -/g, "-")}z`;
-    })
+    .map((ring) => `${relativePath(ring, decimals)}z`)
     .join("");
 }

@@ -2,12 +2,16 @@ import type {
   CityDefinition,
   FactionDefinition,
   FactionId,
+  GameState,
   Neighbor,
   Scenario,
   TerritoryDefinition,
   TerritoryId,
   UnitDefinition,
-  UnitId
+  UnitId,
+  UnitState,
+  UnitTypeDefinition,
+  UnitTypeId
 } from "./types";
 
 /**
@@ -24,6 +28,14 @@ export function requireTerritory(scenario: Scenario, id: TerritoryId): Territory
 
 export function requireUnitDefinition(scenario: Scenario, id: UnitId): UnitDefinition {
   return required(scenario.index.units.get(id), "unit", id);
+}
+
+export function requireUnitType(scenario: Scenario, id: UnitTypeId): UnitTypeDefinition {
+  return required(scenario.index.unitTypes.get(id), "unit type", id);
+}
+
+export function requireUnitState(state: GameState, id: UnitId): UnitState {
+  return required(state.units[id], "army in play", id);
 }
 
 export function neighborsOf(scenario: Scenario, id: TerritoryId): readonly Neighbor[] {

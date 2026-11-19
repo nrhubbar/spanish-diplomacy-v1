@@ -10,6 +10,7 @@ import type {
   UnitId
 } from "../engine/types";
 import { glyphs } from "./glyphs";
+import { outcomeText } from "./outcomeText";
 
 /** Player-facing wording for engine data. The engine itself produces no prose. */
 
@@ -30,11 +31,6 @@ export function listNames(names: readonly string[]): string {
   return last < 1 ? names.join("") : `${names.slice(0, last).join(", ")} and ${String(names[last])}`;
 }
 
-/** B15: the snapshot date describes the start only. */
-export function turnLabel(scenario: Scenario, turnNumber: number): string {
-  return turnNumber === 1 ? `Turn 1 ${glyphs.dot} ${scenario.snapshotLabel}` : `Turn ${String(turnNumber)}`;
-}
-
 export function route(scenario: Scenario, order: MoveOrder): string {
   return `${territoryName(scenario, order.from)} ${glyphs.arrow} ${territoryName(scenario, order.to)}`;
 }
@@ -50,7 +46,7 @@ export function controllerName(scenario: Scenario, control: TerritoryControl): s
   return control.kind === "controlled" ? factionName(scenario, control.factionId) : "Contested";
 }
 
-type MoveOutcome = Extract<TurnOutcome, { readonly kind: "successful-move" | "bounced-move" | "disbanded-move" }>;
+type MoveOutcome = Extract<TurnOutcome, { readonly kind: "successful-move" | "bounced-move" | "disbanded-move" | "reinforcement-arrived" }>;
 
 /** Formations of one faction that share an outcome; `outcome` is the first of them. */
 export interface OutcomeGroup {
@@ -60,7 +56,8 @@ export interface OutcomeGroup {
 
 /**
  * U2: moves of one faction along the same route with the same result form one group, so
- * formations that moved together read as one line. Other outcomes stay one per line.
+ * formations that moved together read as one line. Other outcomes, battles included, stay one
+ * per line.
  */
 export function groupOutcomes(outcomes: readonly TurnOutcome[]): readonly OutcomeGroup[] {
   const groups = new Map<string, { readonly outcome: TurnOutcome; readonly unitIds: UnitId[] }>();
@@ -78,17 +75,26 @@ export function groupOutcomes(outcomes: readonly TurnOutcome[]): readonly Outcom
 }
 
 function unitIdsOf(outcome: TurnOutcome): UnitId[] {
-  if (outcome.kind !== "no-move") return [outcome.order.unitId];
-  return outcome.unitId === undefined ? [] : [outcome.unitId];
+  switch (outcome.kind) {
+    case "no-move":
+      return outcome.unitId === undefined ? [] : [outcome.unitId];
+    case "recovered":
+      return [outcome.unitId];
+    case "battle":
+      return [...outcome.attacker.armies, ...outcome.defender.armies].map((army) => army.unitId);
+    default:
+      return [outcome.order.unitId];
+  }
 }
 
 function isMoveOutcome(outcome: TurnOutcome): outcome is MoveOutcome {
-  return outcome.kind === "successful-move" || outcome.kind === "bounced-move" || outcome.kind === "disbanded-move";
+  return outcome.kind === "successful-move" || outcome.kind === "bounced-move" || outcome.kind === "disbanded-move"
+    || outcome.kind === "reinforcement-arrived";
 }
 
 function moveGroupKey(outcome: MoveOutcome): string {
   const { factionId, from, to } = outcome.order;
-  const cause = outcome.kind === "successful-move" ? null : outcome.cause;
+  const cause = outcome.kind === "successful-move" || outcome.kind === "reinforcement-arrived" ? null : outcome.cause;
   const captor = outcome.kind === "disbanded-move" ? outcome.capturedByFactionId : null;
   return JSON.stringify([outcome.kind, factionId, from, to, cause, captor]);
 }
@@ -140,6 +146,16 @@ export function describeOutcomeGroup(scenario: Scenario, group: OutcomeGroup, ou
       ? `${factionName(scenario, outcome.factionId)} had no armies to order.`
       : `${unitName(scenario, outcome.unitId)} held.`;
   }
+  if (outcome.kind === "recovered") {
+    return `${unitName(scenario, outcome.unitId)} recovered its morale in ${territoryName(scenario, outcome.territoryId)}.`;
+  }
+  if (outcome.kind === "battle") {
+    // The battle cards carry the sides, roll, and effects; this is the one-line headline.
+    const place = outcome.site.kind === "meeting"
+      ? `on the road between ${listNames(outcome.site.between.map((id) => territoryName(scenario, id)))}`
+      : `for ${territoryName(scenario, outcome.site.territoryId)}`;
+    return `Battle ${place}: ${outcomeText[outcome.result].title}.`;
+  }
   const { order } = outcome;
   const actor = factionName(scenario, order.factionId);
   const units = listNames(group.unitIds.map((id) => unitName(scenario, id)));
@@ -148,8 +164,14 @@ export function describeOutcomeGroup(scenario: Scenario, group: OutcomeGroup, ou
   switch (outcome.kind) {
     case "successful-move":
       return `${actor}: ${units} moved${path}.`;
-    case "bounced-move":
-      return `${actor}: ${units} tried to move${path} and bounced: ${bounceReason(scenario, outcome.cause, { order, outcomes })}.`;
+    case "reinforcement-arrived":
+      return `${actor}: ${units} moved${path} as reinforcements.`;
+    case "bounced-move": {
+      const bounced = `${actor}: ${units} tried to move${path} and bounced: ${bounceReason(scenario, outcome.cause, { order, outcomes })}.`;
+      return outcome.retreatedTo === undefined
+        ? bounced
+        : `${bounced} ${several ? "They" : "It"} fell back to ${territoryName(scenario, outcome.retreatedTo)}.`;
+    }
     case "disbanded-move":
       return `${actor}: ${units} ${several ? "were" : "was"} lost. ${several ? "They" : "It"} tried to move${path} and bounced: ${bounceReason(scenario, outcome.cause, { order, outcomes })}. ${factionName(scenario, outcome.capturedByFactionId)} took ${territoryName(scenario, order.from)}.`;
     case "invalid-order":
@@ -162,14 +184,8 @@ export function unitDesignation(name: string): string {
   const number = /(?:No\.\s*)?(\d+)\b/.exec(name)?.[1] ?? "";
   const words = name
     .replace(/\b(?:Infantry|Regiment|Battalion|Column|Security|Guard|Detachment|Barracks|No)\.?\b/gi, " ")
-    .match(/[A-Za-z]+/g) ?? [];
+    // Any letter, so accented names ("Arag\u00f3n") stay one word.
+    .match(/\p{L}+/gu) ?? [];
   const initials = words.slice(0, number === "" ? 3 : 2).map((word) => word.charAt(0).toUpperCase()).join("");
   return `${initials}${number}`.slice(0, 4);
-}
-
-export function compactStrength(strength: number | undefined): string {
-  if (strength === undefined) return "";
-  if (strength < 1000) return String(strength);
-  const thousands = strength / 1000;
-  return `${Number.isInteger(thousands) ? String(thousands) : thousands.toFixed(1)}k`;
 }

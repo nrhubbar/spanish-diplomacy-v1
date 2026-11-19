@@ -1,6 +1,6 @@
-import { requireTerritory } from "../engine/lookup";
+import { isNeighbor, requireTerritory } from "../engine/lookup";
 import type { MoveOrder, Scenario, TerritoryId, UnitId } from "../engine/types";
-import { legalDestinations } from "../engine/validation";
+import { legalDestinations, validateMoveOrder } from "../engine/validation";
 import type { Draft, OrderKind, Session } from "./session";
 
 export type PlanningSession = Extract<Session, { readonly phase: "planning" }>;
@@ -154,9 +154,7 @@ export function chooseDestination(scenario: Scenario, session: PlanningSession, 
     return feedback(session, "Choose a different territory as the destination.");
   }
   if (!selectedDestinations(scenario, session).includes(territoryId)) {
-    const from = requireTerritory(scenario, origin).name;
-    const to = requireTerritory(scenario, territoryId).name;
-    return feedback(session, `${to} is not connected to ${from}. Choose a highlighted territory.`);
+    return feedback(session, refusal(scenario, session, origin, territoryId));
   }
   const planned: MoveOrder[] = session.draft.selectedUnitIds.map((unitId) => ({
     factionId: session.factionId,
@@ -174,4 +172,16 @@ export function removeOrder(session: PlanningSession, unitId: UnitId): PlanningS
     ...session.draft,
     orders: session.draft.orders.filter((order) => order.unitId !== unitId)
   });
+}
+
+/** Why the selected armies cannot move to `to`: no connection, or the engine's own reason. */
+function refusal(scenario: Scenario, session: PlanningSession, from: TerritoryId, to: TerritoryId): string {
+  if (!isNeighbor(scenario, from, to)) {
+    return `${requireTerritory(scenario, to).name} is not connected to ${requireTerritory(scenario, from).name}. Choose a highlighted territory.`;
+  }
+  const reasons = session.draft.selectedUnitIds.flatMap((unitId) => {
+    const validation = validateMoveOrder(scenario, session.game.state, { factionId: session.factionId, from, kind: "move", to, unitId });
+    return validation.ok ? [] : [validation.reason];
+  });
+  return reasons[0] ?? "These armies cannot move there together. Choose a highlighted territory.";
 }

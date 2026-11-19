@@ -1,18 +1,23 @@
 // Builds the iberia-1936 map package from vendored geographic sources, offline:
 //   - assets/maps/iberia-regions.svg (territory geometry),
 //   - the relief layers (overview, margin, and detail images),
-//   - every coordinate in src/main/scenarios/spain-1936-07-31/map.json.
+//   - every coordinate in src/main/scenarios/spain-1936-07-31/map.json, including its rivers and
+//     water labels.
 // Geometry and rasters are produced in one projection from the same projected paths, so region
 // borders and coastlines agree with the relief by construction. Run with `npm run maps:build`.
 import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import sharp from "sharp";
 import * as config from "./map/iberia-1936.ts";
+import * as water from "./map/iberia-1936-water.ts";
+import { edgeIndex } from "./map/edgeIndex.ts";
+import { lineParts, type LineFeature } from "./map/lines.ts";
 import type { Rect } from "./map/iberia-1936.ts";
 import { containsPoint, type GeoJsonPolygonal, pathData, type Point, polygonRings, ringArea, simplifyRing } from "./map/geometry.ts";
-import { hexColor, insideTerritory, placeTerritory, roundPoint } from "./map/package.ts";
+import { asciiJson, hexColor, insideTerritory, placeTerritory, roundPoint } from "./map/package.ts";
 import { lambertConformalConic, webMercatorPixel } from "./map/projection.ts";
 import { blur, colorRamp, type Color, createGrid, distanceField, type Grid, hillshade, sampleBicubic, smoothstep } from "./map/raster.ts";
+import { assertConfluence, assertOnLand, type BuiltRiver, buildRiver, buildWaterLabels } from "./map/water.ts";
 
 const root = new URL("../", import.meta.url);
 const projection = lambertConformalConic(config.projection);
@@ -37,6 +42,7 @@ interface ElevationMosaic {
 interface Manifest {
   readonly elevation: { readonly mosaics: readonly ElevationMosaic[] };
   readonly neutralLand: { readonly file: string; readonly sha256: string };
+  readonly rivers: { readonly file: string; readonly sha256: string };
 }
 
 async function readVerified(file: string, expected: string): Promise<Buffer> {
@@ -54,6 +60,7 @@ interface Feature {
 const manifest = JSON.parse(await readFile(new URL("scripts/sources/manifest.json", root), "utf8")) as Manifest;
 const administrative = JSON.parse((await readVerified(geoBoundaries.file, geoBoundaries.sha256)).toString("utf8")) as { features: Feature[] };
 const neutralSource = JSON.parse((await readVerified(manifest.neutralLand.file, manifest.neutralLand.sha256)).toString("utf8")) as { features: Feature[] };
+const riverSource = JSON.parse((await readVerified(manifest.rivers.file, manifest.rivers.sha256)).toString("utf8")) as { features: LineFeature[] };
 
 interface Elevation {
   readonly grid: Grid;
@@ -96,7 +103,8 @@ const regionPaths = Object.entries(config.regionSources).map(([id, name]) => {
 const extraRings = config.playableExtras.map((name) => projectFeature(featureNamed(name), geometryTolerance));
 const playableRings = [...regionPaths.flatMap((region) => region.rings), ...extraRings.flat()];
 const playablePaths = [...regionPaths.map(({ d }) => d), ...extraRings.map((rings) => pathData(rings, 1))];
-const neutralPaths = neutralSource.features.map((feature) => pathData(projectFeature(feature, 0.4), 1));
+const neutralRings = neutralSource.features.map((feature) => projectFeature(feature, 0.4));
+const neutralPaths = neutralRings.map((rings) => pathData(rings, 1));
 
 const svg = [
   `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${[config.viewBox.x, config.viewBox.y, config.viewBox.width, config.viewBox.height].join(" ")}">`,
@@ -104,6 +112,118 @@ const svg = [
   "</svg>",
   ""
 ].join("\n");
+
+const { detail, margin, master, overview } = config.terrain;
+const outputs = {
+  detail: "assets/maps/iberia-relief-detail.webp",
+  geometry: "assets/maps/iberia-regions.svg",
+  margin: "assets/maps/iberia-relief-margin.webp",
+  overview: "assets/maps/iberia-relief-overview.webp"
+};
+
+// ---------------------------------------------------------------------------------------------
+// map.json
+
+const mapUrl = new URL(config.mapDocument, root);
+const previous = JSON.parse(await readFile(mapUrl, "utf8")) as Record<string, unknown> & { regions: Record<string, { territoryId: string }>; territories: Record<string, unknown> };
+const territoryRings = new Map<string, Point[][]>();
+for (const region of regionPaths) {
+  const territoryId = previous.regions[region.id]?.territoryId;
+  if (territoryId === undefined) throw new Error(`map.json does not bind region ${region.id}`);
+  territoryRings.set(territoryId, [...(territoryRings.get(territoryId) ?? []), ...region.rings]);
+}
+const geoPoint = ({ latitude, longitude }: config.GeoPoint): Point => roundPoint(project(longitude, latitude));
+const territories = Object.fromEntries(Object.keys(previous.territories).map((territoryId) => {
+  const enclave = config.enclaves[territoryId];
+  if (enclave !== undefined) {
+    const centre = geoPoint(enclave);
+    return [territoryId, {
+      unitAnchor: centre,
+      label: { ...roundPoint({ x: centre.x + enclave.labelOffset.x, y: centre.y + enclave.labelOffset.y }), tier: "detail" },
+      shape: { kind: "circle", ...centre, r: enclave.radius }
+    }];
+  }
+  const rings = territoryRings.get(territoryId);
+  if (rings === undefined) throw new Error(`Territory ${territoryId} has neither a region nor an enclave entry`);
+  const override = config.anchorOverrides[territoryId] ?? {};
+  const placement = placeTerritory(rings, override.lift ?? config.labelLift, {
+    ...(override.anchor === undefined ? {} : { unitAnchor: geoPoint(override.anchor) }),
+    ...(override.label === undefined ? {} : { label: geoPoint(override.label) })
+  });
+  if (!insideTerritory(rings, placement.label)) console.log(`note: the ${territoryId} label sits outside its territory`);
+  const tier = (previous.territories[territoryId] as { label: { tier: string } }).label.tier;
+  return [territoryId, { unitAnchor: placement.unitAnchor, label: { ...placement.label, tier } }];
+}));
+
+// ---------------------------------------------------------------------------------------------
+// Rivers and water labels
+
+/** Projected river lines by Natural Earth `rivernum`; any feature not configured fails the build. */
+function riverLines(): Map<number, Point[][]> {
+  const listed = new Set([...Object.values(water.rivers).flatMap((entry) => entry.rivernums), ...water.excludedRivernums]);
+  const lines = new Map<number, Point[][]>();
+  for (const feature of riverSource.features) {
+    const rivernum = Number(feature.properties["rivernum"]);
+    if (!listed.has(rivernum)) throw new Error(`River source has unconfigured rivernum ${String(rivernum)} (${String(feature.properties["name"])}); list or exclude it.`);
+    const projected = lineParts(feature.geometry).map((line) => line.map(([longitude, latitude]) => project(longitude, latitude)));
+    lines.set(rivernum, [...(lines.get(rivernum) ?? []), ...projected]);
+  }
+  return lines;
+}
+
+const detailElevation = await readElevation(config.terrain.master.demZoom);
+/** Ground height in metres at a map point, from the same elevation the relief is baked from. */
+function elevationAt(point: Point): number {
+  const { latitude, longitude } = projection.inverse(point.x, point.y);
+  const { firstColumn, firstRow, zoom } = detailElevation.mosaic;
+  const pixel = webMercatorPixel(longitude, latitude, zoom);
+  return sampleBicubic(detailElevation.grid, pixel.x - firstColumn * 256 - 0.5, pixel.y - firstRow * 256 - 0.5);
+}
+
+const land = { neutral: edgeIndex(neutralRings.flat()), playable: edgeIndex(regionPaths.flatMap((region) => region.rings)) };
+const obstacles = [
+  ...Object.values(config.cities).map(geoPoint),
+  ...Object.values(territories).map((entry) => entry.label)
+];
+const riverInput = { elevation: elevationAt, entries: water.rivers, focus: config.focus, land, lines: riverLines(), obstacles, style: water.riverStyle };
+const builtRivers = Object.entries(water.rivers).flatMap(([id, entry]): BuiltRiver[] => {
+  const river = buildRiver(id, entry, riverInput);
+  if (river === undefined) throw new Error(`River ${id} has no course on the playable land.`);
+  assertOnLand(river, land.playable);
+  return [river];
+});
+for (const river of builtRivers) assertConfluence(river, builtRivers, land, water.riverStyle.confluenceReach);
+
+const document = {
+  $schema: previous["$schema"],
+  specVersion: previous["specVersion"],
+  id: previous["id"],
+  viewBox: config.viewBox,
+  focus: config.focus,
+  background: hexColor(config.art.background),
+  geometry: { svg: outputs.geometry, stripSelectors: [] },
+  terrain: {
+    layers: [
+      { image: outputs.overview, bounds: overview.bounds },
+      { image: outputs.margin, bounds: margin.bounds },
+      { image: outputs.detail, bounds: detail.bounds }
+    ]
+  },
+  regions: previous.regions,
+  territories,
+  cities: Object.fromEntries(Object.entries(config.cities).map(([id, city]) => [id, { ...geoPoint(city), tier: city.tier }])),
+  contextLabels: config.contextLabels.map((label) => ({ text: label.text, ...geoPoint(label) })),
+  rivers: builtRivers.map((river) => river.document),
+  waterLabels: buildWaterLabels(water.waterLabels, geoPoint),
+  unitSymbols: previous["unitSymbols"],
+  attribution: config.attribution
+};
+await writeFile(mapUrl, asciiJson(document));
+console.log(`wrote ${config.mapDocument}`);
+// `--package-only` rewrites map.json without re-baking the relief, for iterating on labels. Only
+// the full build checks the relief registration and the asset checksums.
+if (process.argv.includes("--package-only")) process.exit(0);
+
 
 // ---------------------------------------------------------------------------------------------
 // Relief
@@ -288,7 +408,6 @@ function checkRegistration(raster: Raster, playable: Float32Array): void {
 // ---------------------------------------------------------------------------------------------
 // Build
 
-const { detail, margin, master, overview } = config.terrain;
 const masterRaster = rasterFor(master.bounds, master.texelsPerUnit);
 const detailRaster = rasterFor(detail.bounds, detail.texelsPerUnit);
 const marginRaster = rasterFor(margin.bounds, margin.texelsPerUnit);
@@ -296,9 +415,10 @@ const overviewRaster = rasterFor(overview.bounds, overview.texelsPerUnit);
 const timer = performance.now();
 const elapsed = (): string => `${((performance.now() - timer) / 1000).toFixed(1)} s`;
 
-const masterBake = await bake(masterRaster, await readElevation(master.demZoom));
+const masterBake = await bake(masterRaster, detailElevation);
 console.log(`baked master ${String(masterRaster.width)}x${String(masterRaster.height)} (${elapsed()})`);
 checkRegistration(masterRaster, masterBake.playable);
+checkRiverRegistration(masterRaster, masterBake.playable, builtRivers);
 
 const detailWindow = window(masterRaster, detail.bounds);
 const detailPixels = await rgb(masterBake.pixels, masterRaster)
@@ -354,12 +474,6 @@ for (let row = 0; row < overviewRaster.height; row += 1) {
 }
 console.log(`baked overview ${String(overviewRaster.width)}x${String(overviewRaster.height)} (${elapsed()})`);
 
-const outputs = {
-  detail: "assets/maps/iberia-relief-detail.webp",
-  geometry: "assets/maps/iberia-regions.svg",
-  margin: "assets/maps/iberia-relief-margin.webp",
-  overview: "assets/maps/iberia-relief-overview.webp"
-};
 const webp = { effort: 6, quality: config.art.webpQuality, smartSubsample: true } as const;
 const rgba = (pixels: Uint8Array, raster: Raster) =>
   sharp(pixels, { limitInputPixels: false, raw: { channels: 4, height: raster.height, width: raster.width } });
@@ -376,57 +490,15 @@ if (process.argv.includes("--preview")) {
   await rgb(masterBake.pixels, masterRaster).png({ compressionLevel: 2 }).toFile(new URL("build/map/master.png", root).pathname);
 }
 
-// ---------------------------------------------------------------------------------------------
-// map.json
-
-const mapUrl = new URL(config.mapDocument, root);
-const previous = JSON.parse(await readFile(mapUrl, "utf8")) as Record<string, unknown> & { regions: Record<string, { territoryId: string }>; territories: Record<string, unknown> };
-const territoryRings = new Map<string, Point[][]>();
-for (const region of regionPaths) {
-  const territoryId = previous.regions[region.id]?.territoryId;
-  if (territoryId === undefined) throw new Error(`map.json does not bind region ${region.id}`);
-  territoryRings.set(territoryId, [...(territoryRings.get(territoryId) ?? []), ...region.rings]);
-}
-const geoPoint = ({ latitude, longitude }: config.GeoPoint): Point => roundPoint(project(longitude, latitude));
-const territories = Object.fromEntries(Object.keys(previous.territories).map((territoryId) => {
-  const enclave = config.enclaves[territoryId];
-  if (enclave !== undefined) {
-    const centre = geoPoint(enclave);
-    return [territoryId, {
-      unitAnchor: centre,
-      label: { ...roundPoint({ x: centre.x + enclave.labelOffset.x, y: centre.y + enclave.labelOffset.y }), tier: "detail" },
-      shape: { kind: "circle", ...centre, r: enclave.radius }
-    }];
-  }
-  const rings = territoryRings.get(territoryId);
-  if (rings === undefined) throw new Error(`Territory ${territoryId} has neither a region nor an enclave entry`);
-  const override = config.anchorOverrides[territoryId] ?? {};
-  const placement = placeTerritory(rings, override.lift ?? config.labelLift, {
-    ...(override.anchor === undefined ? {} : { unitAnchor: geoPoint(override.anchor) }),
-    ...(override.label === undefined ? {} : { label: geoPoint(override.label) })
+/** The baked relief's land mask agrees: every river vertex sits on playable land in the raster. */
+function checkRiverRegistration(raster: Raster, playable: Float32Array, rivers: readonly BuiltRiver[]): void {
+  const vertices = rivers.flatMap((river) => river.vertices);
+  const offLand = vertices.filter((point) => {
+    const column = Math.floor((point.x - raster.bounds.x) * raster.texelsPerUnit);
+    const row = Math.floor((point.y - raster.bounds.y) * raster.texelsPerUnit);
+    return (playable[row * raster.width + column] ?? 0) < 0.5;
   });
-  if (!insideTerritory(rings, placement.label)) console.log(`note: the ${territoryId} label sits outside its territory`);
-  const tier = (previous.territories[territoryId] as { label: { tier: string } }).label.tier;
-  return [territoryId, { unitAnchor: placement.unitAnchor, label: { ...placement.label, tier } }];
-}));
-const document = {
-  ...previous,
-  viewBox: config.viewBox,
-  focus: config.focus,
-  background: hexColor(config.art.background),
-  geometry: { svg: outputs.geometry, stripSelectors: [] },
-  terrain: {
-    layers: [
-      { image: outputs.overview, bounds: overview.bounds },
-      { image: outputs.margin, bounds: margin.bounds },
-      { image: outputs.detail, bounds: detail.bounds }
-    ]
-  },
-  regions: previous.regions,
-  territories,
-  cities: Object.fromEntries(Object.entries(config.cities).map(([id, city]) => [id, { ...geoPoint(city), tier: city.tier }])),
-  contextLabels: config.contextLabels.map((label) => ({ text: label.text, ...geoPoint(label) })),
-  attribution: config.attribution
-};
-await writeFile(mapUrl, `${JSON.stringify(document, null, 2)}\n`);
-console.log(`wrote ${Object.values(outputs).join(", ")}, and ${config.mapDocument} (${elapsed()})`);
+  console.log(`river registration: ${String(offLand.length)} of ${String(vertices.length)} river vertices off the baked land mask`);
+  if (offLand.length > 0) throw new Error("Rivers leave the baked land mask; the pipeline is no longer registered.");
+}
+console.log(`wrote ${Object.values(outputs).join(", ")} (${elapsed()})`);

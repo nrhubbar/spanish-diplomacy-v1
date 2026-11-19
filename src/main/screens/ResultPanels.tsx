@@ -2,6 +2,9 @@ import type { JSX } from "react";
 import { requireFaction } from "../engine/lookup";
 import type { Scenario, TurnOutcome, TurnResolutionResult } from "../engine/types";
 import { glyphs } from "../presentation/glyphs";
+import { medallionMarkup } from "../presentation/outcomeArt";
+import type { OutcomeKey } from "../presentation/outcomes";
+import { outcomeText } from "../presentation/outcomeText";
 import { cssVariables } from "../presentation/style";
 import { controllerName, describeOutcomeGroup, factionName, groupOutcomes, route, territoryName, unitName } from "../presentation/text";
 import type { RevealedOrders } from "../state/selectors";
@@ -27,11 +30,26 @@ export function TerritoryChanges({ result, scenario }: { readonly result: TurnRe
   );
 }
 
-const groups: readonly { readonly kinds: readonly TurnOutcome["kind"][]; readonly label: string; readonly open: boolean; readonly tone: string }[] = [
-  { kinds: ["disbanded-move", "invalid-order"], label: "Armies lost", open: true, tone: "disbanded" },
-  { kinds: ["bounced-move"], label: "Bounced", open: true, tone: "bounced" },
-  { kinds: ["successful-move"], label: "Completed moves", open: false, tone: "moved" }
+interface OutcomeGroupSpec {
+  readonly kinds: readonly TurnOutcome["kind"][];
+  readonly label: string;
+  readonly open: boolean;
+  /** An outcome medallion (H's art), or a plain route-coloured dot for ordinary moves. */
+  readonly icon: { readonly medallion: OutcomeKey } | { readonly tone: "bounced" | "disbanded" | "moved" };
+}
+
+/** Battles have their own cards; these are every other kind of outcome, most serious first. */
+const groups: readonly OutcomeGroupSpec[] = [
+  { icon: { medallion: "surrendered" }, kinds: ["disbanded-move"], label: outcomeText.surrendered.title, open: true },
+  { icon: { tone: "disbanded" }, kinds: ["invalid-order"], label: "Disbanded", open: true },
+  { icon: { tone: "bounced" }, kinds: ["bounced-move"], label: "Bounced", open: true },
+  { icon: { medallion: "recovered" }, kinds: ["recovered"], label: outcomeText.recovered.title, open: true },
+  { icon: { medallion: "reinforcement-arrived" }, kinds: ["reinforcement-arrived"], label: outcomeText["reinforcement-arrived"].title, open: false },
+  { icon: { tone: "moved" }, kinds: ["successful-move"], label: "Completed moves", open: false }
 ];
+
+/** Neutral ring for report icons, which stand for a kind of outcome rather than a faction. */
+const reportRing = "#5b4d40";
 
 /**
  * U2: a compact summary grouped by result, with routine detail collapsed. Formations of one
@@ -48,14 +66,16 @@ export function OutcomeSummary({ result, scenario }: { readonly result: TurnReso
         const outcomes = result.outcomes.filter((outcome) => group.kinds.includes(outcome.kind));
         if (outcomes.length === 0) return null;
         return (
-          <details className="outcome-group" data-tone={group.tone} key={group.label} open={group.open}>
+          <details className="outcome-group" key={group.label} open={group.open}>
             <summary>
-              <span aria-hidden="true" className={`outcome-icon outcome-icon-${group.tone}`} />
+              {"medallion" in group.icon
+                ? <span aria-hidden="true" className="outcome-medallion" dangerouslySetInnerHTML={{ __html: medallionMarkup(group.icon.medallion, reportRing) }} />
+                : <span aria-hidden="true" className={`outcome-icon outcome-icon-${group.icon.tone}`} />}
               {`${group.label} (${String(outcomes.length)})`}
             </summary>
             <ul>
               {groupOutcomes(outcomes).map((entry, index) => (
-                <li key={`${group.tone}-${String(index)}`}>{describeOutcomeGroup(scenario, entry, result.outcomes)}</li>
+                <li key={`${group.label}-${String(index)}`}>{describeOutcomeGroup(scenario, entry, result.outcomes)}</li>
               ))}
             </ul>
           </details>

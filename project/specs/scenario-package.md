@@ -1,6 +1,6 @@
 # Scenario Package Specification (spec version 1)
 
-A scenario package is the rules data for one playable scenario: factions, territories and how they connect, cities, units, and victory parameters. The game engine interprets it; it contains no presentation. Its companion map package (`map-package.md`) holds everything visual.
+A scenario package is the rules data for one playable scenario: factions, territories and how they connect, cities, units and their combat values, the combat rules' numbers, and victory parameters. The game engine interprets it; it contains no presentation. Its companion map package (`map-package.md`) holds everything visual.
 
 - Machine-readable schema: `src/main/scenarios/schema/scenario.schema.json` (JSON Schema draft 2020-12), generated from `scenarioSchema.ts` by `npm run spec:build`. A unit test fails if the two drift.
 - Reference packages: `src/main/scenarios/spain-1936-07-31/` (shipped) and `src/test/fixtures/scenarios/tiny-front/` (minimal test fixture).
@@ -11,7 +11,7 @@ A scenario package is the rules data for one playable scenario: factions, territ
 2. Put map assets anywhere under `assets/` and reference them by repository-relative path from `map.json`.
 3. Run `npm run test:unit`. The contract tests load every package and report each problem with its JSON path and rule id. A package that fails validation is left out of the game and reported in a notification; it never crashes the app.
 
-No code changes are needed, provided the scenario fits the `m2-movement` ruleset below. A scenario that needs different rules needs a new ruleset in the engine, and its `ruleset` value makes that explicit.
+No code changes are needed, provided the scenario fits the `m2-strength` ruleset below. A scenario that needs different rules needs a new ruleset in the engine, and its `ruleset` value makes that explicit.
 
 ## Fields
 
@@ -23,12 +23,13 @@ All ids are lowercase kebab-case (`[a-z0-9]+(-[a-z0-9]+)*`) and are never shown 
 | `id` | id | Scenario id; unique across packages. |
 | `name` | text | Shown in the scenario picker. |
 | `snapshotLabel` | text | Starting date or moment; shown on setup and turn 1 only. |
-| `ruleset` | `"m2-movement"` | Rules the engine applies. Unknown values fail to load. |
+| `ruleset` | `"m2-strength"` | Rules the engine applies. Unknown values fail to load. |
 | `map` | path | The map package, relative to this file. |
 | `victory.territoryShare` | 0-1 | Share of victory-eligible territories that wins (rounded up). |
 | `victory.cityShare` | 0-1 | Share of victory-eligible cities that wins (rounded up). |
 | `victory.tieBreak` | list of `cities` / `territories` | Order in which qualifying factions are compared. |
-| `unitTypes[]` | `{ id, name }` | Unit types. Symbols come from the map package. |
+| `combat` | see below | The numbers of the battle rules: results table, below-1:1 rule, digging in, demoralization, faction modifiers. |
+| `unitTypes[]` | `{ id, name, attack, defence }` | Unit types. `attack` and `defence` are positive whole numbers: the values of a full-strength army of the type (C4). Symbols come from the map package. |
 | `factions[]` | see below | At least two. |
 | `territories[]` | see below | At least two. |
 | `connections[]` | `{ between: [id, id], kind: land or sea, label? }` | Undirected adjacency. |
@@ -36,11 +37,25 @@ All ids are lowercase kebab-case (`[a-z0-9]+(-[a-z0-9]+)*`) and are never shown 
 | `units[]` | see below | Starting formations. |
 | `sources[]` | `{ id, title, url? }` | Source catalog for historical data. |
 
-Faction: `id`, `name`, `abbreviation` (1-4 characters, used on narrow screens), `color` (`#rrggbb`, the faction's identity color everywhere), `motivation` (one sentence on setup), `defaultActor` (`local-human` or `computer`), `objectiveTerritoryIds` (used by computer players).
+Faction: `id`, `name`, `abbreviation` (1-4 characters, used on narrow screens), `color` (`#rrggbb`, the faction's identity color everywhere), `motivation` (one sentence on setup), `defaultActor` (`local-human` or `computer`), `objectiveTerritoryIds` (used by computer players), and `briefing: { objective, firstTurnHint }`.
+
+Briefing: player-facing text shown in the in-map Briefing. `objective` says what the faction is fighting for and how it wins; if it states the victory numbers, they must match the thresholds the `victory` shares produce. `firstTurnHint` is shown on turn 1 only. It reads like an intelligence report and ends in a question: it gives the player ideas and a choice, never a move to copy. Neither field may mention balance or design intent.
 
 Territory: `id`, `name`, `countsForVictory`, `initialControl` (`{ kind: "controlled", factionId }` or `{ kind: "contested", factionIds: [two or more] }`), and optional `isolated: { reason }` for a territory deliberately left without connections.
 
-Unit: `id`, `name`, `factionId`, `type`, `formationKind` (`regiment`, `battalion`, `column`, `security`, `other`), optional `approximateStrength` (display only; no rules effect), `territoryId`, optional `cityId` (must be in the unit's territory; the counter is drawn at that city), `sources` (at least one `{ sourceId, reference? }`), and optional `historicalNote`.
+Unit: `id`, `name`, `factionId`, `type`, `formationKind` (`regiment`, `battalion`, `column`, `security`, `other`), `strength` (men at the snapshot) and `fullStrength` (men at full establishment; both positive whole numbers), `territoryId`, optional `cityId` (must be in the unit's territory; the counter is drawn at that city), `sources` (at least one `{ sourceId, reference? }`), optional `historicalNote`, and optional `designation` (the counter label, up to 4 capitals or digits; derived from the name when absent).
+
+Combat (`combat`), every field required:
+
+| Field | Type | Meaning |
+|---|---|---|
+| `table` | 7 lists of 7 results | `table[column][row]`. Columns are the odds: 0 is below 1:1, then 1:1 to 6:1. Rows are the modified roll, 0 to 6 (M15). Results are the seven keys of M16. |
+| `belowOneToOne` | `{ kind: "halving", rollPenalty }` | Below 1:1 the attacker's roll takes `rollPenalty` (a whole number, 0 or more) for each halving of the odds (M14). |
+| `diggingIn` | `{ perTurn, max }` | Defence roll bonus gained per quiet turn, and its cap; positive whole numbers (M22). |
+| `demoralizationFactor` | above 0, at most 1 | Multiplier for a demoralized army's values (M12). |
+| `factionModifiers[]` | `{ id, name, factionId, when, attack?, defence? }` | Named roll bonuses for one faction (M24). `name` is shown in battle breakdowns. `when` is `holds-controlled-city`. `attack` and `defence` are whole numbers, 0 or more, default 0; at least one is above 0. |
+
+The shipped table is the prototype's, corrected so each odds step is exactly one result better for the attacker (C2): column `k` is `SEQ[k..k+6]` over `SEQ = AE AE AA AD BD BD DD DX DE DE DE DE DE` (attacker-eliminated, attacker-attrition, attacker-demoralized, both-demoralized, defender-demoralized, defender-exchange, defender-eliminated).
 
 ## Validation rules
 
@@ -48,9 +63,9 @@ The loader applies these when the app starts. Each failure names the JSON path a
 
 | Rule | Requirement |
 |---|---|
-| L1 | Valid against the schema; `specVersion` and `ruleset` supported. |
-| L2 | Ids are unique within each collection. |
-| L3 | Every reference resolves (factions, territories, cities, unit types, sources, objectives). |
+| L1 | Valid against the schema; `specVersion` and `ruleset` supported. This includes the shape of `combat` (a 7 by 7 table of known results and the ranges above), unit type values, and unit strengths. |
+| L2 | Ids are unique within each collection, including `combat.factionModifiers`. |
+| L3 | Every reference resolves (factions, territories, cities, unit types, sources, objectives, faction modifiers' factions). |
 | L4 | A unit's `cityId` is in the unit's territory. |
 | L5 | Contested control lists at least two distinct factions. |
 | L6 | No self-connections or duplicate connections. |
@@ -59,28 +74,131 @@ The loader applies these when the app starts. Each failure names the JSON path a
 | L9 | No faction starts at or above a victory threshold. |
 | L10 | The map package covers every territory, city, and unit type (see `map-package.md`). |
 | L11 | Every asset the map package names exists. |
+| L12 | A unit's `strength` is no greater than its `fullStrength`. |
+| L13 | Every faction modifier changes something: its `attack` or `defence` is above 0. |
 
-## The `m2-movement` ruleset
+## The `m2-strength` ruleset
 
-Each turn every faction submits orders in secret; all orders resolve together against the start-of-turn state.
+Each turn every faction submits orders in secret; all orders resolve together against the start-of-turn state. Armies have men (`strength`), morale, and values; territories can be dug in. Rule ids M1-M10 keep their Revision 5 meaning where they survive. Revision 5's movement-only rules M3, M4, M5, and M8 are retired: the battle rules M11 and M17-M21 replace them, and their ids are not reused.
+
+**Status.** Every rule is enforced by the resolver (`src/main/engine/resolution.ts` and the modules it calls). The arithmetic of M12-M16 and M24 lives in `src/main/engine/combat.ts`, including `estimateAttack`, which planning uses for odds (C15) and which a test keeps consistent with resolution.
+
+| Rule | Topic | Status |
+|---|---|---|
+| M1, M2 | Orders and moves | Now |
+| M6, M7 | Taking and changing control | Now |
+| M9 | Impossible orders | Now |
+| M10 | Victory | Now |
+| M11 | Reinforcement | Now |
+| M12-M16 | Values, odds, modifiers, table, results | Now |
+| M17-M19 | Battles, occupation, several entrants | Now |
+| M20 | Head-on meeting battles | Now |
+| M21 | Returns, retreats, and surrender | Now |
+| M22 | Digging in | Now |
+| M23 | Morale | Now |
+| M24 | Faction modifiers | Now |
+| M25 | No recovery of men | Now |
+| M26 | Resolution order | Now |
+| M27 | Standing battles in shared territories | Now |
+
+### Orders and movement
 
 | Rule | Behavior |
 |---|---|
-| M1 | Orders are validated against the start-of-turn state. A unit takes at most one order; without one it holds. |
-| M2 | A move must follow a connection from the unit's current territory. Land and sea connections behave alike. |
-| M3 | Standoff: when two or more factions move into the same territory, all those moves bounce. Units of one faction may move together. |
-| M4 | A move into a territory where a hostile unit holds (is not moving away) bounces, unless the mover's faction also has a unit holding there (a reinforcement). |
-| M5 | Units of different factions swapping territories meet head-on and both bounce. |
+| M1 | Orders are validated against the start-of-turn state. An army takes at most one order; without one it holds. |
+| M2 | A move must follow a connection from the army's current territory. Land and sea connections behave alike. |
 | M6 | An unopposed move takes control of its destination, including a contested one. |
-| M7 | After movement, a territory changes hands when exactly one faction has units there and either the set of factions present changed this turn or that faction moved in. Its cities follow. Holding never changes control. |
-| M8 | A bounced unit is lost if a unit of another faction entered the territory it tried to leave. |
-| M9 | A unit with an impossible order, or with more than one order, is disbanded. |
-| M10 | Victory is checked after M7. A faction meeting either threshold qualifies; `tieBreak` orders qualifiers; a remaining tie is a shared victory. |
+| M7 | After movement and battles, a territory changes hands when exactly one faction has armies there and either the set of factions present changed this turn or one of that faction's armies ended the turn there having started elsewhere. Its cities follow. Holding never changes control. |
+| M9 | An army with an impossible order, or with more than one order, is disbanded. Planning and computer players never offer such orders. |
+| M10 | Victory is checked last. A faction meeting either threshold qualifies; `tieBreak` orders qualifiers; a remaining tie is a shared victory. |
 
-Friendly units never obstruct each other. Units of one faction may enter the same territory, join friendly units there, follow a friendly unit out, swap, or move in a chain or ring. Only units of another faction cause a bounce (M3-M5) or a loss (M8). The M4 reinforcement exception counts friendly units that hold (OD-7), so a unit entering a shared territory that its only friendly occupant is leaving faces the hostile holder alone.
+Friendly armies never obstruct each other. Armies of one faction may enter the same territory, join friendly armies there, follow a friendly army out, swap, or move in a chain or ring. Only armies of another faction cause a bounce or a battle. An army moving into a territory where armies of its own faction defend after the meeting battles joins them, as a reinforcement does (M11).
 
-Known property: because a held territory cannot be taken (M4), games settle into stable fronts. See decision OD-9 in `milestone-2-rev-5.md`.
+Every valid move is reported once: as a reinforcement (`reinforcement-arrived`), an unopposed move (`successful-move`), a move that bounced without a battle (`bounced-move` or, after a surrender, `disbanded-move`), or through the battles its army fought in, which list it as an attacker or defender. A meeting winner may appear in two battles, and a winner that then enters unopposed is also reported as a successful move.
+
+### Battles
+
+**M11. Reinforcement (C10).** A move is a reinforcement when its faction controls the destination at the start of the turn, or when an army of its faction is in the destination and does not move out (OD-7). A reinforcement always arrives: it is never bounced and never fights on the way in. It joins the defence of its destination in that turn's battles.
+
+**M12. Values (C4, C5, C6).** Every army is its own instance with its own men and morale. Its attack (or defence) value is its type's attack (or defence) x `strength / fullStrength`, x `demoralizationFactor` when demoralized, rounded once to the nearest whole number (halves round up), and never below 1. A side's value is the sum of its armies' rounded values; all armies of one faction in one battle form one side, whatever their origins. Attackers use attack values and defenders defence values, except where M19 says otherwise. What a counter shows is exactly what fights.
+
+**M13. Odds (C2, C3).** Odds are rounded in the defender's favour. At or above 1:1 they are `floor(attack / defence)`:1; below 1:1 they are 1:`ceil(defence / attack)`. So 5 against 3 is 1:1, 2 against 3 is 1:2, and 2 against 7 is 1:4. The table column is the odds up to 6:1 (columns 1 to 6), or column 0 below 1:1.
+
+**M14. Roll modifiers.** The attacker's die roll changes by:
+- each faction modifier of the attacker (M24): plus its `attack`;
+- the defenders' works (M22): minus the dug-in level;
+- each faction modifier of a defender (M24): minus its `defence`;
+- odds above 6:1: plus one for each step beyond 6 (8:1 is +2);
+- odds below 1:1: minus `belowOneToOne.rollPenalty` for each halving of the rounded odds (C3). 1:2 and 1:3 are one halving, 1:4 to 1:7 two, 1:8 three.
+
+Every modifier is reported by name in the battle's breakdown (C14).
+
+**M15. The table.** The table row is the die (1 to 6) plus every modifier, clamped to 0..6; the result is `table[column][row]`. Row 0 is reached only with a net negative modifier. With the shipped table, 2:1 without modifiers takes the territory one time in two, and 3:1 against a defender dug in at +3 one time in six.
+
+**M16. Results (C2a).** Attrition and demoralization are different, and attrition is worse.
+
+| Result | Effect |
+|---|---|
+| `attacker-eliminated` | Every attacking army is destroyed. |
+| `attacker-attrition` | The attackers pay attrition worth the defenders' value. Survivors return (M21). |
+| `attacker-demoralized` | The attackers are demoralized and return (M21). |
+| `both-demoralized` | The defenders are demoralized and stay. The attackers are demoralized and return. |
+| `defender-demoralized` | The defenders are demoralized and every defending army retreats (M21). The attackers claim the territory (M18). |
+| `defender-exchange` | Every defending army is destroyed. The attackers pay attrition worth the defenders' value, and the survivors claim the territory. |
+| `defender-eliminated` | Every defending army is destroyed. The attackers claim the territory. |
+
+The last three are the attacker's successes; the chance to take a territory is the chance of rolling one of them.
+
+- *Attrition.* The paying side loses men worth the opposing side's value (its M12 side value, before modifiers). One point costs `fullStrength / base` men of the army that pays, where `base` is the type value it fought with: a 740-man regiment rated 4-6 loses 185 men per point when attacking. The army with the highest value in the battle pays first (ties: more men, then scenario order). An army can pay at most the points it holds, `base x strength / fullStrength`; an army left holding under one point is destroyed, and the rest of the debt passes to the next army. Men lost are rounded to the nearest man. Debt beyond the whole side is dropped.
+- *Demoralization.* Armies are demoralized from the weakest up (lowest value in the battle; ties: fewer men, then scenario order) until the demoralized armies carry at least half of the side's value. A side with one army demoralizes it. An army that is already demoralized restarts its clock (M23). On `defender-demoralized` only those armies are demoralized, but every defending army retreats.
+- *Reporting.* A battle reports the losses, demoralizations, retreats, and surrenders it caused. Where several battles share defenders (M17), each effect on the defenders is reported once, in the first battle by index that caused it, and a demoralization is not reported for defenders another battle destroyed. Surrendered armies are listed as surrendered, not as losses.
+
+**M17. Battles in a defended territory (section 1.6 step 1, C8).** A territory is defended when an army of a faction other than the mover's is in it at the start of the turn and does not move out, or arrives there as a reinforcement (M11). Every army of one faction that moves into it, and is not a reinforcement, attacks it as one side. The defenders are every army of the other factions there, including the loser of a head-on meeting battle that returned home (M20); armies of several factions defend together as one side. Each attacking faction fights the defenders in a separate battle, and every battle uses the same values, those after the meeting battles (M20), so the order never matters. The defenders take every result they receive: losses add up, any demoralizing result demoralizes them, and any result that removes them from the territory removes them.
+
+**M18. Who occupies (section 1.6 step 2).** Attacking factions whose battle succeeded, and which have an army left, claim the territory. With one claimant, it moves in. With several, the claimant with the greatest attack value left after its own losses (M12, recomputed) moves in, and the others return (M21) without further loss. With a tie for greatest, every claimant returns and the territory is left empty. Without a claimant, the defenders hold; if no defender is left either (an exchange that also destroyed every attacker), the territory is left empty.
+
+**M19. Empty territory, several factions entering (section 1.6 step 3).** When no army stays in a territory, no entrant is a reinforcement, and two or more factions move in, the entrant with the greatest attack value stands as the defender, using its attack values as its defence with no works; faction modifiers apply. Each other entrant fights it as in M17, and M18 decides who occupies; if the standing entrant holds, it moves in and takes the territory. A standing entrant driven off (`defender-demoralized`) never got in: it returns to its origin like a failed attacker (M21). With a tie for greatest, every entrant bounces with a `standoff` and returns (M21). A single entrant is unopposed (M6).
+
+**M20. Head-on (C9).** When armies of exactly two factions move along one connection in opposite directions, they meet on the road. Reinforcements (M11) are never on the road: they pass a hostile move without meeting it. Each faction's movers on that road form a side. The side with the greater attack value attacks; the other defends with its defence values. Meeting battles have no works and no faction modifiers. With equal attack values there is no battle and both sides bounce. On a success the attacker wins; on `attacker-eliminated`, `attacker-attrition`, or `attacker-demoralized` the defender wins; on `both-demoralized` neither wins and both bounce. The winner continues its move as if the road were clear and is resolved against its destination like any other move (M11, M17-M19). The loser bounces, takes its result, and returns to its origin, where it defends if attacked. With more than two factions moving along one connection in opposite directions, every move that meets another faction's bounces without a battle. Every army that bounced on the road, with or without a battle, is back at its origin before the territory battles and defends it (M17).
+
+**M21. Returns, retreats, and surrender (C11, replaces M8).**
+- An attacker that does not occupy, a driven-off standing entrant (M19), and an army whose entry bounced (M19) return to their origin. If another faction took the origin, that is, an army of another faction that started the turn elsewhere stands there after the battles, the army retreats from there instead.
+- A retreating army moves to an adjacent territory that its faction controlled at the start of the turn and that no army of another faction occupies after the battles, choosing the one holding the most armies of its faction (ties: scenario order). Every choice is made against the same snapshot, before any army retreats, so armies of one faction retreating from one territory move together and the order never matters.
+- With nowhere to go, the army surrenders: it is destroyed and reported as surrendered.
+- Armies in a battle report their retreat or surrender in its battle outcome. An army whose entry bounced without a battle (M19) reports it in its move outcome: a bounced move names where it fell back (`retreatedTo`), and a surrender is a disbanded move naming the faction that took its origin. Head-on bounces (M20) defend their origin, so any retreat of theirs is reported by the battle there.
+
+**M22. Digging in (C7).** A faction holds a territory when it controls it and has an army there. At the end of each turn, a territory held by the same faction at the start and at the end of the turn, where no battle was fought, gains `diggingIn.perTurn` levels of works for that faction, up to `diggingIn.max`. A territory that was fought over keeps its level. Works are removed when their faction no longer holds the territory. Meeting battles (M20) are fought on the road, not in a territory. The works give the defenders their level as a defence modifier (M14) whenever the works' faction is among the defenders, except in head-on (M20), entry (M19), and standing (M27) battles.
+
+**M23. Morale (C6).**
+- A demoralized army fights at `demoralizationFactor` times its values (M12) and cannot attack: it may move only into a territory where no army of another faction stands at the start of the turn. Any other move is an impossible order (M9); planning and computer players offer only the allowed destinations.
+- An army is quiet in a turn when it had no move order, did not retreat, and was not demoralized that turn. At the end of each turn, a demoralized army that was quiet recovers and is reported as recovered: one quiet turn is enough. A demoralized army that moves restarts its count, and a new demoralization restarts it too, so `quietTurns` stays 0 while an army is demoralized.
+
+**M24. Faction modifiers (C17).** A faction modifier adds its `attack` to the roll when its faction attacks and subtracts its `defence` when its faction is among the defenders, while its condition holds. `holds-controlled-city`: the battle territory contains at least one city the faction controlled at the start of the turn. The Spain scenario's "Popular resistance" (Republic, +1 defence) is one; battle breakdowns name it like any other modifier.
+
+**M25. No recovery of men (C13).** In Milestone 2 an army's strength never rises, and destroyed or surrendered armies never return. Only morale recovers (M23). Recruitment and reinforcements arrive in Milestone 3.
+
+**M26. Resolution order.** One turn resolves in this order:
+1. Orders (M1, M2, M9, M23).
+2. Reinforcements arrive (M11).
+3. Head-on meeting battles (M20).
+4. Battles in defended territories, and in empty territories that several factions enter (M17-M19).
+5. Results (M16) and occupation (M18).
+6. Returns, retreats, and surrender (M21).
+7. Standing battles in shared territories (M27), and their retreats (M21).
+8. Control (M6, M7).
+9. Morale recovery (M23) and digging in (M22).
+10. Victory (M10).
+
+Each battle rolls one die from its own seeded stream, `deriveSeed(game seed, battleStreamTag, turn, battle index)`. The tag (`0x62617474`, in `engine/dice.ts`) keeps battle streams apart from the computer players' streams, `deriveSeed(game seed, turn, faction index)`. Meeting battles are indexed first, then territory battles, then standing battles. Meetings are ordered by the lower id of their two territories, then by attacking faction id, then by the higher territory id; territory battles by territory id, then by attacking faction id; standing battles by territory id. Ids compare by code unit, never by locale. The die is the stream's first draw; a standing battle's tie-break rolls come after it. The same seed always replays the same game.
+
+**M27. Standing battles (D29).** After the territory battles and their retreats, factions that still have armies in one territory fight there, once per territory per turn.
+- A faction's standing attack is the attack value (M12) of its armies there that are not demoralized; a demoralized army cannot attack (M23). If no faction there has one, there is no battle.
+- The faction with the greatest standing attack attacks with those armies. The other faction with the greatest standing attack defends with all of its armies there, at their defence values.
+- A tie for either place is broken by a seeded roll from the battle's stream among the tied factions in id order (a roll of `k` picks the `k`-th), recorded in the battle as a tie-break.
+- Neither side has works (M22). Faction modifiers apply (M24), judged at the start of the turn.
+- Results apply as in any battle (M16), with one difference: the attacker is already in the territory, so it stays whatever happens. A defender that must retreat leaves the territory (M21). The site records `taken` when the defender is gone and the attacker remains, `left-empty` when no army is left, and `held` otherwise.
+- A standing battle is a battle fought in the territory for digging in (M22).
 
 ## Worked example
 
-`src/test/fixtures/scenarios/tiny-front/scenario.json` is a complete five-territory scenario with two factions, one sea connection, one contested island, two cities, and three units. It exercises every field above except `isolated` and is played end to end in the e2e suite.
+`src/test/fixtures/scenarios/tiny-front/scenario.json` is a complete five-territory scenario with two factions, one sea connection, one contested island, two cities, three units (one below full strength), and its own combat block with one faction modifier. It exercises every field above except `isolated` and is played end to end in the e2e suite.

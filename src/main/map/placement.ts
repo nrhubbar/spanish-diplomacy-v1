@@ -32,6 +32,21 @@ export function placeCounters(
   metrics: CounterMetrics,
   obstacles: readonly ScreenRect[]
 ): ReadonlyMap<string, MapPoint> {
+  return placeCounterStacks(requests, metrics, obstacles).positions;
+}
+
+export interface StackPlacement {
+  /** How far, in screen pixels, the most displaced stack moved from its first-choice spot. */
+  readonly maxDisplacement: number;
+  readonly positions: ReadonlyMap<string, MapPoint>;
+}
+
+/** `placeCounters`, also reporting how far crowding pushed stacks from their anchors. */
+export function placeCounterStacks(
+  requests: readonly PlacementRequest[],
+  metrics: CounterMetrics,
+  obstacles: readonly ScreenRect[]
+): StackPlacement {
   const stacks = new Map<string, { anchor: MapPoint; ids: string[] }>();
   for (const request of requests) {
     const stack = stacks.get(request.anchorKey) ?? { anchor: request.anchor, ids: [] };
@@ -41,6 +56,7 @@ export function placeCounters(
 
   const placed: ScreenRect[] = [];
   const positions = new Map<string, MapPoint>();
+  let maxDisplacement = 0;
   const step = metrics.height / 2 + metrics.gap;
 
   for (const { anchor, ids } of stacks.values()) {
@@ -58,11 +74,20 @@ export function placeCounters(
     const candidates = [
       { dx: 0, dy: 0 }, { dx: 0, dy: step }, { dx: side, dy: -step }, { dx: -side, dy: -step },
       { dx: side, dy: step }, { dx: -side, dy: step }, { dx: 0, dy: 2 * step }, { dx: 0, dy: 3 * step },
-      { dx: 0, dy: 4 * step }, { dx: 0, dy: -2 * step - height }
+      { dx: 0, dy: 4 * step }, { dx: 0, dy: -2 * step - height },
+      // Crowded fronts: further out to each side, then diagonally.
+      ...[2, 3].flatMap((reach) => [-1, 0, 1, 2, 3].flatMap((rowsDown) => [
+        { dx: reach * side, dy: rowsDown * step },
+        { dx: -reach * side, dy: rowsDown * step }
+      ]))
     ];
-    const offset = candidates.find((candidate) => !blocked({ ...base, x: base.x + candidate.dx, y: base.y + candidate.dy })) ?? { dx: 0, dy: 0 };
+    const at = (candidate: { dx: number; dy: number }): ScreenRect => ({ ...base, x: base.x + candidate.dx, y: base.y + candidate.dy });
+    // With no free slot, take the one that covers the least of its neighbours.
+    const offset = candidates.find((candidate) => !blocked(at(candidate)))
+      ?? candidates.reduce((best, candidate) => (overlap(at(candidate), [...placed, ...obstacles]) < overlap(at(best), [...placed, ...obstacles]) ? candidate : best));
     const box = { ...base, x: base.x + offset.dx, y: base.y + offset.dy };
     placed.push(box);
+    maxDisplacement = Math.max(maxDisplacement, Math.hypot(offset.dx, offset.dy));
 
     ids.forEach((id, index) => {
       const column = index % metrics.perRow;
@@ -75,7 +100,16 @@ export function placeCounters(
       });
     });
   }
-  return positions;
+  return { maxDisplacement, positions };
+}
+
+/** Total area of `rect` covered by the others. */
+function overlap(rect: ScreenRect, others: readonly ScreenRect[]): number {
+  return others.reduce((sum, other) => {
+    const width = Math.min(rect.x + rect.width, other.x + other.width) - Math.max(rect.x, other.x);
+    const height = Math.min(rect.y + rect.height, other.y + other.height) - Math.max(rect.y, other.y);
+    return sum + Math.max(0, width) * Math.max(0, height);
+  }, 0);
 }
 
 export function intersects(a: ScreenRect, b: ScreenRect): boolean {
@@ -88,22 +122,31 @@ export const contextLabelType = { fontSize: 13, letterSpacing: 2.5 } as const;
 /** Context labels are uppercase serif; this over-estimates their width so a fit is never optimistic. */
 const contextGlyphEm = 0.78;
 
+export interface ScreenSize {
+  readonly height: number;
+  readonly width: number;
+}
+
 /**
- * The neutral context labels to draw: those that fit entirely on screen and touch no counter.
- * They name the land around the playing area, so a cut or covered label is hidden instead;
- * panning or zooming brings it back. Counters and positions are in screen pixels.
+ * Whether a label's footprint lies wholly on screen and touches no counter. Labels that name
+ * scenery (neighbouring land, water) are hidden instead of cut or covered; panning or zooming
+ * brings them back. Everything is in screen pixels.
  */
+export function clearOnScreen(footprint: readonly ScreenRect[], viewport: ScreenSize, counters: readonly ScreenRect[]): boolean {
+  return footprint.every((rect) => rect.x >= 0 && rect.y >= 0 && rect.x + rect.width <= viewport.width && rect.y + rect.height <= viewport.height
+    && !counters.some((counter) => intersects(rect, counter)));
+}
+
+/** The neutral context labels to draw: those that fit entirely on screen and touch no counter. */
 export function visibleContextLabels<Label extends MapPoint & { readonly text: string }>(
   labels: readonly Label[],
   toScreen: (point: MapPoint) => MapPoint,
-  viewport: { readonly height: number; readonly width: number },
+  viewport: ScreenSize,
   counters: readonly ScreenRect[]
 ): readonly Label[] {
   return labels.filter((label) => {
     const at = toScreen(label);
     const width = label.text.length * (contextLabelType.fontSize * contextGlyphEm + contextLabelType.letterSpacing);
-    const rect: ScreenRect = { height: contextLabelType.fontSize, width, x: at.x - width / 2, y: at.y - contextLabelType.fontSize };
-    return rect.x >= 0 && rect.y >= 0 && rect.x + rect.width <= viewport.width && at.y <= viewport.height
-      && !counters.some((counter) => intersects(rect, counter));
+    return clearOnScreen([{ height: contextLabelType.fontSize, width, x: at.x - width / 2, y: at.y - contextLabelType.fontSize }], viewport, counters);
   });
 }

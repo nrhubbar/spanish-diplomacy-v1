@@ -40,9 +40,15 @@ export function soak(scenario: Scenario, games: number, maxTurns: number, firstS
       if (turn === 1) firstTurnChanges += result.controlChanges.length;
       quietTurns = result.controlChanges.length === 0 ? quietTurns + 1 : 0;
       if (quietTurns >= 5) froze = true;
+      // Driven out is not abandoned: an army that retreated (M21) left under fire.
+      const retreated = new Set(result.outcomes.flatMap((outcome) => {
+        if (outcome.kind === "battle") return outcome.retreats.map((retreat) => retreat.unitId);
+        return outcome.kind === "bounced-move" && outcome.retreatedTo !== undefined ? [outcome.order.unitId] : [];
+      }));
       for (const faction of scenario.factions) {
         const lostUnits = unitCount(game, faction.id) < unitCount(before, faction.id);
-        if (holdsObjective(before, faction.id) && !holdsObjective(game, faction.id) && !lostUnits) abandonments += 1;
+        const drivenOut = Object.values(before.state.units).some((unit) => unit.factionId === faction.id && retreated.has(unit.id));
+        if (holdsObjective(before, faction.id) && !holdsObjective(game, faction.id) && !lostUnits && !drivenOut) abandonments += 1;
       }
       if (session.phase === "game-over") {
         decided += 1;

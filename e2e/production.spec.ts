@@ -16,9 +16,8 @@ test("the production build plays without test fixtures or console errors", async
   await page.getByRole("button", { name: "Start Campaign" }).click();
   await expect(page.locator(".map-vector")).toBeVisible();
   await expect(page.locator(".terrain-layer")).toHaveAttribute("data-renderer", "webgl", { timeout: 15000 });
-  await expect(page.locator(".unit-counter")).toHaveCount(25);
-  await page.getByRole("button", { name: "Submit Orders" }).filter({ visible: true }).click();
-  await page.getByRole("button", { name: "Reveal and Resolve" }).click();
+  await expect(page.locator(".unit-counter")).toHaveCount(35);
+  await page.getByRole("button", { name: "End Turn" }).filter({ visible: true }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Turn resolution" })).toBeVisible();
   expect(errors).toEqual([]);
 });

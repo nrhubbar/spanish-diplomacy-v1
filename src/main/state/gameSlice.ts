@@ -2,7 +2,7 @@ import { createAction, createReducer } from "@reduxjs/toolkit";
 import { initialGameState } from "../engine/resolution";
 import type { ActorKind, FactionId, Scenario, ScenarioId, TerritoryId, UnitId } from "../engine/types";
 import type { ScenarioRegistry } from "../scenarios/registry";
-import { advance, lockSubmission, nextTurn, resolve } from "./coordinator";
+import { advance, lockSubmission, nextTurn } from "./coordinator";
 import {
   cancelOrder,
   chooseOrder,
@@ -46,8 +46,7 @@ export const toggleOrderMenu = createAction("game/toggleOrderMenu");
 export const chooseOrderKind = createAction<OrderKind>("game/chooseOrderKind");
 export const cancelOrderStage = createAction("game/cancelOrderStage");
 export const removePlannedOrder = createAction<UnitId>("game/removePlannedOrder");
-export const submitOrders = createAction("game/submitOrders");
-export const revealAndResolve = createAction("game/revealAndResolve");
+export const endTurn = createAction("game/endTurn");
 export const startNextTurn = createAction("game/startNextTurn");
 
 function setupFor(scenario: Scenario): Session {
@@ -128,16 +127,12 @@ export function createGameReducer(dependencies: GameReducerDependencies) {
         set(inPlanning(state.session, (_scenario, planning) => cancelOrder(planning))))
       .addCase(removePlannedOrder, (state, { payload }) =>
         set(inPlanning(state.session, (_scenario, planning) => removeOrder(planning, payload))))
-      .addCase(submitOrders, (state) =>
+      .addCase(endTurn, (state) =>
         set(inPlanning(state.session, (scenario, planning) => advance(
           scenario,
           lockSubmission(scenario, planning.game, { factionId: planning.factionId, orders: planning.draft.orders }),
           planning.factionId
         ))))
-      .addCase(revealAndResolve, (state) => {
-        const session = state.session;
-        return session.phase === "ready-to-resolve" ? set(resolve(scenarioOf(session.game.scenarioId), session.game)) : state;
-      })
       .addCase(startNextTurn, (state) => {
         const session = state.session;
         return session.phase === "resolution"

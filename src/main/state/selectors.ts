@@ -1,4 +1,5 @@
-import type { FactionId, MoveOrder, Scenario } from "../engine/types";
+import type { FactionId, GameState, MoveOrder, Scenario } from "../engine/types";
+import { victoryProgress } from "../engine/victory";
 import type { Session } from "./session";
 
 export interface SubmissionStatus {
@@ -35,4 +36,41 @@ export function selectRevealedOrders(session: Session): readonly RevealedOrders[
     byFaction.set(order.factionId, [...(byFaction.get(order.factionId) ?? []), order]);
   }
   return [...byFaction].map(([factionId, orders]) => ({ factionId, orders }));
+}
+
+export interface VictoryMeasure {
+  /** How many the faction holds now. */
+  readonly held: number;
+  /** How many it must hold to win. */
+  readonly needed: number;
+  /** How many count toward victory in this scenario. */
+  readonly total: number;
+}
+
+export interface VictoryStanding {
+  readonly cities: VictoryMeasure;
+  readonly factionId: FactionId;
+  readonly territories: VictoryMeasure;
+}
+
+/**
+ * One faction's live standing against the scenario's victory thresholds. Counts come from
+ * the engine's `victoryProgress`, so the Briefing always agrees with how victory is judged.
+ */
+export function selectVictoryStanding(scenario: Scenario, state: GameState, factionId: FactionId): VictoryStanding {
+  const entry = victoryProgress(scenario, state).find((candidate) => candidate.factionId === factionId);
+  if (entry === undefined) throw new Error(`Unknown faction "${factionId}".`);
+  return {
+    cities: {
+      held: entry.citiesControlled,
+      needed: entry.cityThreshold,
+      total: scenario.cities.filter((city) => city.countsForVictory).length
+    },
+    factionId,
+    territories: {
+      held: entry.territoriesControlled,
+      needed: entry.territoryThreshold,
+      total: scenario.territories.filter((territory) => territory.countsForVictory).length
+    }
+  };
 }
