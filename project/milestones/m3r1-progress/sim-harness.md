@@ -83,7 +83,7 @@
   - Baseline: decided 50 percent [29.9, 70.1]; freezes 50 percent; stalled 60 percent; median length 14.5.
   - Baseline wins of decided games: Republic 50, Northern command 40, Southern command 10.
   - With a works cap of 2: decided 75 percent; freezes 25; stalled 35.
-  - Paired difference: freezes -25.0 points [-53.0, +3.0], stalled -25.0 [-49.1, -0.9], Republic win share +20.0 [+2.0, +38.0].
+  - Paired difference, with CP3's Student-t intervals: freezes -25.0 points [-54.9, +4.9], stalled -25.0 [-50.7, +0.8], Republic win share +20.0 [+0.8, +39.2]. CP2 first reported normal intervals: freezes [-53.0, +3.0], stalled [-49.1, -0.9], Republic [+2.0, +38.0].
 - Parity with the deleted soak: `node build/sim-cli/sim.mjs --games 200 --turns 30` reproduces the soak's recorded Revision 7 numbers exactly.
   - Seeds 1-200 at 30 turns.
   - 116 stalled (58.0 percent); 103 decided.
@@ -106,3 +106,33 @@
 **Outside my ownership:**
 - `vitest.config.ts`: the coverage include (CP1), the exclude that drops `src/sim/test/**`, and the `testTimeout` comment.
 - `src/test/setup.ts`: one comment that mentioned the soak.
+
+## CP3: review fixes
+
+**Done:**
+1. Paired intervals use Student's t on n - 1 degrees of freedom. The quantile is a table up to 30 degrees, then the Cornish-Fisher expansion, within 1e-4 of the exact value. A comparison with fewer than 2 pairs is `null`.
+2. The blunder seam is renamed `blunderChancePointer`, expected at `/ai/blunderChance` (coordinator correction). It turns blunders off with JSON Patch `add`, so it works whether or not the scenario states the chance; both cases are tested.
+3. Bookkeeping reads the board before and after each turn, not outcome kinds:
+   - Units lost: units present before and absent after, by id. Units that appear mid-game no longer mask a loss, in the losses or in S3's "lost a unit" test.
+   - Men lost: the men of units that left the board, plus each remaining unit's drop in men. Units that appear count neither way, and a gain never offsets a loss.
+   - S3: units and objectives are checked against the scenario index's territory ids. A unit or objective outside them stops the run with an error. Each game records `objectiveChecks`, and the smoke test requires the total to be above 0, so S3 cannot pass vacuously.
+   - Quiet turns compare territory-level control before and after the turn, over the scenario's territory ids only, so sub-territory or city changes do not count.
+   - Outcome kinds are still read for battles by column and result, retreats (S3's "driven out"), turn-1 orders and the victory. The spec lists these under "Re-check at the contract merge".
+4. The pool rejects when a worker thread exits with a game unfinished. `cli.ts` wires the thread's `exit` event.
+5. The worker-count test now holds replies and releases them highest seed first (4, 3, 2, 1, 5). It checks that `summary.json` and `games.jsonl` are the same as a one-worker run, so it tests reordering for real.
+6. Factions are collected across all cells, in order of first appearance. This is tested with a variant that adds a faction.
+
+**Decisions:**
+13. Battles do not break a quiet stretch. The review asked that territory-level control changes and battles count. Counting battles would change S2's meaning: over 200 games of 30 turns, stalled drops from 116 to 85, and the coordinator asked for comparability with Revision 7. So only territory control counts, read from the board. The integrator can switch it in one line in `playGame` (`quiet = changed ? 0 : quiet + 1`).
+14. `men` is now gross losses taken from the board, not the sum of battle reports, so per-game numbers moved slightly. For example, the Republic loses 22,075 men per game over 200 games of 30 turns.
+
+**Checks:**
+- `npm run lint`, `npm run typecheck` and `npm run build`: exit 0.
+- `npm test`: exit 0. 33 files and 518 tests; coverage 98.8 percent statements and 94.5 percent branches.
+- ASCII check: clean.
+- Real threads: seeds 1-30 with the variant, on 1 thread and on 9, give byte-identical `summary.json` and `games.jsonl`.
+- Parity still exact. 200 games of 30 turns give:
+  - 103 decided and 116 stalled;
+  - wins: Republic 42, Northern command 48, Southern command 13;
+  - S1 0 and S3 0, with 12,886 S3 checks made.
+- 20-seed variant rerun: the same cells as CP2. Only the intervals changed (corrected above). The stalled difference's interval now crosses 0.
