@@ -126,3 +126,10 @@
 - regenerate `map.schema.json` after both streams merge.
 
 **Checks after the follow-up:** lint passed, typecheck passed, test:unit passed (30 files, 566 tests).
+
+### CP2 note: generated topology
+
+- CT-32. `m3r1-map-provinces`' generated `sub-territory-topology.json` is the single source of truth for `subTerritoryBorders`, `connections[].entry` and city-to-sub-territory assignment. My hand-written values are placeholders, to be replaced at merge, and I spent no more effort on them.
+  - I checked that nothing depends on the exact values.
+  - No test reads Spain's borders, entries or city assignments. `spainData.test.ts` checks only the D8 ids, capitals, start holders and the system blocks.
+  - The loader rules are generic. L16 checks that a city's sub-territory lies in the city's territory. L19 checks that a border joins two known, different sub-territories once, and that each entry lies on its own side of the connection. Neither rule requires an entry pair to be a border, so sea entries and the pipeline's overrides (`melilla`-`malaga`, `valencia`-`mallorca`, `badajoz`-`sevilla`) pass, and so do sea borders inside a territory (`mallorca`-`menorca`, `mallorca`-`ibiza`).
