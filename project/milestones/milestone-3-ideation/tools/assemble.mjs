@@ -71,7 +71,7 @@ for (const q of questions) {
   q.idea = String(q.idea);
   const recIdx = q.options.findIndex((o) => o.recommended);
   if (recIdx > 0) { const [r] = q.options.splice(recIdx, 1); q.options.unshift(r); }
-  q.options.forEach((o, i) => { if (i > 0 && o.recommended) delete o.recommended; });
+  if (!q.multi) q.options.forEach((o, i) => { if (i > 0 && o.recommended) delete o.recommended; });
   if (recIdx < 0) console.warn(`no recommended option in ${q.id}`);
   q.groupTitle = /^\d+$/.test(q.idea) ? `Idea ${q.idea}: ${ideaTitles[q.idea]}` : q.idea.startsWith("mismatch-") ? `Mismatch (${q.idea.slice(9)})` : q.idea === "sequencing" ? "Sequencing" : "Tensions";
 }

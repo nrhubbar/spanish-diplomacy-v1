@@ -69,9 +69,12 @@
     "text": "Who holds sub-regions that no army stands in at the start, such as Caceres (Nationalist on 31 July) and Alava (Nationalist)?",
     "options": [
       {
-        "label": "The historical holder, from a start-of-game control table in scenario data, whatever the parent territory's controller",
+        "label": "The historical holder, from a start-of-game control table in scenario data, whatever the parent territory's controller; rule P7 still lets an unopposed enemy take one ungarrisoned sub-region a turn, so the Republic could walk into Caceres in a turn or two",
         "recommended": true,
         "rationale": "Keeps the 31 July snapshot honest; otherwise the Republic gets Caceres and Alava free from territory-level control."
+      },
+      {
+        "label": "The historical holder, and an ungarrisoned sub-region can only be taken from an adjacent sub-region the attacker already holds"
       },
       {
         "label": "The territory's controller, and contested territories split by where armies stand"
@@ -150,7 +153,7 @@
         "rationale": "The front you meet is the one facing your approach, and the attack's origin then feeds the split rule; today's M11 would make every such move a non-fighting reinforcement."
       },
       {
-        "label": "It always joins its own zone; only a Push order from inside fights"
+        "label": "It always joins its own zone; only an attack from a neighbouring sub-region fights (a Push order, if Q-TEN-2 chooses it)"
       },
       {
         "label": "The player chooses: reinforce the zone or attack the enemy zone"
@@ -354,7 +357,7 @@
     "multi": false,
     "options": [
       {
-        "label": "No new rule: a surrounded city is cut off from supply (mismatch c), so it stops paying income and cannot recruit or replenish; Fortifications and Popular resistance already strengthen its defence",
+        "label": "No new rule: a surrounded city is cut off from supply (mismatch c), so it stops paying income and cannot recruit or replenish; Fortifications and digging in already strengthen its defence",
         "recommended": true,
         "rationale": "Most of a siege falls out of sub-regions plus supply; a separate siege battle type is a second combat system."
       },

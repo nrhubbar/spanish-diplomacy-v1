@@ -282,7 +282,7 @@
   {
     "id": "Q-WX-7",
     "idea": 12,
-    "text": "Should the game show a calendar date for every turn?",
+    "text": "How should the turn's date be shown? (Turn length itself is Q-TEN-4.)",
     "multi": false,
     "options": [
       {

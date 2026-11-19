@@ -152,7 +152,7 @@ Stop armies being stationed in a city rather than the territory, and make cities
 
 ### Fit with today's engine
 - **Units.** Remove `UnitDefinition.cityId` and `UnitState.cityId`, and loader rule L4. Armies are in a territory, and under idea 7 in their faction's zone.
-- **Cities in scenario.json.** Add `cities[].subRegionId` (idea 7), `coastal`, `startingBuildings`, and `buildable[]`. Add a scenario `buildings[]` catalogue: `id`, `turns`, `cost`, and an effect kind from a small fixed set (`recruit-limit`, `yield`, `works`, `port`, `airfield`, `rail-yard`). Effects are data and kinds are code; this keeps the abstraction minimal (coding principles).
+- **Cities in scenario.json.** Add `cities[].subRegionId` (idea 7), `coastal`, `startingBuildings`, and `buildable[]`. Add a scenario `buildings[]` catalogue: `id`, `turns`, `cost`, and an effect kind from a small fixed set (`recruit-limit`, `yield`, `works`, later `airfield` and `rail-yard`; ports are map features, Q-CITY-7). Effects are data and kinds are code; this keeps the abstraction minimal (coding principles).
 - **GameState.** Add `cities[id].buildings` and `cities[id].building` (an in-progress build and its turns left).
 - **Orders.** A `build` order is hidden until reveal and paid at reveal, with a refund if the city is lost before it completes.
 - **Rules.**
@@ -190,7 +190,7 @@ Choose a city and its buildings to see its yield each turn and the turns to fini
 - No scenario field, M-rule, or engine module mentions supply.
 
 **Proposed resolution.** Add the smallest trace rule, and only for the economy:
-- **Supplied ground.** A sub-region (or territory, before idea 7) is supplied when a path runs through ground its faction controls to a controlled city tagged `supplySource` in `scenario.json`. Sea legs count only between ports the faction controls.
+- **Supplied ground.** A sub-region (or territory, before idea 7) is supplied when a path runs through ground its faction controls to a controlled city or port feature tagged `supplySource` in `scenario.json` (Ceuta and Melilla are port features, Q-CITY-7). Sea legs count only between ports the faction controls.
 - **Effects in Milestone 3:**
   - unsupplied ground yields nothing;
   - unsupplied cities cannot recruit or replenish;

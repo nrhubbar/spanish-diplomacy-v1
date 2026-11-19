@@ -139,7 +139,7 @@ One weather roll for all of Spain would therefore look wrong.
 | C. Fixed seasonal rule, no roll | For example, Meseta and Cantabrian attacks -1 from December to February (Arriba Espana style). | Deterministic and cheapest. Loses the roll and the monthly odds the owner asked for. | Low | Medium |
 | D. Defer | Wait for movement points (idea 6) and aircraft (idea 8), since most historical weather effects act through them. | No balance risk now, but the owner's idea waits. | None | n/a |
 
-**Recommendation:** Option A, with the soft effect set (Mud -1, Snow -1, Severe cold -2, no digging-in in snow or cold).
+**Recommendation:** Option A, with the soft effect set (on today's d6: Mud -1, Snow -1, Severe cold -2; on the d20 from idea 9: -3, -3, -6; no digging-in in snow or cold).
 - Air and movement effects stay as dormant hooks for ideas 8 and 6.
 - Under the soft set, Hot and Rain are display-only until then: a badge and a forecast, with no rule effect.
 - Weather ships only once a harness run shows the freeze rate has not risen.

@@ -339,10 +339,10 @@ figure.mockup figcaption { font-size: 0.8rem; color: var(--ink-soft); margin-top
     var filled = 0;
     questions.forEach(function (q) {
       if (isAnswered(q.id)) return;
-      var idx = -1; (q.options || []).forEach(function (o, i) { if (o.recommended && idx < 0) idx = i; });
-      if (idx < 0) return;
+      var picks = []; (q.options || []).forEach(function (o, i) { if (o.recommended && (q.multi || picks.length === 0)) picks.push(i); });
+      if (!picks.length) return;
       var prev = answers[q.id] || { notes: "" };
-      answers[q.id] = { choices: [idx], notes: prev.notes || "" }; filled += 1;
+      answers[q.id] = { choices: picks, notes: prev.notes || "" }; filled += 1;
     });
     save();
     Array.prototype.forEach.call(document.querySelectorAll("fieldset.q"), function (fs) { applyAnswer(fs, byId[fs.getAttribute("data-qid")]); });

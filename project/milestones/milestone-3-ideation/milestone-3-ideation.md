@@ -27,7 +27,7 @@ The order matters more than the ideas themselves. Three of the 13 are platform w
 |---|---|---|
 | 11 Harness | `npm run sim` CLI over worker threads, sharing one game loop with the soak; JSON, CSV, and HTML output with Wilson intervals; paired-seed A/B variants | <span class="pill m3">M3 rev 1</span> |
 | 13 Generic engine | Numbers in data, algorithms as named, tested modules picked by a `rules` object; AI weights move to data now (put to the owner as Q-DATA-1) | <span class="pill m3">M3 rev 1</span> |
-| 10 Process | A CI gate on every push, a short steering file, a contract stream first, a file-ownership table, and the harness as a merge gate; at most 3 to 4 streams | <span class="pill m3">M3 rev 1</span> |
+| 10 Process | A CI gate on every push, a short steering file, a contract stream first, a file-ownership table, and an owner-reviewed harness check at each merge; at most 3 to 4 streams | <span class="pill m3">M3 rev 1</span> |
 | 3 Timed turns | Each player's clock runs only on their own planning screen; on timeout, planned orders lock and other armies hold; Off, 1, 5, 10 min now | <span class="pill m3">M3 rev 1</span> |
 | 7 Sub-partitioning | About 55 sub-regions (the 1936 provinces, with overrides) decide control, cities, income, and supply; moves and battles stay on the 18 territories | <span class="pill m3">M3 rev 2</span> |
 | 9 d20 | An 11-grade ladder; each grade sets losses (10, 20, or 35 percent), morale, and ground taken; the chance to take a territory stays within 5 points of today | <span class="pill m3">M3 rev 2</span> |
@@ -438,15 +438,16 @@ Pick Andalucia, Aragon or Extremadura, an attacker and its origin, and a graded 
 
 **Q-PART-8** When an army moves into a partitioned territory where its own faction already has a zone, does it fight?
 1. It attacks if an enemy sub-region borders the territory it came from; otherwise it joins its own zone as a reinforcement **(Recommended)** - The front you meet is the one facing your approach, and the attack's origin then feeds the split rule; today's M11 would make every such move a non-fighting reinforcement.
-2. It always joins its own zone; only a Push order from inside fights
+2. It always joins its own zone; only an attack from a neighbouring sub-region fights (a Push order, if Q-TEN-2 chooses it)
 3. The player chooses: reinforce the zone or attack the enemy zone
 4. Other / notes: ____
 
 **Q-PART-9** Who holds sub-regions that no army stands in at the start, such as Caceres (Nationalist on 31 July) and Alava (Nationalist)?
-1. The historical holder, from a start-of-game control table in scenario data, whatever the parent territory's controller **(Recommended)** - Keeps the 31 July snapshot honest; otherwise the Republic gets Caceres and Alava free from territory-level control.
-2. The territory's controller, and contested territories split by where armies stand
-3. Add a small garrison army wherever history needs one
-4. Other / notes: ____
+1. The historical holder, from a start-of-game control table in scenario data, whatever the parent territory's controller; rule P7 still lets an unopposed enemy take one ungarrisoned sub-region a turn, so the Republic could walk into Caceres in a turn or two **(Recommended)** - Keeps the 31 July snapshot honest; otherwise the Republic gets Caceres and Alava free from territory-level control.
+2. The historical holder, and an ungarrisoned sub-region can only be taken from an adjacent sub-region the attacker already holds
+3. The territory's controller, and contested territories split by where armies stand
+4. Add a small garrison army wherever history needs one
+5. Other / notes: ____
 
 ---
 
@@ -497,7 +498,7 @@ Yields attach to the smallest place that exists: a city, a sub-region after idea
 
 ### Fit with today's engine
 - **Units.** Remove `UnitDefinition.cityId` and `UnitState.cityId`, and loader rule L4. Armies are in a territory, and under idea 7 in their faction's zone.
-- **Cities in scenario.json.** Add `cities[].subRegionId` (idea 7), `coastal`, `startingBuildings`, and `buildable[]`. Add a scenario `buildings[]` catalogue: `id`, `turns`, `cost`, and an effect kind from a small fixed set (`recruit-limit`, `yield`, `works`, `port`, `airfield`, `rail-yard`). Effects are data and kinds are code; this keeps the abstraction minimal (coding principles).
+- **Cities in scenario.json.** Add `cities[].subRegionId` (idea 7), `coastal`, `startingBuildings`, and `buildable[]`. Add a scenario `buildings[]` catalogue: `id`, `turns`, `cost`, and an effect kind from a small fixed set (`recruit-limit`, `yield`, `works`, later `airfield` and `rail-yard`; ports are map features, Q-CITY-7). Effects are data and kinds are code; this keeps the abstraction minimal (coding principles).
 - **GameState.** Add `cities[id].buildings` and `cities[id].building` (an in-progress build and its turns left).
 - **Orders.** A `build` order is hidden until reveal and paid at reveal, with a refund if the city is lost before it completes.
 - **Rules.**
@@ -549,7 +550,7 @@ Choose a city and its buildings to see its yield each turn and the turns to fini
 4. Other / notes: ____
 
 **Q-CITY-5** Should besieged cities (Oviedo, the Toledo Alcazar) get a rule of their own?
-1. No new rule: a surrounded city is cut off from supply (mismatch c), so it stops paying income and cannot recruit or replenish; Fortifications and Popular resistance already strengthen its defence **(Recommended)** - Most of a siege falls out of sub-regions plus supply; a separate siege battle type is a second combat system.
+1. No new rule: a surrounded city is cut off from supply (mismatch c), so it stops paying income and cannot recruit or replenish; Fortifications and digging in already strengthen its defence **(Recommended)** - Most of a siege falls out of sub-regions plus supply; a separate siege battle type is a second combat system.
 2. Yes: a Here I Stand-style siege where a city keeps its holder until a successful assault
 3. Drop this idea or defer it
 4. Other / notes: ____
@@ -1027,7 +1028,6 @@ The owner asked for new unit types (cavalry, tanks, aircraft, anti-air, artiller
 - **`unitTypes[]`** gains optional fields:
   - `support { rollPerPoints: 3, maxRoll: 3 }`;
   - `canAttackAlone: false`;
-  - `trainingTurns`;
   - `trainingTurns` per unit type, with faster militia set by place (a `trainingTurns` value on a territory's `recruitment` entry, Q-RECR-4), not by faction;
   - `movement`, only with idea 6 B.
 - **M12 is unchanged.** The artillery points are the M12 rounded values, so depleted guns give less.
@@ -1071,7 +1071,7 @@ Build an attacking stack from the four real types (values from `scenario.json`) 
 
 **Q-UNIT-1** Which new unit types should Milestone 3 add to today's four? Choose all that apply; leave all unticked to add none. *(choose all that apply)*
 1. Artillery group **(Recommended)** - The arm with the clearest historical weight that fits the battle table; the owner's roll-bonus rule needs it.
-2. Air as faction air wings (not counters) - Air mattered (the airlift, the Condor Legion), and abstract wings avoid crowding the map.
+2. Air as faction air wings (not counters) **(Recommended)** - Air mattered (the airlift, the Condor Legion), and abstract wings avoid crowding the map.
 3. Cavalry (both sides fielded it; the Nationalist cavalry division charged at Alfambra in February 1938)
 4. Tanks (T-26, Panzer I, CV-33; few and rarely decisive)
 5. Anti-air as a unit (the 88 mm mostly served as anti-tank artillery)
@@ -1292,7 +1292,7 @@ One weather roll for all of Spain would therefore look wrong.
 | C. Fixed seasonal rule, no roll | For example, Meseta and Cantabrian attacks -1 from December to February (Arriba Espana style). | Deterministic and cheapest. Loses the roll and the monthly odds the owner asked for. | Low | Medium |
 | D. Defer | Wait for movement points (idea 6) and aircraft (idea 8), since most historical weather effects act through them. | No balance risk now, but the owner's idea waits. | None | n/a |
 
-**Recommendation:** Option A, with the soft effect set (Mud -1, Snow -1, Severe cold -2, no digging-in in snow or cold).
+**Recommendation:** Option A, with the soft effect set (on today's d6: Mud -1, Snow -1, Severe cold -2; on the d20 from idea 9: -3, -3, -6; no digging-in in snow or cold).
 - Air and movement effects stay as dormant hooks for ideas 8 and 6.
 - Under the soft set, Hot and Rain are display-only until then: a badge and a forecast, with no rule effect.
 - Weather ships only once a harness run shows the freeze rate has not risen.
@@ -1347,7 +1347,7 @@ Choose a month and a zone to see the weather odds, the effects, and the expected
 3. Movement effects only; no attack modifiers
 4. Other / notes: ____
 
-**Q-WX-7** Should the game show a calendar date for every turn?
+**Q-WX-7** How should the turn's date be shown? (Turn length itself is Q-TEN-4.)
 1. Yes: two-week turns from 31 July 1936, shown as a date range (Turn 5, 25 Sep to 8 Oct 1936); a turn's month is its midpoint's month **(Recommended)** - Weather odds need a month, and dates let players connect turns to history (Guadalajara is turns 16-17).
 2. Show only the month and season, not exact dates
 3. Keep the date on turn 1 only (today's rule B15) and track the month internally
@@ -1775,7 +1775,7 @@ Proposed division:
 - No scenario field, M-rule, or engine module mentions supply.
 
 **Proposed resolution.** Add the smallest trace rule, and only for the economy:
-- **Supplied ground.** A sub-region (or territory, before idea 7) is supplied when a path runs through ground its faction controls to a controlled city tagged `supplySource` in `scenario.json`. Sea legs count only between ports the faction controls.
+- **Supplied ground.** A sub-region (or territory, before idea 7) is supplied when a path runs through ground its faction controls to a controlled city or port feature tagged `supplySource` in `scenario.json` (Ceuta and Melilla are port features, Q-CITY-7). Sea legs count only between ports the faction controls.
 - **Effects in Milestone 3:**
   - unsupplied ground yields nothing;
   - unsupplied cities cannot recruit or replenish;

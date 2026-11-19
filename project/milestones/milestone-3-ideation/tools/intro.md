@@ -25,7 +25,7 @@ The order matters more than the ideas themselves. Three of the 13 are platform w
 |---|---|---|
 | 11 Harness | `npm run sim` CLI over worker threads, sharing one game loop with the soak; JSON, CSV, and HTML output with Wilson intervals; paired-seed A/B variants | <span class="pill m3">M3 rev 1</span> |
 | 13 Generic engine | Numbers in data, algorithms as named, tested modules picked by a `rules` object; AI weights move to data now (put to the owner as Q-DATA-1) | <span class="pill m3">M3 rev 1</span> |
-| 10 Process | A CI gate on every push, a short steering file, a contract stream first, a file-ownership table, and the harness as a merge gate; at most 3 to 4 streams | <span class="pill m3">M3 rev 1</span> |
+| 10 Process | A CI gate on every push, a short steering file, a contract stream first, a file-ownership table, and an owner-reviewed harness check at each merge; at most 3 to 4 streams | <span class="pill m3">M3 rev 1</span> |
 | 3 Timed turns | Each player's clock runs only on their own planning screen; on timeout, planned orders lock and other armies hold; Off, 1, 5, 10 min now | <span class="pill m3">M3 rev 1</span> |
 | 7 Sub-partitioning | About 55 sub-regions (the 1936 provinces, with overrides) decide control, cities, income, and supply; moves and battles stay on the 18 territories | <span class="pill m3">M3 rev 2</span> |
 | 9 d20 | An 11-grade ladder; each grade sets losses (10, 20, or 35 percent), morale, and ground taken; the chance to take a territory stays within 5 points of today | <span class="pill m3">M3 rev 2</span> |

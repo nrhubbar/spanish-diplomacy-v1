@@ -96,7 +96,6 @@ The owner asked for new unit types (cavalry, tanks, aircraft, anti-air, artiller
 - **`unitTypes[]`** gains optional fields:
   - `support { rollPerPoints: 3, maxRoll: 3 }`;
   - `canAttackAlone: false`;
-  - `trainingTurns`;
   - `trainingTurns` per unit type, with faster militia set by place (a `trainingTurns` value on a territory's `recruitment` entry, Q-RECR-4), not by faction;
   - `movement`, only with idea 6 B.
 - **M12 is unchanged.** The artillery points are the M12 rounded values, so depleted guns give less.
