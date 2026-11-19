@@ -1,5 +1,7 @@
 # Milestone 3: Recruitment, Reinforcements, And Income
 
+> **Superseded** by `milestone-3-rev-1-tasks.md` (19 November 2026). Kept for history only.
+
 ## 1. Goal
 
 Milestone 3 adds a small, deterministic wartime economy to the completed Milestone 2 scenario. Players earn income from controlled objectives, secretly spend it on recruitment and reinforcement orders, and receive new or restored formations through the same simultaneous submission and resolution pipeline.
