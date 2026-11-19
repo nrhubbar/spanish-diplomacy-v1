@@ -19,6 +19,7 @@ import type {
   ResourceDefinition,
   SubTerritoryDefinition
 } from "./economy";
+import type { RuleModule } from "../modules";
 import type { RulesetId, RulesSelection } from "./rules";
 import type {
   CityDefinition,
@@ -84,6 +85,8 @@ export interface Scenario {
   readonly id: ScenarioId;
   readonly improvements?: ImprovementRules;
   readonly index: ScenarioIndex;
+  /** The modules `rules` selects, resolved by the loader, in `ruleAreas` order. */
+  readonly modules: readonly RuleModule[];
   readonly movement?: MovementRules;
   readonly name: string;
   readonly recruitment?: RecruitmentRules;

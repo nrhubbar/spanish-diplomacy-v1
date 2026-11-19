@@ -1,18 +1,18 @@
-import { knownModules, moduleBlocks, type ScenarioBlock } from "../../engine/modules";
+import type { ModuleRegistry, ScenarioBlock } from "../../engine/modules";
 import { ruleAreas } from "../../engine/types";
 import type { ModularScenarioDocument } from "../schema/scenarioSchema";
 import { idSet, type Issues } from "./issues";
 import { checkSubTerritories } from "./subTerritoryChecks";
 
 /** Rules L14-L17 and L24 for `m3-modular` packages. */
-export function checkModular(document: ModularScenarioDocument, issues: Issues): void {
+export function checkModular(document: ModularScenarioDocument, issues: Issues, modules: ModuleRegistry): void {
   for (const area of ruleAreas) {
     const moduleId = document.rules[area];
-    if (!knownModules(area).has(moduleId)) {
+    if (!modules.known(area).has(moduleId)) {
       issues.add(`rules.${area}: unknown ${area} module "${moduleId}" (L14)`);
       continue;
     }
-    for (const block of moduleBlocks(moduleId)) {
+    for (const block of modules.require(area, moduleId).blocks) {
       if (!hasBlock(document, block)) issues.add(`${block}: required by the ${area} module "${moduleId}" (L15)`);
     }
   }

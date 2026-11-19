@@ -1,4 +1,5 @@
 import type { ZodError } from "zod";
+import { builtInModuleRegistry, type ModuleRegistry } from "../engine/modules";
 import { initialGameState } from "../engine/resolution";
 import type { CityId, Scenario, TerritoryId, UnitTypeId } from "../engine/types";
 import { victoryProgress } from "../engine/victory";
@@ -74,6 +75,8 @@ export interface PackageInput {
   readonly assetPaths: ReadonlySet<string>;
   readonly mapDocument: unknown;
   readonly mapPath: string;
+  /** The rule modules known to this package: the built-in ones plus its plugin's (E3). */
+  readonly modules?: ModuleRegistry;
   readonly scenarioDocument: unknown;
   readonly scenarioPath: string;
 }
@@ -89,11 +92,12 @@ export function loadPackage(input: PackageInput): ScenarioPackage {
     throw new PackageValidationError(input.mapPath, formatZodIssues(mapResult.error));
   }
 
-  const scenarioIssues = checkScenario(scenarioResult.data);
+  const modules = input.modules ?? builtInModuleRegistry;
+  const scenarioIssues = checkScenario(scenarioResult.data, modules);
   if (scenarioIssues.length > 0) {
     throw new PackageValidationError(input.scenarioPath, scenarioIssues);
   }
-  const scenario = indexScenario(scenarioResult.data);
+  const scenario = indexScenario(scenarioResult.data, modules);
   const startIssues = checkStartingPosition(scenario);
   const mapIssues = checkMap(scenarioResult.data, mapResult.data, input.assetPaths);
   if (startIssues.length + mapIssues.length > 0) {
@@ -113,11 +117,11 @@ function formatZodIssues(error: ZodError): readonly string[] {
   return error.issues.map((issue) => `${issue.path.join(".") || "(root)"}: ${issue.message}`);
 }
 
-function checkScenario(document: ScenarioDocument): readonly string[] {
+function checkScenario(document: ScenarioDocument, modules: ModuleRegistry): readonly string[] {
   const issues = createIssues();
   checkCore(document, issues);
   if (document.ruleset === "m3-modular") {
-    checkModular(document, issues);
+    checkModular(document, issues, modules);
     checkSystems(document, issues);
   }
   return issues.list;

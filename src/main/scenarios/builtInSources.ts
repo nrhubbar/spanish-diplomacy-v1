@@ -1,3 +1,4 @@
+import type { ScenarioPlugin } from "../engine/modules";
 import type { PackageSources } from "./registry";
 
 /**
@@ -6,6 +7,7 @@ import type { PackageSources } from "./registry";
  */
 export const builtInSources: PackageSources = {
   maps: import.meta.glob("/src/scenarios/*/map.json", { eager: true, import: "default" }),
+  plugins: import.meta.glob<ScenarioPlugin>("/src/scenarios/*/plugin.ts", { eager: true, import: "plugin" }),
   rawAssets: import.meta.glob<string>(["/assets/maps/**/*.svg", "/assets/icons/**/*.svg"], {
     import: "default",
     query: "?raw"

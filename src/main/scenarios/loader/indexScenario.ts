@@ -1,3 +1,4 @@
+import { type ModuleRegistry, selectModules } from "../../engine/modules";
 import { m2StrengthRules } from "../../engine/types";
 import type {
   CityDefinition,
@@ -25,7 +26,7 @@ import { emptySystems, indexSystems, indexUnitTypes, type ModularParts } from ".
 
 
 /** Indexes a validated package. Under `m2-strength` the Milestone 3 systems are empty (declog D3). */
-export function indexScenario(document: ScenarioDocument): Scenario {
+export function indexScenario(document: ScenarioDocument, modules: ModuleRegistry): Scenario {
   const modular = document.ruleset === "m3-modular" ? document : undefined;
   const parts: ModularParts = modular === undefined ? emptySystems() : indexSystems(modular);
   const byId = <Item extends { readonly id: string }>(items: readonly Item[] | undefined) => new Map((items ?? []).map((item) => [item.id, item]));
@@ -133,6 +134,7 @@ export function indexScenario(document: ScenarioDocument): Scenario {
       units: new Map(units.map((unit) => [unit.id, unit]))
     },
     name: document.name,
+    modules: selectModules(modules, modular?.rules ?? m2StrengthRules),
     rules: modular?.rules ?? m2StrengthRules,
     ruleset: document.ruleset,
     snapshotLabel: document.snapshotLabel,

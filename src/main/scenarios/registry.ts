@@ -1,3 +1,4 @@
+import { createModuleRegistry, type ModuleRegistry, type ScenarioPlugin } from "../engine/modules";
 import type { ScenarioId, UnitTypeId } from "../engine/types";
 import { checkGeometry, loadPackage, type MapRect, PackageValidationError, type ScenarioPackage } from "./loader";
 
@@ -7,6 +8,8 @@ import { checkGeometry, loadPackage, type MapRect, PackageValidationError, type 
  */
 export interface PackageSources {
   readonly maps: Readonly<Record<string, unknown>>;
+  /** Each scenario folder's optional `plugin.ts` export `plugin` (E3), keyed by its path. */
+  readonly plugins?: Readonly<Record<string, ScenarioPlugin>>;
   readonly rawAssets: Readonly<Record<string, () => Promise<string>>>;
   readonly scenarios: Readonly<Record<string, unknown>>;
   readonly urlAssets: Readonly<Record<string, () => Promise<string>>>;
@@ -62,15 +65,26 @@ function mapReference(document: unknown): string | undefined {
   return typeof map === "string" ? map : undefined;
 }
 
+/** The modules a package may select: the built-in ones plus its plugin's. A clash is a package problem. */
+function packageModules(scenarioPath: string, plugin: ScenarioPlugin | undefined): ModuleRegistry {
+  try {
+    return createModuleRegistry(plugin === undefined ? [] : [plugin]);
+  } catch (error) {
+    throw new PackageValidationError(scenarioPath, [`plugin: ${error instanceof Error ? error.message : String(error)}`]);
+  }
+}
+
 export function createScenarioRegistry(...sourceSets: readonly PackageSources[]): ScenarioRegistry {
   const maps = new Map<string, unknown>();
   const rawAssets = new Map<string, () => Promise<string>>();
   const urlAssets = new Map<string, () => Promise<string>>();
   const scenarioDocuments: [string, unknown][] = [];
+  const plugins = new Map<string, ScenarioPlugin>();
   for (const sources of sourceSets) {
     for (const [path, value] of normalizeKeys(sources.maps)) maps.set(path, value);
     for (const [path, value] of normalizeKeys(sources.rawAssets)) rawAssets.set(path, value);
     for (const [path, value] of normalizeKeys(sources.urlAssets)) urlAssets.set(path, value);
+    for (const [path, value] of normalizeKeys(sources.plugins ?? {})) plugins.set(path, value);
     scenarioDocuments.push(...normalizeKeys(sources.scenarios));
   }
   const assetPaths = new Set([...rawAssets.keys(), ...urlAssets.keys()]);
@@ -81,7 +95,8 @@ export function createScenarioRegistry(...sourceSets: readonly PackageSources[])
     const reference = mapReference(scenarioDocument);
     const mapPath = reference === undefined ? "(missing map)" : resolveRelative(scenarioPath, reference);
     try {
-      const loaded = loadPackage({ assetPaths, mapDocument: maps.get(mapPath), mapPath, scenarioDocument, scenarioPath });
+      const modules = packageModules(scenarioPath, plugins.get(resolveRelative(scenarioPath, "plugin.ts")));
+      const loaded = loadPackage({ assetPaths, mapDocument: maps.get(mapPath), mapPath, modules, scenarioDocument, scenarioPath });
       if (packages.has(loaded.scenario.id)) {
         throw new PackageValidationError(scenarioPath, [`duplicate scenario id "${loaded.scenario.id}"`]);
       }
