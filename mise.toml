@@ -1,0 +1,61 @@
+# Toolchain for the game and its infrastructure. `mise install` (or `mise run setup`) gets
+# everything; CI uses the same file through jdx/mise-action.
+[tools]
+node = "24.17.0"
+git-lfs = "3.8.1"
+aws-cli = "2.41.1"
+
+[tasks.setup]
+description = "Install Git LFS hooks, pull LFS files, and install npm dependencies"
+run = [
+  "git lfs install --local",
+  "git lfs pull",
+  "npm ci",
+  "npm ci --prefix infra",
+]
+
+[tasks.dev]
+description = "Run the game at http://127.0.0.1:5173/assets/"
+run = "npm run dev"
+
+[tasks.verify]
+description = "Lint, typecheck, unit tests, build, and Playwright (what CI runs)"
+run = "npm run verify"
+
+[tasks."infra:check"]
+description = "Typecheck and synthesize the CDK app (no AWS credentials needed)"
+dir = "infra"
+run = ["npm run typecheck", "npm run synth"]
+
+[tasks."infra:diff"]
+description = "Diff the CDK stacks against the account"
+dir = "infra"
+run = "npm run diff"
+
+[tasks."infra:deploy"]
+description = "Deploy the CDK stacks and write infra/cdk-outputs.json"
+dir = "infra"
+run = "npm run deploy"
+
+[tasks.publish]
+description = "Upload build/dist to the site bucket and invalidate the HTML"
+run = "infra/scripts/publish-site.sh"
+
+[tasks.deploy]
+description = "Build, deploy infrastructure, publish, then dye- and smoke-test production (what CI runs on main)"
+run = [
+  "BUILD_COMMIT=\"$(git rev-parse HEAD)\" npm run build",
+  "mise run infra:deploy",
+  "mise run publish",
+  "mise run dye",
+  "mise run smoke",
+]
+
+[tasks.dye]
+description = "Wait until the live site serves this commit (GITHUB_SHA or HEAD) and all its assets"
+run = "infra/scripts/check-deployed-commit.sh"
+
+[tasks.smoke]
+description = "Play one turn against the live site in Chromium"
+env = { PROD_URL = "https://spanish-diplomacy.nicholas-hubbard.com/" }
+run = "npx playwright test e2e/production.spec.ts --project=chromium"

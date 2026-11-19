@@ -16,10 +16,47 @@ A browser strategy game inspired by Diplomacy: every player plans orders in secr
 
 ## Running
 
+Tools are pinned in `mise.toml` (Node, Git LFS, AWS CLI), and images, map sources, and visual baselines live in Git LFS.
+
 ```
-npm ci
+mise install         # once: the pinned toolchain
+mise run setup       # once per clone: LFS hooks and files, npm ci for the game and infra/
 npm run dev          # http://127.0.0.1:5173/assets/
 npm run verify       # lint, types, unit tests with coverage, build, and Playwright
+```
+
+## Deploying
+
+The game is live at https://spanish-diplomacy.nicholas-hubbard.com/. Every push to `main` deploys it through GitHub Actions (`.github/workflows/ci-cd.yml`):
+
+1. **Verify game** (Ubuntu): `npm run verify`, building with the commit SHA stamped into `<meta name="build-commit">`. The `build/dist` it produces is kept as an artifact.
+2. **Check infrastructure**: typecheck and `cdk synth` of `infra/`.
+3. **Deploy to AWS** (main only): `cdk deploy` of the stacks, then `infra/scripts/publish-site.sh` uploads that exact `build/dist` to S3 and invalidates the HTML.
+4. **Verify production**:
+   - Dye test: `infra/scripts/check-deployed-commit.sh` waits until the live site serves the pushed commit, and checks every asset that commit's HTML references.
+   - Smoke test: `e2e/production.spec.ts` plays a turn.
+
+Every branch push and pull request runs steps 1 and 2.
+
+The visual baselines in `e2e/baselines/` are Linux Chromium renders, so `visual.spec.ts` runs only on Linux and skips on a Mac. To refresh them:
+
+1. Push a `baselines/<name>` branch. The "Update visual baselines" workflow renders them.
+2. Download its `visual-baselines` artifact and review the images.
+3. Commit them in a commit of their own.
+
+The infrastructure is an AWS CDK (TypeScript) app in `infra/` with two stacks in account 756988898359, us-east-1:
+
+- `SpanishDiplomacyGithubDeploy`: the `spanish-diplomacy-github-deploy` IAM role. GitHub Actions assumes it over OIDC, and only from `main` of this repository. It deploys through the CDK bootstrap roles.
+- `SpanishDiplomacySite`: a private S3 bucket behind CloudFront (origin access control, HTTP/2 and 3, security headers), an ACM certificate, and A/AAAA records in the existing `nicholas-hubbard.com` hosted zone.
+
+Content is not baked into CloudFormation. Hashed files under `/assets/` are uploaded with a one-year immutable cache and HTML with `no-cache`, so a content-only release is an `s3 sync` plus a small invalidation. Old hashed chunks are never deleted, so a player mid-game keeps working through a release.
+
+To run any of it from a laptop, sign in with the `spanish-diplomacy` AWS profile:
+
+```
+mise run infra:check                            # no credentials needed
+AWS_PROFILE=spanish-diplomacy mise run infra:diff
+AWS_PROFILE=spanish-diplomacy mise run deploy   # build, cdk deploy, publish, smoke test
 ```
 
 ## Scenarios

@@ -1,0 +1,45 @@
+name: Update visual baselines
+
+# Visual baselines are Linux Chromium renders, the platform CI checks them on. To refresh them:
+# push a branch named baselines/<anything> (or run this workflow by hand), download the
+# "visual-baselines" artifact, review the images, and commit them to e2e/baselines/ in a commit
+# of their own (project/coding-principles.md).
+on:
+  push:
+    branches: ["baselines/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  MISE_TRUSTED_CONFIG_PATHS: ${{ github.workspace }}
+
+jobs:
+  baselines:
+    name: Render baselines
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          lfs: true
+      - uses: jdx/mise-action@v5
+      - uses: actions/cache@v6
+        with:
+          path: ~/.npm
+          key: npm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: npm-${{ runner.os }}-
+      - run: npm ci
+      - uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-chromium-${{ hashFiles('package-lock.json') }}
+      - run: npx playwright install --with-deps chromium
+      - run: npm run e2e:baselines
+      - uses: actions/upload-artifact@v7
+        with:
+          name: visual-baselines
+          path: e2e/baselines
+          retention-days: 14
+          if-no-files-found: error

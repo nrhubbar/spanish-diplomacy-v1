@@ -1,11 +1,13 @@
 import { expect, type Page, test } from "@playwright/test";
 
-// Reviewed visual baselines (Revision 5, section 8.3). Chromium only: other engines raster
-// WebGL and fonts differently. Update deliberately with `npm run e2e:baselines` in a commit
-// of its own, after reviewing the new images.
+// Reviewed visual baselines (Revision 5, section 8.3). Chromium on Linux only: other engines
+// and operating systems raster WebGL and fonts differently, and CI runs on Linux. Refresh them
+// with the "Update visual baselines" workflow (push a baselines/<name> branch), then commit the
+// reviewed images in a commit of their own.
 
 test.beforeEach(async ({ browserName, page }) => {
   test.skip(browserName !== "chromium", "Baselines are Chromium-only.");
+  test.skip(process.platform !== "linux", "Baselines are Linux renders; CI checks them.");
   // A fixed seed makes computer orders, and therefore resolution screens, deterministic.
   await page.addInitScript(() => { Math.random = () => 0.4242; });
 });

@@ -1,0 +1,156 @@
+name: CI/CD
+
+# Every push and pull request runs the checks. A push to main that passes them deploys to
+# https://spanish-diplomacy.nicholas-hubbard.com/, then proves the commit is live (dye test)
+# and plays a turn against the live site (smoke test).
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  # Superseded branch runs are cancelled; runs on main always finish so every commit deploys in order.
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+env:
+  MISE_TRUSTED_CONFIG_PATHS: ${{ github.workspace }}
+  AWS_REGION: us-east-1
+  DEPLOY_ROLE_ARN: arn:aws:iam::756988898359:role/spanish-diplomacy-github-deploy
+
+jobs:
+  verify:
+    name: Verify game
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: jdx/mise-action@v5
+
+      # Restore LFS objects from the Actions cache so each run does not spend LFS bandwidth.
+      - name: List LFS objects
+        run: git lfs ls-files --long | cut -d ' ' -f1 | sort > .lfs-assets-id
+      - uses: actions/cache@v6
+        with:
+          path: .git/lfs
+          key: lfs-${{ hashFiles('.lfs-assets-id') }}
+          restore-keys: lfs-
+      - name: Pull LFS files
+        run: git lfs install --local && git lfs pull
+
+      - uses: actions/cache@v6
+        with:
+          path: ~/.npm
+          key: npm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: npm-${{ runner.os }}-
+      - run: npm ci
+
+      - uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      - run: npx playwright install --with-deps
+
+      - run: npm run verify
+        env:
+          BUILD_COMMIT: ${{ github.sha }}
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: build/e2e
+          retention-days: 14
+      - name: Upload site build
+        uses: actions/upload-artifact@v7
+        with:
+          name: site-dist
+          path: build/dist
+          retention-days: 7
+          if-no-files-found: error
+
+  infra:
+    name: Check infrastructure
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: jdx/mise-action@v5
+      - uses: actions/cache@v6
+        with:
+          path: ~/.npm
+          key: npm-infra-${{ runner.os }}-${{ hashFiles('infra/package-lock.json') }}
+          restore-keys: npm-infra-${{ runner.os }}-
+      - run: npm ci --prefix infra
+      - run: mise run infra:check
+
+  deploy:
+    name: Deploy to AWS
+    needs: [verify, infra]
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write # OIDC token for the deploy role; its trust policy accepts only refs/heads/main
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7
+      - uses: jdx/mise-action@v5
+      - uses: actions/download-artifact@v8
+        with:
+          name: site-dist
+          path: build/dist
+      - uses: actions/cache@v6
+        with:
+          path: ~/.npm
+          key: npm-infra-${{ runner.os }}-${{ hashFiles('infra/package-lock.json') }}
+          restore-keys: npm-infra-${{ runner.os }}-
+      - run: npm ci --prefix infra
+      - uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          role-session-name: spanish-diplomacy-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: Deploy infrastructure
+        run: mise run infra:deploy
+      - name: Publish site
+        run: mise run publish
+
+  smoke:
+    name: Verify production
+    needs: deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: jdx/mise-action@v5
+      - name: Dye test (live site serves this commit)
+        run: mise run dye
+      - uses: actions/cache@v6
+        with:
+          path: ~/.npm
+          key: npm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: npm-${{ runner.os }}-
+      - run: npm ci
+      - uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-chromium-${{ hashFiles('package-lock.json') }}
+      - run: npx playwright install --with-deps chromium
+      - name: Smoke test (play a turn on the live site)
+        run: mise run smoke
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: smoke-report
+          path: build/e2e
+          retention-days: 14

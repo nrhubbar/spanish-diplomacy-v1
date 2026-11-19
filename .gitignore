@@ -5,6 +5,11 @@
 /build/
 dist/script.js
 
+# CDK (infra/)
+/infra/cdk.out/
+/infra/cdk-outputs.json
+/mise.local.toml
+
 # Playwright
 /test-results/
 /playwright-report/
