@@ -1,0 +1,241 @@
+[
+  {"id": "Q-MR-01", "idea": "contested", "text": "How should a demoralized army recover its morale?",
+   "context": "Three answers give three routes: rest (M23, Q-MIS-b-11), Replenish clears demoralization (Q-MIS-b-2), and your Q-GEN-1 note says that only an army with a general can recover morale. Q-PART-2 also bans recovering morale in contested ground.",
+   "options": [
+     {"label": "Three routes, each with its own place: rest in uncontested ground (M23), Replenish in uncontested ground (Q-MIS-b-2), and a general rallying his army in contested ground", "recommended": true, "rationale": "Keeps every answer. The general's rally is the one way out of the contested-ground trap, which makes generals matter without stranding every army that lacks one."},
+     {"label": "Only a general ever restores morale, anywhere", "rationale": "The literal reading of the Q-GEN-1 note. Armies without a general stay demoralized until they are destroyed, so generals would be needed on almost every army."},
+     {"label": "Rest and Replenish only; a general gives his +1 but never rallies"}
+   ]},
+  {"id": "Q-MR-02", "idea": "contested", "text": "What does a demoralized army in a contested territory do?",
+   "context": "It cannot attack (M23), and Q-PART-2 says it cannot rest either. Today it would have no legal order apart from leaving.",
+   "options": [
+     {"label": "It holds and defends, gains no fatigue, and may withdraw; it recovers only if a general rallies it", "recommended": true, "rationale": "Armies can stay in a siege. A demoralized army becomes a weak garrison instead of an army with no legal order."},
+     {"label": "It must withdraw; if it has no path out, it holds"},
+     {"label": "It must withdraw; if it has no path out, it surrenders", "rationale": "The harshest choice. Contested ground empties fast, which works against long sieges."}
+   ]},
+  {"id": "Q-MR-03", "idea": "contested", "text": "\"Armies in contested ground attack by default\": how does that fit M27 standing battles, where only the strongest faction attacks?",
+   "context": "In Q-TEN-2 you kept M27: one standing battle per contested territory per turn, and the faction with the greatest standing attack is the attacker. Your Q-PART-2 note says every army in contested ground attacks.",
+   "options": [
+     {"label": "Keep M27 as it is: \"attack by default\" means no entrenching or resting, and only the M27 attacker's armies gain fatigue", "recommended": true, "rationale": "One battle per territory, as today. Fatigue (\"defending doesn't exhaust\", Q-MOVE-5) wears down whoever keeps pressing, which is how offensives stalled."},
+     {"label": "Every faction attacks every turn: two battles per contested territory, both sides tire", "rationale": "Losses roughly double, and fatigue demoralizes both sides within three turns."},
+     {"label": "Attack is the default, but a player may set an army in contested ground to Hold; M27 then chooses among the armies set to attack"}
+   ]},
+  {"id": "Q-MR-04", "idea": "contested", "text": "What should fatigue level 2 do?",
+   "context": "You picked a 0–3 fatigue track with a value penalty at 2 (Q-MOVE-2). Q-MIS-b-11 ruled out a third value multiplier on counters beyond men and morale.",
+   "options": [
+     {"label": "A named roll modifier: \"Fatigued\", −2 on the d20 at level 2, demoralized at 3; +1 for each turn the army attacks; a quiet turn in uncontested ground resets it to 0", "recommended": true, "rationale": "A counter still shows exactly what fights (M12), and the penalty is named in the battle breakdown like any other modifier."},
+     {"label": "A value penalty at 2 (×0.75), accepting a third multiplier on counters"},
+     {"label": "No effect at 2; only demoralization at 3"}
+   ]},
+  {"id": "Q-MR-05", "idea": "contested", "text": "What does a battle do to a Replenish order?",
+   "context": "Q-RECR-5 says any battle cancels it. Your Q-MOVE-5 note says defending \"will affect the replenishment rate\", which suggests defending reduces replenishment instead of cancelling it.",
+   "options": [
+     {"label": "Attacking, a meeting battle or a retreat cancels it with a refund; defending halves the men who arrive; contested territories never replenish", "recommended": true, "rationale": "Keeps both notes. A front-line garrison still fills up slowly, while an attacking army must pull back to refit."},
+     {"label": "Any battle cancels it (Q-RECR-5 as ticked); defending has no other effect"},
+     {"label": "Battles never cancel it; fatigue reduces the men who arrive"}
+   ]},
+
+  {"id": "Q-MR-06", "idea": "combat", "text": "Is the grade catalogue above the right shape?",
+   "context": "This brings Q-D20-1 (an 11-grade ladder), Q-D20-2 (13 or more grades), Q-D20-3 (an explicit 7 × 21 table) and your note (each odds column has its own outcomes) into one design.",
+   "options": [
+     {"label": "Yes: 13 grades, with an explicit 7 × 21 table in data whose cells name grades; the harness tunes the numbers", "recommended": true},
+     {"label": "Fewer: drop Attack checked and Defender broken (11 grades)"},
+     {"label": "Different grades (describe them in the notes)"}
+   ]},
+  {"id": "Q-MR-07", "idea": "combat", "text": "Your \"+1\" for a general (Q-GEN-1) and for city barricades (Q-PART-3): are they on the d20?",
+   "context": "Q-D20-6 multiplies the old d6 modifiers by 3, so works become +3 a turn, up to +9. On the d20, +1 shifts results by 5%; one old d6 point (+3) shifts them by about 15%.",
+   "options": [
+     {"label": "Both on the d20: general +1, barricades +1", "recommended": true, "rationale": "\"A small boost\", as you put it. Two such bonuses together still count for less than one turn of digging in."},
+     {"label": "General +1 on the d20; barricades +3, worth one old d6 point or a turn of digging in"},
+     {"label": "Both +3, worth one old d6 point each"}
+   ]},
+  {"id": "Q-MR-08", "idea": "combat", "text": "Below what strength is a worn-down army destroyed?",
+   "context": "Q-MIS-b-12 says 10% of full strength; Q-D20-4 (ticked) says 25%.",
+   "options": [
+     {"label": "10% (Q-MIS-b-12)", "recommended": true, "rationale": "The question that asked exactly this. Q-D20-4 adopts the same value."},
+     {"label": "25% (Q-D20-4)"}
+   ]},
+  {"id": "Q-MR-09", "idea": "combat", "text": "When does the siege bonus (city barricades) apply?",
+   "context": "Q-CITY-5 relied on supply to model sieges, and supply is dropped. Your Q-PART-3 note adds barricades for a defender who is \"setting up for a siege\".",
+   "options": [
+     {"label": "When the defending faction holds only the capital sub-territory of a territory (Oviedo in 1936); on a gives-ground grade it keeps the city and does not fall back", "recommended": true, "rationale": "A clear trigger the player can see on the map, and the last sub-territory becomes the hardest to take."},
+     {"label": "Whenever the battle territory has a city the defender controls, for every faction, like Popular resistance today"},
+     {"label": "Only with a Fortifications building"}
+   ]},
+
+  {"id": "Q-MR-10", "idea": "economy", "text": "With no foreign aid until Milestone 4, how should Milestone 3 keep the Southern command in the game?",
+   "context": "Under whole-territory income, the Southern command earns only from Ceuta and Melilla until Andalucia falls (table above). In Revision 7 it won 13% of decided games.",
+   "options": [
+     {"label": "Starting stocks in scenario data: each faction starts with Funds and Manpower sized from harness runs (largest per army for the Southern command), and Ceuta and Melilla get a high Manpower yield", "recommended": true, "rationale": "Keeps your rule exactly. It stands in for the Army of Africa's head start, and aid can replace it in Milestone 4."},
+     {"label": "Relax the rule: a contested territory pays each holder half the yield of the sub-territories it holds"},
+     {"label": "Leave it: the Southern command is meant to be poor until it breaks out; tune it only if the harness says so"}
+   ]},
+  {"id": "Q-MR-11", "idea": "economy", "text": "What happens to build queues in a contested territory?",
+   "options": [
+     {"label": "They pause: no progress and no loss. A sub-territory that changes hands follows your rule (the money on the order in progress is forfeit and the order passes to the new owner; queued orders are refunded)", "recommended": true, "rationale": "Matches \"no income, no recruiting\" in contested ground without wiping out investment."},
+     {"label": "They keep progressing"},
+     {"label": "They are cancelled and refunded"}
+   ]},
+  {"id": "Q-MR-12", "idea": "economy", "text": "What can a rural sub-territory develop?",
+   "context": "Your Q-CITY-3 note: income is the sum of sub-territory development, rural sub-territories develop too (\"olive farms or whatever makes sense\"), and each sub-territory has its own queue.",
+   "options": [
+     {"label": "A small catalogue in data: Farms (Manpower), Mines (Funds) and Industry (Funds, city sub-territories only), each with levels 0–3 and 1936 starting levels", "recommended": true, "rationale": "Three names a player can learn. Asturias' coal, Rio Tinto and Barcelona's industry each get a real lever."},
+     {"label": "One generic Development level per sub-territory (0–5) that yields both resources"},
+     {"label": "Only city buildings are built; rural sub-territories have a fixed yield"}
+   ]},
+  {"id": "Q-MR-13", "idea": "economy", "text": "Which buildings exist?",
+   "context": "Your Q-RECR-2 note gates units with Barracks, Factory and Depot. In Q-CITY-2 you ticked Depot, Workshop, Fortifications, Airfield, Rail yard and Hospital, but that list has no Barracks or Factory.",
+   "options": [
+     {"label": "Barracks, Factory (replaces Workshop), Depot, Fortifications, Hospital, Airfield and Rail yard; Port and Rail are levelled sub-territory improvements, not buildings. With supply dropped, the Depot gates trucks and tanks and raises the replenishment cap", "recommended": true},
+     {"label": "As above, but keep Workshop and Factory separate"},
+     {"label": "A different list (describe it in the notes)"}
+   ]},
+  {"id": "Q-MR-14", "idea": "economy", "text": "What did you mean by militia \"coming to arms\" in a contested territory?",
+   "context": "Your Q-PART-2 rule 3 note says an order to call militia has to be given when the territory becomes contested. Orders are written before anyone knows a territory will become contested, so the call has to come from training already under way, or from a standing order.",
+   "options": [
+     {"label": "Training already under way when the territory becomes contested: militia finish and appear, other units pause until it is uncontested; no new Recruit orders there", "recommended": true},
+     {"label": "A standing \"call to arms\" set on a territory in advance: if it becomes contested, militia rise at once and you pay for them then"},
+     {"label": "New militia-only Recruit orders are allowed in contested ground"}
+   ]},
+
+  {"id": "Q-MR-15", "idea": "movement", "text": "How far can an army move in a turn?",
+   "context": "You ticked one move per turn (Q-MOVE-1), but your rail note adds trucks (+1), mountains and swamp (−1) and a minimum of 1.",
+   "options": [
+     {"label": "An allowance in territories: 1, plus 1 with enough trucks, minus 1 for mountain or swamp on the way in, and minus 1 in Mud or Snow; never below 1. Rail legs don't count against it", "recommended": true, "rationale": "This is your rule written out. It also replaces \"movement costs doubled\" in Q-WX-5 with \"−1 in Mud or Snow\"."},
+     {"label": "Keep one territory per turn in Milestone 3; trucks, terrain and the allowance come with rail later"}
+   ]},
+  {"id": "Q-MR-16", "idea": "movement", "text": "How do moves across several territories resolve when all orders resolve together?",
+   "options": [
+     {"label": "Only the last step may enter enemy or contested ground. Earlier steps pass only through territories your faction held whole at the start of the turn, resolve first like reinforcements, and cannot be intercepted. Meeting battles (M20) happen on the last step only", "recommended": true, "rationale": "All of M11 and M17–M21 keep working unchanged. A railway move is a fast way to reach the front, not a way to break through."},
+     {"label": "Step by step: every army's first step resolves, then every second step, with battles at each step", "rationale": "Hard to predict and hard to show in the odds preview; Diplomacy avoided this for good reason."},
+     {"label": "Transit can be intercepted: if an enemy army enters a territory you are passing through, your army stops there and defends"}
+   ]},
+  {"id": "Q-MR-17", "idea": "movement", "text": "In your rail note, option 2 is \"move one territory, then take rail\". Can that first move be an attack?",
+   "options": [
+     {"label": "No: it must be into friendly ground, so an attack is always the last step. \"Rail, then attack one territory\" (option 3) is how you attack from a railhead", "recommended": true},
+     {"label": "Yes: if the attack takes the territory, the army continues by rail; otherwise it stops", "rationale": "This breaks Q-MR-16's rule that only the last step fights, and makes the odds preview depend on an earlier battle's outcome."}
+   ]},
+  {"id": "Q-MR-18", "idea": "movement", "text": "How should rail work in data and on the map?",
+   "context": "You ticked per-line levels with capacity (Q-RAIL-1), but your Q-RAIL-3 and Q-RAIL-5 notes make rail a sub-territory capability, with adjacent rail joining up automatically and \"the unit needs to path on the rail\".",
+   "options": [
+     {"label": "Each sub-territory has a rail level from 0 to 3, and adjacent rail sub-territories connect. An army boards at its territory's capital and rides through rail sub-territories its faction holds to another territory's capital. The route's lowest level sets its range, and the boarding capital's level sets how many armies can leave per turn (a Rail yard adds 1)", "recommended": true, "rationale": "Your model, plus a fixed boarding point so the army never has to stand in a sub-territory."},
+     {"label": "Per-line levels between pairs of territories (Q-RAIL-1 as ticked); sub-territories only decide who holds each end"}
+   ]},
+  {"id": "Q-MR-19", "idea": "movement", "text": "An army moves between territories, but terrain belongs to sub-territories. Which terrain counts on the way in?",
+   "options": [
+     {"label": "Each connection names the sub-territory it enters on each side; that sub-territory's terrain applies", "recommended": true, "rationale": "Asturias and Navarra's passes then cost a move, and the open Meseta doesn't."},
+     {"label": "Each territory gets one terrain, the worst of its sub-territories"},
+     {"label": "The capital sub-territory's terrain counts"}
+   ]},
+  {"id": "Q-MR-20", "idea": "movement", "text": "How many trucks does an army need for its +1?",
+   "options": [
+     {"label": "At least one truck for every two other units; trucks take losses like every other unit", "recommended": true},
+     {"label": "One truck carries the whole army"},
+     {"label": "One truck for every other unit"}
+   ]},
+  {"id": "Q-MR-21", "idea": "movement", "text": "What makes a territory contested, and what does an entry with no enemy army there take?",
+   "context": "At the start, Extremadura has a Republican army and no enemy army, but Cáceres is Nationalist. Baleares has no armies at all. M6 (an unopposed move takes the territory) conflicts with P7 (one sub-territory a turn, Q-PART-9).",
+   "options": [
+     {"label": "Contested means two or more factions hold sub-territories there. An army entering a territory the enemy holds whole, with no enemy army there, takes all of it (M6). Inside a contested territory where the enemy has no army, your armies take one enemy sub-territory a turn (P7), nearest the attack's origin first and the capital last", "recommended": true, "rationale": "Grand-strategy speed in open country, and a turn or two to mop up a split territory, as Q-PART-9 expected for Cáceres."},
+     {"label": "Contested means armies of two or more factions are there; holding sub-territories without an army doesn't count"},
+     {"label": "One sub-territory a turn always, even when entering an empty enemy territory"}
+   ]},
+  {"id": "Q-MR-22", "idea": "movement", "text": "Do forced retreats (M21) follow the same path rule as Withdraw orders?",
+   "context": "Your note: a withdrawal passes only through your own sub-territories, so a surrounded army cannot slip out.",
+   "options": [
+     {"label": "Yes: a retreating army needs a path through its own sub-territories to an adjacent territory it held at the start of the turn; without one it surrenders", "recommended": true, "rationale": "Encirclement becomes real, which is the point of your rule. Expect more surrenders in the harness."},
+     {"label": "No: only Withdraw orders need a path; forced retreats work as today"}
+   ]},
+  {"id": "Q-MR-23", "idea": "movement", "text": "How do sea moves and amphibious assaults work?",
+   "context": "In Q-CITY-6 you ticked a port at each end, and your note adds a disadvantaged landing where there is none. Your Q-CITY-7 note: ports are sub-territories, and Ceuta and Melilla are one-sub-territory territories.",
+   "options": [
+     {"label": "A sea move needs a friendly port to sail from. Into a friendly port, it lands normally, up to the port's capacity. Onto an enemy coast with no friendly port, it is an amphibious assault: −4 on the d20, at most one army per sea connection per turn", "recommended": true},
+     {"label": "A port at both ends, always; no amphibious assault"},
+     {"label": "An amphibious assault needs no port at either end"}
+   ]},
+
+  {"id": "Q-MR-24", "idea": "units", "text": "How do armies form and change?",
+   "context": "An army is a group of units from one territory with one order. Today each formation is one army of one type.",
+   "options": [
+     {"label": "A Recruit order makes a new one-unit army in that territory, with that territory as its home. With an Organize order, armies from the same home territory standing in one territory may merge, or an army may split off units; an army that organizes doesn't move that turn", "recommended": true, "rationale": "\"Comes from one territory\" becomes a real rule that players can see (the Navarra requetés stay Navarrese)."},
+     {"label": "Recruits join an army from their home territory standing there; armies never merge or split otherwise"},
+     {"label": "Armies never merge or split: one army is one unit, as today"}
+   ]},
+  {"id": "Q-MR-25", "idea": "units", "text": "Is the artillery bonus counted per side or per army?",
+   "options": [
+     {"label": "Per side: add up the artillery attack points of every attacking army in the battle, +1 on the d20 per 3, at most +3", "recommended": true, "rationale": "There is one roll per battle, so a per-side bonus is the only reading that is easy to show."},
+     {"label": "Only the best single army's artillery counts"}
+   ]},
+  {"id": "Q-MR-26", "idea": "units", "text": "Should the unit effect table above be the starting sheet?",
+   "options": [
+     {"label": "Yes; the harness tunes the numbers", "recommended": true},
+     {"label": "Yes, with changes (listed in the notes)"},
+     {"label": "Fewer new types in Milestone 3: artillery, trucks and aircraft now; cavalry, tanks and anti-air later"}
+   ]},
+  {"id": "Q-MR-27", "idea": "units", "text": "How do aircraft counters work?",
+   "context": "You picked counters with recon, fighter and bomber roles (Q-UNIT-3), raids on a chosen sub-territory with a four-outcome roll (Q-UNIT-4 note), and anti-air units. Nothing says yet where aircraft are based or how far they reach.",
+   "options": [
+     {"label": "Each aircraft counter is based in a territory with an Airfield. Each turn it flies one mission within a range in territories (set in data): raid, intercept, battle support (bombers) or recon. Weather grounds it unless the airfield is paved. Losses come from the raid roll and from enemy fighters", "recommended": true},
+     {"label": "A faction air pool assigned to missions each turn, with counters only as a display"},
+     {"label": "As recommended, but no recon in Milestone 3"}
+   ]},
+  {"id": "Q-MR-28", "idea": "units", "text": "How much of the generals design belongs in Milestone 3?",
+   "context": "Your notes: a small boost (+1), rallying in contested ground, bad generals that nudge you to sack them, deaths, and nothing scripted. In idea 8 you said \"let's not muddy this too much\".",
+   "options": [
+     {"label": "A roster of 3–5 named commanders per faction in data, each with one trait, good or bad. An attached general gives +1 and can rally his army. Sacking is a free order that brings in the next on the roster. A general can die only when his army is destroyed or routed, on a seeded roll", "recommended": true},
+     {"label": "Generals wait for Milestone 4, where political capital could pay for sacking"},
+     {"label": "Only the +1 and the rally in Milestone 3; traits, sacking and deaths later"}
+   ]},
+
+  {"id": "Q-MR-29", "idea": "weather", "text": "One roll for the whole map, or four zones?",
+   "context": "Your Q-WX-1 note asks for one roll for the whole map so weather is consistent; in Q-WX-2 you picked four zones.",
+   "options": [
+     {"label": "One d100 roll per turn, read against each zone's seasonal table, with every table ordered from best weather to worst. A bad roll is bad everywhere, but the Meseta can see snow while the South sees rain", "recommended": true, "rationale": "Weather stays consistent across the map without every zone getting the same outcome."},
+     {"label": "One weather for the whole map from a single national table; the zones are dropped"},
+     {"label": "Four independent rolls (Q-WX-2 as ticked)"}
+   ]},
+  {"id": "Q-MR-30", "idea": "weather", "text": "Q-WX-5 closes sea connections in storms, but the outcome list (Q-WX-4) has no Storm. What closes the sea?",
+   "options": [
+     {"label": "Add Storm as a seventh outcome in the coastal zones' winter rows only; it closes every sea connection touching that zone for the turn", "recommended": true},
+     {"label": "Rain in a winter month closes the sea"},
+     {"label": "Drop sea closures"}
+   ]},
+  {"id": "Q-MR-31", "idea": "weather", "text": "How is the calendar counted?",
+   "context": "Q-WX-7 gives 24 turns a year shown as Early or Late Month. Q-TEN-4 gives two-week turns, which makes 26 a year.",
+   "options": [
+     {"label": "24 half-month turns a year, starting Late July 1936; Q-TEN-4's \"two weeks\" becomes \"half a month\". The harness runs 60 to 70 turns, which is about January to June 1939", "recommended": true},
+     {"label": "Fixed 14-day turns, with each turn's date range shown"}
+   ]},
+
+  {"id": "Q-MR-32", "idea": "harness", "text": "What freeze-rate target should Milestone 3 aim for?",
+   "context": "Q-MIS-e-2 (ticked) says 20% or less; your Q-HARN-1 note says under 15%. A frozen game is one that reaches the turn limit with no winner; today 58% of games freeze.",
+   "options": [
+     {"label": "15% or less over 1000 games by the end of Milestone 3, with every faction winning at least 20% of decided games", "recommended": true},
+     {"label": "20% or less (Q-MIS-e-2)"}
+   ]},
+  {"id": "Q-MR-33", "idea": "harness", "text": "Where does the computer player's 1-in-100 blunder chance apply?",
+   "options": [
+     {"label": "It is a scenario value (starting at 1 in 100 orders) built into the computer player with seeded rolls, so it applies in real games and the harness alike; the harness reports freeze rates with and without it", "recommended": true, "rationale": "If only the harness blundered, the harness would measure a different game from the one people play."},
+     {"label": "Harness only: computer players in real games never blunder"},
+     {"label": "No blunder chance; fix freezing through the rules alone"}
+   ]},
+  {"id": "Q-MR-34", "idea": "harness", "text": "Can a scenario folder hold code?",
+   "context": "Your Q-DATA-2 note puts a custom rule plugin in each scenario folder. In Q-DATA-1 you chose named rule modules in engine code, selected by data, and the north star is \"jpegs and jsons\".",
+   "options": [
+     {"label": "`src/scenarios/<id>/` holds scenario.json, map.json, its assets and an optional plugin.ts. The plugin may only register named rule modules through the interface the engine's own modules use. `src/scenarios/MANIFEST.md` and `scenario.schema.json` describe the folder; shared symbols stay in one shared folder", "recommended": true},
+     {"label": "No code in scenario folders in Milestone 3: data and assets only; every module lives in the engine"},
+     {"label": "Any code is allowed in a scenario folder"}
+   ]},
+  {"id": "Q-MR-35", "idea": "harness", "text": "What should the scenario folder be called?",
+   "options": [
+     {"label": "Its id: `spanish-civil-war-1936` (not \"spainish\"). A scenario is one war with one start date; another start date is a new folder that may reuse this one's assets. The tiny-front fixture uses the same layout under `src/test/fixtures/scenarios/`", "recommended": true},
+     {"label": "Keep the dated id `spain-1936-07-31`"}
+   ]},
+  {"id": "Q-MR-36", "idea": "harness", "text": "With a larger Milestone 3 (Q-SEQ-2), and the computer player required to use every new order (Q-HARN-8), what does Revision 1 attempt?",
+   "context": "A revision is an attempt at the whole milestone. The larger scope adds about ten systems, and each needs computer-player logic before it merges.",
+   "options": [
+     {"label": "Everything. The contract stream first fixes the types and schema for every system; the computer player gets a simple heuristic for each new order, even a weak one. Playtests then decide where Revision 2 goes deeper", "recommended": true},
+     {"label": "Core first: sub-territories, d20, economy, recruitment, weather, timer and harness in Revision 1; rail, air and generals start in Revision 2"},
+     {"label": "Relax Q-HARN-8: new orders may land before the computer player uses them"}
+   ]}
+]

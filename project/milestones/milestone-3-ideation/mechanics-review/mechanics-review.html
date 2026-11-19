@@ -1,0 +1,980 @@
+<title>Milestone 3 Mechanics Review</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,500;8..60,700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a design-review dossier. Sticky index on the left (top bar on phones), one reading column, widgets and questions as set-off "cards on the table". */
+:root {
+  --bg: #e6dfcd;          /* table canvas, from the app's --canvas */
+  --paper: #fbf6ea;       /* reading sheet, the app's --paper */
+  --surface: #f4eddc;     /* widget card */
+  --surface-2: #ebe2cc;   /* inset rows, table heads */
+  --ink: #241d18;
+  --ink-soft: #5b4d40;
+  --line: #c9bba0;
+  --accent: #7d2f2a;      /* oxblood, the app's --accent */
+  --accent-ink: #fbf6ea;
+  --gold: #b8891a;
+  --route: #1f3550;
+  --good: #2f7d4f;
+  --bad: #9e2b2b;
+  --warn: #b5730f;
+  --rep: #b1493f;
+  --nic: #a3841f;
+  --sic: #665089;
+  --c1: #7a1f1a; --c2: #b5483c; --c3: #d99a6c; --c4: #cbbf9f; --c5: #7d9bb5; --c6: #3f6a90; --c7: #1f3550;
+  --serif: "Source Serif 4", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --shadow: 0 1px 0 rgb(36 29 24 / 8%), 0 6px 18px rgb(36 29 24 / 8%);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #17120e; --paper: #221a14; --surface: #2b221a; --surface-2: #352a20;
+    --ink: #efe5d2; --ink-soft: #c2b29b; --line: #4d3f31; --accent: #d9897e; --accent-ink: #1b1410;
+    --gold: #e0b54a; --route: #9cb7d6; --good: #6fc08f; --bad: #e07a72; --warn: #e5a54a;
+    --rep: #d9786d; --nic: #d9b84a; --sic: #a88fd1;
+    --c1: #e07a72; --c2: #c9665b; --c3: #b98a63; --c4: #6f6555; --c5: #5f86a8; --c6: #7fa6cc; --c7: #b5cfe8;
+    --shadow: 0 1px 0 rgb(0 0 0 / 30%), 0 6px 18px rgb(0 0 0 / 30%);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #17120e; --paper: #221a14; --surface: #2b221a; --surface-2: #352a20;
+  --ink: #efe5d2; --ink-soft: #c2b29b; --line: #4d3f31; --accent: #d9897e; --accent-ink: #1b1410;
+  --gold: #e0b54a; --route: #9cb7d6; --good: #6fc08f; --bad: #e07a72; --warn: #e5a54a;
+  --rep: #d9786d; --nic: #d9b84a; --sic: #a88fd1;
+  --c1: #e07a72; --c2: #c9665b; --c3: #b98a63; --c4: #6f6555; --c5: #5f86a8; --c6: #7fa6cc; --c7: #b5cfe8;
+  --shadow: 0 1px 0 rgb(0 0 0 / 30%), 0 6px 18px rgb(0 0 0 / 30%);
+  color-scheme: dark;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 72px; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 var(--sans); -webkit-font-smoothing: antialiased; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+a { color: var(--route); text-underline-offset: 2px; }
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+h1, h2, h3, h4 { font-family: var(--serif); line-height: 1.2; text-wrap: balance; margin: 0; }
+code, kbd { font-family: var(--mono); font-size: 0.86em; background: var(--surface-2); padding: 0.05em 0.3em; border-radius: 3px; }
+
+.shell { display: grid; grid-template-columns: 270px minmax(0, 1fr); gap: 28px; max-width: 1180px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 24px 64px; }
+.toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); align-self: start; max-height: calc(100vh - 32px); overflow: auto;
+  background: var(--paper); border: 1px solid var(--line); border-radius: 6px; padding: 14px 14px 16px; font-size: 0.86rem; }
+.toc h2 { font-size: 1rem; margin-bottom: 6px; }
+.toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; }
+.toc li.group { margin-top: 10px; font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-soft); font-weight: 600; }
+.toc a { display: flex; justify-content: space-between; gap: 8px; padding: 3px 6px; border-radius: 4px; text-decoration: none; color: var(--ink); }
+.toc a:hover { background: var(--surface-2); }
+.toc a.active { background: var(--surface-2); box-shadow: inset 2px 0 0 var(--accent); }
+.toc .count { font-family: var(--mono); font-size: 0.72rem; color: var(--ink-soft); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.answerbox { display: grid; gap: 8px; padding-bottom: 12px; margin-bottom: 10px; border-bottom: 1px solid var(--line); }
+.progress-text { font-family: var(--mono); font-size: 0.8rem; font-variant-numeric: tabular-nums; }
+.progress-track { height: 6px; background: var(--surface-2); border-radius: 3px; overflow: hidden; }
+.progress-fill { height: 100%; width: 0; background: var(--accent); transition: width 0.2s; }
+.btn { font: 600 0.86rem var(--sans); border: 1px solid var(--ink); background: var(--accent); color: var(--accent-ink); border-radius: 5px; padding: 8px 12px; cursor: pointer; min-height: 38px; }
+.btn.secondary { background: transparent; color: var(--ink); border-color: var(--line); font-weight: 500; }
+.btn-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.copy-status { font-size: 0.78rem; color: var(--good); min-height: 1.1em; }
+.copy-fallback { width: 100%; min-height: 140px; font: 0.75rem/1.4 var(--mono); }
+.mobile-bar { display: none; }
+
+main { min-width: 0; display: grid; gap: 22px; }
+.sheet { background: var(--paper); border: 1px solid var(--line); border-radius: 6px; padding: 28px clamp(16px, 4vw, 44px) 32px; box-shadow: var(--shadow); min-width: 0; }
+.sheet > * + * { margin-top: 0.9rem; }
+.masthead .eyebrow, .eyebrow { font: 600 0.72rem var(--sans); letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
+.masthead h1 { font-size: clamp(1.9rem, 4.5vw, 2.7rem); }
+.masthead .meta { font-family: var(--mono); font-size: 0.8rem; color: var(--ink-soft); display: flex; flex-wrap: wrap; gap: 6px 18px; }
+.group-head { padding: 6px 4px 0; }
+.group-head h2 { font-size: 1.05rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-soft); font-family: var(--sans); font-weight: 600; }
+.group-head p { color: var(--ink-soft); font-size: 0.92rem; max-width: 70ch; }
+.sheet h2 { font-size: clamp(1.4rem, 3vw, 1.8rem); }
+.sheet h2 .idea-no { font-family: var(--mono); font-size: 0.8em; color: var(--accent); margin-right: 0.4em; }
+.sheet h3 { font-size: 1.12rem; margin-top: 1.6rem; padding-top: 0.9rem; border-top: 1px solid var(--line); }
+.sheet h4 { font-size: 1rem; margin-top: 1.2rem; }
+.sheet p, .sheet li { max-width: 72ch; }
+.sheet ul, .sheet ol { padding-left: 1.25rem; }
+.sheet li + li { margin-top: 0.25rem; }
+.sheet blockquote { margin: 0; padding: 8px 14px; border-left: 3px solid var(--gold); background: var(--surface); font-family: var(--serif); font-style: italic; }
+.summary-line { font-family: var(--serif); font-size: 1.12rem; }
+.table-wrap, .w-scroll { overflow-x: auto; max-width: 100%; -webkit-overflow-scrolling: touch; }
+.sheet table, .w-table { border-collapse: collapse; width: 100%; font-size: 0.88rem; }
+.sheet th, .sheet td, .w-table th, .w-table td { border-bottom: 1px solid var(--line); padding: 6px 8px; text-align: left; vertical-align: top; }
+.sheet th, .w-table th { background: var(--surface-2); font-weight: 600; }
+.sheet td:first-child { min-width: 9rem; }
+.recommend { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--good); padding: 10px 14px; border-radius: 4px; }
+
+figure.mockup { margin: 1rem 0 0; }
+figure.mockup img { display: block; width: 100%; height: auto; border: 1px solid var(--line); border-radius: 4px; background: var(--surface-2); }
+figure.mockup figcaption { font-size: 0.8rem; color: var(--ink-soft); margin-top: 6px; }
+.missing { font-size: 0.85rem; color: var(--ink-soft); background: var(--surface-2); padding: 10px 12px; border-radius: 4px; border: 1px dashed var(--line); }
+
+/* Widgets */
+.widget { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 14px 16px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; font-size: 0.9rem; min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
+.widget > *, .w-row > *, .w-grid > * { min-width: 0; max-width: 100%; }
+.widget svg, .widget canvas { max-width: 100%; height: auto; }
+.widget h4, .widget h5 { margin: 0; font-family: var(--serif); }
+.w-row { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
+.w-label { font-weight: 600; font-size: 0.82rem; color: var(--ink-soft); }
+.w-out { font-family: var(--mono); font-weight: 500; background: var(--paper); border: 1px solid var(--line); border-radius: 4px; padding: 1px 7px; font-variant-numeric: tabular-nums; }
+.w-note { font-size: 0.78rem; color: var(--ink-soft); }
+.w-bar-track { background: var(--surface-2); border-radius: 3px; height: 14px; overflow: hidden; min-width: 60px; flex: 1; }
+.w-bar { height: 100%; background: var(--accent); min-width: 1px; }
+.w-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+.w-card { background: var(--paper); border: 1px solid var(--line); border-radius: 4px; padding: 8px 10px; min-width: 0; }
+.widget select, .widget input[type=number], .widget input[type=text] { font: inherit; color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 4px; padding: 4px 6px; min-height: 34px; max-width: 100%; }
+.widget input[type=range] { accent-color: var(--accent); max-width: 100%; }
+.widget button { font: 500 0.84rem var(--sans); color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 4px; padding: 5px 10px; cursor: pointer; min-height: 34px; }
+.widget button[aria-pressed="true"], .widget button.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.widget label { display: inline-flex; align-items: center; gap: 6px; }
+.widget-error { color: var(--bad); font-size: 0.85rem; }
+
+/* Questions */
+.questions { display: grid; gap: 12px; }
+.q { border: 1px solid var(--line); border-radius: 6px; background: var(--surface); padding: 12px 14px 14px; margin: 0; min-width: 0; }
+.q.answered { border-left: 4px solid var(--good); }
+.q legend { display: contents; }
+.q .q-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; margin-bottom: 8px; }
+.q .q-id { font-family: var(--mono); font-size: 0.74rem; background: var(--paper); border: 1px solid var(--line); border-radius: 3px; padding: 0 6px; color: var(--ink-soft); }
+.q .q-text { font-weight: 600; flex: 1 1 260px; }
+.q .q-ctx { font-size: 0.84rem; color: var(--ink-soft); margin: 0 0 8px; max-width: 72ch; }
+.q .opt > span { min-width: 0; overflow-wrap: anywhere; }
+.q .q-multi { font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--route); border: 1px solid currentColor; border-radius: 3px; padding: 0 5px; }
+.q .opt { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; align-items: start; padding: 6px 8px; border-radius: 4px; cursor: pointer; }
+.q .opt:hover { background: var(--surface-2); }
+.q .opt input { margin-top: 4px; accent-color: var(--accent); width: 17px; height: 17px; }
+.q .opt .rec { color: var(--good); font-weight: 600; font-size: 0.82rem; margin-left: 4px; }
+.q .opt .why { grid-column: 2; font-size: 0.8rem; color: var(--ink-soft); }
+.q textarea { width: 100%; margin-top: 8px; min-height: 2.4rem; font: 0.86rem var(--sans); color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 4px; padding: 6px 8px; resize: vertical; }
+.q .notes-label { font-size: 0.76rem; color: var(--ink-soft); display: block; margin-top: 6px; }
+
+.sources ol { font-size: 0.82rem; overflow-wrap: anywhere; }
+.diagram { overflow-x: auto; }
+.diagram svg { display: block; min-width: 640px; width: 100%; height: auto; }
+.diagram svg text { fill: var(--ink); font-family: var(--sans); font-size: 12px; }
+.diagram .node { fill: var(--paper); stroke: var(--good); stroke-width: 1.2; }
+.diagram .node.later { fill: var(--surface-2); stroke: var(--ink-soft); stroke-dasharray: 4 3; }
+.diagram .edge { fill: none; stroke: var(--ink-soft); stroke-width: 1.4; }
+.diagram .arrowhead { fill: var(--ink-soft); }
+.diagram .band { fill: var(--surface-2); stroke: var(--line); }
+.diagram svg text.col { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; fill: var(--ink-soft); }
+.pill { display: inline-block; font: 600 0.72rem var(--sans); letter-spacing: 0.04em; padding: 1px 7px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface-2); }
+.pill.m3 { background: var(--good); color: var(--paper); border-color: var(--good); }
+.pill.later { background: var(--surface-2); }
+.pill.drop { color: var(--bad); border-color: var(--bad); }
+
+@media (max-width: 900px) {
+  html { scroll-padding-top: 64px; }
+  .shell { grid-template-columns: minmax(0, 1fr); gap: 16px; padding-block: 0 48px; }
+  .toc { position: static; max-height: none; display: none; }
+  .toc.open { display: block; position: fixed; inset: calc(env(safe-area-inset-top, 0px) + 56px) 0 0; z-index: 20; border-radius: 0; overflow: auto;
+    padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .mobile-bar { display: flex; position: sticky; top: env(safe-area-inset-top, 0px); z-index: 15; align-items: center; justify-content: space-between; gap: 10px;
+    background: var(--paper); border-bottom: 1px solid var(--line); margin: 0 calc(-1 * max(16px, env(safe-area-inset-left, 0px))); padding: 8px max(16px, env(safe-area-inset-right, 0px)) 8px max(16px, env(safe-area-inset-left, 0px)); }
+  .mobile-bar .progress-text { font-size: 0.75rem; }
+  .sheet { padding: 20px 16px 24px; }
+}
+</style>
+
+<div class="shell">
+  <div class="mobile-bar">
+    <button class="btn secondary" id="toc-toggle" type="button" aria-expanded="false" aria-controls="toc">Contents</button>
+    <span class="progress-text" data-progress-text>0 of 0 answered</span>
+    <button class="btn" type="button" data-copy>Copy my answers</button>
+  </div>
+  <nav class="toc" id="toc" aria-label="Contents">
+    <div class="answerbox">
+      <h2>Your answers</h2>
+      <span class="progress-text" data-progress-text>0 of 0 answered</span>
+      <div class="progress-track" aria-hidden="true"><div class="progress-fill" id="progress-fill"></div></div>
+      <div class="btn-row">
+        <button class="btn" type="button" data-copy>Copy my answers</button>
+        <button class="btn secondary" type="button" id="fill-rec">Use recommended for blanks</button>
+      </div>
+      <div class="btn-row">
+        <button class="btn secondary" type="button" id="clear-all">Clear all</button>
+        <button class="btn secondary" type="button" id="clear-confirm" hidden>Yes, clear every answer</button>
+      </div>
+      <div class="copy-status" id="copy-status" role="status" aria-live="polite"></div>
+      <div class="w-note" id="remote-status">Answers save in this browser. Use Copy my answers to send them to the team.</div>
+      <textarea class="copy-fallback" id="copy-fallback" hidden readonly aria-label="Your answers as Markdown"></textarea>
+    </div>
+    <h2>Contents</h2>
+    <ol>
+<li><a href="#model"><span>What I understood</span><span class="count"></span></a></li>
+<li><a href="#contested"><span>Contested ground, morale and fatigue</span><span class="count" data-toc-idea="contested"></span></a></li>
+<li><a href="#combat"><span>Combat numbers</span><span class="count" data-toc-idea="combat"></span></a></li>
+<li><a href="#economy"><span>Income and balance</span><span class="count" data-toc-idea="economy"></span></a></li>
+<li><a href="#movement"><span>Movement, rail and ports</span><span class="count" data-toc-idea="movement"></span></a></li>
+<li><a href="#units"><span>Armies, units, buildings and air</span><span class="count" data-toc-idea="units"></span></a></li>
+<li><a href="#weather"><span>Weather and calendar</span><span class="count" data-toc-idea="weather"></span></a></li>
+<li><a href="#harness"><span>Harness, data and scope</span><span class="count" data-toc-idea="harness"></span></a></li>
+<li><a href="#sequence"><span>Proposed turn sequence</span><span class="count"></span></a></li>
+<li><a href="#ui"><span>Parked for the UI pass (step 3)</span><span class="count"></span></a></li>
+<li><a href="#deferred"><span>Deferred and dropped</span><span class="count"></span></a></li>
+</ol>
+  </nav>
+  <main id="main">
+    <section class="sheet masthead-sheet" id="intro">
+<header class="masthead">
+<p class="eyebrow">Milestone 3 · Step 2 of 4 · Mechanics review</p>
+<h1>Milestone 3 Mechanics Review</h1>
+<p class="meta"><span>19 Nov 2026</span><span>Source: your 110 answers and notes (branch <code>m3-ideation</code>, <code>answers/owner-answers.md</code>)</span><span>Against: <code>m2-strength</code> rules M1–M27</span></p>
+</header>
+
+<p class="summary-line">Your answers describe a coherent game: armies fight and move at territory scale, and sub-territories hold the economy, terrain, rail and ports. Most of the remaining problems are places where two answers, or an answer and its note, pull against each other. A few come from rules we kept from Milestone 2.</p>
+
+<p>This page has four parts:</p>
+<ol>
+<li><strong>What I understood.</strong> The model in one place, with the words fixed. Check it before anything else, because everything below builds on it.</li>
+<li><strong>Contradictions.</strong> Each one says what clashes and proposes a fix, then asks you to pick.</li>
+<li><strong>Gaps.</strong> Things none of the 110 questions covered that the build will need.</li>
+<li><strong>The turn sequence, parked UI notes and deferrals,</strong> for reference.</li>
+</ol>
+<p>Where a note disagreed with the option you ticked, I treated the note as your answer. Those cases are listed in the first section, so you can tell me if I misread one. No widgets or mockups appear here; those come in the UI pass.</p>
+
+</section>
+<section class="sheet" id="model">
+<h2>What I understood</h2>
+<h3>The words</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Word</th>
+<th>Meaning from now on</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Territory</strong></td>
+<td>One of today&#39;s 18 regions. Armies move between territories and fight for a whole territory. Control, victory and recruitment are judged per territory.</td>
+</tr>
+<tr>
+<td><strong>Sub-territory</strong></td>
+<td>A 1936 province, or a scenario override such as Baleares&#39; three islands (about 55 in all). It holds development, a build queue, terrain, rail and a port. It changes hands after battles, but armies never stand in one or fight for one.</td>
+</tr>
+<tr>
+<td><strong>Capital sub-territory</strong></td>
+<td>The sub-territory holding the territory&#39;s capital. Recruiting happens there, it has the most build options, and defenders keep it longest.</td>
+</tr>
+<tr>
+<td><strong>Army</strong></td>
+<td>A group of units that comes from one territory and takes one order. Today&#39;s 35 starting formations become armies of one unit each.</td>
+</tr>
+<tr>
+<td><strong>Unit</strong></td>
+<td>One piece of an army, such as infantry, militia, artillery, truck, cavalry, tank or anti-air. Its type gives the army values and bonuses.</td>
+</tr>
+<tr>
+<td><strong>Contested territory</strong></td>
+<td>A territory where more than one faction holds sub-territories (see Q-MR-21).</td>
+</tr>
+<tr>
+<td><strong>Funds, Manpower</strong></td>
+<td>The only two resources in Milestone 3. Sub-territory development produces both. Food is folded into Manpower: farms raise Manpower, and losing farmland lowers it. That answers your Q-ECON-1 question.</td>
+</tr>
+</tbody></table></div>
+<h3>The model</h3>
+<ul>
+<li><strong>Battles are territory-wide.</strong> A battle&#39;s grade decides losses, morale and how much ground changes hands. Ground means a number of sub-territories, or the whole territory.</li>
+<li><strong>Contested ground is chaos.</strong> Armies in a contested territory attack or withdraw. They cannot entrench, rest or recover morale. They withdraw only to an adjacent territory, through sub-territories their own faction holds.</li>
+<li><strong>Income only comes from a whole territory.</strong> A faction earns from a territory only while it holds every sub-territory there. It recruits only in an uncontested territory, and only in the capital sub-territory.</li>
+<li><strong>Buildings, not tags, decide what a territory can train.</strong> For example, a Barracks trains infantry, a Barracks with a Factory trains artillery, and a Factory with a Depot trains trucks. Every unit type is visible; a greyed-out type says on hover what is missing.</li>
+<li><strong>Every sub-territory has its own build queue.</strong> You pay when you queue an order. Losing the sub-territory forfeits the money on the order in progress, and the new owner inherits it. Orders queued behind it are refunded.</li>
+<li><strong>Movement:</strong><ul>
+<li>an army always moves at least one territory;</li>
+<li>trucks add one;</li>
+<li>mountains or swamp take one away;</li>
+<li>rail is a sub-territory movement bonus.</li>
+</ul>
+</li>
+<li><strong>Air power:</strong><ul>
+<li>recon, fighter and bomber aircraft appear as counters;</li>
+<li>an air raid on a sub-territory rolls one of four outcomes;</li>
+<li>anti-air is a unit.</li>
+</ul>
+</li>
+<li><strong>Generals</strong> give armies a small boost and have a part in morale. They are never scripted; a bad general nudges you to sack him, and generals can die.</li>
+<li><strong>Combat uses a d20</strong> on an explicit 7 × 21 table. Each odds column has its own spread of outcomes, and only the relevant column is shown after a battle.</li>
+<li><strong>Turns are half-months</strong> (Early or Late Month, 24 a year), and turn 1 gets double time.</li>
+<li><strong>Weather</strong> is seasonal and consistent across the map. It shows in the territory pane and next to move targets, never as effects drawn on the map.</li>
+</ul>
+<h3>Notes I treated as overriding the tick</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Question</th>
+<th>You ticked</th>
+<th>Your note says</th>
+<th>I used</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Q-PART-2</td>
+<td>Hybrid: orders on territories, sub-regions for control and income</td>
+<td>Withdrawals path through sub-territories; battles stay territory-wide</td>
+<td>Hybrid, plus sub-territory paths for withdraw, retreat and rail</td>
+</tr>
+<tr>
+<td>Q-RECR-2</td>
+<td>Recruitment tags in scenario data</td>
+<td>Tags are not needed; buildings gate the unit types</td>
+<td>Buildings gate it; no tags</td>
+</tr>
+<tr>
+<td>Q-D20-1 / D20-3</td>
+<td>11-grade ladder / explicit 7 × 21 table</td>
+<td>Each odds column has its own outcome set</td>
+<td>An explicit table over a catalogue of grades (Q-MR-06)</td>
+</tr>
+<tr>
+<td>Q-HARN-1</td>
+<td>Command-line tool writing JSON, CSV and HTML</td>
+<td>JSON only, for robots</td>
+<td>JSON only</td>
+</tr>
+<tr>
+<td>Q-DATA-2</td>
+<td><code>src/main/scenarios/spain-1936-07-31/</code></td>
+<td><code>src/scenarios/spanish-civil-war-1936/</code> with a manifest and a schema</td>
+<td>Your folder (Q-MR-34)</td>
+</tr>
+<tr>
+<td>Q-RAIL-1</td>
+<td>Per-line levels and capacity</td>
+<td>Rail is a sub-territory capability; adjacent rail joins up automatically</td>
+<td>Sub-territory rail (Q-MR-18)</td>
+</tr>
+<tr>
+<td>Q-MOVE-1</td>
+<td>Keep one move per turn</td>
+<td>Trucks +1, terrain −1, rail legs</td>
+<td>A movement allowance (Q-MR-15)</td>
+</tr>
+<tr>
+<td>Q-UNIT-4</td>
+<td>Yield cut, no defence</td>
+<td>A raid roll with &quot;air eliminated&quot; as one outcome</td>
+<td>The raid roll, with anti-air and fighters affecting it</td>
+</tr>
+<tr>
+<td>Q-ECON-5</td>
+<td>(note only)</td>
+<td>Turn order: combat, then training and building progress, then income</td>
+<td>Whole-territory income; cities in contested ground pay nothing</td>
+</tr>
+</tbody></table></div>
+<h3>Already settled by your notes (no question)</h3>
+<ul>
+<li><strong>Supply is gone.</strong> Q-CITY-5&#39;s siege rule leaned on supply, so it needs a replacement (Q-MR-09).</li>
+<li><strong>No CI in Milestone 3.</strong> The platform phase of Q-SEQ-1 loses its CI gate. &quot;A gate reads the budgets&quot; (Q-PROC-6) now means a local check script.</li>
+<li><strong>Foreign aid waits for Milestone 4,</strong> so Q-ECON-8 (aid size) is void. The balance gap it addressed is still real (Q-MR-10).</li>
+<li><strong>Q-PART-8 is moot.</strong> An army entering a contested territory joins the territory battle.</li>
+<li><strong>Pausing</strong> stops the timer in local play only, and the chips show each player&#39;s readiness. Local computer players are always ready.</li>
+<li><strong><code>milestone3.md</code> is out of date.</strong> It says balances are public, recruitment needs supply, and builds take one turn. I will rewrite it from this review before execution.</li>
+</ul>
+
+</section>
+<section class="sheet" id="contested">
+<h2>Contradictions: contested ground, morale and fatigue</h2>
+<p>These answers interact the most, and combined literally they trap armies.</p>
+<p><strong>The trap.</strong> Take an army in contested Asturias:</p>
+<ul>
+<li>it must attack every turn (PART-2 rule 1);</li>
+<li>after three attack turns it is demoralized by fatigue (MOVE-2, MOVE-4);</li>
+<li>a demoralized army cannot attack (M23);</li>
+<li>it cannot rest or recover in contested ground (PART-2);</li>
+<li>only a general can restore morale (GEN-1 note).</li>
+</ul>
+<p>It ends up stuck, unable to attack or recover, until it withdraws. That fits &quot;contested ground is chaos&quot;, but long sieges such as Oviedo, the Madrid front and the Alcázar become impossible unless both sides rotate armies out. The four questions below make it coherent without dropping your intent.</p>
+<div class="questions" data-idea="contested"></div>
+</section>
+<section class="sheet" id="combat">
+<h2>Contradictions: combat numbers</h2>
+<div class="recommend">
+
+<p><strong>Proposed grade catalogue (illustrative).</strong> The explicit 7 × 21 table (Q-D20-3) holds a grade id in each cell, and a catalogue defines what each grade does. Each odds column uses only the grades that fit it: 1:1 can roll Attacker destroyed, while 4:1 cannot (your note). The losses and ground below are starting values for the harness to tune.</p>
+</div>
+
+<div class="table-wrap">
+
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>#</th>
+<th>Grade</th>
+<th>Attacker men lost</th>
+<th>Defender men lost</th>
+<th>Demoralized</th>
+<th>Ground</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Attacker destroyed</td>
+<td>all</td>
+<td>–</td>
+<td>–</td>
+<td>none</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Attacker routed</td>
+<td>35%</td>
+<td>0</td>
+<td>attacker all</td>
+<td>none</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Attacker repulsed</td>
+<td>20%</td>
+<td>0</td>
+<td>attacker half</td>
+<td>none</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Attack checked</td>
+<td>10%</td>
+<td>0</td>
+<td>none</td>
+<td>none</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Bloody stalemate</td>
+<td>20%</td>
+<td>20%</td>
+<td>both half</td>
+<td>none</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Stalemate</td>
+<td>10%</td>
+<td>10%</td>
+<td>none</td>
+<td>none</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Defender gives ground</td>
+<td>10%</td>
+<td>10%</td>
+<td>none</td>
+<td>1 sub-territory</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Defender pushed back</td>
+<td>10%</td>
+<td>20%</td>
+<td>defender half</td>
+<td>2 sub-territories</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Costly victory</td>
+<td>35%</td>
+<td>35%</td>
+<td>none</td>
+<td>whole territory</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Defender driven out</td>
+<td>10%</td>
+<td>20%</td>
+<td>defender half</td>
+<td>whole territory</td>
+</tr>
+<tr>
+<td>11</td>
+<td>Defender routed</td>
+<td>10%</td>
+<td>35%</td>
+<td>defender all</td>
+<td>whole territory</td>
+</tr>
+<tr>
+<td>12</td>
+<td>Defender broken</td>
+<td>10%</td>
+<td>50%</td>
+<td>defender all</td>
+<td>whole territory</td>
+</tr>
+<tr>
+<td>13</td>
+<td>Defender destroyed</td>
+<td>10%</td>
+<td>all</td>
+<td>–</td>
+<td>whole territory</td>
+</tr>
+</tbody></table></div>
+</div>
+
+<p>On a whole-territory grade, defenders retreat (M21). On a 1- or 2-sub-territory grade, they fall back inside the territory (Q-PART-6). Where a territory has only one sub-territory (Ceuta, Melilla), grades 7–8 act as a stalemate (Q-D20-7). This replaces the shape in Q-TEN-1 (&quot;four best grades take all&quot;): here five grades take the whole territory.</p>
+<div class="questions" data-idea="combat"></div>
+</section>
+<section class="sheet" id="economy">
+<h2>Contradictions: income and balance</h2>
+<p><strong>What whole-territory income does on turn 1.</strong> I took each territory&#39;s starting control from today&#39;s <code>scenario.json</code> and assumed every split territory starts partitioned (Q-PART-7). Five territories start contested: Asturias, Aragon, Extremadura, Baleares and Andalucia.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Faction</th>
+<th>Territories it holds whole on turn 1</th>
+<th>Cities in them</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Republic</td>
+<td>Cantabria, País Vasco, Madrid, Castilla-La Mancha, Catalunya, Valencia, Murcia (7)</td>
+<td>10</td>
+</tr>
+<tr>
+<td>Northern command</td>
+<td>Galicia, Navarra, La Rioja, Castilla y León (4)</td>
+<td>5</td>
+</tr>
+<tr>
+<td>Southern command</td>
+<td>Ceuta, Melilla (2)</td>
+<td>0</td>
+</tr>
+</tbody></table></div>
+<p>All four Southern cities (Sevilla, Córdoba, Granada, Cádiz) are in contested Andalucia, so <strong>the Southern command earns nothing from them until Málaga&#39;s province falls</strong>; historically that was February 1937, about 14 turns in. It can recruit only in Ceuta and Melilla. That matches the Army of Africa&#39;s position, but in Revision 7 the Southern command already won only 13% of decided games, so this would likely push it lower.</p>
+<div class="questions" data-idea="economy"></div>
+</section>
+<section class="sheet" id="movement">
+<h2>Contradictions: movement, rail and ports</h2>
+<p>Today every move is one connection, and all of M11 and M17–M21 assume that. Trucks, rail and &quot;move one then rail&quot; create moves that cross several territories. In simultaneous resolution, that raises three questions: what happens when you pass through a territory that the enemy enters that same turn, where you meet an enemy moving the other way, and where you retreat to. These questions settle it.</p>
+<div class="questions" data-idea="movement"></div>
+</section>
+<section class="sheet" id="units">
+<h2>Contradictions: armies, units, buildings and air</h2>
+<p>Under the new definition, an army is a group of units. Today the engine has no such grouping: each formation is one army with one type. So recruitment, replenishment, artillery counting and trucks all need an answer to &quot;per unit or per army?&quot;</p>
+<div class="table-wrap">
+
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Unit</th>
+<th>Proposed effect (one line each, Q-UNIT-6 allows several)</th>
+<th>Needs</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Militia</td>
+<td>Cheap; trains in 1 turn with no building; the only unit that completes training in a contested territory</td>
+<td>–</td>
+</tr>
+<tr>
+<td>Infantry, security forces, colonial veterans</td>
+<td>Today&#39;s values; 2 turns</td>
+<td>Barracks</td>
+</tr>
+<tr>
+<td>Artillery</td>
+<td>+1 d20 per 3 artillery attack points on the attacking side, at most +3; cannot attack alone; 3 turns</td>
+<td>Barracks + Factory</td>
+</tr>
+<tr>
+<td>Cavalry</td>
+<td>+1 movement like a truck, also in mountains; 2 turns</td>
+<td>Barracks</td>
+</tr>
+<tr>
+<td>Tanks</td>
+<td>+1 d20 per 3 tank points, at most +2, on attack; none in Mud or Snow; 4 turns</td>
+<td>Factory + Depot</td>
+</tr>
+<tr>
+<td>Truck</td>
+<td>+1 movement for its army (Q-MR-15, Q-MR-20); no combat value</td>
+<td>Factory + Depot</td>
+</tr>
+<tr>
+<td>Anti-air</td>
+<td>Worsens enemy raid rolls in its territory by 3; no attack</td>
+<td>Factory</td>
+</tr>
+<tr>
+<td>Fighter</td>
+<td>Escorts or intercepts raids within range; grounded by weather</td>
+<td>Airfield</td>
+</tr>
+<tr>
+<td>Bomber</td>
+<td>Raids a sub-territory (four-outcome roll), or supports a battle with +2 d20</td>
+<td>Airfield</td>
+</tr>
+<tr>
+<td>Recon</td>
+<td>Reveals one enemy territory&#39;s balances, build queues and units in training this turn (balances are hidden under Q-ECON-7)</td>
+<td>Airfield</td>
+</tr>
+</tbody></table></div>
+</div>
+
+<div class="questions" data-idea="units"></div>
+</section>
+<section class="sheet" id="weather">
+<h2>Contradictions: weather and calendar</h2>
+<div class="questions" data-idea="weather"></div>
+</section>
+<section class="sheet" id="harness">
+<h2>Contradictions: harness, data and scope</h2>
+<div class="questions" data-idea="harness"></div>
+</section>
+<section class="sheet" id="sequence">
+<h2>Proposed turn sequence</h2>
+<p>This merges M26 with your order (combat, then training and building progress, then income) and with the new systems. Each step uses the state the previous step leaves.</p>
+<div class="table-wrap">
+
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Step</th>
+<th>What happens</th>
+<th>Rules</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Before planning</td>
+<td>The turn&#39;s weather is rolled and shown, with next turn&#39;s odds as a forecast; the timer starts (turn 1 gets double time)</td>
+<td>weather, timer</td>
+</tr>
+<tr>
+<td>1</td>
+<td>Orders are revealed. Spending is checked against start-of-turn balances and paid.</td>
+<td>M1, M9, purchases</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Air missions: recon reveals, fighters intercept, raids roll. Bombers on battle support wait for their battle.</td>
+<td>air</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Transit legs (rail and truck moves through friendly ground) and reinforcements arrive</td>
+<td>M11, Q-MR-16</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Head-on meeting battles, on the final leg only</td>
+<td>M20</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Battles in defended and empty territories; grades apply losses, morale and ground</td>
+<td>M17–M19, grades</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Occupation, returns, retreats, surrenders and withdrawals, along sub-territory paths</td>
+<td>M18, M21</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Standing battles in contested territories, and their retreats</td>
+<td>M27</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Control, including the one-sub-territory-a-turn sweep where no enemy army stands</td>
+<td>M6, M7, P7</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Morale recovery, fatigue, digging in, general deaths</td>
+<td>M22, M23, fatigue</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Training, replenishment and build queues advance; finished units appear and cannot move this turn</td>
+<td>recruitment, builds</td>
+</tr>
+<tr>
+<td>11</td>
+<td>Income from whole territories</td>
+<td>economy</td>
+</tr>
+<tr>
+<td>12</td>
+<td>Victory</td>
+<td>M10</td>
+</tr>
+</tbody></table></div>
+</div>
+</section>
+<section class="sheet" id="ui">
+<h2>Parked for the UI pass (step 3)</h2>
+<p>These notes from your answers are about how things look, so they move to the UI pass. Your two missing notes are first.</p>
+<ul>
+<li><strong>Battle result icon:</strong> hovering over it on the map names the result, for example &quot;Attacker attrition&quot;.</li>
+<li><strong>Weather:</strong><ul>
+<li>weather has no effects drawn on the map;</li>
+<li>clicking a territory shows its weather in the detail pane on the right;</li>
+<li>when you give move orders, each reachable territory shows its weather next to the attack odds.</li>
+</ul>
+</li>
+<li><strong>The territory pane:</strong><ul>
+<li>it lists the sub-territories with their development and build queues;</li>
+<li>zooming in and clicking one sub-territory opens the same pane focused on it;</li>
+<li>three things can now be ordered (armies, sub-territory builds, territory recruitment), so this layout needs options.</li>
+</ul>
+</li>
+<li><strong>Recruitment:</strong> every unit type is listed, and greyed-out types say on hover which buildings or resources are missing.</li>
+<li><strong>Rail on the map:</strong> thinner lines drawn as Bezier curves, clearly tied to their sub-territories, with adjacent rail sub-territories joining automatically.</li>
+<li><strong>Status chips:</strong><ul>
+<li>the row of chips shows each player&#39;s readiness;</li>
+<li>a countdown chip appears when there is a timer;</li>
+<li>warnings come at 1 minute and at 10 seconds.</li>
+</ul>
+</li>
+<li><strong>Dates</strong> read &quot;Early&quot; or &quot;Late&quot; plus the month, for example &quot;Late July 1936&quot;.</li>
+<li><strong>Battle results</strong> show only the table column for that battle&#39;s odds.</li>
+</ul>
+
+</section>
+<section class="sheet" id="deferred">
+<h2>Deferred and dropped</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Where it went</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Political capital, foreign aid (as a &quot;focus&quot;)</td>
+<td>Milestone 4</td>
+</tr>
+<tr>
+<td>CI/CD (GitHub Actions), CLAUDE.md and hooks, hosting</td>
+<td>Milestone 5</td>
+</tr>
+<tr>
+<td>Supply as a rule</td>
+<td>Dropped; control only</td>
+</tr>
+<tr>
+<td>Diplomacy-style support orders</td>
+<td>Dropped for good</td>
+</tr>
+<tr>
+<td>Action points</td>
+<td>Dropped</td>
+</tr>
+<tr>
+<td>Rail gauge</td>
+<td>Not now. It may matter for a WW1 or WW2 invasion scenario in the long run.</td>
+</tr>
+</tbody></table></div>
+
+</section>
+
+  </main>
+</div>
+
+<script id="questions-data" type="application/json">[{"id":"Q-MR-01","idea":"contested","text":"How should a demoralized army recover its morale?","context":"Three answers give three routes: rest (M23, Q-MIS-b-11), Replenish clears demoralization (Q-MIS-b-2), and your Q-GEN-1 note says that only an army with a general can recover morale. Q-PART-2 also bans recovering morale in contested ground.","options":[{"label":"Three routes, each with its own place: rest in uncontested ground (M23), Replenish in uncontested ground (Q-MIS-b-2), and a general rallying his army in contested ground","recommended":true,"rationale":"Keeps every answer. The general's rally is the one way out of the contested-ground trap, which makes generals matter without stranding every army that lacks one."},{"label":"Only a general ever restores morale, anywhere","rationale":"The literal reading of the Q-GEN-1 note. Armies without a general stay demoralized until they are destroyed, so generals would be needed on almost every army."},{"label":"Rest and Replenish only; a general gives his +1 but never rallies"}],"groupTitle":"Contested ground"},{"id":"Q-MR-02","idea":"contested","text":"What does a demoralized army in a contested territory do?","context":"It cannot attack (M23), and Q-PART-2 says it cannot rest either. Today it would have no legal order apart from leaving.","options":[{"label":"It holds and defends, gains no fatigue, and may withdraw; it recovers only if a general rallies it","recommended":true,"rationale":"Armies can stay in a siege. A demoralized army becomes a weak garrison instead of an army with no legal order."},{"label":"It must withdraw; if it has no path out, it holds"},{"label":"It must withdraw; if it has no path out, it surrenders","rationale":"The harshest choice. Contested ground empties fast, which works against long sieges."}],"groupTitle":"Contested ground"},{"id":"Q-MR-03","idea":"contested","text":"\"Armies in contested ground attack by default\": how does that fit M27 standing battles, where only the strongest faction attacks?","context":"In Q-TEN-2 you kept M27: one standing battle per contested territory per turn, and the faction with the greatest standing attack is the attacker. Your Q-PART-2 note says every army in contested ground attacks.","options":[{"label":"Keep M27 as it is: \"attack by default\" means no entrenching or resting, and only the M27 attacker's armies gain fatigue","recommended":true,"rationale":"One battle per territory, as today. Fatigue (\"defending doesn't exhaust\", Q-MOVE-5) wears down whoever keeps pressing, which is how offensives stalled."},{"label":"Every faction attacks every turn: two battles per contested territory, both sides tire","rationale":"Losses roughly double, and fatigue demoralizes both sides within three turns."},{"label":"Attack is the default, but a player may set an army in contested ground to Hold; M27 then chooses among the armies set to attack"}],"groupTitle":"Contested ground"},{"id":"Q-MR-04","idea":"contested","text":"What should fatigue level 2 do?","context":"You picked a 0–3 fatigue track with a value penalty at 2 (Q-MOVE-2). Q-MIS-b-11 ruled out a third value multiplier on counters beyond men and morale.","options":[{"label":"A named roll modifier: \"Fatigued\", −2 on the d20 at level 2, demoralized at 3; +1 for each turn the army attacks; a quiet turn in uncontested ground resets it to 0","recommended":true,"rationale":"A counter still shows exactly what fights (M12), and the penalty is named in the battle breakdown like any other modifier."},{"label":"A value penalty at 2 (×0.75), accepting a third multiplier on counters"},{"label":"No effect at 2; only demoralization at 3"}],"groupTitle":"Contested ground"},{"id":"Q-MR-05","idea":"contested","text":"What does a battle do to a Replenish order?","context":"Q-RECR-5 says any battle cancels it. Your Q-MOVE-5 note says defending \"will affect the replenishment rate\", which suggests defending reduces replenishment instead of cancelling it.","options":[{"label":"Attacking, a meeting battle or a retreat cancels it with a refund; defending halves the men who arrive; contested territories never replenish","recommended":true,"rationale":"Keeps both notes. A front-line garrison still fills up slowly, while an attacking army must pull back to refit."},{"label":"Any battle cancels it (Q-RECR-5 as ticked); defending has no other effect"},{"label":"Battles never cancel it; fatigue reduces the men who arrive"}],"groupTitle":"Contested ground"},{"id":"Q-MR-06","idea":"combat","text":"Is the grade catalogue above the right shape?","context":"This brings Q-D20-1 (an 11-grade ladder), Q-D20-2 (13 or more grades), Q-D20-3 (an explicit 7 × 21 table) and your note (each odds column has its own outcomes) into one design.","options":[{"label":"Yes: 13 grades, with an explicit 7 × 21 table in data whose cells name grades; the harness tunes the numbers","recommended":true},{"label":"Fewer: drop Attack checked and Defender broken (11 grades)"},{"label":"Different grades (describe them in the notes)"}],"groupTitle":"Combat numbers"},{"id":"Q-MR-07","idea":"combat","text":"Your \"+1\" for a general (Q-GEN-1) and for city barricades (Q-PART-3): are they on the d20?","context":"Q-D20-6 multiplies the old d6 modifiers by 3, so works become +3 a turn, up to +9. On the d20, +1 shifts results by 5%; one old d6 point (+3) shifts them by about 15%.","options":[{"label":"Both on the d20: general +1, barricades +1","recommended":true,"rationale":"\"A small boost\", as you put it. Two such bonuses together still count for less than one turn of digging in."},{"label":"General +1 on the d20; barricades +3, worth one old d6 point or a turn of digging in"},{"label":"Both +3, worth one old d6 point each"}],"groupTitle":"Combat numbers"},{"id":"Q-MR-08","idea":"combat","text":"Below what strength is a worn-down army destroyed?","context":"Q-MIS-b-12 says 10% of full strength; Q-D20-4 (ticked) says 25%.","options":[{"label":"10% (Q-MIS-b-12)","recommended":true,"rationale":"The question that asked exactly this. Q-D20-4 adopts the same value."},{"label":"25% (Q-D20-4)"}],"groupTitle":"Combat numbers"},{"id":"Q-MR-09","idea":"combat","text":"When does the siege bonus (city barricades) apply?","context":"Q-CITY-5 relied on supply to model sieges, and supply is dropped. Your Q-PART-3 note adds barricades for a defender who is \"setting up for a siege\".","options":[{"label":"When the defending faction holds only the capital sub-territory of a territory (Oviedo in 1936); on a gives-ground grade it keeps the city and does not fall back","recommended":true,"rationale":"A clear trigger the player can see on the map, and the last sub-territory becomes the hardest to take."},{"label":"Whenever the battle territory has a city the defender controls, for every faction, like Popular resistance today"},{"label":"Only with a Fortifications building"}],"groupTitle":"Combat numbers"},{"id":"Q-MR-10","idea":"economy","text":"With no foreign aid until Milestone 4, how should Milestone 3 keep the Southern command in the game?","context":"Under whole-territory income, the Southern command earns only from Ceuta and Melilla until Andalucia falls (table above). In Revision 7 it won 13% of decided games.","options":[{"label":"Starting stocks in scenario data: each faction starts with Funds and Manpower sized from harness runs (largest per army for the Southern command), and Ceuta and Melilla get a high Manpower yield","recommended":true,"rationale":"Keeps your rule exactly. It stands in for the Army of Africa's head start, and aid can replace it in Milestone 4."},{"label":"Relax the rule: a contested territory pays each holder half the yield of the sub-territories it holds"},{"label":"Leave it: the Southern command is meant to be poor until it breaks out; tune it only if the harness says so"}],"groupTitle":"Income and balance"},{"id":"Q-MR-11","idea":"economy","text":"What happens to build queues in a contested territory?","options":[{"label":"They pause: no progress and no loss. A sub-territory that changes hands follows your rule (the money on the order in progress is forfeit and the order passes to the new owner; queued orders are refunded)","recommended":true,"rationale":"Matches \"no income, no recruiting\" in contested ground without wiping out investment."},{"label":"They keep progressing"},{"label":"They are cancelled and refunded"}],"groupTitle":"Income and balance"},{"id":"Q-MR-12","idea":"economy","text":"What can a rural sub-territory develop?","context":"Your Q-CITY-3 note: income is the sum of sub-territory development, rural sub-territories develop too (\"olive farms or whatever makes sense\"), and each sub-territory has its own queue.","options":[{"label":"A small catalogue in data: Farms (Manpower), Mines (Funds) and Industry (Funds, city sub-territories only), each with levels 0–3 and 1936 starting levels","recommended":true,"rationale":"Three names a player can learn. Asturias' coal, Rio Tinto and Barcelona's industry each get a real lever."},{"label":"One generic Development level per sub-territory (0–5) that yields both resources"},{"label":"Only city buildings are built; rural sub-territories have a fixed yield"}],"groupTitle":"Income and balance"},{"id":"Q-MR-13","idea":"economy","text":"Which buildings exist?","context":"Your Q-RECR-2 note gates units with Barracks, Factory and Depot. In Q-CITY-2 you ticked Depot, Workshop, Fortifications, Airfield, Rail yard and Hospital, but that list has no Barracks or Factory.","options":[{"label":"Barracks, Factory (replaces Workshop), Depot, Fortifications, Hospital, Airfield and Rail yard; Port and Rail are levelled sub-territory improvements, not buildings. With supply dropped, the Depot gates trucks and tanks and raises the replenishment cap","recommended":true},{"label":"As above, but keep Workshop and Factory separate"},{"label":"A different list (describe it in the notes)"}],"groupTitle":"Income and balance"},{"id":"Q-MR-14","idea":"economy","text":"What did you mean by militia \"coming to arms\" in a contested territory?","context":"Your Q-PART-2 rule 3 note says an order to call militia has to be given when the territory becomes contested. Orders are written before anyone knows a territory will become contested, so the call has to come from training already under way, or from a standing order.","options":[{"label":"Training already under way when the territory becomes contested: militia finish and appear, other units pause until it is uncontested; no new Recruit orders there","recommended":true},{"label":"A standing \"call to arms\" set on a territory in advance: if it becomes contested, militia rise at once and you pay for them then"},{"label":"New militia-only Recruit orders are allowed in contested ground"}],"groupTitle":"Income and balance"},{"id":"Q-MR-15","idea":"movement","text":"How far can an army move in a turn?","context":"You ticked one move per turn (Q-MOVE-1), but your rail note adds trucks (+1), mountains and swamp (−1) and a minimum of 1.","options":[{"label":"An allowance in territories: 1, plus 1 with enough trucks, minus 1 for mountain or swamp on the way in, and minus 1 in Mud or Snow; never below 1. Rail legs don't count against it","recommended":true,"rationale":"This is your rule written out. It also replaces \"movement costs doubled\" in Q-WX-5 with \"−1 in Mud or Snow\"."},{"label":"Keep one territory per turn in Milestone 3; trucks, terrain and the allowance come with rail later"}],"groupTitle":"Movement, rail, ports"},{"id":"Q-MR-16","idea":"movement","text":"How do moves across several territories resolve when all orders resolve together?","options":[{"label":"Only the last step may enter enemy or contested ground. Earlier steps pass only through territories your faction held whole at the start of the turn, resolve first like reinforcements, and cannot be intercepted. Meeting battles (M20) happen on the last step only","recommended":true,"rationale":"All of M11 and M17–M21 keep working unchanged. A railway move is a fast way to reach the front, not a way to break through."},{"label":"Step by step: every army's first step resolves, then every second step, with battles at each step","rationale":"Hard to predict and hard to show in the odds preview; Diplomacy avoided this for good reason."},{"label":"Transit can be intercepted: if an enemy army enters a territory you are passing through, your army stops there and defends"}],"groupTitle":"Movement, rail, ports"},{"id":"Q-MR-17","idea":"movement","text":"In your rail note, option 2 is \"move one territory, then take rail\". Can that first move be an attack?","options":[{"label":"No: it must be into friendly ground, so an attack is always the last step. \"Rail, then attack one territory\" (option 3) is how you attack from a railhead","recommended":true},{"label":"Yes: if the attack takes the territory, the army continues by rail; otherwise it stops","rationale":"This breaks Q-MR-16's rule that only the last step fights, and makes the odds preview depend on an earlier battle's outcome."}],"groupTitle":"Movement, rail, ports"},{"id":"Q-MR-18","idea":"movement","text":"How should rail work in data and on the map?","context":"You ticked per-line levels with capacity (Q-RAIL-1), but your Q-RAIL-3 and Q-RAIL-5 notes make rail a sub-territory capability, with adjacent rail joining up automatically and \"the unit needs to path on the rail\".","options":[{"label":"Each sub-territory has a rail level from 0 to 3, and adjacent rail sub-territories connect. An army boards at its territory's capital and rides through rail sub-territories its faction holds to another territory's capital. The route's lowest level sets its range, and the boarding capital's level sets how many armies can leave per turn (a Rail yard adds 1)","recommended":true,"rationale":"Your model, plus a fixed boarding point so the army never has to stand in a sub-territory."},{"label":"Per-line levels between pairs of territories (Q-RAIL-1 as ticked); sub-territories only decide who holds each end"}],"groupTitle":"Movement, rail, ports"},{"id":"Q-MR-19","idea":"movement","text":"An army moves between territories, but terrain belongs to sub-territories. Which terrain counts on the way in?","options":[{"label":"Each connection names the sub-territory it enters on each side; that sub-territory's terrain applies","recommended":true,"rationale":"Asturias and Navarra's passes then cost a move, and the open Meseta doesn't."},{"label":"Each territory gets one terrain, the worst of its sub-territories"},{"label":"The capital sub-territory's terrain counts"}],"groupTitle":"Movement, rail, ports"},{"id":"Q-MR-20","idea":"movement","text":"How many trucks does an army need for its +1?","options":[{"label":"At least one truck for every two other units; trucks take losses like every other unit","recommended":true},{"label":"One truck carries the whole army"},{"label":"One truck for every other unit"}],"groupTitle":"Movement, rail, ports"},{"id":"Q-MR-21","idea":"movement","text":"What makes a territory contested, and what does an entry with no enemy army there take?","context":"At the start, Extremadura has a Republican army and no enemy army, but Cáceres is Nationalist. Baleares has no armies at all. M6 (an unopposed move takes the territory) conflicts with P7 (one sub-territory a turn, Q-PART-9).","options":[{"label":"Contested means two or more factions hold sub-territories there. An army entering a territory the enemy holds whole, with no enemy army there, takes all of it (M6). Inside a contested territory where the enemy has no army, your armies take one enemy sub-territory a turn (P7), nearest the attack's origin first and the capital last","recommended":true,"rationale":"Grand-strategy speed in open country, and a turn or two to mop up a split territory, as Q-PART-9 expected for Cáceres."},{"label":"Contested means armies of two or more factions are there; holding sub-territories without an army doesn't count"},{"label":"One sub-territory a turn always, even when entering an empty enemy territory"}],"groupTitle":"Movement, rail, ports"},{"id":"Q-MR-22","idea":"movement","text":"Do forced retreats (M21) follow the same path rule as Withdraw orders?","context":"Your note: a withdrawal passes only through your own sub-territories, so a surrounded army cannot slip out.","options":[{"label":"Yes: a retreating army needs a path through its own sub-territories to an adjacent territory it held at the start of the turn; without one it surrenders","recommended":true,"rationale":"Encirclement becomes real, which is the point of your rule. Expect more surrenders in the harness."},{"label":"No: only Withdraw orders need a path; forced retreats work as today"}],"groupTitle":"Movement, rail, ports"},{"id":"Q-MR-23","idea":"movement","text":"How do sea moves and amphibious assaults work?","context":"In Q-CITY-6 you ticked a port at each end, and your note adds a disadvantaged landing where there is none. Your Q-CITY-7 note: ports are sub-territories, and Ceuta and Melilla are one-sub-territory territories.","options":[{"label":"A sea move needs a friendly port to sail from. Into a friendly port, it lands normally, up to the port's capacity. Onto an enemy coast with no friendly port, it is an amphibious assault: −4 on the d20, at most one army per sea connection per turn","recommended":true},{"label":"A port at both ends, always; no amphibious assault"},{"label":"An amphibious assault needs no port at either end"}],"groupTitle":"Movement, rail, ports"},{"id":"Q-MR-24","idea":"units","text":"How do armies form and change?","context":"An army is a group of units from one territory with one order. Today each formation is one army of one type.","options":[{"label":"A Recruit order makes a new one-unit army in that territory, with that territory as its home. With an Organize order, armies from the same home territory standing in one territory may merge, or an army may split off units; an army that organizes doesn't move that turn","recommended":true,"rationale":"\"Comes from one territory\" becomes a real rule that players can see (the Navarra requetés stay Navarrese)."},{"label":"Recruits join an army from their home territory standing there; armies never merge or split otherwise"},{"label":"Armies never merge or split: one army is one unit, as today"}],"groupTitle":"Armies, units, air"},{"id":"Q-MR-25","idea":"units","text":"Is the artillery bonus counted per side or per army?","options":[{"label":"Per side: add up the artillery attack points of every attacking army in the battle, +1 on the d20 per 3, at most +3","recommended":true,"rationale":"There is one roll per battle, so a per-side bonus is the only reading that is easy to show."},{"label":"Only the best single army's artillery counts"}],"groupTitle":"Armies, units, air"},{"id":"Q-MR-26","idea":"units","text":"Should the unit effect table above be the starting sheet?","options":[{"label":"Yes; the harness tunes the numbers","recommended":true},{"label":"Yes, with changes (listed in the notes)"},{"label":"Fewer new types in Milestone 3: artillery, trucks and aircraft now; cavalry, tanks and anti-air later"}],"groupTitle":"Armies, units, air"},{"id":"Q-MR-27","idea":"units","text":"How do aircraft counters work?","context":"You picked counters with recon, fighter and bomber roles (Q-UNIT-3), raids on a chosen sub-territory with a four-outcome roll (Q-UNIT-4 note), and anti-air units. Nothing says yet where aircraft are based or how far they reach.","options":[{"label":"Each aircraft counter is based in a territory with an Airfield. Each turn it flies one mission within a range in territories (set in data): raid, intercept, battle support (bombers) or recon. Weather grounds it unless the airfield is paved. Losses come from the raid roll and from enemy fighters","recommended":true},{"label":"A faction air pool assigned to missions each turn, with counters only as a display"},{"label":"As recommended, but no recon in Milestone 3"}],"groupTitle":"Armies, units, air"},{"id":"Q-MR-28","idea":"units","text":"How much of the generals design belongs in Milestone 3?","context":"Your notes: a small boost (+1), rallying in contested ground, bad generals that nudge you to sack them, deaths, and nothing scripted. In idea 8 you said \"let's not muddy this too much\".","options":[{"label":"A roster of 3–5 named commanders per faction in data, each with one trait, good or bad. An attached general gives +1 and can rally his army. Sacking is a free order that brings in the next on the roster. A general can die only when his army is destroyed or routed, on a seeded roll","recommended":true},{"label":"Generals wait for Milestone 4, where political capital could pay for sacking"},{"label":"Only the +1 and the rally in Milestone 3; traits, sacking and deaths later"}],"groupTitle":"Armies, units, air"},{"id":"Q-MR-29","idea":"weather","text":"One roll for the whole map, or four zones?","context":"Your Q-WX-1 note asks for one roll for the whole map so weather is consistent; in Q-WX-2 you picked four zones.","options":[{"label":"One d100 roll per turn, read against each zone's seasonal table, with every table ordered from best weather to worst. A bad roll is bad everywhere, but the Meseta can see snow while the South sees rain","recommended":true,"rationale":"Weather stays consistent across the map without every zone getting the same outcome."},{"label":"One weather for the whole map from a single national table; the zones are dropped"},{"label":"Four independent rolls (Q-WX-2 as ticked)"}],"groupTitle":"Weather and calendar"},{"id":"Q-MR-30","idea":"weather","text":"Q-WX-5 closes sea connections in storms, but the outcome list (Q-WX-4) has no Storm. What closes the sea?","options":[{"label":"Add Storm as a seventh outcome in the coastal zones' winter rows only; it closes every sea connection touching that zone for the turn","recommended":true},{"label":"Rain in a winter month closes the sea"},{"label":"Drop sea closures"}],"groupTitle":"Weather and calendar"},{"id":"Q-MR-31","idea":"weather","text":"How is the calendar counted?","context":"Q-WX-7 gives 24 turns a year shown as Early or Late Month. Q-TEN-4 gives two-week turns, which makes 26 a year.","options":[{"label":"24 half-month turns a year, starting Late July 1936; Q-TEN-4's \"two weeks\" becomes \"half a month\". The harness runs 60 to 70 turns, which is about January to June 1939","recommended":true},{"label":"Fixed 14-day turns, with each turn's date range shown"}],"groupTitle":"Weather and calendar"},{"id":"Q-MR-32","idea":"harness","text":"What freeze-rate target should Milestone 3 aim for?","context":"Q-MIS-e-2 (ticked) says 20% or less; your Q-HARN-1 note says under 15%. A frozen game is one that reaches the turn limit with no winner; today 58% of games freeze.","options":[{"label":"15% or less over 1000 games by the end of Milestone 3, with every faction winning at least 20% of decided games","recommended":true},{"label":"20% or less (Q-MIS-e-2)"}],"groupTitle":"Harness, data, scope"},{"id":"Q-MR-33","idea":"harness","text":"Where does the computer player's 1-in-100 blunder chance apply?","options":[{"label":"It is a scenario value (starting at 1 in 100 orders) built into the computer player with seeded rolls, so it applies in real games and the harness alike; the harness reports freeze rates with and without it","recommended":true,"rationale":"If only the harness blundered, the harness would measure a different game from the one people play."},{"label":"Harness only: computer players in real games never blunder"},{"label":"No blunder chance; fix freezing through the rules alone"}],"groupTitle":"Harness, data, scope"},{"id":"Q-MR-34","idea":"harness","text":"Can a scenario folder hold code?","context":"Your Q-DATA-2 note puts a custom rule plugin in each scenario folder. In Q-DATA-1 you chose named rule modules in engine code, selected by data, and the north star is \"jpegs and jsons\".","options":[{"label":"src/scenarios/\u003cid>/ holds scenario.json, map.json, its assets and an optional plugin.ts. The plugin may only register named rule modules through the interface the engine's own modules use. src/scenarios/MANIFEST.md and scenario.schema.json describe the folder; shared symbols stay in one shared folder","recommended":true},{"label":"No code in scenario folders in Milestone 3: data and assets only; every module lives in the engine"},{"label":"Any code is allowed in a scenario folder"}],"groupTitle":"Harness, data, scope"},{"id":"Q-MR-35","idea":"harness","text":"What should the scenario folder be called?","options":[{"label":"Its id: spanish-civil-war-1936 (not \"spainish\"). A scenario is one war with one start date; another start date is a new folder that may reuse this one's assets. The tiny-front fixture uses the same layout under src/test/fixtures/scenarios/","recommended":true},{"label":"Keep the dated id spain-1936-07-31"}],"groupTitle":"Harness, data, scope"},{"id":"Q-MR-36","idea":"harness","text":"With a larger Milestone 3 (Q-SEQ-2), and the computer player required to use every new order (Q-HARN-8), what does Revision 1 attempt?","context":"A revision is an attempt at the whole milestone. The larger scope adds about ten systems, and each needs computer-player logic before it merges.","options":[{"label":"Everything. The contract stream first fixes the types and schema for every system; the computer player gets a simple heuristic for each new order, even a weak one. Playtests then decide where Revision 2 goes deeper","recommended":true},{"label":"Core first: sub-territories, d20, economy, recruitment, weather, timer and harness in Revision 1; rail, air and generals start in Revision 2"},{"label":"Relax Q-HARN-8: new orders may land before the computer player uses them"}],"groupTitle":"Harness, data, scope"}]</script>
+<script>
+
+</script>
+<script>
+(function () {
+  "use strict";
+  var KEY = "m3-mechanics-answers-v1";
+  var questions = [];
+  try { questions = JSON.parse(document.getElementById("questions-data").textContent); } catch (e) { questions = []; }
+  var byId = {};
+  questions.forEach(function (q) { byId[q.id] = q; });
+  var answers = {};
+  try { var raw = window.localStorage.getItem(KEY); if (raw) answers = JSON.parse(raw) || {}; } catch (e) { answers = {}; }
+  var remote = null, remoteTimer = null;
+  function remoteStatus(text) { var s = document.getElementById("remote-status"); if (s) s.textContent = text; }
+  function pushRemote() {
+    if (!remote) return;
+    clearTimeout(remoteTimer);
+    remoteTimer = setTimeout(function () {
+      var n = 0; questions.forEach(function (q) { if (isAnswered(q.id)) n += 1; });
+      remote.set({ answers: answers, answered: n, total: questions.length, updatedAt: new Date().toISOString() }).then(
+        function () { remoteStatus("Saved to this artifact for the team."); },
+        function (e) { if (e && (e.code === "invalid_argument" || e.code === "revoked" || e.code === "not_granted")) { remote = null; remoteStatus("Saved in this browser only. Use Copy my answers to send them."); } });
+    }, 1200);
+  }
+  function save() { try { window.localStorage.setItem(KEY, JSON.stringify(answers)); } catch (e) { /* storage unavailable: answers live in the page only */ } pushRemote(); }
+  function isAnswered(id) { var a = answers[id]; return !!(a && a.choices && a.choices.length); }
+
+  function el(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
+
+  function renderQuestion(q) {
+    var fs = el("fieldset", "q"); fs.id = q.id; fs.setAttribute("data-qid", q.id);
+    var lg = el("legend"); var head = el("div", "q-head");
+    head.appendChild(el("span", "q-id", q.id));
+    head.appendChild(el("span", "q-text", q.text));
+    if (q.multi) head.appendChild(el("span", "q-multi", "Choose all that apply"));
+    lg.appendChild(head); if (q.context) lg.appendChild(el("p", "q-ctx", q.context)); fs.appendChild(lg);
+    var type = q.multi ? "checkbox" : "radio";
+    (q.options || []).forEach(function (o, i) {
+      var lab = el("label", "opt");
+      var inp = document.createElement("input"); inp.type = type; inp.name = q.id; inp.value = String(i); inp.id = q.id + "-o" + i;
+      var txt = el("span"); txt.appendChild(document.createTextNode(o.label));
+      if (o.recommended) txt.appendChild(el("span", "rec", "(Recommended)"));
+      lab.appendChild(inp); lab.appendChild(txt);
+      if (o.rationale) lab.appendChild(el("span", "why", o.rationale));
+      fs.appendChild(lab);
+      inp.addEventListener("change", function () { readQuestion(fs, q); });
+    });
+    var nl = el("label", "notes-label", "Other / notes"); nl.htmlFor = q.id + "-notes";
+    var ta = document.createElement("textarea"); ta.id = q.id + "-notes"; ta.rows = 1; ta.placeholder = "Optional: another option, a condition, or a reason";
+    ta.addEventListener("input", function () { readQuestion(fs, q); });
+    fs.appendChild(nl); fs.appendChild(ta);
+    applyAnswer(fs, q);
+    return fs;
+  }
+  function applyAnswer(fs, q) {
+    var a = answers[q.id] || {};
+    var chosen = (a.choices || []).map(String);
+    Array.prototype.forEach.call(fs.querySelectorAll("input"), function (inp) { inp.checked = chosen.indexOf(inp.value) >= 0; });
+    var ta = fs.querySelector("textarea"); if (ta) ta.value = a.notes || "";
+    fs.classList.toggle("answered", isAnswered(q.id));
+  }
+  function readQuestion(fs, q) {
+    var choices = [];
+    Array.prototype.forEach.call(fs.querySelectorAll("input"), function (inp) { if (inp.checked) choices.push(Number(inp.value)); });
+    var notes = fs.querySelector("textarea").value;
+    if (!choices.length && !notes.trim()) delete answers[q.id]; else answers[q.id] = { choices: choices, notes: notes };
+    fs.classList.toggle("answered", isAnswered(q.id));
+    save(); updateProgress();
+  }
+
+  var groups = {};
+  questions.forEach(function (q) { var k = String(q.idea); (groups[k] = groups[k] || []).push(q); });
+  Array.prototype.forEach.call(document.querySelectorAll(".questions[data-idea]"), function (box) {
+    var list = groups[box.getAttribute("data-idea")] || [];
+    if (!list.length) { box.appendChild(el("p", "missing", "No questions were drafted for this item.")); return; }
+    list.forEach(function (q) { box.appendChild(renderQuestion(q)); });
+  });
+
+  function updateProgress() {
+    var n = 0; questions.forEach(function (q) { if (isAnswered(q.id)) n += 1; });
+    var label = n + " of " + questions.length + " answered";
+    Array.prototype.forEach.call(document.querySelectorAll("[data-progress-text]"), function (s) { s.textContent = label; });
+    var fill = document.getElementById("progress-fill"); if (fill) fill.style.width = (questions.length ? (100 * n / questions.length) : 0) + "%";
+    Array.prototype.forEach.call(document.querySelectorAll("[data-toc-idea]"), function (c) {
+      var list = [];
+      c.getAttribute("data-toc-idea").split(",").forEach(function (k) { list = list.concat(groups[k] || []); });
+      var m = 0; list.forEach(function (q) { if (isAnswered(q.id)) m += 1; });
+      c.textContent = list.length ? (m + "/" + list.length) : "";
+    });
+  }
+
+  function answersMarkdown() {
+    var lines = ["# Milestone 3 mechanics review answers", ""];
+    var n = 0; questions.forEach(function (q) { if (isAnswered(q.id) || (answers[q.id] && answers[q.id].notes)) n += 1; });
+    lines.push("Answered " + n + " of " + questions.length + " questions. Copied " + new Date().toISOString().slice(0, 10) + ".", "");
+    var currentIdea = null;
+    questions.forEach(function (q) {
+      var a = answers[q.id]; if (!a) return;
+      if (q.idea !== currentIdea) { currentIdea = q.idea; lines.push("## " + (q.groupTitle || ("Idea " + q.idea)), ""); }
+      var picked = (a.choices || []).map(function (i) { var o = q.options[i]; return o ? o.label + (o.recommended ? " (Recommended)" : "") : "?"; });
+      lines.push("- **" + q.id + "** " + q.text);
+      lines.push("  - Answer: " + (picked.length ? picked.join("; ") : "(no option chosen)"));
+      if (a.notes && a.notes.trim()) lines.push("  - Notes: " + a.notes.trim().replace(/\s*\n\s*/g, " / "));
+    });
+    var blanks = questions.filter(function (q) { return !answers[q.id]; }).map(function (q) { return q.id; });
+    if (blanks.length) { lines.push("", "## Unanswered", "", blanks.join(", ")); }
+    return lines.join("\n") + "\n";
+  }
+  var status = document.getElementById("copy-status");
+  var fallback = document.getElementById("copy-fallback");
+  function showFallback(text) {
+    fallback.hidden = false; fallback.value = text; fallback.focus(); fallback.select();
+    status.textContent = "Copying is blocked here. The answers are selected below: copy them by hand.";
+  }
+  Array.prototype.forEach.call(document.querySelectorAll("[data-copy]"), function (b) {
+    b.addEventListener("click", function () {
+      var text = answersMarkdown();
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(function () { status.textContent = "Copied as Markdown. Paste it into the chat or the tasks doc."; fallback.hidden = true; },
+            function () { showFallback(text); });
+        } else { showFallback(text); }
+      } catch (e) { showFallback(text); }
+      if (window.matchMedia("(max-width: 900px)").matches) { document.getElementById("toc").classList.add("open"); document.getElementById("toc-toggle").setAttribute("aria-expanded", "true"); }
+    });
+  });
+  document.getElementById("fill-rec").addEventListener("click", function () {
+    var filled = 0;
+    questions.forEach(function (q) {
+      if (isAnswered(q.id)) return;
+      var picks = []; (q.options || []).forEach(function (o, i) { if (o.recommended && (q.multi || picks.length === 0)) picks.push(i); });
+      if (!picks.length) return;
+      var prev = answers[q.id] || { notes: "" };
+      answers[q.id] = { choices: picks, notes: prev.notes || "" }; filled += 1;
+    });
+    save();
+    Array.prototype.forEach.call(document.querySelectorAll("fieldset.q"), function (fs) { applyAnswer(fs, byId[fs.getAttribute("data-qid")]); });
+    updateProgress(); status.textContent = filled + " blank questions set to the recommended option. Review and change any you disagree with.";
+  });
+  var clearAll = document.getElementById("clear-all"), clearConfirm = document.getElementById("clear-confirm");
+  clearAll.addEventListener("click", function () { clearConfirm.hidden = !clearConfirm.hidden; });
+  clearConfirm.addEventListener("click", function () {
+    answers = {}; save(); clearConfirm.hidden = true;
+    Array.prototype.forEach.call(document.querySelectorAll("fieldset.q"), function (fs) { applyAnswer(fs, byId[fs.getAttribute("data-qid")]); });
+    updateProgress(); status.textContent = "All answers cleared.";
+  });
+  var toggle = document.getElementById("toc-toggle"), toc = document.getElementById("toc");
+  toggle.addEventListener("click", function () { var open = toc.classList.toggle("open"); toggle.setAttribute("aria-expanded", open ? "true" : "false"); });
+  Array.prototype.forEach.call(toc.querySelectorAll("ol a"), function (a) { a.addEventListener("click", function () { toc.classList.remove("open"); toggle.setAttribute("aria-expanded", "false"); }); });
+
+  // Widgets
+  Array.prototype.forEach.call(document.querySelectorAll(".widget[data-widget]"), function (w) {
+    var fn = window.M3W && window.M3W[w.getAttribute("data-widget")];
+    if (typeof fn !== "function") { w.appendChild(el("p", "widget-error", "This widget is not available.")); return; }
+    try { fn(w); } catch (e) { w.appendChild(el("p", "widget-error", "This widget failed to start: " + (e && e.message))); }
+  });
+
+  // Active section in the contents
+  var links = Array.prototype.slice.call(toc.querySelectorAll("ol a[href^='#']"));
+  if ("IntersectionObserver" in window) {
+    var map = {}; links.forEach(function (a) { map[a.getAttribute("href").slice(1)] = a; });
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) { if (en.isIntersecting && map[en.target.id]) { links.forEach(function (l) { l.classList.remove("active"); }); map[en.target.id].classList.add("active"); } });
+    }, { rootMargin: "-10% 0px -80% 0px" });
+    Object.keys(map).forEach(function (id) { var t = document.getElementById(id); if (t) io.observe(t); });
+  }
+  updateProgress();
+
+  // Optional: when this page runs as a claude.ai Artifact with storage, also keep answers there.
+  try {
+    if (window.claude && typeof window.claude.use === "function") {
+      Promise.all([window.claude.use("db"), window.claude.use("user")]).then(function (r) {
+        var db = r[0], user = r[1];
+        if (!db || !user) return null;
+        return user.id().then(function (uid) {
+          if (!uid) return null;
+          var ref; try { ref = db.doc("answers/" + uid); } catch (e) { return null; }
+          return ref.get().then(function (snap) {
+            remote = ref;
+            var d = snap.exists ? snap.data() : null;
+            if (d && d.answers && !Object.keys(answers).length) {
+              answers = d.answers;
+              try { window.localStorage.setItem(KEY, JSON.stringify(answers)); } catch (e) { /* ignore */ }
+              Array.prototype.forEach.call(document.querySelectorAll("fieldset.q"), function (fs) { applyAnswer(fs, byId[fs.getAttribute("data-qid")]); });
+              updateProgress();
+            }
+            remoteStatus("Answers save to this artifact for the team, and to this browser.");
+          });
+        });
+      }).catch(function () { /* no shared storage: browser only */ });
+    }
+  } catch (e) { /* no runtime */ }
+})();
+</script>
