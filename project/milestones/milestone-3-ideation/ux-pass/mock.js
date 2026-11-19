@@ -5,7 +5,14 @@
 (function () {
   "use strict";
   const DATA = window.__M3;
-  const P = DATA.provinces;
+  const P = DATA.provinces.map((p) => ({ ...p }));
+  // Illustrative scenario split: the Oviedo pocket inside Asturias, held by the North (Q-PART-1 splits Asturias in 2).
+  {
+    const ast = P.find((p) => p.id === "asturias"); ast.capital = false;
+    const pts = []; for (let i = 0; i < 9; i += 1) { const a = i / 9 * Math.PI * 2; const r = i % 2 ? 13 : 16; pts.push(`${(-230 + r * Math.cos(a)).toFixed(1)} ${(-375 + r * Math.sin(a)).toFixed(1)}`); }
+    P.push({ id: "oviedo", name: "Oviedo", territory: "asturias", holder: "north", capital: true, rail: 2, port: 0, d: "M" + pts.join("L") + "Z", cx: -230, cy: -375, neighbours: ["asturias"] });
+    ast.neighbours = ast.neighbours.concat("oviedo");
+  }
   const MAP = DATA.map;
   const FC = { republic: "#b1493f", north: "#b39232", south: "#665089" };
   const FNAME = { republic: "Republican Government", north: "Northern Insurgent Command", south: "Southern Insurgent Command" };
@@ -103,14 +110,14 @@
     const strip = html(`<div class="m3-header-strip"></div>`);
     strip.appendChild(html(`<span class="m3-timer" title="Time left this turn">${ICON.clock}4:12</span>`));
     if (opt !== "b") {
-      strip.appendChild(html(`<span class="m3-res" title="Funds: balance, and income next turn">Funds <span>42</span><span class="gain">+11</span></span>`));
-      strip.appendChild(html(`<span class="m3-res" title="Manpower in thousands of men">Manpower <span>18k</span><span class="gain">+4k</span></span>`));
+      strip.appendChild(html(`<span class="m3-res" title="Funds: balance, and income next turn">Funds <span>42</span><span class="gain">+31</span></span>`));
+      strip.appendChild(html(`<span class="m3-res" title="Manpower in thousands of men">Manpower <span>18k</span><span class="gain">+9k</span></span>`));
     }
     if (window.innerWidth < 700) { $(".game-header-title").appendChild(strip); strip.style.marginTop = "0.35rem"; }
     else { const act = $(".game-header-actions"); act.style.display = "flex"; act.style.gap = "0.5rem"; act.style.alignItems = "center"; act.prepend(strip); addCss(".status-chips .chip-name{display:none!important}.status-chips .chip-abbreviation{display:inline!important}"); }
   }
   function ledgerInPane() {
-    return `<div class="m3-income" aria-label="Your treasury"><div>Funds<strong>42 <small style="color:var(--success)">+11 next turn</small></strong></div><div>Manpower<strong>18k <small style="color:var(--success)">+4k next turn</small></strong></div></div>`;
+    return `<div class="m3-income" aria-label="Your treasury"><div>Funds<strong>42 <small style="color:var(--success)">+31 next turn</small></strong></div><div>Manpower<strong>18k <small style="color:var(--success)">+9k next turn</small></strong></div></div>`;
   }
 
   // ---------- sub-territories on the map ----------
@@ -313,7 +320,7 @@
   function paneSubFocus() {
     const head = `<button class="m3-back" type="button">← Cataluña</button><h3>★ Barcelona</h3><p class="pane-meta">Capital sub-territory of Cataluña · held by Republican Government</p><div class="m3-meta-row">${wxChip("catalunya")}<span class="m3-pill">Pays +6 Funds · +1k men</span><span class="m3-pill">Coast · port 2</span></div>`;
     const card = `<ul class="m3-sub-list">${subCard("barcelona", { buttons: false })}</ul>`;
-    const options = [["Industry 3 → 4", "max level is 3", true], ["Farms 1 → 2", "8 Funds · 2 turns · +1k men a turn", false], ["Port 2 → 3", "max level is 2", true], ["Fortifications", "10 Funds · 2 turns · +1 defence", false], ["Hospital", "built", true], ["Airfield → paved", "12 Funds · 2 turns · flies in Rain", false]];
+    const options = [["Industry 3 → 4", "max level is 3", true], ["Farms 1 → 2", "8 Funds · 2 turns · +1k men a turn", false], ["Port 2 → 3", "max level is 2", true], ["Fortifications", "10 Funds · 2 turns · +1 defence", false], ["Hospital", "built", true], ["Airfield → paved", "12 Funds · 2 turns · flies in Mud and Snow", false]];
     const list = `<div class="m3-section-head" style="margin-top:.7rem"><h4 style="margin:0">Add to the queue</h4><span class="note">Paid when queued</span></div><ul class="m3-recruit-list">${options.map(([n, c, off]) => `<li class="m3-rec" data-off="${off}" style="grid-template-columns:1fr auto"><span class="nm">${n}</span><span class="qty">${off ? "" : '<button class="m3-mini" type="button">Queue</button>'}</span><span class="${off ? "why" : "cost"}" style="grid-column:1/-1">${c}</span></li>`).join("")}</ul>`;
     setPane(`<section class="pane-section">${head}${card}${list}</section>`);
   }
@@ -332,7 +339,7 @@
     } else {
       if (cyl) {
         $("button", cyl).style.borderWidth = "1.5px"; $("button", cyl).style.borderColor = "var(--ink)"; $("button", cyl).style.background = "#fff";
-        cyl.insertAdjacentHTML("beforeend", `<div class="m3-detail-card"><h5>Attack Castilla y León</h5><dl class="m3-mods"><dt>Odds (attack 14 v defence 22)</dt><dd>1:2</dd><dt>Below 1:1 (1 halving)</dt><dd>−3</dd><dt>Fatigued (Madrid Sierra Columns)</dt><dd>−2</dd><dt>Gen. Miaja (Cautious)</dt><dd>−1</dd><dt>Weather · Meseta ${ICON.Clear.replace("<svg", '<svg width="12" height="12"')} Clear</dt><dd>0</dd><dt class="total">Chance to take ground</dt><dd class="total">0% · 8% gives ground</dd></dl><p class="pane-meta" style="font-size:.78rem">Enters at Ávila (mountain): uses the rest of this turn's moves. Next turn ${FORECAST.Meseta}.</p></div>`);
+        cyl.insertAdjacentHTML("beforeend", `<div class="m3-detail-card"><h5>Attack Castilla y León</h5><dl class="m3-mods"><dt>Odds (attack 14 v defence 22)</dt><dd>1:2</dd><dt>Below 1:1 (1 halving)</dt><dd>−3</dd><dt>Fatigued (Madrid Sierra Columns)</dt><dd>−2</dd><dt>Gen. Miaja +1, Cautious −1</dt><dd>0</dd><dt>Weather · Meseta ${ICON.Clear.replace("<svg", '<svg width="12" height="12"')} Clear</dt><dd>0</dd><dt class="total">Chance to take ground</dt><dd class="total">0% · 8% gives ground</dd></dl><p class="pane-meta" style="font-size:.78rem">Enters at Ávila (mountain): uses the rest of this turn's moves. Next turn ${FORECAST.Meseta}.</p></div>`);
       }
       if (clm) $("button", clm).insertAdjacentHTML("beforeend", `<span class="m3-dest-extra">${wxChip("castilla-la-mancha")}<span class="m3-pill">Reinforce · 1 move left</span></span>`);
     }
@@ -343,7 +350,7 @@
       tpl("Aragón", `<span class="odds-chip" data-tone="even">Rail, then attack · Approx. 1:1 · 38%</span>`, "Rail to Guadalajara, then attack Teruel (level 1 line) · Teruel is the last move", opt === "a" ? `${wxChip("aragon")}<span class="m3-pill">${ICON.rail}Rail + 1</span>` : ""));
     // "Army forming" summary above the destinations.
     const choices = $(".destination-choices") || list.parentElement;
-    choices.insertAdjacentHTML("afterbegin", `<div class="m3-army-forming"><b>Army leaving Madrid</b> · 4 units, 14 attack ${allow(1, 0)}<br><span class="pane-meta" style="font-size:.76rem">1 move this turn: 1 truck for 4 units (a second truck would give +1). Rail does not use moves.</span></div>`);
+    choices.insertAdjacentHTML("afterbegin", `<div class="m3-army-forming"><b>Army leaving Madrid</b> · 4 units, 14 attack ${allow(1, 0)}<br><span class="pane-meta" style="font-size:.76rem">1 move this turn: no trucks (2 trucks for these 4 units would give +1). Rail does not use moves.</span></div>`);
     // Map: weather glyph on odds chips, plus chips for the rail destinations.
     $$(".odds-layer .odds-chip").forEach((c) => { c.insertAdjacentHTML("beforeend", `<span class="m3-wx-inline">${ICON.Clear}</span>`); });
     const add = (t, text, tone) => { const a = MAP.territories[t].unitAnchor; const pt = km2px(a.x, a.y - 26); const c = html(`<span class="odds-chip m3-pin" data-tone="${tone}" style="position:absolute;height:21px;box-shadow:0 1px 4px rgb(0 0 0 / 45%)">${text}<span class="m3-wx-inline">${ICON.Clear}</span></span>`); c.style.left = pt.x + "px"; c.style.top = pt.y + "px"; overlay().appendChild(c); };
@@ -434,7 +441,7 @@
         <section class="pane-section"><h3 style="font-size:.95rem">Other aircraft at Madrid</h3><p class="pane-meta">Dewoitine D.372 fighters · Intercept over Madrid</p></section>`, "Air");
     } else {
       const row = (n, meta, sel, extra) => `<li class="m3-sub"><div class="m3-sub-head"><span class="m3-sub-name">${n}</span><span class="m3-sub-holder" style="--fc:${FC.republic}">${meta}</span></div>${missions(sel)}${extra || ""}</li>`;
-      setPane(`<section class="pane-section"><h3>Air</h3><p class="pane-meta">3 aircraft · each flies one mission a turn · Cantabrian zone grounded (Rain, unpaved)</p>
+      setPane(`<section class="pane-section"><h3>Air</h3><p class="pane-meta">3 aircraft · each flies one mission a turn · none grounded (Mud or Snow grounds unpaved airfields)</p>
         <ul class="m3-sub-list">${row("Escuadrilla España", "Bomber · Madrid", "Raid", `<p class="pane-meta" style="font-size:.78rem;margin:0">→ Sevilla · 15% lost · 45% hits something</p>`)}${row("Dewoitine D.372", "Fighter · Madrid", "Support", `<p class="pane-meta" style="font-size:.78rem;margin:0">→ Battle for Toledo: +2 if it happens</p>`)}${row("Breguet 19", "Recon · Barcelona", "Recon", `<p class="pane-meta" style="font-size:.78rem;margin:0">→ Aragón: shows balances, queues and training next turn</p>`)}</ul></section>`, "Orders");
     }
   }
@@ -445,7 +452,26 @@
     anchor.insertAdjacentHTML("afterend", `<div class="m3-setup-field"><label>Turn timer</label><div class="m3-seg" role="radiogroup"><span aria-checked="false">Off</span><span aria-checked="false">1 min</span><span aria-checked="true">5 min</span><span aria-checked="false">10 min</span><span aria-disabled="true">30 min · online</span><span aria-disabled="true">1 h · online</span></div><p class="hint">Each player's clock runs only on their own planning screen. Turn 1 gets double time. When time runs out, the orders you planned go in and every other unit holds.</p></div>`);
   }
 
+  function menu(items) {
+    return `<div class="m3-menu" role="menu">${items.map(([n, d, st]) => `<div class="m3-menu-item" data-state="${st || ""}" role="menuitem"><b>${n}</b><span>${d}</span></div>`).join("")}</div>`;
+  }
+  function paneContested(armies) {
+    const u = armies[0] || { name: "Vitoria Infantry Regiment No. 8", meta: "Infantry regiment", values: "4-6", men: "785/785 men", share: "1" };
+    const head = `<h3>Andalucía</h3><p class="pane-meta">Contested: Republic 3 sub-territories, Southern command 5</p>
+      <div class="m3-meta-row">${wxChip("andalucia")}<span class="m3-pill bad">No income while contested</span><span class="m3-pill warn">Builds paused</span><span class="m3-pill warn">No recruiting</span></div>`;
+    const rows = unitRow({ ...u, order: "Attacking (default)" }, '<span class="m3-pill warn">Fatigue 2 · −2</span>', true)
+      + unitRow({ name: "Málaga Militia Column", meta: "Militia column", values: "2-2", men: "1400/2500 men", share: "0.56", order: "Holding" }, '<span class="m3-pill bad">Demoralized · no general to rally it</span>', false);
+    const m = menu([["Attack", "Default here. Joins the standing battle for Andalucía; +1 fatigue.", "on"], ["Withdraw", "To Murcia or Castilla-La Mancha, through your own sub-territories (Almería, Jaén).", ""], ["Move, Entrench, Rest", "Not in contested ground: units here attack or withdraw.", "off"], ["Replenish", "Not in contested ground.", "off"]]);
+    setPane(`<section class="pane-section">${head}<div class="army-picker"><div class="army-picker-header"><h4>Your units</h4><span class="selection-count">1 of 2 selected</span></div><ul class="formation-list">${rows}</ul><div class="order-command" data-menu-open="true"><button class="order-button" type="button"><span>Give Selected Units Order</span></button>${m}</div></div></section>`);
+  }
+  function paneReplenish(armies) {
+    const list = armies.map((u, i) => i === 1 ? { ...u, men: "1,800/2,500 men", share: "0.72", order: "Entrenching" } : { ...u, order: "Entrenching" });
+    const rows = list.map((u, i) => unitRow(u, i === 1 ? '<span class="m3-pill">Below strength: 700 men short</span>' : "", i === 1)).join("");
+    const m = menu([["Replenish", "+700 men, arriving at the end of the turn · 4 Funds and 0.7k Manpower · cancelled and refunded if the unit fights", "on"], ["Move", "To a neighbouring territory, or by rail", ""], ["Entrench", "Default when there is no other order (+1 works)", ""]]);
+    setPane(`<section class="pane-section">${territoryHead("catalunya", "Cataluña")}<div class="m3-tabs" role="tablist"><button class="m3-tab" role="tab" aria-selected="true">Units<span class="count">3</span></button><button class="m3-tab" role="tab" aria-selected="false">Build<span class="count">2</span></button><button class="m3-tab" role="tab" aria-selected="false">Recruit</button></div>
+      <div class="army-picker"><div class="army-picker-header"><h4>Your units</h4><span class="selection-count">1 of 3 selected</span></div><ul class="formation-list">${rows}</ul><div class="order-command" data-menu-open="true"><button class="order-button" type="button"><span>Give Selected Units Order</span></button>${m}</div></div></section>`);
+  }
   function stamp(text) { const s = html(`<div class="m3-stamp">${text}</div>`); document.body.appendChild(s); }
 
-  window.M3 = { header, subterr, rail, paneTerritory, paneSubFocus, readArmies, moveTargets, battle, battleIconTooltip, aircraft, paneAir, setupTimer, focusSub, recruitTooltip, stamp, ledgerInPane, setPane, km2px };
+  window.M3 = { paneContested, paneReplenish, header, subterr, rail, paneTerritory, paneSubFocus, readArmies, moveTargets, battle, battleIconTooltip, aircraft, paneAir, setupTimer, focusSub, recruitTooltip, stamp, ledgerInPane, setPane, km2px };
 })();

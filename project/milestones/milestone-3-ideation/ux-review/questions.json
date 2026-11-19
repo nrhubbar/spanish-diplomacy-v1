@@ -1,95 +1,339 @@
 [
-  {"id": "Q-UX-I1", "idea": "interpret", "text": "Units are the lasting pieces, and an army is whatever leaves one territory with the same order that turn. Men, morale and fatigue belong to each unit, and there is no Organize order. Is that right?",
-   "options": [{"label": "Yes", "recommended": true}, {"label": "No (explain in the notes)"}]},
-  {"id": "Q-UX-I2", "idea": "interpret", "text": "A general is attached to one unit and gives his +1 and his rally to whatever army that unit is in that turn, with at most one general's bonus per side. Is that right?",
-   "options": [{"label": "Yes", "recommended": true}, {"label": "No (explain in the notes)"}]},
-  {"id": "Q-UX-I3", "idea": "interpret", "text": "Interception (Q-MR-16): if an enemy army enters a territory your units are passing through, your units stop at the first such territory and defend there as a reinforcement. Only the last step can attack. Is that right?",
-   "options": [{"label": "Yes", "recommended": true}, {"label": "No (explain in the notes)"}]},
-  {"id": "Q-UX-I4", "idea": "interpret", "text": "City barricades (+1 on the d20) stack with the Republic's Popular resistance (+3 on the d20). Is that right?",
-   "options": [{"label": "Yes, they stack", "recommended": true}, {"label": "No: Popular resistance replaces barricades for the Republic"}]},
-  {"id": "Q-UX-I5", "idea": "interpret", "text": "Weather: one d20 roll a turn, read against each zone's table. \"Winter\" for closing the sea means December, January and February. Is that right?",
-   "options": [{"label": "Yes", "recommended": true}, {"label": "Yes, but winter is November to March"}, {"label": "No (explain in the notes)"}]},
-
-  {"id": "Q-UX-01", "idea": "header", "text": "Where should Funds and Manpower live?",
-   "options": [
-     {"label": "A: chips in the header, each with next turn's income", "recommended": true, "rationale": "You check balances while planning moves, so they belong where the pane can't hide them."},
-     {"label": "B: a ledger at the top of the Orders pane"},
-     {"label": "Both: short chips in the header, with a detailed income breakdown in the pane"}
-   ]},
-  {"id": "Q-UX-02", "idea": "subterr", "text": "How should the full map show sub-territories?",
-   "options": [
-     {"label": "A: provinces only in contested territories, with faint diagonal lines; names and capital stars appear on zoom", "recommended": true, "rationale": "Your note keeps the player's mind at territory scale. Sub-territories show only where they matter, which is the contested ground."},
-     {"label": "B: faint province borders everywhere, fills where contested"},
-     {"label": "C: keep today's hatch with a split bar; provinces and a front line only when zoomed in"}
-   ]},
-  {"id": "Q-UX-03", "idea": "pane", "text": "How should the territory pane hold units, builds and recruiting?",
-   "options": [
-     {"label": "A: tabs (Units, Build, Recruit), opening on Units", "recommended": true, "rationale": "Each job stays short and it works on a phone sheet. Moving units, the most frequent job, is still one click away."},
-     {"label": "B: one scroll with sections that open and close"},
-     {"label": "C: sub-territory cards first, with units below"}
-   ]},
-  {"id": "Q-UX-04", "idea": "focus", "text": "Is the focused sub-territory view right (zoom in and click a sub-territory; the same pane, with a link back)?",
-   "options": [
-     {"label": "Yes, as shown", "recommended": true},
-     {"label": "Yes, but also let me focus a sub-territory from its card in the Build tab without zooming"},
-     {"label": "No: show a small card over the map instead of changing the pane"}
-   ]},
-  {"id": "Q-UX-05", "idea": "recruit", "text": "Which recruitment layout?",
-   "options": [
-     {"label": "A: a list with values, cost, training time and quantity; locked types say why inline, and hovering gives details", "recommended": true, "rationale": "The reason a type is locked is readable without hovering, which phones can't do."},
-     {"label": "B: a grid of cards; costs and reasons on hover or tap"}
-   ]},
-  {"id": "Q-UX-06", "idea": "move", "text": "How should move destinations show weather, terrain, fatigue and rail?",
-   "options": [
-     {"label": "Both: chips on every destination (A), plus the full breakdown card for the one you hover over or tap (B)", "recommended": true, "rationale": "The chips let you compare destinations at a glance, and the card explains the odds."},
-     {"label": "A only: chips on every destination"},
-     {"label": "B only: the card for the hovered destination"}
-   ]},
-  {"id": "Q-UX-07", "idea": "move", "text": "Is the \"Army leaving Madrid\" summary right (units, attack, moves left, and why trucks do or don't add a move)?",
-   "options": [
-     {"label": "Yes", "recommended": true},
-     {"label": "Yes, but also show it on the map next to the selected units"},
-     {"label": "No: leave it out"}
-   ]},
-  {"id": "Q-UX-08", "idea": "rail", "text": "How should rail show on the map?",
-   "options": [
-     {"label": "B, plus C: main lines at full-map zoom and every line when zoomed in; when you select units, the network they can ride lights up", "recommended": true, "rationale": "A quiet overview, full detail when you zoom in, and the rail you can use right now when you need it."},
-     {"label": "A: every line, always"},
-     {"label": "B: main lines at full-map zoom, every line when zoomed in"},
-     {"label": "C: hidden until units are selected"}
-   ]},
-  {"id": "Q-UX-09", "idea": "battle", "text": "How should the battle card show the d20 column?",
-   "options": [
-     {"label": "B: bands with score ranges and their effects, the hit band outlined", "recommended": true, "rationale": "It says what each result does in words; the strip needs a colour key."},
-     {"label": "A: a 20-cell strip coloured by grade"},
-     {"label": "Both: the strip, with the bands one click away"}
-   ]},
-  {"id": "Q-UX-10", "idea": "air", "text": "How should you give aircraft their missions?",
-   "options": [
-     {"label": "A: counters at their airfields on the map; select one to set its mission, with its range ring", "recommended": true},
-     {"label": "B: an Air list in the pane with every aircraft's mission"},
-     {"label": "Both: counters on the map, plus an Air list for setting several at once"}
-   ]},
-  {"id": "Q-UX-11", "idea": "setup", "text": "Is the setup timer choice right?",
-   "options": [
-     {"label": "Yes", "recommended": true},
-     {"label": "Yes, but as a dropdown like the player choices"},
-     {"label": "Change it (notes)"}
-   ]},
-  {"id": "Q-UX-12", "idea": "phone", "text": "How should the phone header get its space back?",
-   "options": [
-     {"label": "One compact row: timer · Funds · Manpower, then the readiness chips; tap a chip for detail", "recommended": true},
-     {"label": "Move the timer and resources into the sheet's header"},
-     {"label": "Leave it as shown"}
-   ]},
-  {"id": "Q-UX-13", "idea": "singles", "multi": true, "text": "Which single designs do you approve as shown? Tick all that apply; say what to change for the rest in the notes.",
-   "options": [
-     {"label": "Battle icon tooltip naming the result", "recommended": true},
-     {"label": "Weather pill and next turn's forecast in the territory pane", "recommended": true},
-     {"label": "A weather symbol on the odds chips on the map", "recommended": true},
-     {"label": "The date as \"Turn 7 · Late October 1936\"", "recommended": true},
-     {"label": "Readiness on the faction chips (planning / ready)", "recommended": true},
-     {"label": "Unit pills: general, Fatigue n, Demoralized; units in training shown dashed", "recommended": true},
-     {"label": "Sub-territory cards: development pips, buildings, queue with progress bars", "recommended": true}
-   ]}
+ {
+  "id": "Q-UX-I1",
+  "idea": "interpret",
+  "text": "Units are the lasting pieces, and an army is whatever leaves one territory with the same order that turn. Men, morale and fatigue belong to each unit, and there is no Organize order. Is that right?",
+  "options": [
+   {
+    "label": "Yes",
+    "recommended": true
+   },
+   {
+    "label": "No (explain in the notes)"
+   }
+  ]
+ },
+ {
+  "id": "Q-UX-I2",
+  "idea": "interpret",
+  "text": "A general is attached to one unit and gives his +1 and his rally to whatever army that unit is in that turn, with at most one general's bonus per side. Is that right?",
+  "options": [
+   {
+    "label": "Yes",
+    "recommended": true
+   },
+   {
+    "label": "No (explain in the notes)"
+   }
+  ]
+ },
+ {
+  "id": "Q-UX-I3",
+  "idea": "interpret",
+  "text": "Interception (Q-MR-16): if an enemy army enters a territory your units are passing through, your units stop at the first such territory and defend there as a reinforcement. Only the last step can attack. Is that right?",
+  "options": [
+   {
+    "label": "Yes",
+    "recommended": true
+   },
+   {
+    "label": "No (explain in the notes)"
+   }
+  ]
+ },
+ {
+  "id": "Q-UX-I4",
+  "idea": "interpret",
+  "text": "City barricades (+1 on the d20) stack with the Republic's Popular resistance (+3 on the d20). Is that right?",
+  "options": [
+   {
+    "label": "Yes, they stack",
+    "recommended": true
+   },
+   {
+    "label": "No: Popular resistance replaces barricades for the Republic"
+   }
+  ]
+ },
+ {
+  "id": "Q-UX-I5",
+  "idea": "interpret",
+  "text": "Weather: one d20 roll a turn, read against each zone's table. \"Winter\" for closing the sea means December, January and February. Is that right?",
+  "options": [
+   {
+    "label": "Yes",
+    "recommended": true
+   },
+   {
+    "label": "Yes, but winter is November to March"
+   },
+   {
+    "label": "No (explain in the notes)"
+   }
+  ]
+ },
+ {
+  "id": "Q-UX-01",
+  "idea": "header",
+  "text": "Where should Funds and Manpower live?",
+  "options": [
+   {
+    "label": "A: chips in the header, each with next turn's income",
+    "recommended": true,
+    "rationale": "You check balances while planning moves, so they belong where the pane can't hide them."
+   },
+   {
+    "label": "B: a ledger at the top of the Orders pane"
+   },
+   {
+    "label": "Both: short chips in the header, with a detailed income breakdown in the pane"
+   }
+  ]
+ },
+ {
+  "id": "Q-UX-02",
+  "idea": "subterr",
+  "text": "How should the full map show sub-territories?",
+  "options": [
+   {
+    "label": "A: provinces only in contested territories, with faint diagonal lines; names and capital stars appear on zoom",
+    "recommended": true,
+    "rationale": "Your note keeps the player's mind at territory scale. Sub-territories show only where they matter, which is the contested ground."
+   },
+   {
+    "label": "B: faint province borders everywhere, fills where contested"
+   },
+   {
+    "label": "C: keep today's hatch with a split bar; provinces and a front line only when zoomed in"
+   }
+  ]
+ },
+ {
+  "id": "Q-UX-03",
+  "idea": "pane",
+  "text": "How should the territory pane hold units, builds and recruiting?",
+  "options": [
+   {
+    "label": "A: tabs (Units, Build, Recruit), opening on Units",
+    "recommended": true,
+    "rationale": "Each job stays short and it works on a phone sheet. Moving units, the most frequent job, is still one click away."
+   },
+   {
+    "label": "B: one scroll with sections that open and close"
+   },
+   {
+    "label": "C: sub-territory cards first, with units below"
+   }
+  ]
+ },
+ {
+  "id": "Q-UX-04",
+  "idea": "focus",
+  "text": "Is the focused sub-territory view right (zoom in and click a sub-territory; the same pane, with a link back)?",
+  "options": [
+   {
+    "label": "Yes, as shown",
+    "recommended": true
+   },
+   {
+    "label": "Yes, but also let me focus a sub-territory from its card in the Build tab without zooming"
+   },
+   {
+    "label": "No: show a small card over the map instead of changing the pane"
+   }
+  ]
+ },
+ {
+  "id": "Q-UX-14",
+  "idea": "orders",
+  "text": "Are the contested-ground orders and the Replenish order right?",
+  "options": [
+   {
+    "label": "Yes, as shown",
+    "recommended": true
+   },
+   {
+    "label": "Yes, but hide orders that can't be given here instead of greying them out"
+   },
+   {
+    "label": "Change it (notes)"
+   }
+  ]
+ },
+ {
+  "id": "Q-UX-05",
+  "idea": "recruit",
+  "text": "Which recruitment layout?",
+  "options": [
+   {
+    "label": "A: a list with values, cost, training time and quantity; locked types say why inline, and hovering gives details",
+    "recommended": true,
+    "rationale": "The reason a type is locked is readable without hovering, which phones can't do."
+   },
+   {
+    "label": "B: a grid of cards; costs and reasons on hover or tap"
+   }
+  ]
+ },
+ {
+  "id": "Q-UX-06",
+  "idea": "move",
+  "text": "How should move destinations show weather, terrain, fatigue and rail?",
+  "options": [
+   {
+    "label": "Both: chips on every destination (A), plus the full breakdown card for the one you hover over or tap (B)",
+    "recommended": true,
+    "rationale": "The chips let you compare destinations at a glance, and the card explains the odds."
+   },
+   {
+    "label": "A only: chips on every destination"
+   },
+   {
+    "label": "B only: the card for the hovered destination"
+   }
+  ]
+ },
+ {
+  "id": "Q-UX-07",
+  "idea": "move",
+  "text": "Is the \"Army leaving Madrid\" summary right (units, attack, moves left, and why trucks do or don't add a move)?",
+  "options": [
+   {
+    "label": "Yes",
+    "recommended": true
+   },
+   {
+    "label": "Yes, but also show it on the map next to the selected units"
+   },
+   {
+    "label": "No: leave it out"
+   }
+  ]
+ },
+ {
+  "id": "Q-UX-08",
+  "idea": "rail",
+  "text": "How should rail show on the map?",
+  "options": [
+   {
+    "label": "B, plus C: main lines at full-map zoom and every line when zoomed in; when you select units, the network they can ride lights up",
+    "recommended": true,
+    "rationale": "A quiet overview, full detail when you zoom in, and the rail you can use right now when you need it."
+   },
+   {
+    "label": "A: every line, always"
+   },
+   {
+    "label": "B: main lines at full-map zoom, every line when zoomed in"
+   },
+   {
+    "label": "C: hidden until units are selected"
+   }
+  ]
+ },
+ {
+  "id": "Q-UX-09",
+  "idea": "battle",
+  "text": "How should the battle card show the d20 column?",
+  "options": [
+   {
+    "label": "B: bands with score ranges and their effects, the hit band outlined",
+    "recommended": true,
+    "rationale": "It says what each result does in words; the strip needs a colour key."
+   },
+   {
+    "label": "A: a 20-cell strip coloured by grade"
+   },
+   {
+    "label": "Both: the strip, with the bands one click away"
+   }
+  ]
+ },
+ {
+  "id": "Q-UX-10",
+  "idea": "air",
+  "text": "How should you give aircraft their missions?",
+  "options": [
+   {
+    "label": "A: counters at their airfields on the map; select one to set its mission, with its range ring",
+    "recommended": true
+   },
+   {
+    "label": "B: an Air list in the pane with every aircraft's mission"
+   },
+   {
+    "label": "Both: counters on the map, plus an Air list for setting several at once"
+   }
+  ]
+ },
+ {
+  "id": "Q-UX-11",
+  "idea": "setup",
+  "text": "Is the setup timer choice right?",
+  "options": [
+   {
+    "label": "Yes",
+    "recommended": true
+   },
+   {
+    "label": "Yes, but as a dropdown like the player choices"
+   },
+   {
+    "label": "Change it (notes)"
+   }
+  ]
+ },
+ {
+  "id": "Q-UX-12",
+  "idea": "phone",
+  "text": "How should the phone header get its space back?",
+  "options": [
+   {
+    "label": "One compact row: timer · Funds · Manpower, then the readiness chips; tap a chip for detail",
+    "recommended": true
+   },
+   {
+    "label": "Move the timer and resources into the sheet's header"
+   },
+   {
+    "label": "Leave it as shown"
+   }
+  ]
+ },
+ {
+  "id": "Q-UX-13",
+  "idea": "singles",
+  "multi": true,
+  "text": "Which single designs do you approve as shown? Tick all that apply; say what to change for the rest in the notes.",
+  "options": [
+   {
+    "label": "Battle icon tooltip naming the result",
+    "recommended": true
+   },
+   {
+    "label": "Weather pill and next turn's forecast in the territory pane",
+    "recommended": true
+   },
+   {
+    "label": "A weather symbol on the odds chips on the map",
+    "recommended": true
+   },
+   {
+    "label": "The date as \"Turn 7 · Late October 1936\"",
+    "recommended": true
+   },
+   {
+    "label": "Readiness on the faction chips (planning / ready)",
+    "recommended": true
+   },
+   {
+    "label": "Unit pills: general, Fatigue n, Demoralized; units in training shown dashed",
+    "recommended": true
+   },
+   {
+    "label": "Sub-territory cards: development pips, buildings, queue with progress bars",
+    "recommended": true
+   }
+  ]
+ }
 ]

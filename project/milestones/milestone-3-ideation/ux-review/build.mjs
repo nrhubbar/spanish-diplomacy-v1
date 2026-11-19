@@ -14,7 +14,7 @@ const imgBase = process.argv[3] ?? "../images/";
 
 const titles = {
   interpret: "Readings of your answers", header: "Header", subterr: "Sub-territories on the map", pane: "Territory pane", focus: "Focused sub-territory",
-  recruit: "Recruiting", move: "Moving units", rail: "Rail", battle: "Battle results", air: "Air", setup: "Setup timer", phone: "Phone", singles: "Single designs"
+  recruit: "Recruiting", move: "Moving units", rail: "Rail", battle: "Battle results", air: "Air", setup: "Setup timer", orders: "Contested orders and Replenish", phone: "Phone", singles: "Single designs"
 };
 const questions = JSON.parse(readFileSync(join(here, "questions.json"), "utf8")).map((q) => {
   const strip = (s) => (s == null ? s : s.replace(/`/g, ""));

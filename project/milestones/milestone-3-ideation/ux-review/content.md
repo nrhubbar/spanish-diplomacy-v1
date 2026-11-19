@@ -21,7 +21,7 @@
 - the tabbed territory pane;
 - the list-style recruitment panel.
 
-<figure class="mockup"><img src="{{IMG}}ux-world.webp" alt="The mock world: header with timer, Funds and Manpower, readiness chips; map with rail and contested provinces; Cataluña's pane with Units, Build and Recruit tabs"><figcaption>The mock world at its defaults. Header: timer, Funds and Manpower, and readiness chips (the computer players are always ready). Map: rail, and provinces drawn in Asturias, Aragón, Extremadura, Baleares and Andalucía. Pane: Cataluña with its weather and next turn's forecast, its income, and three tabs.</figcaption></figure>
+<figure class="mockup"><img src="{{IMG}}ux-world.webp" alt="The mock world: header with timer, Funds and Manpower, readiness chips; map with rail and contested provinces; Cataluña's pane with Units, Build and Recruit tabs"><figcaption>The mock world at its defaults. Header: timer, Funds and Manpower, and readiness chips (the computer players are always ready). Map: rail, and provinces drawn in the six contested territories: Asturias (with an illustrative Oviedo pocket), País Vasco (Álava), Aragón, Extremadura, Baleares and Andalucía. Pane: Cataluña with its weather and next turn's forecast, its income, and three tabs.</figcaption></figure>
 
 <!-- section:interpret -->
 ## First, five readings of your answers
@@ -78,6 +78,20 @@ Your note asked for options. A territory now has three things to order: its unit
 
 <div class="questions" data-idea="focus"></div>
 
+<!-- section:orders -->
+## Orders in contested ground, and Replenish
+
+<figure class="mockup"><img src="{{IMG}}ux-orders-contested.webp" alt="Andalucía: contested pills, a unit attacking by default with fatigue, a demoralized militia holding, and the order menu with Attack and Withdraw, the rest greyed out"><figcaption><b>Contested ground.</b>
+<ul>
+<li>Pills say what contested means here: no income, builds paused, no recruiting.</li>
+<li>Units attack by default and gain fatigue.</li>
+<li>A demoralized unit holds, and says it has no general to rally it.</li>
+<li>The menu offers only Attack (the default) and Withdraw, which names the route through your own sub-territories. Move, Entrench, Rest and Replenish are greyed out with the reason.</li>
+</ul></figcaption></figure>
+<figure class="mockup"><img src="{{IMG}}ux-orders-replenish.webp" alt="Cataluña: the Durruti Column 700 men short, with the order menu showing Replenish with its men, cost and the cancel rule"><figcaption><b>Replenish.</b> A unit below strength says how many men it is short. Replenish shows the men it brings, what it costs and when they arrive, and that it is cancelled (and refunded) if the unit fights.</figcaption></figure>
+
+<div class="questions" data-idea="orders"></div>
+
 <!-- section:recruit -->
 ## Recruiting
 
@@ -127,7 +141,7 @@ Only the column for this battle's odds is shown, as you asked. The die, every mo
 
 <figure class="mockup"><img src="{{IMG}}ux-battle-a.webp" alt="Option A: a 20-cell strip coloured by grade with the score outlined"><figcaption><b>A. Strip.</b> Twenty cells coloured by grade, with the score outlined and a key underneath. You see the spread at a glance, but you have to decode the colours.</figcaption></figure>
 <figure class="mockup"><img src="{{IMG}}ux-battle-b.webp" alt="Option B: grade bands with score ranges and their effects, the hit band outlined"><figcaption><b>B. Bands.</b> One row per grade: its score range, its name, and what it does. The band that was hit is outlined.</figcaption></figure>
-<figure class="mockup"><img src="{{IMG}}ux-battle-icon.webp" alt="Hovering a battle icon on the map shows a tooltip naming the result"><figcaption>Your missing note: hovering over a battle icon on the map names its result (here "Defender demoralized"), and clicking opens the battle card.</figcaption></figure>
+<figure class="mockup"><img src="{{IMG}}ux-battle-icon.webp" alt="Hovering a battle icon on the map shows a tooltip naming the result"><figcaption>Your missing note: hovering over a battle icon on the map names its result, and clicking opens the battle card.</figcaption></figure>
 
 <div class="questions" data-idea="battle"></div>
 
@@ -174,4 +188,5 @@ Each of these has one design in the images above.
 - **Generals:** the roster screen and the sacking order. Only the general badge on a unit appears above.
 - **Recon results:** the enemy balances and queues a recon flight reveals.
 - **The simulation harness output.** It is JSON only, so there is no UI.
+- **Timer details:** the Pause button (local play), the 1-minute and 10-second warnings, and the "time ran out" line in the turn results.
 

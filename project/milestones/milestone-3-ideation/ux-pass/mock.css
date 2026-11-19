@@ -182,3 +182,9 @@ details.m3-acc[open] > summary::before { content: "▾"; }
 .m3-rec .m3-mini { margin-right: 0.15rem; }
 .m3-back:hover { background: transparent !important; color: var(--accent) !important; }
 .m3-rec .qty .m3-mini { width: auto; height: auto; padding: 0.2rem 0.55rem; }
+.m3-menu { display: grid; gap: 1px; margin-top: 0.35rem; overflow: hidden; border: 1.5px solid var(--ink); border-radius: 6px; background: rgb(36 29 24 / 20%); box-shadow: 0 4px 14px rgb(0 0 0 / 25%); }
+.m3-menu-item { display: grid; gap: 0.1rem; padding: 0.45rem 0.65rem; background: var(--paper); font-size: 0.78rem; color: var(--ink-soft); }
+.m3-menu-item b { color: var(--ink); font-size: 0.9rem; }
+.m3-menu-item[data-state="on"] { background: var(--gold-wash); box-shadow: inset 4px 0 0 var(--gold); }
+.m3-menu-item[data-state="off"] { color: rgb(36 29 24 / 45%); }
+.m3-menu-item[data-state="off"] b { color: rgb(36 29 24 / 45%); }
