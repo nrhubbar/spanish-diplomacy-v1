@@ -20,7 +20,7 @@ import { arrowHead, groupRoutes, pointOnCurve, routeCurve, shortenCurve } from "
 import { terrainFrustum, terrainRenderMetrics } from "../main/map/terrainRendering";
 import { staticMapView } from "../main/map/view";
 import { initialGameState, resolveTurn } from "../main/engine/resolution";
-import type { BattleOutcome, BouncedMoveOutcome } from "../main/engine/types";
+import { type BattleOutcome, type BouncedMoveOutcome, isMoveOrder } from "../main/engine/types";
 import {
   bounceReason,
   controlDescription,
@@ -242,7 +242,7 @@ describe("markup and rendering helpers", () => {
       { factionId: faction("republic"), orders: [move("republic", "rep-wad-ras-1", "madrid", "castilla-y-leon")] },
       { factionId: faction("north"), orders: [move("north", "north-san-marcial-22", "castilla-y-leon", "madrid")] }
     ], 1);
-    expect(legendEntries(scenario, state, { ...staticMapView, outcomes: result.outcomes, plannedOrders: result.submittedOrders })).toEqual(["contested", "sea", "planned", "bounced", "attacker-demoralized", "defender-demoralized"]);
+    expect(legendEntries(scenario, state, { ...staticMapView, outcomes: result.outcomes, plannedOrders: result.submittedOrders.filter(isMoveOrder) })).toEqual(["contested", "sea", "planned", "bounced", "attacker-demoralized", "defender-demoralized"]);
   });
 });
 

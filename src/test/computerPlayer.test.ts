@@ -6,7 +6,7 @@ import { computerWeights, generateComputerSubmission, legalMoves } from "../main
 import { battleOdds, estimateAttack } from "../main/engine/combat";
 import { deriveSeed, seededRandom } from "../main/engine/random";
 import { initialGameState, resolveTurn } from "../main/engine/resolution";
-import type { GameState, PlayerSubmission } from "../main/engine/types";
+import { type GameState, isMoveOrder, type PlayerSubmission } from "../main/engine/types";
 import { validateSubmission } from "../main/engine/validation";
 import { board, demoralize, into, ordersOf, type Placement } from "./aiBoards";
 import { armyIn, faction, loadedDice, spain, territory, tiny, unit, withUnits } from "./support";
@@ -72,7 +72,7 @@ describe("computer player: orders (C18)", () => {
     const remembered = generateComputerSubmission(scenario, state, faction("blue"), seededRandom(1), {
       previousOutcomes: fresh.map((order) => ({ cause: { opposingFactionIds: [faction("red")], kind: "standoff" }, kind: "bounced-move", order }))
     });
-    expect(remembered.orders.map((order) => order.to)).not.toContain(fresh[0]?.to);
+    expect(remembered.orders.filter(isMoveOrder).map((order) => order.to)).not.toContain(fresh[0]?.to);
   });
 
   it("also remembers an attack that failed last turn, now a battle rather than a bounce (A2, M17)", () => {
@@ -85,7 +85,7 @@ describe("computer player: orders (C18)", () => {
       units: { ...base.units, [unit("red-rangers")]: { ...armyIn(base, "red-rangers"), strength: 150 } }
     };
     const fresh = generateComputerSubmission(scenario, state, faction("blue"), seededRandom(1));
-    expect(fresh.orders.map((order) => order.to)).toEqual(["highlands"]);
+    expect(fresh.orders.filter(isMoveOrder).map((order) => order.to)).toEqual(["highlands"]);
     const failed = resolveTurn(scenario, state, [fresh], 1, loadedDice([1]));
     expect(failed.outcomes.find((outcome) => outcome.kind === "battle")).toMatchObject({ site: { kind: "assault", occupation: { kind: "held" } } });
     // The failed assault is remembered and costs the same move a penalty next turn. Red is one

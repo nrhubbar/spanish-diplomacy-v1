@@ -3,12 +3,25 @@ import type {
   FactionId,
   GameState,
   MoveOrder,
+  Order,
   PlayerSubmission,
   Scenario,
   TerritoryId,
   UnitId,
   ValidationResult
 } from "./types";
+
+/** M9: an order kind no module of the scenario's ruleset handles yet. */
+export const unavailableOrderReason = "This order is not available in this scenario.";
+
+/**
+ * M1, M9: validates any order against the start-of-turn state. Only moves are handled so far;
+ * every other kind is impossible until its module lands (TODO(m3r1-recruit-replenish),
+ * TODO(m3r1-economy-builds), TODO(m3r1-sub-territories), TODO(m3r1-air-generals)).
+ */
+export function validateOrder(scenario: Scenario, state: GameState, order: Order): ValidationResult {
+  return order.kind === "move" ? validateMoveOrder(scenario, state, order) : { ok: false, reason: unavailableOrderReason };
+}
 
 /** M23 (C6): why a demoralized army may not enter where another faction stands. */
 export const demoralizedAttackReason = "A demoralized army cannot attack. It can move only into empty or friendly territory.";
@@ -35,6 +48,10 @@ export function validateMoveOrder(
   if (!isNeighbor(scenario, order.from, order.to)) {
     return { ok: false, reason: "Destination is not connected to the unit's territory." };
   }
+  // M2: one step along a connection. Paths of several legs wait for TODO(m3r1-movement-rail-ports).
+  if (order.legs !== undefined && !(order.legs.length === 1 && order.legs[0]?.kind !== "rail" && order.legs[0]?.to === order.to)) {
+    return { ok: false, reason: unavailableOrderReason };
+  }
   // M23 (C6): a demoralized army cannot attack, so it may not enter where another faction stands.
   if (unit.morale.demoralized && Object.values(state.units).some((other) => other.territoryId === order.to && other.factionId !== unit.factionId)) {
     return { ok: false, reason: demoralizedAttackReason };
@@ -54,11 +71,13 @@ export function validateSubmission(
 
   const seen = new Set<UnitId>();
   for (const order of submission.orders) {
-    if (seen.has(order.unitId)) {
-      return { ok: false, reason: "A unit can receive only one order per turn." };
+    if ("unitId" in order) {
+      if (seen.has(order.unitId)) {
+        return { ok: false, reason: "A unit can receive only one order per turn." };
+      }
+      seen.add(order.unitId);
     }
-    seen.add(order.unitId);
-    const validation = validateMoveOrder(scenario, state, order);
+    const validation = validateOrder(scenario, state, order);
     if (!validation.ok) {
       return validation;
     }

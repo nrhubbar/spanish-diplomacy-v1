@@ -20,6 +20,7 @@ function happenedAt(outcome: TurnOutcome, territoryId: TerritoryId): boolean {
   switch (outcome.kind) {
     case "battle":
     case "no-move":
+    case "rejected-order":
       return false;
     case "recovered":
       return outcome.territoryId === territoryId;

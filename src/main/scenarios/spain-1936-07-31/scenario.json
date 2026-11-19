@@ -1,6 +1,6 @@
 {
   "$schema": "../schema/scenario.schema.json",
-  "specVersion": 1,
+  "specVersion": 2,
   "id": "spain-1936-07-31",
   "name": "Spain, July 1936",
   "snapshotLabel": "31 July 1936",
@@ -99,6 +99,95 @@
       }
     ]
   },
+  "ai": {
+    "blunderChance": 0.01,
+    "profiles": [
+      {
+        "id": "republic-staff",
+        "computer": {
+          "approachObjective": 1.5,
+          "bouncedLastTurn": -4,
+          "caution": 0.5,
+          "demoralizedShare": 0.25,
+          "enemyLoss": 0.5,
+          "ownLoss": 0.75
+        },
+        "offensive": {
+          "reach": 3,
+          "oddsTieBreak": 0.02,
+          "staging": 2,
+          "focus": 1,
+          "stallStep": 1,
+          "stallCap": 4
+        },
+        "stakes": {
+          "city": 2,
+          "objective": 5,
+          "territory": 4
+        },
+        "victoryAlarm": {
+          "perStep": 0.5,
+          "steps": 4
+        }
+      },
+      {
+        "id": "north-staff",
+        "computer": {
+          "approachObjective": 1.5,
+          "bouncedLastTurn": -4,
+          "caution": 0.5,
+          "demoralizedShare": 0.25,
+          "enemyLoss": 0.5,
+          "ownLoss": 0.75
+        },
+        "offensive": {
+          "reach": 3,
+          "oddsTieBreak": 0.02,
+          "staging": 2,
+          "focus": 1,
+          "stallStep": 1,
+          "stallCap": 4
+        },
+        "stakes": {
+          "city": 2,
+          "objective": 5,
+          "territory": 4
+        },
+        "victoryAlarm": {
+          "perStep": 0.5,
+          "steps": 4
+        }
+      },
+      {
+        "id": "south-staff",
+        "computer": {
+          "approachObjective": 1.5,
+          "bouncedLastTurn": -4,
+          "caution": 0.5,
+          "demoralizedShare": 0.25,
+          "enemyLoss": 0.5,
+          "ownLoss": 0.75
+        },
+        "offensive": {
+          "reach": 3,
+          "oddsTieBreak": 0.02,
+          "staging": 2,
+          "focus": 1,
+          "stallStep": 1,
+          "stallCap": 4
+        },
+        "stakes": {
+          "city": 2,
+          "objective": 5,
+          "territory": 4
+        },
+        "victoryAlarm": {
+          "perStep": 0.5,
+          "steps": 4
+        }
+      }
+    ]
+  },
   "unitTypes": [
     {
       "id": "infantry-regiment",
@@ -139,6 +228,7 @@
         "valencia",
         "pais-vasco"
       ],
+      "aiProfile": "republic-staff",
       "briefing": {
         "objective": "Hold the Republic together. You keep Madrid, Barcelona, Valencia, and the northern coast, but the rising has split the country in two. Win by holding 10 of 18 territories or 19 of 25 cities.",
         "firstTurnHint": "Reports from Toledo say columns are moving north out of Andaluc\u00eda, and the northern command is gathering beyond the Sierra de Guadarrama. Madrid has two regiments, its guards, and the militia columns holding the passes. Do we keep them all in the capital, or send some forward to meet the southern columns before they arrive?"
@@ -157,6 +247,7 @@
         "pais-vasco",
         "aragon"
       ],
+      "aiProfile": "north-staff",
       "briefing": {
         "objective": "Link the insurgent zone and take Madrid. You hold Castilla y Le\u00f3n, Navarra, Galicia, and Zaragoza, and your garrison in Oviedo is besieged; the Basque coast and Santander sit behind your lines.",
         "firstTurnHint": "Zaragoza's garrison reports militia columns leaving Barcelona for Arag\u00f3n, and in Asturias the miners have Oviedo surrounded. Do we hold Arag\u00f3n and relieve Oviedo, or send the requet\u00e9s and the Sierra columns south toward Madrid while the Republic is still organizing?"
@@ -175,6 +266,7 @@
         "castilla-la-mancha",
         "andalucia"
       ],
+      "aiProfile": "south-staff",
       "briefing": {
         "objective": "Bring the Army of Africa across the Strait and march on Madrid. You hold Sevilla, C\u00f3rdoba, C\u00e1diz, and Granada, and the first of the Army of Africa has landed at Sevilla; most of the Legion and the Regulares still wait in Ceuta and Melilla.",
         "firstTurnHint": "The vanguard flown into Sevilla is ready to march, but most of the Legion and the Regulares are still in Africa, and every day they stay there gives the Republic time to organize. Do we bring them across now, or push north with the vanguard and the regiments in Andaluc\u00eda and let Africa follow?"

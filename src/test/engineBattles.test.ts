@@ -29,7 +29,7 @@ const only = (result: TurnResolutionResult): BattleOutcome => {
   return battle;
 };
 const outcomeOf = (result: TurnResolutionResult, id: string): TurnOutcome | undefined =>
-  result.outcomes.find((outcome) => "order" in outcome && outcome.order.unitId === unit(id));
+  result.outcomes.find((outcome) => "order" in outcome && "unitId" in outcome.order && outcome.order.unitId === unit(id));
 const lowlandsContested = (state: Partial<GameState> = {}): Partial<GameState> => ({
   control: { ...initialControl(tiny()), [territory("lowlands")]: { factionIds: [faction("red"), faction("blue")], kind: "contested" } },
   ...state

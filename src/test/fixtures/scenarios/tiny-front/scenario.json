@@ -1,6 +1,6 @@
 {
   "$schema": "../../../../main/scenarios/schema/scenario.schema.json",
-  "specVersion": 1,
+  "specVersion": 2,
   "id": "tiny-front",
   "name": "Tiny Front (test fixture)",
   "snapshotLabel": "Day 1",
@@ -24,12 +24,24 @@
       { "id": "harbor-batteries", "name": "Harbor batteries", "factionId": "blue", "when": "holds-controlled-city", "defence": 1 }
     ]
   },
+  "ai": {
+    "blunderChance": 0,
+    "profiles": [
+      {
+        "id": "fixture-staff",
+        "computer": { "approachObjective": 1.5, "bouncedLastTurn": -4, "caution": 0.5, "demoralizedShare": 0.25, "enemyLoss": 0.5, "ownLoss": 0.75 },
+        "offensive": { "reach": 3, "oddsTieBreak": 0.02, "staging": 2, "focus": 1, "stallStep": 1, "stallCap": 4 },
+        "stakes": { "city": 2, "objective": 5, "territory": 4 },
+        "victoryAlarm": { "perStep": 0.5, "steps": 4 }
+      }
+    ]
+  },
   "unitTypes": [{ "id": "foot", "name": "Foot", "attack": 4, "defence": 5 }],
   "factions": [
     {
       "id": "red", "name": "Red League", "abbreviation": "RED", "color": "#b03a2e",
       "motivation": "Hold the west and take the harbor.", "defaultActor": "local-human",
-      "objectiveTerritoryIds": ["harbor", "isle"],
+      "objectiveTerritoryIds": ["harbor", "isle"], "aiProfile": "fixture-staff",
       "briefing": {
         "objective": "Hold the west and take the harbor. Win by holding 3 of 5 territories or both towns.",
         "firstTurnHint": "Scouts report Blue Union marines holding Port Town, and the Lowlands road is open. Do we march on the Lowlands now, or keep the Guard home until the Rangers can join it?"
@@ -38,7 +50,7 @@
     {
       "id": "blue", "name": "Blue Union", "abbreviation": "BLU", "color": "#2e5f9a",
       "motivation": "Push west from the harbor.", "defaultActor": "computer",
-      "objectiveTerritoryIds": ["westfold", "highlands"],
+      "objectiveTerritoryIds": ["westfold", "highlands"], "aiProfile": "fixture-staff",
       "briefing": {
         "objective": "Push west from the harbor. Win by holding 3 of 5 territories or both towns.",
         "firstTurnHint": "Red League patrols have been seen on the Highlands road. Do we keep the marines in Port Town, or cross the Narrows and claim the Isle first?"

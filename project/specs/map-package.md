@@ -1,4 +1,4 @@
-# Map Package Specification (spec version 1)
+# Map Package Specification (spec version 2)
 
 A map package says how a scenario is drawn and how players interact with it. The engine never reads it; the renderer reads both the map and the scenario and joins them only through stable ids.
 
@@ -15,7 +15,7 @@ A package with relief should produce its geometry, relief images, and coordinate
 
 | Field | Type | Meaning |
 |---|---|---|
-| `specVersion` | `1` | Spec version. |
+| `specVersion` | `2` | Spec version. Version 2 changes nothing else yet; sub-territory geometry is added by the map-provinces stream. |
 | `id` | id | Map id. |
 | `viewBox` | `{ x, y, width, height }` | The coordinate space. The camera never pans its center outside it. |
 | `focus` | rectangle | Area framed when a game starts, clear of the details pane. |

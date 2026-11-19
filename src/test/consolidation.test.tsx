@@ -4,7 +4,7 @@ import { generateComputerSubmission, legalMoves } from "../main/ai/computerPlaye
 import type { BattleDice } from "../main/engine/dice";
 import { deriveSeed, seededRandom } from "../main/engine/random";
 import { initialGameState } from "../main/engine/resolution";
-import type { GameState, MoveOrder, Scenario, TurnOutcome, TurnResolutionResult } from "../main/engine/types";
+import { type GameState, isMoveOrder, type MoveOrder, type Scenario, type TurnOutcome, type TurnResolutionResult } from "../main/engine/types";
 import { legalDestinations } from "../main/engine/validation";
 import { groupRoutes } from "../main/map/routes";
 import { describeOutcome, describeOutcomeGroup, groupOutcomes } from "../main/presentation/text";
@@ -27,9 +27,9 @@ function play(scenario: Scenario, state: GameState, orders: readonly MoveOrder[]
 /** Outcome kind (and bounce cause) per ordered unit, in a compact readable form. */
 function resultOf(result: TurnResolutionResult, unitId: string): string {
   const outcome = result.outcomes.find((candidate): candidate is Extract<TurnOutcome, { order: MoveOrder }> =>
-    "order" in candidate && candidate.order.unitId === unitId);
+    candidate.kind !== "rejected-order" && "order" in candidate && candidate.order.unitId === unitId);
   if (outcome === undefined) {
-    const ordered = result.submittedOrders.some((order) => order.unitId === unitId);
+    const ordered = result.submittedOrders.some((order) => "unitId" in order && order.unitId === unitId);
     const fought = battlesOf(result).some((battle) => battle.attacker.armies.some((army) => army.unitId === unitId));
     return ordered && fought ? "fought" : "no order";
   }
@@ -297,7 +297,7 @@ describe("friendly consolidation (planning and computer players)", () => {
     const initial = initialGameState(scenario);
     const stacked = Array.from({ length: 20 }, (_, seed) =>
       generateComputerSubmission(scenario, initial, faction("south"), seededRandom(deriveSeed(seed, 1, 2))))
-      .some((submission) => new Set(submission.orders.map((order) => order.to)).size < submission.orders.length);
+      .some((submission) => new Set(submission.orders.filter(isMoveOrder).map((order) => order.to)).size < submission.orders.length);
     expect(stacked).toBe(true);
   });
 });

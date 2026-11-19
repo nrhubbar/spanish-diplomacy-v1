@@ -59,6 +59,7 @@ export function withUnits(scenario: Scenario, units: readonly (readonly [string,
   for (const [id, factionId, territoryId] of units) {
     record[unit(id)] = {
       factionId: faction(factionId),
+      fatigue: 0,
       id: unit(id),
       morale: { demoralized: false, quietTurns: 0 },
       strength: scenario.index.units.get(unit(id))?.strength ?? syntheticStrength,
@@ -132,6 +133,7 @@ export function battlefield(
     const fullStrength = spec.fullStrength ?? known.get(unit(spec.id))?.fullStrength ?? syntheticStrength;
     units[unit(spec.id)] = {
       factionId: faction(spec.faction),
+      fatigue: 0,
       id: unit(spec.id),
       morale: { demoralized: spec.demoralized ?? false, quietTurns: 0 },
       strength: spec.strength ?? fullStrength,
@@ -141,7 +143,8 @@ export function battlefield(
   return { scenario, state: { ...start, units, ...options.state } };
 }
 
-export const unitType = (id: string, attack: number, defence: number): UnitTypeDefinition => ({ attack, defence, id: id as UnitTypeId, name: id });
+export const unitType = (id: string, attack: number, defence: number): UnitTypeDefinition =>
+  ({ attack, defence, effects: [], id: id as UnitTypeId, kind: "ground", name: id, orders: ["move"] });
 
 /**
  * Loaded dice: battle `i` rolls `faces[i]`. Draws after the die (standing-battle tie-breaks)

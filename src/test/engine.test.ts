@@ -60,7 +60,7 @@ describe("m2-strength state (C4, C6, C7, C13)", () => {
     const result = resolveTurn(scenario, state, [{ factionId: faction("red"), orders: [move("red", "red-guard", "westfold", "lowlands")] }], 1);
     // The army keeps its men; moving is not quiet, so its recovery clock restarts.
     expect(result.finalState.units[unit("red-guard")]).toEqual({
-      factionId: "red", id: "red-guard", morale: { demoralized: true, quietTurns: 0 }, strength: 250, territoryId: "lowlands"
+      factionId: "red", fatigue: 0, id: "red-guard", morale: { demoralized: true, quietTurns: 0 }, strength: 250, territoryId: "lowlands"
     });
     expect(result.finalState.units[unit("red-rangers")]).toBe(state.units[unit("red-rangers")]);
     // Red no longer holds Westfold, so its works go; it held the Highlands all turn, so they dig in.

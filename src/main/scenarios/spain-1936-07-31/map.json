@@ -1,6 +1,6 @@
 {
   "$schema": "../schema/map.schema.json",
-  "specVersion": 1,
+  "specVersion": 2,
   "id": "iberia-1936",
   "viewBox": {
     "x": -680,

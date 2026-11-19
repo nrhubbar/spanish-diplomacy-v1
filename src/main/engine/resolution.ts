@@ -26,6 +26,7 @@ import type {
   UnitState
 } from "./types";
 import { evaluateVictory, victoryProgress } from "./victory";
+import { initialSystems } from "./initialSystems";
 import { digIn } from "./works";
 
 /**
@@ -45,7 +46,7 @@ export function resolveTurn(
 ): TurnResolutionResult {
   const submittedOrders = submissions.flatMap((submission) => submission.orders);
   // 1. Orders (M1, M2, M9, M23).
-  const { invalid, valid } = partitionOrders(scenario, state, submittedOrders);
+  const { invalid, rejected, valid } = partitionOrders(scenario, state, submittedOrders);
   const origins = new Map(valid.map((order) => [order.unitId, order.from]));
   let armies = removeArmies(state.units, invalid.map((outcome) => outcome.order.unitId));
   const { advances, reinforcements } = classifyMoves(state.control, armies, valid);
@@ -82,6 +83,7 @@ export function resolveTurn(
   const morale = recoverMorale(scenario, armies, new Set([...origins.keys(), ...retreated, ...demoralized]));
   const foughtIn = new Set(pending.map((battle) => battle.site.territoryId));
   const finalState: GameState = {
+    ...state,
     cityControl,
     control,
     fortification: digIn(scenario, state, { armies: morale.armies, control }, foughtIn, new Set(origins.keys())),
@@ -109,6 +111,7 @@ export function resolveTurn(
       ...valid.flatMap((order) => moveOutcomes.get(order.unitId) ?? []),
       ...battles,
       ...invalid,
+      ...rejected,
       ...holdOutcomes(scenario, state, submissions),
       ...morale.recovered
     ],
@@ -184,6 +187,7 @@ export function initialGameState(scenario: Scenario): GameState {
   for (const unit of scenario.units) {
     units[unit.id] = {
       factionId: unit.factionId,
+      fatigue: 0,
       id: unit.id,
       morale: { demoralized: false, quietTurns: 0 },
       strength: unit.strength,
@@ -191,5 +195,5 @@ export function initialGameState(scenario: Scenario): GameState {
       ...(unit.cityId === undefined ? {} : { cityId: unit.cityId })
     };
   }
-  return { cityControl, control, fortification: {}, turnNumber: 1, units };
+  return { ...initialSystems(scenario), cityControl, control, fortification: {}, turnNumber: 1, units };
 }

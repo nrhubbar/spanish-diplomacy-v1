@@ -52,12 +52,12 @@ export function removeArmies(armies: Armies, ids: Iterable<UnitId>): Armies {
   return next;
 }
 
-/** An army standing in a new territory. It leaves its city behind; men and morale go with it. */
+/** An army standing in a new territory. It leaves its city behind; men, morale and fatigue go with it. */
 export function placeAt(unit: UnitState, territoryId: TerritoryId): UnitState {
   if (unit.territoryId === territoryId) {
     return unit;
   }
-  return { factionId: unit.factionId, id: unit.id, morale: unit.morale, strength: unit.strength, territoryId };
+  return { factionId: unit.factionId, fatigue: unit.fatigue, id: unit.id, morale: unit.morale, strength: unit.strength, territoryId };
 }
 
 export function armiesIn(armies: Armies, territoryId: TerritoryId): readonly UnitState[] {

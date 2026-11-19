@@ -110,7 +110,7 @@ describe("engine and computer edge cases", () => {
     const scenario = tiny();
     const state: GameState = { ...withUnits(scenario, [["blue-marines", "blue", "harbor"]]), control: { ...initialGameState(scenario).control, westfold: { factionId: faction("blue"), kind: "controlled" }, highlands: { factionId: faction("blue"), kind: "controlled" } } as GameState["control"] };
     const submission = generateComputerSubmission(scenario, state, faction("blue"), seededRandom(4));
-    expect(submission.orders.every((order) => order.unitId === unit("blue-marines"))).toBe(true);
+    expect(submission.orders.every((order) => "unitId" in order && order.unitId === unit("blue-marines"))).toBe(true);
     const crowded = withUnits(scenario, [["red-guard", "red", "westfold"], ["red-rangers", "red", "westfold"]]);
     expect(generateComputerSubmission(scenario, crowded, faction("red"), () => 0.999).orders.length).toBeGreaterThan(0);
   });

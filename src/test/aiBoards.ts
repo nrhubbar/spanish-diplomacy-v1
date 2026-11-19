@@ -1,6 +1,6 @@
 import { generateComputerSubmission } from "../main/ai/computerPlayer";
 import { seededRandom } from "../main/engine/random";
-import type { GameState, MoveOrder, Scenario } from "../main/engine/types";
+import { type GameState, isMoveOrder, type MoveOrder, type Order, type Scenario } from "../main/engine/types";
 import { armyIn, faction, unit, withUnits } from "./support";
 
 /** Boards and helpers for computer-player tests. */
@@ -8,10 +8,10 @@ import { armyIn, faction, unit, withUnits } from "./support";
 export type Placement = readonly (readonly [string, string, string])[];
 
 export const ordersOf = (scenario: Scenario, state: GameState, factionId: string, seed = 1): readonly MoveOrder[] =>
-  generateComputerSubmission(scenario, state, faction(factionId), seededRandom(seed)).orders;
+  generateComputerSubmission(scenario, state, faction(factionId), seededRandom(seed)).orders.filter(isMoveOrder);
 
-export const into = (orders: readonly MoveOrder[], to: string): readonly string[] =>
-  orders.filter((order) => order.to === to).map((order) => order.unitId).sort();
+export const into = (orders: readonly Order[], to: string): readonly string[] =>
+  orders.filter(isMoveOrder).filter((order) => order.to === to).map((order) => order.unitId).sort();
 
 /**
  * Places armies on a board where the faction controls every territory except `others`, which

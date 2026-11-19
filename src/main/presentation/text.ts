@@ -82,6 +82,8 @@ function unitIdsOf(outcome: TurnOutcome): UnitId[] {
       return [outcome.unitId];
     case "battle":
       return [...outcome.attacker.armies, ...outcome.defender.armies].map((army) => army.unitId);
+    case "rejected-order":
+      return "unitId" in outcome.order ? [outcome.order.unitId] : [];
     default:
       return [outcome.order.unitId];
   }
@@ -145,6 +147,9 @@ export function describeOutcomeGroup(scenario: Scenario, group: OutcomeGroup, ou
     return outcome.unitId === undefined
       ? `${factionName(scenario, outcome.factionId)} had no armies to order.`
       : `${unitName(scenario, outcome.unitId)} held.`;
+  }
+  if (outcome.kind === "rejected-order") {
+    return `${factionName(scenario, outcome.order.factionId)}: an order was not carried out: ${outcome.reason}`;
   }
   if (outcome.kind === "recovered") {
     return `${unitName(scenario, outcome.unitId)} recovered its morale in ${territoryName(scenario, outcome.territoryId)}.`;

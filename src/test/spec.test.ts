@@ -75,7 +75,7 @@ describe("loader rules", () => {
 
   it.each([
     ["L1 schema", (scenario: Json) => { scenario["ruleset"] = "m4-combined-arms"; }, "ruleset"],
-    ["L1 map schema", (_scenario: Json, map: Json) => { map["specVersion"] = 2; }, "specVersion"],
+    ["L1 map schema", (_scenario: Json, map: Json) => { map["specVersion"] = 1; }, "specVersion"],
     ["L2 duplicate ids", (scenario: Json) => { list(scenario["units"]).push(clone(list(scenario["units"])[0]!)); }, "(L2)"],
     ["L3 unknown reference", (scenario: Json) => { list(scenario["units"])[0]!["cityId"] = "las-palmas"; }, "unknown city"],
     ["L3 unknown objective", (scenario: Json) => { list(scenario["factions"])[0]!["objectiveTerritoryIds"] = ["atlantis"]; }, "unknown territory"],

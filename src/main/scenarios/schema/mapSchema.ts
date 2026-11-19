@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 /**
- * Map package schema (spec version 1). Presentation data only: the engine never reads it.
+ * Map package schema (spec version 2). Presentation data only: the engine never reads it.
  * All coordinates are in `viewBox` space; packages are pre-registered to that space by their
  * build pipeline, so the renderer applies no projection.
  */
@@ -29,7 +29,7 @@ const waterTier = z.enum(["overview", "operational", "detail"]).meta({
 export const mapSchema = z
   .strictObject({
     $schema: z.string().optional(),
-    specVersion: z.literal(1),
+    specVersion: z.literal(2),
     id: slug,
     viewBox: rect.meta({ description: "Coordinate space for geometry, anchors, and labels." }),
     focus: rect.meta({ description: "Area framed by the camera when a game starts." }),
