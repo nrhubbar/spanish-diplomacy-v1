@@ -1,10 +1,23 @@
 import { describe, expect, it } from "vitest";
-import { fixtureSources } from "../../test/fixtures/scenarios/fixtureSources";
-import { loadScenario, scenarioSources } from "../engine";
-import { playGame } from "../game";
-import { PatchError } from "../patch";
-import { baselineName, buildSummary, cellId, cellsOf, orderLines, type RunPlan, runInProcess, seedRanges, tasksOf } from "../run";
-import { compare, summarize } from "../summary";
+import { fixtureSources } from "../fixtures/scenarios/fixtureSources";
+import { loadScenario, scenarioSources } from "../../sim/engine";
+import { playGame } from "../../sim/game";
+import { PatchError } from "../../sim/patch";
+import {
+  baselineName,
+  blunderControl,
+  blunderPatch,
+  buildSummary,
+  cellId,
+  cellsOf,
+  defaultBlunderMode,
+  orderLines,
+  type RunPlan,
+  runInProcess,
+  seedRanges,
+  tasksOf
+} from "../../sim/run";
+import { compare, stallQuietTurns, summarize } from "../../sim/summary";
 
 const sources = [...scenarioSources(), fixtureSources];
 const tinyPlan = (overrides: Partial<RunPlan> = {}): RunPlan => ({
@@ -55,6 +68,8 @@ describe("harness core on the tiny-front fixture", () => {
     expect(Object.values(metrics.battles.byColumn).reduce((sum, column) => sum + column.battles, 0)).toBe(metrics.battles.total);
     expect(metrics.firstTurn["red"]?.meanOrders).toBeGreaterThan(0);
     expect(metrics.sanity.abandonments).toBe(0);
+    expect(metrics.stalled).toBe(first.lines.filter((line) => line.longestQuiet >= stallQuietTurns).length);
+    expect(metrics.stalledRate?.value).toBeCloseTo(metrics.stalled / 6, 3);
     expect(first.summary.format).toBe("spanish-diplomacy-sim/1");
     expect(first.summary.seeds).toBe("1-6");
   });
@@ -92,6 +107,16 @@ describe("harness core on the tiny-front fixture", () => {
     expect(blunderComparison?.pairs).toBe(3);
     expect(blunderComparison?.freezeRate).toEqual({ high: 0, low: 0, value: 0 });
     expect(blunderComparison?.winShare["red"]).toEqual({ high: 0, low: 0, value: 0 });
+  });
+
+  it("leaves a seam for the blunder rate: pending plays without, a pointer turns blunders off by patch", () => {
+    expect(blunderControl()).toBe("pending");
+    expect(blunderControl("/ai/blunderRate")).toBe("scenario");
+    expect(defaultBlunderMode("pending")).toBe("without");
+    expect(defaultBlunderMode("scenario")).toBe("both");
+    expect(blunderPatch(false)).toEqual([]);
+    expect(blunderPatch(true, "/ai/blunderRate")).toEqual([]);
+    expect(blunderPatch(false, "/ai/blunderRate")).toEqual([{ op: "replace", path: "/ai/blunderRate", value: 0 }]);
   });
 
   it("rejects a bad patch, a patched scenario that fails validation, and an unknown scenario", () => {

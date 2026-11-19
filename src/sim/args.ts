@@ -1,16 +1,17 @@
-import { defaultScenarioId } from "./engine";
 import { type BlunderMode, defaultTurnLimit } from "./run";
 
 export const defaultGames = 200;
 export const defaultOutDir = "build/sim";
 
 export interface CliOptions {
-  readonly blunders: BlunderMode;
+  /** Absent: the default for the current blunder control (`defaultBlunderMode`). */
+  readonly blunders?: BlunderMode;
   readonly help: boolean;
   readonly outDir: string;
   /** The run folder's name; the CLI picks a time-stamped one when absent. */
   readonly run?: string;
-  readonly scenarioId: string;
+  /** Absent: the only shipped scenario (`defaultScenarioId`). */
+  readonly scenarioId?: string;
   readonly seeds: readonly number[];
   readonly turnLimit: number;
   /** Variant patch files, in the order given. */
@@ -26,8 +27,9 @@ export const usage = `Usage: npm run sim -- [options]
   --seeds LIST       explicit seeds, for example 1-50,77 (overrides --games and --first-seed)
   --turns N          turn limit; a game still running after it is a freeze (default ${defaultTurnLimit})
   --variant FILE     a JSON patch variant, played on the same seeds as the baseline (repeatable)
-  --blunders MODE    with, without or both (default both)
-  --scenario ID      scenario id (default ${defaultScenarioId})
+  --blunders MODE    with, without or both (default: without while blunders are pending
+                     in the computer player, both once the scenario sets a blunder rate)
+  --scenario ID      scenario id (default: the only shipped scenario)
   --workers N        worker threads (default: one per core, less one)
   --run NAME         run folder name under the output folder (default: a time stamp)
   --out DIR          output folder (default ${defaultOutDir})
@@ -69,8 +71,8 @@ export function parseArgs(argv: readonly string[]): CliOptions {
   let firstSeed = 1;
   let seeds: readonly number[] | undefined;
   let turnLimit = defaultTurnLimit;
-  let blunders: BlunderMode = "both";
-  let scenarioId = defaultScenarioId;
+  let blunders: BlunderMode | undefined;
+  let scenarioId: string | undefined;
   let workers: number | undefined;
   let run: string | undefined;
   let outDir = defaultOutDir;
@@ -117,11 +119,11 @@ export function parseArgs(argv: readonly string[]): CliOptions {
     }
   }
   return {
-    blunders,
+    ...(blunders === undefined ? {} : { blunders }),
     help,
     outDir,
     ...(run === undefined ? {} : { run }),
-    scenarioId,
+    ...(scenarioId === undefined ? {} : { scenarioId }),
     seeds: seeds ?? Array.from({ length: games }, (_, offset) => firstSeed + offset),
     turnLimit,
     variantFiles,

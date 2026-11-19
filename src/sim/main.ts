@@ -1,11 +1,21 @@
 import { join } from "node:path";
 import { type CliOptions, parseArgs, usage } from "./args";
-import type { PackageSources } from "./engine";
+import { defaultScenarioId, type PackageSources } from "./engine";
 import type { GameLine } from "./game";
 import { formatSummary, runStamp, writeRun } from "./output";
 import { parseVariantFile, PatchError } from "./patch";
 import { type PoolWorker, runPool } from "./pool";
-import { baselineName, buildSummary, type GameTask, orderLines, prepare, type RunPlan, tasksOf, type Variant } from "./run";
+import {
+  baselineName,
+  buildSummary,
+  defaultBlunderMode,
+  type GameTask,
+  orderLines,
+  prepare,
+  type RunPlan,
+  tasksOf,
+  type Variant
+} from "./run";
 
 /** What a worker thread is started with. */
 export interface WorkerSetup {
@@ -17,6 +27,7 @@ export interface CliIo {
   readonly cores: number;
   readonly now: () => Date;
   readonly readText: (path: string) => string;
+  /** The scenario packages to play; with exactly one, it is the default scenario. */
   readonly sources: readonly PackageSources[];
   readonly spawn: (setup: WorkerSetup) => PoolWorker<GameTask, GameLine>;
   readonly stderr: (text: string) => void;
@@ -42,8 +53,15 @@ export function readVariants(files: readonly string[], readText: (path: string) 
   return variants;
 }
 
-export function planOf(options: CliOptions, variants: readonly Variant[]): RunPlan {
-  return { blunders: options.blunders, scenarioId: options.scenarioId, seeds: options.seeds, turnLimit: options.turnLimit, variants };
+/** The run plan, with the defaults the options leave open filled in. */
+export function planOf(options: CliOptions, variants: readonly Variant[], sources: readonly PackageSources[]): RunPlan {
+  return {
+    blunders: options.blunders ?? defaultBlunderMode(),
+    scenarioId: options.scenarioId ?? defaultScenarioId(sources),
+    seeds: options.seeds,
+    turnLimit: options.turnLimit,
+    variants
+  };
 }
 
 /** Runs the CLI. Returns the process exit code: 0 done, 2 bad arguments or data. */
@@ -57,7 +75,7 @@ export async function runCli(argv: readonly string[], io: CliIo): Promise<number
       io.stdout(usage);
       return 0;
     }
-    plan = planOf(options, readVariants(options.variantFiles, io.readText));
+    plan = planOf(options, readVariants(options.variantFiles, io.readText), io.sources);
     factionIds = prepare(io.sources, plan);
   } catch (error) {
     // Everything before the first game is input: arguments, variant files, scenario data.

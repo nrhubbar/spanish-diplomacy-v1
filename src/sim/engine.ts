@@ -11,15 +11,32 @@ import type { GameRecord, Session } from "../main/state/session";
 
 export type { FactionId, PackageSources, Scenario, TurnOutcome, TurnResolutionResult, UnitId };
 
-/** The scenario a run plays when none is named. */
-export const defaultScenarioId = "spain-1936-07-31";
-
 /**
  * Where scenario packages come from. The app's own glob of shipped packages, so a moved
  * scenario folder is followed without touching the harness.
  */
 export function scenarioSources(): readonly PackageSources[] {
   return [builtInSources];
+}
+
+/**
+ * H6 seam: the JSON Pointer of the computer player's blunder rate in `scenario.json`. It is
+ * owned by `m3r1-contract` and expected at `/ai/blunderRate`; the integrator sets it here when
+ * that lands. While it is undefined, blunders are "pending": both settings play alike.
+ */
+export const blunderRatePointer: string | undefined = undefined;
+
+/**
+ * The scenario a run plays when none is named: the only playable package in `sources`. With
+ * none, or more than one, the caller must name one. The harness holds no scenario ids.
+ */
+export function defaultScenarioId(sources: readonly PackageSources[]): string {
+  const ids = createScenarioRegistry(...sources).list().map((summary) => summary.id as string);
+  const [only] = ids;
+  if (ids.length !== 1 || only === undefined) {
+    throw new Error(`Name a scenario with --scenario; the playable ones are: ${ids.length === 0 ? "none" : ids.join(", ")}.`);
+  }
+  return only;
 }
 
 /** A raw scenario document transformed before validation, for example by a variant patch. */

@@ -1,4 +1,4 @@
-import { loadScenario, type PackageSources, type Scenario } from "./engine";
+import { blunderRatePointer, loadScenario, type PackageSources, type Scenario } from "./engine";
 import { type GameLine, playGame } from "./game";
 import { applyPatch, type PatchOperation } from "./patch";
 import { type Comparison, compare, type RunMetrics, summarize } from "./summary";
@@ -38,6 +38,26 @@ export interface GameTask {
   readonly seed: number;
 }
 
+/** H6: "scenario" once the blunder rate is in scenario data, "pending" until then. */
+export type BlunderControl = "pending" | "scenario";
+
+export function blunderControl(pointer: string | undefined = blunderRatePointer): BlunderControl {
+  return pointer === undefined ? "pending" : "scenario";
+}
+
+/**
+ * The default blunder setting. While blunders are pending, both settings would play alike,
+ * so the harness plays only "without"; once they reach the game, every report carries both.
+ */
+export function defaultBlunderMode(control: BlunderControl = blunderControl()): BlunderMode {
+  return control === "pending" ? "without" : "both";
+}
+
+/** The patch that turns blunders off: the scenario's blunder rate set to 0. Empty with blunders on or while pending. */
+export function blunderPatch(blunders: boolean, pointer: string | undefined = blunderRatePointer): readonly PatchOperation[] {
+  return blunders || pointer === undefined ? [] : [{ op: "replace", path: pointer, value: 0 }];
+}
+
 export function blunderSettings(mode: BlunderMode): readonly boolean[] {
   if (mode === "both") return [true, false];
   return [mode === "with"];
@@ -57,12 +77,9 @@ export function tasksOf(plan: RunPlan): readonly GameTask[] {
   return cellsOf(plan).flatMap((_, cell) => plan.seeds.map((seed) => ({ cell, seed })));
 }
 
-/**
- * Builds a cell's scenario. The blunder setting has no scenario value to change yet: the
- * chance arrives with the computer player's blunder rule (H6), and is wired here when it does.
- */
+/** Builds a cell's scenario: the variant's patch, then the blunder setting's (H6). */
 export function cellScenario(sources: readonly PackageSources[], plan: RunPlan, cell: Cell): Scenario {
-  const { patch } = cell.variant;
+  const patch = [...cell.variant.patch, ...blunderPatch(cell.blunders)];
   return loadScenario(sources, plan.scenarioId, patch.length === 0 ? undefined : (document) => applyPatch(document, patch));
 }
 
@@ -112,9 +129,9 @@ export interface CellSummary {
 export interface Summary {
   /**
    * H6: whether the blunder setting reaches the game yet. "pending" until the computer
-   * player's blunder chance exists in scenario data; until then both settings play alike.
+   * player's blunder rate exists in scenario data; until then both settings play alike.
    */
-  readonly blunderControl: "pending" | "scenario";
+  readonly blunderControl: BlunderControl;
   readonly blunders: BlunderMode;
   readonly cells: readonly CellSummary[];
   /** Every variant against the baseline, and each blunder setting against the other. */
@@ -142,7 +159,7 @@ export function buildSummary(plan: RunPlan, factionIds: readonly string[], lines
     if (cell.blunders && without !== undefined) comparisons.push(compare(cell.id, linesOf(cell), without.id, linesOf(without), factionIds));
   }
   return {
-    blunderControl: "pending",
+    blunderControl: blunderControl(),
     blunders: plan.blunders,
     cells: cells.map((cell) => ({
       blunders: cell.blunders,

@@ -32,13 +32,17 @@ export function formatSummary(summary: Summary, dir: string): string {
   const out: string[] = [
     `sim: ${summary.scenarioId}, seeds ${summary.seeds}, turn limit ${summary.turnLimit}, ${summary.games} games -> ${dir}`
   ];
-  if (summary.blunderControl === "pending") out.push("note: blunders are not in the computer player yet; both settings play alike.");
+  if (summary.blunderControl === "pending") {
+    const effect = summary.blunders === "without" ? "this run plays without them" : "with and without play alike";
+    out.push(`note: the computer player has no blunder rate yet (pending); ${effect}.`);
+  }
+  out.push("freeze: no winner by the turn limit. stalled: 5 or more quiet turns in a row (Revision 7's S2).");
   for (const cell of summary.cells) {
     const { metrics } = cell;
     const median = metrics.length.decided?.median;
     out.push(
       `${cell.id}: ${metrics.games} games, decided ${share(metrics.decidedRate)}, freezes ${share(metrics.freezeRate)}`
-        + (median === undefined ? "" : `, median length ${median}`),
+        + `, stalled ${share(metrics.stalledRate)}${median === undefined ? "" : `, median length ${median}`}`,
       `  wins of decided: ${summary.factions.map((id) => `${id} ${share(metrics.wins[id]?.shareOfDecided ?? null)}`).join(", ")}`,
       `  battles per turn ${metrics.battles.perTurn}, abandonments ${metrics.sanity.abandonments}, early wins ${metrics.sanity.earlyWins}`
     );
@@ -46,6 +50,7 @@ export function formatSummary(summary: Summary, dir: string): string {
   for (const comparison of summary.comparisons) {
     out.push(
       `${comparison.subject} vs ${comparison.against} (${comparison.pairs} seeds): freezes ${difference(comparison.freezeRate, 100, 1)} pts,`
+        + ` stalled ${difference(comparison.stalledRate, 100, 1)} pts,`
         + ` turns ${difference(comparison.turns, 1, 2)}`,
       `  win share (pts): ${summary.factions.map((id) => `${id} ${difference(comparison.winShare[id] ?? null, 100, 1)}`).join(", ")}`
     );

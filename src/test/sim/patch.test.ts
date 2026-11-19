@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyPatch, parsePatch, parseVariantFile, PatchError } from "../patch";
+import { applyPatch, parsePatch, parseVariantFile, PatchError } from "../../sim/patch";
 
 const document = { combat: { diggingIn: { max: 3, perTurn: 1 } }, factions: [{ id: "red" }, { id: "blue" }], "a/b": { "c~d": 1 } };
 

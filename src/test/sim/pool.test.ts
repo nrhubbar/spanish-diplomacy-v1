@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { type FromWorker, type PoolWorker, runPool, type ToWorker } from "../pool";
+import { type FromWorker, type PoolWorker, runPool, type ToWorker } from "../../sim/pool";
 
 interface FakeOptions {
   readonly crashOn?: number;

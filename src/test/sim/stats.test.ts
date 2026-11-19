@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { distribution, pairedDifference, quantile, round, wilson } from "../stats";
+import { distribution, pairedDifference, quantile, round, wilson } from "../../sim/stats";
 
 describe("harness statistics", () => {
   it("gives the Wilson interval, inside 0..1 even at the edges", () => {

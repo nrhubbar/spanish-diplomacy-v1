@@ -2,14 +2,15 @@ import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { fixtureSources } from "../../test/fixtures/scenarios/fixtureSources";
-import { scenarioSources } from "../engine";
-import type { GameLine } from "../game";
-import { type CliIo, readVariants, runCli, type WorkerSetup } from "../main";
-import { formatSummary, runStamp } from "../output";
-import type { FromWorker, PoolWorker, ToWorker } from "../pool";
-import type { GameTask, Summary } from "../run";
-import { serveWorker } from "../worker";
+import { fixtureSources } from "../fixtures/scenarios/fixtureSources";
+import { defaultScenarioId, scenarioSources } from "../../sim/engine";
+import type { GameLine } from "../../sim/game";
+import { type CliIo, planOf, readVariants, runCli, type WorkerSetup } from "../../sim/main";
+import { parseArgs } from "../../sim/args";
+import { formatSummary, runStamp } from "../../sim/output";
+import type { FromWorker, PoolWorker, ToWorker } from "../../sim/pool";
+import type { GameTask, Summary } from "../../sim/run";
+import { serveWorker } from "../../sim/worker";
 
 const sources = [...scenarioSources(), fixtureSources];
 const folders: string[] = [];
@@ -63,7 +64,7 @@ describe("sim command line", () => {
     const out = tempOut();
     const files = { "cap.json": JSON.stringify({ name: "cap", patch: [{ op: "replace", path: "/combat/diggingIn/max", value: 1 }] }) };
     const run = io(files);
-    const code = await runCli(["--scenario", "tiny-front", "--games", "4", "--turns", "20", "--variant", "cap.json", "--out", out], run.io);
+    const code = await runCli(["--scenario", "tiny-front", "--games", "4", "--turns", "20", "--variant", "cap.json", "--blunders", "both", "--out", out], run.io);
     expect(code).toBe(0);
     const dir = join(out, "20261119-140509");
     const summary = JSON.parse(readFileSync(join(dir, "summary.json"), "utf8")) as Summary;
@@ -94,6 +95,7 @@ describe("sim command line", () => {
     const cases: readonly [readonly string[], Readonly<Record<string, string>>, RegExp][] = [
       [["--games", "x"], {}, /positive whole number/],
       [["--scenario", "nowhere"], {}, /Unknown scenario/],
+      [["--games", "1"], {}, /Name a scenario with --scenario; the playable ones are: .*tiny-front/],
       [["--scenario", "tiny-front", "--variant", "missing.json"], {}, /missing.json: ENOENT/],
       [["--scenario", "tiny-front", "--variant", "bad.json"], { "bad.json": "{" }, /bad.json/],
       [["--scenario", "tiny-front", "--variant", "a.json"], { "a.json": "[{\"op\":\"replace\",\"path\":\"/nope\",\"value\":1}]" }, /nope/]
@@ -116,6 +118,15 @@ describe("sim command line", () => {
     expect(posted[1]?.kind).toBe("result");
   });
 
+  it("defaults to the only shipped scenario, and plays without blunders while they are pending", () => {
+    const shipped = scenarioSources();
+    const plan = planOf(parseArgs([]), [], shipped);
+    expect(plan.scenarioId).toBe(defaultScenarioId(shipped));
+    expect(plan.blunders).toBe("without");
+    expect(() => defaultScenarioId([])).toThrow(/playable ones are: none/);
+    expect(planOf(parseArgs(["--scenario", "x", "--blunders", "with"]), [], []).scenarioId).toBe("x");
+  });
+
   it("refuses two variants with one name, or one named like the baseline", () => {
     const read = (path: string) => (path === "baseline.json" ? "[]" : "{\"name\":\"same\",\"patch\":[]}");
     expect(() => readVariants(["a.json", "b.json"], read)).toThrow(/"same" is used twice/);
@@ -131,7 +142,10 @@ describe("sim command line", () => {
     expect(text).toContain("baseline/without-blunders: 2 games");
     expect(/^[\x20-\x7e\n]*$/.test(text)).toBe(true);
     const summary = JSON.parse(readFileSync(join(out, "r", "summary.json"), "utf8")) as Summary;
-    expect(formatSummary({ ...summary, blunderControl: "scenario" }, "x")).not.toContain("note: blunders");
+    expect(text).toContain("this run plays without them");
+    expect(formatSummary({ ...summary, blunders: "both" }, "x")).toContain("with and without play alike");
+    expect(formatSummary({ ...summary, blunderControl: "scenario" }, "x")).not.toContain("blunder rate");
+    expect(text).toContain("stalled: 5 or more quiet turns");
     expect(runStamp(new Date("2026-01-02T03:04:05.678Z"))).toBe("20260102-030405");
   });
 });

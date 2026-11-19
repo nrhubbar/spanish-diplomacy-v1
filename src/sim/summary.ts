@@ -3,6 +3,8 @@ import { type Distribution, distribution, type Interval, pairedDifference, round
 
 /** Turns per bar of the game-length histogram. */
 export const lengthBucket = 6;
+/** A game with this many quiet turns in a row (no territory changing hands) is stalled: Revision 7's S2 freeze. */
+export const stallQuietTurns = 5;
 /** First-turn routes listed per faction. */
 export const topRouteCount = 10;
 
@@ -44,6 +46,9 @@ export interface RunMetrics {
   readonly freezeRate: Interval | null;
   /** Games that reached the turn limit with no winner. */
   readonly freezes: number;
+  /** Games with `stallQuietTurns` or more quiet turns in a row, decided or not (Revision 7's S2). */
+  readonly stalled: number;
+  readonly stalledRate: Interval | null;
   readonly games: number;
   readonly length: {
     /** Turns to a decision, decided games only. */
@@ -85,6 +90,7 @@ export function summarize(input: readonly GameLine[], factionIds: readonly strin
   const decidedLines = lines.filter((line) => line.end === "decided");
   const decided = decidedLines.length;
   const freezes = games - decided;
+  const stalled = lines.filter((line) => line.longestQuiet >= stallQuietTurns).length;
   const earlyWins = decidedLines.filter((line) => line.turns < earlyWinTurn).length;
 
   const wins = Object.fromEntries(factionIds.map((id) => {
@@ -164,6 +170,8 @@ export function summarize(input: readonly GameLine[], factionIds: readonly strin
       longestQuiet: distribution(lines.map((line) => line.longestQuiet))
     },
     sharedVictories: decidedLines.filter((line) => line.winners.length > 1).length,
+    stalled,
+    stalledRate: wilson(stalled, games),
     wins
   };
 }
@@ -177,6 +185,7 @@ export interface Comparison {
   readonly freezeRate: Interval | null;
   /** Seeds both cells played; only these are compared. */
   readonly pairs: number;
+  readonly stalledRate: Interval | null;
   readonly subject: string;
   /** Turns played (the limit for a freeze), variant minus baseline. */
   readonly turns: Interval | null;
@@ -203,6 +212,7 @@ export function compare(
     decidedRate: differences((line) => (line.end === "decided" ? 1 : 0)),
     freezeRate: differences((line) => (line.end === "freeze" ? 1 : 0)),
     pairs: pairs.length,
+    stalledRate: differences((line) => (line.longestQuiet >= stallQuietTurns ? 1 : 0)),
     subject: subjectName,
     turns: differences((line) => line.turns),
     winShare: Object.fromEntries(factionIds.map((id) => [id, differences((line) => credit(line, id))]))

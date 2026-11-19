@@ -1,16 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { defaultGames, defaultOutDir, parseArgs, parseSeeds, usage, UsageError } from "../args";
-import { defaultScenarioId } from "../engine";
-import { defaultTurnLimit } from "../run";
+import { defaultGames, defaultOutDir, parseArgs, parseSeeds, usage, UsageError } from "../../sim/args";
+import { defaultTurnLimit } from "../../sim/run";
 
 describe("sim arguments", () => {
-  it("defaults to 200 games from seed 1, 66 turns, both blunder settings", () => {
+  it("defaults to 200 games from seed 1 and 66 turns, leaving the scenario and blunders to the run", () => {
     const options = parseArgs([]);
     expect(options).toEqual({
-      blunders: "both",
       help: false,
       outDir: defaultOutDir,
-      scenarioId: defaultScenarioId,
       seeds: Array.from({ length: defaultGames }, (_, index) => index + 1),
       turnLimit: defaultTurnLimit,
       variantFiles: []
