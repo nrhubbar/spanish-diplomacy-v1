@@ -57,3 +57,56 @@
 - A generated topology file.
 - `project/specs/map-package.md`.
 - Unit tests.
+
+## CP2: topology, schema and tests (commit 8f50062)
+
+**Done**
+- `scripts/map/topology.ts` measures, from the built geometry:
+  - shared border length between every pair of sub-territories;
+  - coast per sub-territory;
+  - the entry sub-territories of each scenario connection.
+- `npm run maps:build` writes `sub-territory-topology.json` beside `map.json`. It is in the contract's CT-10 shape, ready to copy into `scenario.json`:
+  - `subTerritoryBorders`: 118 `[a, b]` pairs;
+  - `connections[]`: `{ between, kind, entry: [a, b] }` in scenario order, with `entry` in `between` order (ports for sea connections);
+  - `subTerritories[]`: `{ id, territoryId, name }`, the name being a suggestion;
+  - `measurements`: border km, coast km, and connection km.
+- One constant, `scenarioPackage` in `scripts/map/iberia-1936.ts`, names the scenario folder. `mapDocument`, `scenarioDocument`, `topologyDocument` and the tests derive from it.
+- `manifest.json`: `boundarySource` is now "Estad\u00edstica" (upstream drops the letter). The fetch script restores it and writes the manifest as ASCII.
+- `project/specs/map-package.md` documents `subTerritories` and the topology file.
+- Tests:
+  - `src/test/mapPartition.test.ts` (12 tests): partitioning, topology and the build on synthetic shapes.
+  - `src/test/subTerritories.test.ts` (14 tests) on the shipped package:
+    - the ids equal D8 exactly;
+    - the SVG path ids equal the `entries` keys, in the same order;
+    - rings are closed;
+    - the parts cover their region's area to within 0.2 percent;
+    - every label and capital point is inside its own part only;
+    - capitals are within 1 km of their towns;
+    - the split areas fall in their expected bands;
+    - enclave probes are taken from real region rings (Trevino, Petilla, Ademuz, Llivia, Formentera, Cabrera, Dragonera);
+    - borders are unique and symmetric;
+    - each mainland territory is one connected piece;
+    - cross-territory borders match the land connections exactly;
+    - every connection has entries on the right sides, land entries share a border, and ports have coast;
+    - inland and coastal checks.
+
+**Decisions**
+11. Two sub-territories border if at least 2 km of their boundaries lie within 0.75 km of each other. Region borders are simplified separately, so neighbours across a territory border sit a little apart. Corner touches do not count.
+12. Coast is boundary whose outward probes, at 0.5 to 8 km, all land in the sea. Natural Earth and geoBoundaries leave gaps of up to several km along the Portuguese rivers, and the longer probes cross them. Inland frontier provinces keep at most 1.4 km of false coast, below the 5 km a port needs.
+13. A land entry is the pair across the two territories with the longest shared border. A sea entry (the ports) is the pair of coastal sub-territories whose coasts come closest. The sea results:
+    - cadiz to ceuta (17 km);
+    - almeria to melilla (153 km);
+    - barcelona to mallorca (168 km);
+    - alicante to ibiza (84 km).
+    The contract may prefer other historical ports: valencia for the Valencia crossing, malaga for Melilla.
+14. The topology file also carries suggested names and measurements, which the contract can ignore.
+15. Cross-territory borders equal the scenario's 29 land connections exactly, so no connection is missing or extra.
+
+**Checks**
+- `npm run maps:build` exit 0. Two runs gave identical `map.json`, topology and assets; all 5 checksums match; the relief and region files are unchanged.
+- `npm run maps:fetch -- provinces` reproduces `manifest.json` byte for byte.
+- `lint` 0, `typecheck` 0, `test:unit` 0 (29 files, 509 tests; coverage 98.64 statements, 94.95 branches).
+
+**Next**
+- Hand-off.
+- At merge, the integrator moves `scenarioPackage` to the contract's folder, and the contract copies `subTerritoryBorders` and `connections[].entry` into `scenario.json`.
