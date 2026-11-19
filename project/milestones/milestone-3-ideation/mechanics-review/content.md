@@ -88,7 +88,7 @@ These answers interact the most, and combined literally they trap armies.
 - it cannot rest or recover in contested ground (PART-2);
 - only a general can restore morale (GEN-1 note).
 
-It ends up stuck, unable to attack or recover, until it withdraws. That fits "contested ground is chaos", but long sieges such as Oviedo, the Madrid front and the Alcázar become impossible unless both sides rotate armies out. The four questions below make it coherent without dropping your intent.
+It ends up stuck, unable to attack or recover, until it withdraws. That fits "contested ground is chaos", but long sieges such as Oviedo, the Madrid front and the Alcázar become impossible unless both sides rotate armies out. The questions below make it coherent without dropping your intent.
 
 <div class="questions" data-idea="contested"></div>
 
@@ -116,27 +116,29 @@ It ends up stuck, unable to attack or recover, until it withdraws. That fits "co
 | 9 | Costly victory | 35% | 35% | none | whole territory |
 | 10 | Defender driven out | 10% | 20% | defender half | whole territory |
 | 11 | Defender routed | 10% | 35% | defender all | whole territory |
-| 12 | Defender broken | 10% | 50% | defender all | whole territory |
+| 12 | Defender broken | 0 | 35% | defender all; its weakest army is destroyed | whole territory |
 | 13 | Defender destroyed | 10% | all | – | whole territory |
 
 </div>
 
-On a whole-territory grade, defenders retreat (M21). On a 1- or 2-sub-territory grade, they fall back inside the territory (Q-PART-6). Where a territory has only one sub-territory (Ceuta, Melilla), grades 7–8 act as a stalemate (Q-D20-7). This replaces the shape in Q-TEN-1 ("four best grades take all"): here five grades take the whole territory.
+Following your Q-PART-3 note, sub-territories flip from the outside in: first the ones nearest the attack's origin, the capital last. On a whole-territory grade, defenders retreat (M21). On a 1- or 2-sub-territory grade, they fall back inside the territory (Q-PART-6). Where a territory has only one sub-territory (Ceuta, Melilla), grades 7–8 act as a stalemate (Q-D20-7). This replaces the shape in Q-TEN-1 ("four best grades take all"): here five grades take the whole territory.
 
 <div class="questions" data-idea="combat"></div>
 
 <!-- section:economy -->
 ## Contradictions: income and balance
 
-**What whole-territory income does on turn 1.** I took each territory's starting control from today's `scenario.json` and assumed every split territory starts partitioned (Q-PART-7). Five territories start contested: Asturias, Aragon, Extremadura, Baleares and Andalucia.
+**What whole-territory income does on turn 1.** I took each territory's starting control from today's `scenario.json` and assumed every split territory starts partitioned (Q-PART-7). I also applied the historical holders of each province (Q-PART-9), so Álava makes País Vasco contested. Six territories start contested: Asturias, País Vasco, Aragon, Extremadura, Baleares and Andalucia.
 
 | Faction | Territories it holds whole on turn 1 | Cities in them |
 |---|---|---|
-| Republic | Cantabria, País Vasco, Madrid, Castilla-La Mancha, Catalunya, Valencia, Murcia (7) | 10 |
+| Republic | Cantabria, Madrid, Castilla-La Mancha, Catalunya, Valencia, Murcia (6) | 8 |
 | Northern command | Galicia, Navarra, La Rioja, Castilla y León (4) | 5 |
 | Southern command | Ceuta, Melilla (2) | 0 |
 
-All four Southern cities (Sevilla, Córdoba, Granada, Cádiz) are in contested Andalucia, so **the Southern command earns nothing from them until Málaga's province falls**; historically that was February 1937, about 14 turns in. It can recruit only in Ceuta and Melilla. That matches the Army of Africa's position, but in Revision 7 the Southern command already won only 13% of decided games, so this would likely push it lower.
+All four Southern cities (Sevilla, Córdoba, Granada, Cádiz) are in contested Andalucia. Q-PART-7 starts Andalucia with 3 Republican provinces: Málaga, Jaén and Almería. Málaga fell in February 1937, but Jaén and Almería stayed Republican until the end of the war in March 1939. So, if the war goes as it did, **the Southern command never earns from Andalucia at all**. It can recruit only in Ceuta and Melilla. A starting stock cannot cover two and a half years of no income from its home region.
+
+The cause is the map, not the rule. Whole-territory income works where fronts move, but the Andalusian front barely moved for the whole war, and Aragon's held from 1936 until March 1938. Q-MR-10 asks how to fix it.
 
 <div class="questions" data-idea="economy"></div>
 
