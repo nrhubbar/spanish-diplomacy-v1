@@ -103,3 +103,26 @@
 - tests that read battle results or the old id.
 
 **Next: CP3.** The engine skeleton: `engine/phases/` run in order by `resolveTurn`, the module registry and plugin interface, per-viewer filtering, seeded streams per roll kind, and the `ai/orders/<kind>.ts` stubs; the computer player reads `ai.profiles`.
+
+### CP2 follow-up
+
+- CT-30. The placeholder report lines are split one file per area under `presentation/systemText/`, mirroring `engine/types/outcomes/`, and joined with `satisfies Record<SystemOutcome["kind"], string>`, so each slice edits only its own file.
+  - `modifierName` in `presentation/odds.ts` names the owner of each new case: d20 combat (barricades, unit-bonus, fatigue), air-generals (general, trait, air-support), weather-timer (weather), movement (amphibious), economy (building).
+- CT-31. Rail yards moved to the boarding capitals, Burgos (for Medina del Campo) and Toledo (for Alcazar de San Juan), because M3 counts them only there. Valladolid and Ciudad Real no longer have one.
+
+**Public API changes for `m3r1-sim-harness`.** I read their worktree at `603e72d`; I did not edit it.
+- `src/sim/game.ts:122-125`: `outcome.result` after `kind !== "battle"` no longer typechecks. Use `isD6Battle(outcome)` (from `engine/types`) or switch on `outcome.dice`. A d20 battle has `grade` and `score` in place of `result` and `row`; `column` is common to both.
+- `src/sim/engine.ts:125-126`: `orderRoute` reads `order.from` and `order.to` off `submittedOrders`, which are now `Order[]`. Narrow with `isMoveOrder` first.
+- `src/sim/engine.ts:27`: `blunderChancePointer` can now be `/ai/blunderChance`. Profiles are at `/ai/profiles/<factionId>`.
+- The scenario id is now `spanish-civil-war-1936`. Their default scenario comes from the registry, so only id literals, if any, change.
+- `TurnOutcome` has about 30 new kinds, so an exhaustive switch over it breaks. Their code has none.
+- `TurnResolutionResult.subTerritoryChanges`, `UnitState.fatigue` and the new `GameState` fields are required. Their code builds no literals of these.
+- `digging-in-cap-2.json` (`/combat/diggingIn/max`) still applies.
+
+**Merge to-dos for the integrator:**
+- `scripts/map/iberia-1936.ts` still has the old map path;
+- wire `checkSubTerritoryMap` to map-provinces' schema and require it for partitioned packages (TODO in `loader/map.ts`);
+- replace the placeholder `subTerritoryBorders` and connection `entry` pairs with map-provinces' generated file;
+- regenerate `map.schema.json` after both streams merge.
+
+**Checks after the follow-up:** lint passed, typecheck passed, test:unit passed (30 files, 566 tests).

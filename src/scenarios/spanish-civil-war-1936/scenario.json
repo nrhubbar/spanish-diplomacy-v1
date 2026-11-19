@@ -2675,7 +2675,8 @@
       },
       "buildings": [
         "barracks",
-        "depot"
+        "depot",
+        "rail-yard"
       ],
       "rail": 2,
       "port": 0,
@@ -2684,7 +2685,7 @@
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "VI Division seat; the junta's seat from 24 July. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "VI Division seat; the junta's seat from 24 July. The rail yard stands for the region's main junction (Medina del Campo): rail yards count only at the boarding capital (M3). Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
     },
     {
       "id": "valladolid",
@@ -2698,8 +2699,7 @@
       },
       "buildings": [
         "barracks",
-        "depot",
-        "rail-yard"
+        "depot"
       ],
       "rail": 3,
       "port": 0,
@@ -2861,7 +2861,8 @@
       },
       "buildings": [
         "barracks",
-        "factory"
+        "factory",
+        "rail-yard"
       ],
       "rail": 2,
       "port": 0,
@@ -2870,7 +2871,7 @@
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "The Toledo arms factory. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "The Toledo arms factory. The rail yard stands for the region's main junction (Alc\u00e1zar de San Juan): rail yards count only at the boarding capital (M3). Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
     },
     {
       "id": "ciudad-real",
@@ -2882,9 +2883,7 @@
         "farms": 3,
         "mines": 2
       },
-      "buildings": [
-        "rail-yard"
-      ],
+      "buildings": [],
       "rail": 2,
       "port": 0,
       "sources": [
@@ -2892,7 +2891,7 @@
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "Almad\u00e9n mercury and Puertollano coal; Alc\u00e1zar de San Juan junction. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "Almad\u00e9n mercury and Puertollano coal. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
     },
     {
       "id": "cuenca",
@@ -5112,7 +5111,7 @@
     },
     {
       "id": "enwiki-sebastian-pozas",
-      "title": "English Wikipedia, Sebasti\u00e1n Pozas",
+      "title": "English Wikipedia, Sebasti\u00e1n Pozas Perea",
       "url": "https://en.wikipedia.org/wiki/Sebasti%C3%A1n_Pozas"
     },
     {
