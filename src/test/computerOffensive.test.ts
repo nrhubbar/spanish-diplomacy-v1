@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { assess, victoryAlarm } from "../main/ai/assessment";
+import { assess } from "../main/ai/assessment";
 import { generateComputerSubmission } from "../main/ai/computerPlayer";
 import { stalledTurns } from "../main/ai/memory";
-import { chooseOffensive, offensiveWeights, prizeFactor } from "../main/ai/offensive";
+import { chooseOffensive, prizeFactor } from "../main/ai/offensive";
 import { estimateAttack } from "../main/engine/combat";
 import { seededRandom } from "../main/engine/random";
 import type { GameState, TurnOutcome } from "../main/engine/types";
@@ -87,9 +87,10 @@ describe("computer player: offensives (C18)", () => {
     expect(stalledTurns([[], [gain]], faction("south"))).toBe(0);
     expect(stalledTurns([[gain]], faction("north"))).toBe(1);
     const offensive = { distance: new Map(), massedTakeChance: 0.5, target: territory("valencia") };
-    expect(prizeFactor(offensive, territory("valencia"), 0)).toBe(1 + offensiveWeights.focus);
-    expect(prizeFactor(offensive, territory("murcia"), 99)).toBe(1 + offensiveWeights.stallStep * offensiveWeights.stallCap);
-    expect(prizeFactor(undefined, territory("murcia"), 1)).toBe(1 + offensiveWeights.stallStep);
+    const weights = spain().ai.profiles[faction("south")]!.offensive;
+    expect(prizeFactor(weights, offensive, territory("valencia"), 0)).toBe(1 + weights.focus);
+    expect(prizeFactor(weights, offensive, territory("murcia"), 99)).toBe(1 + weights.stallStep * weights.stallCap);
+    expect(prizeFactor(weights, undefined, territory("murcia"), 1)).toBe(1 + weights.stallStep);
   });
 });
 
@@ -113,6 +114,7 @@ describe("computer player: relief and victory alarm", () => {
     // Red holds two of the three territories it needs.
     const state = withUnits(scenario, [["blue-marines", "blue", "harbor"]]);
     const view = assess(scenario, state, faction("blue"));
+    const { victoryAlarm } = view.profile;
     const alarm = (victoryAlarm.steps - 1) * victoryAlarm.perStep;
     expect(view.stake(territory("lowlands"))).toBe(4 * (1 + alarm));
     expect(view.stake(territory("isle"))).toBe(4);

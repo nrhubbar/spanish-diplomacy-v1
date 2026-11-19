@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { assess, stakeWeights, victoryAlarm } from "../main/ai/assessment";
+import { assess } from "../main/ai/assessment";
 import { bouncedMoves, moveKey } from "../main/ai/memory";
 import { expectedLosses } from "../main/ai/attacks";
-import { computerWeights, generateComputerSubmission, legalMoves } from "../main/ai/computerPlayer";
+import { generateComputerSubmission, legalMoves } from "../main/ai/computerPlayer";
 import { battleOdds, estimateAttack } from "../main/engine/combat";
 import { deriveSeed, seededRandom } from "../main/engine/random";
 import { initialGameState, resolveTurn } from "../main/engine/resolution";
@@ -233,6 +233,7 @@ describe("computer player: defence and morale (C18, M23)", () => {
   it("values territories by victory weight, cities, and objectives", () => {
     const scenario = spain();
     const view = assess(scenario, initialGameState(scenario), faction("south"));
+    const { computer: computerWeights, stakes: stakeWeights, victoryAlarm } = view.profile;
     expect(view.stake(territory("andalucia"))).toBe(stakeWeights.territory + 5 * stakeWeights.city + stakeWeights.objective);
     // The Republic starts three territories short of victory, which raises the South's own stakes.
     expect(view.stake(territory("ceuta"))).toBe(stakeWeights.territory * (1 + victoryAlarm.perStep));
