@@ -38,3 +38,10 @@ This log records the decisions and assumptions made while carrying out `mileston
 ## Streams
 
 (Filled in as checkpoints and hand-offs arrive.)
+
+**D8. Sub-territory ids, agreed before phase 0 starts.** These ids are shared by `m3r1-contract` (scenario data) and `m3r1-map-provinces` (geometry):
+- The ids in `milestone-3-ideation/ux-pass/provinces.json`, as lowercase kebab-case province names: a-coruna, lugo, ourense, pontevedra, asturias, cantabria, bizkaia, gipuzkoa, alava, navarra, la-rioja, zaragoza, huesca, teruel, madrid, burgos, valladolid, leon, palencia, zamora, salamanca, avila, segovia, soria, toledo, ciudad-real, cuenca, guadalajara, albacete, badajoz, caceres, barcelona, girona, lleida, tarragona, valencia, castellon, alicante, sevilla, cadiz, huelva, cordoba, granada, malaga, jaen, almeria, murcia, ceuta, melilla, mallorca, menorca and ibiza.
+- Asturias splits into `oviedo` (the capital pocket around the city) and `asturias` (the rest).
+- Madrid splits into three: `madrid` (the capital, with the city and the south), `guadarrama` (the Sierra to the north-west) and `henares` (the Henares valley to the east, Alcala).
+- Baleares is `mallorca` (its capital), `menorca` and `ibiza`.
+- `m3r1-map-provinces` draws the splits; `m3r1-contract` writes the data for those ids.
