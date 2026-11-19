@@ -12,11 +12,11 @@
     "alt": "Setup screen with a Turn timer select and a countdown chip."
   },
   "planning-resources": {
-    "caption": "Mockup (ideas 1 and 2): a resource bar (Funds, Manpower, optional Materiel), a Recruit menu with cost, training turns and site, and Replenish on a depleted regiment. Numbers are illustrative and untuned.",
+    "caption": "Mockup (ideas 1 and 2): a resource bar (Funds, Manpower, optional Materiel), a Recruit menu with cost, training turns and site, and Replenish on a depleted regiment. Numbers are illustrative and untuned. The training turns shown (2, 3, 4) illustrate the longer-for-heavy-types option; the recommendation is militia 1 turn and every other type 2 (Q-RECR-3, Q-UNIT-5), and Materiel is not recommended.",
     "alt": "Planning pane with a resource bar and a recruit menu."
   },
   "city-build": {
-    "caption": "Mockup (idea 4): a city panel with garrison, yields, and build options. The research recommends four buildings (Depot, Workshop, Fortifications, Port); the mockup's fact sheet also shows an AA battery and rail depot as later options.",
+    "caption": "Mockup (idea 4): a city panel with garrison, yields, and build options. The research now recommends three buildings (Depot, Workshop, Fortifications), with ports as map features (Q-CITY-7); the mockup's fact sheet also shows an AA battery and rail depot as later options.",
     "alt": "City panel for a major city with yields and build options."
   },
   "partition-map": {
@@ -40,7 +40,7 @@
     "alt": "Battle card with a d20 roll breakdown and a graded outcome ladder."
   },
   "weather-badge": {
-    "caption": "Mockup (idea 12): a weather badge in the planning header and a per-zone forecast with effects. Effects shown are illustrative; the research recommends a soft set (Mud -1, Snow -1, Severe cold -2, no digging in during snow or cold). Turn 11 is 18 to 31 December 1936 under two-week turns from 31 July.",
+    "caption": "Mockup (idea 12): a weather badge in the planning header and a per-zone forecast with effects. Effects shown are illustrative; the research recommends a soft set (on the d20: Mud -3, Snow -3, Severe cold -6; no digging in during snow or cold). Turn 11 is 18 to 31 December 1936 under two-week turns from 31 July.",
     "alt": "Planning header with a weather badge and a forecast panel."
   },
   "movement-exhaustion": {

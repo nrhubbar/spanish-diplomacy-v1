@@ -72,7 +72,7 @@ Weather did matter in Spain, moderately and mostly in winter.
 
 **Battles where weather was decisive or delaying:**
 - **Guadalajara (March 1937).** Fog and sleet cut visibility to 100 m. Italian aircraft were "grounded on water-logged airports" while the Republican Albacete field "had a concrete strip". Roatta's motorised units "got stuck" in the mud under strafing fighters. Thomas is cited as saying the Italians "had not taken the weather into account at all" ([Wikipedia, Guadalajara](https://en.wikipedia.org/wiki/Battle_of_Guadalajara)).
-- **Teruel (December 1937 to February 1938).** It was fought in "the worst Spanish winter in 20 years". A four-day blizzard left about 120 cm of snow at about -18 C. "The fighting ground to a halt as guns and machines froze", and Nationalist advances stalled until the weather improved on 17 January ([Wikipedia, Teruel](https://en.wikipedia.org/wiki/Battle_of_Teruel)).
+- **Teruel (December 1937 to February 1938).** It was fought in "the worst Spanish winter in 20 years". A four-day blizzard dropped about 120 cm of snow at about -18 C. "The fighting ground to a halt as guns and machines froze", and Nationalist advances stalled until the weather improved on 17 January ([Wikipedia, Teruel](https://en.wikipedia.org/wiki/Battle_of_Teruel)).
 - **Catalonia offensive (December 1938).** It was postponed from 10 to 23 December, partly because of weather and floods ([Wikipedia, Catalonia Offensive](https://www.wikipedia.com/wiki/Fall_of_Catalonia); [Spectator, 1938](https://archive.spectator.co.uk/article/23rd-december-1938/1/plots-in-spain-general-francos-offensive-intended-)).
 - **Ebro (summer 1938).** Heat reached 37 C on 4 August and worsened water shortages. The bridge floods came from dams Franco deliberately opened, not from weather ([Wikipedia, Ebro](https://en.wikipedia.org/wiki/Battle_of_the_Ebro)).
 - **Counter-evidence.** The Army of Africa advanced fastest in August 1936 (from recall, unverified), so heat should be mild.
@@ -129,7 +129,7 @@ One weather roll for all of Spain would therefore look wrong.
 - A weather badge for each zone.
 - Turn dates on the turn label, which changes B15.
 
-**Balance risk.** Penalties that fall only on attackers raise the 58 percent freeze rate. The effects must be gated by a harness metric (idea 11) over 40 to 70 turns.
+**Balance risk.** Penalties that fall only on attackers raise the 58 percent freeze rate. The effects must be gated by a harness metric (idea 11) over 60 to 70 turns (Q-TEN-4).
 
 ### Options
 | Option | What it is | Tradeoffs | Complexity | Genericity |
@@ -146,7 +146,7 @@ One weather roll for all of Spain would therefore look wrong.
 
 ### Widget
 <!-- widget:weather-months -->
-Choose a month and a zone to see the weather odds, the effects, and the expected chance that a 2:1 attack takes its target. The weights are illustrative, derived from AEMET 1991-2020 normals (Santander, Madrid and Teruel, Valencia, Seville). The chance uses the shipped d6 table.
+Choose a month and a zone to see the weather odds, the effects, and the expected chance that a 2:1 attack takes its target. The weights are illustrative, derived from AEMET 1991-2020 normals (Santander, Madrid and Teruel, Valencia, Seville). The chance uses the shipped d6 table; each modifier also shows its d20 equivalent (three times larger), the scale weather would use once idea 9 lands.
 
 ### Mockup
 <!-- mockup:weather-badge -->

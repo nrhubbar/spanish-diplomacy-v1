@@ -15,7 +15,7 @@ The owner wants players to raise new armies and to restore men to armies that ha
   - In Arriba Espana (Brian Train), a foreign-support phase yields reinforcements and economic points that build units ([Grognard review](https://grognard.com/reviews1/arriba1.txt)).
 - **Gaps:** I found no economy details for Espana 1936 (Devir; [Zatu review](https://zatu.com/blogs/reviews/espana-1936-review)), and no trace at all of "Spain 1936" by VR Designs or of "Brother Against Brother".
 - **History.**
-  - The Republic formed its first six mixed brigades on 18 October 1936, and by spring 1937 had 40 active and 15 in training ([Mixed brigade](https://en.wikipedia.org/wiki/Mixed_Brigade)). There was little time for training ([IBMT](https://international-brigades.org.uk/news-and-blog/content-story-ej%C3%A9rcito-popular/)).
+  - The Republic decreed its first mixed brigades in October 1936 (18 October is the date of the first document); about 15 were deployed by December 1936, and many more by spring 1937 ([Mixed brigade](https://en.wikipedia.org/wiki/Mixed_Brigade)). There was little time for training ([IBMT](https://international-brigades.org.uk/news-and-blog/content-story-ej%C3%A9rcito-popular/)).
   - The Army of Africa grew from about 30,000 men to about 60,000 ([Army of Africa](https://en.wikipedia.org/wiki/Army_of_Africa_(Spain))).
   - Navarrese requetes and the union militias of Barcelona and Madrid formed within days of the rising (from recall, unverified). That supports fast militia training tied to the place, not to the faction.
 
@@ -28,7 +28,7 @@ The owner wants players to raise new armies and to restore men to armies that ha
   - `unitTypes[].cost` (per value point, keyed by resource id) and `unitTypes[].trainingTurns`.
   - `territories[].recruitment` (`{ unitTypeIds, capacity, trainingTurns? }`).
   - The game state gains a pending-recruit queue and deterministic new-unit ids.
-- **Recruitment sites.** "Territory capitals" has no field today, so recruitment is a territory-level tag. Ceuta, Melilla, La Rioja and the Baleares have no city. If idea 4 moves recruitment into cities, the Map agent must add depot entries there.
+- **Recruitment sites.** "Territory capitals" has no field today, so recruitment is a territory-level tag. Ceuta, Melilla, La Rioja and the Baleares have no city. If idea 4 moves recruitment into cities, those territories need depot (and, for Ceuta and Melilla, port) entries in data.
 - **Shared territories.** Standing battles (M27) recur in Asturias and Andalucia, so Replenish must not fail on them, or the Southern command's main body could never refill.
 - **Modules affected:** `engine/resolution.ts`, a new `engine/economy.ts`, `ai/computerPlayer.ts`, and the planning and resolution UI.
 
@@ -125,9 +125,12 @@ The values below are illustrative, not tuned. Manpower is counted in thousands o
 | Madrid | 3 | 1 | Capital, population |
 | Bilbao | 3 | 0 | Iron and steel |
 | Valencia, Seville | 2 | 1 | Ports, exports |
-| Oviedo, Gijon | 1 | 0 | Asturian coal (from recall, unverified) |
-| Any other city | 1 | 0 | Market town |
+| Any other city (including Oviedo, Gijon, Zaragoza, Cartagena, Malaga, Cadiz) | 1 | 0 | Market town |
 | Castilla y Leon or Andalucia, rural | 1 | 3 | Wheat and olives, population |
+| Castilla-La Mancha, rural | 1 | 2 | Wheat, population |
+| Valencia or Extremadura, rural | 1 | 1 | Orchards, pasture |
+| Galicia, rural | 0 | 2 | Population |
+| Every other territory, rural | 0 | 1 | Population |
 | Ceuta, Melilla, rural | 0 | 2 | Moroccan recruiting |
 
 Yields attach to the smallest place that exists: a city, a sub-region after idea 7, or a territory's rural yield until then. That way per-territory, per-city and per-sub-region income all work.
@@ -171,7 +174,7 @@ The Republic out-earns both insurgent commands together (23 Funds against 14), a
 
 Without historical levers the economy widens both gaps:
 - A Morocco recruitment tag for colonial veterans.
-- A foreign-aid schedule that sends early Axis aid to the Southern command, since the 1936 airlift carried the Army of Africa (scenario source `enwiki-airlift-1936`).
+- A foreign-aid schedule that sends early Axis aid to the Southern command, since Axis transport aircraft and escorted convoys carried the Army of Africa in 1936 (scenario source `enwiki-airlift-1936`).
 
 The aid values are design abstractions with notes, not changes to historical starting data.
 

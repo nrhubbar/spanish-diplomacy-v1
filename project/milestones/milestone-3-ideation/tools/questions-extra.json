@@ -5,10 +5,23 @@
     "text": "In what order should Milestone 3 be built?",
     "multi": false,
     "options": [
-      { "label": "Platform (harness, rules modules, CI gate, timer), then map and battle (sub-regions, d20), then economy, then content", "recommended": true, "rationale": "Measure before changing balance; sub-regions are the floor that cities, income, and supply stand on." },
-      { "label": "Economy first, as the old milestone3.md draft planned, with the harness alongside" },
-      { "label": "d20 and unit types first, economy and map later" },
-      { "label": "All ideas in parallel streams from the start" }
+      {
+        "label": "Platform (harness, rules modules, CI gate, timer), then map and battle (sub-regions, d20), then economy, then content",
+        "recommended": true,
+        "rationale": "Measure before changing balance. Sub-regions come before the economy because income and supply per sub-region would otherwise be built twice; the economy can work at territory level if the owner wants it sooner (option 2)."
+      },
+      {
+        "label": "Platform, then the economy at territory level (income, Recruit and Replenish), then sub-regions and d20, then content: income first, finer map later"
+      },
+      {
+        "label": "Economy first, as the old milestone3.md draft planned, with the harness alongside"
+      },
+      {
+        "label": "d20 and unit types first, economy and map later"
+      },
+      {
+        "label": "All ideas in parallel streams from the start"
+      }
     ]
   },
   {
@@ -17,21 +30,42 @@
     "text": "How large should Milestone 3 be?",
     "multi": false,
     "options": [
-      { "label": "The four-revision cut on this page: rail, movement points, more unit types, and support orders wait", "recommended": true, "rationale": "Delivers the economy on a finer map while staying near the 6/10 complexity target." },
-      { "label": "Smaller: revisions 1 to 3 only (platform, map and battle, economy); weather, artillery, and exhaustion move to Milestone 4" },
-      { "label": "Smallest: the old draft's scope (income, recruitment, replenishment) plus the harness; no sub-regions or d20 yet" },
-      { "label": "Larger: also rail and air units in Milestone 3" }
+      {
+        "label": "The four-revision cut on this page: rail, movement points, more unit types, and support orders wait",
+        "recommended": true,
+        "rationale": "Delivers the economy on a finer map while staying near the 6/10 complexity target."
+      },
+      {
+        "label": "Smaller: revisions 1 to 3 only (platform, map and battle, economy); weather, artillery, and exhaustion move to Milestone 4"
+      },
+      {
+        "label": "Smallest: the old draft's scope (income, recruitment, replenishment) plus the harness; no sub-regions or d20 yet"
+      },
+      {
+        "label": "Larger: also rail and air units in Milestone 3"
+      }
     ]
   },
   {
     "id": "Q-SEQ-3",
     "idea": "sequencing",
-    "text": "What should a harness run decide at each Milestone 3 merge?",
+    "text": "What should a harness run decide at each Milestone 3 merge? (This also replaces the engine cluster's question on failing the build.)",
     "multi": false,
     "options": [
-      { "label": "A gate with explicit budgets the owner sets (freeze rate, minimum share per faction), checked with intervals on paired seeds", "recommended": true, "rationale": "Turns balance from a report into a decision, without tuning by hand." },
-      { "label": "Measure and report only, as P3 did in Milestone 2" },
-      { "label": "Set budgets only for the end of Milestone 3, not per merge" }
+      {
+        "label": "A relative check the owner reviews: on paired seeds, the freeze rate and each faction's share must be no worse than the previous revision's interval. CI itself fails only on correctness (lint, types, unit tests, build, determinism, no early wins, no abandonments)",
+        "recommended": true,
+        "rationale": "Balance becomes a decision at each merge without demanding a target today's 58 percent freeze rate cannot meet, and without tuning loops (P3)."
+      },
+      {
+        "label": "An absolute gate: each merge must meet the owner's targets (Q-MIS-e-2), and CI fails when it does not"
+      },
+      {
+        "label": "Measure and report only, as P3 did in Milestone 2"
+      },
+      {
+        "label": "Check only at the end of Milestone 3, not per merge"
+      }
     ]
   },
   {
@@ -40,10 +74,17 @@
     "text": "Which graded results take a whole territory rather than some of its sub-regions?",
     "multi": false,
     "options": [
-      { "label": "The Military ladder as proposed: the four best grades take all, two grades flip 1 or 2 sub-regions", "recommended": true, "rationale": "Keeps today's chance to take a territory per odds column, so harness runs compare cleanly with Milestone 2." },
-      { "label": "Only the best grade takes all; the middle grades flip 1, 2, or 3 sub-regions (more partitions, slower conquest)" },
-      { "label": "Ground as a share of the territory (a quarter, a half, all), so large and small territories behave alike" },
-      { "label": "Let the harness choose between these on freeze rate and partition frequency" }
+      {
+        "label": "The Military ladder as proposed: the four best grades take all, two grades flip 1 or 2 sub-regions",
+        "recommended": true,
+        "rationale": "Keeps today's chance to take a territory per odds column, so harness runs compare cleanly with Milestone 2. Cost: partitions would be fairly rare, mostly from the two partial grades; option 3 makes them common."
+      },
+      {
+        "label": "Only the best grade takes all; the middle grades flip 1, 2, or 3 sub-regions (more partitions, slower conquest)"
+      },
+      {
+        "label": "Ground as a share of the territory (a quarter, a half, all), so large and small territories behave alike"
+      }
     ]
   },
   {
@@ -52,9 +93,17 @@
     "text": "How do factions fight inside a territory they share?",
     "multi": false,
     "options": [
-      { "label": "Keep M27 standing battles, fought once a turn per territory, and let their ground grade flip sub-regions", "recommended": true, "rationale": "No new order type and already tested; the ladder gives it the partial results it lacked." },
-      { "label": "Replace M27 with an explicit Push order from one sub-region into a neighbouring enemy sub-region (the Map cluster's design)" },
-      { "label": "Keep M27 now and add Push when sub-regions become the movement grid" }
+      {
+        "label": "Keep M27 standing battles, fought once a turn per territory, and let their ground grade flip sub-regions",
+        "recommended": true,
+        "rationale": "No new order type and already tested; the ladder gives it the partial results it lacked."
+      },
+      {
+        "label": "Replace M27 with an explicit Push order from one sub-region into a neighbouring enemy sub-region (the Map cluster's design)"
+      },
+      {
+        "label": "Keep M27 now and add Push when sub-regions become the movement grid"
+      }
     ]
   },
   {
@@ -63,9 +112,17 @@
     "text": "How should orders that are not moves (Replenish, Recruit, builds, air missions) be submitted?",
     "multi": false,
     "options": [
-      { "label": "Armies get an order union (Move or Replenish, with Entrench and Rest still derived); Recruit and builds go in a separate per-faction purchase list", "recommended": true, "rationale": "Keeps one order per army and puts site-based purchases where they belong, in one contract change." },
-      { "label": "One flat list of typed orders per faction, armies and sites alike" },
-      { "label": "Keep submissions as moves only; economic choices are made in a separate step after resolution" }
+      {
+        "label": "Armies get an order union (Move or Replenish, with Entrench and Rest still derived); Recruit and builds go in a separate per-faction purchase list",
+        "recommended": true,
+        "rationale": "Keeps one order per army and puts site-based purchases where they belong, in one contract change."
+      },
+      {
+        "label": "One flat list of typed orders per faction, armies and sites alike"
+      },
+      {
+        "label": "Keep submissions as moves only; economic choices are made in a separate step after resolution"
+      }
     ]
   },
   {
@@ -74,10 +131,17 @@
     "text": "How long is a turn, and how long is a game?",
     "multi": false,
     "options": [
-      { "label": "Two weeks per turn, stored in a scenario calendar block; the harness also runs 60 to 70 turns to reach the first winters and Teruel", "recommended": true, "rationale": "Every cluster already assumed two weeks; weather and aid schedules need real dates." },
-      { "label": "One month per turn, so 30 turns covers about two and a half years" },
-      { "label": "Two weeks per turn, with a turn limit and a cities-held result to end long games" },
-      { "label": "Keep game length open until the harness shows how long games run" }
+      {
+        "label": "Two weeks per turn, stored in a scenario calendar block; the harness also runs 60 to 70 turns to reach the first winters and Teruel",
+        "recommended": true,
+        "rationale": "Every cluster already assumed two weeks; weather and aid schedules need real dates."
+      },
+      {
+        "label": "One month per turn, so 30 turns covers about two and a half years"
+      },
+      {
+        "label": "Two weeks per turn, with a turn limit and a cities-held result to end long games"
+      }
     ]
   }
 ]

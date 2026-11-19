@@ -17,7 +17,7 @@
    - Military keeps M27: armies of factions sharing a territory fight once a turn, with no new order.
    - Map replaces M27 with a `push` order that attacks a neighbouring enemy sub-region inside the same territory. A move to your own territory would break M2 and L6.
    - The Map cluster's design is the more faithful; M27 is cheaper and already tested.
-   - See Q-TEN-2.
+   - See Q-TEN-2. (The Map cluster's Q-PART-4 was merged into it after review.)
 4. **The first orders that are not moves.**
    - Revision 7 kept every submission a list of move orders, with Entrench and Rest derived (O5).
    - Replenish (idea 1), Recruit and builds (ideas 1 and 4), and air missions (idea 8) all break that.
@@ -25,10 +25,10 @@
    - See Q-TEN-3.
 5. **Game length and the calendar.**
    - No turn length is stored anywhere. Every cluster assumed two weeks, from the owner's weather note.
-   - At that rate the soak's 30 turns end in late September 1937, before Teruel, Alfambra, the Ebro, and the winters that weather is for.
+   - At that rate the soak's 30 turns end in late September 1937, after only one winter, before Teruel, Alfambra, the Ebro, and the second winter.
    - Mola's death falls in turn 22.
    - A `calendar` block is needed, and the harness should also run 60 to 70 turns.
-   - See Q-TEN-4.
+   - See Q-TEN-4. (Q-DATA-6 on a calendar block was merged into it after review.)
 6. **Balance pressure points the same way.**
    - Several proposals lean toward more stalemate:
      - weather penalties fall on attackers;

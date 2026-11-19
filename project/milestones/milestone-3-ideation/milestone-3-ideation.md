@@ -21,7 +21,7 @@ This review covers the owner's 13 Milestone 3 ideas. For each idea we checked ga
 
 ## The short version
 
-The order matters more than the ideas themselves. Three of the 13 are platform work: the harness (11), the data model (13), and the build process (10). Those come first, because every other idea changes balance, and today balance can only be measured with one 200-game soak test. Sub-regions (7) and graded d20 results (9) come next, since cities (4), resource collection (2), recruitment (1), and supply all depend on them. Everything else adds content on top.
+The order matters more than the ideas themselves. Three of the 13 are platform work: the harness (11), the data model (13), and the build process (10). Those come first, because every other idea changes balance, and today balance can only be measured with one 200-game soak test. Sub-regions (7) and graded d20 results (9) come next, since cities (4) and supply depend on them, and income per sub-region would otherwise be built twice. The economy (2, 1) can work at territory level if the owner wants it sooner (Q-SEQ-1, option 2). Everything else adds content on top.
 
 | Idea | Recommended direction | Where it lands |
 |---|---|---|
@@ -33,7 +33,7 @@ The order matters more than the ideas themselves. Three of the 13 are platform w
 | 9 d20 | An 11-grade ladder; each grade sets losses (10, 20, or 35 percent), morale, and ground taken; the chance to take a territory stays within 5 points of today | <span class="pill m3">M3 rev 2</span> |
 | 2 Resources | Funds and Manpower, plus a build limit per site; oil and food fold into Funds and foreign aid; political capital and action points deferred | <span class="pill m3">M3 rev 3</span> |
 | 1 Recruitment | Separate Recruit and Replenish orders (not "reinforce"); militia trains in 1 turn and other types in 2; Replenish restores up to half establishment per turn | <span class="pill m3">M3 rev 3</span> |
-| 4 Cities | Cities become features of a sub-region, and armies are no longer stationed in them; four buildings (Depot, Workshop, Fortifications, Port); sieges through supply | <span class="pill m3">M3 rev 3</span> |
+| 4 Cities | Cities become features of a sub-region, and armies are no longer stationed in them; three buildings (Depot, Workshop, Fortifications) and ports as map features; sieges through supply | <span class="pill m3">M3 rev 3</span> |
 | 12 Weather | Four climate zones, each with a table for every month, rolled and shown before planning; soft effects only | <span class="pill m3">M3 rev 4</span> |
 | 8 Unit types | Artillery with the owner's rule on the d20 scale, capped at +3; air as abstract faction wings; commanders as display-only chips; tanks, cavalry, and AA deferred | <span class="pill m3">M3 rev 4</span> partly |
 | 6 Movement | Keep one move per turn; three straight turns of attacking demoralize an army; drop action points | <span class="pill m3">M3 rev 4</span> |
@@ -119,13 +119,6 @@ Estimates wall time for a run from games, turns, workers, and milliseconds per g
 4. Computer-player behaviour: share of armies that never move, offensives started and abandoned
 5. Other / notes: ____
 
-**Q-HARN-4** Should harness results fail the build?
-1. Keep today's guards (no early wins, no abandonments, determinism) as failures; report balance numbers with intervals without failing **(Recommended)** - Balance moves with every rule change; failing the build on it would force tuning loops the owner ruled out (P3).
-2. Also fail the build when the freeze rate exceeds its budget
-3. Fail the build on any faction's share leaving a target band
-4. Never fail the build on the soak; report only
-5. Other / notes: ____
-
 **Q-HARN-5** How should we compare rule variants (A/B)?
 1. Variants are small JSON patches over the scenario (for example digging-in cap 2), run on the same seeds as the baseline, with the difference and its interval reported **(Recommended)** - Paired seeds cut dice noise, and patches never change the shipped scenario.
 2. Variants are full copies of the scenario package
@@ -142,6 +135,12 @@ Estimates wall time for a run from games, turns, workers, and milliseconds per g
 1. A generated HTML page in build/sim/ next to summary.json and games.csv **(Recommended)** - Readable in the morning without tools; the JSON and CSV feed any deeper analysis.
 2. Console summary and JSON only
 3. A developer screen inside the game
+4. Other / notes: ____
+
+**Q-HARN-8** Must the computer player use each new order (Recruit, Replenish, builds, air wings) in the same revision that adds it?
+1. Yes: no new order merges until the computer player uses it, with tests, so harness runs measure the real game **(Recommended)** - Without this the harness measures an AI that never recruits, and every balance number is wrong.
+2. Yes, but a simple rule-based use is enough until the end of Milestone 3
+3. No: computer players catch up in a later revision
 4. Other / notes: ____
 
 ---
@@ -194,7 +193,7 @@ Toggle each game element between data, named module, and code to see the estimat
 5. Other / notes: ____
 
 **Q-DATA-3** Should computer-player weights move into the scenario data?
-1. Yes: named AI profiles in data, one per faction, holding today's computerWeights, offensiveWeights, stakeWeights, and victoryAlarm numbers; the strategy logic stays in code **(Recommended)** - They are already plain numbers; in data the harness can A/B them per faction, as Paradox scripts AI weights.
+1. Yes: named AI profiles in data, one per faction, holding today's computerWeights, offensiveWeights, stakeWeights, and victoryAlarm numbers; the strategy logic stays in code **(Recommended)** - They are already plain numbers; in data the harness can A/B them per faction. Paradox games script AI weights (from recall: the forum threads could not be opened).
 2. Yes, and let data choose among several coded strategies per faction
 3. No: keep them as code constants
 4. Other / notes: ____
@@ -209,12 +208,6 @@ Toggle each game element between data, named module, and code to see the estimat
 1. Check each new module on paper against one other era (WW1 is the closest), and build nothing for other eras yet **(Recommended)** - Catches Spain-only assumptions cheaply while the owner says other game types come later.
 2. Build a small second test scenario in another era to prove the engine
 3. Design only for Spain; generalise when a second era starts
-4. Other / notes: ____
-
-**Q-DATA-6** Should the turn calendar (start date and 14-day turns) become scenario data now?
-1. Yes: a calendar block with start date and turn length in days, shown on the turn banner **(Recommended)** - Weather by month needs a date, and other eras use other turn lengths.
-2. Only if the weather idea is accepted
-3. No: keep turns numbered without dates
 4. Other / notes: ____
 
 ---
@@ -244,7 +237,7 @@ Current practice:
   - A short `CLAUDE.md`.
   - `.claude/settings.json` with a `Stop` hook running typecheck and lint, and a hook that blocks edits to `e2e/baselines/**` outside the integrator.
   - `.claude/agents/reviewer.md`, a read-only reviewer.
-- **Cost.** Locally, lint takes about 5 s, typecheck about 2 s, and the unit suite about 7 s (483 tests), so a CI run is probably 2 to 4 minutes including `npm ci` (a guess). GitHub Free includes 12 USD of compute a month, and public repositories run free ([GitHub](https://docs.github.com/en/billing/concepts/product-billing/github-actions)).
+- **Cost.** Locally, lint takes about 5 s, typecheck about 2 s, and the unit suite about 7 s (484 tests), so a CI run is probably 2 to 4 minutes including `npm ci` (a guess). GitHub Free includes 12 USD of compute a month, and public repositories run free ([GitHub](https://docs.github.com/en/billing/concepts/product-billing/github-actions)).
 - **Contract stream for M3.** It owns:
   - `engine/types.ts` (440 lines) and `scenarios/loader.ts` (434);
   - the schema files and `project/specs/scenario-package.md`;
@@ -257,11 +250,11 @@ Current practice:
 | Option | What it is | Tradeoffs | Complexity | Genericity |
 |---|---|---|---|---|
 | A. Guardrails only | CI gate, a short CLAUDE.md, two or three hooks; process otherwise unchanged | About an hour to set up. Stops red commits and gives a check that still runs when the local verify is waived. Leaves stream coupling, rolling debt, and integrator-owned budgets alone | Low | Applies to any revision or scenario |
-| B. Gated slices | A, plus: a contract stream first; per-idea vertical slices; 3 or 4 streams at most; a file-ownership table; a harness gate with owner-owned budgets; a read-only reviewer per stream; stored answers feeding the tasks doc; a debt slot | Covers every problem in the evidence. Costs a serial contract phase and about one extra agent run per stream for review (estimate) | Med | The contract, slice, and gate pattern suits later scenarios (WW1, WW2) as well |
+| B. Gated slices | A, plus: a contract stream first; per-idea vertical slices; 3 or 4 streams at most; a file-ownership table; an owner-reviewed harness check at each merge (no worse than the previous revision, Q-SEQ-3); a read-only reviewer per stream; stored answers feeding the tasks doc; a debt slot | Covers every problem in the evidence. Costs a serial contract phase and about one extra agent run per stream for review (estimate) | Med | The contract, slice, and gate pattern suits later scenarios (WW1, WW2) as well |
 | C. Full orchestration | B, plus scripted multi-agent workflows or agent teams, cloud runs, spec-kit or Kiro specs per idea | Most automation, but experimental features, many times the tokens, a heavy spec review burden, and coding parallelises poorly | High | Generic, but locks the process into tooling |
 | D. One agent, in sequence | One agent works through the steps in order, like Rev 5's first pass | No merge conflicts, but slow. Rev 5 still had red commits (D30) and a combined commit (D14) | Low | Neutral |
 
-**Recommendation:** Option B, starting with its cheapest parts: the CI gate and a short CLAUDE.md first, then a contract stream and file-ownership table (most M3 ideas share the schema and map files), then the harness gate and a reviewer subagent. Keep 3 or 4 streams at most, and defer agent teams, scripted workflows, and cloud runs until the gates are working.
+**Recommendation:** Option B, starting with its cheapest parts: the CI gate and a short CLAUDE.md first, then a contract stream and file-ownership table (most M3 ideas share the schema and map files), then the owner-reviewed harness check at each merge (Q-SEQ-3) and a reviewer subagent. Keep 3 or 4 streams at most, and defer agent teams, scripted workflows, and cloud runs until the gates are working.
 
 ### Widget
 *Interactive widget `process-planner`: open the HTML report to use it.*
@@ -302,7 +295,7 @@ Pick one of the three observed setups (Rev 5, 6, or 7) to see what actually happ
 4. Other / notes: ____
 
 **Q-PROC-6** Some follow-ups have rolled over for three revisions (files over 200 lines, manual accessibility checks, OD-3 historical sign-off, the initial-chunk budget). How should Milestone 3 handle them?
-1. All three: split the hotspot files (CampaignMap.tsx, planning.ts, useMapCamera.ts, combat.ts) in the first M3 contract stream; schedule or formally defer the person-only checks (screen reader, 200 percent zoom, OD-3); move owner-owned budgets (freeze rate, chunk size) into one file a gate reads **(Recommended)** - The over-200 list grew from 3 to 5 files, CampaignMap.tsx (227, 230, 236 lines) was the Rev 7 conflict file, agents cannot do person-only checks, and Rev 6 D62 shows an agent raising its own budget.
+1. All of them: split the hotspot files (CampaignMap.tsx, planning.ts, useMapCamera.ts, combat.ts) in the first M3 contract stream; schedule or formally defer the person-only checks (screen reader, 200 percent zoom, OD-3); move owner-owned budgets (freeze rate, chunk size) into one file a gate reads **(Recommended)** - The over-200 list grew from 3 to 5 files, CampaignMap.tsx (227, 230, 236 lines) was the Rev 7 conflict file, agents cannot do person-only checks, and Rev 6 D62 shows an agent raising its own budget.
 2. Only split the hotspot files
 3. Only schedule or formally defer the person-only checks
 4. Drop the 200-line target and the manual checks from the Definition of Done
@@ -352,14 +345,14 @@ Split a territory into historical sub-regions (NUTS3 or provinces) during combat
   - Andalucia is Sevilla, Cadiz, Huelva (city taken 29 July), Cordoba and Granada for the rising. Cordoba and Granada were city only: "la provincia permanece fiel". Malaga, Jaen and Almeria were Republican.
   - Extremadura is Caceres for the rising and Badajoz Republican.
   - Pais Vasco is Alava for the rising, Vizcaya and Guipuzcoa Republican.
-  - By capital holder, Asturias, Extremadura, Baleares, Andalucia and Pais Vasco start partitioned. Aragon would start wholly Northern, losing its Republican eastern strip, so it needs an override (full table in `research/map.md`).
+  - By capital holder, Extremadura, Andalucia and Pais Vasco start partitioned. Asturias and Baleares are single provinces whose capitals (Oviedo, Palma) the rising held, so only the overrides split them. Aragon would start wholly Northern, losing its Republican eastern strip, so it needs an override (full table in `research/map.md`).
 - **Precedents.**
   - Diplomacy has no partial control; its only sub-province device is split coasts (from recall, unverified).
   - In [Here I Stand](https://rulespal.com/here-i-stand/rulebook), a fortified space changes hands only through a successful siege.
   - `plan.md` sections 6.3 and 9 already specify predefined sub-territories that lie dormant until a split.
 - **Movement on sub-regions is expensive.**
   - **Graph and AI.** 55 nodes instead of 18, and every order, battle and AI distance changes ids. The AI's "three steps" planning (D58) covers a third of the ground.
-  - **Tempo.** The Army of Africa crossed three province borders in about five weeks from 2 August ([Battle of Merida](https://en.wikipedia.org/wiki/Battle_of_M%C3%A9rida); Talavera date from recall). One sub-region per two-week turn needs idea 6's multi-step movement to match that.
+  - **Tempo.** The Army of Africa crossed three province borders in about five weeks from 2 August ([Battle of Merida](https://en.wikipedia.org/wiki/Battle_of_M%C3%A9rida); Talavera date from recall), about 1.2 a turn. One sub-region per turn is close to that, so province moves do not need multi-step movement; territory moves already cover it.
 
 ### Fit with today's engine
 - **scenario.json.**
@@ -373,7 +366,7 @@ Split a territory into historical sub-regions (NUTS3 or provinces) during combat
   - **M21:** displaced defenders fall back into their own remaining sub-regions, else retreat (P2).
   - **M22:** works are kept per territory per faction.
   - **M24:** a city is held through its sub-region.
-  - **M27:** replaced by a new `push` order kind. It is not a move to the army's own territory, which would break M2 and L6. The Military cluster keeps M27, so the coordinator must reconcile.
+  - **M27:** this cluster proposed replacing it with a `push` order (from one sub-region into a neighbouring enemy sub-region, not a move to the army's own territory, which would break M2 and L6). The Military cluster keeps M27. The report recommends keeping M27 and lets the owner choose in Q-TEN-2.
   - **P7:** an unopposed entry or Push into an ungarrisoned enemy zone takes one sub-region a turn. At the start, Caceres and Alava have no garrison.
   - **M10:** a partitioned territory counts for nobody.
 - **Rule P1.** Repeat k times.
@@ -406,10 +399,10 @@ Pick Andalucia, Aragon or Extremadura, an attacker and its origin, and a graded 
 
 ### Questions
 **Q-PART-1** Which sub-regions should a territory split into?
-1. 1936 provinces, with scenario overrides: Baleares as its three islands, Asturias in 2, Madrid in 3 (about 55 sub-regions) **(Recommended)** - Historical borders straight from the data, and the overrides cover the two contested territories and Madrid that provinces alone cannot split.
-2. Pure 1936 provinces (48; Asturias, Baleares and Madrid never split)
+1. 1936 provinces, with scenario overrides: Baleares as its three islands, Asturias in 2, Madrid in 3 (about 55 sub-regions) **(Recommended)** - Historical borders straight from the data, and the overrides cover the two contested territories and Madrid. This departs from plan.md sections 3.5 and 9.2 (1 to 5 sub-territories, dormant until a split): Castilla y Leon gets 9 and Andalucia 8, and sub-regions are always active, because they carry income and supply. Cost: more map data and art, and every territory shows its sub-regions.
+2. Pure 1936 provinces (48 on the mainland and islands, plus Ceuta and Melilla; Asturias, Baleares and Madrid never split)
 3. NUTS3 as published (52; Baleares splits, Asturias and Madrid never split)
-4. Fewer merged zones, at most 5 per territory as plan.md section 9.2 says (about 35)
+4. plan.md as written: 1 to 5 predefined sub-territories per territory, dormant until a battle splits it; income and supply stay at territory level (about 35 in all)
 5. Drop this idea or defer it
 6. Other / notes: ____
 
@@ -423,12 +416,6 @@ Pick Andalucia, Aragon or Extremadura, an attacker and its origin, and a graded 
 1. Automatic: the defender's sub-regions bordering the attack's origin, taking the one with the most attacker-held neighbours each time; ties by scenario order **(Recommended)** - Deterministic, explainable in one line, and grows a contiguous front from the side the attack came from.
 2. The attacker names target sub-regions in its order, in priority order
 3. Seeded random choice among the bordering sub-regions
-4. Other / notes: ____
-
-**Q-PART-4** How do two factions fight inside a partitioned territory?
-1. An explicit Push order (a move order to its own territory) attacks the enemy zone; otherwise armies dig in and the front holds **(Recommended)** - Stable, holdable fronts are what partitioning is for; today's automatic M27 battle every turn would grind every split territory.
-2. Keep M27 automatic standing battles every turn, with the graded result moving sub-regions
-3. Both: automatic battles unless both sides entrench
 4. Other / notes: ____
 
 **Q-PART-5** How does a partitioned territory count toward the territory victory share?
@@ -455,6 +442,12 @@ Pick Andalucia, Aragon or Extremadura, an attacker and its origin, and a graded 
 3. The player chooses: reinforce the zone or attack the enemy zone
 4. Other / notes: ____
 
+**Q-PART-9** Who holds sub-regions that no army stands in at the start, such as Caceres (Nationalist on 31 July) and Alava (Nationalist)?
+1. The historical holder, from a start-of-game control table in scenario data, whatever the parent territory's controller **(Recommended)** - Keeps the 31 July snapshot honest; otherwise the Republic gets Caceres and Alava free from territory-level control.
+2. The territory's controller, and contested territories split by where armies stand
+3. Add a small garrison army wherever history needs one
+4. Other / notes: ____
+
 ---
 
 ## Idea 4: City interactions
@@ -472,10 +465,10 @@ Stop armies being stationed in a city rather than the territory, and make cities
   - Under idea 7 a city sits in a sub-region, and a sub-region cut off from supply (mismatch c) already models most of a siege.
 - **Ports.**
   - The scenario's sea connections are ordinary moves, so "all four African counters can land in Andalucia at once" (D32, `milestone-2-rev-6-declog.md`).
-  - Historically, about 1,500 men had crossed by 5 August, mainly by air, landing at Seville (project research note, `enwiki-airlift-1936` and `eswiki-sevilla-1936`).
-  - Requiring a controlled port at each end ties sea moves to Ceuta, Cadiz, Melilla and Malaga. Malaga was Republican.
+  - Historically, about 1,500 men had been flown across by 5 August, and the sea convoy of 5 August carried at least as many again (1,600 to 3,000 by different accounts) (project research note, `enwiki-airlift-1936` and `eswiki-sevilla-1936`).
+  - Requiring a controlled port at each end ties sea moves to named ports: Ceuta and Melilla (ports without a city, Q-CITY-7) and Cadiz, Algeciras or Malaga. Malaga was Republican, but Cadiz and Algeciras were held by the rising, so the Strait stays open; ports limit how many armies cross a turn.
 - **Airfields** matter only if idea 8 adds aircraft.
-- **Rail hubs** are where idea 5's lines meet: Madrid, Albacete, Zaragoza, Merida, Badajoz.
+- **Rail hubs** are where idea 5's lines meet: Madrid, Albacete, Zaragoza, Badajoz (and Merida, which is not yet a scenario city).
 - **Build options** are a common pattern: Paths of Glory trench levels ([rules](https://rulespal.com/paths-of-glory/rulebook)), 18xx station tokens, and HOI4 supply hubs that are built ([GuildOrder](https://guildorder.com/games/hoi4/wiki/supply-and-logistics)). The Economy cluster's Option B already has a "build limit per site", which a Depot can raise.
 
 ### City and rural yields (from the Economy research)
@@ -492,9 +485,12 @@ The values below are illustrative, not tuned. Manpower is counted in thousands o
 | Madrid | 3 | 1 | Capital, population |
 | Bilbao | 3 | 0 | Iron and steel |
 | Valencia, Seville | 2 | 1 | Ports, exports |
-| Oviedo, Gijon | 1 | 0 | Asturian coal (from recall, unverified) |
-| Any other city | 1 | 0 | Market town |
+| Any other city (including Oviedo, Gijon, Zaragoza, Cartagena, Malaga, Cadiz) | 1 | 0 | Market town |
 | Castilla y Leon or Andalucia, rural | 1 | 3 | Wheat and olives, population |
+| Castilla-La Mancha, rural | 1 | 2 | Wheat, population |
+| Valencia or Extremadura, rural | 1 | 1 | Orchards, pasture |
+| Galicia, rural | 0 | 2 | Population |
+| Every other territory, rural | 0 | 1 | Population |
 | Ceuta, Melilla, rural | 0 | 2 | Moroccan recruiting |
 
 Yields attach to the smallest place that exists: a city, a sub-region after idea 7, or a territory's rural yield until then. That way per-territory, per-city and per-sub-region income all work.
@@ -517,14 +513,14 @@ Yields attach to the smallest place that exists: a city, a sub-region after idea
 | B. Cities as separate garrison nodes | A city is a defended point inside its territory, with its own siege and assault (Here I Stand style). | Rich Oviedo and Alcazar stories. Adds a second node layer and a new battle type. | High | Med |
 | C. Status quo plus yields | Keep display-only `cityId` and add income only. | Cheap, but does not make cities "more interesting". | Low | High |
 
-**Recommendation:** Option A. Start with four buildings (Depot, Workshop, Fortifications, Port). Add Airfield only if idea 8 adds aircraft, and Rail yard only if idea 5 lands. Handle sieges through supply, not a new rule.
+**Recommendation:** Option A. Start with three buildings (Depot, Workshop, Fortifications); a Port is a map feature in data, not a building (Q-CITY-7). Add Airfield only if idea 8 adds aircraft, and Rail yard only if idea 5 lands. Handle sieges through supply, not a new rule.
 
 ### Widget
 *Interactive widget `city-yield`: open the HTML report to use it.*
 Choose a city and its buildings to see its yield each turn and the turns to finish each build. Base yields are the Economy cluster's illustrative table; building effects and turns are illustrative.
 
 ### Mockup
-![Mockup (idea 4): a city panel with garrison, yields, and build options. The research recommends four buildings (Depot, Workshop, Fortifications, Port); the mockup's fact sheet also shows an AA battery and rail depot as later options.](images/city-build.webp)
+![Mockup (idea 4): a city panel with garrison, yields, and build options. The research now recommends three buildings (Depot, Workshop, Fortifications), with ports as map features (Q-CITY-7); the mockup's fact sheet also shows an AA battery and rail depot as later options.](images/city-build.webp)
 
 ### Questions
 **Q-CITY-1** Where do armies stand relative to cities?
@@ -533,13 +529,12 @@ Choose a city and its buildings to see its yield each turn and the turns to fini
 3. A city is a separate garrison point armies can enter and be besieged in
 4. Other / notes: ____
 
-**Q-CITY-2** Which city buildings should Milestone 3 offer? Choose all that apply. *(choose all that apply)*
-1. Depot, Workshop, Fortifications, Port **(Recommended)** - Each one maps onto a system Milestone 3 already has or adds: recruitment, Funds, works, and sea moves.
+**Q-CITY-2** Which city buildings should Milestone 3 offer? Choose all that apply; leave all unticked to defer buildings. *(choose all that apply)*
+1. Depot, Workshop, Fortifications (Port is a map feature, Q-CITY-7) **(Recommended)** - Each one maps onto a system Milestone 3 already has or adds: recruitment, Funds, and works.
 2. Airfield (only if idea 8 adds aircraft)
 3. Rail yard (only if idea 5 lands)
 4. Hospital (faster replenishment)
-5. Drop this idea or defer it
-6. Other / notes: ____
+5. Other / notes: ____
 
 **Q-CITY-3** How do builds work?
 1. One build at a time per city, paid at reveal, finished after its turns, refunded if the city is lost first **(Recommended)** - Same hidden-order pipeline as recruitment, one queue slot per city, and nothing to micromanage.
@@ -554,15 +549,21 @@ Choose a city and its buildings to see its yield each turn and the turns to fini
 4. Other / notes: ____
 
 **Q-CITY-5** Should besieged cities (Oviedo, the Toledo Alcazar) get a rule of their own?
-1. No new rule: a city's sub-region gives its defender +1, and a surrounded city is cut off from supply (mismatch c) **(Recommended)** - Most of a siege falls out of sub-regions plus supply; a separate siege battle type is a second combat system.
+1. No new rule: a surrounded city is cut off from supply (mismatch c), so it stops paying income and cannot recruit or replenish; Fortifications and Popular resistance already strengthen its defence **(Recommended)** - Most of a siege falls out of sub-regions plus supply; a separate siege battle type is a second combat system.
 2. Yes: a Here I Stand-style siege where a city keeps its holder until a successful assault
 3. Drop this idea or defer it
 4. Other / notes: ____
 
 **Q-CITY-6** Should sea connections require a controlled port at each end?
-1. Yes, with a balance check: test it against the Southern command's 13 percent win share before shipping **(Recommended)** - It fixes D32 (the whole Army of Africa crossing on turn 1) historically, but Malaga being Republican would block Melilla's crossing.
+1. Yes, with a balance check: test it against the Southern command's 13 percent win share before shipping **(Recommended)** - It answers D32 (the whole Army of Africa crossing on turn 1) through port capacity and lanes. Ceuta and Melilla are ports, and the Strait lanes land at Cadiz or Algeciras, both held by the Southern command on 31 July, so the crossing stays open.
 2. Yes, unconditionally
 3. No; sea moves stay ordinary moves (status quo)
+4. Other / notes: ____
+
+**Q-CITY-7** What is a port in the rules?
+1. A port feature of a coastal sub-region, given in data; each sea connection names its port at each end, and a port can land a set number of armies per turn. Ceuta and Melilla are ports even though they have no city **(Recommended)** - Ports become data the loader can check, the Strait has a capacity, and enclaves without a city still work.
+2. A city building (Port) that a player must build before sea moves are allowed there
+3. No ports: any controlled coastal territory can use any of its sea connections
 4. Other / notes: ____
 
 ---
@@ -573,10 +574,10 @@ Choose a city and its buildings to see its yield each turn and the turns to fini
 Add railways that armies can use, that players can build and upgrade, and whose capacity limits how many troops move.
 
 ### Findings
-- **Spain's gauge.** Spain built its network to 1,672 mm, "six Castilian feet". The 1,668 mm Iberian gauge is a 1955 compromise with Portugal ([Iberian gauge](https://en.wikipedia.org/wiki/Iberian_gauge)). The usual explanations are distrust of France and powerful engines for steep grades ([History of rail transport in Spain](https://en.wikipedia.org/wiki/History_of_rail_transport_in_Spain)). Traffic across the Pyrenees was transshipped at Irun and Portbou (search snippet, [RailTarget](https://www.railtarget.eu/technologies-and-infrastructure/railway-revolution-in-spain-from-civil-war-battlefield-to-europes-highspeed-leader-8949.html)). Inside Spain the main network had one gauge, so War in the East-style gauge conversion does not apply.
-- **The 1936 network.** Norte, MZA and Andaluces ran about two-thirds of it. The Republic took over its lines in August 1936, and MZA was absorbed into RENFE in 1941 ([MZA](https://en.wikipedia.org/wiki/Madrid,_Zaragoza_and_Alicante_railway)). The network was "extensively damaged" in the war. Its total length was not found; about 12,000 km is from recall.
-- **Madrid.** The Nationalists cut the southern lines into Madrid. The Republic then built about 91 km from Torrejon de Ardoz to Tarancon (the "Tren de los 40 dias"), linking the Madrid-Zaragoza and Levante lines to keep Madrid supplied from Valencia ([Vias Verdes](https://viasverdes.com/en/itineraries/tren-40-dias/historia-del-ferrocarril.asp); [FCMAF](https://www.fcmaf.es/Rutometros/RT-40D_01.pdf)). Sources date it to 1937-38 and say it took about ten months and over 10,000 workers. So building rail took many two-week turns.
-- **The Army of Africa** moved by truck, not rail, from Seville on 2 August. It took Merida on 10-11 August and Badajoz on 14 August ([Battle of Merida](https://en.wikipedia.org/wiki/Battle_of_M%C3%A9rida)). Rail mattered as junctions to capture: Llerena, and Badajoz, which held "the principal road and railway links" ([Extremadura campaign](https://en.wikipedia.org/wiki/Extremadura_campaign), snippet). The Strait was crossed mainly by air (project research note, `enwiki-airlift-1936`).
+- **Spain's gauge.** Spain built its network to 1,672 mm, "six Castilian feet". The 1,668 mm Iberian gauge is a 1955 compromise with Portugal ([Iberian gauge](https://en.wikipedia.org/wiki/Iberian_gauge)). The usual explanations are distrust of France and powerful engines for steep grades ([History of rail transport in Spain](https://en.wikipedia.org/wiki/History_of_rail_transport_in_Spain)). The northern coast (Bilbao, Santander, Asturias) also ran a large narrow-gauge system, a real break inside Spain for the 1937 Northern campaign ([History of rail transport in Spain](https://en.wikipedia.org/wiki/History_of_rail_transport_in_Spain)). Traffic across the Pyrenees was transshipped at Irun and Portbou (search snippet, [RailTarget](https://www.railtarget.eu/technologies-and-infrastructure/railway-revolution-in-spain-from-civil-war-battlefield-to-europes-highspeed-leader-8949.html)). Inside Spain the main network had one gauge, so War in the East-style gauge conversion does not apply.
+- **The 1936 network.** Norte, MZA and Andaluces were the main companies (their share, about two-thirds, is from recall). The Republic took over its lines in August 1936, and MZA was absorbed into RENFE in 1941 ([MZA](https://en.wikipedia.org/wiki/Madrid,_Zaragoza_and_Alicante_railway)). The network was "extensively damaged" in the war. Its total length was not found; about 12,000 km is from recall.
+- **Madrid.** The Nationalists cut the southern lines into Madrid. The Republic then built about 91 km toward Tarancon (Vias Verdes measures it from Mejorada del Campo; other sources start at Torrejon de Ardoz) (the "Tren de los 40 dias"), linking the Madrid-Zaragoza and Levante lines to keep Madrid supplied from Valencia ([Vias Verdes](https://viasverdes.com/en/itineraries/tren-40-dias/historia-del-ferrocarril.asp); [FCMAF](https://www.fcmaf.es/Rutometros/RT-40D_01.pdf)). Sources date it to 1937-38 and say it took about ten months and over 10,000 workers. So building rail took many two-week turns.
+- **The Army of Africa** moved by truck, not rail, from Seville on 2 August. It took Merida on 10-11 August and Badajoz on 14 August ([Battle of Merida](https://en.wikipedia.org/wiki/Battle_of_M%C3%A9rida)). Rail mattered as junctions to capture: Llerena, and Badajoz, a road and rail junction on the Portuguese border ([Extremadura campaign](https://en.wikipedia.org/wiki/Extremadura_campaign); junction role from recall). The Strait was crossed by air and, from the 5 August convoy, by sea (project research note, `enwiki-airlift-1936`).
 - **Precedents.**
   - **[Paths of Glory](https://rulespal.com/paths-of-glory/rulebook):** strategic redeployment points come from a card. A corps costs 1 point and an army 4. Units travel only through friendly, supplied spaces, and only corps may redeploy by sea.
   - **HOI4:** railway level sets supply throughput, and the weakest segment caps the whole route ([GuildOrder](https://guildorder.com/games/hoi4/wiki/supply-and-logistics)).
@@ -616,7 +617,7 @@ Choose a 1936 line, its track level and how many armies to send. The widget show
 ### Questions
 **Q-RAIL-1** How should rail move armies?
 1. Lines with a level (0 to 3) that sets per-line capacity (armies per turn) and range; the weakest segment caps a route **(Recommended)** - Shows the bottleneck the owner asked for (Madrid-Valencia) and makes junction cities worth taking.
-2. One rail-point pool per faction per turn, as in Paths of Glory strategic redeployment; lines only gate where
+2. One rail-point pool per faction per turn, as in Paths of Glory strategic redeployment; lines only decide where rail moves can go
 3. Rail carries supply only, not armies (HOI4 style)
 4. Drop this idea or defer it
 5. Other / notes: ____
@@ -628,7 +629,7 @@ Choose a 1936 line, its track level and how many armies to send. The widget show
 4. Other / notes: ____
 
 **Q-RAIL-3** Can players build and upgrade rail?
-1. Build and upgrade one level at a time, paying Funds over several turns, on a connection whose both ends you hold **(Recommended)** - The owner asked for it, 18xx shows one-step upgrades read well, and the 1938 Torrejon-Tarancon line shows building took many turns.
+1. Build and upgrade one level at a time, paying Funds over several turns, on a connection whose both ends you hold **(Recommended)** - The owner asked for it, 18xx shows one-step upgrades read well, and the Madrid-Valencia bypass built in 1937-38 shows building took many turns.
 2. Upgrade existing 1936 lines only; no new lines
 3. Fixed 1936 network; no building
 4. Other / notes: ____
@@ -640,8 +641,8 @@ Choose a 1936 line, its track level and how many armies to send. The widget show
 4. Other / notes: ____
 
 **Q-RAIL-5** Should the engine model track gauge now?
-1. No; add an optional gauge field later, for a WW1 or WW2 scenario **(Recommended)** - Spain's main network was one broad gauge; the only break was at the French border, which only matters for foreign aid.
-2. Yes: an optional gauge per line, plus transshipment cost at a break
+1. Not in Milestone 3, since rail waits; when rail lands, add an optional gauge per line with a transshipment cost **(Recommended)** - Spain's main network was one broad gauge, but the northern coast (Bilbao, Santander, Asturias) ran on a large narrow-gauge system, a real break for the 1937 Northern campaign. Model it when rail lands, as an optional gauge per line.
+2. Never: one gauge for every line
 3. Other / notes: ____
 
 **Q-RAIL-6** Should rail affect supply in Milestone 3?
@@ -709,7 +710,7 @@ The owner wants money for sure, and possibly oil, food, or point pools, but few 
 Choose 1 to 5 resources. The widget shows estimated decisions per turn, new counters on screen, new schema fields, a complexity meter, and the precedent game for each. All counts are my estimates.
 
 ### Mockup
-![Mockup (ideas 1 and 2): a resource bar (Funds, Manpower, optional Materiel), a Recruit menu with cost, training turns and site, and Replenish on a depleted regiment. Numbers are illustrative and untuned.](images/planning-resources.webp)
+![Mockup (ideas 1 and 2): a resource bar (Funds, Manpower, optional Materiel), a Recruit menu with cost, training turns and site, and Replenish on a depleted regiment. Numbers are illustrative and untuned. The training turns shown (2, 3, 4) illustrate the longer-for-heavy-types option; the recommendation is militia 1 turn and every other type 2 (Q-RECR-3, Q-UNIT-5), and Materiel is not recommended.](images/planning-resources.webp)
 
 ### Questions
 **Q-ECON-1** Which resource set should Milestone 3 use?
@@ -720,14 +721,13 @@ Choose 1 to 5 resources. The widget shows estimated decisions per turn, new coun
 5. Drop this idea or defer it
 6. Other / notes: ____
 
-**Q-ECON-2** Which of the owner's optional resources should Milestone 3 add as separate counters? Choose all that apply. *(choose all that apply)*
-1. None: fold oil and food into Funds and foreign aid; defer political capital, research and action points **(Recommended)** - Each one needs upkeep rules or an event system and the owner hedged on all of them.
-2. Oil, consumed by units each turn
-3. Food, consumed by armies and cities
-4. Political capital, spent on events or foreign aid
-5. Action points per turn (coordinate with idea 6)
-6. Research points
-7. Other / notes: ____
+**Q-ECON-2** Which of the owner's optional resources should Milestone 3 add as separate stocks?
+1. Fold oil and food into Funds and foreign aid; defer political capital and research (tick nothing else) **(Recommended)** - Each one needs upkeep rules or an event system and the owner hedged on all of them. Action points are Q-MOVE-6.
+2. Add oil, consumed by units each turn
+3. Add food, consumed by armies and cities
+4. Add political capital, spent on events or foreign aid
+5. Add research points
+6. Other / notes: ____
 
 **Q-ECON-3** How should foreign aid enter the economy?
 1. A per-faction aid schedule in scenario data: Republic starts with a gold treasury, the insurgent commands receive aid on credit per turn **(Recommended)** - Moscow gold and Axis and Texaco credit were decisive and give a data-only balance lever.
@@ -759,6 +759,12 @@ Choose 1 to 5 resources. The widget shows estimated decisions per turn, new coun
 3. Opponents' balances hidden too
 4. Other / notes: ____
 
+**Q-ECON-8** At the illustrative yields the Republic out-earns both insurgent commands together on turn 1 (23 Funds against 14). How should aid be sized?
+1. Size aid to narrow that gap: insurgent credit per turn larger than the Republic's gold drawdown at first, set from harness runs **(Recommended)** - Historically Axis aid arrived steadily while the gold was spent; a Republic ahead on income and gold widens the 13 percent Southern share.
+2. Historical proportions only, whatever the balance result
+3. No aid until the harness shows the income gap matters
+4. Other / notes: ____
+
 ---
 
 ## Idea 1: Recruitment and replenishment
@@ -777,7 +783,7 @@ The owner wants players to raise new armies and to restore men to armies that ha
   - In Arriba Espana (Brian Train), a foreign-support phase yields reinforcements and economic points that build units ([Grognard review](https://grognard.com/reviews1/arriba1.txt)).
 - **Gaps:** I found no economy details for Espana 1936 (Devir; [Zatu review](https://zatu.com/blogs/reviews/espana-1936-review)), and no trace at all of "Spain 1936" by VR Designs or of "Brother Against Brother".
 - **History.**
-  - The Republic formed its first six mixed brigades on 18 October 1936, and by spring 1937 had 40 active and 15 in training ([Mixed brigade](https://en.wikipedia.org/wiki/Mixed_Brigade)). There was little time for training ([IBMT](https://international-brigades.org.uk/news-and-blog/content-story-ej%C3%A9rcito-popular/)).
+  - The Republic decreed its first mixed brigades in October 1936 (18 October is the date of the first document); about 15 were deployed by December 1936, and many more by spring 1937 ([Mixed brigade](https://en.wikipedia.org/wiki/Mixed_Brigade)). There was little time for training ([IBMT](https://international-brigades.org.uk/news-and-blog/content-story-ej%C3%A9rcito-popular/)).
   - The Army of Africa grew from about 30,000 men to about 60,000 ([Army of Africa](https://en.wikipedia.org/wiki/Army_of_Africa_(Spain))).
   - Navarrese requetes and the union militias of Barcelona and Madrid formed within days of the rising (from recall, unverified). That supports fast militia training tied to the place, not to the faction.
 
@@ -790,7 +796,7 @@ The owner wants players to raise new armies and to restore men to armies that ha
   - `unitTypes[].cost` (per value point, keyed by resource id) and `unitTypes[].trainingTurns`.
   - `territories[].recruitment` (`{ unitTypeIds, capacity, trainingTurns? }`).
   - The game state gains a pending-recruit queue and deterministic new-unit ids.
-- **Recruitment sites.** "Territory capitals" has no field today, so recruitment is a territory-level tag. Ceuta, Melilla, La Rioja and the Baleares have no city. If idea 4 moves recruitment into cities, the Map agent must add depot entries there.
+- **Recruitment sites.** "Territory capitals" has no field today, so recruitment is a territory-level tag. Ceuta, Melilla, La Rioja and the Baleares have no city. If idea 4 moves recruitment into cities, those territories need depot (and, for Ceuta and Melilla, port) entries in data.
 - **Shared territories.** Standing battles (M27) recur in Asturias and Andalucia, so Replenish must not fail on them, or the Southern command's main body could never refill.
 - **Modules affected:** `engine/resolution.ts`, a new `engine/economy.ts`, `ai/computerPlayer.ts`, and the planning and resolution UI.
 
@@ -809,7 +815,7 @@ The owner wants players to raise new armies and to restore men to armies that ha
 Pick a real army from the Spain scenario, set its men now and the men to restore, and see the Funds and Manpower cost, the turns needed, and the resulting attack and defence (M12 rounding, demoralization factor 0.5 from `scenario.json`). Prices are illustrative.
 
 ### Mockup
-![Mockup (ideas 1 and 2): a resource bar (Funds, Manpower, optional Materiel), a Recruit menu with cost, training turns and site, and Replenish on a depleted regiment. Numbers are illustrative and untuned.](images/planning-resources.webp)
+![Mockup (ideas 1 and 2): a resource bar (Funds, Manpower, optional Materiel), a Recruit menu with cost, training turns and site, and Replenish on a depleted regiment. Numbers are illustrative and untuned. The training turns shown (2, 3, 4) illustrate the longer-for-heavy-types option; the recommendation is militia 1 turn and every other type 2 (Q-RECR-3, Q-UNIT-5), and Materiel is not recommended.](images/planning-resources.webp)
 
 ### Questions
 **Q-RECR-1** Which recruitment model should Milestone 3 use?
@@ -988,18 +994,18 @@ The owner asked for new unit types (cavalry, tanks, aircraft, anti-air, artiller
 ### Findings
 - **Artillery mattered most.**
   - Nationalist artillery and air superiority decided the Ebro, where bridge bombing let only 22 Republican tanks and a handful of guns cross ([Battle of the Ebro](https://en.wikipedia.org/wiki/Battle_of_the_Ebro)).
-  - Republican artillery and aircraft stopped the Italians at Guadalajara ([Guadalajara](https://en.wikipedia.org/wiki/Battle_of_Guadalajara)).
+  - Republican aircraft, the XI International Brigade and the weather stopped the Italians at Guadalajara ([Guadalajara](https://en.wikipedia.org/wiki/Battle_of_Guadalajara)).
 - **Tanks mattered little.**
   - The T-26 outclassed the Panzer I and CV-33, but numbers were small, armour was thin, and infantry-tank cooperation was poor ([Osprey](https://www.ospreypublishing.com/ca/osprey-blog/2026/the-first-clash-of-steel-panzer-i-vs-t-26-in-spain-1936-39/), [warhistory.org](https://warhistory.org/2015/08/26/spanish-republican-t-26s/)).
-- **Cavalry was marginal and Nationalist-only.**
+- **Cavalry was marginal, though both sides had it.**
   - Monasterio's charge at Alfambra (5-8 February 1938) is called the last great mounted charge in Western Europe ([Alfambra](https://en.wikipedia.org/wiki/Battle_of_Alfambra)).
-  - The division was created only in November 1937 ([El Debate](https://www.eldebate.com/historia/20260226/batalla-alfambra-3000-jinetes-nacionales-vencieron-republicanos-teruel_389225.html)), about turn 34, beyond a 30-turn game.
+  - The Nationalist cavalry division was created in November 1937, about turn 34; both sides later formed cavalry divisions, and Moroccan cavalry fought for the rising from 1936 ([El Debate](https://www.eldebate.com/historia/20260226/batalla-alfambra-3000-jinetes-nacionales-vencieron-republicanos-teruel_389225.html)). The game has no turn limit, but the 30-turn soak never reaches it, which is the reason to defer.
 - **Air mattered operationally, not strategically.**
   - Operationally:
-    - The July-August 1936 airlift of the Army of Africa began on 29 July with 20 Ju 52s; about 1,500 men crossed by 5 August ([Spanish airlift](https://wikipedia.com/wiki/Spanish_airlift_of_1936), [Air & Space Forces](https://www.airandspaceforces.com/article/0213condor/)).
+    - The airlift of the Army of Africa began on 19 July with Spanish aircraft; the first German Ju 52 arrived on 29 July, and there were 20 by 10 August. About 1,500 men were flown across by 5 August, when a sea convoy carried at least as many ([Spanish airlift](https://wikipedia.com/wiki/Spanish_airlift_of_1936), [Air & Space Forces](https://www.airandspaceforces.com/article/0213condor/)).
     - Close support and interdiction were used in the north in 1937 and at the Ebro.
     - Guernica was chosen for a road and bridge on the Basque retreat route; the bridge survived ([UNR Basque Library](https://library.unr.edu/places/basque-library/gernika/the-bombing-of-gernika/strategy-of-the-attack)).
-  - Strategically, the Barcelona raids of 16-18 March 1938 did not break morale ([Bombing of Barcelona](https://en.wikipedia.org/wiki/Bombing_of_Barcelona), [vscw.ca](https://vscw.ca/en/node/101)).
+  - Strategically, the Barcelona raids of 16-18 March 1938 caused panic and an exodus and had a "demoralizing effect", but the city kept fighting for ten more months ([Bombing of Barcelona](https://en.wikipedia.org/wiki/Bombing_of_Barcelona), [vscw.ca](https://vscw.ca/en/node/101)). The case for a small effect is that it did not change the war's course, not that morale held.
   - So "bombing reduces resource collection" should be small or dropped.
 - **Anti-air was dual-use.**
   - The 88 mm Flak 18 was soon used against tanks and bunkers in direct fire ([warhistory.org](https://warhistory.org/2021/05/15/antitank-warfare-in-the-spanish-civil-war/)). An AA counter would mostly be artillery in disguise.
@@ -1008,7 +1014,7 @@ The owner asked for new unit types (cavalry, tanks, aircraft, anti-air, artiller
   - Rojo planned Brunete, Teruel and the Ebro ([Rojo](https://en.wikipedia.org/wiki/Vicente_Rojo_Lluch)).
   - Miaja led the defence of Madrid, and Queipo de Llano held Seville (from recall, unverified).
   - The scenario's Northern and Southern commands already are Mola's and Franco's commands.
-  - GMT's *The Spanish Civil War* models command as HQs, not personalities ([grognard.com](https://www.grognard.com/reviews1/scw.txt)).
+  - Some Spanish Civil War games model command through HQs or activation rather than personalities (from recall, unverified; the cited [grognard.com](https://www.grognard.com/reviews1/scw.txt) review does not say so).
   - In Hannibal, generals are the activation system itself ([rulespal](https://rulespal.com/hannibal-rome-vs-carthage/rulebook)), a big commitment.
 - **Air as a bonus, not a unit.** Europe Engulfed treats air as a capped hit bonus to one ground unit, in good weather only ([rulespal](https://rulespal.com/europe-engulfed/rulebook)).
 - **The owner's artillery rule, evaluated literally** (widget numbers). Take one infantry regiment (4) plus one artillery group (3, proposal) against an infantry regiment (6):
@@ -1022,7 +1028,7 @@ The owner asked for new unit types (cavalry, tanks, aircraft, anti-air, artiller
   - `support { rollPerPoints: 3, maxRoll: 3 }`;
   - `canAttackAlone: false`;
   - `trainingTurns`;
-  - `trainingTurnsByFaction`;
+  - `trainingTurns` per unit type, with faster militia set by place (a `trainingTurns` value on a territory's `recruitment` entry, Q-RECR-4), not by faction;
   - `movement`, only with idea 6 B.
 - **M12 is unchanged.** The artillery points are the M12 rounded values, so depleted guns give less.
 - **M14** gains a named "Artillery support" modifier, shown in breakdowns (C14).
@@ -1034,7 +1040,7 @@ The owner asked for new unit types (cavalry, tanks, aircraft, anti-air, artiller
 ### Options
 | Option | What it is | Tradeoffs | Complexity | Genericity |
 |---|---|---|---|---|
-| A. Artillery plus air wings | Today's four types plus an artillery group (3-2 proposal; roll bonus, cannot attack alone). Air as faction wings assigned each turn to support (+2 d20), intercept, or bomb. | Covers the two arms with clear historical weight; one new order kind. | Med | Support rules and wing schedules are data. |
+| A. Artillery plus air wings | Today's four types plus an artillery group (3-2 proposal; roll bonus, cannot attack alone). Air as faction wings assigned each turn to support (+2 d20) or intercept; bombing waits (Q-UNIT-4). | Covers the two arms with clear historical weight; one new order kind. | Med | Support rules and wing schedules are data. |
 | B. The owner's full list as counters | Cavalry, tanks, recon, fighter and bomber aircraft, AA, artillery. | Rich, but many interactions (AA against air, air that cannot hold ground); against "lets not muddy". | High | Generic, but a large schema. |
 | C. Values-only new types | Add artillery, cavalry and tanks as plain attack-defence types. | No code. Little difference in play. | Low | Pure data. |
 | D. Defer new types | Add only training times for today's four types. | Smallest; misses the owner's interest. | Low | Pure data. |
@@ -1063,13 +1069,13 @@ Build an attacking stack from the four real types (values from `scenario.json`) 
 3. Yes, and tie it to events such as a random chance of loss
 4. Other / notes: ____
 
-**Q-UNIT-1** Which new unit types should Milestone 3 add to today's four? Choose all that apply. *(choose all that apply)*
-1. Artillery group, plus air as faction air wings (not counters) **(Recommended)** - Artillery and air are the two arms with clear historical weight in Spain; abstract air avoids muddying the map.
-2. Cavalry (Nationalist only; the 1st Cavalry Division formed in November 1937)
-3. Tanks (T-26, Panzer I, CV-33; few and rarely decisive)
-4. Anti-air as a unit (the 88 mm mostly served as anti-tank artillery)
-5. Aircraft as map counters split into recon, fighter, and bomber
-6. Drop this idea or defer it
+**Q-UNIT-1** Which new unit types should Milestone 3 add to today's four? Choose all that apply; leave all unticked to add none. *(choose all that apply)*
+1. Artillery group **(Recommended)** - The arm with the clearest historical weight that fits the battle table; the owner's roll-bonus rule needs it.
+2. Air as faction air wings (not counters) - Air mattered (the airlift, the Condor Legion), and abstract wings avoid crowding the map.
+3. Cavalry (both sides fielded it; the Nationalist cavalry division charged at Alfambra in February 1938)
+4. Tanks (T-26, Panzer I, CV-33; few and rarely decisive)
+5. Anti-air as a unit (the 88 mm mostly served as anti-tank artillery)
+6. Aircraft as map counters split into recon, fighter, and bomber
 7. Other / notes: ____
 
 **Q-UNIT-2** How should artillery's special effect work?
@@ -1081,23 +1087,23 @@ Build an attacking stack from the four real types (values from `scenario.json`) 
 6. Other / notes: ____
 
 **Q-UNIT-3** How should air power be represented?
-1. Faction air wings from a scenario schedule, each assigned per turn to support a battle, intercept, or bomb a city **(Recommended)** - Captures the airlift-era and Condor Legion impact with one new order kind and no new counters.
+1. Faction air wings from a scenario schedule, each assigned per turn to support a battle or to intercept; bombing cities waits (Q-UNIT-4) **(Recommended)** - Captures the Condor Legion and Soviet air support with one new order kind and no new counters, and keeps the economic side out until wings prove themselves.
 2. Aircraft counters on the map with recon, fighter, and bomber roles
 3. A fixed per-faction battle modifier from data, with no player decision
 4. Drop this idea or defer it
 5. Other / notes: ____
 
 **Q-UNIT-4** What should bombing a town do?
-1. A small, one-turn yield cut in one city (proposal: -25 percent), blunted by a city AA defence **(Recommended)** - Barcelona in March 1938 shows bombing hurt but did not break a city; a small temporary effect matches that.
-2. A lasting cut until the city is repaired with money
-3. No economic effect; air only supports battles
-4. Drop this idea or defer it
+1. Defer bombing until air wings prove themselves; when it comes, a small one-turn yield cut in one city (proposal: -25 percent) **(Recommended)** - The cut parks bombing for Milestone 3, and AA is deferred, so there is nothing to blunt it yet.
+2. A small one-turn yield cut in Milestone 3 (-25 percent), with no defence
+3. A lasting cut until the city is repaired with money
+4. No economic effect ever; air only supports battles
 5. Other / notes: ____
 
-**Q-UNIT-5** How should training time be set?
-1. Per-type trainingTurns with per-faction overrides (e.g. militia 1 turn for the Republic, 2 for others; infantry 3; artillery 4) **(Recommended)** - Matches the owner's 'some factions recruit militia faster' as plain unit data, with no code per faction.
-2. Every recruit arrives next turn; types differ only in cost
-3. Per-type trainingTurns, the same for every faction
+**Q-UNIT-5** How long should the new unit types (artillery, and later tanks or cavalry) take to train?
+1. Per-type trainingTurns in unitTypes, on the same scale as Q-RECR-3: artillery 2 turns like the other formed types; any faster militia comes from place tags (Q-RECR-4), not faction rules **(Recommended)** - One training rule for every type; the owner's 'some factions recruit militia faster' is covered by places that change hands with the ground.
+2. Longer for heavy types: artillery 3 turns, tanks 4
+3. Every recruit arrives next turn; types differ only in cost
 4. Drop this idea or defer it
 5. Other / notes: ____
 
@@ -1118,10 +1124,10 @@ The owner asked for army movement points or action points, and for exhaustion to
 - **Today's pace already fits two-week turns.**
   - Yague's motorized columns covered about 500 km from Seville in four weeks in August 1936, roughly 250 km per two-week turn ([Extremadura campaign](https://wikipedia.com/wiki/Extremadura_front), [Sierra Guadalupe](https://wikipedia.com/wiki/Battle_of_the_Sierra_Guadalupe)).
   - That is about one move between autonomous-community territories per turn, which is today's rule (M2).
-  - It would be two to three moves if idea 7 shrinks the grid to provinces.
+  - If idea 7 made provinces the movement grid, the August 1936 pace was about one province border a turn (see idea 7, Tempo).
 - **Offensives ran out of breath.**
-  - After Talavera (3 September 1936) the drive paused for about two and a half weeks at Maqueda and Toledo ([Extremadura campaign](https://wikipedia.com/wiki/Extremadura_front), [vscw.ca](https://vscw.ca/en/node/993)).
-  - That is about one turn of pause after three to four turns of advance (early August to 21 September is about 3.5 turns).
+  - After Talavera (3 September 1936) the drive halted at Maqueda and turned to Toledo (from recall; the cited [Extremadura campaign](https://wikipedia.com/wiki/Extremadura_front) page does not describe the pause, [vscw.ca](https://vscw.ca/en/node/993)). The halt is usually tied to the decision to relieve the Alcazar, a political choice, not exhaustion.
+  - The advance to Talavera took about 2.3 turns (2 August to 3 September). So the 3-turn exhaustion threshold is a judgement to test, not a measured figure.
 - **Mud stopped motorized columns at Guadalajara** in March 1937 ([Battle of Guadalajara](https://en.wikipedia.org/wiki/Battle_of_Guadalajara)), so movement rules will meet the weather idea (12).
 - **Precedents:**
   - Hannibal applies attrition by force size when crossing mountain passes and in winter, not for distance moved ([rulespal: Hannibal](https://rulespal.com/hannibal-rome-vs-carthage/rulebook)).
@@ -1156,7 +1162,7 @@ The owner asked for army movement points or action points, and for exhaustion to
 
 ### Widget
 *Interactive widget `exhaustion-sim`: open the HTML report to use it.*
-One infantry regiment, 4-6 from `scenario.json`, at 1,270 men, over ten two-week turns of attacking, marching, defending or holding. It shows morale, men, attack value (M12), works (M22) and moves under rule A or D. The losses per battle are illustrative.
+One infantry regiment, 4-6 from `scenario.json`, at the 1,270-man establishment from the research note (no scenario regiment is that large), over ten two-week turns of attacking, marching, defending or holding. It shows morale, men, attack value (M12), works (M22) and moves under rule A or D. The losses per battle are illustrative.
 
 ### Mockup
 ![Mockup (idea 6): fatigue pips and a movement allowance on a planned multi-step route. The research recommends one move per turn with exhaustion through morale, so the movement readout illustrates the deferred option.](images/movement-exhaustion.webp)
@@ -1183,7 +1189,7 @@ One infantry regiment, 4-6 from `scenario.json`, at 1,270 men, over ten two-week
 4. Other / notes: ____
 
 **Q-MOVE-4** How many consecutive attack turns before an army is exhausted?
-1. 3 turns (six weeks), as one scenario value **(Recommended)** - Close to the 1936 drive on Madrid, which paused after three to four turns of advance (about 3.5 turns from early August to 21 September).
+1. 3 turns (six weeks), as one scenario value **(Recommended)** - A judgement: the drive from Seville reached Talavera in about 2.3 turns (2 August to 3 September) before halting, a halt usually tied to the decision to relieve Toledo rather than exhaustion. The harness should test 2 to 4.
 2. 2 turns
 3. 4 turns
 4. Per unit type (e.g. colonial 4, militia 2)
@@ -1219,7 +1225,7 @@ Weather did matter in Spain, moderately and mostly in winter.
 
 **Battles where weather was decisive or delaying:**
 - **Guadalajara (March 1937).** Fog and sleet cut visibility to 100 m. Italian aircraft were "grounded on water-logged airports" while the Republican Albacete field "had a concrete strip". Roatta's motorised units "got stuck" in the mud under strafing fighters. Thomas is cited as saying the Italians "had not taken the weather into account at all" ([Wikipedia, Guadalajara](https://en.wikipedia.org/wiki/Battle_of_Guadalajara)).
-- **Teruel (December 1937 to February 1938).** It was fought in "the worst Spanish winter in 20 years". A four-day blizzard left about 120 cm of snow at about -18 C. "The fighting ground to a halt as guns and machines froze", and Nationalist advances stalled until the weather improved on 17 January ([Wikipedia, Teruel](https://en.wikipedia.org/wiki/Battle_of_Teruel)).
+- **Teruel (December 1937 to February 1938).** It was fought in "the worst Spanish winter in 20 years". A four-day blizzard dropped about 120 cm of snow at about -18 C. "The fighting ground to a halt as guns and machines froze", and Nationalist advances stalled until the weather improved on 17 January ([Wikipedia, Teruel](https://en.wikipedia.org/wiki/Battle_of_Teruel)).
 - **Catalonia offensive (December 1938).** It was postponed from 10 to 23 December, partly because of weather and floods ([Wikipedia, Catalonia Offensive](https://www.wikipedia.com/wiki/Fall_of_Catalonia); [Spectator, 1938](https://archive.spectator.co.uk/article/23rd-december-1938/1/plots-in-spain-general-francos-offensive-intended-)).
 - **Ebro (summer 1938).** Heat reached 37 C on 4 August and worsened water shortages. The bridge floods came from dams Franco deliberately opened, not from weather ([Wikipedia, Ebro](https://en.wikipedia.org/wiki/Battle_of_the_Ebro)).
 - **Counter-evidence.** The Army of Africa advanced fastest in August 1936 (from recall, unverified), so heat should be mild.
@@ -1276,7 +1282,7 @@ One weather roll for all of Spain would therefore look wrong.
 - A weather badge for each zone.
 - Turn dates on the turn label, which changes B15.
 
-**Balance risk.** Penalties that fall only on attackers raise the 58 percent freeze rate. The effects must be gated by a harness metric (idea 11) over 40 to 70 turns.
+**Balance risk.** Penalties that fall only on attackers raise the 58 percent freeze rate. The effects must be gated by a harness metric (idea 11) over 60 to 70 turns (Q-TEN-4).
 
 ### Options
 | Option | What it is | Tradeoffs | Complexity | Genericity |
@@ -1293,10 +1299,10 @@ One weather roll for all of Spain would therefore look wrong.
 
 ### Widget
 *Interactive widget `weather-months`: open the HTML report to use it.*
-Choose a month and a zone to see the weather odds, the effects, and the expected chance that a 2:1 attack takes its target. The weights are illustrative, derived from AEMET 1991-2020 normals (Santander, Madrid and Teruel, Valencia, Seville). The chance uses the shipped d6 table.
+Choose a month and a zone to see the weather odds, the effects, and the expected chance that a 2:1 attack takes its target. The weights are illustrative, derived from AEMET 1991-2020 normals (Santander, Madrid and Teruel, Valencia, Seville). The chance uses the shipped d6 table; each modifier also shows its d20 equivalent (three times larger), the scale weather would use once idea 9 lands.
 
 ### Mockup
-![Mockup (idea 12): a weather badge in the planning header and a per-zone forecast with effects. Effects shown are illustrative; the research recommends a soft set (Mud -1, Snow -1, Severe cold -2, no digging in during snow or cold). Turn 11 is 18 to 31 December 1936 under two-week turns from 31 July.](images/weather-badge.webp)
+![Mockup (idea 12): a weather badge in the planning header and a per-zone forecast with effects. Effects shown are illustrative; the research recommends a soft set (on the d20: Mud -3, Snow -3, Severe cold -6; no digging in during snow or cold). Turn 11 is 18 to 31 December 1936 under two-week turns from 31 July.](images/weather-badge.webp)
 
 ### Questions
 **Q-WX-1** Should Milestone 3 include weather, and in which form?
@@ -1335,10 +1341,10 @@ Choose a month and a zone to see the weather odds, the effects, and the expected
 6. Defenders' works also weakened in Mud
 7. Other / notes: ____
 
-**Q-WX-6** How strong should the attack modifiers be (on today's d6 scale)?
-1. Soft: Hot 0, Rain 0, Mud -1, Snow -1, Severe cold -2 **(Recommended)** - The game already freezes 58 percent of the time; soft values hurt attacks only in real winter weather. Hot and Rain are display-only until ideas 6 and 8 land, and can be raised after a harness run.
-2. Standard: Hot -1, Rain -1, Mud -2, Snow -2, Severe cold -2
-3. Decide only from balance-harness results (idea 11)
+**Q-WX-6** How strong should weather's attack modifiers be? (Values are on the d20 ladder from idea 9, which lands first; the d6 equivalent is in brackets.)
+1. Soft: Hot 0, Rain 0, Mud -3, Snow -3, Severe cold -6 (d6: 0, 0, -1, -1, -2) **(Recommended)** - 58 percent of soak games already contain a five-turn freeze; soft values hurt attacks only in real winter weather. Hot and Rain are display-only until ideas 6 and 8 land, and can be raised after a harness run.
+2. Standard: Hot -3, Rain -3, Mud -6, Snow -6, Severe cold -6 (d6: -1, -1, -2, -2, -2)
+3. Movement effects only; no attack modifiers
 4. Other / notes: ____
 
 **Q-WX-7** Should the game show a calendar date for every turn?
@@ -1430,7 +1436,7 @@ Simulates one turn on a shared PC. Choose the timer, the number of humans and co
 5. Other / notes: ____
 
 **Q-TIMER-3** When a player's time runs out, what gets submitted?
-1. The orders already planned; every other army holds (entrench or rest); a half-built order is dropped **(Recommended)** - This is exactly what End Turn does today, matches 'autosubmitted', and matches webDiplomacy's saved-orders rule.
+1. The orders already planned; every other army holds (entrench or rest); a half-built order is dropped **(Recommended)** - This is exactly what End Turn does today and matches 'autosubmitted'. webDiplomacy keeps saved orders at the deadline (from recall, unverified).
 2. Nothing: every army holds (Diplomacy no-orders style)
 3. The computer player plans the armies that have no order
 4. One grace extension per game (the clock restarts once), then the planned orders
@@ -1537,7 +1543,7 @@ Simulates one turn on a shared PC. Choose the timer, the number of humans and co
 <path class="edge" d="M895 120 L895 102" marker-end="url(#arr)"/>
 </g>
 <rect class="band" x="10" y="300" width="770" height="40" rx="5"/>
-<text x="395" y="325" text-anchor="middle">Every merge: CI gate (lint, typecheck, unit, build) and a harness run against the revision's balance budget</text>
+<text x="395" y="325" text-anchor="middle">Every merge: CI fails on correctness (lint, types, unit, build); a paired-seed harness run must be no worse than the last revision</text>
 <text class="col" x="10" y="372">Arrows show "needs". Also, not drawn: 9 feeds artillery's roll bonus (8); supply gates recruitment (1); 7 and movement points gate rail (5).</text>
 </svg>
 </div>
@@ -1548,17 +1554,18 @@ Simulates one turn on a shared PC. Choose the timer, the number of humans and co
 |---|---|---|
 | 1 Platform | Harness CLI, `rules` object and spec v2 (with `m2-strength` as a preset), AI weights in data, CI gate, turn timer | `npm run sim` reproduces today's soak figures exactly on the same seeds; CI is green on every commit |
 | 2 Map and battle | d20 ladder with ground grades, about 55 sub-regions for control and income, new battle card | Paired-seed harness run against Rev 1: chance to take per column within 5 points; freeze rate and faction shares reported with intervals |
-| 3 Economy | Funds and Manpower, Recruit and Replenish, cities in sub-regions with four buildings, supply trace, foreign-aid schedule | Freeze rate does not rise beyond its interval; the Southern command's share is reported and, if the owner sets a target (Q-MIS-e), checked |
-| 4 Content | Weather (soft set), artillery, air wings, commander chips, exhaustion | Each feature ships only if its own A/B run stays inside the budget; otherwise it stays behind its module flag |
+| 3 Economy | Funds and Manpower, Recruit and Replenish, cities in sub-regions with three buildings and port features, supply trace, foreign-aid schedule | Freeze rate does not rise beyond its interval; the Southern command's share is reported and, if the owner sets a target (Q-MIS-e), checked |
+| 4 Content | Weather (soft set), artillery, air wings, commander chips, exhaustion | Each feature ships only if its own A/B run is no worse than revision 3 (Q-SEQ-3); otherwise it stays behind its module flag |
 
 ### Questions
 
 **Q-SEQ-1** In what order should Milestone 3 be built?
-1. Platform (harness, rules modules, CI gate, timer), then map and battle (sub-regions, d20), then economy, then content **(Recommended)** - Measure before changing balance; sub-regions are the floor that cities, income, and supply stand on.
-2. Economy first, as the old milestone3.md draft planned, with the harness alongside
-3. d20 and unit types first, economy and map later
-4. All ideas in parallel streams from the start
-5. Other / notes: ____
+1. Platform (harness, rules modules, CI gate, timer), then map and battle (sub-regions, d20), then economy, then content **(Recommended)** - Measure before changing balance. Sub-regions come before the economy because income and supply per sub-region would otherwise be built twice; the economy can work at territory level if the owner wants it sooner (option 2).
+2. Platform, then the economy at territory level (income, Recruit and Replenish), then sub-regions and d20, then content: income first, finer map later
+3. Economy first, as the old milestone3.md draft planned, with the harness alongside
+4. d20 and unit types first, economy and map later
+5. All ideas in parallel streams from the start
+6. Other / notes: ____
 
 **Q-SEQ-2** How large should Milestone 3 be?
 1. The four-revision cut on this page: rail, movement points, more unit types, and support orders wait **(Recommended)** - Delivers the economy on a finer map while staying near the 6/10 complexity target.
@@ -1567,11 +1574,12 @@ Simulates one turn on a shared PC. Choose the timer, the number of humans and co
 4. Larger: also rail and air units in Milestone 3
 5. Other / notes: ____
 
-**Q-SEQ-3** What should a harness run decide at each Milestone 3 merge?
-1. A gate with explicit budgets the owner sets (freeze rate, minimum share per faction), checked with intervals on paired seeds **(Recommended)** - Turns balance from a report into a decision, without tuning by hand.
-2. Measure and report only, as P3 did in Milestone 2
-3. Set budgets only for the end of Milestone 3, not per merge
-4. Other / notes: ____
+**Q-SEQ-3** What should a harness run decide at each Milestone 3 merge? (This also replaces the engine cluster's question on failing the build.)
+1. A relative check the owner reviews: on paired seeds, the freeze rate and each faction's share must be no worse than the previous revision's interval. CI itself fails only on correctness (lint, types, unit tests, build, determinism, no early wins, no abandonments) **(Recommended)** - Balance becomes a decision at each merge without demanding a target today's 58 percent freeze rate cannot meet, and without tuning loops (P3).
+2. An absolute gate: each merge must meet the owner's targets (Q-MIS-e-2), and CI fails when it does not
+3. Measure and report only, as P3 did in Milestone 2
+4. Check only at the end of Milestone 3, not per merge
+5. Other / notes: ____
 
 
 ---
@@ -1586,13 +1594,13 @@ Only one idea is dropped outright: action points, which the owner's own question
 |---|---|---|---|
 | 11 Harness | CLI, worker threads, reports, Wilson intervals, paired-seed A/B variants, CI-sized soak | Balance dashboards across commits; AI tournaments | |
 | 13 Generic engine | `rules` object, spec v2, `m2-strength` kept as a preset, AI weights and new blocks as data | Second game mode as the real test of genericity | Encoding resolution algorithms as data |
-| 10 Process | CI gate, short steering file, contract stream first, file-ownership table, harness gate, read-only reviewer per stream | Scripted multi-agent workflows; cloud runs | Agent teams before the gates work |
+| 10 Process | CI gate, short steering file, contract stream first, file-ownership table, owner-reviewed harness check at each merge, read-only reviewer per stream | Scripted multi-agent workflows; cloud runs | Agent teams before the gates work |
 | 3 Timed turns | Off, 1, 5, 10 min on a shared PC; Pause; planned orders lock on timeout | 30 min and 1 h with online play | |
 | 7 Sub-partitioning | About 55 sub-regions for control, cities, income, and supply; ground grades flip sub-regions | Sub-regions as the movement grid | Dynamic geometry |
 | 9 d20 | 11-grade ladder with faded losses and ground values; new battle card | | |
 | 2 Resources | Funds and Manpower, build limit per site, foreign-aid schedule | Materiel or production capacity, if the harness shows Funds alone is too flat | Oil and food as separate stocks; research points; action points |
 | 1 Recruitment | Recruit and Replenish orders, training time per type, recruitment tags per site | Faction-specific militia rules beyond site tags | Reviving destroyed armies |
-| 4 Cities | Cities as features of sub-regions; stationing in cities removed; Depot, Workshop, Fortifications, Port | Airfield (with air units), rail yard (with rail) | |
+| 4 Cities | Cities as features of sub-regions; stationing in cities removed; Depot, Workshop, Fortifications; ports as map features | Airfield (with air units), rail yard (with rail) | |
 | 12 Weather | Four zones, monthly tables, visible before planning, soft effects | Movement and air effects once ideas 6 and 8 land | |
 | 8 Unit types | Artillery; air as abstract faction wings; commander chips with no rules effect | Tanks, cavalry, AA as values-only types; commander effects if wanted | Bomber missions that cut income, until air wings prove themselves |
 | 6 Movement | Offensive exhaustion through the existing morale rule | Movement points, if sub-regions become the movement grid | Action points |
@@ -1631,7 +1639,7 @@ Only one idea is dropped outright: action points, which the owner's own question
    - Military keeps M27: armies of factions sharing a territory fight once a turn, with no new order.
    - Map replaces M27 with a `push` order that attacks a neighbouring enemy sub-region inside the same territory. A move to your own territory would break M2 and L6.
    - The Map cluster's design is the more faithful; M27 is cheaper and already tested.
-   - See Q-TEN-2.
+   - See Q-TEN-2. (The Map cluster's Q-PART-4 was merged into it after review.)
 4. **The first orders that are not moves.**
    - Revision 7 kept every submission a list of move orders, with Entrench and Rest derived (O5).
    - Replenish (idea 1), Recruit and builds (ideas 1 and 4), and air missions (idea 8) all break that.
@@ -1639,10 +1647,10 @@ Only one idea is dropped outright: action points, which the owner's own question
    - See Q-TEN-3.
 5. **Game length and the calendar.**
    - No turn length is stored anywhere. Every cluster assumed two weeks, from the owner's weather note.
-   - At that rate the soak's 30 turns end in late September 1937, before Teruel, Alfambra, the Ebro, and the winters that weather is for.
+   - At that rate the soak's 30 turns end in late September 1937, after only one winter, before Teruel, Alfambra, the Ebro, and the second winter.
    - Mola's death falls in turn 22.
    - A `calendar` block is needed, and the harness should also run 60 to 70 turns.
-   - See Q-TEN-4.
+   - See Q-TEN-4. (Q-DATA-6 on a calendar block was merged into it after review.)
 6. **Balance pressure points the same way.**
    - Several proposals lean toward more stalemate:
      - weather penalties fall on attackers;
@@ -1668,11 +1676,10 @@ Only one idea is dropped outright: action points, which the owner's own question
 ### Questions on these tensions
 
 **Q-TEN-1** Which graded results take a whole territory rather than some of its sub-regions?
-1. The Military ladder as proposed: the four best grades take all, two grades flip 1 or 2 sub-regions **(Recommended)** - Keeps today's chance to take a territory per odds column, so harness runs compare cleanly with Milestone 2.
+1. The Military ladder as proposed: the four best grades take all, two grades flip 1 or 2 sub-regions **(Recommended)** - Keeps today's chance to take a territory per odds column, so harness runs compare cleanly with Milestone 2. Cost: partitions would be fairly rare, mostly from the two partial grades; option 3 makes them common.
 2. Only the best grade takes all; the middle grades flip 1, 2, or 3 sub-regions (more partitions, slower conquest)
 3. Ground as a share of the territory (a quarter, a half, all), so large and small territories behave alike
-4. Let the harness choose between these on freeze rate and partition frequency
-5. Other / notes: ____
+4. Other / notes: ____
 
 **Q-TEN-2** How do factions fight inside a territory they share?
 1. Keep M27 standing battles, fought once a turn per territory, and let their ground grade flip sub-regions **(Recommended)** - No new order type and already tested; the ladder gives it the partial results it lacked.
@@ -1690,8 +1697,7 @@ Only one idea is dropped outright: action points, which the owner's own question
 1. Two weeks per turn, stored in a scenario calendar block; the harness also runs 60 to 70 turns to reach the first winters and Teruel **(Recommended)** - Every cluster already assumed two weeks; weather and aid schedules need real dates.
 2. One month per turn, so 30 turns covers about two and a half years
 3. Two weeks per turn, with a turn limit and a cities-held result to end long games
-4. Keep game length open until the harness shows how long games run
-5. Other / notes: ____
+4. Other / notes: ____
 
 ### The five known mismatches in the old draft
 
@@ -1726,7 +1732,7 @@ Only one idea is dropped outright: action points, which the owner's own question
 - **Morale is unchanged** (only rest recovers it, M23). Destroyed armies stay gone; a fresh Recruit replaces them.
 - **The arithmetic needs no change.** M12 and M16 already read `strength / fullStrength`: a 740-man 4-6 regiment at 370 men fights at 2-3. The Military agent sets per-type costs and caps.
 
-### Mismatch (b): Strength, morale and faded casualties (Military contribution)
+### Mismatch (b), continued: morale and faded casualties (Military contribution)
 Faded results make armies lose men often and die rarely, so the M25 relaxation ("lost men never return") becomes central: without replacements, every army slowly bleeds out.
 
 Proposed division:
@@ -1734,7 +1740,7 @@ Proposed division:
 - **Morale** stays a temporary binary state (M23). Results demoralize a share of the side, weakest first as today, and one turn of rest recovers it.
 - **Exhaustion** (idea 6 A) is not a third multiplier. It is a counter that demoralizes, so values stay type x strength / fullStrength x 0.5 when demoralized.
 - **A strength floor** (25 percent of `fullStrength`) breaks up an army, so remnants do not linger at value 1.
-- **Restore orders** should be blocked for a demoralized army, so rest comes before refit.
+- **Restore orders** may be given to a demoralized army, but they do not restore morale and the army does not rest that turn (Q-MIS-b-2), so the player chooses between rest and refit.
 
 **Q-MIS-b-1** How should the new ruleset relax M25 (no recovery of men)?
 1. Replace M25 with M28 Replenish in the new ruleset; destroyed armies stay gone; m2-strength keeps M25 **(Recommended)** - Reuses strength and fullStrength as they are and keeps the existing ruleset reproducible.
@@ -1777,7 +1783,7 @@ Proposed division:
 - **Cost.** One breadth-first search per faction during cleanup. It would be selected as `rules.supply` in the Engine cluster's module object.
 - **What it captures.**
   - The cut-off Republican north stays supplied through Bilbao and Gijon.
-  - Besieged Oviedo stops paying.
+  - A surrounded city stops paying. Whether besieged Oviedo is surrounded depends on the Asturias override: if its sub-region touches Northern Galicia or Leon, it stays supplied, as it historically was by the Galician columns from October.
 - **Later.** Rail-borne supply (HOI4, Unity of Command) waits for Milestone 4.
 
 **Q-MIS-c-1** Does Milestone 3 need supply at all?
@@ -1822,7 +1828,7 @@ The Republic out-earns both insurgent commands together (23 Funds against 14), a
 
 Without historical levers the economy widens both gaps:
 - A Morocco recruitment tag for colonial veterans.
-- A foreign-aid schedule that sends early Axis aid to the Southern command, since the 1936 airlift carried the Army of Africa (scenario source `enwiki-airlift-1936`).
+- A foreign-aid schedule that sends early Axis aid to the Southern command, since Axis transport aircraft and escorted convoys carried the Army of Africa in 1936 (scenario source `enwiki-airlift-1936`).
 
 The aid values are design abstractions with notes, not changes to historical starting data.
 
@@ -1834,8 +1840,8 @@ The aid values are design abstractions with notes, not changes to historical sta
 3. Drop support orders for good
 4. Other / notes: ____
 
-**Q-MIS-e-2** What balance targets should Milestone 3 aim at?
-1. Over 1000 games: freeze rate at or under 20 percent, and every faction winning at least 20 percent of decided games; report misses to the owner rather than tuning in a loop **(Recommended)** - Gives the harness a stated target, which simulation balancing needs, without forcing equal shares on a historical asymmetry; at 1000 games a share is known to about +/- 3 points.
+**Q-MIS-e-2** What balance targets should Milestone 3 aim for by its end (a goal, not a per-merge gate; see Q-SEQ-3)?
+1. Over 1000 games by the end of Milestone 3: freeze rate at or under 20 percent, and every faction winning at least 20 percent of decided games; misses are reported to the owner rather than tuned in a loop **(Recommended)** - Gives the harness a stated target, which simulation balancing needs, without forcing equal shares on a historical asymmetry; at 1000 games a share is known to about +/- 3 points.
 2. Equal shares: each faction 25 to 42 percent of decided games
 3. No targets; keep reporting numbers only (as P3 in Milestone 2)
 4. Other / notes: ____
@@ -1915,7 +1921,7 @@ Every decision taken without the owner is numbered here, so it can be challenged
 - **A-MAP-5. Resource names are the Economy cluster's.** Funds and Manpower (its Option B). If the owner picks a different set, the city widget's labels change, not its logic.
 - **A-MAP-6. Province adjacency is from recall.** Andalucia's internal province borders, and which provinces touch neighbouring territories, are from recall (unverified). A real implementation derives them from the boundary geometry in the map build (see "Pipeline cost").
 - **A-MAP-7. Ceuta and Melilla stay single sub-regions.** They were not provinces in 1936, and NUTS 3 gives each one unit.
-- **A-MAP-8. Ungarrisoned enemy ground falls one sub-region per turn (rule P7).** The 31 July start state is left as it is; whether Caceres and Alava get starting garrisons is a scenario-data question for the owner.
+- **A-MAP-8. Ungarrisoned enemy ground falls one sub-region per turn (rule P7).** The 31 July start state is left as it is; who holds Caceres and Alava at the start is Q-PART-9.
 - **A-MAP-9. These systems plug into the Engine cluster's `rules` object.** The Engine cluster proposes per-area modules (`rules.partition`, `rules.supply`; `research/engine.md` section 6). This cluster's proposals would be `partition: "sub-regions-hybrid"` and `supply: "trace-to-source"`; the names are illustrative.
 - **A-MAP-10. Rail validation.** Rail orders beyond a line's capacity are never offered in planning. An order that is invalid at submission is rejected before lock, so M9 disbanding never applies to it.
 
@@ -1934,7 +1940,7 @@ Every decision taken without the owner is numbered here, so it can be challenged
 
 #### Military
 
-- A-MILITARY-1: Turns are two weeks, per the owner. `scenario.json` records no turn length. Turn 1 is 31 July 1936, so turn n starts 31 July 1936 + 14(n-1) days. That puts Mola's death (3 June 1937) in turn 22, the creation of the Nationalist 1st Cavalry Division (November 1937) at about turn 34, Alfambra (5-8 February 1938) in turn 40, and the Barcelona raids (16-18 March 1938) in turn 43. The soak test runs 30 turns, so a 30-turn game ends in late September 1937, before Alfambra and Barcelona.
+- A-MILITARY-1: Turns are two weeks, per the owner. `scenario.json` records no turn length. Turn 1 is 31 July 1936, so turn n starts 31 July 1936 + 14(n-1) days. That puts Mola's death (3 June 1937) in turn 22, the creation of the Nationalist 1st Cavalry Division (November 1937) at about turn 34, Alfambra (5-8 February 1938) in turn 40, and the Barcelona raids (16-18 March 1938) in turn 43. The game has no turn limit; the soak test stops at 30 turns, in late September 1937, before Alfambra and Barcelona.
 - A-MILITARY-2: Idea 7 sub-regions are the Map agent's. I give every d20 grade an explicit ground value (0, 1, 2, or all sub-regions) and a kebab-case id the Map agent can reference. I also give a fallback for when partitioning is rejected.
 - A-MILITARY-3: The d20 ladder has 11 grades. Its thresholds are my proposal, calibrated so that the chance to take a territory stays within 5 percentage points of today's d6 table at every odds column with no modifiers.
 - A-MILITARY-4: All new unit-type values (artillery 3-2, cavalry 4-3, tank 5-3) are proposals only, measured against the yardstick infantry regiment 4-6 (1,270 men at full establishment, from the Revision 6 research).

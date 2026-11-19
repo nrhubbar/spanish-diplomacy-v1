@@ -8,10 +8,10 @@ The owner asked for army movement points or action points, and for exhaustion to
 - **Today's pace already fits two-week turns.**
   - Yague's motorized columns covered about 500 km from Seville in four weeks in August 1936, roughly 250 km per two-week turn ([Extremadura campaign](https://wikipedia.com/wiki/Extremadura_front), [Sierra Guadalupe](https://wikipedia.com/wiki/Battle_of_the_Sierra_Guadalupe)).
   - That is about one move between autonomous-community territories per turn, which is today's rule (M2).
-  - It would be two to three moves if idea 7 shrinks the grid to provinces.
+  - If idea 7 made provinces the movement grid, the August 1936 pace was about one province border a turn (see idea 7, Tempo).
 - **Offensives ran out of breath.**
-  - After Talavera (3 September 1936) the drive paused for about two and a half weeks at Maqueda and Toledo ([Extremadura campaign](https://wikipedia.com/wiki/Extremadura_front), [vscw.ca](https://vscw.ca/en/node/993)).
-  - That is about one turn of pause after three to four turns of advance (early August to 21 September is about 3.5 turns).
+  - After Talavera (3 September 1936) the drive halted at Maqueda and turned to Toledo (from recall; the cited [Extremadura campaign](https://wikipedia.com/wiki/Extremadura_front) page does not describe the pause, [vscw.ca](https://vscw.ca/en/node/993)). The halt is usually tied to the decision to relieve the Alcazar, a political choice, not exhaustion.
+  - The advance to Talavera took about 2.3 turns (2 August to 3 September). So the 3-turn exhaustion threshold is a judgement to test, not a measured figure.
 - **Mud stopped motorized columns at Guadalajara** in March 1937 ([Battle of Guadalajara](https://en.wikipedia.org/wiki/Battle_of_Guadalajara)), so movement rules will meet the weather idea (12).
 - **Precedents:**
   - Hannibal applies attrition by force size when crossing mountain passes and in winter, not for distance moved ([rulespal: Hannibal](https://rulespal.com/hannibal-rome-vs-carthage/rulebook)).
@@ -46,7 +46,7 @@ The owner asked for army movement points or action points, and for exhaustion to
 
 ### Widget
 <!-- widget:exhaustion-sim -->
-One infantry regiment, 4-6 from `scenario.json`, at 1,270 men, over ten two-week turns of attacking, marching, defending or holding. It shows morale, men, attack value (M12), works (M22) and moves under rule A or D. The losses per battle are illustrative.
+One infantry regiment, 4-6 from `scenario.json`, at the 1,270-man establishment from the research note (no scenario regiment is that large), over ten two-week turns of attacking, marching, defending or holding. It shows morale, men, attack value (M12), works (M22) and moves under rule A or D. The losses per battle are illustrative.
 
 ### Mockup
 <!-- mockup:movement-exhaustion -->
@@ -63,18 +63,18 @@ The owner asked for new unit types (cavalry, tanks, aircraft, anti-air, artiller
 ### Findings
 - **Artillery mattered most.**
   - Nationalist artillery and air superiority decided the Ebro, where bridge bombing let only 22 Republican tanks and a handful of guns cross ([Battle of the Ebro](https://en.wikipedia.org/wiki/Battle_of_the_Ebro)).
-  - Republican artillery and aircraft stopped the Italians at Guadalajara ([Guadalajara](https://en.wikipedia.org/wiki/Battle_of_Guadalajara)).
+  - Republican aircraft, the XI International Brigade and the weather stopped the Italians at Guadalajara ([Guadalajara](https://en.wikipedia.org/wiki/Battle_of_Guadalajara)).
 - **Tanks mattered little.**
   - The T-26 outclassed the Panzer I and CV-33, but numbers were small, armour was thin, and infantry-tank cooperation was poor ([Osprey](https://www.ospreypublishing.com/ca/osprey-blog/2026/the-first-clash-of-steel-panzer-i-vs-t-26-in-spain-1936-39/), [warhistory.org](https://warhistory.org/2015/08/26/spanish-republican-t-26s/)).
-- **Cavalry was marginal and Nationalist-only.**
+- **Cavalry was marginal, though both sides had it.**
   - Monasterio's charge at Alfambra (5-8 February 1938) is called the last great mounted charge in Western Europe ([Alfambra](https://en.wikipedia.org/wiki/Battle_of_Alfambra)).
-  - The division was created only in November 1937 ([El Debate](https://www.eldebate.com/historia/20260226/batalla-alfambra-3000-jinetes-nacionales-vencieron-republicanos-teruel_389225.html)), about turn 34, beyond a 30-turn game.
+  - The Nationalist cavalry division was created in November 1937, about turn 34; both sides later formed cavalry divisions, and Moroccan cavalry fought for the rising from 1936 ([El Debate](https://www.eldebate.com/historia/20260226/batalla-alfambra-3000-jinetes-nacionales-vencieron-republicanos-teruel_389225.html)). The game has no turn limit, but the 30-turn soak never reaches it, which is the reason to defer.
 - **Air mattered operationally, not strategically.**
   - Operationally:
-    - The July-August 1936 airlift of the Army of Africa began on 29 July with 20 Ju 52s; about 1,500 men crossed by 5 August ([Spanish airlift](https://wikipedia.com/wiki/Spanish_airlift_of_1936), [Air & Space Forces](https://www.airandspaceforces.com/article/0213condor/)).
+    - The airlift of the Army of Africa began on 19 July with Spanish aircraft; the first German Ju 52 arrived on 29 July, and there were 20 by 10 August. About 1,500 men were flown across by 5 August, when a sea convoy carried at least as many ([Spanish airlift](https://wikipedia.com/wiki/Spanish_airlift_of_1936), [Air & Space Forces](https://www.airandspaceforces.com/article/0213condor/)).
     - Close support and interdiction were used in the north in 1937 and at the Ebro.
     - Guernica was chosen for a road and bridge on the Basque retreat route; the bridge survived ([UNR Basque Library](https://library.unr.edu/places/basque-library/gernika/the-bombing-of-gernika/strategy-of-the-attack)).
-  - Strategically, the Barcelona raids of 16-18 March 1938 did not break morale ([Bombing of Barcelona](https://en.wikipedia.org/wiki/Bombing_of_Barcelona), [vscw.ca](https://vscw.ca/en/node/101)).
+  - Strategically, the Barcelona raids of 16-18 March 1938 caused panic and an exodus and had a "demoralizing effect", but the city kept fighting for ten more months ([Bombing of Barcelona](https://en.wikipedia.org/wiki/Bombing_of_Barcelona), [vscw.ca](https://vscw.ca/en/node/101)). The case for a small effect is that it did not change the war's course, not that morale held.
   - So "bombing reduces resource collection" should be small or dropped.
 - **Anti-air was dual-use.**
   - The 88 mm Flak 18 was soon used against tanks and bunkers in direct fire ([warhistory.org](https://warhistory.org/2021/05/15/antitank-warfare-in-the-spanish-civil-war/)). An AA counter would mostly be artillery in disguise.
@@ -83,7 +83,7 @@ The owner asked for new unit types (cavalry, tanks, aircraft, anti-air, artiller
   - Rojo planned Brunete, Teruel and the Ebro ([Rojo](https://en.wikipedia.org/wiki/Vicente_Rojo_Lluch)).
   - Miaja led the defence of Madrid, and Queipo de Llano held Seville (from recall, unverified).
   - The scenario's Northern and Southern commands already are Mola's and Franco's commands.
-  - GMT's *The Spanish Civil War* models command as HQs, not personalities ([grognard.com](https://www.grognard.com/reviews1/scw.txt)).
+  - Some Spanish Civil War games model command through HQs or activation rather than personalities (from recall, unverified; the cited [grognard.com](https://www.grognard.com/reviews1/scw.txt) review does not say so).
   - In Hannibal, generals are the activation system itself ([rulespal](https://rulespal.com/hannibal-rome-vs-carthage/rulebook)), a big commitment.
 - **Air as a bonus, not a unit.** Europe Engulfed treats air as a capped hit bonus to one ground unit, in good weather only ([rulespal](https://rulespal.com/europe-engulfed/rulebook)).
 - **The owner's artillery rule, evaluated literally** (widget numbers). Take one infantry regiment (4) plus one artillery group (3, proposal) against an infantry regiment (6):
@@ -97,7 +97,7 @@ The owner asked for new unit types (cavalry, tanks, aircraft, anti-air, artiller
   - `support { rollPerPoints: 3, maxRoll: 3 }`;
   - `canAttackAlone: false`;
   - `trainingTurns`;
-  - `trainingTurnsByFaction`;
+  - `trainingTurns` per unit type, with faster militia set by place (a `trainingTurns` value on a territory's `recruitment` entry, Q-RECR-4), not by faction;
   - `movement`, only with idea 6 B.
 - **M12 is unchanged.** The artillery points are the M12 rounded values, so depleted guns give less.
 - **M14** gains a named "Artillery support" modifier, shown in breakdowns (C14).
@@ -109,7 +109,7 @@ The owner asked for new unit types (cavalry, tanks, aircraft, anti-air, artiller
 ### Options
 | Option | What it is | Tradeoffs | Complexity | Genericity |
 |---|---|---|---|---|
-| A. Artillery plus air wings | Today's four types plus an artillery group (3-2 proposal; roll bonus, cannot attack alone). Air as faction wings assigned each turn to support (+2 d20), intercept, or bomb. | Covers the two arms with clear historical weight; one new order kind. | Med | Support rules and wing schedules are data. |
+| A. Artillery plus air wings | Today's four types plus an artillery group (3-2 proposal; roll bonus, cannot attack alone). Air as faction wings assigned each turn to support (+2 d20) or intercept; bombing waits (Q-UNIT-4). | Covers the two arms with clear historical weight; one new order kind. | Med | Support rules and wing schedules are data. |
 | B. The owner's full list as counters | Cavalry, tanks, recon, fighter and bomber aircraft, AA, artillery. | Rich, but many interactions (AA against air, air that cannot hold ground); against "lets not muddy". | High | Generic, but a large schema. |
 | C. Values-only new types | Add artillery, cavalry and tanks as plain attack-defence types. | No code. Little difference in play. | Low | Pure data. |
 | D. Defer new types | Add only training times for today's four types. | Smallest; misses the owner's interest. | Low | Pure data. |
@@ -198,7 +198,7 @@ Choose an odds column and modifiers. It shows the exact d6 outcome distribution 
 <!-- questions:9 -->
 
 <!-- mismatch:b-military -->
-### Mismatch (b): Strength, morale and faded casualties (Military contribution)
+### Mismatch (b), continued: morale and faded casualties (Military contribution)
 Faded results make armies lose men often and die rarely, so the M25 relaxation ("lost men never return") becomes central: without replacements, every army slowly bleeds out.
 
 Proposed division:
@@ -206,7 +206,7 @@ Proposed division:
 - **Morale** stays a temporary binary state (M23). Results demoralize a share of the side, weakest first as today, and one turn of rest recovers it.
 - **Exhaustion** (idea 6 A) is not a third multiplier. It is a counter that demoralizes, so values stay type x strength / fullStrength x 0.5 when demoralized.
 - **A strength floor** (25 percent of `fullStrength`) breaks up an army, so remnants do not linger at value 1.
-- **Restore orders** should be blocked for a demoralized army, so rest comes before refit.
+- **Restore orders** may be given to a demoralized army, but they do not restore morale and the army does not rest that turn (Q-MIS-b-2), so the player chooses between rest and refit.
 
 <!-- sources -->
 - [Battle of Alfambra (Wikipedia)](https://en.wikipedia.org/wiki/Battle_of_Alfambra)

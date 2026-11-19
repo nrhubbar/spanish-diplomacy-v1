@@ -8,13 +8,13 @@ Only one idea is dropped outright: action points, which the owner's own question
 |---|---|---|---|
 | 11 Harness | CLI, worker threads, reports, Wilson intervals, paired-seed A/B variants, CI-sized soak | Balance dashboards across commits; AI tournaments | |
 | 13 Generic engine | `rules` object, spec v2, `m2-strength` kept as a preset, AI weights and new blocks as data | Second game mode as the real test of genericity | Encoding resolution algorithms as data |
-| 10 Process | CI gate, short steering file, contract stream first, file-ownership table, harness gate, read-only reviewer per stream | Scripted multi-agent workflows; cloud runs | Agent teams before the gates work |
+| 10 Process | CI gate, short steering file, contract stream first, file-ownership table, owner-reviewed harness check at each merge, read-only reviewer per stream | Scripted multi-agent workflows; cloud runs | Agent teams before the gates work |
 | 3 Timed turns | Off, 1, 5, 10 min on a shared PC; Pause; planned orders lock on timeout | 30 min and 1 h with online play | |
 | 7 Sub-partitioning | About 55 sub-regions for control, cities, income, and supply; ground grades flip sub-regions | Sub-regions as the movement grid | Dynamic geometry |
 | 9 d20 | 11-grade ladder with faded losses and ground values; new battle card | | |
 | 2 Resources | Funds and Manpower, build limit per site, foreign-aid schedule | Materiel or production capacity, if the harness shows Funds alone is too flat | Oil and food as separate stocks; research points; action points |
 | 1 Recruitment | Recruit and Replenish orders, training time per type, recruitment tags per site | Faction-specific militia rules beyond site tags | Reviving destroyed armies |
-| 4 Cities | Cities as features of sub-regions; stationing in cities removed; Depot, Workshop, Fortifications, Port | Airfield (with air units), rail yard (with rail) | |
+| 4 Cities | Cities as features of sub-regions; stationing in cities removed; Depot, Workshop, Fortifications; ports as map features | Airfield (with air units), rail yard (with rail) | |
 | 12 Weather | Four zones, monthly tables, visible before planning, soft effects | Movement and air effects once ideas 6 and 8 land | |
 | 8 Unit types | Artillery; air as abstract faction wings; commander chips with no rules effect | Tanks, cavalry, AA as values-only types; commander effects if wanted | Bomber missions that cut income, until air wings prove themselves |
 | 6 Movement | Offensive exhaustion through the existing morale rule | Movement points, if sub-regions become the movement grid | Action points |

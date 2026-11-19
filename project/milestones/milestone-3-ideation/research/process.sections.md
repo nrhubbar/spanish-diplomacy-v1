@@ -24,7 +24,7 @@ Current practice:
   - A short `CLAUDE.md`.
   - `.claude/settings.json` with a `Stop` hook running typecheck and lint, and a hook that blocks edits to `e2e/baselines/**` outside the integrator.
   - `.claude/agents/reviewer.md`, a read-only reviewer.
-- **Cost.** Locally, lint takes about 5 s, typecheck about 2 s, and the unit suite about 7 s (483 tests), so a CI run is probably 2 to 4 minutes including `npm ci` (a guess). GitHub Free includes 12 USD of compute a month, and public repositories run free ([GitHub](https://docs.github.com/en/billing/concepts/product-billing/github-actions)).
+- **Cost.** Locally, lint takes about 5 s, typecheck about 2 s, and the unit suite about 7 s (484 tests), so a CI run is probably 2 to 4 minutes including `npm ci` (a guess). GitHub Free includes 12 USD of compute a month, and public repositories run free ([GitHub](https://docs.github.com/en/billing/concepts/product-billing/github-actions)).
 - **Contract stream for M3.** It owns:
   - `engine/types.ts` (440 lines) and `scenarios/loader.ts` (434);
   - the schema files and `project/specs/scenario-package.md`;
@@ -37,11 +37,11 @@ Current practice:
 | Option | What it is | Tradeoffs | Complexity | Genericity |
 |---|---|---|---|---|
 | A. Guardrails only | CI gate, a short CLAUDE.md, two or three hooks; process otherwise unchanged | About an hour to set up. Stops red commits and gives a check that still runs when the local verify is waived. Leaves stream coupling, rolling debt, and integrator-owned budgets alone | Low | Applies to any revision or scenario |
-| B. Gated slices | A, plus: a contract stream first; per-idea vertical slices; 3 or 4 streams at most; a file-ownership table; a harness gate with owner-owned budgets; a read-only reviewer per stream; stored answers feeding the tasks doc; a debt slot | Covers every problem in the evidence. Costs a serial contract phase and about one extra agent run per stream for review (estimate) | Med | The contract, slice, and gate pattern suits later scenarios (WW1, WW2) as well |
+| B. Gated slices | A, plus: a contract stream first; per-idea vertical slices; 3 or 4 streams at most; a file-ownership table; an owner-reviewed harness check at each merge (no worse than the previous revision, Q-SEQ-3); a read-only reviewer per stream; stored answers feeding the tasks doc; a debt slot | Covers every problem in the evidence. Costs a serial contract phase and about one extra agent run per stream for review (estimate) | Med | The contract, slice, and gate pattern suits later scenarios (WW1, WW2) as well |
 | C. Full orchestration | B, plus scripted multi-agent workflows or agent teams, cloud runs, spec-kit or Kiro specs per idea | Most automation, but experimental features, many times the tokens, a heavy spec review burden, and coding parallelises poorly | High | Generic, but locks the process into tooling |
 | D. One agent, in sequence | One agent works through the steps in order, like Rev 5's first pass | No merge conflicts, but slow. Rev 5 still had red commits (D30) and a combined commit (D14) | Low | Neutral |
 
-**Recommendation:** Option B, starting with its cheapest parts: the CI gate and a short CLAUDE.md first, then a contract stream and file-ownership table (most M3 ideas share the schema and map files), then the harness gate and a reviewer subagent. Keep 3 or 4 streams at most, and defer agent teams, scripted workflows, and cloud runs until the gates are working.
+**Recommendation:** Option B, starting with its cheapest parts: the CI gate and a short CLAUDE.md first, then a contract stream and file-ownership table (most M3 ideas share the schema and map files), then the owner-reviewed harness check at each merge (Q-SEQ-3) and a reviewer subagent. Keep 3 or 4 streams at most, and defer agent teams, scripted workflows, and cloud runs until the gates are working.
 
 ### Widget
 <!-- widget:process-planner -->

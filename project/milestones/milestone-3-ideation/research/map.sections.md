@@ -21,14 +21,14 @@ Split a territory into historical sub-regions (NUTS3 or provinces) during combat
   - Andalucia is Sevilla, Cadiz, Huelva (city taken 29 July), Cordoba and Granada for the rising. Cordoba and Granada were city only: "la provincia permanece fiel". Malaga, Jaen and Almeria were Republican.
   - Extremadura is Caceres for the rising and Badajoz Republican.
   - Pais Vasco is Alava for the rising, Vizcaya and Guipuzcoa Republican.
-  - By capital holder, Asturias, Extremadura, Baleares, Andalucia and Pais Vasco start partitioned. Aragon would start wholly Northern, losing its Republican eastern strip, so it needs an override (full table in `research/map.md`).
+  - By capital holder, Extremadura, Andalucia and Pais Vasco start partitioned. Asturias and Baleares are single provinces whose capitals (Oviedo, Palma) the rising held, so only the overrides split them. Aragon would start wholly Northern, losing its Republican eastern strip, so it needs an override (full table in `research/map.md`).
 - **Precedents.**
   - Diplomacy has no partial control; its only sub-province device is split coasts (from recall, unverified).
   - In [Here I Stand](https://rulespal.com/here-i-stand/rulebook), a fortified space changes hands only through a successful siege.
   - `plan.md` sections 6.3 and 9 already specify predefined sub-territories that lie dormant until a split.
 - **Movement on sub-regions is expensive.**
   - **Graph and AI.** 55 nodes instead of 18, and every order, battle and AI distance changes ids. The AI's "three steps" planning (D58) covers a third of the ground.
-  - **Tempo.** The Army of Africa crossed three province borders in about five weeks from 2 August ([Battle of Merida](https://en.wikipedia.org/wiki/Battle_of_M%C3%A9rida); Talavera date from recall). One sub-region per two-week turn needs idea 6's multi-step movement to match that.
+  - **Tempo.** The Army of Africa crossed three province borders in about five weeks from 2 August ([Battle of Merida](https://en.wikipedia.org/wiki/Battle_of_M%C3%A9rida); Talavera date from recall), about 1.2 a turn. One sub-region per turn is close to that, so province moves do not need multi-step movement; territory moves already cover it.
 
 ### Fit with today's engine
 - **scenario.json.**
@@ -42,7 +42,7 @@ Split a territory into historical sub-regions (NUTS3 or provinces) during combat
   - **M21:** displaced defenders fall back into their own remaining sub-regions, else retreat (P2).
   - **M22:** works are kept per territory per faction.
   - **M24:** a city is held through its sub-region.
-  - **M27:** replaced by a new `push` order kind. It is not a move to the army's own territory, which would break M2 and L6. The Military cluster keeps M27, so the coordinator must reconcile.
+  - **M27:** this cluster proposed replacing it with a `push` order (from one sub-region into a neighbouring enemy sub-region, not a move to the army's own territory, which would break M2 and L6). The Military cluster keeps M27. The report recommends keeping M27 and lets the owner choose in Q-TEN-2.
   - **P7:** an unopposed entry or Push into an ungarrisoned enemy zone takes one sub-region a turn. At the start, Caceres and Alava have no garrison.
   - **M10:** a partitioned territory counts for nobody.
 - **Rule P1.** Repeat k times.
@@ -83,10 +83,10 @@ Pick Andalucia, Aragon or Extremadura, an attacker and its origin, and a graded 
 Add railways that armies can use, that players can build and upgrade, and whose capacity limits how many troops move.
 
 ### Findings
-- **Spain's gauge.** Spain built its network to 1,672 mm, "six Castilian feet". The 1,668 mm Iberian gauge is a 1955 compromise with Portugal ([Iberian gauge](https://en.wikipedia.org/wiki/Iberian_gauge)). The usual explanations are distrust of France and powerful engines for steep grades ([History of rail transport in Spain](https://en.wikipedia.org/wiki/History_of_rail_transport_in_Spain)). Traffic across the Pyrenees was transshipped at Irun and Portbou (search snippet, [RailTarget](https://www.railtarget.eu/technologies-and-infrastructure/railway-revolution-in-spain-from-civil-war-battlefield-to-europes-highspeed-leader-8949.html)). Inside Spain the main network had one gauge, so War in the East-style gauge conversion does not apply.
-- **The 1936 network.** Norte, MZA and Andaluces ran about two-thirds of it. The Republic took over its lines in August 1936, and MZA was absorbed into RENFE in 1941 ([MZA](https://en.wikipedia.org/wiki/Madrid,_Zaragoza_and_Alicante_railway)). The network was "extensively damaged" in the war. Its total length was not found; about 12,000 km is from recall.
-- **Madrid.** The Nationalists cut the southern lines into Madrid. The Republic then built about 91 km from Torrejon de Ardoz to Tarancon (the "Tren de los 40 dias"), linking the Madrid-Zaragoza and Levante lines to keep Madrid supplied from Valencia ([Vias Verdes](https://viasverdes.com/en/itineraries/tren-40-dias/historia-del-ferrocarril.asp); [FCMAF](https://www.fcmaf.es/Rutometros/RT-40D_01.pdf)). Sources date it to 1937-38 and say it took about ten months and over 10,000 workers. So building rail took many two-week turns.
-- **The Army of Africa** moved by truck, not rail, from Seville on 2 August. It took Merida on 10-11 August and Badajoz on 14 August ([Battle of Merida](https://en.wikipedia.org/wiki/Battle_of_M%C3%A9rida)). Rail mattered as junctions to capture: Llerena, and Badajoz, which held "the principal road and railway links" ([Extremadura campaign](https://en.wikipedia.org/wiki/Extremadura_campaign), snippet). The Strait was crossed mainly by air (project research note, `enwiki-airlift-1936`).
+- **Spain's gauge.** Spain built its network to 1,672 mm, "six Castilian feet". The 1,668 mm Iberian gauge is a 1955 compromise with Portugal ([Iberian gauge](https://en.wikipedia.org/wiki/Iberian_gauge)). The usual explanations are distrust of France and powerful engines for steep grades ([History of rail transport in Spain](https://en.wikipedia.org/wiki/History_of_rail_transport_in_Spain)). The northern coast (Bilbao, Santander, Asturias) also ran a large narrow-gauge system, a real break inside Spain for the 1937 Northern campaign ([History of rail transport in Spain](https://en.wikipedia.org/wiki/History_of_rail_transport_in_Spain)). Traffic across the Pyrenees was transshipped at Irun and Portbou (search snippet, [RailTarget](https://www.railtarget.eu/technologies-and-infrastructure/railway-revolution-in-spain-from-civil-war-battlefield-to-europes-highspeed-leader-8949.html)). Inside Spain the main network had one gauge, so War in the East-style gauge conversion does not apply.
+- **The 1936 network.** Norte, MZA and Andaluces were the main companies (their share, about two-thirds, is from recall). The Republic took over its lines in August 1936, and MZA was absorbed into RENFE in 1941 ([MZA](https://en.wikipedia.org/wiki/Madrid,_Zaragoza_and_Alicante_railway)). The network was "extensively damaged" in the war. Its total length was not found; about 12,000 km is from recall.
+- **Madrid.** The Nationalists cut the southern lines into Madrid. The Republic then built about 91 km toward Tarancon (Vias Verdes measures it from Mejorada del Campo; other sources start at Torrejon de Ardoz) (the "Tren de los 40 dias"), linking the Madrid-Zaragoza and Levante lines to keep Madrid supplied from Valencia ([Vias Verdes](https://viasverdes.com/en/itineraries/tren-40-dias/historia-del-ferrocarril.asp); [FCMAF](https://www.fcmaf.es/Rutometros/RT-40D_01.pdf)). Sources date it to 1937-38 and say it took about ten months and over 10,000 workers. So building rail took many two-week turns.
+- **The Army of Africa** moved by truck, not rail, from Seville on 2 August. It took Merida on 10-11 August and Badajoz on 14 August ([Battle of Merida](https://en.wikipedia.org/wiki/Battle_of_M%C3%A9rida)). Rail mattered as junctions to capture: Llerena, and Badajoz, a road and rail junction on the Portuguese border ([Extremadura campaign](https://en.wikipedia.org/wiki/Extremadura_campaign); junction role from recall). The Strait was crossed by air and, from the 5 August convoy, by sea (project research note, `enwiki-airlift-1936`).
 - **Precedents.**
   - **[Paths of Glory](https://rulespal.com/paths-of-glory/rulebook):** strategic redeployment points come from a card. A corps costs 1 point and an army 4. Units travel only through friendly, supplied spaces, and only corps may redeploy by sea.
   - **HOI4:** railway level sets supply throughput, and the weakest segment caps the whole route ([GuildOrder](https://guildorder.com/games/hoi4/wiki/supply-and-logistics)).
@@ -142,10 +142,10 @@ Stop armies being stationed in a city rather than the territory, and make cities
   - Under idea 7 a city sits in a sub-region, and a sub-region cut off from supply (mismatch c) already models most of a siege.
 - **Ports.**
   - The scenario's sea connections are ordinary moves, so "all four African counters can land in Andalucia at once" (D32, `milestone-2-rev-6-declog.md`).
-  - Historically, about 1,500 men had crossed by 5 August, mainly by air, landing at Seville (project research note, `enwiki-airlift-1936` and `eswiki-sevilla-1936`).
-  - Requiring a controlled port at each end ties sea moves to Ceuta, Cadiz, Melilla and Malaga. Malaga was Republican.
+  - Historically, about 1,500 men had been flown across by 5 August, and the sea convoy of 5 August carried at least as many again (1,600 to 3,000 by different accounts) (project research note, `enwiki-airlift-1936` and `eswiki-sevilla-1936`).
+  - Requiring a controlled port at each end ties sea moves to named ports: Ceuta and Melilla (ports without a city, Q-CITY-7) and Cadiz, Algeciras or Malaga. Malaga was Republican, but Cadiz and Algeciras were held by the rising, so the Strait stays open; ports limit how many armies cross a turn.
 - **Airfields** matter only if idea 8 adds aircraft.
-- **Rail hubs** are where idea 5's lines meet: Madrid, Albacete, Zaragoza, Merida, Badajoz.
+- **Rail hubs** are where idea 5's lines meet: Madrid, Albacete, Zaragoza, Badajoz (and Merida, which is not yet a scenario city).
 - **Build options** are a common pattern: Paths of Glory trench levels ([rules](https://rulespal.com/paths-of-glory/rulebook)), 18xx station tokens, and HOI4 supply hubs that are built ([GuildOrder](https://guildorder.com/games/hoi4/wiki/supply-and-logistics)). The Economy cluster's Option B already has a "build limit per site", which a Depot can raise.
 
 <!-- idea:4-resources -->
@@ -168,7 +168,7 @@ Stop armies being stationed in a city rather than the territory, and make cities
 | B. Cities as separate garrison nodes | A city is a defended point inside its territory, with its own siege and assault (Here I Stand style). | Rich Oviedo and Alcazar stories. Adds a second node layer and a new battle type. | High | Med |
 | C. Status quo plus yields | Keep display-only `cityId` and add income only. | Cheap, but does not make cities "more interesting". | Low | High |
 
-**Recommendation:** Option A. Start with four buildings (Depot, Workshop, Fortifications, Port). Add Airfield only if idea 8 adds aircraft, and Rail yard only if idea 5 lands. Handle sieges through supply, not a new rule.
+**Recommendation:** Option A. Start with three buildings (Depot, Workshop, Fortifications); a Port is a map feature in data, not a building (Q-CITY-7). Add Airfield only if idea 8 adds aircraft, and Rail yard only if idea 5 lands. Handle sieges through supply, not a new rule.
 
 ### Widget
 <!-- widget:city-yield -->
@@ -198,7 +198,7 @@ Choose a city and its buildings to see its yield each turn and the turns to fini
 - **Cost.** One breadth-first search per faction during cleanup. It would be selected as `rules.supply` in the Engine cluster's module object.
 - **What it captures.**
   - The cut-off Republican north stays supplied through Bilbao and Gijon.
-  - Besieged Oviedo stops paying.
+  - A surrounded city stops paying. Whether besieged Oviedo is surrounded depends on the Asturias override: if its sub-region touches Northern Galicia or Leon, it stays supplied, as it historically was by the Galician columns from October.
 - **Later.** Rail-borne supply (HOI4, Unity of Command) waits for Milestone 4.
 
 <!-- sources -->

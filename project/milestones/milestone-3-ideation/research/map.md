@@ -13,7 +13,7 @@ Web access worked. About 25 searches and fetches were used. Failures: the Unity 
 - **A-MAP-5. Resource names are the Economy cluster's.** Funds and Manpower (its Option B). If the owner picks a different set, the city widget's labels change, not its logic.
 - **A-MAP-6. Province adjacency is from recall.** Andalucia's internal province borders, and which provinces touch neighbouring territories, are from recall (unverified). A real implementation derives them from the boundary geometry in the map build (see "Pipeline cost").
 - **A-MAP-7. Ceuta and Melilla stay single sub-regions.** They were not provinces in 1936, and NUTS 3 gives each one unit.
-- **A-MAP-8. Ungarrisoned enemy ground falls one sub-region per turn (rule P7).** The 31 July start state is left as it is; whether Caceres and Alava get starting garrisons is a scenario-data question for the owner.
+- **A-MAP-8. Ungarrisoned enemy ground falls one sub-region per turn (rule P7).** The 31 July start state is left as it is; who holds Caceres and Alava at the start is Q-PART-9.
 - **A-MAP-9. These systems plug into the Engine cluster's `rules` object.** The Engine cluster proposes per-area modules (`rules.partition`, `rules.supply`; `research/engine.md` section 6). This cluster's proposals would be `partition: "sub-regions-hybrid"` and `supply: "trace-to-source"`; the names are illustrative.
 - **A-MAP-10. Rail validation.** Rail orders beyond a line's capacity are never offered in planning. An order that is invalid at submission is rejected before lock, so M9 disbanding never applies to it.
 

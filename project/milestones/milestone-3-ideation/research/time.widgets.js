@@ -317,7 +317,7 @@
         var cell = el("td");
         cell.appendChild(bar(p * 100, o.color));
         tr.appendChild(cell);
-        tr.appendChild(el("td", null, mod === 0 ? "0" : String(mod)));
+        tr.appendChild(el("td", null, mod === 0 ? "0" : String(mod) + " (d20 " + String(mod * 3) + ")"));
         tr.appendChild(el("td", null, o.extra));
         table.appendChild(tr);
       });

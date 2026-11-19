@@ -65,7 +65,7 @@
 <path class="edge" d="M895 120 L895 102" marker-end="url(#arr)"/>
 </g>
 <rect class="band" x="10" y="300" width="770" height="40" rx="5"/>
-<text x="395" y="325" text-anchor="middle">Every merge: CI gate (lint, typecheck, unit, build) and a harness run against the revision's balance budget</text>
+<text x="395" y="325" text-anchor="middle">Every merge: CI fails on correctness (lint, types, unit, build); a paired-seed harness run must be no worse than the last revision</text>
 <text class="col" x="10" y="372">Arrows show "needs". Also, not drawn: 9 feeds artillery's roll bonus (8); supply gates recruitment (1); 7 and movement points gate rail (5).</text>
 </svg>
 </div>
@@ -76,8 +76,8 @@
 |---|---|---|
 | 1 Platform | Harness CLI, `rules` object and spec v2 (with `m2-strength` as a preset), AI weights in data, CI gate, turn timer | `npm run sim` reproduces today's soak figures exactly on the same seeds; CI is green on every commit |
 | 2 Map and battle | d20 ladder with ground grades, about 55 sub-regions for control and income, new battle card | Paired-seed harness run against Rev 1: chance to take per column within 5 points; freeze rate and faction shares reported with intervals |
-| 3 Economy | Funds and Manpower, Recruit and Replenish, cities in sub-regions with four buildings, supply trace, foreign-aid schedule | Freeze rate does not rise beyond its interval; the Southern command's share is reported and, if the owner sets a target (Q-MIS-e), checked |
-| 4 Content | Weather (soft set), artillery, air wings, commander chips, exhaustion | Each feature ships only if its own A/B run stays inside the budget; otherwise it stays behind its module flag |
+| 3 Economy | Funds and Manpower, Recruit and Replenish, cities in sub-regions with three buildings and port features, supply trace, foreign-aid schedule | Freeze rate does not rise beyond its interval; the Southern command's share is reported and, if the owner sets a target (Q-MIS-e), checked |
+| 4 Content | Weather (soft set), artillery, air wings, commander chips, exhaustion | Each feature ships only if its own A/B run is no worse than revision 3 (Q-SEQ-3); otherwise it stays behind its module flag |
 
 ### Questions
 
