@@ -1,5 +1,5 @@
 import type { FactionId, Scenario } from "../engine/types";
-import { outcomesFor, viewFor } from "../engine/visibility";
+import { ordersFor, outcomesFor, viewFor } from "../engine/visibility";
 import { type InGameSession, isInGame, localPlayerCount, type Session } from "./session";
 
 /**
@@ -15,8 +15,9 @@ export function sessionViewer(session: InGameSession): FactionId | undefined {
 
 /**
  * $6, U4: the session as its viewer may see it, the one source every screen reads. The game
- * state and the report's final state go through `viewFor`, outcomes through `outcomesFor`, and
- * other factions' locked submissions are dropped until the turn reveals them.
+ * state and the report's final state go through `viewFor`, outcomes through `outcomesFor`,
+ * submitted orders through `ordersFor`, and other factions' locked submissions keep only their
+ * readiness until the turn reveals them.
  */
 export function visibleSession<S extends Session>(scenario: Scenario, session: S): S {
   if (!isInGame(session)) return session;
@@ -26,7 +27,9 @@ export function visibleSession<S extends Session>(scenario: Scenario, session: S
   const visibleGame = {
     ...game,
     history: game.history.map((entry) => ({ ...entry, outcomes: outcomesFor(scenario, game.state, entry.outcomes, viewer) })),
-    locked: Object.fromEntries(Object.entries(game.locked).filter(([factionId]) => factionId === viewer)),
+    // Readiness is public; the orders stay private until the turn reveals them.
+    locked: Object.fromEntries(Object.entries(game.locked).map(([factionId, submission]) =>
+      [factionId, factionId === viewer ? submission : { factionId: submission.factionId, orders: [] }])),
     state
   };
   if (session.phase === "resolution" || session.phase === "game-over") {
@@ -34,7 +37,8 @@ export function visibleSession<S extends Session>(scenario: Scenario, session: S
     const visibleResult = {
       ...result,
       finalState: viewFor(scenario, result.finalState, viewer),
-      outcomes: outcomesFor(scenario, result.finalState, result.outcomes, viewer)
+      outcomes: outcomesFor(scenario, result.finalState, result.outcomes, viewer),
+      submittedOrders: ordersFor(scenario, game.state, result.submittedOrders, viewer)
     };
     return { ...session, game: visibleGame, result: visibleResult };
   }

@@ -47,11 +47,13 @@ export function TerritoryTabs({ children, ...props }: TerritoryTabProps & { read
           </button>
         ))}
       </div>
-      <div aria-labelledby={`${id}-${open}-tab`} className="pane-tab-panel" id={`${id}-${open}`} role="tabpanel">
-        {open === "units" ? children : null}
-        {open === "build" ? <BuildTab {...props} /> : null}
-        {open === "recruit" ? <RecruitTab {...props} /> : null}
-      </div>
+      {tabs.map((tab) => (
+        <div aria-labelledby={`${id}-${tab}-tab`} className="pane-tab-panel" hidden={open !== tab} id={`${id}-${tab}`} key={tab} role="tabpanel">
+          {tab === "units" ? children : null}
+          {tab === "build" ? <BuildTab {...props} /> : null}
+          {tab === "recruit" ? <RecruitTab {...props} /> : null}
+        </div>
+      ))}
     </div>
   );
 }

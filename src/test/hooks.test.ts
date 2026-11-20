@@ -13,7 +13,7 @@ import { createModuleRegistry, type RuleModule } from "../main/engine/modules";
 import type { Phase } from "../main/engine/phases/draft";
 import { initialGameState, resolveTurn } from "../main/engine/resolution";
 import type { GameState, Resources, SubTerritoryId, TurnOutcome, UnitId, UnitTypeId } from "../main/engine/types";
-import { outcomesFor } from "../main/engine/visibility";
+import { ordersFor, outcomesFor } from "../main/engine/visibility";
 import { loadPackage } from "../main/scenarios/loader";
 import { emptyDraft, type GameRecord, type Session } from "../main/state/session";
 import { sessionViewer, visibleSession } from "../main/state/visible";
@@ -115,22 +115,33 @@ describe("what each viewer may see ($6, U4)", () => {
     const game: GameRecord = {
       assignments: { [faction("red")]: "local-human", [faction("blue")]: "local-human" },
       history: [{ outcomes: all, turnNumber: 1 }],
-      locked: { [faction("blue")]: { factionId: faction("blue"), orders: [] } },
+      locked: { [faction("blue")]: { factionId: faction("blue"), orders: [move("blue", "blue-marines", "harbor", "lowlands")] } },
       scenarioId: scenario.id,
       seed: 1,
       state
     };
     const planning: Session = { draft: emptyDraft, factionId: faction("red"), game, phase: "planning" };
     const seen = visibleSession(scenario, planning);
-    expect([Object.keys(seen.game.locked), Object.keys(seen.game.state.treasuries), seen.game.history[0]?.outcomes.length])
-      .toEqual([[], ["red"], 2]);
+    expect([seen.game.locked, Object.keys(seen.game.state.treasuries), seen.game.history[0]?.outcomes.length])
+      .toEqual([{ blue: { factionId: "blue", orders: [] } }, ["red"], 2]);
     const result = resolveTurn(scenario, state, [], 1);
     const shared: Session = { game, phase: "resolution", result: { ...result, outcomes: all } };
     expect(sessionViewer(shared as never)).toBeUndefined();
     const solo: Session = { game: { ...game, assignments: { ...game.assignments, [faction("blue")]: "computer" } }, phase: "resolution", result: { ...result, outcomes: all } };
     expect(sessionViewer(solo as never)).toBe("red");
-    const report = visibleSession(scenario, solo);
+    const recruit = { factionId: faction("blue"), kind: "recruit" as const, territoryId: territory("harbor"), unitTypeId: "foot" as UnitTypeId };
+    const recon = { factionId: faction("blue"), kind: "air-mission" as const, mission: { kind: "recon" as const, territoryId: territory("westfold") }, unitId: unit("blue-wing") };
+    const raid = { ...recon, mission: { kind: "raid" as const, subTerritoryId: "west-hills" as SubTerritoryId } };
+    const moved = move("blue", "blue-marines", "harbor", "lowlands");
+    const build = { factionId: faction("blue"), kind: "build" as const, project: { improvement: "rail" as const, kind: "improvement" as const }, subTerritoryId: "port-quarter" as SubTerritoryId };
+    const replenish = { factionId: faction("blue"), kind: "replenish" as const, unitId: unit("blue-marines") };
+    const own = { factionId: faction("red"), kind: "replenish" as const, unitId: unit("red-guard") };
+    const orders = [moved, recruit, build, replenish, recon, raid, own];
+    const report = visibleSession(scenario, { ...solo, result: { ...solo.result, submittedOrders: orders } });
     expect(report.result.outcomes).toEqual([forfeit, weather]);
+    expect(report.result.submittedOrders).toEqual([moved, raid, own]);
+    const scouted: GameState = { ...state, reveals: [{ territoryId: territory("harbor"), untilTurn: 1, viewerFactionId: faction("red") }] };
+    expect(ordersFor(scenario, scouted, orders, faction("red"))).toEqual([moved, recruit, build, replenish, raid, own]);
     expect(visibleSession(scenario, { phase: "idle" })).toEqual({ phase: "idle" });
   });
 });
