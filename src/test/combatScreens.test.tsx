@@ -174,13 +174,14 @@ describe("planning with strength and morale (C5, C6, C15)", () => {
     await user.click(within(pane).getByRole("button", { name: "Give Selected Armies Order" }));
     await user.click(within(pane).getByRole("button", { name: "Move" }));
     const list = within(pane).getByRole("list", { name: "Destinations" });
-    const battle = within(list).getByRole("button", { name: /Approximately 1:\d+, \d+ percent to take it/ });
+    // Under `allowance` rail adds destinations beyond the two neighbours (M3, M4).
+    const [battle] = within(list).getAllByRole("button", { name: /Approximately 1:\d+, \d+ percent to take it/ });
     expect(battle).toHaveTextContent(/Attack 4 against defence \d+/);
-    expect(within(list).getByRole("button", { name: /Reinforcement: it always arrives/ })).toBeVisible();
-    expect(document.querySelectorAll(".odds-layer .odds-chip")).toHaveLength(2);
+    expect(within(list).getByRole("button", { name: /^Castilla-La Mancha.*Reinforcement: it always arrives/ })).toBeVisible();
+    expect(document.querySelectorAll(".odds-layer .odds-chip").length).toBeGreaterThanOrEqual(2);
     expect(document.querySelector('.odds-layer .odds-chip[data-territory-id="castilla-la-mancha"]')?.textContent).toBe("Reinforce");
 
-    await user.click(within(list).getByRole("button", { name: /Reinforcement/ }));
+    await user.click(within(list).getByRole("button", { name: /^Castilla-La Mancha.*Reinforcement/ }));
     expect(within(pane).getByRole("list", { name: "Planned moves (1)" })).toBeVisible();
     expect(document.querySelector(".odds-layer")).toBeNull();
   });

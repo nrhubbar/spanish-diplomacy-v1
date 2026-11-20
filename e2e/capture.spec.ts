@@ -379,3 +379,27 @@ test("@capture air missions and generals", async ({ page }) => {
   if (await air.count() > 0) await air.first().evaluate((element) => { element.scrollIntoView({ block: "start" }); });
   await capture(page, "24d-air-report");
 });
+
+test("@capture movement, rail and ports (X5, X6)", async ({ page }) => {
+  await page.goto("./");
+  await page.getByRole("button", { name: "Create Game" }).click();
+  await page.getByRole("button", { name: "Start Campaign" }).click();
+  await waitForMap(page);
+  const toggle = page.getByRole("button", { exact: true, name: "Briefing" });
+  if (await toggle.isVisible() && await toggle.getAttribute("aria-pressed") === "true") await toggle.click();
+  await page.locator('.map-region[data-territory-id="madrid"]').focus();
+  await page.keyboard.press("Enter");
+  await page.getByRole("button", { name: "Give Selected Armies Order" }).click();
+  await page.getByRole("button", { exact: true, name: "Move" }).click();
+  await expect(page.locator(".army-leaving").first()).toBeAttached();
+  await capture(page, "23a-move-destinations");
+  const railRow = page.locator(".destination-row").filter({ hasText: /By rail|Rail, then/ }).first();
+  if (await railRow.isVisible()) {
+    await railRow.scrollIntoViewIfNeeded();
+    await railRow.hover();
+    await capture(page, "23b-move-route-card");
+  }
+  await page.getByRole("button", { name: /^Cancel( move)?$/ }).filter({ visible: true }).first().click();
+  for (let step = 0; step < 2; step += 1) await page.getByRole("button", { name: "Zoom in" }).click();
+  await capture(page, "23c-rail-operational");
+});

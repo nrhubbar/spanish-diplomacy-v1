@@ -5,7 +5,7 @@ import { validateMoveOrder } from "../../engine/validation";
 import type { OrderKind, PlannedOrder } from "../session";
 import { selectedWithdrawRoutes } from "./contested";
 import { chooseReplenish, replenishWithout } from "./recruitment";
-import { type PlanningSession, availableUnitIds, feedback, selectedDestinations, selectedUnits, selecting, selectionOf, withDraft } from "./selection";
+import { type PlanningSession, availableUnitIds, feedback, selectedDestinations, selectedRoutes, selectedUnits, selecting, selectionOf, withDraft } from "./selection";
 
 /** "Give Selected Armies Order": opens the order choice, or closes it when it is open. */
 export function toggleOrderChoice(session: PlanningSession): PlanningSession {
@@ -105,10 +105,20 @@ export function chooseDestination(scenario: Scenario, session: PlanningSession, 
   if (!selectedDestinations(scenario, session).includes(territoryId)) {
     return feedback(session, withdrawing ? "Withdraw to a highlighted territory: one you hold whole, reached through your own sub-territories." : refusal(scenario, session, origin, territoryId));
   }
-  const planned: PlannedOrder[] = session.draft.selectedUnitIds.map((unitId): MoveOrder | WithdrawOrder => ({
+  // CT-6: a plain land step keeps no legs; rail, sea and marches carry theirs (M4).
+  const route = withdrawing ? undefined : selectedRoutes(scenario, session)?.get(territoryId);
+  const legs = route === undefined || route.shape === "step" ? undefined : route.legs;
+  const planned: PlannedOrder[] = session.draft.selectedUnitIds.map((unitId): MoveOrder | WithdrawOrder => (withdrawing ? {
     factionId: session.factionId,
     from: origin,
-    kind: withdrawing ? "withdraw" : "move",
+    kind: "withdraw",
+    to: territoryId,
+    unitId
+  } : {
+    factionId: session.factionId,
+    from: origin,
+    kind: "move",
+    ...(legs === undefined ? {} : { legs }),
     to: territoryId,
     unitId
   }));

@@ -1,26 +1,25 @@
 import type { RuleModule } from "../modules";
-import type { MoveLeg, UnitId } from "../types";
+import { movementHooks } from "../movement/hooks";
+import { checkArmies, type MovementScratch, moveAlongRoutes } from "../movement/transit";
+import { moveInTransit } from "../phases/03-transit";
 
 declare module "../phases/draft" {
   interface TurnScratch {
-    /** The movement area's turn-only data. TODO(m3r1-movement-rail-ports): shape it as the slice needs. */
-    readonly movement?: {
-      /** M4: each moving unit's legs, resolved at step 3. */
-      readonly legs: ReadonlyMap<UnitId, readonly MoveLeg[]>;
-    };
+    /** The movement area's turn-only data: each moving unit's route and submitted order (M1-M5). */
+    readonly movement?: MovementScratch;
   }
 }
-import { moveInTransit } from "../phases/03-transit";
 
 /** Today's single steps (M2, M11): the preset's part of step 3. */
 const singleStepSteps = { transit: moveInTransit };
 
 /**
- * The movement area's modules (M1-M6). TODO(m3r1-movement-rail-ports): give `allowance` its own
- * transit part here (rail, sea and truck legs, interception stops, frostbite) and the path use
- * of withdrawals (P6).
+ * The movement area's modules (M1-M6). `allowance` checks moves as armies at reveal (allowance,
+ * rail departures, port landings, amphibious lanes), then moves them along their routes at
+ * step 3 (transit legs, interception stops, reinforcements).
+ * TODO(m3r1-sub-territories): Withdraw legs at step 6 use `movement/withdraw.ts` once Withdraw validates.
  */
 export const movementModules: readonly RuleModule[] = [
   { area: "movement", blocks: [], id: "single-step", steps: singleStepSteps },
-  { area: "movement", blocks: ["subTerritories", "movement"], id: "allowance", steps: singleStepSteps }
+  { area: "movement", blocks: ["subTerritories", "movement"], hooks: movementHooks, id: "allowance", steps: { reveal: checkArmies, transit: moveAlongRoutes } }
 ];

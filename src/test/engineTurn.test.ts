@@ -363,8 +363,10 @@ describe("turn invariants over seeded computer games", () => {
       const moveOutcomes = result.outcomes.flatMap((outcome) => (outcome.kind !== "battle" && "order" in outcome && outcome.kind !== "invalid-order" && "unitId" in outcome.order ? [outcome.order.unitId] : []));
       expect(new Set(moveOutcomes).size).toBe(moveOutcomes.length);
       const inBattle = new Set(battlesOf(result).flatMap((battle) => [...battle.attacker.armies, ...battle.defender.armies].map((army) => army.unitId)));
+      // M1, M3, M5: an army over its allowance or a capacity is reported as held back, once per army.
+      const heldBack = new Set(result.outcomes.flatMap((outcome) => (outcome.kind === "move-held-back" ? outcome.unitIds : [])));
       for (const order of result.submittedOrders.filter(isMoveOrder).filter((candidate) => !invalid.has(candidate.unitId))) {
-        expect(moveOutcomes.includes(order.unitId) || inBattle.has(order.unitId)).toBe(true);
+        expect(moveOutcomes.includes(order.unitId) || inBattle.has(order.unitId) || heldBack.has(order.unitId)).toBe(true);
       }
     }
   });

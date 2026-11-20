@@ -34,6 +34,11 @@ export function listNames(names: readonly string[]): string {
 }
 
 export function route(scenario: Scenario, order: MoveOrder): string {
+  const legs = order.legs ?? [];
+  // M4, M5: a route of several legs, or by rail or sea, names each leg: "Madrid \u2192 Valencia (rail) \u2192 Arag\u00f3n".
+  if (legs.length > 1 || legs.some((leg) => leg.kind !== "land")) {
+    return [territoryName(scenario, order.from), ...legs.map((leg) => (leg.kind === "land" ? territoryName(scenario, leg.to) : `${territoryName(scenario, leg.to)} (${leg.kind})`))].join(` ${glyphs.arrow} `);
+  }
   return `${territoryName(scenario, order.from)} ${glyphs.arrow} ${territoryName(scenario, order.to)}`;
 }
 

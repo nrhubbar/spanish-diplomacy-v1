@@ -307,11 +307,13 @@ describe("fatigue and morale (C4-C6, M22, M23)", () => {
 });
 
 describe("the computer player on the d20 (C15, H5)", () => {
+  // These boards count on one-step reach; under `allowance` rail would bring other units in (M3, M4).
+  const singleStep = (document: Json): void => { (document["rules"] as Json)["movement"] = "single-step"; };
   const plan = (scenario: Scenario, state: GameState) =>
     generateComputerSubmission(scenario, state, faction("red"), seededRandom(5)).orders.filter(isMoveOrder).map((order) => [order.unitId, order.to]);
 
   it("attacks a weak defender with fresh units, but rests a unit one attack away from exhaustion", () => {
-    const { scenario, state } = field(d20Scenario(), [
+    const { scenario, state } = field(d20Scenario(undefined, singleStep), [
       { faction: "red", id: "r1", territory: "highlands" },
       { faction: "red", id: "r2", territory: "westfold" },
       { faction: "blue", fullStrength: 100, id: "b1", strength: 30, territory: "lowlands" },
@@ -323,7 +325,7 @@ describe("the computer player on the d20 (C15, H5)", () => {
   });
 
   it("never sends artillery to attack alone (D5)", () => {
-    const { scenario, state } = field(d20Scenario(), [
+    const { scenario, state } = field(d20Scenario(undefined, singleStep), [
       { faction: "red", id: "g1", territory: "highlands", type: "cannon" },
       { faction: "red", id: "r2", territory: "westfold" },
       { faction: "blue", fullStrength: 100, id: "b1", strength: 20, territory: "harbor" }

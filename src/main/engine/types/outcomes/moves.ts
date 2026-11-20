@@ -1,5 +1,5 @@
 import type { FactionId, TerritoryId, UnitId } from "../../ids";
-import type { MoveOrder, Order } from "../orders";
+import type { MoveLeg, MoveOrder, Order } from "../orders";
 
 /** Move outcomes (M1-M11, M19-M21) and order outcomes, owned by the movement and reveal phases. */
 
@@ -62,3 +62,44 @@ export interface ReinforcementArrivedOutcome {
   readonly kind: "reinforcement-arrived";
   readonly order: MoveOrder;
 }
+
+/** M1, M3, M5: why an army's move could not go this turn. */
+export type HeldBackReason = "allowance" | "rail-departures" | "port-landings" | "amphibious-lane";
+
+/**
+ * M1, M3, M5: an army's move did not go. Its route was longer than its allowance, or the
+ * boarding capital, the landing port or the sea lane had no room left this turn. The army
+ * stays where it is and takes its standing order; nothing is disbanded.
+ */
+export interface MoveHeldBackOutcome {
+  readonly factionId: FactionId;
+  readonly from: TerritoryId;
+  readonly kind: "move-held-back";
+  readonly reason: HeldBackReason;
+  readonly to: TerritoryId;
+  readonly unitIds: readonly UnitId[];
+}
+
+/** M2 (Q-UX-I3): an enemy army entered a territory the army was passing through; it stopped there and defends it. */
+export interface MoveInterceptedOutcome {
+  readonly byFactionIds: readonly FactionId[];
+  readonly factionId: FactionId;
+  readonly from: TerritoryId;
+  readonly kind: "move-intercepted";
+  readonly stoppedAt: TerritoryId;
+  readonly to: TerritoryId;
+  readonly unitIds: readonly UnitId[];
+}
+
+/** M3-M5: an army travelled by rail, by sea or on a march; `legs` is the whole route it was given. */
+export interface MoveTransitOutcome {
+  readonly factionId: FactionId;
+  readonly from: TerritoryId;
+  readonly kind: "move-transit";
+  readonly legs: readonly MoveLeg[];
+  readonly to: TerritoryId;
+  readonly unitIds: readonly UnitId[];
+}
+
+/** Every Milestone 3 outcome of the movement area. Adding a kind here is all the union needs. */
+export type MovementTurnOutcome = MoveHeldBackOutcome | MoveInterceptedOutcome | MoveTransitOutcome;

@@ -37,7 +37,9 @@ export const planGeneralMoves: OrderPlanner<MoveOrder> = ({ factionId, planned, 
     if (attack !== undefined && attack[1].length >= staying.length) to = attack[0];
     else if (here.length === 0) to = stepToward(general.territoryId, ground.map((unit) => unit.territoryId));
     if (to === undefined) continue;
-    const order: MoveOrder = { factionId, from: general.territoryId, kind: "move", to, unitId: general.id };
+    // M4: he takes his army's route (rail, sea, march), so he joins that army and its boarding place.
+    const legs = leaving.find((candidate) => candidate.to === to)?.legs;
+    const order: MoveOrder = { factionId, from: general.territoryId, kind: "move", ...(legs === undefined ? {} : { legs }), to, unitId: general.id };
     if (validateMoveOrder(scenario, state, order).ok) orders.push(order);
   }
   return orders;

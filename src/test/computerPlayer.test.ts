@@ -182,7 +182,8 @@ describe("computer player: defence and morale (C18, M23)", () => {
       ["south-regulares", "south", "andalucia"]
     ];
     const threatened = board(scenario, "republic", ["andalucia"], placement);
-    const reinforcements = ordersOf(scenario, threatened, "republic").filter((order) => order.to === "castilla-la-mancha");
+    // Under `allowance` the Valencia armies may also ride through Castilla-La Mancha into the attack (M4).
+    const reinforcements = ordersOf(scenario, threatened, "republic").filter((order) => order.to === "castilla-la-mancha" || order.legs?.some((leg) => leg.to === "castilla-la-mancha") === true);
     expect(reinforcements.length).toBeGreaterThan(0);
     expect(reinforcements.every((order) => order.from === "valencia")).toBe(true);
     // Demoralized, the same armies cannot attack (M23): one regiment holds Castilla-La Mancha.

@@ -15,10 +15,10 @@ const agreedIds = [
 describe("the Spanish Civil War package (spec v2, m3-modular)", () => {
   const scenario = spain();
 
-  it("selects the m3-modular modules, keeping the d6 table and single steps until their slices land (CT-2)", () => {
+  it("selects the m3-modular modules, keeping the d6 table until its slice lands (CT-2)", () => {
     expect(scenario.ruleset).toBe("m3-modular");
     expect(scenario.rules).toEqual({
-      air: "missions", dice: "d6-table", economy: "development", movement: "single-step", partition: "provinces", recruitment: "buildings", weather: "seasonal-zones"
+      air: "missions", dice: "d6-table", economy: "development", movement: "allowance", partition: "provinces", recruitment: "buildings", weather: "seasonal-zones"
     });
   });
 

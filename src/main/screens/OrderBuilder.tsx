@@ -10,6 +10,8 @@ import { isAircraft, orderCounts, type PlanningSession } from "../state/planning
 import { ArmyLine } from "./ArmyLine";
 import { ArmyPicker } from "./ArmyPicker";
 import { DestinationChoices } from "./DestinationChoices";
+import { ArmyLeaving } from "./movement/ArmyLeaving";
+import { destinationRoutes } from "./movement/destinationRoutes";
 import { armies } from "./OrderCommand";
 import { AircraftHere, AirPane } from "./pane/AirPane";
 import { SubTerritoryFocus } from "./pane/SubTerritoryFocus";
@@ -50,7 +52,8 @@ export function OrderBuilder({ estimates, scenario, session }: BuilderProps & { 
             <button className="text-button" onClick={() => dispatch(cancelOrderStage())} ref={focusWhenShown} type="button">{draft.stage.orderKind === "withdraw" ? "Cancel withdrawal" : "Cancel move"}</button>
           </div>
         ) : null}
-        {choosingDestination && estimates.size > 0 ? <DestinationChoices estimates={estimates} scenario={scenario} /> : null}
+        {choosingDestination && territoryId !== undefined && draft.stage.orderKind !== "withdraw" ? <ArmyLeaving scenario={scenario} session={session} territoryId={territoryId} /> : null}
+        {choosingDestination && estimates.size > 0 ? <DestinationChoices estimates={estimates} moves={draft.stage.orderKind === "withdraw" ? undefined : destinationRoutes(scenario, session)} scenario={scenario} /> : null}
         {draft.selectedAircraftId !== undefined ? (
           <AirPane key={draft.selectedAircraftId} scenario={scenario} session={session} unitId={draft.selectedAircraftId} />
         ) : territoryId === undefined ? (
