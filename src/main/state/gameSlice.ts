@@ -20,6 +20,7 @@ import {
   unfocus
 } from "./planning";
 import { type Assignments, emptyDraft, type OrderKind, type Session } from "./session";
+import { submitOnTimeout, timeRanOut } from "./timeout";
 
 export interface GameState {
   readonly session: Session;
@@ -145,6 +146,8 @@ export function createGameReducer(dependencies: GameReducerDependencies) {
           lockSubmission(scenario, planning.game, { factionId: planning.factionId, orders: draftOrders(planning.draft) }),
           planning.factionId
         ))))
+      .addCase(timeRanOut, (state) =>
+        set(inPlanning(state.session, (scenario, planning) => submitOnTimeout(scenario, planning))))
       .addCase(startNextTurn, (state) => {
         const session = state.session;
         return session.phase === "resolution"

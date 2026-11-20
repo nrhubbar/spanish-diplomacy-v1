@@ -178,6 +178,20 @@ Every roll kind draws from its own seeded streams, `deriveSeed(game seed, tag, t
 - **RR7. Recruited units (R6).** A recruited unit's id is `r_<faction>_<type>_<serial>`, the serial counting that faction's units of that type raised or in training. Its definition (`GameState.raised`) is derived from the id: the type's name with "No. <serial>", and the type's establishment as full strength. Recruited units follow every scenario unit in scenario-order tie-breaks. Destroyed and surrendered units never return.
 - **RR8. Replenish (R5).** A unit whose type allows `replenish` may replenish in uncontested territory its faction controls, when it is below full strength or demoralized. It restores at most `replenishShare` of its full strength a turn, plus the `rateShare` and `capShare` of the `replenishBonus` hook (Hospital, Depot). Its price is `replenishCostShare` of the type's Recruit cost times the share of full strength restored, rounded up per resource. It is paid at step 1. At step 9, after the dice module's morale part, the men arrive and demoralization clears; if the unit fought any battle this turn (meeting, territory or standing), fell back, or was lost, the order is cancelled and refunded.
 
+### Calendar, weather and the turn timer (`seasonal-zones`, T1-T6)
+
+- **Date (T1).** Turn 1 is `calendar.start`. Each later turn is the next half-month, 24 a year. The date derives from the turn number and is never stored; it reads "Turn 7 · Late October 1936" wherever the turn is shown.
+- **Roll (T2).** Before anyone plans a turn (step 0), the coordinator sets `GameState.weather`: one d20 from the weather stream, `deriveSeed(seed, weather, turn, 0)`, read against every zone's table for the season holding the turn's month. Each table runs best to worst, so one roll moves the whole map the same way. The roll is a pure function of the seed and turn, so replays match. Inside `resolveTurn`, step 0 only reports `weather-rolled` from the start state.
+- **Forecast (T3).** Next turn's chances in a zone come from next turn's season table. They are never taken from the seeded roll.
+- **Effects (T4).** These use the start-of-turn weather of a territory's zone, through the hooks:
+  - `combatModifiers`: the battle territory's `attackRoll`, under `d20-graded`. Under `d6-table` it is a third of that, truncated (Q-WX-6). A zero adds nothing.
+  - `canDigIn`: false with `blocks-digging-in`.
+  - `allowanceDelta`: minus `movement-penalty.amount` at the origin. The movement module keeps the allowance at 1 or more.
+  - `grounded`: true with `grounds-aircraft`, unless the aircraft's faction holds a sub-territory of that territory with an `all-weather-airbase` building.
+- **Sea closure.** A sea connection is closed when a coastal zone at either end has an outcome whose `closes-sea` lists the turn's month (`isSeaConnectionClosed` in `engine/weather.ts`).
+- **Frostbite.** At step 9, a unit with a valid move whose origin or destination has `frostbite` loses that share of its men, rounded to the nearest man. This produces a `frostbite` outcome.
+- **Turn timer (T5, T6).** This rule applies to every ruleset. A submission may carry `timedOut: true`, set when the player's planning clock ran out. The engine then reports `time-ran-out` at step 0, with the faction's units that had no unit order (`heldUnitCount`). The clock itself lives only in the UI; the engine never reads time.
+
 ## The `m2-strength` ruleset
 
 Each turn every faction submits orders in secret; all orders resolve together against the start-of-turn state. Armies have men (`strength`), morale, and values; territories can be dug in. Rule ids M1-M10 keep their Revision 5 meaning where they survive. Revision 5's movement-only rules M3, M4, M5, and M8 are retired: the battle rules M11 and M17-M21 replace them, and their ids are not reused.

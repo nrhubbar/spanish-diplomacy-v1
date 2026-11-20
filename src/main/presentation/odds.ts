@@ -1,6 +1,7 @@
 import { type AttackEstimate, estimateAttack } from "../engine/combat";
 import type { CombatModifier, FactionId, GameState, MoveOrder, Scenario, TerritoryId, UnitId } from "../engine/types";
 import { glyphs } from "./glyphs";
+import { weatherModifierName } from "./weatherName";
 
 /**
  * C15: what a planned move would meet, for the destination highlights and the Orders pane.
@@ -128,7 +129,7 @@ export function modifierName(modifier: CombatModifier, scenario?: Scenario): str
       return `Odds below 1:1 (${String(modifier.halvings)} ${modifier.halvings === 1 ? "halving" : "halvings"})`;
     // Placeholder names for the d20 modifiers; each owner replaces its own case:
     // TODO(m3r1-air-generals): general,
-    // trait, air-support. TODO(m3r1-weather-timer): weather. TODO(m3r1-movement-rail-ports):
+    // trait, air-support. TODO(m3r1-movement-rail-ports):
     // amphibious. TODO(m3r1-economy-builds): building.
     case "general":
       return "General";
@@ -141,7 +142,7 @@ export function modifierName(modifier: CombatModifier, scenario?: Scenario): str
     case "fatigue":
       return modifier.role === "attack" ? "Fatigued" : "Defenders fatigued";
     case "weather":
-      return "Weather";
+      return weatherModifierName(modifier.weatherId);
     case "amphibious":
       return "Amphibious assault";
     case "air-support":
@@ -151,9 +152,9 @@ export function modifierName(modifier: CombatModifier, scenario?: Scenario): str
   }
 }
 
-/** A modifier as one phrase: defender bonuses by name, odds steps with their roll change. */
+/** A modifier as one phrase: defender bonuses by name, odds steps and the weather (D7) with their roll change. */
 export function modifierPhrase(modifier: CombatModifier): string {
-  return modifier.kind === "odds-overflow" || modifier.kind === "odds-halving"
+  return modifier.kind === "odds-overflow" || modifier.kind === "odds-halving" || modifier.kind === "weather"
     ? `${modifierName(modifier)} ${signed(modifier.roll)}`
     : modifierName(modifier);
 }

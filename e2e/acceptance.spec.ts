@@ -63,7 +63,7 @@ test("plays a mixed local and computer turn straight through to the results", as
   await expectAccessible(page);
   await page.getByRole("button", { name: "Start Campaign" }).click();
   await mapReady(page);
-  await expect(page.getByText(/Turn 1 . 31 July 1936/)).toBeVisible();
+  await expect(page.getByText(/Turn 1 . Late July 1936/)).toBeVisible();
   await expectAccessible(page);
   await selectTerritory(page, "madrid");
   const orders = await pane(page, "Orders");
