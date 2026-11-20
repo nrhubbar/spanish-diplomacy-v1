@@ -7,6 +7,7 @@ export * from "./planning/air";
 export * from "./planning/contested";
 export * from "./planning/builds";
 export * from "./planning/focus";
+export * from "./planning/mapView";
 export * from "./planning/orders";
 export * from "./planning/recruitment";
 export * from "./planning/selection";

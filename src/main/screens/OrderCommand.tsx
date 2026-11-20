@@ -1,5 +1,6 @@
 import { type JSX, useId } from "react";
 import { useAppDispatch } from "../hooks";
+import { armies } from "../presentation/text";
 import { chooseOrderKind, toggleOrderMenu } from "../state/gameSlice";
 import type { BlockedOrder } from "../state/planning";
 import type { OrderKind } from "../state/session";
@@ -14,10 +15,6 @@ const orderLabels: Readonly<Record<OrderKind, { readonly description: string; re
   replenish: { description: "Restore men and morale. Cancelled and refunded if the unit fights.", label: "Replenish" },
   withdraw: { description: "Leave for a neighbouring territory you hold, through your own sub-territories.", label: "Withdraw" }
 };
-
-export function armies(count: number): string {
-  return `${String(count)} ${count === 1 ? "unit" : "units"}`;
-}
 
 /** Brings the order choice into view as it opens, for the short mobile sheet. */
 function revealWhenShown(element: HTMLElement | null): void {
