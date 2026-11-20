@@ -290,3 +290,19 @@ Tiny-front, which has chance 0, is unchanged.
 - replace the placeholder topology with map-provinces' generated file;
 - regenerate `map.schema.json` after both merges;
 - review the one changed visual baseline.
+
+### Hand-off follow-up (commit `216d526`)
+
+- **Read first: CT-50 is only partly done.** Item 7 asked for the registry, loader and Zod to load only when the setup screen needs them.
+  - Done: they, and the scenario packages, are out of the initial chunk (102.99 kB, under 155).
+  - Not done: `main.tsx` still awaits them before the first render, so first paint waits for the same bytes, now with an extra round trip (index, then `lazySources`, then the package chunks).
+  - Finishing it means the store, the `gameSlice` reducers and `RegistryContext` must start without a registry and receive it later, or the setup route loads it, which is about a day's change to the app shell. The integrator decides.
+- CT-52. Readiness is public: the visible session keeps every faction's locked submission and empties the orders of every faction but the viewer's, so hot-seat readiness chips are unchanged.
+- CT-53. `ordersFor` filters `result.submittedOrders` with the same rule as `outcomesFor`. Moves and visible actions stay (withdraw, sack, raid, intercept and support missions). Other factions' Recruit, Build, Replenish and recon orders are hidden unless the viewer's recon reveals that territory.
+- CT-54. The territory tabs render all three panels and hide the inactive two, so every `aria-controls` points at an element in the DOM.
+- Checks after the follow-up:
+  - lint and typecheck passed;
+  - test:unit passed (596 tests);
+  - e2e on chromium and mobile-chromium: 50 passed, 5 skipped, and the one allowed visual diff (the Spain pane tabs);
+  - `e2e:capture`: 11 passed.
+- Screenshots (under `build/e2e/screenshots/`): `chromium-08b-pane-open.png`, `mobile-chromium-08b-pane-open.png`, `chromium-04b-order-menu.png`, `chromium-12-fixture-planning.png` (tiny-front, no tabs), plus the diff `build/e2e/test-results/visual-planning-at-every-zoom-level-chromium/planning-destinations-diff.png`.
