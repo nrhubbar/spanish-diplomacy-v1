@@ -134,13 +134,13 @@ A variant is a JSON file. It is either an object, or a bare patch array, which t
 
 ## Blunders (H6)
 
-The computer player's blunder chance is a scenario value, expected at `/ai/blunderChance` and owned by `m3r1-contract`. The harness's seam is `blunderChancePointer` in `src/sim/engine.ts`, which the integrator sets when the value lands. Until then:
+The computer player's blunder chance is a scenario value at `/ai/blunderChance`, owned by `m3r1-contract`. The harness's seam is `blunderChancePointer` in `src/sim/engine.ts`, and it is set: `blunderControl` is `scenario`.
 
-- `blunderControl` is `pending`;
-- with and without blunders play alike, so `--blunders` defaults to `without` and a run is not doubled;
-- the console says so.
+- A cell without blunders sets the chance to 0 with a JSON Patch `add` after the variant's own patch. `add` works whether or not the scenario states the chance; it needs `/ai` to exist. The loader requires the chance, so a variant that removes it plays only without blunders.
+- `--blunders` defaults to `both`, so every report carries both settings.
+- The smoke run plays `without` only, to stay at 10 games.
 
-When the pointer is set, `blunderControl` becomes `scenario`. A cell without blunders then sets the chance to 0 with a JSON Patch `add` after the variant's own patch. `add` works whether or not the scenario states the chance; it needs `/ai` to exist. and `--blunders` defaults to `both`, so every report carries both settings.
+The seam is passed explicitly (`blunderControl(pointer)`, `blunderPatch(blunders, pointer)`), so the `pending` case stays tested: with no pointer, `blunderControl` is `pending`, no patch is added, `--blunders` would default to `without`, and the console says that both settings play alike.
 
 ## Re-check at the contract merge
 

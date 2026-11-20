@@ -142,11 +142,12 @@ describe("sim command line", () => {
     expect(posted[1]?.kind).toBe("result");
   });
 
-  it("defaults to the only shipped scenario, and plays without blunders while they are pending", () => {
+  it("defaults to the only shipped scenario, and plays both blunder settings now that the scenario sets the chance", () => {
     const shipped = scenarioSources();
     const plan = planOf(parseArgs([]), [], shipped);
     expect(plan.scenarioId).toBe(defaultScenarioId(shipped));
-    expect(plan.blunders).toBe("without");
+    expect(plan.blunders).toBe("both");
+    expect(planOf(parseArgs(["--blunders", "without"]), [], shipped).blunders).toBe("without");
     expect(() => defaultScenarioId([])).toThrow(/playable ones are: none/);
     expect(planOf(parseArgs(["--scenario", "x", "--blunders", "with"]), [], []).scenarioId).toBe("x");
   });
@@ -166,9 +167,13 @@ describe("sim command line", () => {
     expect(text).toContain("baseline/without-blunders: 2 games");
     expect(/^[\x20-\x7e\n]*$/.test(text)).toBe(true);
     const summary = JSON.parse(readFileSync(join(out, "r", "summary.json"), "utf8")) as Summary;
-    expect(text).toContain("this run plays without them");
-    expect(formatSummary({ ...summary, blunders: "both" }, "x")).toContain("with and without play alike");
-    expect(formatSummary({ ...summary, blunderControl: "scenario" }, "x")).not.toContain("blunder chance");
+    // The blunder chance is in scenario data, so the console carries no pending note.
+    expect(summary.blunderControl).toBe("scenario");
+    expect(text).not.toContain("blunder chance");
+    // While pending, the note says what the run does.
+    const pending = { ...summary, blunderControl: "pending" as const };
+    expect(formatSummary(pending, "x")).toContain("this run plays without them");
+    expect(formatSummary({ ...pending, blunders: "both" }, "x")).toContain("with and without play alike");
     expect(text).toContain("stalled: 5 or more quiet turns");
     expect(runStamp(new Date("2026-01-02T03:04:05.678Z"))).toBe("20260102-030405");
   });

@@ -41,7 +41,11 @@ export interface GameTask {
 /** H6: "scenario" once the blunder chance is in scenario data, "pending" until then. */
 export type BlunderControl = "pending" | "scenario";
 
-export function blunderControl(pointer: string | undefined = blunderChancePointer): BlunderControl {
+/**
+ * Whether a blunder-chance pointer reaches the game. The seam is passed explicitly (callers
+ * pass `blunderChancePointer`), so the "pending" case stays reachable with `undefined`.
+ */
+export function blunderControl(pointer: string | undefined): BlunderControl {
   return pointer === undefined ? "pending" : "scenario";
 }
 
@@ -49,7 +53,7 @@ export function blunderControl(pointer: string | undefined = blunderChancePointe
  * The default blunder setting. While blunders are pending, both settings would play alike,
  * so the harness plays only "without"; once they reach the game, every report carries both.
  */
-export function defaultBlunderMode(control: BlunderControl = blunderControl()): BlunderMode {
+export function defaultBlunderMode(control: BlunderControl = blunderControl(blunderChancePointer)): BlunderMode {
   return control === "pending" ? "without" : "both";
 }
 
@@ -57,7 +61,7 @@ export function defaultBlunderMode(control: BlunderControl = blunderControl()): 
  * The patch that turns blunders off: the scenario's blunder chance set to 0. JSON Patch `add`
  * sets the member whether or not the scenario states it. Empty with blunders on or while pending.
  */
-export function blunderPatch(blunders: boolean, pointer: string | undefined = blunderChancePointer): readonly PatchOperation[] {
+export function blunderPatch(blunders: boolean, pointer: string | undefined): readonly PatchOperation[] {
   return blunders || pointer === undefined ? [] : [{ op: "add", path: pointer, value: 0 }];
 }
 
@@ -82,7 +86,7 @@ export function tasksOf(plan: RunPlan): readonly GameTask[] {
 
 /** Builds a cell's scenario: the variant's patch, then the blunder setting's (H6). */
 export function cellScenario(sources: readonly PackageSources[], plan: RunPlan, cell: Cell): Scenario {
-  const patch = [...cell.variant.patch, ...blunderPatch(cell.blunders)];
+  const patch = [...cell.variant.patch, ...blunderPatch(cell.blunders, blunderChancePointer)];
   return loadScenario(sources, plan.scenarioId, patch.length === 0 ? undefined : (document) => applyPatch(document, patch));
 }
 
@@ -162,7 +166,7 @@ export function buildSummary(plan: RunPlan, factionIds: readonly string[], lines
     if (cell.blunders && without !== undefined) comparisons.push(compare(cell.id, linesOf(cell), without.id, linesOf(without), factionIds));
   }
   return {
-    blunderControl: blunderControl(),
+    blunderControl: blunderControl(blunderChancePointer),
     blunders: plan.blunders,
     cells: cells.map((cell) => ({
       blunders: cell.blunders,

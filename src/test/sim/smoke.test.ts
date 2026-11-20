@@ -1,16 +1,20 @@
 import { describe, expect, it } from "vitest";
 import { defaultScenarioId, scenarioSources } from "../../sim/engine";
 import { earlyWinTurn } from "../../sim/game";
-import { defaultBlunderMode, defaultTurnLimit, type RunPlan, runInProcess } from "../../sim/run";
+import { defaultTurnLimit, type RunPlan, runInProcess } from "../../sim/run";
 
 // H2: the 10-game smoke run that replaced the 200-game soak in npm test. It plays the shipped
 // scenario through the same harness core as `npm run sim`, and checks structure, determinism,
 // S1 and S3 only. Balance (win shares, freeze and stall rates) is measured by `npm run sim`
 // and reported, never asserted here.
+//
+// The smoke run plays one cell, without blunders, to stay a 10-game run: the default (both
+// settings, H6) would double it. Blunders reach the game through scenario data, which the
+// tiny-front harness tests and the determinism check below cover.
 describe("harness smoke run on the shipped scenario", () => {
   const sources = scenarioSources();
   const plan: RunPlan = {
-    blunders: defaultBlunderMode(),
+    blunders: "without",
     scenarioId: defaultScenarioId(sources),
     seeds: Array.from({ length: 10 }, (_, index) => index + 1),
     turnLimit: defaultTurnLimit,
@@ -38,8 +42,14 @@ describe("harness smoke run on the shipped scenario", () => {
     }
   });
 
-  it("gives the same summary for the same seeds", () => {
-    expect(runInProcess(sources, plan).summary).toEqual(run.summary);
+  it("gives the same lines and summary for the same seeds", () => {
+    // Determinism, on a short plan so it does not replay the whole smoke run: a few seeds over
+    // the first turns, with blunders on so their seeded stream is replayed too. Per-turn cost
+    // grows with the turn number, so the cut is in turns.
+    const short: RunPlan = { ...plan, blunders: "with", seeds: [1, 2, 3], turnLimit: 8 };
+    const first = runInProcess(sources, short);
+    expect(first.lines).toHaveLength(3);
+    expect(runInProcess(sources, short)).toEqual(first);
   });
 
   it("never abandons every objective without losing a unit or being driven out (S3)", () => {
