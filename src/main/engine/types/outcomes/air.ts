@@ -36,6 +36,12 @@ export interface InterceptionOutcome {
   readonly lostUnitIds: readonly UnitId[];
   /** The enemy aircraft intercepted, whatever their mission. */
   readonly raiderIds: readonly UnitId[];
+  /**
+   * CT-46: set when the intercepted flights were recon, to the fliers' factions. Recon
+   * interceptions are kept apart from raids and support, and only the fighters' faction and the
+   * fliers see them, since they name the territory a recon flew over.
+   */
+  readonly reconFactionIds?: readonly FactionId[];
   readonly territoryId: TerritoryId;
 }
 

@@ -25,8 +25,13 @@ export function useRegistry(): ScenarioRegistry {
  */
 export function useSession(): Session {
   const session = useAppSelector((state) => state.game.session);
-  const registry = useRegistry();
-  return useMemo(() => (isInGame(session) ? visibleSession(registry.require(session.game.scenarioId).scenario, session) : session), [registry, session]);
+  // Outside a game there is nothing to filter, so no registry is needed (a header on its own).
+  const registry = useContext(RegistryContext);
+  return useMemo(() => {
+    if (!isInGame(session)) return session;
+    if (registry === undefined) throw new Error("RegistryContext is missing.");
+    return visibleSession(registry.require(session.game.scenarioId).scenario, session);
+  }, [registry, session]);
 }
 
 function inPhase<P extends Phase>(session: Session, phases: readonly P[]): session is Extract<Session, { readonly phase: P }> {

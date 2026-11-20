@@ -1,4 +1,5 @@
 import { type JSX, useEffect, useRef } from "react";
+import { unitKindIn } from "../engine/air/pieces";
 import { requireFaction } from "../engine/lookup";
 import type { FactionId, Scenario, TerritoryId, TurnOutcome, TurnResolutionResult } from "../engine/types";
 import { glyphs } from "../presentation/glyphs";
@@ -39,6 +40,8 @@ interface FocusNoteProps {
   readonly focusedTerritoryId: TerritoryId | undefined;
   readonly result: TurnResolutionResult;
   readonly scenario: Scenario;
+  /** The report's viewer, so a line never names another faction's numbers (`ReportView`). */
+  readonly viewer?: FactionId | undefined;
 }
 
 /**
@@ -46,14 +49,14 @@ interface FocusNoteProps {
  * gets a short note of what happened there. The region is always present and polite, so a
  * keyboard player on the map hears the answer without leaving it.
  */
-export function FocusNote({ battle, focusedTerritoryId, result, scenario }: FocusNoteProps): JSX.Element {
+export function FocusNote({ battle, focusedTerritoryId, result, scenario, viewer }: FocusNoteProps): JSX.Element {
   const note = useRef<HTMLElement>(null);
   const shown = focusedTerritoryId !== undefined && !battle;
   useEffect(() => {
     if (shown && note.current !== null) revealInPane(note.current);
   }, [focusedTerritoryId, shown]);
   const name = focusedTerritoryId === undefined ? "" : territoryName(scenario, focusedTerritoryId);
-  const events = focusedTerritoryId === undefined || battle ? [] : eventsAt(scenario, result, focusedTerritoryId);
+  const events = focusedTerritoryId === undefined || battle ? [] : eventsAt(scenario, result, focusedTerritoryId, { state: result.finalState, ...(viewer === undefined ? {} : { viewer }) });
   return (
     <div className="focus-status" role="status">
       {focusedTerritoryId === undefined ? null : battle ? (
@@ -103,7 +106,9 @@ const reportRing = "#5b4d40";
 export function OutcomeSummary({ result, scenario, viewer }: { readonly result: TurnResolutionResult; readonly scenario: Scenario; readonly viewer?: FactionId | undefined }): JSX.Element {
   // The Milestone 3 lines read the viewer's board (development) and keep other factions' numbers private.
   const view = { state: result.finalState, ...(viewer === undefined ? {} : { viewer }) };
-  const holds = result.outcomes.filter((outcome) => outcome.kind === "no-move").length;
+  // Armies only: aircraft and generals have no order to hold on ($6: holds come from public orders, T6).
+  const holds = result.outcomes.filter((outcome) => outcome.kind === "no-move" && outcome.unitId !== undefined
+    && unitKindIn(scenario, result.finalState.raised, outcome.unitId) === "ground").length;
   const bounced = result.outcomes.some((outcome) => outcome.kind === "bounced-move" || outcome.kind === "disbanded-move");
   return (
     <section aria-labelledby="outcomes-title" className="pane-section">

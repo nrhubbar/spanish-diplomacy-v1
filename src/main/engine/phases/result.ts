@@ -12,6 +12,7 @@ import type {
   TurnResolutionResult,
   UnitId
 } from "../types";
+import { isPublicOrder } from "../visibility";
 import { draftState, type TurnDraft } from "./draft";
 
 /**
@@ -96,7 +97,8 @@ function holdOutcomes(draft: TurnDraft): readonly NoMoveOutcome[] {
   const { scenario, start, submissions } = draft.input;
   return scenario.factions.flatMap((faction): NoMoveOutcome[] => {
     const submission = submissions.find((candidate) => candidate.factionId === faction.id);
-    if (submission !== undefined && submission.orders.length > 0) {
+    // $6: only public orders count, so a turn of hidden orders alone reads as one without orders.
+    if (submission !== undefined && submission.orders.some(isPublicOrder)) {
       return [];
     }
     const units = Object.values(start.units).filter((unit) => unit.factionId === faction.id);

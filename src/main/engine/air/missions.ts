@@ -146,7 +146,7 @@ export const flyAirMissions: Phase = (draft) => {
   const raidCuts: RaidCut[] = [];
   let subTerritories = draft.systems.subTerritories;
   let raidIndex = 0;
-  const interceptions = new Map<string, { factionId: FactionId; interceptorIds: UnitId[]; lostUnitIds: UnitId[]; raiderIds: UnitId[]; territoryId: TerritoryId }>();
+  const interceptions = new Map<string, { factionId: FactionId; interceptorIds: UnitId[]; lostUnitIds: UnitId[]; raiderIds: UnitId[]; reconFactionIds?: FactionId[]; territoryId: TerritoryId }>();
   for (const order of flying) {
     if (order.mission.kind !== "raid") continue;
     const subTerritoryId: SubTerritoryId = order.mission.subTerritoryId;
@@ -191,11 +191,14 @@ export const flyAirMissions: Phase = (draft) => {
     raidIndex += 1;
     const shotDown = raidResult(scenario, roll) === "air-eliminated";
     if (shotDown) lost.add(order.unitId);
-    // CT-46: a recon flight stays its flier's own unless it is shot down, which every faction sees.
-    if (order.mission.kind === "recon" && !shotDown) continue;
+    // CT-46: a recon flight is reported only when shot down, in an interception of its own that
+    // only the fighters' faction and the flier see (`visibility.ts`): it names the recon's target.
+    const recon = order.mission.kind === "recon";
+    if (recon && !shotDown) continue;
     for (const fighter of against) {
-      const key = `${territoryId}|${fighter.factionId}`;
-      const entry = interceptions.get(key) ?? { factionId: fighter.factionId, interceptorIds: [], lostUnitIds: [], raiderIds: [], territoryId };
+      const key = `${territoryId}|${fighter.factionId}${recon ? "|recon" : ""}`;
+      const entry = interceptions.get(key) ?? { factionId: fighter.factionId, interceptorIds: [], lostUnitIds: [], raiderIds: [], ...(recon ? { reconFactionIds: [] } : {}), territoryId };
+      if (entry.reconFactionIds !== undefined && !entry.reconFactionIds.includes(order.factionId)) entry.reconFactionIds.push(order.factionId);
       if (!entry.interceptorIds.includes(fighter.unitId)) entry.interceptorIds.push(fighter.unitId);
       if (!entry.raiderIds.includes(order.unitId)) entry.raiderIds.push(order.unitId);
       if (shotDown && !entry.lostUnitIds.includes(order.unitId)) entry.lostUnitIds.push(order.unitId);
