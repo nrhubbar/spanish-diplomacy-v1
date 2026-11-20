@@ -5,7 +5,7 @@ Mode: make it work (declog D13). Branch `m3r1-air-generals`. It has merged `mile
 ## What works
 
 - **Engine (`air: missions`).**
-  - Step 1: sackings; aircraft and generals set aside from the ground steps.
+  - Step 1: sackings; aircraft set aside from the ground steps, and generals too under the d6 table only (AG-17).
   - Step 2: grounding through the `grounded` hook, recon reveals, interception, raids rolled on the `raid` stream (anti-air, fighters, the four outcomes), and support recorded in the scratch.
   - Step 5: bomber support and generals reach every battle through `combatModifiers`.
   - Step 9: aircraft back at base, or rebased or lost; generals arrive with their army; death rolls on the `general-death` stream; rallies; replacements in the seat.
@@ -33,12 +33,12 @@ Mode: make it work (declog D13). Branch `m3r1-air-generals`. It has merged `mile
 ## Decisions
 
 - **AG-1. Generals ride on the air module.** Generals have no area (CT-4), so the general rules live in `air: missions` (`engine/generals/`), with their numbers in the `air` block (`generalDeathRoll`). A scenario with generals but `air: none` gets no generals' rules.
-- **AG-2. CT-21: generals stay out of the d6 army counts.** Generals and aircraft never enter a ground battle (AG-3), so they add no point to any side, under d6 and d20 alike. The `m2-strength` preset (tiny-front) has neither, so it is unchanged. Spain places its starting generals whatever the dice module.
-- **AG-3. Aircraft and generals are set aside during the ground steps.**
+- **AG-2. CT-21: generals stay out of the d6 army counts.** *(Refined by AG-17: under the d20, generals fight at value 0.)* Generals and aircraft never enter a ground battle (AG-3), so they add no point to any side, under d6 and d20 alike. The `m2-strength` preset (tiny-front) has neither, so it is unchanged. Spain places its starting generals whatever the dice module.
+- **AG-3. Aircraft and generals are set aside during the ground steps.** *(Superseded by AG-17 and AG-18: aircraft always, generals only under the d6 table.)*
   - The air module's step-1 part takes every non-ground unit out of `draft.armies`, along with its move orders, into `scratch.air.aside`. Its step-9 part puts them back.
   - So no ground rule (battles, retreats, control, works, sweeps) ever counts them, and no shared ground file needed a kind check.
   - Planning estimates (`estimateAttack`) and the move planner see only ground units, which makes them consistent with resolution.
-- **AG-4. A general's move follows his army.** He arrives where his faction has ground units at his destination after the battles; otherwise he stays where he was. A `general-moved` outcome reports which.
+- **AG-4. A general's move follows his army.** *(d6 table only, AG-17. Under the d20, a general's move is an ordinary move.)* He arrives where his faction has ground units at his destination after the battles; otherwise he stays where he was. A `general-moved` outcome reports which.
   - His army is the ground units of his faction with the same origin and destination, or holding with him when he does not move.
   - The +1 applies to the side whose faction he belongs to, in the territory he is going to or holding.
 - **AG-5. The raid cut names the turn whose income it removes, the turn after the raid.** The hook reads `state.raidCuts` where `cut.turnNumber === state.turnNumber`, so it works whether economy passes the start or the current state. It removes the sub-territory's development yield (level × `yieldPerLevel`), only when the holder holds the whole territory ($2).
@@ -50,7 +50,7 @@ Mode: make it work (declog D13). Branch `m3r1-air-generals`. It has merged `mile
 - **AG-8. Death means the army was destroyed or routed.** The trigger: every unit of his army was destroyed, retreated or surrendered this turn, or he stood alone in ground another faction took or stands in. The d6 rules have no rout, so a forced retreat counts as routed.
   - He dies on a d20 at or under `generalDeathRoll`.
   - A survivor follows the first retreat of his army, else goes to the seat, else to the first territory his faction controls. With nowhere to go, he is lost as if dead.
-- **AG-9. Aircraft whose base is lost** rebase to the nearest airbase of their faction within range (ties by scenario order), or are lost on the ground. Outcomes: `aircraft-rebased` and `aircraft-lost`.
+- **AG-9. Aircraft whose base is lost** *(superseded by AG-18: the trigger is the enemy taking the whole territory, D17)* rebase to the nearest airbase of their faction within range (ties by scenario order), or are lost on the ground. Outcomes: `aircraft-rebased` and `aircraft-lost`.
 - **AG-10. Rally per army.** At the end of step 9, the best general (D5) with each group of his faction in one territory rallies its demoralized units, unless his trait has `no-rally`. This includes units demoralized this turn (C5, D7: "at the end of the turn"). It runs after the dice module's morale part.
 - **AG-11. Building hit.**
   - A building chosen by the raid stream's next draw is destroyed. A building with `upgradeOf` (the paved airfield) falls back to that building instead.
@@ -95,6 +95,7 @@ Mode: make it work (declog D13). Branch `m3r1-air-generals`. It has merged `mile
   - `collectIncome` calls `incomeFor` on `draftState`, so a cut recorded for turn N+1 is paid at step 11 of turn N+1.
   - My step-11 part only drops spent cuts and reveals, after the economy's part, so nothing is cut twice.
   - Airfields are read from `systems.subTerritories[*].buildings` by effect kind.
+- **AG-25. Replacement generals in tie-breaks.** `unitOrder` (`board.ts`) falls back to `generalUnitOrder`, after every other unit, by roster order. A general disbanded for an impossible move (M9) is not rolled for.
 - **AG-24. Tests keep Spain's Milestone 2 board.** `testRegistry()` and `spain()` drop Spain's starting aircraft and generals (`groundForcesOnly`), as DC-17 pinned the d6, so the Milestone 2 rule and UI tests count ground armies. Air tests use `spainWithAir()` (d6) and `spainD20()` (as shipped).
 
 ## Stubbed
@@ -109,12 +110,13 @@ Mode: make it work (declog D13). Branch `m3r1-air-generals`. It has merged `mile
 
 - **`m3r1-d20-combat`:** please review my minimal edits to `d20/battle.ts`, `d20/phases.ts`, `d20/modifiers.ts` (the scratch for the hooks) and `d20/estimate.ts` (aircraft off both sides).
 - Weather, economy and recruitment: nothing further. The earlier items were met at the merges.
-- **`m3r1-sub-territories`:** set aside generals' Withdraw orders as AG-3 does their moves. Sub-territory flips make airfields change hands, and AG-9 follows them.
+- **`m3r1-sub-territories`:** under the d6 table only (AG-17), set aside generals' Withdraw orders as AG-3 does their moves. Sub-territory flips make airfields change hands, and AG-9 follows them.
 - **`m3r1-movement-rail-ports`:** your reveal part runs before mine. Do not keep scratch for units of a non-ground kind, because mine removes their moves.
 
 ## Files outside my ownership
 
 Each is a small wiring edit.
+- **`engine/board.ts`:** the `unitOrder` fallback (AG-25).
 - **d20 engine:** `d20/battle.ts`, `d20/phases.ts`, `d20/modifiers.ts` and `d20/estimate.ts` (AG-18, AG-19).
 - **AI:** `ai/orders/recruit.ts`, one call to `airRecruits.ts` (AG-22).
 - **Tests:** `src/test/support.ts` (`groundForcesOnly`, `spainWithAir`) and `src/test/economy.test.ts` (it pins the income seam without the air module).
@@ -158,13 +160,18 @@ Each is a small wiring edit.
 
 **After the last merge (`6e32d05`):**
 - typecheck and lint passed.
-- `src/test/air/*`: 38 passed.
+- `src/test/air/*`: 39 passed.
 - Full `vitest` run: 803 passed. The 7 red are all sim-harness tests: the 6 known (D14), plus S1 "early wins at most 5 percent", which is also red on `milestone-3-rev-1` without this stream (10 percent there).
 - `@capture air missions and generals` on chromium and mobile-chromium: passed. Screenshots in `build/e2e/screenshots/{chromium,mobile-chromium}-22{a,b,c,d}-*.png`.
 - `npm run sim -- --games 50` (Spain as shipped on the d20, turn limit 66):
   - With blunders: decided 100%, freezes 0%, stalled 4%, median length 13.5. Wins of decided games: Republic 94%, North 6%, South 0%. Battles per turn 3.0; early wins 12.
   - Without blunders: decided 100%, median length 11. Wins: Republic 100%. Early wins 11.
-  - For comparison, `milestone-3-rev-1` before economy and without this stream: Republic 96%, early wins 4 and 3. The Republic's dominance is not from air; reported, not tuned (H7).
+  - **Matched pair**, both on the d20 before the economy merge, 50 seeds each:
+    - this stream: decided 74%, Republic 84%, early wins 10 and 9 (with and without blunders);
+    - `milestone-3-rev-1` without it: decided 100%, Republic 96%, early wins 4 and 3.
+    - This stream lowers the Republic's share, but raises early wins. The S1 smoke test agrees: 20 percent here against 10 percent on the base.
+    - Likely causes: generals now on the board under the d20 (+1, and Mola's and Yagüe's aggressive trait +1 more); bomber support +2; rallies that clear demoralization each turn.
+    - Reported for the owner, not tuned (H7).
 - A 10-game, 40-turn count on Spain as shipped saw every new kind:
   - 216 recon flights and 139 support missions (99 battles with `air-support`);
   - 50 raids: 9 air eliminated, 17 nothing hit, 12 income cuts, 12 building hits;
