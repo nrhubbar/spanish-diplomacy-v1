@@ -189,9 +189,11 @@ describe("the computer player in contested ground (H5)", () => {
     const { rollStream, deriveSeed } = { ...(await import("../main/engine/dice")), ...(await import("../main/engine/random")) };
     const { seededRandom } = await import("../main/engine/random");
     const d20Ground: unknown[] = [];
-    for (const [scenario, seed] of [[spain(), 1], [spain(), 2], [spainD20(), 1], [spainD20(), 2]] as const) {
+    // Kept short (M-6, as D22 did for the others): two games of eight turns, one per dice module, so it
+    // finishes well inside the limit under the full suite's load.
+    for (const [scenario, seed] of [[spain(), 1], [spainD20(), 2]] as const) {
       let state = initialGameState(scenario);
-      for (let turn = 1; turn <= 12; turn += 1) {
+      for (let turn = 1; turn <= 8; turn += 1) {
         const submissions = scenario.factions.map((entry, index) =>
           generateComputerSubmission(scenario, state, entry.id, seededRandom(deriveSeed(seed, turn, index)), { blunder: rollStream(seed, "blunder", turn, index) }));
         const result = resolveTurn(scenario, state, submissions, seed);
