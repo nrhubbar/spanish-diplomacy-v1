@@ -45,7 +45,14 @@ The number orders captures by the player's journey. Look at the test in `e2e/cap
 | `16a`–`16c` briefing | The in-map Briefing |
 | `17-*` counters, `17a`–`17c` | Counter states at overview and detail zoom; army list |
 | `18-destination-odds` | Odds on destinations (map chips and pane) |
-| `19a`–`19e` battle cards | Turn report battle cards, three-sided battle, legend |
+| `19a`–`19g` battle cards | Turn report battle cards, three-sided battle and its rule, collapsed cards, legend, the d20 card (`19f`), a battle icon's tooltip (`19g`) |
+| `20a`–`20f` | Weather and the turn timer: setup, planning, destinations, paused, ten seconds, time ran out |
+| `21a`–`21d` | Economy: the Build tab, the focused build list, a queued build, a resource chip's detail |
+| `22a`–`22e` | Sub-territories and contested ground: overview, orders, Withdraw, zoom, the focus view |
+| `23a`–`23c` | Movement: destinations, the route card, rail at the operational zoom |
+| `24a`–`24d` | Air and generals: the general's pill, a raid, an interception, the air report |
+| `25a`–`25d` | Recruitment: the Recruit tab, locked details, units in training, a provincial territory |
+| `26-replenish` | The Replenish order on turn 2 (X7) |
 
 ## Adding a capture
 

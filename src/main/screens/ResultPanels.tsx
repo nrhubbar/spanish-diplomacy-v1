@@ -4,12 +4,13 @@ import { requireFaction } from "../engine/lookup";
 import type { FactionId, Scenario, TerritoryId, TurnOutcome, TurnResolutionResult } from "../engine/types";
 import { glyphs } from "../presentation/glyphs";
 import { medallionMarkup } from "../presentation/outcomeArt";
-import type { OutcomeKey } from "../presentation/outcomes";
-import { outcomeText } from "../presentation/outcomeText";
+import { EconomyIcon } from "../components/economy/EconomyIcon";
 import { cssVariables } from "../presentation/style";
-import { controllerName, describeOutcomeGroup, factionName, groupOutcomes, route, territoryName, unitName } from "../presentation/text";
+import { controllerName, describeOutcomeGroup, factionName, groupOutcomes, type ReportView, route, territoryName, unitName } from "../presentation/text";
 import type { RevealedOrders } from "../state/selectors";
 import { eventsAt, revealInPane } from "./report/focus";
+import { groupMembers, groupOpen, type OutcomeGroupIcon, outcomeGroups } from "./report/groups";
+import { SiteIcon } from "./pane/SiteIcons";
 import { SubTerritoryChanges } from "./report/SubTerritoryChanges";
 
 /** U5: which territories changed hands this turn. */
@@ -56,7 +57,8 @@ export function FocusNote({ battle, focusedTerritoryId, result, scenario, viewer
     if (shown && note.current !== null) revealInPane(note.current);
   }, [focusedTerritoryId, shown]);
   const name = focusedTerritoryId === undefined ? "" : territoryName(scenario, focusedTerritoryId);
-  const events = focusedTerritoryId === undefined || battle ? [] : eventsAt(scenario, result, focusedTerritoryId, { state: result.finalState, ...(viewer === undefined ? {} : { viewer }) });
+  const view = { state: result.finalState, ...(viewer === undefined ? {} : { viewer }) };
+  const events = focusedTerritoryId === undefined || battle ? [] : eventsAt(scenario, result, focusedTerritoryId, view);
   return (
     <div className="focus-status" role="status">
       {focusedTerritoryId === undefined ? null : battle ? (
@@ -75,27 +77,6 @@ export function FocusNote({ battle, focusedTerritoryId, result, scenario, viewer
   );
 }
 
-interface OutcomeGroupSpec {
-  readonly kinds: readonly TurnOutcome["kind"][];
-  readonly label: string;
-  readonly open: boolean;
-  /** An outcome medallion (H's art), or a plain route-coloured dot for ordinary moves. */
-  readonly icon: { readonly medallion: OutcomeKey } | { readonly tone: "bounced" | "disbanded" | "moved" };
-}
-
-/** Battles have their own cards; these are every other kind of outcome, most serious first. */
-const groups: readonly OutcomeGroupSpec[] = [
-  { icon: { medallion: "surrendered" }, kinds: ["disbanded-move"], label: outcomeText.surrendered.title, open: true },
-  { icon: { tone: "disbanded" }, kinds: ["invalid-order"], label: "Disbanded", open: true },
-  { icon: { tone: "bounced" }, kinds: ["bounced-move"], label: "Bounced", open: true },
-  { icon: { medallion: "recovered" }, kinds: ["recovered"], label: outcomeText.recovered.title, open: true },
-  { icon: { medallion: "reinforcement-arrived" }, kinds: ["reinforcement-arrived"], label: outcomeText["reinforcement-arrived"].title, open: false },
-  { icon: { tone: "moved" }, kinds: ["successful-move"], label: "Completed moves", open: false },
-  // U2-U5 (m3r1-air-generals): raids, recon, interceptions and support; generals' changes and rallies.
-  { icon: { tone: "moved" }, kinds: ["raid", "recon", "interception", "air-support", "grounded", "aircraft-rebased", "aircraft-lost"], label: "Air missions", open: true },
-  { icon: { tone: "moved" }, kinds: ["general-died", "general-sacked", "replacement-due", "replacement-arrived", "rallied", "general-moved"], label: "Generals", open: true }
-];
-
 /** Neutral ring for report icons, which stand for a kind of outcome rather than a faction. */
 const reportRing = "#5b4d40";
 
@@ -113,29 +94,51 @@ export function OutcomeSummary({ result, scenario, viewer }: { readonly result: 
   return (
     <section aria-labelledby="outcomes-title" className="pane-section">
       <h3 id="outcomes-title">What happened</h3>
-      {bounced ? <p className="pane-hint">{"Only another faction's armies can stop a move. A faction's own armies never block each other."}</p> : null}
-      {groups.map((group) => {
-        const outcomes = result.outcomes.filter((outcome) => group.kinds.includes(outcome.kind));
+      {bounced ? <p className="pane-hint">{"Only another faction's units can stop a move. A faction's own units never block each other."}</p> : null}
+      {outcomeGroups.map((group) => {
+        const outcomes = groupMembers(group, result.outcomes);
         if (outcomes.length === 0) return null;
         return (
-          <details className="outcome-group" key={group.label} open={group.open}>
+          <details className="outcome-group" key={group.label} open={groupOpen(group, outcomes)}>
             <summary>
-              {"medallion" in group.icon
-                ? <span aria-hidden="true" className="outcome-medallion" dangerouslySetInnerHTML={{ __html: medallionMarkup(group.icon.medallion, reportRing) }} />
-                : <span aria-hidden="true" className={`outcome-icon outcome-icon-${group.icon.tone}`} />}
+              <GroupIcon icon={group.icon} />
               {`${group.label} (${String(outcomes.length)})`}
             </summary>
             <ul>
-              {groupOutcomes(outcomes).map((entry, index) => (
-                <li key={`${group.label}-${String(index)}`}>{describeOutcomeGroup(scenario, entry, result.outcomes, view)}</li>
+              {groupLines(scenario, outcomes, result.outcomes, view).map((line, index) => (
+                <li key={`${group.label}-${String(index)}`}>{line}</li>
               ))}
             </ul>
           </details>
         );
       })}
-      {holds === 0 ? null : <p className="pane-hint">{`${String(holds)} ${holds === 1 ? "army" : "armies"} held without orders.`}</p>}
+      {holds === 0 ? null : <p className="pane-hint">{`${String(holds)} ${holds === 1 ? "unit" : "units"} held without orders.`}</p>}
     </section>
   );
+}
+
+/** Builds still under way are summed into one line once there are this many. */
+const progressSummaryFrom = 3;
+
+/**
+ * A group's lines in the report's words. Routine build progress is summed into one line
+ * ("3 builds progressed: Farms at Girona, 1 of 3 turns; ...") so a long queue does not bury the
+ * finished and lost builds above it.
+ */
+function groupLines(scenario: Scenario, outcomes: readonly TurnOutcome[], all: readonly TurnOutcome[], view: ReportView): readonly string[] {
+  const progressed = outcomes.filter((outcome) => outcome.kind === "build-progressed");
+  const rest = progressed.length < progressSummaryFrom ? outcomes : outcomes.filter((outcome) => outcome.kind !== "build-progressed");
+  const lines = groupOutcomes(rest).map((entry) => describeOutcomeGroup(scenario, entry, all, view));
+  if (rest === outcomes) return lines;
+  const parts = progressed.map((outcome) => describeOutcomeGroup(scenario, { outcome, unitIds: [] }, all, view).replace(/\.$/u, "").replace(": ", ", "));
+  return [...lines, `${String(progressed.length)} builds progressed: ${parts.join("; ")}.`];
+}
+
+/** A report group's icon (X8): H's medallion, a route-coloured dot, or a line icon. */
+function GroupIcon({ icon }: { readonly icon: OutcomeGroupIcon }): JSX.Element {
+  if ("medallion" in icon) return <span aria-hidden="true" className="outcome-medallion" dangerouslySetInnerHTML={{ __html: medallionMarkup(icon.medallion, reportRing) }} />;
+  if ("tone" in icon) return <span aria-hidden="true" className={`outcome-icon outcome-icon-${icon.tone}`} />;
+  return <span aria-hidden="true" className="outcome-line-icon">{"site" in icon ? <SiteIcon kind={icon.site} /> : <EconomyIcon name={icon.economy} />}</span>;
 }
 
 /** U4: progress against the thresholds, stated plainly. */

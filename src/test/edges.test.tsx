@@ -269,6 +269,6 @@ describe("component edge cases", () => {
     expect(screen.getByRole("heading", { level: 1, name: "Red League and Blue Union share victory" })).toBeVisible();
     expect(await screen.findByText(/equal claims/)).toBeVisible();
     expect(screen.getByText("No territory changed hands.")).toBeVisible();
-    expect(screen.getByText(/3 armies held/)).toBeVisible();
+    expect(screen.getByText(/3 units held/)).toBeVisible();
   });
 });

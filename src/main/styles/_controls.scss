@@ -2,6 +2,9 @@
 
 .map-controls {
   position: absolute;
+  // B4: the controls and the legend sit above every map layer (hovered counters reach 3, the
+  // odds chips 4 and come earlier in the page); the pane, later, stays above them.
+  z-index: 4;
   top: 0.75rem;
   left: 0.75rem;
   display: flex;
@@ -87,6 +90,7 @@
 
 .map-legend {
   position: absolute;
+  z-index: 4;
   bottom: 0.75rem;
   left: 0.75rem;
   max-width: calc(100% - 1.5rem);

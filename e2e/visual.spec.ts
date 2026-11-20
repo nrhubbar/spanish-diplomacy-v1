@@ -30,7 +30,7 @@ test("planning at every zoom level", async ({ page }) => {
   await expect(page).toHaveScreenshot("planning-overview.png");
   await page.locator('.map-region[data-territory-id="madrid"]').focus();
   await page.keyboard.press("Enter");
-  await page.getByRole("button", { name: "Give Selected Armies Order" }).click();
+  await page.getByRole("button", { name: "Give Selected Units Order" }).click();
   await page.getByRole("button", { exact: true, name: "Move" }).click();
   await expect(page).toHaveScreenshot("planning-destinations.png");
   for (let step = 0; step < 2; step += 1) await page.getByRole("button", { name: "Zoom in" }).click();

@@ -1,6 +1,9 @@
 import { type JSX, useId, useState } from "react";
 import { generalOf, isAllWeatherAirbaseFor, unitDefinitionIn, unitKindIn, unitTypeIn } from "../../engine/air/pieces";
 import { airMissionKinds, type AirMission, type AirMissionKind, type Scenario, type UnitId, type UnitState } from "../../engine/types";
+import { weatherEffectsIn, weatherIn, zoneOf } from "../../engine/weather";
+import { WeatherChip } from "../../components/weather/WeatherChip";
+import { WeatherIcon } from "../../components/weather/WeatherIcon";
 import { useAppDispatch } from "../../hooks";
 import { glyphs } from "../../presentation/glyphs";
 import { raidResultNames } from "../../presentation/systemText/air";
@@ -20,7 +23,7 @@ const missionNames: Readonly<Record<AirMissionKind, string>> = { intercept: "Int
 
 const missionHints: Readonly<Record<AirMissionKind, string>> = {
   intercept: "Fighters over a territory worsen enemy raids there and can shoot raiders down.",
-  raid: "A raid on one province rolls: air eliminated, nothing hit, income cut for a turn, or a building hit.",
+  raid: "A raid on one sub-territory rolls: air eliminated, nothing hit, income cut for a turn, or a building hit.",
   recon: "Shows the territory's balances, queues and training next turn.",
   support: "Bombers over a battle add to their side's roll."
 };
@@ -65,7 +68,10 @@ export function AirPane({ scenario, session, unitId }: AirPaneProps): JSX.Elemen
       <p className="pane-meta">
         {`${type?.name ?? "Aircraft"} ${glyphs.dot} based at ${base}${paved ? " (paved airfield)" : ""} ${glyphs.dot} range ${String(type?.air?.range ?? 0)} territories`}
       </p>
-      <p className="pane-meta">One mission a turn.</p>
+      <div className="territory-meta">
+        <WeatherChip scenario={scenario} state={state} territoryId={unit.territoryId} />
+        <span className="site-chip">1 mission a turn</span>
+      </div>
       <h4>Mission</h4>
       <div aria-label="Mission" className="air-missions" role="group">
         {airMissionKinds.map((mission) => (
@@ -150,6 +156,7 @@ function TargetCard({ range, scenario, session, target, unit }: {
       <dl>
         <dt>Range</dt>
         <dd>{`${String(target.distance)} of ${String(range)}`}</dd>
+        <BaseWeather scenario={scenario} session={session} unit={unit} />
         {raid === undefined ? null : (
           <>
             <dt>{`Anti-air in ${territoryId === undefined ? target.name : scenario.index.territories.get(territoryId)?.name ?? target.name}`}</dt>
@@ -162,11 +169,38 @@ function TargetCard({ range, scenario, session, target, unit }: {
       {raid === undefined ? null : (
         <ul aria-label="Raid chances before interception" className="air-chances">
           {(Object.keys(raidResultNames) as (keyof typeof raidResultNames)[]).map((result) => (
-            <li key={result}>{`${raidResultNames[result]} ${String(Math.round(raid.chances[result] * 100))}%`}</li>
+            <li key={result}>
+              <span aria-hidden="true" className="air-chance-key" data-result={result} />
+              {`${raidResultNames[result]} ${String(Math.round(raid.chances[result] * 100))}%`}
+            </li>
           ))}
         </ul>
       )}
     </div>
+  );
+}
+
+/**
+ * M11, T3, U2 (`ux-air-a`): the weather at the aircraft's base and whether it flies: aircraft are
+ * grounded in Mud and Snow unless their airfield is paved.
+ */
+function BaseWeather({ scenario, session, unit }: { readonly scenario: Scenario; readonly session: PlanningSession; readonly unit: UnitState }): JSX.Element | null {
+  const state = session.game.state;
+  const weather = weatherIn(scenario, state, unit.territoryId);
+  if (weather === undefined) return null;
+  const grounds = weatherEffectsIn(scenario, state, unit.territoryId, "grounds-aircraft").length > 0;
+  const paved = isAllWeatherAirbaseFor(scenario, state, unit.territoryId, unit.factionId);
+  const zone = zoneOf(scenario, unit.territoryId)?.name;
+  const verdict = !grounds ? "flies" : paved ? "flies (paved airfield)" : `grounded (${weather.name})`;
+  return (
+    <>
+      <dt>
+        {`Weather${zone === undefined ? "" : ` ${glyphs.dot} ${zone}`} `}
+        <WeatherIcon weatherId={weather.id} />
+        {` ${weather.name}`}
+      </dt>
+      <dd data-grounded={grounds && !paved}>{verdict}</dd>
+    </>
   );
 }
 

@@ -36,7 +36,7 @@ export function PlannedOddsInfo(props: PlannedOddsProps): JSX.Element | null {
   if (![...estimates.values()].some((estimate) => estimate.kind === "battle")) return null;
   return (
     <OddsInfo label="About the planned odds">
-      <p className="pane-meta">Odds count every army ordered to the same place.</p>
+      <p className="pane-meta">Odds count every unit ordered to the same place.</p>
     </OddsInfo>
   );
 }

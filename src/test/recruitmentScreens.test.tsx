@@ -53,7 +53,7 @@ describe("the Recruit tab and the Replenish order (X4, X7)", () => {
     const pane = screen.getByRole("tabpanel");
     const row = within(pane).getAllByRole("button").find((button) => button.classList.contains("formation-button") && button.textContent.includes("men") && button.textContent.includes(String(Math.round(worn.strength / 2))));
     await user.click(row!);
-    await user.click(screen.getByRole("button", { name: /Give Selected Armies Order/u }));
+    await user.click(screen.getByRole("button", { name: /Give Selected Units Order/u }));
     const menu = screen.getByRole("group", { name: /Order for/u });
     const choices = within(menu).getAllByRole("button").map((button) => button.textContent);
     expect(choices[0]).toBe("Replenish");

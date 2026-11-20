@@ -235,14 +235,15 @@ describe("markup and rendering helpers", () => {
   it("builds legend entries from what is shown (V9)", () => {
     const scenario = spain();
     const state = initialGameState(scenario);
-    expect(legendEntries(scenario, state, staticMapView)).toEqual(["contested", "sea"]);
+    // m11: Spain has rail on the board from the start.
+    expect(legendEntries(scenario, state, staticMapView)).toEqual(["contested", "sea", "rail"]);
     // Equal attacks meeting head-on bounce without a battle (M20); Spain's shared territories
     // also fight their standing battles (M27), so their results join the legend.
     const result = resolveTurn(scenario, state, [
       { factionId: faction("republic"), orders: [move("republic", "rep-wad-ras-1", "madrid", "castilla-y-leon")] },
       { factionId: faction("north"), orders: [move("north", "north-san-marcial-22", "castilla-y-leon", "madrid")] }
     ], 1);
-    expect(legendEntries(scenario, state, { ...staticMapView, outcomes: result.outcomes, plannedOrders: result.submittedOrders.filter(isMoveOrder) })).toEqual(["contested", "sea", "planned", "bounced", "attacker-eliminated", "attacker-demoralized", "both-demoralized", "defender-demoralized"]);
+    expect(legendEntries(scenario, state, { ...staticMapView, outcomes: result.outcomes, plannedOrders: result.submittedOrders.filter(isMoveOrder) })).toEqual(["contested", "sea", "planned", "bounced", "attacker-eliminated", "attacker-demoralized", "both-demoralized", "defender-demoralized", "rail"]);
   });
 });
 
@@ -258,7 +259,7 @@ describe("player-facing text", () => {
     const text = result.outcomes.map((outcome) => describeOutcome(scenario, outcome)).join(" | ");
     expect(text).toContain("met Blue Union head-on");
     expect(text).toContain("impossible order");
-    expect(describeOutcome(scenario, { factionId: faction("red"), kind: "no-move" })).toContain("no armies");
+    expect(describeOutcome(scenario, { factionId: faction("red"), kind: "no-move" })).toContain("no units");
     expect(describeOutcome(scenario, { factionId: faction("red"), kind: "no-move", unitId: "red-guard" as never })).toBe("Red Guard held.");
     expect(bounceReason(scenario, { holdingFactionIds: [faction("blue")], kind: "held" })).toBe("held by Blue Union");
     expect(bounceReason(scenario, { kind: "standoff", opposingFactionIds: [faction("blue"), faction("red")] })).toBe("standoff with Blue Union and Red League");

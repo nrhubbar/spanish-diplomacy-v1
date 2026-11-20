@@ -223,8 +223,8 @@ describe("battle reports (C14)", () => {
     ]);
     expect(groups.map((entry) => changedHands(entry))).toEqual([true, true, true, false, false, false]);
     expect(groups.map(groupTerritory)).toEqual(["castilla-la-mancha", "extremadura", "murcia", "madrid", undefined, "asturias"]);
-    expect(battleSummary(groups)).toBe("6 battles \u00b7 3 territories changed hands \u00b7 2,835 men lost \u00b7 4 armies destroyed \u00b7 5 armies demoralized");
-    expect(battleSummary(groupBattles([roadMeeting]))).toBe("1 battle \u00b7 1 army demoralized");
+    expect(battleSummary(groups)).toBe("6 battles \u00b7 3 territories changed hands \u00b7 2,835 men lost \u00b7 4 units destroyed \u00b7 5 units demoralized");
+    expect(battleSummary(groupBattles([roadMeeting]))).toBe("1 battle \u00b7 1 unit demoralized");
   });
 
   it("leads a card with the battle that decided the place", () => {

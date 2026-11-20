@@ -205,7 +205,7 @@ describe("planning drafts", () => {
     store.dispatch(clickMapUnit(unit("rep-guadalajara-10")));
     expect(draftOf(store).selectedUnitIds).toEqual(["rep-otumba-9"]);
     store.dispatch(clickMapUnit(unit("north-zamora-29")));
-    expect(draftOf(store)).toMatchObject({ feedback: expect.stringContaining("None of your armies"), selectedTerritoryId: "galicia", selectedUnitIds: [] });
+    expect(draftOf(store)).toMatchObject({ feedback: expect.stringContaining("None of your units"), selectedTerritoryId: "galicia", selectedUnitIds: [] });
     store.dispatch(toggleUnitSelection(unit("rep-otumba-9")));
     expect(draftOf(store)).toMatchObject({ selectedTerritoryId: "valencia", selectedUnitIds: ["rep-otumba-9", "rep-guadalajara-10"] });
     store.dispatch(clickMapUnit(unit("no-such-unit")));
@@ -269,11 +269,11 @@ describe("planning drafts", () => {
     store.dispatch(selectAllAvailableUnits());
     expect(feedback()).toContain("Select a territory");
     store.dispatch(toggleOrderMenu());
-    expect(feedback()).toContain("at least one army");
+    expect(feedback()).toContain("at least one unit");
     store.dispatch(chooseOrderKind("move"));
-    expect(feedback()).toContain("at least one army");
+    expect(feedback()).toContain("at least one unit");
     store.dispatch(clickMapTerritory(territory("galicia")));
-    expect(feedback()).toContain("None of your armies");
+    expect(feedback()).toContain("None of your units");
     store.dispatch(toggleUnitSelection(unit("north-zamora-29")));
     expect(feedback()).toContain("your own");
     store.dispatch(clickMapTerritory(territory("madrid")));
@@ -289,7 +289,7 @@ describe("planning drafts", () => {
     store.dispatch(toggleUnitSelection(unit("rep-wad-ras-1")));
     expect(draftOf(store)).toMatchObject({ selectedTerritoryId: "madrid", selectedUnitIds: ["rep-wad-ras-1"] });
     store.dispatch(clickMapTerritory(territory("madrid")));
-    expect(feedback()).toContain("Every army here is moving");
+    expect(feedback()).toContain("Every unit here is moving");
     store.dispatch(clearUnitSelection());
     expect(feedback()).toBeUndefined();
   });
@@ -337,7 +337,7 @@ describe("standing orders: Entrench and Rest (O1-O5)", () => {
     const planning = planningOf(store);
     expect(planning.draft.selectedUnitIds).toEqual(["rep-otumba-9", "rep-guadalajara-10"]);
     expect(orderKindsFor(planning)).toEqual(["move", "entrench"]);
-    expect(chooseOrder(scenario, planning, "rest").draft.feedback).toBe("Only demoralized armies rest.");
+    expect(chooseOrder(scenario, planning, "rest").draft.feedback).toBe("Only demoralized units rest.");
   });
 
   it("offers Rest to demoralized armies only, and never lets them entrench", () => {
@@ -348,8 +348,8 @@ describe("standing orders: Entrench and Rest (O1-O5)", () => {
     expect(orderKindsFor(tired)).toEqual(["move"]);
     const restOnly = { ...tired, draft: { ...tired.draft, selectedUnitIds: [unit("rep-otumba-9")] } };
     expect(orderKindsFor(restOnly)).toEqual(["move", "rest"]);
-    expect(chooseOrder(scenario, restOnly, "entrench").draft.feedback).toContain("Demoralized armies cannot entrench");
-    expect(chooseOrder(scenario, restOnly, "rest").draft).toMatchObject({ feedback: "1 army will rest.", orders: [] });
+    expect(chooseOrder(scenario, restOnly, "entrench").draft.feedback).toContain("Demoralized units cannot entrench");
+    expect(chooseOrder(scenario, restOnly, "rest").draft).toMatchObject({ feedback: "1 unit will rest.", orders: [] });
   });
 
   it("cancels a move with Entrench, replaces it with another Move, and returns to Entrench when cleared", () => {
@@ -372,7 +372,7 @@ describe("standing orders: Entrench and Rest (O1-O5)", () => {
     store.dispatch(toggleOrderMenu());
     store.dispatch(chooseOrderKind("entrench"));
     expect(planningOf(store).draft).toEqual({
-      feedback: "1 army will entrench.",
+      feedback: "1 unit will entrench.",
       orders: [{ factionId: "republic", from: "valencia", kind: "move", to: "castilla-la-mancha", unitId: "rep-guadalajara-10" }],
       selectedTerritoryId: "valencia",
       selectedUnitIds: ["rep-otumba-9"]

@@ -83,8 +83,13 @@ button {
   transition: background 120ms ease, color 120ms ease, transform 120ms ease;
 }
 
-button:hover:not(:disabled) {
-  background: var(--accent-dark);
+// B2: the plain button hover has the specificity of a bare `button`, so any component class that
+// sets its own background (tabs, chips, steppers, counters) keeps it. Hover is only for a pointer
+// that hovers: a tap leaves touch screens "hovering".
+@media (hover: hover) {
+  button:where(:hover:not(:disabled)) {
+    background: var(--accent-dark);
+  }
 }
 
 button:focus-visible,

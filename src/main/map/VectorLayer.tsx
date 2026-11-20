@@ -1,4 +1,4 @@
-import { type JSX, memo } from "react";
+import { type JSX, memo, type ReactNode } from "react";
 import type { FactionId, GameState, Scenario, TerritoryId } from "../engine/types";
 import type { MapPackage, MapRect } from "../scenarios/loader";
 import { requireFaction } from "../engine/lookup";
@@ -24,6 +24,8 @@ interface VectorLayerProps {
   /** Map units per screen pixel; every stroke, label, and icon is sized with it (V1). */
   readonly unit: number;
   readonly scenario: Scenario;
+  /** Drawn in screen pixels over the shapes and under every name and city (B4: the rail). */
+  readonly underlay?: ReactNode;
   readonly view: MapView;
   readonly visible: MapRect;
   /** The water names to draw, already checked against the screen edges and counters. */
@@ -43,7 +45,7 @@ const Borders = memo(function Borders({ outlines }: { readonly outlines: Prepare
   return <g aria-hidden="true" className="map-borders" dangerouslySetInnerHTML={{ __html: [...outlines.values()].join("") }} />;
 });
 
-export function VectorLayer({ contextLabels, game, geometry, level, map, scenario, unit, view, visible, water }: VectorLayerProps): JSX.Element {
+export function VectorLayer({ contextLabels, game, geometry, level, map, scenario, underlay, unit, view, visible, water }: VectorLayerProps): JSX.Element {
   const factionColor = (id: FactionId): string => requireFaction(scenario, id).color;
   const anchor = (id: TerritoryId) => territoryAnchor(map, id);
   const showDetail = level !== "overview";
@@ -109,6 +111,10 @@ export function VectorLayer({ contextLabels, game, geometry, level, map, scenari
           );
         })}
       </g>
+      {/* B4: Milestone 3's screen-space underlay (rail), above the shapes and under every name. */}
+      {underlay === undefined ? null : (
+        <g className="map-underlay" transform={`translate(${String(visible.x)} ${String(visible.y)}) scale(${String(unit)})`}>{underlay}</g>
+      )}
       <WaterLabelLayer unit={unit} water={water} />
       <g className="map-context-labels" aria-hidden="true">
         {contextLabels.map((label) => (

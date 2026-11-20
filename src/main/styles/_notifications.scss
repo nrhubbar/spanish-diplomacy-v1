@@ -62,8 +62,16 @@
     display: inline;
   }
 
+  // m16: one line, ellipsized, so the title keeps its place.
   .game-header .screen-kicker {
+    overflow: hidden;
     font-size: 0.68rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .game-header-title {
+    min-width: 0;
   }
 
   .status-chips li {

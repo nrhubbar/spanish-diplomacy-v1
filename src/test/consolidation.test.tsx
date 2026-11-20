@@ -282,7 +282,7 @@ describe("friendly consolidation (planning and computer players)", () => {
     store.dispatch(clickMapTerritory(territory("castilla-y-leon")));
     const session = store.getState().game.session;
     expect(session.phase === "planning" && session.draft.orders).toEqual([]);
-    expect(session.phase === "planning" && session.draft.feedback).toBe("A demoralized army cannot attack. It can move only into empty or friendly territory.");
+    expect(session.phase === "planning" && session.draft.feedback).toBe("A demoralized unit cannot attack. It can move only into empty or friendly territory.");
     // A territory that is not connected keeps its own explanation.
     store.dispatch(clickMapTerritory(territory("galicia")));
     const far = store.getState().game.session;
@@ -394,7 +394,7 @@ describe("friendly consolidation (turn report)", () => {
     expect(groupOutcomes(outcomes).map((group) => describeOutcomeGroup(scenario, group))).toEqual([
       "Red Guard held.",
       "Red Rangers held.",
-      "Blue Union had no armies to order.",
+      "Blue Union had no units to order.",
       "Red League: Red Guard was disbanded after an impossible order: Destination is not connected to the unit's territory."
     ]);
   });
@@ -403,7 +403,7 @@ describe("friendly consolidation (turn report)", () => {
     render(<OutcomeSummary result={reportedCase(false)} scenario={spainM2()} />);
     const bounced = screen.getByText("Bounced (6)").closest("details");
     expect(within(bounced!).getAllByRole("listitem")).toHaveLength(3);
-    expect(screen.getByText(/A faction's own armies never block each other/)).toBeVisible();
+    expect(screen.getByText(/A faction's own units never block each other/)).toBeVisible();
     cleanup();
 
     const scenario = spainM2();

@@ -2,7 +2,7 @@ import { battleSide } from "../engine/combat";
 import { armyMovement, type MoveRoute, moveRoutes } from "../engine/movement/routes";
 import { portLandings, railDepartures } from "../engine/movement/network";
 import { weatherIn } from "../engine/weather";
-import type { FactionId, GameState, MoveOrder, Scenario, SubTerritoryId, TerritoryId, UnitId, UnitState } from "../engine/types";
+import type { FactionId, GameState, MoveOrder, Scenario, SubTerritoryId, TerritoryId, UnitId, UnitState, WeatherId } from "../engine/types";
 import { glyphs } from "./glyphs";
 import type { DestinationEstimate } from "./odds";
 import { territoryName } from "./text";
@@ -37,10 +37,10 @@ export function subTerritoryName(scenario: Scenario, id: SubTerritoryId): string
 
 /**
  * The route's shape as a tag, or undefined for a plain step: "By rail", "Rail, then attack",
- * "Amphibious". `short` is the map plaque's form ("Rail + attack").
+ * "Rail, then march", "Amphibious". The map plaques and the pane rows use the same words (m8).
  */
-export function routeTag(route: MoveRoute, attacks = false, short = false): string | undefined {
-  const then = (first: string, second: string): string => (short ? `${first} + ${second}` : `${first}, then ${second}`);
+export function routeTag(route: MoveRoute, attacks = false): string | undefined {
+  const then = (first: string, second: string): string => `${first}, then ${second}`;
   switch (route.shape) {
     case "step":
       return undefined;
@@ -49,9 +49,9 @@ export function routeTag(route: MoveRoute, attacks = false, short = false): stri
     case "rail":
       return "By rail";
     case "step-rail":
-      return then("Step", "rail");
+      return then("March", "rail");
     case "rail-step":
-      return then("Rail", attacks ? "attack" : "step");
+      return then("Rail", attacks ? "attack" : "march");
     case "sea":
       return route.sea?.kind === "amphibious" ? "Amphibious" : "By sea";
   }
@@ -150,8 +150,8 @@ export function routeDetail(scenario: Scenario, state: GameState, route: MoveRou
 }
 
 /** X5: the rows of the breakdown card for a destination: what the route costs and why. */
-export function routeRows(scenario: Scenario, state: GameState, route: MoveRoute, allowance: number): readonly { readonly label: string; readonly value: string }[] {
-  const rows: { label: string; value: string }[] = [];
+export function routeRows(scenario: Scenario, state: GameState, route: MoveRoute, allowance: number): readonly RouteRow[] {
+  const rows: RouteRow[] = [];
   // M1: a single step always fits, using at most the whole allowance.
   const used = route.steps <= 1 ? Math.min(route.cost, allowance) : route.cost;
   rows.push({ label: "Moves this turn", value: `${String(used)} of ${String(allowance)}` });
@@ -159,8 +159,15 @@ export function routeRows(scenario: Scenario, state: GameState, route: MoveRoute
   if (route.rail !== undefined) rows.push({ label: `Rail, level ${String(route.rail.level)}`, value: `${String(route.rail.crossings)} of ${String(route.rail.range)} borders` });
   if (route.sea?.kind === "amphibious") rows.push({ label: "Amphibious assault", value: amphibiousRoll(scenario) === 0 ? "No roll modifier" : signedRoll(amphibiousRoll(scenario)) });
   const weather = weatherIn(scenario, state, route.to);
-  if (weather !== undefined) rows.push({ label: `Weather ${glyphs.dot} ${territoryName(scenario, route.to)}`, value: weather.name });
+  if (weather !== undefined) rows.push({ label: `Weather ${glyphs.dot} ${territoryName(scenario, route.to)}`, value: weather.name, weatherId: weather.id });
   return rows;
+}
+
+/** One row of the route card; the weather row carries its symbol (M7, T3). */
+export interface RouteRow {
+  readonly label: string;
+  readonly value: string;
+  readonly weatherId?: WeatherId;
 }
 
 /** X5: "Army leaving Madrid": its units, attack, moves this turn and the truck rule. */
@@ -172,7 +179,7 @@ export function armyLeaving(scenario: Scenario, state: GameState, factionId: Fac
   const count = `${String(units.length)} ${units.length === 1 ? "unit" : "units"}`;
   const needed = Math.ceil(movement.needing / truckCarries(scenario));
   const trucks = movement.transports === 0
-    ? (movement.allMobile ? "all mounted" : `no trucks (${String(needed)} ${needed === 1 ? "truck" : "trucks"} for these ${String(movement.needing)} ${movement.needing === 1 ? "unit" : "units"} would give +1)`)
+    ? (movement.allMobile ? "all mounted" : `no trucks (${String(needed)} ${needed === 1 ? "truck" : "trucks"} for ${movement.needing === 1 ? "this unit" : `these ${String(movement.needing)} units`} would give +1)`)
     : `${String(movement.transports)} ${movement.transports === 1 ? "truck" : "trucks"} for ${String(movement.needing)} ${movement.needing === 1 ? "unit" : "units"}`;
   return {
     heading: `Army leaving ${territoryName(scenario, from)} ${glyphs.dot} ${count}, ${String(attack)} attack`,

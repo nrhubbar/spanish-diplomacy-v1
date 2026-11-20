@@ -66,6 +66,7 @@
 
 .map-pane-toggle:hover:not(:disabled) {
   color: var(--paper);
+  background: var(--accent-dark);
 }
 
 .map-pane[data-open="false"] .map-pane-toggle {
@@ -101,6 +102,8 @@
   min-height: 0;
   padding: 0 1rem 1rem;
   overflow: auto;
+  // B3, WCAG 2.4.11: a row scrolled into view or focused stays above the sticky order bar.
+  scroll-padding-bottom: 4.75rem;
 }
 
 .map-pane-body:focus-visible {

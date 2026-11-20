@@ -36,7 +36,13 @@
   cursor: pointer;
 
   &:hover:not(:disabled) {
-    background: var(--paper-deep);
+    background: var(--paper);
+  }
+
+  @media (hover: hover) {
+    &:hover:not(:disabled) {
+      background: var(--paper-deep);
+    }
   }
 
   &[aria-expanded="true"] {
@@ -49,7 +55,8 @@
 }
 
 .resource-income {
-  color: var(--success);
+  // B2: darker than --success, so it keeps 4.5:1 on the chip's hover background.
+  color: #25663f;
   font-variant-numeric: tabular-nums;
 }
 

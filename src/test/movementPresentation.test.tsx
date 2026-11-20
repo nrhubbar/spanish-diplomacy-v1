@@ -60,8 +60,8 @@ describe("route chips and rows for each shape (X5)", () => {
     expect(detail).toContain("Rail from Madrid to Catalu\u00f1a, level 2 or better the whole way (range 4)");
     expect(detail).toContain("Stops in Castilla-La Mancha, Valencia if an enemy army enters it");
     expect(routeRows(scenario, state, rail, 1)).toContainEqual({ label: "Rail, level 2", value: "2 of 4 borders" });
-    expect(routeTag(route({ shape: "step-rail", to: t("catalunya") }))).toBe("Step, then rail");
-    expect(routeTag(route({ shape: "rail-step", to: t("aragon") }), false)).toBe("Rail, then step");
+    expect(routeTag(route({ shape: "step-rail", to: t("catalunya") }))).toBe("March, then rail");
+    expect(routeTag(route({ shape: "rail-step", to: t("aragon") }), false)).toBe("Rail, then march");
   });
 
   it("separates a port landing from an amphibious assault, with the d20 modifier only under the d20", () => {

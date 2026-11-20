@@ -55,9 +55,9 @@ describe("application flow", () => {
     const pane = screen.getByRole("complementary", { name: "Orders" });
     expect(within(pane).getByRole("heading", { name: "Madrid" })).toBeVisible();
     expect(within(pane).getByText("4 of 4 selected")).toBeVisible();
-    await user.click(within(pane).getByRole("button", { name: "Give Selected Armies Order" }));
+    await user.click(within(pane).getByRole("button", { name: "Give Selected Units Order" }));
     await user.click(within(pane).getByRole("button", { name: "Move" }));
-    expect(within(pane).getByText(/Moving 4 armies from Madrid. Choose a highlighted territory/)).toBeVisible();
+    expect(within(pane).getByText(/Moving 4 units from Madrid. Choose a highlighted territory/)).toBeVisible();
     expect(within(pane).getByRole("button", { name: "Cancel move" })).toHaveFocus();
     expect(document.querySelectorAll('[data-highlight="destination"]').length).toBeGreaterThan(0);
     await user.click(region("galicia"));
@@ -93,7 +93,7 @@ describe("application flow", () => {
     await user.click(screen.getByRole("button", { name: "Zoom in" }));
     await user.click(screen.getByRole("button", { name: /Guadalajara Infantry Regiment No. 10/ }));
     const pane = screen.getByRole("complementary", { name: "Orders" });
-    const armies = within(pane).getByRole("list", { name: "Your armies" });
+    const armies = within(pane).getByRole("list", { name: "Your units" });
     const otumba = within(armies).getByRole("button", { name: /Otumba/ });
     const guadalajara = within(armies).getByRole("button", { name: /Guadalajara/ });
     expect(otumba).toHaveAttribute("aria-pressed", "true");
@@ -103,9 +103,9 @@ describe("application flow", () => {
     expect(guadalajara).toHaveAttribute("aria-pressed", "false");
     expect(within(pane).getByText("1 of 2 selected")).toBeVisible();
     await user.click(within(pane).getByRole("button", { name: "Clear" }));
-    const give = within(pane).getByRole("button", { name: "Give Selected Armies Order" });
+    const give = within(pane).getByRole("button", { name: "Give Selected Units Order" });
     expect(give).toBeDisabled();
-    expect(give).toHaveAccessibleDescription("Select at least one army to give an order.");
+    expect(give).toHaveAccessibleDescription("Select at least one unit to give an order.");
     await user.click(within(pane).getByRole("button", { name: "Select all" }));
     await user.click(guadalajara);
     expect(give).toBeEnabled();
@@ -113,7 +113,7 @@ describe("application flow", () => {
 
     await user.click(give);
     expect(give).toHaveAttribute("aria-expanded", "true");
-    const menu = within(pane).getByRole("group", { name: "Order for 1 army" });
+    const menu = within(pane).getByRole("group", { name: "Order for 1 unit" });
     expect(give).toHaveAttribute("aria-controls", menu.id);
     expect(within(menu).getByRole("button", { name: "Move" })).toHaveAccessibleDescription("March to a neighboring territory.");
     await user.click(give);
@@ -128,7 +128,7 @@ describe("application flow", () => {
     expect(otumba).toHaveAttribute("aria-pressed", "true");
     expect(guadalajara).toHaveAttribute("aria-pressed", "false");
 
-    await user.click(within(pane).getByRole("button", { name: "Give Selected Armies Order" }));
+    await user.click(within(pane).getByRole("button", { name: "Give Selected Units Order" }));
     await user.click(within(pane).getByRole("button", { name: "Move" }));
     await user.click(region("castilla-la-mancha"));
     expect(within(pane).getByText(/Valencia . Castilla-La Mancha/)).toBeVisible();
@@ -142,12 +142,12 @@ describe("application flow", () => {
     await startDefaultGame(user);
     await user.click(region("madrid"));
     const pane = screen.getByRole("complementary", { name: "Orders" });
-    await user.click(within(pane).getByRole("button", { name: "Give Selected Armies Order" }));
+    await user.click(within(pane).getByRole("button", { name: "Give Selected Units Order" }));
     await user.click(within(pane).getByRole("button", { name: "Move" }));
     await user.click(region("castilla-la-mancha"));
     expect(within(pane).getByText("All moving")).toBeVisible();
     expect(within(pane).queryByRole("button", { name: "Select all" })).not.toBeInTheDocument();
-    expect(within(pane).getByRole("button", { name: "Give Selected Armies Order" })).toHaveAccessibleDescription(/Every army here is moving/);
+    expect(within(pane).getByRole("button", { name: "Give Selected Units Order" })).toHaveAccessibleDescription(/Every unit here is moving/);
   });
 
   it("hands the device between local players without revealing orders, then shows the results", async () => {
@@ -198,7 +198,7 @@ describe("application flow", () => {
     await user.click(screen.getByRole("button", { name: "Continue to Red League" }));
     await screen.findByRole("application", { name: /map/ });
     await user.click(region("westfold"));
-    await user.click(screen.getByRole("button", { name: "Give Selected Armies Order" }));
+    await user.click(screen.getByRole("button", { name: "Give Selected Units Order" }));
     await user.click(screen.getByRole("button", { name: "Move" }));
     await user.click(region("lowlands"));
     await user.click(screen.getByRole("button", { name: "End Turn" }));
@@ -319,7 +319,7 @@ describe("campaign map interaction", () => {
     expect(counter).toHaveAttribute("aria-pressed", "true");
     await user.click(screen.getByRole("button", { name: /Zamora Infantry Regiment/ }));
     expect(screen.getByRole("heading", { name: "Galicia" })).toBeVisible();
-    expect(screen.getByText(/Other armies here/)).toBeVisible();
+    expect(screen.getByText(/Other units here/)).toBeVisible();
   });
 
   it("drags without selecting and collapses the pane", async () => {

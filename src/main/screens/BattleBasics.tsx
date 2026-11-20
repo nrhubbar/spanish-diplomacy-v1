@@ -26,15 +26,15 @@ export function BattleBasics({ scenario }: { readonly scenario: Scenario }): JSX
         </li>
         {d20 === undefined ? null : (
           <li>
-            {`Battles roll a d20. Each result costs each side a share of its men, may demoralize some armies, and may take part or all of the territory. Attacking tires an army: at fatigue ${String(d20.fatigue.fatiguedLevel)} it fights Fatigued (${String(d20.modifiers.fatigued)}), and at ${String(d20.fatigue.demoralizedLevel)} it is demoralized. A quiet turn in uncontested ground rests it.`}
+            {`Battles roll a d20. Each result costs each side a share of its men, may demoralize some units, and may take part or all of the territory. Attacking tires a unit: at fatigue ${String(d20.fatigue.fatiguedLevel)} it fights Fatigued (${String(d20.modifiers.fatigued)}), and at ${String(d20.fatigue.demoralizedLevel)} it is demoralized. A quiet turn in uncontested ground rests it.`}
           </li>
         )}
-        <li>Every army has one order each turn: Move, Entrench, or Rest. An army you do not move entrenches, or rests if it is demoralized.</li>
+        <li>Every unit has one order each turn: Move, Entrench, or Rest. A unit you do not move entrenches, or rests if it is demoralized.</li>
         <li>
-          {`Entrenching armies dig the territory in: each turn shifts the die ${String(diggingIn.perTurn)} in the defenders' favour, up to ${String(diggingIn.max)}. `}
+          {`Entrenching units dig the territory in: each turn shifts the die ${String(diggingIn.perTurn)} in the defenders' favour, up to ${String(diggingIn.max)}. `}
           Armies that move do not dig in, and a battle in the territory stops the digging for that turn.
         </li>
-        <li>{`A demoralized army fights at ${weakened} and cannot attack. It cannot entrench either: it rests, and recovers after one turn of rest.`}</li>
+        <li>{`A demoralized unit fights at ${weakened} and cannot attack. It cannot entrench either: it rests, and recovers after one turn of rest.`}</li>
         <li>Attrition costs men for good, from the strongest armies first. Demoralization passes with rest and falls on the weakest first.</li>
         <li>Moving into a territory your faction controls is a reinforcement: it always arrives.</li>
       </ul>
@@ -49,9 +49,9 @@ function ExampleText({ example }: { readonly example: BattleExample }): JSX.Elem
   const dug = example.dugIn > 0 ? `, dug in +${String(example.dugIn)}` : "";
   return (
     <p className="pane-hint">
-      {`Example: ${count(first.armies)} ${example.typeName} armies attack with ${String(first.attack)} against one with defence ${String(example.defence)}${dug}. `}
+      {`Example: ${count(first.armies)} ${example.typeName} units attack with ${String(first.attack)} against one with defence ${String(example.defence)}${dug}. `}
       {`That is ${first.oddsLabel} odds: ${percent(first.takeChance)} to take the territory. `}
-      {`A ${second.armies === 3 ? "third" : "further"} army makes it ${String(second.attack)} against ${String(example.defence)}, ${second.oddsLabel} odds: ${percent(second.takeChance)}.`}
+      {`A ${second.armies === 3 ? "third" : "further"} unit makes it ${String(second.attack)} against ${String(example.defence)}, ${second.oddsLabel} odds: ${percent(second.takeChance)}.`}
     </p>
   );
 }

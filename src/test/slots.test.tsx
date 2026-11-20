@@ -33,7 +33,10 @@ describe("the territory pane's tabs and focus view (X3)", () => {
     const store = planning(spain(), spainId, "republic");
     store.dispatch(clickMapTerritory(territory("madrid")));
     renderPane(store, spain());
-    expect(screen.getAllByRole("tab").map((tab) => [tab.textContent, tab.getAttribute("aria-selected")])).toEqual([["Units", "true"], ["Build", "false"], ["Recruit", "false"]]);
+    // M6: Units carries a count of the viewer's units here; Build counts sub-territories with work queued.
+    expect(screen.getAllByRole("tab").map((tab) => [tab.textContent, tab.getAttribute("aria-selected")])).toEqual([["Units 4", "true"], ["Build", "false"], ["Recruit", "false"]]);
+    expect(screen.getByText(/^Held whole by Republican Government \u00b7 3 sub-territories$/u)).toBeVisible();
+    expect(screen.getByText(/^Recruits at /u)).toBeVisible();
     // The heading and its meta row sit above the tabs, so they show on every tab.
     expect(screen.getByRole("heading", { name: "Madrid" })).toBeVisible();
     expect(screen.getByRole("tabpanel")).not.toContainElement(screen.getByRole("heading", { name: "Madrid" }));
@@ -42,6 +45,29 @@ describe("the territory pane's tabs and focus view (X3)", () => {
     expect(screen.getByRole("heading", { name: "Madrid" })).toBeVisible();
     await userEvent.click(screen.getByRole("tab", { name: "Recruit" }));
     expect(screen.getByRole("tab", { name: "Recruit" })).toHaveAttribute("aria-selected", "true");
+  });
+
+  it("moves between tabs with the arrow keys, Home and End, with one tab stop (m2)", async () => {
+    const store = planning(spain(), spainId, "republic");
+    store.dispatch(clickMapTerritory(territory("madrid")));
+    renderPane(store, spain());
+    const user = userEvent.setup();
+    const units = screen.getByRole("tab", { name: /^Units/u });
+    expect(screen.getAllByRole("tab").map((tab) => tab.tabIndex)).toEqual([0, -1, -1]);
+    units.focus();
+    await user.keyboard("{ArrowRight}");
+    expect(screen.getByRole("tab", { name: "Build" })).toHaveFocus();
+    expect(screen.getByRole("tab", { name: "Build" })).toHaveAttribute("aria-selected", "true");
+    await user.keyboard("{End}");
+    expect(screen.getByRole("tab", { name: "Recruit" })).toHaveFocus();
+    await user.keyboard("{ArrowRight}");
+    expect(units).toHaveFocus();
+    await user.keyboard("{ArrowLeft}");
+    expect(screen.getByRole("tab", { name: "Recruit" })).toHaveFocus();
+    await user.keyboard("{Home}");
+    expect(units).toHaveAttribute("aria-selected", "true");
+    await user.keyboard("a");
+    expect(units).toHaveFocus();
   });
 
   it("keeps the Milestone 2 pane without tabs under m2-strength", () => {
