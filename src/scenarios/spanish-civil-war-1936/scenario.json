@@ -144,6 +144,9 @@
         },
         "builds": {
           "spendShare": 0.6,
+          "reserveShare": 0.3,
+          "developmentProjects": 1,
+          "developmentShare": 0.5,
           "maxOrdersPerTurn": 3,
           "itemsPerEmptyQueue": 1
         }
@@ -181,6 +184,9 @@
         },
         "builds": {
           "spendShare": 0.6,
+          "reserveShare": 0.3,
+          "developmentProjects": 1,
+          "developmentShare": 0.5,
           "maxOrdersPerTurn": 3,
           "itemsPerEmptyQueue": 1
         }
@@ -218,6 +224,9 @@
         },
         "builds": {
           "spendShare": 0.6,
+          "reserveShare": 0.3,
+          "developmentProjects": 1,
+          "developmentShare": 0.5,
           "maxOrdersPerTurn": 3,
           "itemsPerEmptyQueue": 1
         }
@@ -2655,10 +2664,7 @@
         "mines": 3,
         "industry": 2
       },
-      "buildings": [
-        "barracks",
-        "factory"
-      ],
+      "buildings": [],
       "rail": 2,
       "port": 2,
       "sources": [
@@ -2666,7 +2672,7 @@
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "The Asturian coalfield and Gij\u00f3n's works and port (El Musel). Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "The Asturian coalfield and Gij\u00f3n's works and port (El Musel). Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune. D28.4: the 1936 garrison's Barracks and Factory are not listed, since only the territory's capital may hold one."
     },
     {
       "id": "cantabria",
@@ -2724,10 +2730,7 @@
       "development": {
         "industry": 1
       },
-      "buildings": [
-        "barracks",
-        "factory"
-      ],
+      "buildings": [],
       "rail": 2,
       "port": 1,
       "sources": [
@@ -2735,7 +2738,7 @@
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "Eibar's small-arms works. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "Eibar's small-arms works. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune. D28.4: the 1936 garrison's Barracks and Factory are not listed, since only the territory's capital may hold one."
     },
     {
       "id": "alava",
@@ -2746,9 +2749,7 @@
       "development": {
         "farms": 1
       },
-      "buildings": [
-        "barracks"
-      ],
+      "buildings": [],
       "rail": 2,
       "port": 0,
       "sources": [
@@ -2756,7 +2757,7 @@
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "Vitoria rose with Mola (Q-PART-9). Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "Vitoria rose with Mola (Q-PART-9). Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune. D28.4: the 1936 garrison's Barracks is not listed, since only the territory's capital may hold one."
     },
     {
       "id": "navarra",
@@ -2965,7 +2966,6 @@
         "industry": 1
       },
       "buildings": [
-        "barracks",
         "depot"
       ],
       "rail": 3,
@@ -2975,7 +2975,7 @@
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "VII Division seat; Medina del Campo junction. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "VII Division seat; Medina del Campo junction. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune. D28.4: the 1936 garrison's Barracks is not listed, since only the territory's capital may hold one."
     },
     {
       "id": "leon",
@@ -2988,7 +2988,6 @@
         "mines": 2
       },
       "buildings": [
-        "barracks",
         "airfield"
       ],
       "rail": 2,
@@ -2998,7 +2997,7 @@
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "Le\u00f3n coalfield; air base. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "Le\u00f3n coalfield; air base. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune. D28.4: the 1936 garrison's Barracks is not listed, since only the territory's capital may hold one."
     },
     {
       "id": "palencia",
@@ -3048,9 +3047,7 @@
       "development": {
         "farms": 2
       },
-      "buildings": [
-        "barracks"
-      ],
+      "buildings": [],
       "rail": 1,
       "port": 0,
       "sources": [
@@ -3058,7 +3055,7 @@
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune. D28.4: the 1936 garrison's Barracks is not listed, since only the territory's capital may hold one."
     },
     {
       "id": "avila",
@@ -3207,9 +3204,7 @@
       "development": {
         "farms": 2
       },
-      "buildings": [
-        "barracks"
-      ],
+      "buildings": [],
       "rail": 2,
       "port": 0,
       "sources": [
@@ -3217,7 +3212,7 @@
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune. D28.4: the 1936 garrison's Barracks is not listed, since only the territory's capital may hold one."
     },
     {
       "id": "badajoz",
@@ -3449,9 +3444,7 @@
         "farms": 2,
         "industry": 1
       },
-      "buildings": [
-        "barracks"
-      ],
+      "buildings": [],
       "rail": 2,
       "port": 2,
       "sources": [
@@ -3459,7 +3452,7 @@
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "Port and naval base; the Strait crossing. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "Port and naval base; the Strait crossing. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune. D28.4: the 1936 garrison's Barracks is not listed, since only the territory's capital may hold one."
     },
     {
       "id": "huelva",
@@ -3491,9 +3484,7 @@
         "farms": 3,
         "mines": 1
       },
-      "buildings": [
-        "barracks"
-      ],
+      "buildings": [],
       "rail": 2,
       "port": 0,
       "sources": [
@@ -3501,7 +3492,7 @@
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "Pe\u00f1arroya mines. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "Pe\u00f1arroya mines. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune. D28.4: the 1936 garrison's Barracks is not listed, since only the territory's capital may hold one."
     },
     {
       "id": "granada",
@@ -3512,9 +3503,7 @@
       "development": {
         "farms": 2
       },
-      "buildings": [
-        "barracks"
-      ],
+      "buildings": [],
       "rail": 1,
       "port": 0,
       "sources": [
@@ -3522,7 +3511,7 @@
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune. D28.4: the 1936 garrison's Barracks is not listed, since only the territory's capital may hold one."
     },
     {
       "id": "malaga",
@@ -4255,7 +4244,8 @@
         "funds": 6
       },
       "turns": 2,
-      "note": "R3: gates infantry, security forces and cavalry. Design note: a starting value for the harness to tune (Q-MR-26, H7)."
+      "capitalOnly": true,
+      "note": "R3: gates infantry, security forces and cavalry. D28.4: built only in a capital sub-territory, the only place it unlocks anything. Design note: a starting value for the harness to tune (Q-MR-26, H7)."
     },
     {
       "id": "factory",
@@ -4264,6 +4254,7 @@
         "funds": 12
       },
       "turns": 4,
+      "capitalOnly": true,
       "cityOnly": true,
       "effects": [
         {
@@ -4271,7 +4262,7 @@
           "extra": 1
         }
       ],
-      "note": "R3, D7: one more Recruit order a turn. Design note: a starting value for the harness to tune (Q-MR-26, H7)."
+      "note": "R3, D7: one more Recruit order a turn. D28.4: built only in a capital sub-territory, the only place it unlocks anything. Design note: a starting value for the harness to tune (Q-MR-26, H7)."
     },
     {
       "id": "depot",
@@ -4282,11 +4273,12 @@
       "turns": 2,
       "effects": [
         {
-          "kind": "replenish-cap",
+          "kind": "replenish-discount",
+          "resource": "funds",
           "share": 0.25
         }
       ],
-      "note": "$4, D7. Design note: a starting value for the harness to tune (Q-MR-26, H7)."
+      "note": "$4, D28.1: materiel on hand makes Replenish cost 25 percent less Funds; it also gates trucks and tanks (R3). Design note: a starting value for the harness to tune (Q-MR-26, H7)."
     },
     {
       "id": "fortifications",
@@ -4312,11 +4304,11 @@
       "turns": 2,
       "effects": [
         {
-          "kind": "replenish-rate",
+          "kind": "replenish-cap",
           "share": 0.25
         }
       ],
-      "note": "R5, D7. Design note: a starting value for the harness to tune (Q-MR-26, H7)."
+      "note": "R5, D28.1: the per-turn Replenish cap rises from half the establishment to three quarters. Design note: a starting value for the harness to tune (Q-MR-26, H7)."
     },
     {
       "id": "airfield",

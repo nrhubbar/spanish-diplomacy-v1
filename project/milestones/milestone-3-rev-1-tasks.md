@@ -187,7 +187,7 @@ This replaces M26 for `m3-modular`. Each step is one phase module in `engine/pha
 | 7 | Standing battles in contested territories (M27), and their flips and retreats. | C1-C3 |
 | 8 | Control: territories, sub-territories (including the one-a-turn sweep) and cities. Rail damage. | P3, $8 |
 | 9 | Morale (rest, Replenish, rally), fatigue, digging in, frostbite, and general deaths. | C4-C7, T4, U5 |
-| 10 | Training, replenishment arrivals and build queues advance. New units appear. | R4, R7, $5, C8 |
+| 10 | Training and build queues advance. New units appear. (Replenished men arrive at step 9.) | R4, R7, $5, C8 |
 | 11 | Income from whole territories, minus raid cuts. | $2, U3 |
 | 12 | Victory. | P7 |
 

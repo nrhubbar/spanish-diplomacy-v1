@@ -13,6 +13,7 @@ import type {
   BuildingId,
   DevelopmentId,
   GameState,
+  ResourceId,
   Resources,
   Scenario,
   SubTerritoryId,
@@ -233,7 +234,7 @@ describe("building effects through the hooks ($4)", () => {
     ...scenario,
     index: {
       ...scenario.index,
-      buildings: new Map([...scenario.index.buildings, ["fort" as BuildingId, { capitalOnly: false, cityOnly: false, cost: funds(1), effects: [{ kind: "defence-roll", roll: 1 }, { kind: "replenish-cap", share: 0.25 }, { kind: "replenish-rate", share: 0.5 }], id: "fort" as BuildingId, name: "Fort", turns: 1 }]])
+      buildings: new Map([...scenario.index.buildings, ["fort" as BuildingId, { capitalOnly: false, cityOnly: false, cost: funds(1), effects: [{ kind: "defence-roll", roll: 1 }, { kind: "replenish-cap", share: 0.25 }, { kind: "replenish-discount", resource: "funds" as ResourceId, share: 0.5 }], id: "fort" as BuildingId, name: "Fort", turns: 1 }]])
     }
   };
   const state = withSites(start(), { "west-hills": { buildings: ["fort" as BuildingId] } });
@@ -246,8 +247,8 @@ describe("building effects through the hooks ($4)", () => {
 
   it("gives replenishment bonuses to the holder's units", () => {
     const red = Object.values(state.units).find((candidate) => candidate.factionId === "red")!;
-    expect(buildingReplenishBonus({ scenario: fortified, state, territoryId: territory("westfold"), unitId: red.id })).toEqual({ capShare: 0.25, rateShare: 0.5 });
-    expect(buildingReplenishBonus({ scenario: fortified, state, territoryId: territory("westfold"), unitId: unit("ghost") })).toEqual({ capShare: 0, rateShare: 0 });
+    expect(buildingReplenishBonus({ scenario: fortified, state, territoryId: territory("westfold"), unitId: red.id })).toEqual({ capShare: 0.25, discount: { funds: 0.5 } });
+    expect(buildingReplenishBonus({ scenario: fortified, state, territoryId: territory("westfold"), unitId: unit("ghost") })).toEqual({ capShare: 0, discount: {} });
   });
 });
 

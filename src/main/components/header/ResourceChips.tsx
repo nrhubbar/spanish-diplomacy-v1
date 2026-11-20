@@ -3,9 +3,11 @@ import { plannedSpend } from "../../engine/economy/catalogue";
 import { holdersIn, territoriesHeldWhole } from "../../engine/economy/holdings";
 import { incomeFor } from "../../engine/economy/income";
 import { amountOf, treasuryOf } from "../../engine/economy/resources";
+import { addResources } from "../../engine/resources";
 import type { ResourceId } from "../../engine/types";
 import { useSession } from "../../hooks";
 import { isInGame } from "../../state/session";
+import { replenishmentCost } from "../../state/planning/recruitment";
 import { resourceAmount, resourceAmountInFull, signedResourceAmount } from "../../presentation/economy";
 import { EconomyIcon, resourceIcon } from "../economy/EconomyIcon";
 import type { HeaderSlotProps } from "./slots";
@@ -23,14 +25,15 @@ function Chips({ scenario, state, viewer }: HeaderSlotProps): JSX.Element | null
   const record = isInGame(session) ? session.game.state : undefined;
   const builds = session.phase === "planning" ? session.draft.builds : undefined;
   const recruits = session.phase === "planning" ? session.draft.recruits : undefined;
+  const replenishments = session.phase === "planning" ? session.draft.replenishments : undefined;
   const source = record?.turnNumber === state.turnNumber ? record : state;
   const [open, setOpen] = useState<ResourceId | undefined>(undefined);
   const id = useId();
   const income = useMemo(() => (viewer === undefined || scenario.rules.economy === "none" ? undefined : incomeFor(scenario, source, viewer)), [scenario, source, viewer]);
   if (viewer === undefined || income === undefined || state.treasuries[viewer] === undefined) return null;
   const balance = treasuryOf(state, viewer);
-  // Builds and Recruit orders; Replenish prices are left to the Recruit tab's basket line.
-  const spend = plannedSpend(scenario, [...(builds ?? []), ...(recruits ?? [])]);
+  // m11: builds, Recruit and Replenish orders, as the Recruit tab's "Left" counts them.
+  const spend = addResources(plannedSpend(scenario, [...(builds ?? []), ...(recruits ?? [])]), replenishmentCost(scenario, state, viewer, replenishments ?? []));
   const whole = open === undefined ? 0 : territoriesHeldWhole(scenario, source.subTerritories, viewer).length;
   const contested = open === undefined ? 0 : scenario.territories.filter((territory) => {
     const holders = holdersIn(scenario, source.subTerritories, territory.id);

@@ -69,8 +69,8 @@ const effectIcons: Readonly<Record<BuildingDefinition["effects"][number]["kind"]
   "defence-roll": "fort",
   "rail-departures": "junction",
   "recruit-slots": "gear",
-  "replenish-cap": "crate",
-  "replenish-rate": "cross"
+  "replenish-cap": "cross",
+  "replenish-discount": "crate"
 };
 
 /** A building's icon, from its first effect; a building without effects (a barracks) gets a flag. */

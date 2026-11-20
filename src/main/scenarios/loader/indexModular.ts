@@ -68,7 +68,7 @@ export function indexSystems(document: ModularScenarioDocument | undefined): Mod
     capitalOnly: building.capitalOnly,
     cityOnly: building.cityOnly,
     cost: resources(building.cost),
-    effects: building.effects,
+    effects: building.effects.map((effect) => (effect.kind === "replenish-discount" ? { ...effect, resource: effect.resource as ResourceId } : effect)),
     id: building.id as BuildingId,
     name: building.name,
     turns: building.turns,

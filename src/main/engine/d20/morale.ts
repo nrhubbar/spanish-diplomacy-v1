@@ -3,7 +3,7 @@ import { type Armies, replaceArmies } from "../board";
 import type { Phase, TurnDraft } from "../phases/draft";
 import type { FactionId, FatigueOutcome, RecoveredOutcome, Scenario, TerritoryId, UnitId, UnitState } from "../types";
 import { isContested, isPartitioned } from "../partition/holders";
-import { digIn } from "../works";
+import { digIn, notEntrenching } from "../works";
 import { isGeneralUnit, requireD20, unitRank } from "./rules";
 
 /**
@@ -104,7 +104,7 @@ export const updateGradedMorale: Phase = (draft) => {
   }
   const armies: Armies = replaceArmies(draft.armies, updates);
   const foughtIn = new Set([...draft.front.battles, ...draft.standing].map((pending) => pending.site.territoryId));
-  const fortification = digIn(scenario, start, { armies, control: draft.control.control }, new Set([...foughtIn, ...contested]), moved,
+  const fortification = digIn(scenario, start, { armies, control: draft.control.control }, new Set([...foughtIn, ...contested]), notEntrenching(draft),
     { max: rules.modifiers.worksMax, perTurn: rules.modifiers.worksPerTurn });
   return { ...draft, armies, events: [...draft.events, ...fatigueEvents], fortification, recovered: [...draft.recovered, ...recovered] };
 };

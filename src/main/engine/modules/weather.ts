@@ -24,10 +24,12 @@ const recordWeather: Phase = (draft) => {
 };
 
 /**
- * T4, D7: a unit that moved this turn from or into a territory whose weather carries
+ * T4, D7: a unit that moved or withdrew this turn from or into a territory whose weather carries
  * `frostbite` (Severe cold) loses that share of its men, rounded to the nearest man, at step 9.
- * Units already gone (destroyed, surrendered) lose nothing more. Under the d20, a unit left below
- * `breakUpShare` of its full strength breaks up (D6), as after a battle's losses.
+ * "Into" is where the unit actually ended up: an intercepted move stops short, and a blocked
+ * withdrawal falls back (the `withdrew` outcome names the real destination). Units already gone
+ * (destroyed, surrendered) lose nothing more. Under the d20, a unit left below `breakUpShare` of
+ * its full strength breaks up (D6), as after a battle's losses.
  */
 const takeFrostbite: Phase = (draft) => {
   const { scenario, start } = draft.input;
@@ -35,18 +37,21 @@ const takeFrostbite: Phase = (draft) => {
   const armies: Record<UnitId, GameState["units"][UnitId]> = { ...draft.armies };
   const brokenUp: UnitId[] = [];
   const events: FrostbiteOutcome[] = [];
-  for (const order of draft.orders.valid) {
-    const unit = armies[order.unitId];
+  const marches = [
+    ...draft.orders.valid.map((order) => ({ from: draft.orders.origins.get(order.unitId) ?? order.from, unitId: order.unitId })),
+    ...draft.events.flatMap((event) => (event.kind === "withdrew" ? [{ from: event.order.from, unitId: event.order.unitId }] : []))
+  ];
+  for (const { from, unitId } of marches) {
+    const unit = armies[unitId];
     if (unit === undefined) continue;
-    const from = draft.orders.origins.get(order.unitId) ?? order.from;
-    const worst = Math.max(share(from), share(order.to));
+    const worst = Math.max(share(from), share(unit.territoryId));
     const men = Math.round(unit.strength * worst);
     if (men <= 0) continue;
     const left = Math.max(0, unit.strength - men);
     const fullStrength = (scenario.index.units.get(unit.id) ?? start.raised[unit.id])?.fullStrength ?? unit.strength;
     const breaksUp = left <= 0 || (usesD20(scenario) && left < requireD20(scenario).breakUpShare * fullStrength);
     if (breaksUp) brokenUp.push(unit.id);
-    else armies[order.unitId] = { ...unit, strength: left };
+    else armies[unitId] = { ...unit, strength: left };
     events.push({ factionId: unit.factionId, kind: "frostbite", men, territoryId: unit.territoryId, unitId: unit.id, ...(breaksUp ? { destroyed: true as const } : {}) });
   }
   return events.length === 0 ? draft : { ...draft, armies: removeArmies(armies, brokenUp), events: [...draft.events, ...events] };

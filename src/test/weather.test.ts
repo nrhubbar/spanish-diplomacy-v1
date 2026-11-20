@@ -152,6 +152,18 @@ describe("the weather's effects (T4)", () => {
     expect(result.finalState.units[unit("n1")]?.strength).toBe(100);
     expect(weatherIn(spain(), state, madrid)?.name).toBe("Severe cold");
   });
+
+  it("costs a unit that withdraws in Severe cold too, read where it ends up (m2)", () => {
+    const start = initialGameState(spain());
+    const militia = unit("rep-asturian-militia");
+    const state = withWeather(start, { cantabrian: "severe-cold" });
+    const order = { factionId: faction("republic"), from: territory("asturias"), kind: "withdraw", to: territory("cantabria"), unitId: militia } as const;
+    const result = resolveTurn(spain(), state, [{ factionId: faction("republic"), orders: [order] }], 1);
+    const withdrew = result.outcomes.find((outcome) => outcome.kind === "withdrew");
+    expect(withdrew).toBeDefined();
+    const before = start.units[militia]!.strength;
+    expect(result.outcomes).toContainEqual({ factionId: "republic", kind: "frostbite", men: Math.round(before * 0.05), territoryId: result.finalState.units[militia]!.territoryId, unitId: militia });
+  });
 });
 
 describe("time running out (T5, T6)", () => {

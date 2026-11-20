@@ -62,8 +62,8 @@ export const unitEffectSchema = z.discriminatedUnion("kind", [
 
 export const buildingEffectSchema = z.discriminatedUnion("kind", [
   z.strictObject({ kind: z.literal("recruit-slots"), extra: positiveWholeSchema }),
-  z.strictObject({ kind: z.literal("replenish-rate"), share: shareSchema }),
   z.strictObject({ kind: z.literal("replenish-cap"), share: shareSchema }),
+  z.strictObject({ kind: z.literal("replenish-discount"), resource: slugSchema, share: shareSchema }),
   z.strictObject({ kind: z.literal("rail-departures"), extra: positiveWholeSchema }),
   z.strictObject({ kind: z.literal("airbase") }),
   z.strictObject({ kind: z.literal("all-weather-airbase") }),

@@ -83,6 +83,19 @@ describe("the Replenish order (X7, R5)", () => {
     expect(orderOf(moving, worn.units[unitHere.id]!)).toBe("move");
   });
 
+  it("is refused when the rest of the draft leaves too little to pay for it (m11)", () => {
+    const poor: GameState = { ...worn, treasuries: { ...worn.treasuries, [republic]: { funds: 0, manpower: 0 } as Resources } };
+    let session = selectTerritory(planning(poor), catalunya);
+    session = chooseOrder(scenario, { ...session, draft: { ...session.draft, selectedUnitIds: [unitHere.id] } }, "replenish");
+    expect(session.draft.replenishments ?? []).toEqual([]);
+    expect(session.draft.feedback).toMatch(/Not enough/u);
+    // With money, the same order is taken and counts in the basket.
+    let rich = selectTerritory(planning(worn), catalunya);
+    rich = chooseOrder(scenario, { ...rich, draft: { ...rich.draft, selectedUnitIds: [unitHere.id] } }, "replenish");
+    expect(rich.draft.replenishments).toHaveLength(1);
+    expect(Object.values(basketCost(scenario, rich)).some((value) => value > 0)).toBe(true);
+  });
+
   it("describes men, cost, arrival and the cancel rule", () => {
     expect(replenishDetail(scenario, worn, [worn.units[unitHere.id]!])).toMatch(/^\+\d+ men, arriving at the end of the turn \u00b7 .*Funds.* \u00b7 cancelled and refunded if the unit fights$/u);
   });

@@ -25,7 +25,9 @@ export function viewFor(scenario: Scenario, state: GameState, viewer: FactionId 
     reveals,
     subTerritories,
     training: state.training.filter((item) => item.factionId === viewer || revealed.has(item.territoryId)),
-    treasuries: Object.fromEntries(Object.entries(state.treasuries).filter(([factionId]) => visibleFactions.has(factionId as FactionId)))
+    treasuries: Object.fromEntries(Object.entries(state.treasuries).filter(([factionId]) => visibleFactions.has(factionId as FactionId))),
+    // B2: the Replenish carry is the viewer's own bookkeeping; nobody else's shows.
+    ...(state.replenishCarry === undefined ? {} : { replenishCarry: Object.fromEntries(Object.entries(state.replenishCarry).filter(([factionId]) => factionId === viewer)) })
   };
 }
 

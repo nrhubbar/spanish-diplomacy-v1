@@ -39,7 +39,7 @@ const hooks: RuleHooks = {
   grounded: () => true,
   incomeDelta: () => ({ [funds]: -5 }),
   recruitRequirements: () => ["Needs a test building."],
-  replenishBonus: () => ({ capShare: 0.25, rateShare: 0.25 })
+  replenishBonus: () => ({ capShare: 0.25, discount: { [funds]: 0.25 } })
 };
 
 describe("cross-area rule hooks", () => {
@@ -67,14 +67,14 @@ describe("cross-area rule hooks", () => {
     expect(hookedCanDigIn({ ...base, factionId: faction("red"), territoryId: territory("westfold") })).toBe(false);
     expect(hookedGrounded({ ...base, territoryId: territory("westfold"), unitId: unit("red-guard") })).toBe(true);
     expect(hookedIncome({ ...base, factionId: faction("red"), income: { [funds]: 3 } as Resources })).toEqual({ funds: 0 });
-    expect(hookedReplenishBonus({ ...base, territoryId: territory("westfold"), unitId: unit("red-guard") })).toEqual({ capShare: 0.25, rateShare: 0.25 });
+    expect(hookedReplenishBonus({ ...base, territoryId: territory("westfold"), unitId: unit("red-guard") })).toEqual({ capShare: 0.25, discount: { [funds]: 0.25 } });
     const recruit = { ...base, factionId: faction("red"), subTerritoryId: "west-town-quarter" as SubTerritoryId, territoryId: territory("westfold"), unitTypeId: "foot" as UnitTypeId };
     expect(hookedRecruitRequirements(recruit)).toEqual(["Needs a test building."]);
     const plain = { scenario: tiny(), state: initialGameState(tiny()) };
     expect(hookedAllowanceDelta({ ...plain, factionId: faction("red"), from: territory("westfold"), unitIds: [] })).toBe(0);
     expect(hookedGrounded({ ...plain, territoryId: territory("westfold"), unitId: unit("red-guard") })).toBe(false);
     expect(hookedIncome({ ...plain, factionId: faction("red"), income: { [funds]: 3 } as Resources })).toEqual({ funds: 3 });
-    expect(hookedReplenishBonus({ ...plain, territoryId: territory("westfold"), unitId: unit("red-guard") })).toEqual({ capShare: 0, rateShare: 0 });
+    expect(hookedReplenishBonus({ ...plain, territoryId: territory("westfold"), unitId: unit("red-guard") })).toEqual({ capShare: 0, discount: {} });
     expect(hookedRecruitRequirements({ ...recruit, ...plain })).toEqual([]);
   });
 });

@@ -93,7 +93,11 @@ export function startDraft(input: TurnInput): TurnDraft {
   const { start } = input;
   const { cityControl, control, fortification, units } = start;
   const { generals, raidCuts, raised, reveals, subTerritories, training, treasuries } = start;
-  const systems: SystemState = { generals, raidCuts, raised, reveals, subTerritories, training, treasuries, ...(start.weather === undefined ? {} : { weather: start.weather }) };
+  const systems: SystemState = {
+    generals, raidCuts, raised, reveals, subTerritories, training, treasuries,
+    ...(start.replenishCarry === undefined ? {} : { replenishCarry: start.replenishCarry }),
+    ...(start.weather === undefined ? {} : { weather: start.weather })
+  };
   return {
     armies: units,
     control: { cityControl, control },

@@ -64,7 +64,12 @@ function checkResources(document: ModularScenarioDocument, issues: Issues): void
     issues.ref(`development[${index}].resource`, track.resource, resources, "resource");
     amounts(`development[${index}].upgrade.cost`, track.upgrade.cost);
   });
-  document.buildings.forEach((building, index) => { amounts(`buildings[${index}].cost`, building.cost); });
+  document.buildings.forEach((building, index) => {
+    amounts(`buildings[${index}].cost`, building.cost);
+    building.effects.forEach((effect, effectIndex) => {
+      if (effect.kind === "replenish-discount") issues.ref(`buildings[${index}].effects[${effectIndex}].resource`, effect.resource, resources, "resource");
+    });
+  });
   if (document.improvements !== undefined) {
     amounts("improvements.rail.cost", document.improvements.rail.cost);
     amounts("improvements.port.cost", document.improvements.port.cost);

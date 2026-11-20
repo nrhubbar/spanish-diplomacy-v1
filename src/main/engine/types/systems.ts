@@ -144,6 +144,18 @@ export interface AiBuildBudget {
   readonly maxOrdersPerTurn: number;
   /** Share of each resource left after this turn's Recruit orders that builds may spend. */
   readonly spendShare: number;
+  /**
+   * M5: share of each resource that builds cost which the Recruit planner leaves unspent. It
+   * leaves at least the price of the development item it saves for (`developmentProjects`).
+   */
+  readonly reserveShare: number;
+  /**
+   * M5: development items (Farms, Mines, Industry) the faction keeps in its queues. While it has
+   * fewer, Recruit orders leave the best one's price and Build orders buy it first.
+   */
+  readonly developmentProjects: number;
+  /** M5: the most of a resource's balance the saved-for development item may take; above it, Recruit orders come first. */
+  readonly developmentShare: number;
 }
 
 /** E7: a computer player's weights for one faction. The strategy logic stays in code. */

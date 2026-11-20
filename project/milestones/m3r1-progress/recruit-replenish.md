@@ -26,12 +26,12 @@ Mode: make it work (declog D13). Branch `m3r1-recruit-replenish`, merged with `m
 - RR-8. C8, lost capital: if the faction no longer holds the capital sub-territory at step 10, its training is lost with the payment, like a build in progress ($5). This reports `training-refunded` with an empty refund and a reason. **Owner gap.**
 - RR-9. Recruited ids are `r_<faction>_<type>_<serial>`; scenario ids are kebab-case, so an id with underscores cannot clash with one. The definition is derived from the id: "<Type> No. <serial>", with the type's establishment. `requireUnitDefinition(scenario, id)` falls back to it, so no call site had to thread state through. Its return type is narrowed to `UnitIdentity` (name, designation, faction, type, full strength, general). `GameState.raised` records the same definition.
 - RR-10. `unitOrder` (scenario-order tie-breaks) places recruited units after every scenario unit, by serial, then type, then faction (`raisedOrder`).
-- RR-11. Replenish price = `replenishCostShare` × the type's Recruit cost × the men restored ÷ the unit's full strength, rounded up per resource. That is half the price per value point. The per-turn cap is (`replenishShare` + hook `rateShare` + hook `capShare`) × full strength. **Owner gap:** under this reading the Hospital (+25% rate) and the Depot (+25% cap) do the same thing.
+- RR-11. Replenish owes `replenishCostShare` × the type's Recruit cost × the men restored ÷ the unit's full strength, less the hook's discount per resource, in thousandths of a point. That is half the price per value point. Since m3r1-fix-economy-recruit (D28.3) each faction carries what it owes (`replenishCarry`) and pays whole points as the debt adds up, instead of rounding each order up. The per-turn cap is (`replenishShare` + hook `capShare`) × full strength. The owner gap (Hospital and Depot did the same thing) is settled by D28.1: the Hospital raises the cap to three quarters, the Depot takes a quarter off the Funds.
 - RR-12. A demoralized unit already at full strength may replenish for nothing (0 men, 0 cost), which clears its morale. **Owner gap:** charge a minimum?
 - RR-13. Replenish needs uncontested territory under the unit's own faction's control (C1, C5).
 - RR-14. Cancel rule (Q-RECR-5 as ticked, Q-MR-05): a unit on any battle side at steps 4, 5 or 7 (meeting, territory or standing) cancels, and so does a unit that moved territory (fell back) or was lost. The refund is in full.
 - RR-15. `replenish-applied.recovered` is read from the start-of-turn morale. The d6 rest rule (M23) runs earlier in step 9 and may also report a recovery for the same unit.
-- RR-16. `replenishBonus` is only consumed here, not answered. The Hospital and Depot numbers must come from economy-builds' hook, so they are not counted twice. Until then, no bonus applies.
+- RR-16. `replenishBonus` is only consumed here; the economy module answers it from the Hospital's `replenish-cap` and the Depot's `replenish-discount` (D28.1).
 - RR-17. UI draft: `Draft.recruits` and `Draft.replenishments` (optional). `withDraft` carries them over unless the new draft sets them, and `focusOn` and `unfocus` keep them. End Turn submits `draftOrders(draft)`. Planning a move, Entrench or Rest drops a unit's Replenish order, and Replenish drops its move. `OrderKind` and `ArmyOrder` gain `replenish` ("Replenishing").
 - RR-18. The Recruit tab takes every rule answer from the engine. The + button is disabled, with its reason in its title and the hover details, when the type is locked, the D7 slots are full, or the basket leaves too little. The details sit below the row, because the pane's scroll area clips anything drawn outside it. On phones they show on tap (focus) of a locked row only.
 - RR-19. The Recruit computer player (no random draws, CT-36) works as follows:
@@ -48,13 +48,10 @@ Mode: make it work (declog D13). Branch `m3r1-recruit-replenish`, merged with `m
 
 ## Stubbed
 
-- `isContested`: read from control and holders until sub-territories exports one.
-- Replenish bonuses: none until economy-builds answers `replenishBonus`.
-- The basket's "Left" ignores this turn's Build orders (TODO in `balanceAfterBasket`). `ai/orders/spending.ts` does not yet price Build orders.
-- No income lands yet (economy pass-through), so spending comes only from starting stocks.
+- Nothing is stubbed any more: `isContested` comes from the partition module, the economy answers `replenishBonus`, the basket's "Left" and `ai/orders/spending.ts` count Build orders, and income lands at step 11.
 
 - There is no `@capture` of the Replenish menu: no unit starts below strength, and a later turn's board depends on the seed. The menu is covered by the RTL test `recruitmentScreens.test.tsx` instead. It is not yet compared with `ux-orders-replenish.webp` by eye.
-- A serial can be reused after an RR-8 loss, because the lost item leaves no record. Two units would then share a report name.
+- A serial can be reused after an RR-8 loss or refund, because the item leaves no record. Two units would then share a report name. RR-8 itself is settled by D28.2: training not yet started is refunded, training under way is lost.
 
 ## Needs from
 

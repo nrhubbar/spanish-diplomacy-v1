@@ -51,7 +51,7 @@ Mode: make it work (declog D13). Base: `milestone-3-rev-1` at `eb9515f` (contrac
     - `keepBasket` carries them through selection changes, and `draftOrders` submits them.
     - `balanceAfterBasket` and the build preview both subtract the whole basket. A build cannot be planned with money the Recruit basket needs, because builds pay first at reveal.
 11. **EB-11. The resource chips show the balance after this turn's planned orders,** with next turn's income. The detail shows the full balance, what the planned orders spend, how many territories are held whole, contested territories, raid cuts, and other factions as "hidden", or with a value marked "(recon)".
-12. **EB-12. Resources show as raw numbers with their scenario names** ("Manpower 10 +27"), not "18k". Code knows no resource ids.
+12. **EB-12. Resources show as raw numbers with their scenario names** ("Manpower 10 +27"), not "18k". Code knows no resource ids. *Superseded (D25):* `resources[].display` now gives Manpower its "k" scale.
 13. **EB-13. Icons come from data shapes, not ids (X8):**
     - a building's icon from its first effect, with a flag when it has none (Barracks);
     - a development track's icon from `cityOnly` (industry), else from its resource;
@@ -68,7 +68,7 @@ Mode: make it work (declog D13). Base: `milestone-3-rev-1` at `eb9515f` (contrac
     - "... to <holder>", when another faction holds it whole;
     - "Contested: pays nobody".
     Development is public, so the chip is too.
-19. **EB-19. The chips deviate from the approved captures.** `ux-header-a.webp` shows "Manpower 18k +9k", and the pane shows "+1k men". I show raw amounts with the scenario's resource names ("Manpower 10 +27"), because code knows no resource ids and data has no display scale. See "Needs from" (contract).
+19. **EB-19. The chips deviate from the approved captures.** `ux-header-a.webp` shows "Manpower 18k +9k", and the pane shows "+1k men". I show raw amounts with the scenario's resource names ("Manpower 10 +27"), because code knows no resource ids and data has no display scale. See "Needs from" (contract). *Superseded (D25):* the display scale exists, so the chips read "Manpower 18k +9k".
 20. **EB-20. Render cost.**
     - The Build panel renders only while open: one condition in `TerritoryTabs`.
     - The chips read the game record's state and planned builds through narrow store selections, behind a `memo`, so selecting territories does not re-render them.

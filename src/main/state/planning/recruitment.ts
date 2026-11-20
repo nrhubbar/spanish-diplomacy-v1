@@ -1,7 +1,7 @@
 import { plannedSpend } from "../../engine/economy/catalogue";
-import { recruitSiteProblem, recruitSlots, replenishProblem, replenishQuote, typeLock } from "../../engine/recruitment/rules";
-import { addResources, subtractResources, treasuryOf } from "../../engine/resources";
-import type { Order, RecruitOrder, ReplenishOrder, Resources, Scenario, TerritoryId, UnitTypeId } from "../../engine/types";
+import { priceReplenishments, recruitSiteProblem, recruitSlots, replenishProblem, typeLock } from "../../engine/recruitment/rules";
+import { addResources, canAfford, subtractResources, treasuryOf } from "../../engine/resources";
+import type { FactionId, GameState, Order, RecruitOrder, ReplenishOrder, Resources, Scenario, TerritoryId, UnitState, UnitTypeId } from "../../engine/types";
 import type { Draft } from "../session";
 import { type PlanningSession, availableUnitIds, feedback, selectedUnits, selecting, withDraft } from "./selection";
 
@@ -21,15 +21,21 @@ export function recruitQuantity(draft: Draft, territoryId: TerritoryId, typeId: 
   return (draft.recruits ?? []).filter((order) => order.territoryId === territoryId && order.unitTypeId === typeId).length;
 }
 
-/** What the draft's Recruit and Replenish orders will cost at reveal. */
+/** What the draft's Recruit and Replenish orders will cost at reveal; Replenish orders in turn against the carry (B2). */
 export function basketCost(scenario: Scenario, session: PlanningSession): Resources {
   const recruits = (session.draft.recruits ?? []).reduce<Resources>(
     (sum, order) => addResources(sum, scenario.index.unitTypes.get(order.unitTypeId)?.recruit?.cost ?? {}), {}
   );
-  return (session.draft.replenishments ?? []).reduce<Resources>((sum, order) => {
-    const unit = session.game.state.units[order.unitId];
-    return unit === undefined ? sum : addResources(sum, replenishQuote(scenario, session.game.state, unit)?.cost ?? {});
-  }, recruits);
+  return addResources(recruits, replenishmentCost(scenario, session.game.state, session.factionId, session.draft.replenishments ?? []));
+}
+
+/** B2: what these Replenish orders pay at reveal, priced in turn against the faction's carry. */
+export function replenishmentCost(scenario: Scenario, state: GameState, factionId: FactionId, orders: readonly ReplenishOrder[]): Resources {
+  const units = orders.flatMap((order): UnitState[] => {
+    const unit = state.units[order.unitId];
+    return unit === undefined ? [] : [unit];
+  });
+  return priceReplenishments(scenario, state, factionId, units).total;
 }
 
 /** The balance left after the draft's purchases: Recruit and Replenish orders, and Build orders ($5). */
@@ -79,6 +85,12 @@ export function chooseReplenish(scenario: Scenario, session: PlanningSession): P
   const problem = units.map((unit) => replenishProblem(scenario, session.game.state, unit)).find((reason) => reason !== undefined);
   if (units.length === 0 || problem !== undefined) return feedback(session, problem ?? "Select at least one unit first.");
   const chosen = new Set(units.map((unit) => unit.id));
+  // m11, EB-11: refused while the rest of the draft's purchases leave too little to pay for it.
+  const without: PlanningSession = { ...session, draft: { ...session.draft, replenishments: (session.draft.replenishments ?? []).filter((order) => !chosen.has(order.unitId)) } };
+  const left = balanceAfterBasket(scenario, without);
+  const price = replenishmentCost(scenario, session.game.state, session.factionId, [...(without.draft.replenishments ?? []), ...units.map((unit) => ({ factionId: session.factionId, kind: "replenish" as const, unitId: unit.id }))]);
+  const extra = subtractResources(price, replenishmentCost(scenario, session.game.state, session.factionId, without.draft.replenishments ?? []));
+  if (session.game.state.treasuries[session.factionId] !== undefined && !canAfford(left, extra)) return feedback(session, "Not enough Funds or Manpower left to replenish.");
   const orders = session.draft.orders.filter((order) => !chosen.has(order.unitId));
   const replenishments: ReplenishOrder[] = [
     ...(session.draft.replenishments ?? []).filter((order) => !chosen.has(order.unitId)),

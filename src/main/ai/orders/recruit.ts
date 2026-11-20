@@ -1,19 +1,20 @@
+import { compareIds } from "../../engine/board";
 import { armyValue } from "../../engine/combat";
 import { neighborsOf, requireUnitDefinition } from "../../engine/lookup";
 import { recruitSiteProblem, recruitSlots, recruitableTypes, typeLock } from "../../engine/recruitment/rules";
-import { canAfford, scaleResources, subtractResources } from "../../engine/resources";
+import { canAfford, subtractResources } from "../../engine/resources";
 import type { FactionId, GameState, RecruitOrder, ResourceId, Resources, Scenario, TerritoryId, UnitState, UnitTypeDefinition } from "../../engine/types";
 import type { OrderPlanner } from "./planner";
 import { airRecruitChoices } from "./airRecruits";
+import { buildReserve } from "./build";
 import { balanceLeft } from "./spending";
 
 /**
- * Design notes for the harness to tune (H7). The share of each resource the Recruit planner
- * leaves unspent for the Build planner, which runs after it; a type's price counts each
- * resource against the faction's balance of it, so the scarcer resource weighs more; and each
- * turn of training lowers a type's worth a little, so a threatened front prefers quicker units.
+ * Design notes for the harness to tune (H7). A type's price counts each resource against the
+ * faction's balance of it, so the scarcer resource weighs more; and each turn of training lowers
+ * a type's worth a little, so a threatened front prefers quicker units. What the planner leaves
+ * for the Build planner, which runs after it, is the profile's (`buildReserve`, M5).
  */
-const reserveShare = 0.3;
 const trainingDrag = 0.15;
 /** Artillery-like types (`cannot-attack-alone`) are wanted up to one per this many own ground units. */
 const supportRatio = 4;
@@ -68,7 +69,8 @@ export const planRecruits: OrderPlanner<RecruitOrder> = (context) => {
   const { factionId, scenario, state } = context;
   if (scenario.recruitment === undefined || scenario.rules.recruitment === "none") return [];
   const start = balanceLeft(context);
-  const floor = scaleResources(start, reserveShare);
+  // M5: the profile's reserve of what builds cost, and at least the development item saved for.
+  const floor = buildReserve(context, start);
   let balance = start;
   const spendable = (price: Resources): boolean => canAfford(subtractResources(balance, floor), price);
 
@@ -96,7 +98,7 @@ export const planRecruits: OrderPlanner<RecruitOrder> = (context) => {
   for (const site of sites) {
     const open = trainable(site.territoryId)
       .filter((type) => carriesOf(type) === 0)
-      .sort((left, right) => worth(right, start) - worth(left, start) || left.id.localeCompare(right.id));
+      .sort((left, right) => worth(right, start) - worth(left, start) || compareIds(left.id, right.id));
     // U1-U3 (m3r1-air-generals): anti-air and aircraft first, where the site can train them.
     const air = airRecruitChoices(scenario, state, factionId, site.territoryId, recruitableTypes(scenario)
       .filter((type) => (type.air !== undefined || type.effects.some((effect) => effect.kind === "raid-defence")) && typeLock(scenario, state, factionId, site.territoryId, type).reasons.length === 0));
