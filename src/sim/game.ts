@@ -60,14 +60,13 @@ export interface GameSetup {
 }
 
 /**
- * S3: units that left under fire. Battle retreats (M21), bounced moves that retreated, and
- * Withdraw orders (C1), which are only possible from contested ground, the alternative to
- * standing and fighting there.
+ * S3: units that left under fire. Battle retreats (M21) and bounced moves that retreated. A
+ * Withdraw order (C1) is the computer player's own choice, so it is not excused: S3 exists to
+ * catch a planner walking off objectives (declog D24).
  */
 export function retreatedUnits(outcomes: readonly TurnOutcome[]): ReadonlySet<string> {
   return new Set(outcomes.flatMap((outcome): string[] => {
     if (outcome.kind === "battle") return outcome.retreats.map((retreat) => retreat.unitId);
-    if (outcome.kind === "withdrew") return [outcome.order.unitId];
     return outcome.kind === "bounced-move" && outcome.retreatedTo !== undefined ? [outcome.order.unitId] : [];
   }));
 }
@@ -164,9 +163,9 @@ export function playGame(setup: GameSetup, seed: number): GameLine {
     quiet = changed ? 0 : quiet + 1;
     longestQuiet = Math.max(longestQuiet, quiet);
 
-    // S3. Driven out is not abandoned: an army that retreated (M21) or withdrew (C1) left under
-    // fire. Only units that hold ground count, so an aircraft rebased from a lost airfield is not
-    // an objective walked away from.
+    // S3. Driven out is not abandoned: an army that retreated (M21) left under fire. A
+    // withdrawal (C1) is a choice and still counts (D24). Only units that hold ground count, so
+    // an aircraft rebased from a lost airfield is not an objective walked away from.
     const retreated = retreatedUnits(result.outcomes);
     const groundWas = groundPiecesOf(scenario, before, was);
     const groundNow = groundPiecesOf(scenario, after, now);
