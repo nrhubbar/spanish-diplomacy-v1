@@ -1,6 +1,6 @@
 # `m3r1-sub-territories` progress
 
-Make-it-work pass (declog D13). Branch `m3r1-sub-territories`, `E2E_PORT=5311`. Merged `milestone-3-rev-1` at `eb9515f` (contract CP4) before building.
+Make-it-work pass (declog D13). Branch `m3r1-sub-territories`, `E2E_PORT=5311`. Merged `milestone-3-rev-1` at `eb9515f` (contract CP4) before building, and again at `38b68ba` (d20-combat, recruit-replenish, weather-timer).
 
 ## What works
 
@@ -44,6 +44,9 @@ Make-it-work pass (declog D13). Branch `m3r1-sub-territories`, `E2E_PORT=5311`. 
 - ST-17. The computer player's `hopelessRatio` is 2 (design note): withdraw when the strongest enemy faction's attack is at least twice its defence there, or every unit is demoralized.
 - ST-18. M2 rule tests on the Spanish board now use `spainM2()` (Spain with partition `none`), because `provinces` replaces M6/M7 there. One AI test sets the Milestone 2 start control explicitly.
 
+- ST-19. After the `38b68ba` merge: `isContested` in `engine/partition/holders.ts` is the one W6 test. `recruitment/rules.ts` re-exports it, and `d20/morale.ts`'s `contestedAtEnd` reads it under `provinces` (its army-based fallback stays for unpartitioned scenarios). A d20 battle's `ground` flips sub-territories: partial ground goes to the battle's attacker, "all" only to the occupier (nobody gains it when the attackers fell too).
+- ST-20. The territory meta row (WT-17) carries a "Contested · you hold n of m" chip (`ContestedChip.tsx`). The planning draft keeps `orders: PlannedOrder[]` (moves and withdrawals) beside recruit-replenish's `recruits` and `replenishments`.
+
 ## Stubbed or not done
 
 - C4 (no rest recovery in contested ground) sits in the dice module's morale part: not done here.
@@ -54,8 +57,8 @@ Make-it-work pass (declog D13). Branch `m3r1-sub-territories`, `E2E_PORT=5311`. 
 
 ## Needs from other streams
 
-- **`m3r1-d20-combat`:** put `ground: 0 | 1 | 2 | "all"` on the step-5 and step-7 `PendingBattle.battle` (or tell me where it lives); `groundOf` in `partition/steps.ts` reads `"ground" in battle`. A partial grade must not push a `retreat` `Leaving` for defenders (P5). C4: no rest recovery in contested ground, read `isContested`. Call `settleDepartures` for retreats so the P6 hook applies.
-- **`m3r1-recruit-replenish`:** C8 pause and refusing Replenish and Recruit in contested ground: use `isContested(scenario, state, territoryId)` from `engine/partition/holders.ts`, and `orderVerdict` for validation.
+- **`m3r1-d20-combat`:** done at the merge (`ground` on the pending battle, `contestedAtEnd` on `isContested`). Keep calling `settleDepartures` for retreats so the P6 hook applies.
+- **`m3r1-recruit-replenish`:** done at the merge (their `isContested` re-exports mine).
 - **`m3r1-economy-builds`:** fill `screens/pane/SubTerritoryBuild.tsx` (card and build list); queues pause with `isContested`; income only from whole territories (`holdsWhole`).
 - **`m3r1-movement-rail-ports`:** multi-leg moves must stay refused out of contested ground (the `orderVerdict` refusal covers any Move whose `from` is contested). Withdraw is one step; P6 paths are `pathThrough` in `partition/paths.ts`.
 - **Integrator:** `systemText` lines take no outcome data, so report lines cannot name units or places.
@@ -70,6 +73,7 @@ Make-it-work pass (declog D13). Branch `m3r1-sub-territories`, `E2E_PORT=5311`. 
 - `src/main/map/{MapLayers,CampaignMap,VectorLayer,view}.tsx/ts`: the wash slot, the focus click, contested regions without stripes, `focusedSubTerritoryId` and `onSelectSubTerritory`.
 - `src/main/state/{session,planning}.ts`, `state/planning/{selection,orders}.ts` (new `planning/contested.ts`): Withdraw and contested planning.
 - `src/main/screens/{OrderBuilder,OrderCommand,ArmyPicker,OrdersScreen,PlannedOrderOdds,ResultPanels}.tsx`, `presentation/{army,glyphs}.ts`, `style.scss` (one `@use`).
+- At the `38b68ba` merge: `engine/recruitment/rules.ts` (re-export `isContested`), `engine/d20/morale.ts` (`contestedAtEnd` under `provinces`), `screens/pane/TerritoryHeading.tsx` (one chip), `src/test/recruitment.test.ts` (two test states: no army in Catalunya for C8; Aragon whole for the North so its unit may move).
 - Tests: `support.ts` (`spainM2`), `modularFixture.ts` (an `isle-cove` held by red), `pipeline.test.ts`, `app.test.tsx`, `computerPlayer.test.ts`, and the M2 test files switched to `spainM2()`.
 - `e2e/capture.spec.ts`: one capture test.
 

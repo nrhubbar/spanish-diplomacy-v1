@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { flipOrder, attackSources, groundTaken } from "../main/engine/partition/flips";
+import { applyGround } from "../main/engine/partition/steps";
 import { controlFromHolders, holdersIn, isContested } from "../main/engine/partition/holders";
 import { contestedReasons, partitionRetreatAllowed, validateWithdrawOrder } from "../main/engine/partition/orders";
 import { withdrawRoutes } from "../main/engine/partition/paths";
@@ -9,7 +10,7 @@ import type { FactionId, GameState, SubTerritoryId, WithdrawOrder } from "../mai
 import { validateMoveOrder, validateOrder } from "../main/engine/validation";
 import { victoryProgress } from "../main/engine/victory";
 import { type Json } from "./modularFixture";
-import { faction, move, spain, territory, unit, withUnits } from "./support";
+import { faction, move, spain, spainD20, territory, unit, withUnits } from "./support";
 
 const sub = (id: string): SubTerritoryId => id as SubTerritoryId;
 
@@ -57,6 +58,18 @@ describe("which ground falls first (P4)", () => {
     expect(groundTaken(scenario, territory("murcia"), [sub("murcia")], 1)).toEqual([]);
     expect(groundTaken(scenario, territory("murcia"), [sub("murcia")], "all")).toEqual(["murcia"]);
     expect(groundTaken(scenario, territory("andalucia"), [sub("granada"), sub("cordoba"), sub("sevilla")], 2)).toEqual(["granada", "cordoba"]);
+  });
+});
+
+describe("battle ground (P4, P5)", () => {
+  it("flips a d20 grade's partial ground outer-first, and the whole territory on 'all'", () => {
+    const scenario = spain();
+    const state = initialGameState(scenario);
+    const result = { battleIndex: 3, gainer: faction("republic"), losers: new Set([faction("south")]), origins: [territory("murcia")], territoryId: territory("andalucia") };
+    const two = applyGround(scenario, state.subTerritories, [{ ...result, ground: 2 }]);
+    expect(two.changes.map((change) => [change.subTerritoryId, change.cause, change.battleIndex])).toEqual([["granada", "battle", 3], ["cordoba", "battle", 3]]);
+    const all = applyGround(scenario, state.subTerritories, [{ ...result, ground: "all" }]);
+    expect(holdersIn(scenario, all.holdings, territory("andalucia"))).toEqual(["republic"]);
   });
 });
 
@@ -175,8 +188,7 @@ describe("the computer player in contested ground (H5)", () => {
     const { generateComputerSubmission } = await import("../main/ai/computerPlayer");
     const { rollStream, deriveSeed } = { ...(await import("../main/engine/dice")), ...(await import("../main/engine/random")) };
     const { seededRandom } = await import("../main/engine/random");
-    const scenario = spain();
-    for (const seed of [1, 2]) {
+    for (const [scenario, seed] of [[spain(), 1], [spain(), 2], [spainD20(), 1], [spainD20(), 2]] as const) {
       let state = initialGameState(scenario);
       for (let turn = 1; turn <= 12; turn += 1) {
         const submissions = scenario.factions.map((entry, index) =>
