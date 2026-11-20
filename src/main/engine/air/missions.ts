@@ -39,7 +39,8 @@ export const setAside: Phase = (input) => {
     // D17: aircraft are never ground combatants; generals leave the ground steps only under the d6 table (AG-2).
     if (kind === "air" || (kind === "general" && generalsSetAside(scenario))) aside[unit.id] = unit;
   }
-  const moves = draft.orders.valid;
+  // C1: a set-aside general's Withdraw goes where his withdrawing army goes, like a move (d6 table only).
+  const moves = [...draft.orders.valid, ...validOrdersOf(draft, "withdraw")];
   const generalMoves: Record<UnitId, TerritoryId> = {};
   for (const order of moves) if (aside[order.unitId] !== undefined && unitKindIn(scenario, start.raised, order.unitId) === "general") generalMoves[order.unitId] = order.to;
   const moving = new Map(moves.map((order) => [order.unitId, order]));

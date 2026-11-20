@@ -1,3 +1,4 @@
+import { isContested } from "../partition/holders";
 import { hookedRecruitRequirements, hookedReplenishBonus } from "../hooks";
 import { scaleResources } from "../resources";
 import type {
@@ -24,16 +25,8 @@ import type {
  * all ask these, so the pane never offers what the engine would refuse.
  */
 
-/**
- * W6: two or more factions hold ground in the territory. Read from territory control (M27's
- * shared territories) and from the sub-territory holders (P1).
- * TODO(m3r1-sub-territories): replace with the partition module's own export once it lands.
- */
-export function isContested(scenario: Scenario, state: Pick<GameState, "control" | "subTerritories">, territoryId: TerritoryId): boolean {
-  if (state.control[territoryId]?.kind === "contested") return true;
-  const holders = new Set((scenario.index.subTerritoriesByTerritory.get(territoryId) ?? []).flatMap((sub) => state.subTerritories[sub.id]?.holder ?? []));
-  return holders.size > 1;
-}
+/** W6: the partition module's one test of contested ground (m3r1-sub-territories). */
+export { isContested };
 
 /** W3: the territory's capital sub-territory, when the scenario has sub-territories. */
 export function capitalOf(scenario: Scenario, territoryId: TerritoryId): SubTerritoryId | undefined {

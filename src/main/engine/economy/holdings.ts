@@ -1,25 +1,23 @@
+import { holdersIn as partitionHolders, subTerritoriesOf as partitionSubTerritories } from "../partition/holders";
 import type { FactionId, GameState, Scenario, SubTerritoryDefinition, TerritoryId } from "../types";
 
 /**
  * W6, $2: who holds a territory, read from its sub-territories' holders (not from the Milestone 2
  * territory control). A territory is held whole when one faction holds every sub-territory, and
- * contested when two or more factions hold sub-territories in it.
+ * contested when two or more factions hold sub-territories in it. The one implementation is the
+ * partition module's (`engine/partition/holders.ts`, m3r1-sub-territories); these are its
+ * economy-shaped entry points, taking the sub-territory states alone.
  */
 
 type Sites = GameState["subTerritories"];
 
 export function subTerritoriesOf(scenario: Scenario, territoryId: TerritoryId): readonly SubTerritoryDefinition[] {
-  return scenario.index.subTerritoriesByTerritory.get(territoryId) ?? [];
+  return partitionSubTerritories(scenario, territoryId);
 }
 
-/** The distinct holders of a territory's sub-territories, in sub-territory order. */
+/** The distinct holders of a territory's sub-territories, in scenario faction order. */
 export function holdersIn(scenario: Scenario, sites: Sites, territoryId: TerritoryId): readonly FactionId[] {
-  const holders: FactionId[] = [];
-  for (const sub of subTerritoriesOf(scenario, territoryId)) {
-    const holder = sites[sub.id]?.holder;
-    if (holder !== undefined && !holders.includes(holder)) holders.push(holder);
-  }
-  return holders;
+  return partitionHolders(scenario, sites, territoryId);
 }
 
 /** The faction holding every sub-territory of the territory, if one does. */

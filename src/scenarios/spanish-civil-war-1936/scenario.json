@@ -713,8 +713,11 @@
       "name": "Pa\u00eds Vasco",
       "countsForVictory": true,
       "initialControl": {
-        "kind": "controlled",
-        "factionId": "republic"
+        "kind": "contested",
+        "factionIds": [
+          "republic",
+          "north"
+        ]
       },
       "capitalSubTerritoryId": "bizkaia",
       "weatherZone": "cantabrian"
@@ -796,7 +799,7 @@
         "kind": "contested",
         "factionIds": [
           "republic",
-          "south"
+          "north"
         ]
       },
       "capitalSubTerritoryId": "badajoz",

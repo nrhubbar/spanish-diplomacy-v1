@@ -64,7 +64,7 @@ describe("application flow", () => {
     expect(within(pane).getByText(/not connected to Madrid/)).toBeVisible();
     await user.click(region("castilla-la-mancha"));
     expect(within(pane).getByRole("list", { name: "Planned moves (4)" })).toBeVisible();
-    expect(within(pane).getByText(/^4 moving, \d+ entrenching, 0 resting$/)).toBeVisible();
+    expect(within(pane).getByText(/^4 moving, (\d+ (attacking|holding), )*\d+ entrenching, 0 resting$/)).toBeVisible();
     expect(document.querySelectorAll('[data-route-kind="planned"]')).toHaveLength(1);
     await user.click(within(pane).getByRole("button", { name: /Remove order for Wad-Ras/ }));
     expect(within(pane).getByRole("list", { name: "Planned moves (3)" })).toBeVisible();
@@ -164,7 +164,7 @@ describe("application flow", () => {
     await user.click(screen.getByRole("button", { name: "Continue to Northern Insurgent Command" }));
     expect(await screen.findByRole("heading", { level: 1, name: "Northern Insurgent Command" })).toBeVisible();
     await user.click(screen.getByRole("button", { name: "End Turn" }));
-    expect(screen.getByRole("heading", { level: 1, name: "Turn resolution" })).toBeVisible();
+    expect(await screen.findByRole("heading", { level: 1, name: "Turn resolution" })).toBeVisible();
     expect(within(await screen.findByRole("complementary", { name: "Turn report" })).getByRole("button", { name: "Start Next Turn" })).toBeVisible();
   });
 

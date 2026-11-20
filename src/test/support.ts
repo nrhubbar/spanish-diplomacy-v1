@@ -79,6 +79,25 @@ export function spainWithAir(): Scenario {
   return onD6Dice(shippedRegistry().require(spainId).scenario);
 }
 
+let unpartitioned: Scenario | undefined;
+
+/**
+ * Spain with the `none` partition module: control follows armies (M6, M7) and nothing is
+ * contested-ground only. For tests of the Milestone 2 rules (M6-M27) on the Spanish board,
+ * which the `provinces` module replaces (P2-P7, C1).
+ */
+export function spainM2(): Scenario {
+  if (unpartitioned !== undefined) return unpartitioned;
+  const scenario = spain();
+  const none = builtInModuleRegistry.require("partition", "none");
+  unpartitioned = {
+    ...scenario,
+    modules: scenario.modules.map((module) => (module.area === "partition" ? none : module)),
+    rules: { ...scenario.rules, partition: "none" }
+  };
+  return unpartitioned;
+}
+
 /** Spain as shipped, on the d20 (D1-D8). */
 export function spainD20(): Scenario {
   return shippedRegistry().require(spainId).scenario;

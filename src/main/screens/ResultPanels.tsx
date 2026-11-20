@@ -9,6 +9,7 @@ import { cssVariables } from "../presentation/style";
 import { controllerName, describeOutcomeGroup, factionName, groupOutcomes, route, territoryName, unitName } from "../presentation/text";
 import type { RevealedOrders } from "../state/selectors";
 import { eventsAt, revealInPane } from "./report/focus";
+import { SubTerritoryChanges } from "./report/SubTerritoryChanges";
 
 /** U5: which territories changed hands this turn. */
 export function TerritoryChanges({ result, scenario }: { readonly result: TurnResolutionResult; readonly scenario: Scenario }): JSX.Element {
@@ -27,6 +28,7 @@ export function TerritoryChanges({ result, scenario }: { readonly result: TurnRe
           ))}
         </ul>
       )}
+      <SubTerritoryChanges result={result} scenario={scenario} />
     </section>
   );
 }

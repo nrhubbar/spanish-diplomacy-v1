@@ -2,6 +2,7 @@ import { freshlyDemoralized } from "../battleResults";
 import { type Armies, replaceArmies } from "../board";
 import type { Phase, TurnDraft } from "../phases/draft";
 import type { FactionId, FatigueOutcome, RecoveredOutcome, Scenario, TerritoryId, UnitId, UnitState } from "../types";
+import { isContested, isPartitioned } from "../partition/holders";
 import { digIn } from "../works";
 import { requireD20, unitRank } from "./rules";
 
@@ -13,6 +14,11 @@ import { requireD20, unitRank } from "./rules";
  * TODO(m3r1-sub-territories): replace with their contested-territory helper (W6) when it lands.
  */
 export function contestedAtEnd(scenario: Scenario, draft: TurnDraft): ReadonlySet<TerritoryId> {
+  // W6 (m3r1-sub-territories): with the provinces partition, contested ground is the holders' (step 8 has run).
+  if (isPartitioned(scenario)) {
+    const state = { control: draft.control.control, subTerritories: draft.systems.subTerritories };
+    return new Set(scenario.territories.filter((territory) => isContested(scenario, state, territory.id)).map((territory) => territory.id));
+  }
   const contested = new Set<TerritoryId>();
   for (const territory of scenario.territories) {
     if (draft.control.control[territory.id]?.kind === "contested") contested.add(territory.id);

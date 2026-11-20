@@ -120,7 +120,8 @@ The catalogue is `src/main/engine/modules.ts`. Until its owning stream lands, a 
 
 ### Cross-area hooks, turn scratch and what each player sees
 
-- **Hooks.** A module may answer cross-area questions through `RuleModule.hooks` (`src/main/engine/hooks.ts`): `combatModifiers`, `allowanceDelta`, `canDigIn`, `grounded`, `incomeDelta`, `replenishBonus` and `recruitRequirements`. The engine collects every selected module's answer in area order. The d6 rules already call `combatModifiers` (battles and planning estimates) and `canDigIn` (digging in), so a hook such as Snow stopping the works applies under the d6 preset too. With no hooks every collector is neutral.
+- **Hooks.** A module may answer cross-area questions through `RuleModule.hooks` (`src/main/engine/hooks.ts`): `combatModifiers`, `allowanceDelta`, `canDigIn`, `grounded`, `incomeDelta`, `replenishBonus`, `recruitRequirements`, `orderVerdict` and `retreatAllowed`. The engine collects every selected module's answer in area order. The d6 rules already call `combatModifiers` (battles and planning estimates) and `canDigIn` (digging in), so a hook such as Snow stopping the works applies under the d6 preset too. With no hooks every collector is neutral.
+- **Order verdicts and retreats.** `orderVerdict` gives a module's view of an order at reveal (M1, M9): the first refusal in area order wins; otherwise an order of a non-move kind is valid only when some module accepts it, and a move the engine finds valid stays valid. `validateMoveOrder`, `legalDestinations` and the computer player all go through it. `retreatAllowed` must hold for every module before an army may retreat to a territory (M21); `settleDepartures` asks it for every candidate.
 - **Turn scratch.** `TurnDraft.scratch` holds each area's turn-only data. An area declares its key in its own module file by declaration merging on `TurnScratch`, for example bombers assigned at step 2 and read at step 5.
 - **Hidden information.** `viewFor` (state) and `outcomesFor` (outcomes) give what one faction may see. Every screen reads the session through `visibleSession`: the viewer is the faction whose turn it is, and a report goes to the one local player, or shows public information only. Computer players remember only the outcomes their faction could see. Private outcomes are income, queued, progressing, refunded and forfeited builds, training, replenishment and recon results; each is shown to its own faction, and to a viewer whose recon reveals that territory this turn.
 - **Blunders (H6).** Each order a computer player plans draws once from its blunder stream. A draw below `ai.blunderChance` replaces the order with a uniformly chosen legal alternative for the same unit, or with its default order.
@@ -160,6 +161,7 @@ The loader applies these when the app starts. Each failure names the JSON path a
 | L23 | `ai.profiles` has one profile for each faction and none for unknown factions. |
 | L24 | Every resource amount names a known resource; with resources, every faction has a `startingStock`. |
 | L25 | `air.raidTable` rises to 20. |
+| L26 | With the `provinces` partition module: a territory's `initialControl` matches its sub-territories' start holders (one holder: controlled by it; two or more: contested by exactly them), and a city's `initialController` is its sub-territory's start holder. |
 
 ## The `m3-modular` ruleset
 
@@ -190,6 +192,22 @@ Every roll kind draws from its own seeded streams, `deriveSeed(game seed, tag, t
     - The best general with each army rallies its demoralized units, unless his trait is `no-rally`.
   - **Sack** is a free order for one's own general. He leaves at once.
   - **Replacements.** After a sacking or a death, the next roster entry not in play or on his way is due. He appears at the end of the next turn in the seat territory (else the first controlled territory) as unit `general-<generalId>`, whose definition derives from the id.
+### Partition (`provinces`): sub-territories and contested ground
+
+The `provinces` module (`src/main/engine/modules/partition.ts`, rules in `src/main/engine/partition/`) flips `systems.subTerritories[*].holder` (rail damage, $8, is the economy's EC-8, read from those holders) and replaces M6, M7 and the control part of M18 for `m3-modular`. Armies still move between territories and battles are territory-wide (P2); sub-territories decide control.
+
+| Rule | Behaviour |
+|---|---|
+| P1 | Each sub-territory starts with its `startHolder`. Territory and city control are derived from the holders, never from armies: one holder controls the territory whole, two or more contest it (W6); a city follows its own sub-territory's holder. L26 keeps `initialControl` equal to that derivation. |
+| P3 | Occupation (step 6): one faction alone in a territory it entered this turn, where other factions held every sub-territory, takes all of them (M6). The sweep (step 8): where one faction alone has armies and other factions still hold ground, it takes one of their sub-territories a turn, including on the turn it enters. |
+| P4 | A battle's ground flips from the outside in: the defending factions' sub-territories nearest the attack's origin first (breadth-first over `subTerritoryBorders` and each connection's `entry` pair, from every sub-territory of the origin territories, or from the attacker's own ground for a standing battle or the sweep), the capital last, ties in scenario order. A d20 battle states its ground (0, 1, 2 or all) and its attacker gains it; with the d6 preset a taking result (the territory `taken`) is "all", gained by the occupier. Only the defending factions lose ground; a third holder with no army there keeps it until the sweep. |
+| P5 | A partial grade takes nothing where the territory has one sub-territory (a stalemate). Defenders who keep ground stay; the dice module decides who retreats. |
+| P6 | A forced retreat (M21) or a Withdraw needs a path: a sub-territory its faction holds in the territory it leaves that borders (or is the connection entry of) one it holds in the destination. Holders are judged at the start of the turn, as M21 judges control. Without a path to any candidate the army surrenders; a surrender that only the path rule caused is reported as `path-surrender`. |
+| P7 | Victory counts a territory only when one faction holds all of it: control is derived that way, so `victory.ts` needs nothing more. |
+| C1 | In a contested territory (judged at the start of the turn) units attack by default, the M27 standing battle (hold, when demoralized), or withdraw. A Move out of contested ground is refused (`orderVerdict`), so planning and computer players never offer it; works do not grow there (`canDigIn`). Withdraw goes to an adjacent territory the faction holds whole, along P6; units withdraw at step 6, after defending in step 5, and are reported as `withdrew`. If another faction's army now stands in the destination, they fall back as in M21, or surrender. |
+
+`isContested(scenario, state, territoryId)` (`partition/holders.ts`) is the one test of contested ground for every slice: training pauses (C8), Replenish, Recruit and build queues. Every sub-territory that changes hands is listed in `subTerritoryChanges` with its cause (`occupation`, `battle` or `sweep`).
+
 ### Economy: the `development` module (`m3r1-economy-builds`)
 
 Code: `src/main/engine/economy/` (rules), `engine/modules/economy.ts` (wiring), `ai/orders/build.ts` (computer player).

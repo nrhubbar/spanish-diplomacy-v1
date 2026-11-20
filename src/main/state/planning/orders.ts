@@ -1,8 +1,9 @@
 import { isNeighbor, requireTerritory } from "../../engine/lookup";
 import { type StandingOrder, standingOrder } from "../../engine/orders";
-import type { MoveOrder, Scenario, TerritoryId, UnitId } from "../../engine/types";
+import type { MoveOrder, Scenario, TerritoryId, UnitId, WithdrawOrder } from "../../engine/types";
 import { validateMoveOrder } from "../../engine/validation";
-import type { OrderKind } from "../session";
+import type { OrderKind, PlannedOrder } from "../session";
+import { selectedWithdrawRoutes } from "./contested";
 import { chooseReplenish, replenishWithout } from "./recruitment";
 import { type PlanningSession, availableUnitIds, feedback, selectedDestinations, selectedUnits, selecting, selectionOf, withDraft } from "./selection";
 
@@ -24,8 +25,39 @@ export function chooseOrder(scenario: Scenario, session: PlanningSession, orderK
   if (session.draft.selectedUnitIds.length === 0) {
     return feedback(session, "Select at least one army first.");
   }
-  if (orderKind === "replenish") return chooseReplenish(scenario, session);
-  return orderKind === "move" ? chooseMove(scenario, session) : chooseStanding(session, orderKind, scenario);
+  switch (orderKind) {
+    case "move":
+      return chooseMove(scenario, session);
+    case "replenish":
+      return chooseReplenish(scenario, session);
+    case "withdraw":
+      return chooseWithdraw(scenario, session);
+    case "attack":
+    case "hold":
+      return chooseDefault(session, orderKind);
+    case "entrench":
+    case "rest":
+      return chooseStanding(session, orderKind, scenario);
+  }
+}
+
+/** C1: Attack (Hold for demoralized armies) is the default in contested ground; choosing it drops planned withdrawals. */
+function chooseDefault(session: PlanningSession, kind: "attack" | "hold"): PlanningSession {
+  const chosen = new Set(session.draft.selectedUnitIds);
+  const orders = session.draft.orders.filter((order) => !chosen.has(order.unitId));
+  const territoryId = session.draft.selectedTerritoryId;
+  const draft = territoryId === undefined ? { orders, selectedUnitIds: [] } : selecting(territoryId, availableUnitIds(session, territoryId, orders), orders);
+  const who = chosen.size === 1 ? "1 army" : `${String(chosen.size)} armies`;
+  return withDraft(session, { ...draft, feedback: `${who} will ${kind === "attack" ? "attack where they stand" : "hold"}.` });
+}
+
+/** C1, P6: Withdraw. With one way out it is planned at once; with several, the player picks a highlighted territory. */
+function chooseWithdraw(scenario: Scenario, session: PlanningSession): PlanningSession {
+  const routes = selectedWithdrawRoutes(scenario, session);
+  const [only] = routes;
+  if (only === undefined) return feedback(session, "These armies have no way out through your own sub-territories.");
+  const choosing = withDraft(session, { ...selectionOf(session.draft), stage: { orderKind: "withdraw", step: "choose-destination" } });
+  return routes.length === 1 ? chooseDestination(scenario, choosing, only.to) : choosing;
 }
 
 function chooseStanding(session: PlanningSession, kind: StandingOrder, scenario?: Scenario): PlanningSession {
@@ -69,13 +101,14 @@ export function chooseDestination(scenario: Scenario, session: PlanningSession, 
   if (territoryId === origin) {
     return feedback(session, "Choose a different territory as the destination.");
   }
+  const withdrawing = session.draft.stage.orderKind === "withdraw";
   if (!selectedDestinations(scenario, session).includes(territoryId)) {
-    return feedback(session, refusal(scenario, session, origin, territoryId));
+    return feedback(session, withdrawing ? "Withdraw to a highlighted territory: one you hold whole, reached through your own sub-territories." : refusal(scenario, session, origin, territoryId));
   }
-  const planned: MoveOrder[] = session.draft.selectedUnitIds.map((unitId) => ({
+  const planned: PlannedOrder[] = session.draft.selectedUnitIds.map((unitId): MoveOrder | WithdrawOrder => ({
     factionId: session.factionId,
     from: origin,
-    kind: "move",
+    kind: withdrawing ? "withdraw" : "move",
     to: territoryId,
     unitId
   }));

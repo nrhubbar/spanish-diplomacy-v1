@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { holdWhole } from "./holdWhole";
 import { generalModifiers } from "../../main/engine/generals/command";
 import { generalUnitDefinition } from "../../main/engine/generals/identity";
 import { nextOnRoster } from "../../main/engine/generals/roster";
@@ -128,7 +129,7 @@ describe("rallies and deaths (C5, U5, D7)", () => {
     const deadly: Scenario = { ...scenario, air: { ...scenario.air!, generalDeathRoll: 20 } };
     // Yague stands alone in Ceuta, and the Republic lands there.
     const alone = withUnitAt(without(state, "south-legion", "south-regulares-west"), "rep-vitoria-8", { territoryId: territory("andalucia") });
-    const exposed = { ...alone, control: { ...alone.control, [territory("andalucia")]: { factionId: faction("republic"), kind: "controlled" as const } } };
+    const exposed = holdWhole(scenario, alone, territory("andalucia"), faction("republic"));
     const result = resolveTurn(deadly, without(exposed, "south-granada-6", "south-lepanto-5", "south-cadiz-33", "south-africa-vanguard"),
       [{ factionId: faction("republic"), orders: [move("republic", "rep-vitoria-8", "andalucia", "ceuta")] }], seed);
     expect(result.outcomes).toContainEqual({ factionId: "south", generalId: "juan-yague", kind: "general-died", territoryId: "ceuta", unitId: "south-general-yague" });

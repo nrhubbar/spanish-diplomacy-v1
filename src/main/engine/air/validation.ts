@@ -1,5 +1,6 @@
 import type { FactionId, AirMission, AirMissionOrder, GameState, SackOrder, Scenario, TerritoryId, ValidationResult } from "../types";
-import { generalOf, isAirbaseFor, territoriesWithin, unitTypeIn } from "./pieces";
+import { isContested } from "../partition/holders";
+import { generalOf, heldWholeByAnother, isAirbaseFor, territoriesWithin, unitTypeIn } from "./pieces";
 
 /** M9: shown when the scenario's air module is off. */
 const noAirReason = "This order is not available in this scenario.";
@@ -36,13 +37,8 @@ export function validateAirMission(scenario: Scenario, state: GameState, order: 
 }
 
 function othersHoldIn(scenario: Scenario, state: GameState, territoryId: TerritoryId, factionId: FactionId): boolean {
-  const control = state.control[territoryId];
-  if (control?.kind === "contested") return true;
-  if (control?.kind === "controlled" && control.factionId !== factionId) return true;
-  return (scenario.index.subTerritoriesByTerritory.get(territoryId) ?? []).some((sub) => {
-    const holder = state.subTerritories[sub.id]?.holder;
-    return holder !== undefined && holder !== factionId;
-  });
+  // W6: contested, or held whole by another faction (the partition's holders).
+  return isContested(scenario, state, territoryId) || heldWholeByAnother(scenario, state, territoryId, factionId);
 }
 
 /** U5: Sack is a free order for one of the faction's own generals. */

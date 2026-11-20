@@ -1,3 +1,4 @@
+import { holdsWhole } from "../partition/holders";
 import { generalModifiers } from "../generals/command";
 import type { CombatHookContext, IncomeContext, RuleHooks } from "../hooks";
 import type { CombatModifier, CombatRole, FactionId, Resources, UnitId } from "../types";
@@ -42,8 +43,7 @@ export function raidIncomeDelta(context: IncomeContext): Resources {
     const sub = state.subTerritories[cut.subTerritoryId];
     const definition = scenario.index.subTerritories.get(cut.subTerritoryId);
     if (sub === undefined || definition === undefined || sub.holder !== factionId) continue;
-    const whole = (scenario.index.subTerritoriesByTerritory.get(definition.territoryId) ?? []).every((other) => state.subTerritories[other.id]?.holder === factionId);
-    if (!whole) continue;
+    if (!holdsWhole(scenario, state, definition.territoryId, factionId)) continue;
     for (const [developmentId, level] of Object.entries(sub.development)) {
       const track = scenario.development.find((candidate) => candidate.id === developmentId);
       if (track === undefined || level <= 0) continue;

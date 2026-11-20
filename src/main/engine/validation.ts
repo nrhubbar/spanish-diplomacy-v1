@@ -1,5 +1,6 @@
 import { unitTypeIn } from "./air/pieces";
 import { validateAirMission, validateSack } from "./air/validation";
+import { hookedOrderVerdict } from "./hooks";
 import { validateBuildOrder } from "./economy/catalogue";
 import { isNeighbor } from "./lookup";
 import { validateRecruitOrder, validateReplenishOrder } from "./recruitment/rules";
@@ -41,7 +42,8 @@ export function validateOrder(scenario: Scenario, state: GameState, order: Order
     case "build":
       return validateBuildOrder(scenario, state, order);
     default:
-      return { ok: false, reason: unavailableOrderReason };
+      // Other kinds (Withdraw, C1) are valid only when a selected module accepts them (`RuleHooks.orderVerdict`).
+      return hookedOrderVerdict({ order, scenario, state }) ?? { ok: false, reason: unavailableOrderReason };
   }
 }
 
@@ -82,7 +84,9 @@ export function validateMoveOrder(
   if (unit.morale.demoralized && Object.values(state.units).some((other) => other.territoryId === order.to && other.factionId !== unit.factionId)) {
     return { ok: false, reason: demoralizedAttackReason };
   }
-  return { ok: true };
+  // C1 and the like: a selected module may refuse a move the base rules allow.
+  const verdict = hookedOrderVerdict({ order, scenario, state });
+  return verdict === undefined || verdict.ok ? { ok: true } : verdict;
 }
 
 export function validateSubmission(

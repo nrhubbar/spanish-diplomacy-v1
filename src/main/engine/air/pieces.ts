@@ -1,3 +1,4 @@
+import { holdsWhole } from "../partition/holders";
 import { generalUnitDefinition } from "../generals/identity";
 import { neighborsOf, requireUnitType } from "../lookup";
 import type {
@@ -71,8 +72,7 @@ function hasBuildingEffect(scenario: Scenario, state: Pick<GameState, "subTerrit
 
 /** U2: a territory is an airbase for a faction when the faction holds a sub-territory there with an airfield (or a paved one), and no other faction controls the territory whole. */
 export function isAirbaseFor(scenario: Scenario, state: Pick<GameState, "control" | "subTerritories">, territoryId: TerritoryId, factionId: FactionId): boolean {
-  const control = state.control[territoryId];
-  if (control?.kind === "controlled" && control.factionId !== factionId) return false;
+  if (heldWholeByAnother(scenario, state, territoryId, factionId)) return false;
   return (scenario.index.subTerritoriesByTerritory.get(territoryId) ?? []).some((sub) =>
     state.subTerritories[sub.id]?.holder === factionId && hasBuildingEffect(scenario, state, sub.id, ["airbase", "all-weather-airbase"]));
 }
@@ -104,4 +104,9 @@ export function groundView<State extends Pick<GameState, "raised" | "units">>(sc
  */
 export function generalsSetAside(scenario: Scenario): boolean {
   return scenario.rules.dice === "d6-table";
+}
+
+/** D17, W6: another faction holds the whole territory (`holdsWhole`, from the partition's holders). */
+export function heldWholeByAnother(scenario: Scenario, state: Pick<GameState, "control" | "subTerritories">, territoryId: TerritoryId, factionId: FactionId): boolean {
+  return scenario.factions.some((faction) => faction.id !== factionId && holdsWhole(scenario, state, territoryId, faction.id));
 }

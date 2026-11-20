@@ -3,12 +3,14 @@ import type {
   CombatModifier,
   FactionId,
   GameState,
+  Order,
   Resources,
   Scenario,
   SubTerritoryId,
   TerritoryId,
   UnitId,
-  UnitTypeId
+  UnitTypeId,
+  ValidationResult
 } from "./types";
 
 /**
@@ -75,6 +77,18 @@ export interface RecruitContext extends HookContext {
   readonly unitTypeId: UnitTypeId;
 }
 
+/** M1, M9, C1: an order being validated against the start-of-turn state. */
+export interface OrderHookContext extends HookContext {
+  readonly order: Order;
+}
+
+/** M21, P6: an army that must leave `from` for `to`, a territory its faction held at the start of the turn. */
+export interface RetreatContext extends HookContext {
+  readonly factionId: FactionId;
+  readonly from: TerritoryId;
+  readonly to: TerritoryId;
+}
+
 /** R5, $4, D7: extra replenishment, as shares of establishment. */
 export interface ReplenishBonus {
   readonly capShare: number;
@@ -96,6 +110,14 @@ export interface RuleHooks {
   readonly replenishBonus?: (context: ReplenishContext) => ReplenishBonus;
   /** R2, R3: reasons the type is locked here; empty when nothing blocks it. */
   readonly recruitRequirements?: (context: RecruitContext) => readonly string[];
+  /**
+   * M9, C1: a module's verdict on an order. A move the engine finds valid may be refused (moving
+   * out of contested ground); any other kind is valid only when a module accepts it. Undefined
+   * means the module has no view on this order.
+   */
+  readonly orderVerdict?: (context: OrderHookContext) => ValidationResult | undefined;
+  /** P6: false when the army has no path from `from` to `to` (through its own sub-territories). */
+  readonly retreatAllowed?: (context: RetreatContext) => boolean;
 }
 
 const hooksOf = (scenario: Scenario): readonly RuleHooks[] => scenario.modules.flatMap((module) => (module.hooks === undefined ? [] : [module.hooks]));
@@ -134,4 +156,18 @@ export function hookedReplenishBonus(context: ReplenishContext): ReplenishBonus 
 
 export function hookedRecruitRequirements(context: RecruitContext): readonly string[] {
   return hooksOf(context.scenario).flatMap((hooks) => hooks.recruitRequirements?.(context) ?? []);
+}
+
+/**
+ * The modules' verdict on an order: the first refusal in area order, else acceptance when any
+ * module accepts it, else undefined (no module has a view).
+ */
+export function hookedOrderVerdict(context: OrderHookContext): ValidationResult | undefined {
+  const verdicts = hooksOf(context.scenario).flatMap((hooks) => hooks.orderVerdict?.(context) ?? []);
+  return verdicts.find((verdict) => !verdict.ok) ?? verdicts.find((verdict) => verdict.ok);
+}
+
+/** P6: every module must allow the retreat. */
+export function hookedRetreatAllowed(context: RetreatContext): boolean {
+  return hooksOf(context.scenario).every((hooks) => hooks.retreatAllowed?.(context) ?? true);
 }

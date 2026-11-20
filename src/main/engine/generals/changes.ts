@@ -1,4 +1,5 @@
-import { generalsSetAside, isAirbaseFor, territoriesWithin, unitDefinitionIn, unitKindIn, unitTypeIn } from "../air/pieces";
+import { holdsWhole } from "../partition/holders";
+import { generalsSetAside, heldWholeByAnother, isAirbaseFor, territoriesWithin, unitDefinitionIn, unitKindIn, unitTypeIn } from "../air/pieces";
 import { airScratch } from "../air/scratch";
 import { compareIds, removeArmies, replaceArmies } from "../board";
 import { pick } from "../dice";
@@ -50,11 +51,8 @@ export function sackGenerals(draft: TurnDraft, orders: readonly SackOrder[]): Tu
 }
 
 /** The territory a faction holds whole (or at least controls) nearest its seat: the seat itself, else the first in scenario order. */
-function fallbackTerritory(scenario: Scenario, control: GameState["control"], factionId: FactionId): TerritoryId | undefined {
-  const holds = (id: TerritoryId): boolean => {
-    const entry = control[id];
-    return entry?.kind === "controlled" && entry.factionId === factionId;
-  };
+function fallbackTerritory(scenario: Scenario, state: Pick<GameState, "control" | "subTerritories">, factionId: FactionId): TerritoryId | undefined {
+  const holds = (id: TerritoryId): boolean => holdsWhole(scenario, state, id, factionId);
   const seat = scenario.index.factions.get(factionId)?.seatTerritoryId;
   if (seat !== undefined && holds(seat)) return seat;
   return scenario.territories.find((territory) => holds(territory.id))?.id;
@@ -97,8 +95,7 @@ export const commandChanges: Phase = (draft) => {
     if (unitKindIn(scenario, start.raised, unit.id) !== "air") continue;
     const state = { control, subTerritories: draft.systems.subTerritories };
     // D17: an aircraft moves only when an enemy takes the whole of the territory holding its airfield.
-    const held = control[unit.territoryId];
-    if (!(held?.kind === "controlled" && held.factionId !== unit.factionId)) {
+    if (!heldWholeByAnother(scenario, state, unit.territoryId, unit.factionId)) {
       restored.push(unit);
       continue;
     }
@@ -146,16 +143,16 @@ export const commandChanges: Phase = (draft) => {
     for (const unit of [...standing, ...taken].sort((a, b) => compareIds(a.id, b.id))) {
       const generalId = unitDefinitionIn(scenario, start.raised, unit.id)?.generalId;
       if (generalId === undefined) continue;
-      const here = control[unit.territoryId];
+      const lostGround = heldWholeByAnother(scenario, { control, subTerritories: draft.systems.subTerritories }, unit.territoryId, unit.factionId);
       const ownGround = Object.values(armies).some((other) => other.territoryId === unit.territoryId && other.factionId === unit.factionId && other.id !== unit.id
         && unitKindIn(scenario, start.raised, other.id) === "ground");
-      const alone = !ownGround && ((here?.kind === "controlled" && here.factionId !== unit.factionId)
+      const alone = !ownGround && (lostGround
         || Object.values(armies).some((other) => other.territoryId === unit.territoryId && other.factionId !== unit.factionId));
       if (!broken.has(unit.id) && !alone) continue;
       const roll = pick(streams("general-death", deathIndex), 20);
       deathIndex += 1;
       const removed = armies[unit.id] === undefined;
-      const safe = alone || removed ? fallbackTerritory(scenario, control, unit.factionId) : unit.territoryId;
+      const safe = alone || removed ? fallbackTerritory(scenario, { control, subTerritories: draft.systems.subTerritories }, unit.factionId) : unit.territoryId;
       if (roll > deathRoll && safe !== undefined) {
         if (safe !== unit.territoryId || removed) restored.push({ ...unit, territoryId: safe });
         continue;
@@ -179,9 +176,9 @@ export const commandChanges: Phase = (draft) => {
     }
     const gone = (id: UnitId): boolean => armies[id] === undefined || retreatedTo.has(id) || surrendered.has(id);
     const routedTo = members.map((id) => retreatedTo.get(id)).find((to) => to !== undefined);
-    const positionControl = control[position];
+
     const overrun = members.length === 0
-      ? (positionControl?.kind === "controlled" && positionControl.factionId !== unit.factionId)
+      ? heldWholeByAnother(scenario, { control, subTerritories: draft.systems.subTerritories }, position, unit.factionId)
         || (!ownGroundIn(position) && Object.values(armies).some((other) => other.territoryId === position && other.factionId !== unit.factionId))
       : members.every(gone);
     if (!overrun) {
@@ -190,7 +187,7 @@ export const commandChanges: Phase = (draft) => {
     }
     const roll = pick(streams("general-death", deathIndex), 20);
     deathIndex += 1;
-    const safe = routedTo ?? fallbackTerritory(scenario, control, unit.factionId);
+    const safe = routedTo ?? fallbackTerritory(scenario, { control, subTerritories: draft.systems.subTerritories }, unit.factionId);
     if (roll > deathRoll && safe !== undefined) {
       restored.push({ ...unit, territoryId: safe });
       continue;
@@ -225,7 +222,7 @@ export const commandChanges: Phase = (draft) => {
   for (const [factionId, entry] of Object.entries(generals) as [FactionId, GameState["generals"][FactionId]][]) {
     const due = entry.pending.filter((pending) => pending.arrivesOnTurn <= turn);
     if (due.length === 0) continue;
-    const territoryId = fallbackTerritory(scenario, control, factionId);
+    const territoryId = fallbackTerritory(scenario, { control, subTerritories: draft.systems.subTerritories }, factionId);
     if (territoryId === undefined) continue;
     for (const pending of due) {
       const id = generalUnitId(pending.generalId);

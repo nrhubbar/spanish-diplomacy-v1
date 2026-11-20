@@ -1,4 +1,4 @@
-import type { AirMissionOrder, MoveOrder, TerritoryId, TurnOutcome, UnitId, UnitState } from "../engine/types";
+import type { AirMissionOrder, MoveOrder, SubTerritoryId, TerritoryId, TurnOutcome, UnitId, UnitState } from "../engine/types";
 import type { ArmyOrder } from "../presentation/army";
 import type { DestinationEstimate } from "../presentation/odds";
 
@@ -13,9 +13,13 @@ export interface MapView {
    * shows its armies one by one (Z2).
    */
   readonly focusedTerritoryId?: TerritoryId;
+  /** X3: the sub-territory the pane is focused on, outlined on the map. */
+  readonly focusedSubTerritoryId?: SubTerritoryId;
   /** A click or Enter on the map that hit no territory or counter. */
   readonly onSelectNothing?: () => void;
   readonly onSelectTerritory?: (territoryId: TerritoryId) => void;
+  /** X3: zoomed in, a click also names the sub-territory under it (after `onSelectTerritory`). */
+  readonly onSelectSubTerritory?: (subTerritoryId: SubTerritoryId) => void;
   readonly onSelectUnit?: (unit: UnitState) => void;
   readonly orderedUnitIds: ReadonlySet<UnitId>;
   readonly outcomes: readonly TurnOutcome[];

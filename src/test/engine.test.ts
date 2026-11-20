@@ -3,7 +3,7 @@ import { initialGameState, resolveTurn } from "../main/engine/resolution";
 import type { GameState, TurnOutcome, VictoryProgress } from "../main/engine/types";
 import { legalDestinations, validateMoveOrder, validateSubmission } from "../main/engine/validation";
 import { evaluateVictory, victoryProgress, victoryThresholds } from "../main/engine/victory";
-import { armyIn, battlesOf, city, faction, loadedDice, move, spain, territory, tiny, unit, withUnits } from "./support";
+import { armyIn, battlesOf, city, faction, loadedDice, move, spainM2, territory, tiny, unit, withUnits } from "./support";
 
 const kinds = (outcomes: readonly TurnOutcome[]) => outcomes.map((outcome) => outcome.kind);
 
@@ -44,8 +44,8 @@ describe("m2-strength state (C4, C6, C7, C13)", () => {
     expect(state.units[unit("red-guard")]).toMatchObject({ morale: { demoralized: false, quietTurns: 0 }, strength: 500 });
     expect(state.units[unit("red-rangers")]?.strength).toBe(300);
     expect(state.fortification).toEqual({});
-    for (const definition of spain().units) {
-      expect(initialGameState(spain()).units[definition.id]?.strength).toBe(definition.strength);
+    for (const definition of spainM2().units) {
+      expect(initialGameState(spainM2()).units[definition.id]?.strength).toBe(definition.strength);
     }
   });
 
@@ -82,7 +82,7 @@ describe("turn resolution (m2-strength movement)", () => {
   });
 
   it("lets a faction reinforce a shared territory despite stationary hostiles (M11, OD-7)", () => {
-    const scenario = spain();
+    const scenario = spainM2();
     const state = initialGameState(scenario);
     // Andalucia (battle 0) and Asturias (battle 1) are shared, so each has a standing battle (M27).
     const result = resolveTurn(scenario, state, [
@@ -94,7 +94,7 @@ describe("turn resolution (m2-strength movement)", () => {
   });
 
   it("makes an unopposed move into an empty contested territory controlled (M6)", () => {
-    const scenario = spain();
+    const scenario = spainM2();
     const result = resolveTurn(scenario, initialGameState(scenario), [
       { factionId: faction("republic"), orders: [move("republic", "rep-wad-ras-1", "madrid", "castilla-la-mancha"), move("republic", "rep-otumba-9", "valencia", "islas-baleares")] }
     ], 1);
@@ -114,7 +114,7 @@ describe("turn resolution (m2-strength movement)", () => {
   it("fights only the standing battles when every Spanish faction holds (OD-8 under M27)", () => {
     // Changed in Revision 6: shared territories now fight each turn, so holding is no longer
     // guaranteed to leave the historical start unchanged.
-    const scenario = spain();
+    const scenario = spainM2();
     const result = resolveTurn(scenario, initialGameState(scenario), [], 1, loadedDice([3, 4]));
     expect(battlesOf(result).map((battle) => [battle.site.kind, "territoryId" in battle.site ? battle.site.territoryId : ""])).toEqual([
       ["standing", "andalucia"],
@@ -126,7 +126,7 @@ describe("turn resolution (m2-strength movement)", () => {
   });
 
   it("resolves a contest when the other side leaves (B6) and occupies its cities (B5)", () => {
-    const scenario = spain();
+    const scenario = spainM2();
     const state = initialGameState(scenario);
     const result = resolveTurn(scenario, state, [
       { factionId: faction("north"), orders: [move("north", "north-milan-32", "asturias", "galicia"), move("north", "north-simancas-40", "asturias", "galicia"), move("north", "north-oviedo-guards", "asturias", "galicia")] }
@@ -138,7 +138,7 @@ describe("turn resolution (m2-strength movement)", () => {
   });
 
   it("leaves cities unchanged while two factions still share a territory", () => {
-    const scenario = spain();
+    const scenario = spainM2();
     const state = initialGameState(scenario);
     const result = resolveTurn(scenario, state, [
       { factionId: faction("north"), orders: [move("north", "north-milan-32", "asturias", "galicia")] }
@@ -167,7 +167,7 @@ describe("victory (M10)", () => {
   });
 
   it("derives thresholds from scenario data", () => {
-    expect(victoryThresholds(spain())).toEqual({ cities: 19, territories: 10 });
+    expect(victoryThresholds(spainM2())).toEqual({ cities: 19, territories: 10 });
     expect(victoryThresholds(tiny())).toEqual({ cities: 2, territories: 3 });
   });
 

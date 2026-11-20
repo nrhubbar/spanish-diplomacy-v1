@@ -321,6 +321,34 @@ test("@capture economy: resource chips, Build tab and the focused build list", a
   await capture(page, "21d-resource-detail");
 });
 
+test("@capture sub-territories and contested ground", async ({ isMobile, page }) => {
+  await page.goto("./");
+  await page.getByRole("button", { name: "Create Game" }).click();
+  await page.getByRole("button", { name: "Start Campaign" }).click();
+  await waitForMap(page);
+  await page.locator('.map-region[data-territory-id="andalucia"]').focus();
+  await page.keyboard.press("Enter");
+  await expect(page.locator(".sub-territory-wash")).toBeAttached();
+  await capture(page, "22a-contested-overview");
+  await page.getByRole("button", { name: "Give Selected Armies Order" }).click();
+  await capture(page, "22b-contested-orders");
+  await page.getByRole("button", { exact: true, name: "Withdraw" }).click();
+  await capture(page, "22c-withdraw-destination");
+  await page.getByRole("button", { name: /Cancel withdrawal|Cancel/ }).first().click();
+  for (let step = 0; step < 3; step += 1) await page.getByRole("button", { name: "Zoom in" }).click();
+  await capture(page, "22d-contested-zoom");
+  await page.getByRole("button", { name: /^M\u00e1laga, held by/ }).click();
+  await expect(page.locator(".sub-territory-focus")).toBeVisible();
+  await capture(page, "22e-sub-territory-focus");
+  // X3: zoomed in, a click inside the selected territory focuses the pane on the sub-territory there.
+  // On a phone the sheet covers Jaen at this zoom; the pane's list (above) is the phone's way in.
+  if (isMobile) return;
+  await page.locator(".sub-territory-back").click();
+  const jaen = await page.locator('.sub-territory-wash [data-sub-territory-id="jaen"] path').first().boundingBox();
+  if (jaen !== null) await page.mouse.click(jaen.x + jaen.width / 2, jaen.y + jaen.height / 2);
+  await expect(page.locator(".sub-territory-focus h3")).toHaveText(/Ja\u00e9n/);
+});
+
 test("@capture air missions and generals", async ({ page }) => {
   // U2 (ux-air-a): an aircraft counter at its airfield, its range ring and missions; U5: a general's pill and Sack.
   await page.goto("./");

@@ -1,0 +1,200 @@
+// Sub-territories (X2, X3) and contested-ground orders (C1, Q-UX-14), owned by m3r1-sub-territories.
+
+.map-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.sub-territory-wash {
+  // Hit-testable for the zoomed-in focus click, but the vector layer above takes every event.
+  .sub-territory-fill {
+    fill-opacity: var(--contested-opacity);
+    stroke: rgb(36 29 24 / 38%);
+    stroke-width: 0.8px;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .sub-territory-hatch {
+    stroke: none;
+  }
+
+  pattern line {
+    stroke: rgb(36 29 24 / 22%);
+    stroke-width: 1.4px;
+  }
+
+  .sub-territory-hit {
+    fill: transparent;
+    stroke: none;
+  }
+}
+
+.sub-territory-labels {
+  pointer-events: none;
+
+  .sub-territory-name {
+    fill: var(--ink-soft);
+    font-family: var(--serif);
+    font-size: 11px;
+    font-style: italic;
+    paint-order: stroke;
+    stroke: rgb(251 246 234 / 78%);
+    stroke-linejoin: round;
+    stroke-width: 3px;
+    text-anchor: middle;
+  }
+
+  .sub-territory-star {
+    fill: var(--paper);
+    font-size: 13px;
+    paint-order: stroke;
+    stroke: var(--ink);
+    stroke-linejoin: round;
+    stroke-width: 1.6px;
+    text-anchor: middle;
+    dominant-baseline: middle;
+  }
+
+  .sub-territory-focus-outline {
+    fill: var(--gold-bright);
+    fill-opacity: 0.16;
+    stroke: var(--gold);
+    stroke-width: 2.5px;
+    vector-effect: non-scaling-stroke;
+  }
+}
+
+// The focus view (X3, Q-UX-04) and the territory pane's sub-territory list.
+.sub-territory-back {
+  margin-bottom: 2px;
+}
+
+.capital-star {
+  color: var(--gold);
+  text-shadow: 0 0 1px var(--ink);
+}
+
+.site-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  margin: 4px 0 8px;
+  padding: 0;
+  list-style: none;
+}
+
+.site-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 8px;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: var(--paper);
+  font-size: 0.76rem;
+
+  &[data-tone="contested"] {
+    border-color: var(--accent);
+    color: var(--accent-dark);
+  }
+}
+
+.site-icon {
+  flex: none;
+  width: 0.95rem;
+  height: 0.95rem;
+  fill: none;
+  stroke: currentcolor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.4;
+
+  &[data-icon="mountain"] {
+    fill: rgb(36 29 24 / 15%);
+  }
+}
+
+.pane-note[data-tone="contested"] {
+  color: var(--accent-dark);
+}
+
+.sub-territory-list {
+  margin-top: 10px;
+  font-size: 0.85rem;
+
+  ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+}
+
+.sub-territory-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 28px;
+  padding: 2px 8px;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+
+  &:hover {
+    border-color: #7a5a06;
+    background: var(--gold-wash);
+  }
+}
+
+.holder-swatch {
+  width: 0.7rem;
+  height: 0.7rem;
+  border: 1px solid rgb(36 29 24 / 55%);
+  border-radius: 2px;
+}
+
+// Contested-ground orders (C1, Q-UX-14): Attack leads as the default; blocked kinds are greyed with the reason.
+.order-choice[data-order-kind="attack"] {
+  border-left: 4px solid var(--gold);
+  background: var(--gold-wash);
+}
+
+.order-choice[data-order-kind="attack"] .order-choice-icon,
+.order-choice[data-order-kind="hold"] .order-choice-icon {
+  border-top-style: solid;
+  border-top-color: var(--accent);
+}
+
+.order-choice[data-order-kind="withdraw"] .order-choice-icon {
+  transform: scaleX(-1);
+}
+
+.order-choice[data-blocked="true"] {
+  color: rgb(36 29 24 / 45%);
+  background: rgb(251 246 234 / 55%);
+  cursor: not-allowed;
+
+  &:hover {
+    border-color: rgb(36 29 24 / 35%);
+    background: rgb(251 246 234 / 55%);
+  }
+
+  .order-choice-icon {
+    visibility: hidden;
+  }
+
+  .order-choice-label {
+    font-family: var(--serif);
+    font-size: 1.02rem;
+    font-weight: 700;
+  }
+
+  .order-choice-description {
+    color: rgb(36 29 24 / 50%);
+  }
+}

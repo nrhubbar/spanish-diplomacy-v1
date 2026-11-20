@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { holdWhole } from "./holdWhole";
 import { unitOrder } from "../../main/engine/board";
 import { generalUnitDefinition } from "../../main/engine/generals/identity";
 import { initialGameState, resolveTurn } from "../../main/engine/resolution";
@@ -48,7 +49,7 @@ describe("air and generals on the d20", () => {
   it("rolls for a general left alone in ground the enemy took", () => {
     const deadly: Scenario = { ...scenario, air: { ...scenario.air!, generalDeathRoll: 20 } };
     const alone = withUnitAt(without(state, "south-legion", "south-regulares-west", "south-granada-6", "south-lepanto-5", "south-cadiz-33", "south-africa-vanguard"), "rep-vitoria-8", { territoryId: territory("andalucia") });
-    const exposed: GameState = { ...alone, control: { ...alone.control, [territory("andalucia")]: { factionId: faction("republic"), kind: "controlled" } } };
+    const exposed: GameState = holdWhole(scenario, alone, territory("andalucia"), faction("republic"));
     const result = resolveTurn(deadly, exposed, [{ factionId: faction("republic"), orders: [move("republic", "rep-vitoria-8", "andalucia", "ceuta")] }], seed);
     expect(result.outcomes).toContainEqual(expect.objectContaining({ generalId: "juan-yague", kind: "general-died" }));
     expect(result.outcomes).toContainEqual({ arrivesOnTurn: 2, factionId: "south", generalId: "jose-varela", kind: "replacement-due" });
