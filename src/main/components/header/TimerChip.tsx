@@ -1,6 +1,6 @@
 import { type JSX, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { useAppDispatch, useAppSelector } from "../../hooks";
+import { useAppDispatch, useAppSelector, useSession } from "../../hooks";
 import { timeRanOut } from "../../state/timeout";
 import { clockWarned, pauseClock, planningBudgetMs, remainingMs, resumeClock, startClock, type PlanningClock } from "../../state/timerSlice";
 import type { HeaderSlotProps } from "./slots";
@@ -36,7 +36,7 @@ function clockKey(seed: number, turnNumber: number, factionId: string): string {
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- the slot's data; the clock reads the session itself
 export function TimerChip(_props: HeaderSlotProps): JSX.Element | null {
-  const session = useAppSelector((state) => state.game.session);
+  const session = useSession();
   const timer = useAppSelector((state) => state.timer);
   if (session.phase !== "planning" || timer.minutes === 0) return null;
   const { game } = session;

@@ -75,7 +75,7 @@ function Results({ session }: { readonly session: ResultSession }): JSX.Element 
         ...(focused === undefined ? {} : { attentionKey: focused }),
         body: (
           <>
-            <FocusNote battle={focusedBattle} focusedTerritoryId={focused} result={result} scenario={scenario} />
+            <FocusNote battle={focusedBattle} focusedTerritoryId={focused} result={result} scenario={scenario} viewer={sessionViewer(session)} />
             {over && victory !== undefined ? (
               <section className="pane-section victory-callout">
                 <p>{`${winners} ${victory.factionIds.length > 1 ? "share the victory" : "won"} ${conditionText[victory.condition]}.`}</p>

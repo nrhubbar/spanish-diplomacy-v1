@@ -2,7 +2,7 @@ import { isSystemOutcome } from "../../presentation/systemText";
 import type { Scenario, TerritoryId, TurnOutcome, TurnResolutionResult } from "../../engine/types";
 import type { BattleGroup } from "../../presentation/battle";
 import { glyphs } from "../../presentation/glyphs";
-import { controllerName, describeOutcomeGroup, groupOutcomes, territoryName } from "../../presentation/text";
+import { controllerName, describeOutcomeGroup, groupOutcomes, type ReportView, territoryName } from "../../presentation/text";
 
 /**
  * F1: what the turn report shows for a focused place. Pure, so the screen only renders it.
@@ -35,15 +35,15 @@ function happenedAt(outcome: TurnOutcome, territoryId: TerritoryId): boolean {
 
 /**
  * The note for a place with no battle: a change of hands, then one line per outcome there, in
- * the report's own words. Empty when nothing happened.
+ * the report's own words, as the report's viewer may read them. Empty when nothing happened.
  */
-export function eventsAt(scenario: Scenario, result: TurnResolutionResult, territoryId: TerritoryId): readonly string[] {
+export function eventsAt(scenario: Scenario, result: TurnResolutionResult, territoryId: TerritoryId, view: ReportView = {}): readonly string[] {
   const change = result.controlChanges.find((entry) => entry.territoryId === territoryId);
   const changed = change === undefined
     ? []
     : [`${territoryName(scenario, territoryId)} changed hands: ${controllerName(scenario, change.before)} ${glyphs.arrow} ${controllerName(scenario, change.after)}.`];
   const outcomes = result.outcomes.filter((outcome) => happenedAt(outcome, territoryId));
-  return [...changed, ...groupOutcomes(outcomes).map((group) => describeOutcomeGroup(scenario, group, result.outcomes))];
+  return [...changed, ...groupOutcomes(outcomes).map((group) => describeOutcomeGroup(scenario, group, result.outcomes, view))];
 }
 
 /** Scrolls a report element into the pane's view, smoothly unless the player asked for reduced motion. */
