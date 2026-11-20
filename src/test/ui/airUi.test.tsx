@@ -246,3 +246,14 @@ function mapStub() {
   const cities = new Map(scenario.cities.map((entry, index) => [entry.id, { tier: "overview", x: 100 + 60 * index, y: 500 }]));
   return { cities, territories };
 }
+
+describe("the legend's Milestone 3 entries (m11, X8)", () => {
+  it("lists rail, aircraft and generals where the board has them, each with its symbol", async () => {
+    const { legendEntries, MapLegend } = await import("../../main/map/MapLegend");
+    expect(legendEntries(scenario, start, staticMapView)).toEqual(expect.arrayContaining(["rail", "aircraft", "general"]));
+    render(<MapLegend game={start} scenario={scenario} view={staticMapView} />);
+    expect(screen.getByText(/^Aircraft at their airfield/u)).toBeInTheDocument();
+    expect(screen.getByText(/^General with his units$/u)).toBeInTheDocument();
+    expect(screen.getByText(/^Unit: attack-defence/u)).toBeInTheDocument();
+  });
+});

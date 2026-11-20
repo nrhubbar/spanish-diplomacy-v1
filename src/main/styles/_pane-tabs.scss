@@ -61,17 +61,12 @@
   text-align: center;
 }
 
-// M2 (`ux-phone-pane-a`): on the phone sheet the tabs come first and stay at the top of the
-// scroll area; the heading and meta row follow them and scroll away with the tab's content.
-.campaign-map[data-pane-layout="sheet"] {
-  .pane-tab-list {
-    position: sticky;
-    top: 0;
-    z-index: 2;
-    order: -1;
-    margin-top: 0;
-    background: rgb(246 241 230 / 97%);
-  }
+// M2 (`ux-phone-pane-a`): on the phone sheet the tabs come first, at the top of the scroll
+// area; the heading and meta row follow them. Not sticky: a sticky bar would sit over rows
+// scrolled beneath it (WCAG 2.4.11, 2.5.8).
+.campaign-map[data-pane-layout="sheet"] .pane-tab-list {
+  order: -1;
+  margin-top: 0;
 }
 
 .sub-territory-focus h3 {

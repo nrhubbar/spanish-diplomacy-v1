@@ -102,9 +102,8 @@
   min-height: 0;
   padding: 0 1rem 1rem;
   overflow: auto;
-  // B3, WCAG 2.4.11: a row scrolled into view or focused stays above the sticky order bar (and
-  // below the sticky tabs on the phone sheet).
-  scroll-padding-block: 2.5rem 4.75rem;
+  // B3, WCAG 2.4.11: a row scrolled into view or focused stays above the sticky order bar.
+  scroll-padding-bottom: 4.75rem;
 }
 
 .map-pane-body:focus-visible {
