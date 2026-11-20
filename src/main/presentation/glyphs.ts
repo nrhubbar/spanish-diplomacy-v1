@@ -8,5 +8,6 @@ export const glyphs = {
   close: "\u00d7",
   dot: "\u00b7",
   minus: "\u2212",
+  star: "\u2605",
   times: "\u00d7"
 } as const;

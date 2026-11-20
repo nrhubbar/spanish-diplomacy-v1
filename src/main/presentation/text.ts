@@ -145,7 +145,7 @@ export function describeOutcome(scenario: Scenario, outcome: TurnOutcome, outcom
 /** One report line for a group: the faction first, then what its formations did together. */
 export function describeOutcomeGroup(scenario: Scenario, group: OutcomeGroup, outcomes: readonly TurnOutcome[] = []): string {
   const { outcome } = group;
-  if (isSystemOutcome(outcome)) return describeSystemOutcome(outcome);
+  if (isSystemOutcome(outcome)) return describeSystemOutcome(outcome, scenario);
   if (outcome.kind === "no-move") {
     return outcome.unitId === undefined
       ? `${factionName(scenario, outcome.factionId)} had no armies to order.`

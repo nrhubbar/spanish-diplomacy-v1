@@ -3,8 +3,10 @@ import type {
   ActorKind,
   FactionId,
   GameState,
+  AirMissionOrder,
   MoveOrder,
   PlayerSubmission,
+  SackOrder,
   ScenarioId,
   SubTerritoryId,
   TerritoryId,
@@ -47,10 +49,14 @@ export type OrderStage =
 
 /** The current local player's private working set. */
 export interface Draft {
+  /** U2, U5: air missions and Sack orders (m3r1-air-generals). Carried through selection changes by `withDraft`. */
+  readonly airOrders?: readonly (AirMissionOrder | SackOrder)[];
   readonly feedback?: string;
   /** X3: the sub-territory the pane is focused on, inside the selected territory. */
   readonly focusedSubTerritoryId?: SubTerritoryId;
   readonly orders: readonly MoveOrder[];
+  /** U2: the aircraft whose missions the pane shows (m3r1-air-generals). */
+  readonly selectedAircraftId?: UnitId;
   readonly selectedTerritoryId?: TerritoryId;
   readonly selectedUnitIds: readonly UnitId[];
   readonly stage?: OrderStage;

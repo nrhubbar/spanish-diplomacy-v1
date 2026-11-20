@@ -2,6 +2,7 @@ import { standingOrder } from "../../engine/orders";
 import type { MoveOrder, Scenario, TerritoryId, UnitId, UnitState } from "../../engine/types";
 import { legalDestinations } from "../../engine/validation";
 import type { Draft, OrderKind, Session } from "../session";
+import { isAircraft, keepAirOrders, selectAircraft } from "./air";
 import { chooseDestination } from "./orders";
 
 export type PlanningSession = Extract<Session, { readonly phase: "planning" }>;
@@ -43,7 +44,8 @@ export function orderCounts(session: PlanningSession): Readonly<Record<OrderKind
  * order choice, so an order never applies to a stale selection.
  */
 export function withDraft(session: PlanningSession, draft: Draft): PlanningSession {
-  return { ...session, draft };
+  // U2, U5: planned air missions and sackings outlive selection changes unless the new draft sets them.
+  return { ...session, draft: { ...keepAirOrders(session.draft), ...draft } };
 }
 
 export function feedback(session: PlanningSession, message: string): PlanningSession {
@@ -66,16 +68,18 @@ export function selectedUnits(session: PlanningSession): readonly UnitState[] {
   return session.draft.selectedUnitIds.flatMap((id) => session.game.state.units[id] ?? []);
 }
 
-function ownUnitIdsIn(session: PlanningSession, territoryId: TerritoryId): readonly UnitId[] {
+function ownUnitIdsIn(session: PlanningSession, territoryId: TerritoryId, scenario?: Scenario): readonly UnitId[] {
+  // U2: aircraft are selected on their own (`planning/air.ts`), never with the territory's units.
   return Object.values(session.game.state.units)
     .filter((unit) => unit.factionId === session.factionId && unit.territoryId === territoryId)
+    .filter((unit) => scenario === undefined || !isAircraft(scenario, session.game.state, unit.id))
     .map((unit) => unit.id);
 }
 
 /** The player's armies in a territory that have no move order in `orders`. */
-export function availableUnitIds(session: PlanningSession, territoryId: TerritoryId, orders: readonly MoveOrder[]): readonly UnitId[] {
+export function availableUnitIds(session: PlanningSession, territoryId: TerritoryId, orders: readonly MoveOrder[], scenario?: Scenario): readonly UnitId[] {
   const ordered = new Set(orders.map((order) => order.unitId));
-  return ownUnitIdsIn(session, territoryId).filter((id) => !ordered.has(id));
+  return ownUnitIdsIn(session, territoryId, scenario).filter((id) => !ordered.has(id));
 }
 
 export function selectedDestinations(scenario: Scenario, session: PlanningSession): readonly TerritoryId[] {
@@ -87,7 +91,7 @@ export function selectedDestinations(scenario: Scenario, session: PlanningSessio
 export function clickTerritory(scenario: Scenario, session: PlanningSession, territoryId: TerritoryId): PlanningSession {
   return session.draft.stage?.step === "choose-destination"
     ? chooseDestination(scenario, session, territoryId)
-    : selectTerritory(session, territoryId);
+    : selectTerritory(session, territoryId, scenario);
 }
 
 /**
@@ -99,12 +103,13 @@ export function clickUnit(scenario: Scenario, session: PlanningSession, unitId: 
   const unit = session.game.state.units[unitId];
   if (unit === undefined) return session;
   if (session.draft.stage?.step === "choose-destination") return chooseDestination(scenario, session, unit.territoryId);
-  return unit.factionId === session.factionId ? toggleUnit(session, unitId) : selectTerritory(session, unit.territoryId);
+  if (unit.factionId === session.factionId && isAircraft(scenario, session.game.state, unitId)) return selectAircraft(session, unitId);
+  return unit.factionId === session.factionId ? toggleUnit(session, unitId, scenario) : selectTerritory(session, unit.territoryId, scenario);
 }
 
-export function selectTerritory(session: PlanningSession, territoryId: TerritoryId): PlanningSession {
-  const own = ownUnitIdsIn(session, territoryId);
-  const available = availableUnitIds(session, territoryId, session.draft.orders);
+export function selectTerritory(session: PlanningSession, territoryId: TerritoryId, scenario?: Scenario): PlanningSession {
+  const own = ownUnitIdsIn(session, territoryId, scenario);
+  const available = availableUnitIds(session, territoryId, session.draft.orders, scenario);
   const message = own.length === 0
     ? "None of your armies are in this territory."
     : available.length === 0 ? "Every army here is moving. Select one to change its order." : undefined;
@@ -115,13 +120,13 @@ export function selectTerritory(session: PlanningSession, territoryId: Territory
 }
 
 /** Toggles one army in the selected territory; an army elsewhere selects its territory instead. */
-export function toggleUnit(session: PlanningSession, unitId: UnitId): PlanningSession {
+export function toggleUnit(session: PlanningSession, unitId: UnitId, scenario?: Scenario): PlanningSession {
   const unit = session.game.state.units[unitId];
   if (unit?.factionId !== session.factionId) {
     return feedback(session, "Select one of your own armies.");
   }
   if (session.draft.selectedTerritoryId !== unit.territoryId) {
-    return selectTerritory(session, unit.territoryId);
+    return selectTerritory(session, unit.territoryId, scenario);
   }
   const current = session.draft.selectedUnitIds;
   return withDraft(session, selectionOf(
@@ -131,11 +136,11 @@ export function toggleUnit(session: PlanningSession, unitId: UnitId): PlanningSe
 }
 
 /** Restores the default selection: every army in the territory without a move order. */
-export function selectAllAvailable(session: PlanningSession): PlanningSession {
+export function selectAllAvailable(session: PlanningSession, scenario?: Scenario): PlanningSession {
   const territoryId = session.draft.selectedTerritoryId;
   return territoryId === undefined
     ? feedback(session, "Select a territory first.")
-    : selectTerritory(session, territoryId);
+    : selectTerritory(session, territoryId, scenario);
 }
 
 /** Unselects every army but keeps the territory open. */

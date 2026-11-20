@@ -23,10 +23,10 @@ export function chooseOrder(scenario: Scenario, session: PlanningSession, orderK
   if (session.draft.selectedUnitIds.length === 0) {
     return feedback(session, "Select at least one army first.");
   }
-  return orderKind === "move" ? chooseMove(scenario, session) : chooseStanding(session, orderKind);
+  return orderKind === "move" ? chooseMove(scenario, session) : chooseStanding(session, orderKind, scenario);
 }
 
-function chooseStanding(session: PlanningSession, kind: StandingOrder): PlanningSession {
+function chooseStanding(session: PlanningSession, kind: StandingOrder, scenario?: Scenario): PlanningSession {
   const fitting = new Set(selectedUnits(session).filter((unit) => standingOrder(unit) === kind).map((unit) => unit.id));
   if (fitting.size === 0) {
     return feedback(session, kind === "entrench" ? "Demoralized armies cannot entrench. They rest instead." : "Only demoralized armies rest.");
@@ -35,7 +35,7 @@ function chooseStanding(session: PlanningSession, kind: StandingOrder): Planning
   const territoryId = session.draft.selectedTerritoryId;
   const draft = territoryId === undefined
     ? { orders, selectedUnitIds: [] }
-    : selecting(territoryId, availableUnitIds(session, territoryId, orders), orders);
+    : selecting(territoryId, availableUnitIds(session, territoryId, orders, scenario), orders);
   const who = fitting.size === 1 ? "1 army" : `${String(fitting.size)} armies`;
   return withDraft(session, { ...draft, feedback: `${who} will ${kind === "entrench" ? "entrench" : "rest"}.` });
 }
@@ -77,7 +77,7 @@ export function chooseDestination(scenario: Scenario, session: PlanningSession, 
   }));
   const replanned = new Set(session.draft.selectedUnitIds);
   const orders = [...session.draft.orders.filter((order) => !replanned.has(order.unitId)), ...planned];
-  return withDraft(session, selecting(origin, availableUnitIds(session, origin, orders), orders));
+  return withDraft(session, selecting(origin, availableUnitIds(session, origin, orders, scenario), orders));
 }
 
 /** Clears an army's move order, which returns it to its standing order (O5). */

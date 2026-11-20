@@ -1,6 +1,6 @@
 import { createAction, createReducer } from "@reduxjs/toolkit";
 import { initialGameState } from "../engine/resolution";
-import type { ActorKind, FactionId, Scenario, ScenarioId, SubTerritoryId, TerritoryId, UnitId } from "../engine/types";
+import type { ActorKind, AirMission, FactionId, Scenario, ScenarioId, SubTerritoryId, TerritoryId, UnitId } from "../engine/types";
 import type { ScenarioRegistry } from "../scenarios/registry";
 import { advance, lockSubmission, nextTurn } from "./coordinator";
 import {
@@ -9,10 +9,14 @@ import {
   clearSelection,
   clickTerritory,
   clickUnit,
+  closeAircraft,
   focusOn,
   removeOrder,
+  airDraftOrders,
   selectAllAvailable,
+  setAirMission,
   toggleOrderChoice,
+  toggleSack,
   toggleUnit,
   type PlanningSession,
   unfocus
@@ -52,6 +56,12 @@ export const endTurn = createAction("game/endTurn");
 /** X3: focus the pane on a sub-territory, or (undefined) back to its territory. */
 export const focusSubTerritory = createAction<SubTerritoryId | undefined>("game/focusSubTerritory");
 export const startNextTurn = createAction("game/startNextTurn");
+/** U2: plan an aircraft's mission, or with none stand it down (m3r1-air-generals). */
+export const planAirMission = createAction<{ readonly mission?: AirMission; readonly unitId: UnitId }>("game/planAirMission");
+/** U2: close the selected aircraft's missions. */
+export const closeAircraftPane = createAction("game/closeAircraftPane");
+/** U5: plan, or withdraw, a Sack order for a general. */
+export const toggleSackOrder = createAction<UnitId>("game/toggleSackOrder");
 
 function setupFor(scenario: Scenario): Session {
   const assignments: Record<FactionId, ActorKind> = {};
@@ -120,7 +130,7 @@ export function createGameReducer(dependencies: GameReducerDependencies) {
       .addCase(toggleUnitSelection, (state, { payload }) =>
         set(inPlanning(state.session, (_scenario, planning) => toggleUnit(planning, payload))))
       .addCase(selectAllAvailableUnits, (state) =>
-        set(inPlanning(state.session, (_scenario, planning) => selectAllAvailable(planning))))
+        set(inPlanning(state.session, (scenario, planning) => selectAllAvailable(planning, scenario))))
       .addCase(clearUnitSelection, (state) =>
         set(inPlanning(state.session, (_scenario, planning) => clearSelection(planning))))
       .addCase(toggleOrderMenu, (state) =>
@@ -133,10 +143,16 @@ export function createGameReducer(dependencies: GameReducerDependencies) {
         set(inPlanning(state.session, (_scenario, planning) => cancelOrder(planning))))
       .addCase(removePlannedOrder, (state, { payload }) =>
         set(inPlanning(state.session, (_scenario, planning) => removeOrder(planning, payload))))
+      .addCase(planAirMission, (state, { payload }) =>
+        set(inPlanning(state.session, (scenario, planning) => setAirMission(scenario, planning, payload.unitId, payload.mission))))
+      .addCase(closeAircraftPane, (state) =>
+        set(inPlanning(state.session, (_scenario, planning) => closeAircraft(planning))))
+      .addCase(toggleSackOrder, (state, { payload }) =>
+        set(inPlanning(state.session, (scenario, planning) => toggleSack(scenario, planning, payload))))
       .addCase(endTurn, (state) =>
         set(inPlanning(state.session, (scenario, planning) => advance(
           scenario,
-          lockSubmission(scenario, planning.game, { factionId: planning.factionId, orders: planning.draft.orders }),
+          lockSubmission(scenario, planning.game, { factionId: planning.factionId, orders: [...planning.draft.orders, ...airDraftOrders(planning.draft)] }),
           planning.factionId
         ))))
       .addCase(startNextTurn, (state) => {

@@ -1,0 +1,174 @@
+// Air layer and air pane (U2, U5; m3r1-air-generals): aircraft counters at their airfields, the
+// selected aircraft's range ring, planned missions, the mission buttons and the general's pill.
+.air-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.air-layer-lines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.air-range-ring {
+  fill: none;
+  stroke: var(--ink-soft);
+  stroke-dasharray: 6 5;
+  stroke-width: 1.5;
+}
+
+.air-mission-line {
+  stroke: var(--accent);
+  stroke-dasharray: 5 4;
+  stroke-width: 2;
+
+  &[data-mission="intercept"],
+  &[data-mission="recon"] {
+    stroke: var(--ink-soft);
+  }
+}
+
+.air-counter {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: 2px;
+  border: 1.5px solid var(--ink);
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--faction-color) 55%, #fbf6ea);
+  cursor: pointer;
+  pointer-events: auto;
+
+  &[data-selected="true"] {
+    outline: 3px solid #e0b100;
+    outline-offset: 1px;
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 2px;
+  }
+}
+
+.air-counter-symbol {
+  display: flex;
+  width: 22px;
+  height: 14px;
+
+  svg {
+    width: 100%;
+    height: 100%;
+  }
+}
+
+.air-counter-tag {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  padding: 0 2px;
+  transform: translateX(-50%);
+  border-radius: 2px;
+  color: var(--paper);
+  background: var(--ink);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1.3;
+}
+
+.air-counter-badge {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  display: grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  color: var(--paper);
+  background: var(--ink);
+  font-size: 9px;
+}
+
+.air-missions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 6px 0 8px;
+}
+
+.air-mission-button {
+  min-height: 32px;
+  padding: 4px 10px;
+  border: 1px solid var(--ink-soft);
+  border-radius: 4px;
+  color: var(--ink);
+  background: var(--paper);
+  font: inherit;
+  cursor: pointer;
+
+  &[aria-pressed="true"] {
+    color: var(--paper);
+    background: var(--ink);
+  }
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+}
+
+.air-target-card {
+  margin: 8px 0;
+  padding: 8px 10px;
+  border: 1px solid var(--ink);
+  border-radius: 6px;
+  background: var(--paper);
+
+  dl {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 2px 12px;
+    margin: 6px 0 0;
+  }
+
+  dd {
+    margin: 0;
+    font-weight: 600;
+    text-align: right;
+  }
+}
+
+.air-chances {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 6px 0 0;
+  padding: 0;
+  font-size: 12px;
+  list-style: none;
+}
+
+.general-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 8px;
+  border: 1px solid #b08a1e;
+  border-radius: 999px;
+  background: #f6e7b0;
+  font-size: 12px;
+}
+
+.general-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 2px 0 6px 28px;
+}

@@ -44,6 +44,8 @@ function resultOf(result: TurnResolutionResult, unitId: string): string {
       return "invalid";
     case "reinforcement-arrived":
       return "reinforced";
+    case "general-moved":
+      return outcome.arrived ? "moved" : "stayed";
   }
 }
 

@@ -128,6 +128,9 @@ export const commandChanges: Phase = (draft) => {
     const target = scratch.generalMoves[unit.id];
     const ownGroundIn = (id: TerritoryId): boolean => Object.values(armies).some((other) => other.territoryId === id && other.factionId === unit.factionId);
     const position = target !== undefined && ownGroundIn(target) ? target : unit.territoryId;
+    if (target !== undefined) {
+      events.push({ arrived: position === target, kind: "general-moved", order: { factionId: unit.factionId, from: unit.territoryId, kind: "move", to: target, unitId: unit.id } });
+    }
     const gone = (id: UnitId): boolean => armies[id] === undefined || retreatedTo.has(id) || surrendered.has(id);
     const routedTo = members.map((id) => retreatedTo.get(id)).find((to) => to !== undefined);
     const positionControl = control[position];

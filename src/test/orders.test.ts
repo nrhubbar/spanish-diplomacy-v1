@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { initialGameState, resolveTurn } from "../main/engine/resolution";
-import { isD6Battle, isMoveOrder, isUnitOrder, type Order, type TurnOutcome, type UnitTypeId } from "../main/engine/types";
+import { isD6Battle, isMoveOrder, isUnitOrder, type Order, type SystemOutcome, type TurnOutcome, type UnitTypeId } from "../main/engine/types";
 import { unavailableOrderReason, validateSubmission } from "../main/engine/validation";
-import { isSystemOutcome } from "../main/presentation/systemText";
+import { describeSystemOutcome, isSystemOutcome } from "../main/presentation/systemText";
 import { describeOutcome } from "../main/presentation/text";
 import { faction, move, territory, tiny, unit } from "./support";
 
@@ -59,7 +59,7 @@ describe("outcomes of the Milestone 3 systems", () => {
     for (const kind of ["weather-rolled", "training-started", "build-queued", "raid", "general-died", "withdrew", "income"]) {
       const outcome = { kind } as unknown as TurnOutcome;
       expect(isSystemOutcome(outcome)).toBe(true);
-      expect(describeOutcome(tiny(), outcome)).toMatch(/\.$/);
+      expect(describeSystemOutcome(outcome as SystemOutcome)).toMatch(/\.$/);
     }
   });
 
