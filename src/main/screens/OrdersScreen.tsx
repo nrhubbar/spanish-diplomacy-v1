@@ -45,8 +45,10 @@ function Orders({ scenario, session }: { readonly scenario: Scenario; readonly s
     onSelectUnit: (unit: UnitState) => dispatch(clickMapUnit(unit.id)),
     orderedUnitIds: new Set(draft.orders.map((order) => order.unitId)),
     outcomes: [],
+    plannedAirMissions: (draft.airOrders ?? []).filter((order) => order.kind === "air-mission"),
     // A Withdraw is drawn as the move it makes (C1).
     plannedOrders: draft.orders.map((order): MoveOrder => (isMoveOrder(order) ? order : { ...order, kind: "move" })),
+    ...(draft.selectedAircraftId === undefined ? {} : { selectedAircraftId: draft.selectedAircraftId }),
     selectedUnitIds: new Set(draft.selectedUnitIds),
     ...(draft.selectedTerritoryId === undefined ? {} : { selectedTerritoryId: draft.selectedTerritoryId }),
     unitOrders: new Map(Object.values(game.state.units)

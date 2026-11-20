@@ -6,11 +6,12 @@ import { armyFigures, orderStatus } from "../presentation/army";
 import type { DestinationEstimate } from "../presentation/odds";
 import { factionName, route, territoryName, unitName } from "../presentation/text";
 import { cancelOrderStage, removePlannedOrder } from "../state/gameSlice";
-import { orderCounts, type PlanningSession } from "../state/planning";
+import { isAircraft, orderCounts, type PlanningSession } from "../state/planning";
 import { ArmyLine } from "./ArmyLine";
 import { ArmyPicker } from "./ArmyPicker";
 import { DestinationChoices } from "./DestinationChoices";
 import { armies } from "./OrderCommand";
+import { AircraftHere, AirPane } from "./pane/AirPane";
 import { SubTerritoryFocus } from "./pane/SubTerritoryFocus";
 import { SubTerritoryList } from "./pane/SubTerritoryList";
 import { TerritoryTabs } from "./pane/TerritoryTabs";
@@ -50,7 +51,9 @@ export function OrderBuilder({ estimates, scenario, session }: BuilderProps & { 
           </div>
         ) : null}
         {choosingDestination && estimates.size > 0 ? <DestinationChoices estimates={estimates} scenario={scenario} /> : null}
-        {territoryId === undefined ? (
+        {draft.selectedAircraftId !== undefined ? (
+          <AirPane key={draft.selectedAircraftId} scenario={scenario} session={session} unitId={draft.selectedAircraftId} />
+        ) : territoryId === undefined ? (
           <p className="pane-hint">Select a territory or one of your armies on the map.</p>
         ) : (
           draft.focusedSubTerritoryId === undefined ? (
@@ -105,13 +108,16 @@ function OrderSummary({ scenario, session }: { readonly scenario: Scenario; read
 function TerritoryDetails({ scenario, session, territoryId }: BuilderProps & { readonly territoryId: TerritoryId }): JSX.Element {
   const { factionId, game } = session;
   const unitsHere = Object.values(game.state.units).filter((unit) => unit.territoryId === territoryId);
-  const own = unitsHere.filter((unit) => unit.factionId === factionId);
+  // U2: the player's aircraft are listed apart and open their own missions (m3r1-air-generals).
+  const aircraft = unitsHere.filter((unit) => unit.factionId === factionId && isAircraft(scenario, game.state, unit.id));
+  const own = unitsHere.filter((unit) => unit.factionId === factionId && !aircraft.includes(unit));
   const others = unitsHere.filter((unit) => unit.factionId !== factionId);
 
   return (
     <>
       {own.length === 0 ? null : <ArmyPicker own={own} scenario={scenario} session={session} />}
       <TrainingList scenario={scenario} session={session} territoryId={territoryId} />
+      <AircraftHere aircraft={aircraft} scenario={scenario} session={session} />
       {others.length === 0 ? null : (
         <div className="other-formations">
           <h4>Other armies here</h4>

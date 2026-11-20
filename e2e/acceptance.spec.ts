@@ -67,14 +67,15 @@ test("plays a mixed local and computer turn straight through to the results", as
   await expectAccessible(page);
   await selectTerritory(page, "madrid");
   const orders = await pane(page, "Orders");
-  await expect(orders.getByText("4 of 4 selected")).toBeVisible();
+  // Madrid holds four ground armies and General Miaja (m3r1-air-generals); its aircraft are selected on their own.
+  await expect(orders.getByText("5 of 5 selected")).toBeVisible();
   await orders.getByRole("button", { name: "Give Selected Armies Order" }).click();
   await expectAccessible(page);
   await orders.getByRole("button", { exact: true, name: "Move" }).click();
   await expectAccessible(page);
   await selectTerritory(page, "castilla-la-mancha");
   await pane(page, "Orders");
-  await expect(orders.getByRole("list", { name: "Planned moves (4)" })).toBeVisible();
+  await expect(orders.getByRole("list", { name: "Planned moves (5)" })).toBeVisible();
   await page.getByRole("button", { name: "End Turn" }).filter({ visible: true }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Turn resolution" })).toBeVisible();
   await mapReady(page);
@@ -235,7 +236,7 @@ test("plays a turn with the keyboard alone (B3)", async ({ page }) => {
   // Focus lands on the visible Cancel control instead of being lost with the Move button.
   await expect(page.locator(":focus")).toHaveText(/^Cancel/);
   await selectTerritory(page, "castilla-la-mancha");
-  await expect((await pane(page, "Orders")).getByRole("list", { name: "Planned moves (4)" })).toBeVisible();
+  await expect((await pane(page, "Orders")).getByRole("list", { name: "Planned moves (5)" })).toBeVisible();
   await page.getByRole("button", { name: "Zoom in" }).focus();
   await page.keyboard.press("Enter");
   await expect(page.getByText("Map zoom 125 percent")).toBeAttached();

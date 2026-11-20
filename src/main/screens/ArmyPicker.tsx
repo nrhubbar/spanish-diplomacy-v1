@@ -12,6 +12,7 @@ import { territoryName } from "../presentation/text";
 import { routeNames } from "../engine/partition/paths";
 import { ArmyLine } from "./ArmyLine";
 import { OrderCommand } from "./OrderCommand";
+import { GeneralControls } from "./pane/AirPane";
 
 interface ArmyPickerProps {
   readonly own: readonly UnitState[];
@@ -66,6 +67,7 @@ export function ArmyPicker({ own, scenario, session }: ArmyPickerProps): JSX.Ele
                   : null}
                 <ArmyLine factionColor={requireFaction(scenario, unit.factionId).color} figures={armyFigures(scenario, game.state, unit)} />
               </button>
+              <GeneralControls scenario={scenario} session={session} unit={unit} />
             </li>
           );
         })}

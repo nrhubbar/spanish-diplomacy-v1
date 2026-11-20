@@ -91,6 +91,7 @@ export const airSchema = z.strictObject({
   raidTable: z.array(z.strictObject({ outcome: raidOutcomeSchema, upTo: z.number().int().min(1).max(20) })).min(1),
   interceptRoll: signedRoll.negative(),
   reconTurns: positiveWholeSchema,
+  generalDeathRoll: z.number().int().min(0).max(20).optional().meta({ description: "U5: a general whose army is destroyed or routed dies on a d20 at or under this." }),
   ...basisShape
 });
 

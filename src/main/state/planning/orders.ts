@@ -37,7 +37,7 @@ export function chooseOrder(scenario: Scenario, session: PlanningSession, orderK
       return chooseDefault(session, orderKind);
     case "entrench":
     case "rest":
-      return chooseStanding(session, orderKind);
+      return chooseStanding(session, orderKind, scenario);
   }
 }
 
@@ -60,7 +60,7 @@ function chooseWithdraw(scenario: Scenario, session: PlanningSession): PlanningS
   return routes.length === 1 ? chooseDestination(scenario, choosing, only.to) : choosing;
 }
 
-function chooseStanding(session: PlanningSession, kind: StandingOrder): PlanningSession {
+function chooseStanding(session: PlanningSession, kind: StandingOrder, scenario?: Scenario): PlanningSession {
   const fitting = new Set(selectedUnits(session).filter((unit) => standingOrder(unit) === kind).map((unit) => unit.id));
   if (fitting.size === 0) {
     return feedback(session, kind === "entrench" ? "Demoralized armies cannot entrench. They rest instead." : "Only demoralized armies rest.");
@@ -69,7 +69,7 @@ function chooseStanding(session: PlanningSession, kind: StandingOrder): Planning
   const territoryId = session.draft.selectedTerritoryId;
   const kept = replenishWithout(session.draft, fitting);
   const draft = {
-    ...(territoryId === undefined ? { orders, selectedUnitIds: [] } : selecting(territoryId, availableUnitIds(session, territoryId, orders, kept.replenishments), orders)),
+    ...(territoryId === undefined ? { orders, selectedUnitIds: [] } : selecting(territoryId, availableUnitIds(session, territoryId, orders, kept.replenishments, scenario), orders)),
     ...kept
   };
   const who = fitting.size === 1 ? "1 army" : `${String(fitting.size)} armies`;
@@ -114,7 +114,7 @@ export function chooseDestination(scenario: Scenario, session: PlanningSession, 
   }));
   const replanned = new Set(session.draft.selectedUnitIds);
   const orders = [...session.draft.orders.filter((order) => !replanned.has(order.unitId)), ...planned];
-  return withDraft(session, { ...selecting(origin, availableUnitIds(session, origin, orders), orders), ...replenishWithout(session.draft, replanned) });
+  return withDraft(session, { ...selecting(origin, availableUnitIds(session, origin, orders, undefined, scenario), orders), ...replenishWithout(session.draft, replanned) });
 }
 
 /** Clears an army's move or Replenish order, which returns it to its standing order (O5). */

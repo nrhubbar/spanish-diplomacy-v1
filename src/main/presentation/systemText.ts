@@ -1,8 +1,8 @@
 import type { Scenario, SystemOutcome, TurnOutcome } from "../engine/types";
-import { airLines } from "./systemText/air";
+import { airLines, describeAirOutcome, isAirOutcome } from "./systemText/air";
 import { contestedLines } from "./systemText/contested";
 import { economyLines } from "./systemText/economy";
-import { generalsLines } from "./systemText/generals";
+import { describeGeneralsOutcome, describeRally, generalsLines, isGeneralsOutcome } from "./systemText/generals";
 import { moraleLines } from "./systemText/morale";
 import { describeRecruitmentOutcome, isRecruitmentOutcome, recruitmentLines } from "./systemText/recruitment";
 import { weatherLines } from "./systemText/weather";
@@ -27,6 +27,10 @@ export function isSystemOutcome(outcome: TurnOutcome): outcome is SystemOutcome 
 }
 
 export function describeSystemOutcome(outcome: SystemOutcome, scenario?: Scenario): string {
+  // Areas with full sentences take the scenario (m3r1-air-generals: air and generals).
+  if (scenario !== undefined && isAirOutcome(outcome)) return describeAirOutcome(scenario, outcome);
+  if (scenario !== undefined && isGeneralsOutcome(outcome)) return describeGeneralsOutcome(scenario, outcome);
+  if (scenario !== undefined && outcome.kind === "rallied") return describeRally(scenario, outcome);
   // Areas with full sentences take the scenario (m3r1-recruit-replenish: recruitment).
   if (scenario !== undefined && isRecruitmentOutcome(outcome)) return describeRecruitmentOutcome(scenario, outcome);
   return systemLines[outcome.kind];

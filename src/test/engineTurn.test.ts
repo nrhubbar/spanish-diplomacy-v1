@@ -373,7 +373,13 @@ describe("turn invariants over seeded computer games", () => {
     for (const { result, start } of games) {
       const gone = new Set([
         ...battlesOf(result).flatMap((battle) => [...battle.losses.filter((loss) => loss.destroyed).map((loss) => loss.unitId), ...battle.surrenderedUnitIds]),
-        ...result.outcomes.flatMap((outcome) => (outcome.kind === "invalid-order" || outcome.kind === "disbanded-move" ? [outcome.order.unitId] : []))
+        ...result.outcomes.flatMap((outcome) => (outcome.kind === "invalid-order" || outcome.kind === "disbanded-move" ? [outcome.order.unitId] : [])),
+        // U2-U5 (m3r1-air-generals): aircraft shot down or lost on the ground, generals killed or sacked.
+        ...result.outcomes.flatMap((outcome) => {
+          if (outcome.kind === "raid") return outcome.aircraftLost;
+          if (outcome.kind === "aircraft-lost" || outcome.kind === "general-died") return [outcome.unitId];
+          return outcome.kind === "general-sacked" ? [outcome.order.unitId] : [];
+        })
       ]);
       for (const id of Object.keys(start.units)) {
         expect(result.finalState.units[unit(id)] !== undefined || gone.has(unit(id))).toBe(true);
@@ -382,6 +388,8 @@ describe("turn invariants over seeded computer games", () => {
       const raisedOrReplenished = new Set(result.outcomes.flatMap((outcome) =>
         outcome.kind === "training-completed" ? [outcome.unitId] : outcome.kind === "replenish-applied" ? [outcome.order.unitId] : []));
       for (const army of Object.values(result.finalState.units)) {
+        // D7: a replacement general appears during the turn (m3r1-air-generals).
+        if (start.units[army.id] === undefined && result.outcomes.some((outcome) => outcome.kind === "replacement-arrived" && outcome.unitId === army.id)) continue;
         if (!raisedOrReplenished.has(army.id)) expect(army.strength).toBeLessThanOrEqual(armyIn(start, army.id).strength);
         expect(army.strength).toBeGreaterThan(0);
       }

@@ -4,8 +4,10 @@ import type {
   BuildOrder,
   FactionId,
   GameState,
+  AirMissionOrder,
   MoveOrder,
   PlayerSubmission,
+  SackOrder,
   RecruitOrder,
   ReplenishOrder,
   ScenarioId,
@@ -55,12 +57,16 @@ export type OrderStage =
 
 /** The current local player's private working set. */
 export interface Draft {
+  /** U2, U5: air missions and Sack orders (m3r1-air-generals). Carried through selection changes by `withDraft`. */
+  readonly airOrders?: readonly (AirMissionOrder | SackOrder)[];
   /** $5: Build orders planned this turn (m3r1-economy-builds, `planning/builds.ts`). Carried through selection changes by `keepBasket`. */
   readonly builds?: readonly BuildOrder[];
   readonly feedback?: string;
   /** X3: the sub-territory the pane is focused on, inside the selected territory. */
   readonly focusedSubTerritoryId?: SubTerritoryId;
   readonly orders: readonly PlannedOrder[];
+  /** U2: the aircraft whose missions the pane shows (m3r1-air-generals). */
+  readonly selectedAircraftId?: UnitId;
   /** X4, R2: the Recruit basket (m3r1-recruit-replenish). Carried through selection changes by `withDraft`. */
   readonly recruits?: readonly RecruitOrder[];
   /** R5: Replenish orders, one per unit, never alongside a move (m3r1-recruit-replenish). */

@@ -1,4 +1,5 @@
 import { raisedOrder } from "./recruitment/rules";
+import { generalUnitOrder } from "./generals/identity";
 import type { FactionId, GameState, MoveOrder, Scenario, TerritoryId, UnitId, UnitState } from "./types";
 
 /**
@@ -88,7 +89,8 @@ export function compareIds(left: string, right: string): number {
 export function unitOrder(scenario: Scenario): (id: UnitId) => number {
   const order = new Map(scenario.units.map((unit, index) => [unit.id, index]));
   return (id) => {
-    const index = order.get(id) ?? raisedOrder(scenario, id);
+    // D7 (m3r1-air-generals): replacement generals come after every other unit.
+    const index = order.get(id) ?? raisedOrder(scenario, id) ?? generalUnitOrder(scenario, id);
     if (index === undefined) {
       throw new Error(`Invariant violated: unknown unit "${id}".`);
     }

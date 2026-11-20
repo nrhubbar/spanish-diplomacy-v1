@@ -104,6 +104,11 @@ export type RaidOutcome = (typeof raidOutcomes)[number];
 
 /** U2-U4, D7: the air module's numbers. */
 export interface AirRules {
+  /**
+   * U5 (AG-8): a general whose army is destroyed or routed dies on a d20 roll at or under this
+   * (0 when absent: generals never die). Generals have no rule area of their own (CT-4).
+   */
+  readonly generalDeathRoll?: number | undefined;
   /** U3: each enemy fighter intercepting a raid takes this (negative) from its roll. */
   readonly interceptRoll: number;
   /** U3: the d20 raid table, best for the defender first, ending at 20. */

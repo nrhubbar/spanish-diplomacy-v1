@@ -7,7 +7,7 @@ import { resolveGradedStanding } from "./standing";
 
 /** The turn's weather as the battles read it: this turn's roll if step 0 made one, else the start's (CT-44). */
 export function gradedInput(draft: TurnDraft): GradedInput {
-  return { start: draft.input.start, weather: draft.systems.weather ?? draft.input.start.weather };
+  return { scratch: draft.scratch, start: draft.input.start, weather: draft.systems.weather ?? draft.input.start.weather };
 }
 
 /** Step 4 for `d20-graded` (M20). */

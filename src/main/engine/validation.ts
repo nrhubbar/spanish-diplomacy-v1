@@ -1,3 +1,5 @@
+import { unitTypeIn } from "./air/pieces";
+import { validateAirMission, validateSack } from "./air/validation";
 import { hookedOrderVerdict } from "./hooks";
 import { validateBuildOrder } from "./economy/catalogue";
 import { isNeighbor } from "./lookup";
@@ -31,6 +33,11 @@ export function validateOrder(scenario: Scenario, state: GameState, order: Order
       return scenario.rules.recruitment === "none" ? { ok: false, reason: unavailableOrderReason } : validateRecruitOrder(scenario, state, order);
     case "replenish":
       return scenario.rules.recruitment === "none" ? { ok: false, reason: unavailableOrderReason } : validateReplenishOrder(scenario, state, order);
+    // U2, U5: air missions and sackings (m3r1-air-generals).
+    case "air-mission":
+      return validateAirMission(scenario, state, order);
+    case "sack":
+      return validateSack(scenario, state, order);
     // $5: the economy module's Build orders (m3r1-economy-builds).
     case "build":
       return validateBuildOrder(scenario, state, order);
@@ -58,6 +65,10 @@ export function validateMoveOrder(
   }
   if (unit.territoryId !== order.from) {
     return { ok: false, reason: "Selected unit is no longer in that territory." };
+  }
+  // W5: a unit takes only the order kinds its type allows (aircraft fly missions, they do not march).
+  if (!(unitTypeIn(scenario, state.raised, unit.id)?.orders.includes("move") ?? true)) {
+    return { ok: false, reason: "This unit cannot move." };
   }
   if (order.from === order.to) {
     return { ok: false, reason: "Choose a different territory as the destination." };

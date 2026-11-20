@@ -3,6 +3,7 @@ import { freshlyDemoralized, resultEffects } from "./battleResults";
 import { type Armies, type Combatant, combatantsOf, factionsOf, placeAt } from "./board";
 import { armyValue, isSuccessful, situationalModifiers } from "./combat";
 import { type BattleDice, rollDie } from "./dice";
+import type { TurnScratch } from "./phases/draft";
 import type { Leaving } from "./retreat";
 import type { FactionId, GameState, MoveOrder, Occupation, Scenario, TerritoryId, UnitId, UnitState } from "./types";
 
@@ -15,6 +16,8 @@ export interface Front {
   readonly firstIndex: number;
   /** Each moving army's origin. */
   readonly origins: ReadonlyMap<UnitId, TerritoryId>;
+  /** The turn's scratch, for the combat hooks (air support, generals). */
+  readonly scratch?: TurnScratch;
   readonly start: GameState;
 }
 
@@ -55,6 +58,7 @@ export function settleSite(scenario: Scenario, front: Front, site: Site, firstIn
         attackerFactionId: factionId,
         defenderFactionIds,
         diggingIn: site.kind === "assault",
+        ...(front.scratch === undefined ? {} : { scratch: front.scratch }),
         territoryId: site.territoryId
       })
     }, index, rollDie(front.dice(index)));

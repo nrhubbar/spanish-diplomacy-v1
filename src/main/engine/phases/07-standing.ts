@@ -6,7 +6,7 @@ import type { Phase } from "./draft";
 export const fightStandingBattles: Phase = (draft) => {
   const { dice, scenario, start } = draft.input;
   const firstIndex = draft.meetings.battles.length + draft.front.battles.length;
-  const standing = resolveStanding(scenario, start, draft.armies, dice, firstIndex);
+  const standing = resolveStanding(scenario, start, draft.armies, dice, firstIndex, draft.scratch);
   const departures = settleDepartures(scenario, start, standing.armies, standing.leaving);
   return { ...draft, armies: departures.armies, settled: [...draft.settled, ...departures.settled], standing: standing.battles };
 };
