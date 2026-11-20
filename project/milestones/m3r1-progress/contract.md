@@ -207,3 +207,86 @@ I recorded the probe after the Caceres move: the soaks there equal the CP2 ones,
   - Workers get only the run plan and tasks, and load their scenario themselves, so the functions in `Scenario.modules` never cross `postMessage` or `workerData`.
   - They use none of the removed or changed exports: the weight constants, `prizeFactor`, `knownModules`, `moduleBlocks`, or imports from inside `computerPlayer.ts`.
   - `PackageSources.plugins` is optional.
+
+## CP4 and hand-off (commits `106dd42` to `6e9925b`)
+
+**Done.**
+- Supervisor redirect items:
+  1. Cross-area hooks on `RuleModule.hooks` (`engine/hooks.ts`): `combatModifiers`, `allowanceDelta`, `canDigIn`, `grounded`, `incomeDelta`, `replenishBonus` and `recruitRequirements`. The engine collects them across the selected modules, and the d6 rules call `combatModifiers` (`situationalModifiers`, so battles and planning estimates both use it) and `canDigIn` (`digIn`).
+  2. `TurnDraft.scratch`: each area declares its own key by declaration merging in its module file. Air (bomber support) and movement (legs) show the pattern.
+  3. `outcomesFor` and `state/visible.ts` (`visibleSession`, `sessionViewer`). `useSession` returns the visible session, so every screen reads filtered state; the coordinator gives computer players filtered history; other factions' locked submissions are dropped.
+  4. Blunders (H6), below.
+- H9 splits, with no behaviour change. Each split file stays as a barrel, so no import changed.
+  - `engine/combat.ts` into `combat/{values,odds,estimate}.ts`;
+  - `state/planning.ts` into `planning/{selection,orders,focus}.ts`;
+  - `map/CampaignMap.tsx` into `MapLayers.tsx`;
+  - `map/useMapCamera.ts` into `useKeyPan.ts`;
+  - `style.scss` into ten partials under `styles/`. The compiled CSS is byte-identical (`sass` then `cmp`).
+- UI slots:
+  - header slots under `components/header/` (`DateChip`, `TimerChip` and `ResourceChips` render nothing yet; `ReadinessChips` is the extracted status list);
+  - the territory pane tabs `screens/pane/TerritoryTabs.tsx` (Units, then Build and Recruit, which are present but empty, under `m3-modular`; no tabs under `m2-strength`);
+  - the sub-territory focus view `screens/pane/SubTerritoryFocus.tsx`, with a link back, reached through the `focusSubTerritory` action and `Draft.focusedSubTerritoryId`;
+  - empty map layers `map/layers/{SubTerritoryLayer,RailLayer,AirLayer}.tsx`, between the map and the counters (air above them);
+  - a `styles/_pane-tabs.scss` partial.
+- Lazy loading. The app loads its registry from `scenarios/lazySources.ts` through non-eager globs for `scenario.json`, `map.json` and `plugin.ts`, so the packages, the loader and Zod leave the initial chunk. The app waits for them before its first render, as before. Tests and the harness keep the eager `builtInSources`.
+- `project/budgets.json` (initial chunk 155 kB gzip; the H7 harness goals) and `npm run budgets:check` (`scripts/check-budgets.mjs`). The check measures the entry script and its preloads in `build/dist`, and with `--sim <dir>` reads a harness `summary.json`. It exits 1 on any miss.
+- Blunders (`ai/blunder.ts`).
+
+**Decisions and assumptions.**
+- CT-44. The hooks see the start-of-turn state; that is where this turn's weather will be when it is rolled before planning (T3, `m3r1-weather-timer`). The collectors combine answers as follows:
+  - `combatModifiers`: concatenated.
+  - `allowanceDelta`: summed.
+  - `canDigIn`: all must agree.
+  - `grounded`: any one grounds.
+  - `incomeDelta`: summed per resource, never below 0.
+  - `replenishBonus`: summed.
+  - `recruitRequirements`: concatenated reasons.
+  - Meeting battles (M20) take no hooks, as they take no modifiers today; `m3r1-d20-combat` decides.
+- CT-45. With several local players, or none, a turn report shows public information only. With one local player it shows that player's view. Planning and handoff use the faction whose turn it is.
+- CT-46. Private outcomes are income; queued, progressing, refunded and forfeited builds (a forfeit goes to both holders); started, paused and refunded training; replenishment; and recon results. A completed build, a completed unit, raids, interceptions, weather, generals and every Milestone 2 outcome are public, because they show on the board.
+- CT-47. A blunder costs exactly one draw per planned order. The same draw decides whether the order blunders and which alternative replaces it, uniformly over the unit's other legal destinations plus its default order. Orders to sites keep their draw but never blunder. At chance 0, or with no stream, nothing is drawn.
+- CT-48. The pane tabs show only when the scenario has an economy or a recruitment module, so tiny-front and the Milestone 2 tests keep their pane. The Build and Recruit panels are empty `div`s, with no placeholder text.
+- CT-49. The sub-territory focus is pane state in the draft, not a React Router route: routing is per session phase (`routeForSession`), and the focus lives inside the planning screen. Selecting anything else drops it.
+- CT-50. The lazy registry still loads before the first render. It leaves the initial chunk but not the boot path; deferring it until the setup screen would mean rebuilding the store around an async registry, which I judged out of scope.
+- CT-51. `scripts/check-budgets.mjs` is a new file under `scripts/`. I touched none of the existing scripts there.
+
+**How I checked behaviour.** The same probe as CP3 (sha256 `4687658c...`) was byte-identical after the hooks, scratch and visibility changes, after the splits, and with blunders at chance 0. With Spain's 0.01 the soak changes on purpose, and every soak band still holds:
+- freezes: 121 of 200 (was 116);
+- decided games: 97 (was 103);
+- early wins: 1;
+- abandonments: 0;
+- first-turn changes: 909.
+
+Tiny-front, which has chance 0, is unchanged.
+
+**Checks** (gated on exit codes):
+- `npm run lint` passed.
+- `npm run typecheck` passed.
+- `npm run test:unit` passed: 36 files, 596 tests. Coverage: 98.53 statements, 93.57 branches, 99.27 functions, 99.14 lines.
+- `npm run build` passed.
+- `npm run budgets:check`: initial chunk 102.99 kB gzip against 155 kB (met; it was 167.45).
+- `npm run test:e2e` on chromium and mobile-chromium (`E2E_PORT=5301`): 50 passed, 5 skipped, and 1 visual diff, the allowed kind. `visual.spec.ts` "planning at every zoom level" (chromium) now shows the Units, Build and Recruit tabs in the Spain pane; see `build/e2e/test-results/visual-planning-at-every-zoom-level-chromium/planning-destinations-diff.png`. I did not regenerate the baseline.
+- Production smoke against a served `build/dist`: 1 passed.
+- Axe runs inside the e2e acceptance specs, which passed.
+
+**Files outside my list that I touched in CP4:**
+- `src/main/state/{coordinator,gameSlice,session,selectors}.ts`: filtered history, the blunder stream, the focus action, `focusedSubTerritoryId`;
+- `src/main/hooks.ts`: the visible session;
+- `src/main/screens/{OrdersScreen,ResolutionScreen,OrderBuilder}.tsx`: slots and tabs;
+- `src/main/components/GameHeader.tsx`;
+- `src/main/main.tsx`: the lazy registry;
+- `package.json`: the `budgets:check` script;
+- `scripts/check-budgets.mjs`: new;
+- `src/main/engine/works.ts`: the `canDigIn` hook.
+
+**For `m3r1-sim-harness`.**
+- Blunders now play in every coordinator-run game at the scenario's `ai.blunderChance`, from the blunder stream. Their "pending" blunder control can switch to "scenario", with `/ai/blunderChance` as the pointer. A chance of 0 gives exactly the old games.
+- The CP2 break list still applies.
+- CP4 changes no public engine signature. `builtInSources` stays eager, and `PackageSources.plugins` is optional.
+
+**Merge to-dos for the integrator** (unchanged from CP2):
+- `scripts/map/iberia-1936.ts`'s old map path;
+- wire `checkSubTerritoryMap` to map-provinces' schema;
+- replace the placeholder topology with map-provinces' generated file;
+- regenerate `map.schema.json` after both merges;
+- review the one changed visual baseline.
