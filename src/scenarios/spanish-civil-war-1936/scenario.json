@@ -2084,6 +2084,52 @@
       "historicalNote": "Mola's columns at Somosierra and the Alto del Leon under Garcia Escamez, Serrador, and Gistau: regulars with requete and Falange companies. Total estimated."
     },
     {
+      "id": "north-argel-27",
+      "name": "Argel Infantry Regiment No. 27",
+      "factionId": "north",
+      "type": "infantry-regiment",
+      "formationKind": "regiment",
+      "strength": 700,
+      "fullStrength": 700,
+      "territoryId": "extremadura",
+      "sources": [
+        {
+          "sourceId": "arzanegui-1993",
+          "reference": "infantry regiment list (citing the Nafziger Collection); VII Division barracks-strength row"
+        },
+        {
+          "sourceId": "ubc-july-map"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "The C\u00e1ceres garrison, in VII Organic Division (Valladolid). It rose with the division on 19 July and held C\u00e1ceres for the rising. Strength from VII Division's barracks figures, as San Quint\u00edn No. 25. It stands in Extremadura, where units are territory-level; the province it held is C\u00e1ceres."
+    },
+    {
+      "id": "north-flandes-5",
+      "name": "Flandes Mountain Battalion No. 5",
+      "factionId": "north",
+      "type": "infantry-regiment",
+      "formationKind": "battalion",
+      "strength": 450,
+      "fullStrength": 450,
+      "territoryId": "pais-vasco",
+      "sources": [
+        {
+          "sourceId": "arzanegui-1993",
+          "reference": "mountain battalion list"
+        },
+        {
+          "sourceId": "ubc-july-map"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "The Vitoria garrison, which rose with Mola and held \u00c1lava. Vitoria also quartered the Numancia No. 6 cavalry and the No. 2 mountain artillery, which are folded in. No barracks figure was found for the battalion: the strength is an estimate (tier 3), a mountain battalion at VI Division's Nationalist-zone rate of about 55 percent. It stands in Pa\u00eds Vasco, where units are territory-level."
+    },
+    {
       "id": "south-granada-6",
       "name": "Granada Infantry Regiment No. 6",
       "factionId": "south",
@@ -2270,6 +2316,29 @@
         }
       ],
       "historicalNote": "The Tetuan No. 1, Ceuta No. 3, and Larache No. 4 groups of Regulares, less a proportional share already in Seville. Estimated."
+    },
+    {
+      "id": "south-palma-36",
+      "name": "Palma Infantry Regiment No. 36",
+      "factionId": "south",
+      "type": "infantry-regiment",
+      "formationKind": "regiment",
+      "strength": 729,
+      "fullStrength": 729,
+      "territoryId": "islas-baleares",
+      "sources": [
+        {
+          "sourceId": "arzanegui-1993",
+          "reference": "infantry regiment list; Balearics barracks-strength row (729, 57%)"
+        },
+        {
+          "sourceId": "ubc-july-map"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "The Palma garrison of Goded's Baleares command. It held Mallorca, and with it Ibiza, for the rising after Goded left for Barcelona on 19 July. Strength is the Palma barracks figure. It stands in the Islas Baleares, where units are territory-level, so it garrisons Ibiza too."
     },
     {
       "id": "rep-ni52-fighters",

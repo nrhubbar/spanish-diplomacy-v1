@@ -184,7 +184,7 @@ describe("friendly consolidation (engine)", () => {
       move("north", "north-aragon-17", "aragon", "castilla-la-mancha"),
       move("south", "south-granada-6", "andalucia", "castilla-la-mancha"),
       move("south", "south-lepanto-5", "andalucia", "castilla-la-mancha")
-    ], loadedDice([1, 1, 4, 4]));
+    ], loadedDice([1, 1, 4, 4, 4, 4]));
     expect([resultOf(result, "rep-wad-ras-1"), resultOf(result, "rep-covadonga-4")]).toEqual(["reinforced", "reinforced"]);
     const attacks = battlesOf(result).filter((battle) => battle.site.kind === "assault");
     expect(attacks.map((battle) => battle.attackerFactionId)).toEqual(["north", "south"]);
