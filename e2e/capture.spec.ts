@@ -336,10 +336,12 @@ test("@capture air missions and generals", async ({ page }) => {
   if (await orders.isVisible()) await orders.click();
   await page.getByRole("button", { exact: true, name: "Raid" }).click();
   await page.getByRole("combobox").selectOption({ index: 1 });
+  await page.waitForTimeout(300); // the mission buttons fade between states
   await capture(page, "22b-air-raid");
   await page.locator('.air-counter[data-unit-id="rep-ni52-fighters"]').click();
   if (await orders.isVisible()) await orders.click();
   await page.getByRole("button", { exact: true, name: "Intercept" }).click();
+  await page.waitForTimeout(300); // the mission buttons fade between states
   await capture(page, "22c-air-intercept");
   await page.getByRole("button", { name: "End Turn" }).filter({ visible: true }).click();
   await waitForMap(page);

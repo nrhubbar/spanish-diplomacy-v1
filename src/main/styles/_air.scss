@@ -112,7 +112,13 @@
   font: inherit;
   cursor: pointer;
 
-  &[aria-pressed="true"] {
+  &:hover:not(:disabled) {
+    color: var(--ink);
+    background: var(--paper-deep);
+  }
+
+  .air-missions &[aria-pressed="true"],
+  .air-missions &[aria-pressed="true"]:hover:not(:disabled) {
     color: var(--paper);
     background: var(--ink);
   }
