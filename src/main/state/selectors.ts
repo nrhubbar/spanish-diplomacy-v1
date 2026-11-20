@@ -18,7 +18,8 @@ export function selectSubmissionStatus(scenario: Scenario, session: Session): re
     name: faction.name,
     ready: session.phase !== "planning" && session.phase !== "handoff"
       ? true
-      : session.game.locked[faction.id] !== undefined
+      // T6: a local computer player is always ready.
+      : session.game.locked[faction.id] !== undefined || session.game.assignments[faction.id] === "computer"
   }));
 }
 

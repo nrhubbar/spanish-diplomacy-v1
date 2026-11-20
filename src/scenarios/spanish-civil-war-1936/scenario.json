@@ -6,7 +6,7 @@
   "snapshotLabel": "31 July 1936",
   "ruleset": "m3-modular",
   "rules": {
-    "dice": "d6-table",
+    "dice": "d20-graded",
     "economy": "development",
     "recruitment": "buildings",
     "weather": "seasonal-zones",

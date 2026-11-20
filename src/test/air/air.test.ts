@@ -15,7 +15,6 @@ import type {
   Scenario,
   SubTerritoryId,
   TurnOutcome,
-  UnitId,
   UnitTypeId
 } from "../../main/engine/types";
 import { validateMoveOrder } from "../../main/engine/validation";
@@ -207,16 +206,16 @@ describe("recon, support, grounding and rebasing (U2, U4, D7)", () => {
     expect(kinds(result.outcomes)).not.toContain("raid");
   });
 
-  it("rebases an aircraft that lost its airfield to the nearest one in range, or loses it", () => {
-    const stranded: GameState = { ...state, units: { ...state.units, [unit("rep-breguet-bombers")]: { ...state.units[unit("rep-breguet-bombers")]!, territoryId: territory("castilla-la-mancha") } } };
-    const result = resolveTurn(scenario, stranded, [], seed);
-    expect(result.outcomes).toContainEqual({ factionId: "republic", from: "castilla-la-mancha", kind: "aircraft-rebased", to: "madrid", unitId: "rep-breguet-bombers" });
+  it("rebases an aircraft whose territory the enemy took whole to the nearest airfield in range, or loses it (D17)", () => {
+    const taken: GameState = { ...state, control: { ...state.control, [territory("madrid")]: { factionId: faction("north"), kind: "controlled" } } };
+    const result = resolveTurn(scenario, taken, [], seed);
+    expect(result.outcomes).toContainEqual({ factionId: "republic", from: "madrid", kind: "aircraft-rebased", to: "valencia", unitId: "rep-breguet-bombers" });
+    expect(result.finalState.units[unit("rep-breguet-bombers")]?.territoryId).toBe("valencia");
     // With every Republican airfield gone, a stranded aircraft has nowhere to go.
     const bare = Object.fromEntries(Object.entries(state.subTerritories).map(([id, sub]) =>
       [id, sub.holder === faction("republic") ? { ...sub, buildings: sub.buildings.filter((building) => !building.includes("airfield")) } : sub]));
-    const far: GameState = withRaised({ ...state, subTerritories: bare }, "lone-recon", "republic", "recon-flight", "ceuta");
-    const lost = resolveTurn(scenario, far, [], seed);
-    expect(lost.outcomes).toContainEqual({ factionId: "republic", from: "ceuta", kind: "aircraft-lost", unitId: "lone-recon" });
-    expect(lost.finalState.units["lone-recon" as UnitId]).toBeUndefined();
+    const lost = resolveTurn(scenario, { ...taken, subTerritories: bare }, [], seed);
+    expect(lost.outcomes).toContainEqual({ factionId: "republic", from: "madrid", kind: "aircraft-lost", unitId: "rep-breguet-bombers" });
+    expect(lost.finalState.units[unit("rep-breguet-bombers")]).toBeUndefined();
   });
 });

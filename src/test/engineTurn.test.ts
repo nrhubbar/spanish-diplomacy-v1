@@ -384,10 +384,13 @@ describe("turn invariants over seeded computer games", () => {
       for (const id of Object.keys(start.units)) {
         expect(result.finalState.units[unit(id)] !== undefined || gone.has(unit(id))).toBe(true);
       }
+      // R5, R7 (m3-modular): Replenish raises men, and recruits appear; M25 holds for every other army.
+      const raisedOrReplenished = new Set(result.outcomes.flatMap((outcome) =>
+        outcome.kind === "training-completed" ? [outcome.unitId] : outcome.kind === "replenish-applied" ? [outcome.order.unitId] : []));
       for (const army of Object.values(result.finalState.units)) {
         // D7: a replacement general appears during the turn (m3r1-air-generals).
         if (start.units[army.id] === undefined && result.outcomes.some((outcome) => outcome.kind === "replacement-arrived" && outcome.unitId === army.id)) continue;
-        expect(army.strength).toBeLessThanOrEqual(armyIn(start, army.id).strength);
+        if (!raisedOrReplenished.has(army.id)) expect(army.strength).toBeLessThanOrEqual(armyIn(start, army.id).strength);
         expect(army.strength).toBeGreaterThan(0);
       }
       for (const works of Object.values(result.finalState.fortification)) {

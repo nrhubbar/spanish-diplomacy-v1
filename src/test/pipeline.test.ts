@@ -46,9 +46,9 @@ describe("the turn pipeline (section 2)", () => {
     const draft = startDraft({ dice: () => seededRandom(1), scenario, seed: 1, start: initialGameState(scenario), streams: seededRollStreams(1, 1), submissions: [] });
     for (const phase of [weatherStep, airStep, trainingStep, incomeStep]) expect(phase(draft)).toBe(draft);
     const presets = new Set(ruleAreas.flatMap((area) => Object.values(builtInModuleRegistry.require(area, builtInModules[area][0]).steps)));
-    // The air area's parts landed with m3r1-air-generals; `air.test.ts` covers them.
-    const skeletons = ruleAreas.filter((area) => area !== "air").flatMap((area) => Object.values(builtInModuleRegistry.require(area, builtInModules[area][1]).steps)).filter((part) => !presets.has(part));
-    expect(skeletons.length).toBeGreaterThan(4);
+    // The dice (m3r1-d20-combat) and air (m3r1-air-generals) areas have landed, so their second modules are no longer skeletons.
+    const skeletons = ruleAreas.filter((area) => area !== "dice" && area !== "air").flatMap((area) => Object.values(builtInModuleRegistry.require(area, builtInModules[area][1]).steps)).filter((part) => !presets.has(part));
+    expect(skeletons.length).toBeGreaterThan(3);
     for (const part of skeletons) expect(part(draft)).toBe(draft);
   });
 

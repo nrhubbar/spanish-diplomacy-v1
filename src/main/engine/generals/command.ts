@@ -1,4 +1,4 @@
-import { generalOf, unitKindIn, unitTypeIn } from "../air/pieces";
+import { generalOf, generalsSetAside, unitKindIn, unitTypeIn } from "../air/pieces";
 import type { AirScratch } from "../air/scratch";
 import { compareIds } from "../board";
 import type { CombatHookContext } from "../hooks";
@@ -83,6 +83,8 @@ function sideModifiers(scenario: Scenario, commander: Commander | undefined, fac
  */
 export function generalModifiers(context: CombatHookContext): readonly CombatModifier[] {
   const { scenario, state } = context;
+  // DC-16: the d20 module emits the general and his trait itself.
+  if (!generalsSetAside(scenario)) return [];
   const attacker = bestGeneral(scenario, state.raised, generalsAt(context, [context.attackerFactionId], context.territoryId, true));
   const defender = bestGeneral(scenario, state.raised, generalsAt(context, context.defenderFactionIds, context.territoryId, false));
   const defenderFaction = defender === undefined ? undefined : generalFaction(state, context, defender.unitId);

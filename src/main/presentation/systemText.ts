@@ -4,7 +4,7 @@ import { contestedLines } from "./systemText/contested";
 import { economyLines } from "./systemText/economy";
 import { describeGeneralsOutcome, describeRally, generalsLines, isGeneralsOutcome } from "./systemText/generals";
 import { moraleLines } from "./systemText/morale";
-import { recruitmentLines } from "./systemText/recruitment";
+import { describeRecruitmentOutcome, isRecruitmentOutcome, recruitmentLines } from "./systemText/recruitment";
 import { weatherLines } from "./systemText/weather";
 
 /**
@@ -31,5 +31,7 @@ export function describeSystemOutcome(outcome: SystemOutcome, scenario?: Scenari
   if (scenario !== undefined && isAirOutcome(outcome)) return describeAirOutcome(scenario, outcome);
   if (scenario !== undefined && isGeneralsOutcome(outcome)) return describeGeneralsOutcome(scenario, outcome);
   if (scenario !== undefined && outcome.kind === "rallied") return describeRally(scenario, outcome);
+  // Areas with full sentences take the scenario (m3r1-recruit-replenish: recruitment).
+  if (scenario !== undefined && isRecruitmentOutcome(outcome)) return describeRecruitmentOutcome(scenario, outcome);
   return systemLines[outcome.kind];
 }

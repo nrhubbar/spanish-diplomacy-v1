@@ -20,7 +20,7 @@ import type {
   UnitId,
   UnitState
 } from "../types";
-import { isGroundUnit, unitKindIn, unitTypeIn } from "./pieces";
+import { generalsSetAside, unitKindIn, unitTypeIn } from "./pieces";
 import { airScratch, validOrdersOf } from "./scratch";
 import { missionTerritory } from "./validation";
 
@@ -35,11 +35,13 @@ export const setAside: Phase = (input) => {
   const { scenario, start } = draft.input;
   const aside: Record<UnitId, UnitState> = {};
   for (const unit of Object.values(draft.armies)) {
-    if (!isGroundUnit(scenario, start.raised, unit.id)) aside[unit.id] = unit;
+    const kind = unitKindIn(scenario, start.raised, unit.id);
+    // D17: aircraft are never ground combatants; generals leave the ground steps only under the d6 table (AG-2).
+    if (kind === "air" || (kind === "general" && generalsSetAside(scenario))) aside[unit.id] = unit;
   }
   const moves = draft.orders.valid;
   const generalMoves: Record<UnitId, TerritoryId> = {};
-  for (const order of moves) if (unitKindIn(scenario, start.raised, order.unitId) === "general") generalMoves[order.unitId] = order.to;
+  for (const order of moves) if (aside[order.unitId] !== undefined && unitKindIn(scenario, start.raised, order.unitId) === "general") generalMoves[order.unitId] = order.to;
   const moving = new Map(moves.map((order) => [order.unitId, order]));
   const armies: Record<UnitId, readonly UnitId[]> = {};
   for (const general of Object.values(aside)) {

@@ -88,6 +88,8 @@ export type UnitOrder = MoveOrder | WithdrawOrder | ReplenishOrder | AirMissionO
 export interface PlayerSubmission {
   readonly factionId: FactionId;
   readonly orders: readonly Order[];
+  /** T5, T6: the player's planning time ran out; the planned orders went in as they were. */
+  readonly timedOut?: true;
 }
 
 export function isMoveOrder(order: Order): order is MoveOrder {

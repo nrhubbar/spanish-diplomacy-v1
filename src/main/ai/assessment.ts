@@ -1,4 +1,4 @@
-import { armyValue, battleOdds, situationalModifiers } from "../engine/combat";
+import { armyValue, oddsForValues } from "../engine/combat";
 import { citiesIn, neighborsOf, requireAiProfile, requireFaction, requireTerritory } from "../engine/lookup";
 import type { AiProfile, FactionId, GameState, Scenario, TerritoryId, UnitId, UnitState } from "../engine/types";
 import { victoryProgress } from "../engine/victory";
@@ -86,13 +86,12 @@ export function assess(scenario: Scenario, state: GameState, factionId: FactionI
     let worst = 0;
     for (const [attackerFactionId, entry] of pressure) {
       if (entry.attack <= 0) continue;
-      const modifiers = situationalModifiers(scenario, state, {
+      worst = Math.max(worst, oddsForValues(scenario, state, {
         attackerFactionId,
         defenderFactionIds: [factionId],
         diggingIn: true,
         territoryId
-      });
-      worst = Math.max(worst, battleOdds(scenario.combat, entry.attack, defence, modifiers).takeChance);
+      }, entry.attack, defence).takeChance);
     }
     return worst;
   });

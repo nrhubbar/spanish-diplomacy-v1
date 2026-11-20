@@ -96,3 +96,12 @@ export function groundView<State extends Pick<GameState, "raised" | "units">>(sc
   const units = Object.fromEntries(Object.entries(state.units).filter(([id]) => isGroundUnit(scenario, state.raised, id as UnitId)));
   return Object.keys(units).length === Object.keys(state.units).length ? state : { ...state, units };
 }
+
+/**
+ * CT-21, AG-2: under the d6 table generals are set aside from the ground steps, so they add no
+ * point to a side, and this module gives their +1 and trait. The d20 module fights them as units of
+ * value 0 and emits their modifiers itself (DC-16).
+ */
+export function generalsSetAside(scenario: Scenario): boolean {
+  return scenario.rules.dice === "d6-table";
+}

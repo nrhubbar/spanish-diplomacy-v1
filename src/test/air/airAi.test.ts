@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { generateComputerSubmission } from "../../main/ai/computerPlayer";
 import { planAirMissions } from "../../main/ai/orders/air-mission";
+import { airRecruitChoices } from "../../main/ai/orders/airRecruits";
 import { planGeneralMoves } from "../../main/ai/orders/general";
 import type { PlanningContext } from "../../main/ai/orders/planner";
 import { planSackings } from "../../main/ai/orders/sack";
@@ -71,5 +72,18 @@ describe("the computer player's generals (H5)", () => {
     };
     expect(planSackings(context(cautious, "republic"))).toEqual([{ factionId: "republic", kind: "sack", unitId: "general-sebastian-pozas" }]);
     expect(planSackings(context(state, "republic"))).toEqual([]);
+  });
+});
+
+describe("the computer player's aircraft and anti-air recruits (H5, U1)", () => {
+  it("buys anti-air where enemy bombers reach, and an aircraft when it has too few", () => {
+    const scenario = spain();
+    const state = initialGameState(scenario);
+    const open = scenario.unitTypes.filter((type) => type.air !== undefined || type.effects.some((effect) => effect.kind === "raid-defence"));
+    // The North has one aircraft for twelve ground units, and Republican bombers reach Castilla y Leon.
+    expect(airRecruitChoices(scenario, state, faction("north"), territory("castilla-y-leon"), open).map((type) => type.id)).toEqual(["anti-air-battery", "bomber-squadron"]);
+    // The Republic has three aircraft for its fifteen ground units: enough.
+    expect(airRecruitChoices(scenario, state, faction("republic"), territory("madrid"), open).map((type) => type.id)).toEqual(["anti-air-battery"]);
+    expect(airRecruitChoices(scenario, state, faction("republic"), territory("catalunya"), []).length).toBe(0);
   });
 });

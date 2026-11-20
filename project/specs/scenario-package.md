@@ -190,6 +190,30 @@ Every roll kind draws from its own seeded streams, `deriveSeed(game seed, tag, t
     - The best general with each army rallies its demoralized units, unless his trait is `no-rally`.
   - **Sack** is a free order for one's own general. He leaves at once.
   - **Replacements.** After a sacking or a death, the next roster entry not in play or on his way is due. He appears at the end of the next turn in the seat territory (else the first controlled territory) as unit `general-<generalId>`, whose definition derives from the id.
+### Recruitment module `buildings` (R1-R7, C8)
+
+- **RR1. Where.** A Recruit order names a territory and a unit type. It is valid when the faction controls the territory, holds its capital sub-territory, and the territory is not contested (W6: territory control is contested, or two factions hold its sub-territories). Contested ground takes no new Recruit orders (C8).
+- **RR2. What.** Every type with a `recruit` block is listed. A type is locked when `recruit.factionIds` leaves the faction out, when the capital sub-territory lacks a building in `recruit.requires`, or when a `recruitRequirements` hook names a reason. A type with no `requires` (militia) needs no building.
+- **RR3. How many (D7).** A territory takes at most `recruitment.maxPerTerritory` Recruit orders a turn, plus the `extra` of every `recruit-slots` building in its capital. Orders past the limit are refunded at reveal.
+- **RR4. Paying (step 1).** After the economy's builds, Recruit and Replenish orders are paid in submission order. An order the balance cannot cover is refunded (`training-refunded`, `replenish-cancelled`), and nothing is taken.
+- **RR5. Training (step 10, R4, R7).** A paid Recruit starts training with `recruit.trainingTurns` turns left. Each step 10 takes one turn off, including the turn of the order, so a one-turn militia appears at the end of the turn it was ordered and moves the next turn. A unit appears in its territory at full establishment, healthy, with fatigue 0.
+- **RR6. Contested training (C8).** If the territory is contested at step 10, types with the `trains-in-contested` effect advance; the rest pause (`training-paused`, once) and resume when it is uncontested. If the faction loses the capital sub-territory, the training is lost with its payment, like a build in progress ($5).
+- **RR7. Recruited units (R6).** A recruited unit's id is `r_<faction>_<type>_<serial>`, the serial counting that faction's units of that type raised or in training. Its definition (`GameState.raised`) is derived from the id: the type's name with "No. <serial>", and the type's establishment as full strength. Recruited units follow every scenario unit in scenario-order tie-breaks. Destroyed and surrendered units never return.
+- **RR8. Replenish (R5).** A unit whose type allows `replenish` may replenish in uncontested territory its faction controls, when it is below full strength or demoralized. It restores at most `replenishShare` of its full strength a turn, plus the `rateShare` and `capShare` of the `replenishBonus` hook (Hospital, Depot). Its price is `replenishCostShare` of the type's Recruit cost times the share of full strength restored, rounded up per resource. It is paid at step 1. At step 9, after the dice module's morale part, the men arrive and demoralization clears; if the unit fought any battle this turn (meeting, territory or standing), fell back, or was lost, the order is cancelled and refunded.
+
+### Calendar, weather and the turn timer (`seasonal-zones`, T1-T6)
+
+- **Date (T1).** Turn 1 is `calendar.start`. Each later turn is the next half-month, 24 a year. The date derives from the turn number and is never stored; it reads "Turn 7 · Late October 1936" wherever the turn is shown.
+- **Roll (T2).** Before anyone plans a turn (step 0), the coordinator sets `GameState.weather`: one d20 from the weather stream, `deriveSeed(seed, weather, turn, 0)`, read against every zone's table for the season holding the turn's month. Each table runs best to worst, so one roll moves the whole map the same way. The roll is a pure function of the seed and turn, so replays match. Inside `resolveTurn`, step 0 only reports `weather-rolled` from the start state.
+- **Forecast (T3).** Next turn's chances in a zone come from next turn's season table. They are never taken from the seeded roll.
+- **Effects (T4).** These use the start-of-turn weather of a territory's zone, through the hooks:
+  - `combatModifiers`: the battle territory's `attackRoll`, under `d20-graded`. Under `d6-table` it is a third of that, truncated (Q-WX-6). A zero adds nothing.
+  - `canDigIn`: false with `blocks-digging-in`.
+  - `allowanceDelta`: minus `movement-penalty.amount` at the origin. The movement module keeps the allowance at 1 or more.
+  - `grounded`: true with `grounds-aircraft`, unless the aircraft's faction holds a sub-territory of that territory with an `all-weather-airbase` building.
+- **Sea closure.** A sea connection is closed when a coastal zone at either end has an outcome whose `closes-sea` lists the turn's month (`isSeaConnectionClosed` in `engine/weather.ts`).
+- **Frostbite.** At step 9, a unit with a valid move whose origin or destination has `frostbite` loses that share of its men, rounded to the nearest man. This produces a `frostbite` outcome.
+- **Turn timer (T5, T6).** This rule applies to every ruleset. A submission may carry `timedOut: true`, set when the player's planning clock ran out. The engine then reports `time-ran-out` at step 0, with the faction's units that had no unit order (`heldUnitCount`). The clock itself lives only in the UI; the engine never reads time.
 
 ## The `m2-strength` ruleset
 
@@ -317,6 +341,36 @@ Each battle rolls one die from its own seeded stream, `deriveSeed(game seed, bat
 - Neither side has works (M22). Faction modifiers apply (M24), judged at the start of the turn.
 - Results apply as in any battle (M16), with one difference: the attacker is already in the territory, so it stays whatever happens. A defender that must retreat leaves the territory (M21). The site records `taken` when the defender is gone and the attacker remains, `left-empty` when no army is left, and `held` otherwise.
 - A standing battle is a battle fought in the territory for digging in (M22).
+
+## The `d20-graded` dice module (D1-D8, C2-C7, U6)
+
+`m3-modular` scenarios that select `dice: d20-graded` fight every battle on the d20 (`src/main/engine/d20/`, joined in `engine/modules/dice.ts`). The M rules above hold except where these say otherwise. The `combat` block still supplies the demoralization factor (M12); every other number comes from the `d20` block.
+
+**D20-1. Values.** As M12, except that a type with value 0 (trucks, generals) counts 0 rather than 1, and general units never count. A side of value 0 fights as 1 for the odds.
+
+**D20-2. Odds and score.** The odds column is M13's. Below 1:1 the roll takes `belowOneToOnePenalty` per halving; above 6:1 it gains the same per step beyond the table. The score is the d20 (1-20, the battle stream's first draw) plus every modifier, clamped to 0-20, and `table[column][score]` names the grade.
+
+**D20-3. Modifiers**, signed from the attacker's view:
+- in a territory: the works (M22, at the d20's rates), each `d20.factionModifiers` entry (M24), and `barricades` against the attacker when the territory has a city a defending faction controlled at the start of the turn (D4, stacking with Popular resistance);
+- always: the best general on each side (the greatest command bonus plus his trait's roll for the side's role; ties in scenario order) and that general's trait (U6, declog D5); for each unit type with `roll-bonus-per-points` matching the side's role, `bonus` per `per` points of that type's value on the side, at most `max`, none in its `exceptWeather` (D5); and `fatigued` when units at `fatiguedLevel` or above carry at least half of a side's value (declog D6), negative for a fatigued attacker and positive for a fatigued defender;
+- in a territory, the selected modules' `combatModifiers` hooks (weather, amphibious, air support, buildings; D7).
+- Meeting battles (M20) take only the armies' own modifiers: generals, unit bonuses and fatigue.
+
+**D20-4. Grades (D2, D6).** Each side's effect is applied in this order: on a grade with `weakestDestroyed`, the weakest unit (lowest value, then fewer men, then scenario order) is destroyed; every other unit loses `lossPercent` of its men now, rounded; a unit left below `breakUpShare` of its full strength is destroyed; then `none`, `all`, or the weakest units until they carry half of the side's value as fought are demoralized. Generals lose no men and are never demoralized.
+
+**D20-5. Territory battles (M17-M19, P4, P5).** Each attacking faction fights the defenders separately from one snapshot of values; the defenders' losses add up battle by battle. A grade with ground `all`, or an attack that leaves no fighting defender, makes a claim, and M18 picks the occupant; the defenders retreat (M21), or, for an entry battle's standing entrant, return home. Otherwise a grade with ground 1 or 2, in a territory with more than one sub-territory under a partition module other than `none`, brings its attackers into the territory beside the defenders, who stay; anywhere else it acts as a stalemate (Q-D20-7). Every other attacker returns (M21). The battle records the ground it actually took: `all` for the occupant, 1 or 2 for attackers that came in, else 0. A side made only of units with `cannot-attack-alone` (generals and value-0 units aside) does not attack: its move bounces as a standoff (D5). With three or more entrants into an empty territory, the one holding its capital sub-territory, else its last controller, stands as the defender (C3).
+
+**D20-6. Meetings (M20).** A grade with ground `all` lets the attacker continue; a grade with ground 0 that cost the defender nothing lets the defender continue; every other grade bounces both.
+
+**D20-7. Standing battles (M27, C2, C3).** As M27, except: no standing battle is fought where a territory battle was fought this turn; generals and units that cannot attack alone do not make a standing attack; with three or more factions present, the capital holder (else the last controller) always defends and the greatest standing attack among the others attacks. A grade with ground `all` makes the defender retreat; partial ground leaves both in place, with the ground recorded for the partition module.
+
+**D20-8. Fatigue and morale (C4-C7, M22, M23).** At step 9:
+- every unit that fought on the attacking side of a battle this turn gains 1 fatigue, up to `demoralizedLevel`; reaching it demoralizes the unit;
+- a unit with no move order that did not retreat, did not attack, and stands in uncontested ground at the end of the turn has a quiet turn: its fatigue returns to 0 and, if it was demoralized before this turn, it recovers (M23). In contested ground it does not (C4); the recruitment module's Replenish and the air module's general rally run after this part and may restore morale themselves (C5);
+- works grow by `worksPerTurn` up to `worksMax`, never in contested ground or where a battle was fought, and as the `canDigIn` hooks allow (T4).
+Each fatigue change is reported as a `fatigue` outcome.
+
+**D20-9. Estimates (C15).** `estimateAttack` returns the d20 odds, the grade chances, the column's bands, `takeChance` (a grade with ground `all`) and `gainChance` (any ground), with every modifier the battle would take.
 
 ## Worked example
 

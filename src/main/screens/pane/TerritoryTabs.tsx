@@ -3,6 +3,7 @@ import type { Scenario, TerritoryId } from "../../engine/types";
 import type { PlanningSession } from "../../state/planning";
 import { BuildTab } from "./BuildTab";
 import { RecruitTab } from "./RecruitTab";
+import { TerritoryHeading } from "./TerritoryHeading";
 
 type TabId = "units" | "build" | "recruit";
 
@@ -17,7 +18,9 @@ const labels: Readonly<Record<TabId, string>> = { build: "Build", recruit: "Recr
 /**
  * X3: the territory pane's tabs, opening on Units. Build is offered when the scenario has an
  * economy module and Recruit when it has a recruitment module; with neither, the pane shows the
- * units alone, as in Milestone 2. Remount it (key) per territory so each opens on Units.
+ * units alone, as in Milestone 2. The territory's heading and meta row (`TerritoryHeading`) sit
+ * above the tab list, so they show on every tab. Remount it (key) per territory so each opens on
+ * Units.
  */
 export function TerritoryTabs({ children, ...props }: TerritoryTabProps & { readonly children: ReactNode }): JSX.Element {
   const { rules } = props.scenario;
@@ -28,9 +31,19 @@ export function TerritoryTabs({ children, ...props }: TerritoryTabProps & { read
   ];
   const [open, setOpen] = useState<TabId>("units");
   const id = useId();
-  if (tabs.length === 1) return <>{children}</>;
+  if (tabs.length === 1) {
+    return (
+      <>
+        <TerritoryHeading {...props} />
+        {children}
+      </>
+    );
+  }
   return (
     <div className="pane-tabs">
+      <div className="territory-heading">
+        <TerritoryHeading {...props} />
+      </div>
       <div aria-label="Territory" className="pane-tab-list" role="tablist">
         {tabs.map((tab) => (
           <button

@@ -1,4 +1,5 @@
 import { generalUnitDefinition } from "./generals/identity";
+import { raisedDefinition } from "./recruitment/rules";
 import type {
   AiProfile,
   CityDefinition,
@@ -31,9 +32,9 @@ export function requireTerritory(scenario: Scenario, id: TerritoryId): Territory
 /** What every unit in play has a definition for: scenario units and units raised in play (R6, D7). */
 export type UnitIdentity = Pick<UnitDefinition, "designation" | "factionId" | "fullStrength" | "generalId" | "id" | "name" | "type">;
 
-/** A scenario unit's definition, or a replacement general's, derived from his id (D7, m3r1-air-generals). */
+/** A scenario unit's definition, a recruited unit's (R6), or a replacement general's (D7), derived from its id. */
 export function requireUnitDefinition(scenario: Scenario, id: UnitId): UnitIdentity {
-  return required(scenario.index.units.get(id) ?? generalUnitDefinition(scenario, id), "unit", id);
+  return required(scenario.index.units.get(id) ?? raisedDefinition(scenario, id) ?? generalUnitDefinition(scenario, id), "unit", id);
 }
 
 export function requireUnitType(scenario: Scenario, id: UnitTypeId): UnitTypeDefinition {
