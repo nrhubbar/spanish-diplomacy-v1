@@ -1,3 +1,4 @@
+import { compareIds } from "../../engine/board";
 import { requireUnitDefinition } from "../../engine/lookup";
 import { replenishProblem, replenishQuote } from "../../engine/recruitment/rules";
 import { canAfford, subtractResources } from "../../engine/resources";
@@ -26,7 +27,7 @@ export const planReplenishment: OrderPlanner<ReplenishOrder> = ({ factionId, mem
       const missing = (full - unit.strength) / full;
       return unit.morale.demoralized || missing >= minimumMissingShare ? [{ missing, quote, unit }] : [];
     })
-    .sort((left, right) => Number(right.unit.morale.demoralized) - Number(left.unit.morale.demoralized) || right.missing - left.missing || left.unit.id.localeCompare(right.unit.id));
+    .sort((left, right) => Number(right.unit.morale.demoralized) - Number(left.unit.morale.demoralized) || right.missing - left.missing || compareIds(left.unit.id, right.unit.id));
   let balance = balanceLeft({ factionId, memory, planned, random, scenario, state });
   const orders: ReplenishOrder[] = [];
   for (const { quote, unit } of candidates) {

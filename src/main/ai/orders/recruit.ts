@@ -1,3 +1,4 @@
+import { compareIds } from "../../engine/board";
 import { armyValue } from "../../engine/combat";
 import { neighborsOf, requireUnitDefinition } from "../../engine/lookup";
 import { recruitSiteProblem, recruitSlots, recruitableTypes, typeLock } from "../../engine/recruitment/rules";
@@ -73,7 +74,7 @@ export const planRecruits: OrderPlanner<RecruitOrder> = (context) => {
   for (const site of recruitSites(scenario, state, factionId)) {
     const open = ground
       .filter((type) => typeLock(scenario, state, factionId, site.territoryId, type).reasons.length === 0)
-      .sort((left, right) => worth(right, start) - worth(left, start) || left.id.localeCompare(right.id));
+      .sort((left, right) => worth(right, start) - worth(left, start) || compareIds(left.id, right.id));
     // U1-U3 (m3r1-air-generals): anti-air and aircraft first, where the site can train them.
     const air = airRecruitChoices(scenario, state, factionId, site.territoryId, recruitableTypes(scenario)
       .filter((type) => (type.air !== undefined || type.effects.some((effect) => effect.kind === "raid-defence")) && typeLock(scenario, state, factionId, site.territoryId, type).reasons.length === 0));

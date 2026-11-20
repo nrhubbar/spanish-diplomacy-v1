@@ -22,23 +22,28 @@ const recordWeather: Phase = (draft) => {
 };
 
 /**
- * T4, D7: a unit that moved this turn from or into a territory whose weather carries
+ * T4, D7: a unit that moved or withdrew this turn from or into a territory whose weather carries
  * `frostbite` (Severe cold) loses that share of its men, rounded to the nearest man, at step 9.
- * Units already gone (destroyed, surrendered) lose nothing more.
+ * "Into" is where the unit actually ended up: an intercepted move stops short, and a blocked
+ * withdrawal falls back (the `withdrew` outcome names the real destination). Units already gone
+ * (destroyed, surrendered) lose nothing more.
  */
 const takeFrostbite: Phase = (draft) => {
   const { scenario, start } = draft.input;
   const share = (territoryId: TerritoryId): number => weatherEffectsIn(scenario, start, territoryId, "frostbite").reduce((most, effect) => Math.max(most, effect.share), 0);
   const armies: Record<UnitId, GameState["units"][UnitId]> = { ...draft.armies };
   const events: FrostbiteOutcome[] = [];
-  for (const order of draft.orders.valid) {
-    const unit = armies[order.unitId];
+  const marches = [
+    ...draft.orders.valid.map((order) => ({ from: draft.orders.origins.get(order.unitId) ?? order.from, unitId: order.unitId })),
+    ...draft.events.flatMap((event) => (event.kind === "withdrew" ? [{ from: event.order.from, unitId: event.order.unitId }] : []))
+  ];
+  for (const { from, unitId } of marches) {
+    const unit = armies[unitId];
     if (unit === undefined) continue;
-    const from = draft.orders.origins.get(order.unitId) ?? order.from;
-    const worst = Math.max(share(from), share(order.to));
+    const worst = Math.max(share(from), share(unit.territoryId));
     const men = Math.round(unit.strength * worst);
     if (men <= 0) continue;
-    armies[order.unitId] = { ...unit, strength: Math.max(0, unit.strength - men) };
+    armies[unitId] = { ...unit, strength: Math.max(0, unit.strength - men) };
     events.push({ factionId: unit.factionId, kind: "frostbite", men, territoryId: unit.territoryId, unitId: unit.id });
   }
   return events.length === 0 ? draft : { ...draft, armies, events: [...draft.events, ...events] };
