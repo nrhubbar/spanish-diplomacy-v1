@@ -1,5 +1,6 @@
 import { unitTypeIn } from "./air/pieces";
 import { validateAirMission, validateSack } from "./air/validation";
+import { validateBuildOrder } from "./economy/catalogue";
 import { isNeighbor } from "./lookup";
 import { validateRecruitOrder, validateReplenishOrder } from "./recruitment/rules";
 import type {
@@ -36,6 +37,9 @@ export function validateOrder(scenario: Scenario, state: GameState, order: Order
       return validateAirMission(scenario, state, order);
     case "sack":
       return validateSack(scenario, state, order);
+    // $5: the economy module's Build orders (m3r1-economy-builds).
+    case "build":
+      return validateBuildOrder(scenario, state, order);
     default:
       return { ok: false, reason: unavailableOrderReason };
   }

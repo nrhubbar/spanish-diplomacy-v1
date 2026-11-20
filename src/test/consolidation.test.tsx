@@ -372,7 +372,8 @@ describe("friendly consolidation (turn report)", () => {
       move("south", "south-legion", "castilla-y-leon", "extremadura")
     ]);
     expect(groupOutcomes(result.outcomes).map((group) => group.unitIds)).toEqual([
-      ["rep-wad-ras-1"], ["rep-covadonga-4"], ["south-granada-6"], ["south-legion"], []
+      // The last four are the north's hold and each faction's income ($2).
+      ["rep-wad-ras-1"], ["rep-covadonga-4"], ["south-granada-6"], ["south-legion"], [], [], [], []
     ]);
     const report = groupOutcomes(result.outcomes).map((group) => describeOutcomeGroup(field.scenario, group, result.outcomes));
     expect(report[0]).toBe("Republican Government: Wad-Ras Infantry Regiment No. 1 tried to move from Castilla-La Mancha to Extremadura and bounced: standoff with Southern Insurgent Command (from Andaluc\u00eda and Castilla y Le\u00f3n).");

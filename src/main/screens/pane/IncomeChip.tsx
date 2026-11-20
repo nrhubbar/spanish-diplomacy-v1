@@ -1,11 +1,11 @@
 import type { JSX } from "react";
+import { TerritoryIncomeChip } from "./build/TerritoryIncomeChip";
 import type { TerritoryTabProps } from "./TerritoryTabs";
 
 /**
- * Territory meta row slot: what the territory pays its holder each turn, "Pays +11 Funds ·
- * +4k men a turn" ($2, X1). TODO(m3r1-economy-builds): render it; until then it renders nothing.
+ * Territory meta row slot: what the territory pays a turn ($2, X1), "Pays +3 Funds \u00b7 +6
+ * Manpower a turn", or that a contested territory pays nobody. Owner: m3r1-economy-builds.
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- the slot's data, read once its slice lands
-export function IncomeChip(_props: TerritoryTabProps): JSX.Element | null {
-  return null;
+export function IncomeChip({ scenario, session, territoryId }: TerritoryTabProps): JSX.Element | null {
+  return <TerritoryIncomeChip scenario={scenario} state={session.game.state} territoryId={territoryId} viewer={session.factionId} />;
 }

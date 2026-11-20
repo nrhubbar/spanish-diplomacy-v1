@@ -1,6 +1,7 @@
 import type { StandingOrder } from "../engine/orders";
 import type {
   ActorKind,
+  BuildOrder,
   FactionId,
   GameState,
   AirMissionOrder,
@@ -53,6 +54,8 @@ export type OrderStage =
 export interface Draft {
   /** U2, U5: air missions and Sack orders (m3r1-air-generals). Carried through selection changes by `withDraft`. */
   readonly airOrders?: readonly (AirMissionOrder | SackOrder)[];
+  /** $5: Build orders planned this turn (m3r1-economy-builds, `planning/builds.ts`). Carried through selection changes by `keepBasket`. */
+  readonly builds?: readonly BuildOrder[];
   readonly feedback?: string;
   /** X3: the sub-territory the pane is focused on, inside the selected territory. */
   readonly focusedSubTerritoryId?: SubTerritoryId;
