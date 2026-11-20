@@ -82,7 +82,7 @@ Every block and catalogue entry that carries numbers (`ai`, unit types, sub-terr
 | `cities[].subTerritoryId` | sub-territory id | The sub-territory the city stands in. Required with sub-territories (L16). |
 | `subTerritories[]` | see below | W2, P1. |
 | `subTerritoryBorders[]` | `[id, id]` | Undirected sub-territory adjacency, inside and across territories, generated from the map geometry. |
-| `resources[]` | `{ id, name }` | $1: Funds and Manpower for Spain. Amounts elsewhere are `{ [resourceId]: whole number }`; a missing resource is 0. |
+| `resources[]` | `{ id, name, display? }` | $1: Funds and Manpower for Spain. Amounts elsewhere are `{ [resourceId]: whole number }`; a missing resource is 0. `display` (EB-12) is `{ unit, suffix }`: one point stands for `unit` of the real thing, and amounts read as the points followed by `suffix`, with the full figure (points times `unit`) where there is room. Spain's Manpower is `{ unit: 1000, suffix: "k" }`, so 18 reads "18k" ("18,000" in the chip's detail). Without it, amounts are plain numbers. |
 | `development[]` | `{ id, name, resource, yieldPerLevel, maxLevel, cityOnly, upgrade: { cost, turns } }` | $3: Farms, Mines, Industry. |
 | `buildings[]` | `{ id, name, cost, turns, capitalOnly, cityOnly, upgradeOf?, effects[] }` | $4. Building effects: `recruit-slots { extra }`, `replenish-rate { share }`, `replenish-cap { share }`, `rail-departures { extra }`, `airbase`, `all-weather-airbase`, `defence-roll { roll }`. |
 | `improvements` | `{ rail: { cost, turns, maxLevel }, port: { ... }, railDamageOnContest }` | $4, $8: the levelled rail (0-3) and port (0-2). |

@@ -90,7 +90,7 @@ describe("the Replenish order (X7, R5)", () => {
 
 describe("wording", () => {
   it("labels resources, men and training", () => {
-    expect(resourcesLabel(scenario, { funds: 6, manpower: 1 } as Resources)).toBe("6 Funds and 1 Manpower");
+    expect(resourcesLabel(scenario, { funds: 6, manpower: 1 } as Resources)).toBe("6 Funds and 1k Manpower");
     expect(resourcesLabel(scenario, {})).toBe("nothing");
     expect(menShort(2500)).toBe("2.5k men");
     expect(menShort(700)).toBe("700 men");
@@ -110,7 +110,7 @@ describe("wording", () => {
     ] }], 2);
     const lines = result.outcomes.filter((outcome) => outcome.kind.startsWith("training")).map((outcome) => describeOutcome(scenario, outcome));
     expect(lines).toContain("Militia column No. 1 finished training in Cataluña. It can move next turn.");
-    expect(lines.some((line) => line.startsWith("Tank company No. 1 began training in Cataluña for 12 Funds and 1 Manpower; ready in 4 turns."))).toBe(true);
+    expect(lines.some((line) => line.startsWith("Tank company No. 1 began training in Cataluña for 12 Funds and 1k Manpower; ready in 4 turns."))).toBe(true);
     expect(lines.some((line) => line.includes("was not raised"))).toBe(true);
   });
 });

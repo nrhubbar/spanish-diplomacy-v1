@@ -1,32 +1,55 @@
 import { currentLevel, maxLevel, projectCost, queuedLevel } from "../engine/economy/catalogue";
-import type { BuildingEffect, BuildProject, Resources, Scenario, SubTerritoryState } from "../engine/types";
+import type { BuildingEffect, BuildProject, ResourceId, Resources, Scenario, SubTerritoryState } from "../engine/types";
+import { glyphs } from "./glyphs";
 
 /**
  * Words for the economy ($1-$5): amounts, projects and building effects. Resources are named
- * from the scenario, never from code.
+ * from the scenario, never from code, and read through their display scale (EB-12).
  */
 
-/** "6 Funds and 1 Manpower"-style list; zeros left out; "nothing" when empty. */
-export function amountText(scenario: Scenario, amount: Resources, separator = " · "): string {
+const separator = ` ${glyphs.dot} `;
+
+function displayOf(scenario: Scenario, resourceId: ResourceId) {
+  return scenario.resources.find((resource) => resource.id === resourceId)?.display;
+}
+
+/** EB-12: an amount of one resource as the header shows it: "18k" for Manpower, "42" for Funds. */
+export function resourceAmount(scenario: Scenario, resourceId: ResourceId, value: number): string {
+  return `${String(value)}${displayOf(scenario, resourceId)?.suffix ?? ""}`;
+}
+
+/** EB-12: an amount with its sign, using a true minus: "+9k", "\u22123", "+0". */
+export function signedResourceAmount(scenario: Scenario, resourceId: ResourceId, value: number): string {
+  return value < 0 ? `${glyphs.minus}${resourceAmount(scenario, resourceId, -value)}` : `+${resourceAmount(scenario, resourceId, value)}`;
+}
+
+/** EB-12: an amount in full, points times the display unit: "18,000" for 18 Manpower, "42" for Funds. */
+export function resourceAmountInFull(scenario: Scenario, resourceId: ResourceId, value: number): string {
+  const full = value * (displayOf(scenario, resourceId)?.unit ?? 1);
+  return String(full).replace(/\B(?=(\d{3})+(?!\d))/gu, ",");
+}
+
+/** "6 Funds \u00b7 3k Manpower"-style list; zeros left out; "nothing" when empty. */
+export function amountText(scenario: Scenario, amount: Resources, joiner = separator): string {
   const parts = scenario.resources.flatMap((resource) => {
     const value = amount[resource.id] ?? 0;
-    return value === 0 ? [] : [`${String(value)} ${resource.name}`];
+    return value === 0 ? [] : [`${resourceAmount(scenario, resource.id, value)} ${resource.name}`];
+  });
+  return parts.length === 0 ? "nothing" : parts.join(joiner);
+}
+
+/** "+6 Funds \u00b7 +1k Manpower"; zeros left out; "nothing" when empty. */
+export function signedAmountText(scenario: Scenario, amount: Resources): string {
+  const parts = scenario.resources.flatMap((resource) => {
+    const value = amount[resource.id] ?? 0;
+    return value === 0 ? [] : [`${signedResourceAmount(scenario, resource.id, value)} ${resource.name}`];
   });
   return parts.length === 0 ? "nothing" : parts.join(separator);
 }
 
-/** "+6 Funds · +1 Manpower"; zeros left out; "nothing" when empty. */
-export function signedAmountText(scenario: Scenario, amount: Resources): string {
-  const parts = scenario.resources.flatMap((resource) => {
-    const value = amount[resource.id] ?? 0;
-    return value === 0 ? [] : [`${value > 0 ? "+" : "−"}${String(Math.abs(value))} ${resource.name}`];
-  });
-  return parts.length === 0 ? "nothing" : parts.join(" · ");
-}
-
-/** A whole number with its sign, using a true minus: "+14", "−3", "+0". */
+/** A whole number with its sign, using a true minus: "+14", "\u22123", "+0". */
 export function signed(value: number): string {
-  return value < 0 ? `−${String(-value)}` : `+${String(value)}`;
+  return value < 0 ? `${glyphs.minus}${String(-value)}` : `+${String(value)}`;
 }
 
 /** The project's base name: the building, the track, Rail or Port. */
@@ -41,12 +64,12 @@ export function projectBaseName(scenario: Scenario, project: BuildProject): stri
   }
 }
 
-/** A project as the queue shows it: "Factory", or "Farms 1 → 2" for a level after those queued ahead. */
+/** A project as the queue shows it: "Factory", or "Farms 1 \u2192 2" for a level after those queued ahead. */
 export function projectName(scenario: Scenario, site: SubTerritoryState | undefined, project: BuildProject, levelBefore?: number): string {
   const base = projectBaseName(scenario, project);
   if (project.kind === "building" || site === undefined) return base;
   const from = levelBefore ?? queuedLevel(site, project);
-  return `${base} ${String(from)} → ${String(from + 1)}`;
+  return `${base} ${String(from)} ${glyphs.arrow} ${String(from + 1)}`;
 }
 
 /** What a building effect does, in a few words. */
@@ -72,7 +95,7 @@ export function buildingEffectText(effect: BuildingEffect): string {
 /** The buildings that a unit type's recruitment needs, as "needed to recruit Infantry, Cavalry". */
 function unlocksText(scenario: Scenario, buildingId: string): string | undefined {
   const types = scenario.unitTypes.filter((type) => type.recruit?.requires.some((id) => id === buildingId) === true).map((type) => type.name);
-  return types.length === 0 ? undefined : `recruits ${types.slice(0, 3).join(", ")}${types.length > 3 ? "…" : ""}`;
+  return types.length === 0 ? undefined : `recruits ${types.slice(0, 3).join(", ")}${types.length > 3 ? glyphs.ellipsis : ""}`;
 }
 
 /** What finishing the project gives: yield, effects, or what it unlocks. */
@@ -80,7 +103,7 @@ export function projectEffectText(scenario: Scenario, project: BuildProject): st
   switch (project.kind) {
     case "development": {
       const track = scenario.index.development.get(project.developmentId);
-      return track === undefined ? undefined : `+${String(track.yieldPerLevel)} ${scenario.resources.find((resource) => resource.id === track.resource)?.name ?? track.resource} a turn`;
+      return track === undefined ? undefined : `${signedResourceAmount(scenario, track.resource, track.yieldPerLevel)} ${scenario.resources.find((resource) => resource.id === track.resource)?.name ?? track.resource} a turn`;
     }
     case "improvement":
       return project.improvement === "rail" ? "longer rail moves" : "lands more armies";
@@ -93,13 +116,13 @@ export function projectEffectText(scenario: Scenario, project: BuildProject): st
   }
 }
 
-/** "8 Funds · 2 turns · +1 Manpower a turn": a queue option's line. */
+/** "8 Funds \u00b7 2 turns \u00b7 +1k Manpower a turn": a queue option's line. */
 export function projectTerms(scenario: Scenario, project: BuildProject): string {
   const cost = projectCost(scenario, project);
   if (cost === undefined) return "";
   const effect = projectEffectText(scenario, project);
   const turns = `${String(cost.turns)} ${cost.turns === 1 ? "turn" : "turns"}`;
-  return [amountText(scenario, cost.cost), turns, ...(effect === undefined ? [] : [effect])].join(" · ");
+  return [amountText(scenario, cost.cost), turns, ...(effect === undefined ? [] : [effect])].join(separator);
 }
 
 /** Levels for pips: the current level and the most it can reach. */

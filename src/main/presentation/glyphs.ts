@@ -8,6 +8,7 @@ export const glyphs = {
   check: "\u2713",
   close: "\u00d7",
   dot: "\u00b7",
+  ellipsis: "\u2026",
   minus: "\u2212",
   star: "\u2605",
   times: "\u00d7"

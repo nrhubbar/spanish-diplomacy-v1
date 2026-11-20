@@ -104,7 +104,10 @@ describe("the Funds and Manpower chips (X1, $6)", () => {
     const state = viewFor(scenario, initialGameState(scenario), faction("republic"));
     render(<Provider store={store}><RegistryContext value={testRegistry()}><GameHeader kicker="Turn 1" slots={{ scenario, state, viewer: faction("republic") }} title="Republic" /></RegistryContext></Provider>);
     const funds = screen.getByRole("button", { name: /^Funds 40 \+14 ?next turn$/ });
-    expect(screen.getByRole("button", { name: /^Manpower 10 \+27 ?next turn$/ })).toBeInTheDocument();
+    // EB-12: Manpower reads through its display scale, as in the approved capture ("Manpower 18k").
+    const manpower = screen.getByRole("button", { name: /^Manpower 10k \+27k ?next turn$/ });
+    await userEvent.click(manpower);
+    expect(screen.getByRole("region", { name: "Manpower detail" })).toHaveTextContent("Manpower: 10k (10,000)");
     await userEvent.click(funds);
     expect(funds).toHaveAttribute("aria-expanded", "true");
     const detail = screen.getByRole("region", { name: "Funds detail" });

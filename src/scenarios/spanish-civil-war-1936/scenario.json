@@ -4088,7 +4088,11 @@
     },
     {
       "id": "manpower",
-      "name": "Manpower"
+      "name": "Manpower",
+      "display": {
+        "unit": 1000,
+        "suffix": "k"
+      }
     }
   ],
   "development": [

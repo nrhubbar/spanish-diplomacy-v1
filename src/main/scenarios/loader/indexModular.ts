@@ -108,7 +108,11 @@ export function indexSystems(document: ModularScenarioDocument | undefined): Mod
       development,
       generalTraits: (document?.generals?.traits ?? []).map((trait) => ({ ...trait, id: trait.id as TraitId })),
       generals,
-      resources: (document?.resources ?? []).map((resource) => ({ id: resource.id as ResourceId, name: resource.name })),
+      resources: (document?.resources ?? []).map((resource) => ({
+        ...(resource.display === undefined ? {} : { display: resource.display }),
+        id: resource.id as ResourceId,
+        name: resource.name
+      })),
       subTerritories,
       subTerritoryBorders: borders,
       ...optionalBlocks(document)

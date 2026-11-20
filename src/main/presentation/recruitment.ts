@@ -1,17 +1,14 @@
 import { replenishQuote } from "../engine/recruitment/rules";
 import { addResources } from "../engine/resources";
 import type { GameState, Resources, Scenario, TrainingItem, UnitState } from "../engine/types";
+import { amountText } from "./economy";
 import { glyphs } from "./glyphs";
 
 /** Player-facing wording for recruiting and replenishing (X4, X7). */
 
-/** "6 Funds and 1 Manpower", in the scenario's resource order; "nothing" when free. */
+/** "6 Funds and 1k Manpower", in the scenario's resource order, read through each display scale (EB-12); "nothing" when free. */
 export function resourcesLabel(scenario: Scenario, amount: Resources, joiner = " and "): string {
-  const parts = scenario.resources.flatMap((resource) => {
-    const value = amount[resource.id] ?? 0;
-    return value === 0 ? [] : [`${String(value)} ${resource.name}`];
-  });
-  return parts.length === 0 ? "nothing" : parts.join(joiner);
+  return amountText(scenario, amount, joiner);
 }
 
 /** The resources a balance lacks to pay a price: "Funds", "Funds and Manpower", or "". */
@@ -33,7 +30,7 @@ export function turnsLabel(turns: number): string {
 
 /**
  * X7, R5: the Replenish choice for the selected units: "+700 men, arriving at the end of the
- * turn · 4 Funds and 1 Manpower · cancelled and refunded if the unit fights".
+ * turn \u00b7 4 Funds and 1k Manpower \u00b7 cancelled and refunded if the unit fights".
  */
 export function replenishDetail(scenario: Scenario, state: GameState, units: readonly UnitState[]): string {
   const quotes = units.flatMap((unit) => replenishQuote(scenario, state, unit) ?? []);

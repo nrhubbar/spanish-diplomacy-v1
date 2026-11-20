@@ -21,6 +21,7 @@ import type {
 import type { RuleModule } from "../main/engine/modules";
 import { validateOrder } from "../main/engine/validation";
 import { outcomesFor } from "../main/engine/visibility";
+import { amountText, resourceAmount, resourceAmountInFull, signedAmountText, signedResourceAmount } from "../main/presentation/economy";
 import { loadPackage } from "../main/scenarios/loader";
 import { modularMap, modularScenario } from "./modularFixture";
 import { faction, spain, territory, unit } from "./support";
@@ -247,6 +248,29 @@ describe("building effects through the hooks ($4)", () => {
     const red = Object.values(state.units).find((candidate) => candidate.factionId === "red")!;
     expect(buildingReplenishBonus({ scenario: fortified, state, territoryId: territory("westfold"), unitId: red.id })).toEqual({ capShare: 0.25, rateShare: 0.5 });
     expect(buildingReplenishBonus({ scenario: fortified, state, territoryId: territory("westfold"), unitId: unit("ghost") })).toEqual({ capShare: 0, rateShare: 0 });
+  });
+});
+
+describe("resource display scale (EB-12)", () => {
+  const spanish = spain();
+  const manpower = "manpower" as never;
+  const fundsId = "funds" as never;
+
+  it("reads Manpower in thousands, as the approved capture, and Funds as plain numbers", () => {
+    expect(spanish.resources.find((resource) => resource.id === manpower)?.display).toEqual({ suffix: "k", unit: 1000 });
+    expect(resourceAmount(spanish, manpower, 18)).toBe("18k");
+    expect(signedResourceAmount(spanish, manpower, 9)).toBe("+9k");
+    expect(signedResourceAmount(spanish, manpower, -3)).toBe("\u22123k");
+    expect(resourceAmountInFull(spanish, manpower, 1234)).toBe("1,234,000");
+    expect(resourceAmount(spanish, fundsId, 42)).toBe("42");
+    expect(resourceAmountInFull(spanish, fundsId, 42)).toBe("42");
+    expect(amountText(spanish, { [fundsId]: 6, [manpower]: 3 } as Resources)).toBe("6 Funds \u00b7 3k Manpower");
+    expect(signedAmountText(spanish, { [fundsId]: -2, [manpower]: 1 } as Resources)).toBe("\u22122 Funds \u00b7 +1k Manpower");
+  });
+
+  it("leaves a scenario without a display block in plain numbers", () => {
+    expect(scenario.resources.every((resource) => resource.display === undefined)).toBe(true);
+    expect(amountText(scenario, { [manpower]: 3 } as Resources)).toBe("3 Manpower");
   });
 });
 
