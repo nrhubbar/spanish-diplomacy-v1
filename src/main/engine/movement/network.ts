@@ -24,6 +24,11 @@ export function unitTypeOf(scenario: Scenario, state: GameState, unitId: UnitId)
   return typeId === undefined ? undefined : scenario.index.unitTypes.get(typeId);
 }
 
+/** AG-3: a ground unit (an army), as the ground rules and the computer player's ground view see the board. */
+function isArmyUnit(scenario: Scenario, state: GameState, unitId: UnitId): boolean {
+  return (unitTypeOf(scenario, state, unitId)?.kind ?? "ground") === "ground";
+}
+
 /** The sub-territory ids of a territory, in scenario order (`partition/holders.ts`). */
 export function subTerritoriesOf(scenario: Scenario, territoryId: TerritoryId): readonly SubTerritoryId[] {
   return partitionSubTerritories(scenario, territoryId).map((sub) => sub.id);
@@ -158,9 +163,12 @@ function computeRailReach(scenario: Scenario, state: GameState, factionId: Facti
   const maxLevel = scenario.improvements?.rail.maxLevel ?? 3;
   if (boarding === undefined || perLevel <= 0 || holderOf(state, boarding) !== factionId) return { rides, stations: reached };
   const territoryOf = (id: SubTerritoryId): TerritoryId | undefined => scenario.index.subTerritories.get(id)?.territoryId;
-  // M2, Q-MR-16: a train runs only through territories where no other faction's army stands at the start of the turn.
+  // M2, Q-MR-16: a train runs only through territories where no other faction's army (ground
+  // units; aircraft at their bases and generals are not armies, AG-3) stands at the start of the turn.
   const blocked = new Set<TerritoryId>();
-  for (const unit of Object.values(state.units)) if (unit.factionId !== factionId && unit.territoryId !== from) blocked.add(unit.territoryId);
+  for (const unit of Object.values(state.units)) {
+    if (unit.factionId !== factionId && unit.territoryId !== from && isArmyUnit(scenario, state, unit.id)) blocked.add(unit.territoryId);
+  }
   for (let level = Math.min(maxLevel, railLevel(state, boarding)); level >= 1; level -= 1) {
     const range = perLevel * level;
     const usable = (id: SubTerritoryId): boolean => {
