@@ -28,7 +28,7 @@ export { legalMoves } from "./orders/move";
  */
 const planGroundMoves: OrderPlanner<Order> = (context) => planMoves({ ...context, state: movePlanningView(context.scenario, context.state, context.factionId) });
 
-function movePlanningView(scenario: Scenario, state: GameState, factionId: FactionId): GameState {
+export function movePlanningView(scenario: Scenario, state: GameState, factionId: FactionId): GameState {
   const units = Object.fromEntries(Object.entries(state.units).filter(([id, unit]) => {
     const kind = unitKindIn(scenario, state.raised, id as UnitId);
     return kind === "ground" || (kind === "general" && unit.factionId !== factionId);
