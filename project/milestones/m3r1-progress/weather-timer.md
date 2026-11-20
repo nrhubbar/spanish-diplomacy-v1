@@ -49,7 +49,10 @@ Mode: make it work (declog D13). Decisions T1-T6, the timer and readiness parts 
   - Desktop: title, readiness chips, then the meters on the right before Exit.
   - Phone: title and Exit, a forced break, one compact row of meters (timer, Funds, Manpower), then the readiness chips.
   - A meter chip is any header child with the class `header-meter`. The timer has it, and economy's chips need it (Needs from).
-- WT-17. **Open deviation for the integrator: the weather pill and forecast sit in the Units tab, under the "Held by" line.** The approved capture puts them above the tabs, with economy's "Pays +11 Funds" chip. Today the territory heading lives inside the Units panel, so the pill disappears on Build and Recruit. Moving the heading, the pill and economy's chip above the tabs is a pane-frame change I did not make. The forecast names next turn's two likeliest outcomes in the zone, from next turn's season table, never from the seeded roll. Ties keep table order.
+- WT-17. **The territory heading sits above the tabs, as in the approved capture (integrator's decision).** The heading, "Held by", the cities line and a meta row are in `screens/pane/TerritoryHeading.tsx`, rendered by `TerritoryTabs` above the tab list, so they show on every tab.
+  - The meta row holds the weather pill and next turn's forecast, then two documented empty slots, each its owner's own file: `screens/pane/IncomeChip.tsx` (`m3r1-economy-builds`, "Pays +N Funds · +Nk men") and `screens/pane/RecruitsAtChip.tsx` (`m3r1-recruit-replenish`, "Recruits at <capital>").
+  - The row shows only when weather, economy or recruitment is on. The `m2-strength` pane (tiny-front, no tabs) keeps its Milestone 2 order and markup.
+  - The forecast names next turn's two likeliest outcomes in the zone, from next turn's season table, never from the seeded roll. Ties keep table order.
 - WT-18. **Icons** are inline SVG in `currentColor`, one per outcome id (sun, thermometer, rain cloud, mud ripples, snowflake, cold thermometer with a flake), with a cloud fallback. They are decorative, and the name is always written or labelled. Each outcome has its own shape and tone, never colour alone. The timer chip and Pause carry icons too (X8).
 - WT-19. **The map's odds plaques** get the destination's weather symbol through a new optional `weatherAt` prop on `DestinationOddsLayer`, passed from `MapLayers`. Plaque placement counts the symbol's width.
 - WT-21. **The `weather` battle modifier** (`modifierName` in `presentation/odds.ts`, owned here per CT-30) is named after its outcome, "Mud" or "Severe cold", taken from the id because these helpers have no scenario (`presentation/weatherName.ts`). On destination rows, `modifierPhrase` adds the roll: "Mud \u22121".
@@ -83,7 +86,10 @@ Mode: make it work (declog D13). Decisions T1-T6, the timer and readiness parts 
 - `src/main/state/store.ts`: one line, the `timer` reducer.
 - `src/main/state/gameSlice.ts`: the `timeRanOut` case, plus its import.
 - `src/main/screens/SetupScreen.tsx`: `<TimerChoice />`.
-- `src/main/screens/OrderBuilder.tsx`: `<TerritoryWeather />` in `TerritoryDetails`.
+- `src/main/screens/OrderBuilder.tsx`: the heading, control and cities lines moved out of `TerritoryDetails` (the Units tab).
+- `src/main/screens/pane/TerritoryTabs.tsx`: renders `TerritoryHeading` above the tab list (WT-17).
+- New pane files: `screens/pane/TerritoryHeading.tsx`, `IncomeChip.tsx` (economy's slot) and `RecruitsAtChip.tsx` (recruit-replenish's slot).
+- `src/test/slots.test.tsx`: the heading shows outside the tab panels and on the Build tab.
 - `src/main/screens/ResolutionScreen.tsx`: `<TurnConditions />`.
 - `src/main/map/DestinationOddsLayer.tsx` and `src/main/map/MapLayers.tsx`: the weather symbol on the plaques.
 - `src/main/style.scss`: one `@use` line.
