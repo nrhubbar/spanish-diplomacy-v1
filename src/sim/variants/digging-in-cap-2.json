@@ -1,0 +1,7 @@
+{
+  "name": "digging-in-cap-2",
+  "description": "Works cap at 2 instead of the scenario's value (Q-HARN-5's example).",
+  "patch": [
+    { "op": "replace", "path": "/combat/diggingIn/max", "value": 2 }
+  ]
+}
