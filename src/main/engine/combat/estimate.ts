@@ -1,3 +1,4 @@
+import { isGroundUnit } from "../air/pieces";
 import { requireUnitState } from "../lookup";
 import type { BattleSide, FactionId, GameState, Scenario, TerritoryId, UnitId } from "../types";
 import { type BattleOdds, battleOdds, situationalModifiers } from "./odds";
@@ -24,11 +25,14 @@ export function estimateAttack(
   unitIds: readonly UnitId[],
   targetTerritoryId: TerritoryId
 ): AttackEstimate {
-  const attackers = unitIds.map((id) => requireUnitState(state, id));
-  if (attackers.length === 0 || attackers.some((unit) => unit.factionId !== factionId)) {
+  const ordered = unitIds.map((id) => requireUnitState(state, id));
+  if (ordered.length === 0 || ordered.some((unit) => unit.factionId !== factionId)) {
     throw new Error(`Invariant violated: an attack needs one or more armies of "${factionId}".`);
   }
-  const present = Object.values(state.units).filter((unit) => unit.territoryId === targetTerritoryId);
+  // AG-3: only ground units fight; a general with the attack still counts through the hooks.
+  const ground = ordered.filter((unit) => isGroundUnit(scenario, state.raised, unit.id));
+  const attackers = ground.length === 0 ? ordered : ground;
+  const present = Object.values(state.units).filter((unit) => unit.territoryId === targetTerritoryId && isGroundUnit(scenario, state.raised, unit.id));
   const control = state.control[targetTerritoryId];
   const own = control?.kind === "controlled" && control.factionId === factionId;
   if (own || present.some((unit) => unit.factionId === factionId)) {
@@ -41,6 +45,7 @@ export function estimateAttack(
   const defender = battleSide(scenario, present, "defence");
   const situational = situationalModifiers(scenario, state, {
     attackerFactionId: factionId,
+    attackerUnitIds: unitIds,
     defenderFactionIds: [...new Set(present.map((unit) => unit.factionId))],
     diggingIn: true,
     territoryId: targetTerritoryId

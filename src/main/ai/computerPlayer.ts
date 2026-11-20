@@ -2,8 +2,10 @@ import type { RandomSource } from "../engine/random";
 import type { FactionId, GameState, Order, PlayerSubmission, Scenario } from "../engine/types";
 import { viewFor } from "../engine/visibility";
 import { applyBlunders } from "./blunder";
+import { groundView } from "../engine/air/pieces";
 import { planAirMissions } from "./orders/air-mission";
 import { planBuilds } from "./orders/build";
+import { planGeneralMoves } from "./orders/general";
 import { planMoves } from "./orders/move";
 import type { ComputerPlayerContext, OrderPlanner, PlanningContext } from "./orders/planner";
 import { planRecruits } from "./orders/recruit";
@@ -18,14 +20,18 @@ export { legalMoves } from "./orders/move";
  * The planners in the order they run, one per order kind (H5). Each sees the orders the
  * earlier ones chose, so a later planner can avoid ordering a unit twice.
  */
+/** AG-3: the move planner plans ground units on the ground board; generals follow them (`orders/general.ts`). */
+const planGroundMoves: OrderPlanner<Order> = (context) => planMoves({ ...context, state: groundView(context.scenario, context.state) });
+
 const planners: readonly OrderPlanner<Order>[] = [
-  planMoves,
+  planGroundMoves,
   planWithdrawals,
   planReplenishment,
   planRecruits,
   planBuilds,
   planAirMissions,
-  planSackings
+  planSackings,
+  planGeneralMoves
 ];
 
 /**

@@ -1,7 +1,7 @@
 import { hookedCombatModifiers } from "../hooks";
 import { citiesIn } from "../lookup";
 import type { TurnScratch } from "../phases/draft";
-import type { BattleResult, CombatModifier, CombatRole, CombatRules, FactionId, FactionModifier, GameState, ModifierCondition, Scenario, TerritoryId } from "../types";
+import type { UnitId, BattleResult, CombatModifier, CombatRole, CombatRules, FactionId, FactionModifier, GameState, ModifierCondition, Scenario, TerritoryId } from "../types";
 import { dieFaces, isSuccessful, lastColumn, lastRow, requireSideValue } from "./values";
 
 /** M13: the odds of one battle, always rounded in the defender's favour. */
@@ -55,6 +55,8 @@ export function oddsModifiers(combat: CombatRules, odds: Odds): readonly CombatM
  */
 export interface BattleContext {
   readonly attackerFactionId: FactionId;
+  /** The attacking units, when known (planning estimates), so a general with them counts. */
+  readonly attackerUnitIds?: readonly UnitId[];
   readonly defenderFactionIds: readonly FactionId[];
   /** Whether the territory's works count: false for empty-territory entries (M19). */
   readonly diggingIn: boolean;

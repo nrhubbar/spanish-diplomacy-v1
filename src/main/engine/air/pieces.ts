@@ -89,3 +89,9 @@ export function unitsOfKind(scenario: Scenario, state: Pick<GameState, "raised" 
     .filter((id) => unitKindIn(scenario, state.raised, id) === kind)
     .sort();
 }
+
+/** AG-3: the state with only its ground units, as the ground rules and their estimates see the board. */
+export function groundView<State extends Pick<GameState, "raised" | "units">>(scenario: Scenario, state: State): State {
+  const units = Object.fromEntries(Object.entries(state.units).filter(([id]) => isGroundUnit(scenario, state.raised, id as UnitId)));
+  return Object.keys(units).length === Object.keys(state.units).length ? state : { ...state, units };
+}
