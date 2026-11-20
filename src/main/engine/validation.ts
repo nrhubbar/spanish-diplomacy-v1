@@ -1,3 +1,4 @@
+import { validateBuildOrder } from "./economy/catalogue";
 import { isNeighbor } from "./lookup";
 import type {
   FactionId,
@@ -20,6 +21,7 @@ export const unavailableOrderReason = "This order is not available in this scena
  * TODO(m3r1-economy-builds), TODO(m3r1-sub-territories), TODO(m3r1-air-generals)).
  */
 export function validateOrder(scenario: Scenario, state: GameState, order: Order): ValidationResult {
+  if (order.kind === "build") return validateBuildOrder(scenario, state, order);
   return order.kind === "move" ? validateMoveOrder(scenario, state, order) : { ok: false, reason: unavailableOrderReason };
 }
 
