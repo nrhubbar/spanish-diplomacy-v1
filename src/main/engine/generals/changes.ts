@@ -135,7 +135,11 @@ export const commandChanges: Phase = (draft) => {
   if (!generalsSetAside(scenario)) {
     const broken = new Set(brokenUnits(scenario, draft));
     // A general the ground steps removed (his side destroyed, or surrendered with nowhere to go) is a broken army too.
-    const sacked = new Set(draft.events.flatMap((event) => (event.kind === "general-sacked" ? [event.order.unitId] : [])));
+    const sacked = new Set([
+      ...draft.events.flatMap((event) => (event.kind === "general-sacked" ? [event.order.unitId] : [])),
+      // M9: a general disbanded for an impossible move left no army behind to break.
+      ...draft.orders.invalid.map((outcome) => outcome.order.unitId)
+    ]);
     const taken = Object.values(start.units).filter((unit) => armies[unit.id] === undefined && !sacked.has(unit.id) && unitKindIn(scenario, start.raised, unit.id) === "general");
     for (const unit of taken) broken.add(unit.id);
     const standing = Object.values(armies).filter((other) => unitKindIn(scenario, start.raised, other.id) === "general");

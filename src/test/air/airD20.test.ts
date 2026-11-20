@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { unitOrder } from "../../main/engine/board";
+import { generalUnitDefinition } from "../../main/engine/generals/identity";
 import { initialGameState, resolveTurn } from "../../main/engine/resolution";
 import type { AirMissionOrder, GameState, Scenario, TurnOutcome, UnitState } from "../../main/engine/types";
 import { faction, move, spainD20, territory, unit } from "../support";
@@ -51,5 +53,30 @@ describe("air and generals on the d20", () => {
     expect(result.outcomes).toContainEqual(expect.objectContaining({ generalId: "juan-yague", kind: "general-died" }));
     expect(result.outcomes).toContainEqual({ arrivesOnTurn: 2, factionId: "south", generalId: "jose-varela", kind: "replacement-due" });
     expect(result.finalState.units[unit("south-general-yague")]).toBeUndefined();
+  });
+});
+
+describe("a replacement general in the d20 battles (D7)", () => {
+  it("fights, retreats and is ordered like any unit, without a scenario definition", () => {
+    const scenario = spainD20();
+    const opening = initialGameState(scenario);
+    const rojo = generalUnitDefinition(scenario, unit("general-vicente-rojo"));
+    if (rojo === undefined) throw new Error("no Rojo");
+    expect(unitOrder(scenario)(rojo.id)).toBeGreaterThan(scenario.units.length);
+    // Madrid held by one regiment and Rojo, against the North's whole Castilla y Leon army.
+    const thin = without(opening, "rep-general-miaja", "rep-covadonga-4", "rep-madrid-security", "rep-madrid-sierra-column");
+    const state: GameState = {
+      ...thin,
+      raised: { [rojo.id]: rojo },
+      units: { ...thin.units, [rojo.id]: { factionId: faction("republic"), fatigue: 0, id: rojo.id, morale: { demoralized: false, quietTurns: 0 }, strength: 100, territoryId: territory("madrid") } }
+    };
+    const attack = ["north-san-marcial-22", "north-san-quintin-25", "north-la-victoria-28", "north-sierra-column"].map((id) => move("north", id, "castilla-y-leon", "madrid"));
+    let fought = 0;
+    for (let trial = 1; trial <= 12; trial += 1) {
+      const result = resolveTurn(scenario, state, [{ factionId: faction("north"), orders: attack }], trial);
+      const battle = battleOf(result.outcomes);
+      if (battle?.defender.armies.some((army) => army.unitId === rojo.id) === true) fought += 1;
+    }
+    expect(fought).toBeGreaterThan(0);
   });
 });

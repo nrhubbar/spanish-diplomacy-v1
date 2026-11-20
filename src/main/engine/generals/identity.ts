@@ -21,3 +21,13 @@ export function generalUnitDefinition(scenario: Scenario, id: UnitId): RaisedUni
   const model = scenario.units.find((unit) => unit.type === type.id);
   return { factionId: general.factionId, fullStrength: model?.fullStrength ?? 1, generalId: general.id, id, name: general.name, type: type.id };
 }
+
+/**
+ * D7: a replacement general's place in "scenario order" tie-breaks (M26): after every scenario
+ * unit and every recruited one, by roster order. Undefined for other ids.
+ */
+export function generalUnitOrder(scenario: Scenario, id: UnitId): number | undefined {
+  if (!id.startsWith(generalUnitPrefix)) return undefined;
+  const index = scenario.generals.findIndex((general) => general.id === id.slice(generalUnitPrefix.length));
+  return index < 0 ? undefined : Number.MAX_SAFE_INTEGER / 2 + index;
+}
