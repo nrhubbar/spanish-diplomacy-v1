@@ -1,11 +1,11 @@
 import { type JSX, useEffect, useRef } from "react";
 import { requireFaction } from "../engine/lookup";
-import type { FactionId, Scenario, TerritoryId, TurnResolutionResult } from "../engine/types";
+import type { FactionId, Scenario, TerritoryId, TurnOutcome, TurnResolutionResult } from "../engine/types";
 import { glyphs } from "../presentation/glyphs";
 import { medallionMarkup } from "../presentation/outcomeArt";
 import { EconomyIcon } from "../components/economy/EconomyIcon";
 import { cssVariables } from "../presentation/style";
-import { controllerName, describeOutcomeGroup, factionName, groupOutcomes, route, territoryName, unitName } from "../presentation/text";
+import { controllerName, describeOutcomeGroup, factionName, groupOutcomes, type ReportView, route, territoryName, unitName } from "../presentation/text";
 import type { RevealedOrders } from "../state/selectors";
 import { eventsAt, revealInPane } from "./report/focus";
 import { groupMembers, groupOpen, type OutcomeGroupIcon, outcomeGroups } from "./report/groups";
@@ -102,8 +102,8 @@ export function OutcomeSummary({ result, scenario, viewer }: { readonly result: 
               {`${group.label} (${String(outcomes.length)})`}
             </summary>
             <ul>
-              {groupOutcomes(outcomes).map((entry, index) => (
-                <li key={`${group.label}-${String(index)}`}>{describeOutcomeGroup(scenario, entry, result.outcomes, view)}</li>
+              {groupLines(scenario, outcomes, result.outcomes, view).map((line, index) => (
+                <li key={`${group.label}-${String(index)}`}>{line}</li>
               ))}
             </ul>
           </details>
@@ -112,6 +112,23 @@ export function OutcomeSummary({ result, scenario, viewer }: { readonly result: 
       {holds === 0 ? null : <p className="pane-hint">{`${String(holds)} ${holds === 1 ? "unit" : "units"} held without orders.`}</p>}
     </section>
   );
+}
+
+/** Builds still under way are summed into one line once there are this many. */
+const progressSummaryFrom = 3;
+
+/**
+ * A group's lines in the report's words. Routine build progress is summed into one line
+ * ("3 builds progressed: Farms at Girona, 1 of 3 turns; ...") so a long queue does not bury the
+ * finished and lost builds above it.
+ */
+function groupLines(scenario: Scenario, outcomes: readonly TurnOutcome[], all: readonly TurnOutcome[], view: ReportView): readonly string[] {
+  const progressed = outcomes.filter((outcome) => outcome.kind === "build-progressed");
+  const rest = progressed.length < progressSummaryFrom ? outcomes : outcomes.filter((outcome) => outcome.kind !== "build-progressed");
+  const lines = groupOutcomes(rest).map((entry) => describeOutcomeGroup(scenario, entry, all, view));
+  if (rest === outcomes) return lines;
+  const parts = progressed.map((outcome) => describeOutcomeGroup(scenario, { outcome, unitIds: [] }, all, view).replace(/\.$/u, "").replace(": ", ", "));
+  return [...lines, `${String(progressed.length)} builds progressed: ${parts.join("; ")}.`];
 }
 
 /** A report group's icon (X8): H's medallion, a route-coloured dot, or a line icon. */

@@ -101,7 +101,7 @@ describe("the setup choice and readiness (T5, T6)", () => {
     const store = planningStore(0);
     renderWith(store, <TimerChoice />);
     expect(screen.getAllByRole("radio").map((radio) => [radio.parentElement?.textContent, (radio as HTMLInputElement).disabled]))
-      .toEqual([["Off", false], ["1 min", false], ["5 min", false], ["10 min", false], ["30 min · online", true], ["1 h · online", true]]);
+      .toEqual([["Off", false], ["1 min", false], ["5 min", false], ["10 min", false], ["30 min \u00b7 online", true], ["1 h \u00b7 online", true]]);
     await userEvent.click(screen.getByRole("radio", { name: "10 min" }));
     expect(store.getState().timer.minutes).toBe(10);
   });

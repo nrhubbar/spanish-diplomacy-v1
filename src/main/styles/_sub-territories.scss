@@ -132,10 +132,18 @@
   margin-top: 10px;
   font-size: 0.85rem;
 
+  // m1: a row of chips, without the plain list's bullets, indent or stagger.
   ul {
     display: flex;
     flex-wrap: wrap;
     gap: 4px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  li + li {
+    margin: 0;
   }
 }
 
@@ -198,8 +206,10 @@
     background: rgb(251 246 234 / 55%);
   }
 
+  // m9, X8: blocked orders keep their icon, greyed like their text.
   .order-choice-icon {
-    visibility: hidden;
+    opacity: 0.4;
+    filter: grayscale(1);
   }
 
   .order-choice-label {

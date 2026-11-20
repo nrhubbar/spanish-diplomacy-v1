@@ -76,7 +76,7 @@ describe("the turn report's groups (D25, M10)", () => {
     ]);
     // X8: line icons for the Milestone 3 groups, medallions for the ones with art.
     expect(container.querySelectorAll(".outcome-line-icon svg").length).toBe(4);
-    expect(screen.getByText(/stopped in Castilla-La Mancha on the way to Andalucía/u)).toBeInTheDocument();
+    expect(screen.getByText(/stopped in Castilla-La Mancha on the way to Andaluc\u00eda/u)).toBeInTheDocument();
   });
 
   it("opens a routine group when something in it went wrong, and orders its lines", () => {
@@ -93,6 +93,16 @@ describe("the turn report's groups (D25, M10)", () => {
     const lines = within(screen.getByText("Building (2)").closest("details")!).getAllByRole("listitem").map((item) => item.textContent);
     expect(lines[0]).toMatch(/built a Factory at Girona/u);
     expect(lines[1]).toMatch(/paid 10 Funds for Factory/u);
+  });
+
+  it("sums routine build progress into one line once there are three", () => {
+    const progress = (id: string, done: number): SystemOutcome => ({ factionId: republic, kind: "build-progressed", progress: done, project: factory, subTerritoryId: sub(id), turns: 4 });
+    render(<OutcomeSummary result={result([completed, progress("girona", 1), progress("lleida", 2), progress("tarragona", 3)])} scenario={scenario} viewer={republic} />);
+    const lines = within(screen.getByText("Building (4)").closest("details")!).getAllByRole("listitem").map((item) => item.textContent);
+    expect(lines).toEqual([
+      "Republican Government built a Factory at Girona.",
+      "3 builds progressed: Factory at Girona, 1 of 4 turns done; Factory at Lleida, 2 of 4 turns done; Factory at Tarragona, 3 of 4 turns done."
+    ]);
   });
 });
 
@@ -158,6 +168,6 @@ describe("focus notes for Milestone 3 outcomes (D25, F1)", () => {
 
   it("renders the note with the viewer's lines", () => {
     render(<FocusNote battle={false} focusedTerritoryId={territory("catalunya")} result={result([paused])} scenario={scenario} viewer={republic} />);
-    expect(screen.getByRole("region", { name: /What happened in Cataluña/u })).toHaveTextContent(/contested/u);
+    expect(screen.getByRole("region", { name: /What happened in Catalu\u00f1a/u })).toHaveTextContent(/contested/u);
   });
 });

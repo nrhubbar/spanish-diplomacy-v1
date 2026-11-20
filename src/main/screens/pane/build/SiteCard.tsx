@@ -1,3 +1,4 @@
+import { glyphs } from "../../../presentation/glyphs";
 import type { JSX } from "react";
 import { currentLevel, isCapital, projectCost, sameProject } from "../../../engine/economy/catalogue";
 import { subTerritoryYield } from "../../../engine/economy/income";
@@ -93,8 +94,8 @@ export function SiteCard({ planned, scenario, state, subTerritoryId, viewer, wit
                   <span><EconomyIcon name={projectIcon(scenario, item.project)} />{at === 0 ? <strong>{name}</strong> : <>Next: <strong>{name}</strong></>}</span>
                   <span className="queue-status">
                     {plan === undefined
-                      ? at === 0 ? turnsLeftText(turns - item.progress) : `queued · ${amountText(scenario, item.paid)}`
-                      : `this turn · ${amountText(scenario, item.paid)}`}
+                      ? at === 0 ? turnsLeftText(turns - item.progress) : `queued ${glyphs.dot} ${amountText(scenario, item.paid)}`
+                      : `this turn ${glyphs.dot} ${amountText(scenario, item.paid)}`}
                   </span>
                   {plan === undefined ? null : (
                     <button aria-label={`Cancel ${name}`} className="text-button" onClick={() => dispatch(cancelBuildOrder(plan.index))} type="button">Cancel</button>

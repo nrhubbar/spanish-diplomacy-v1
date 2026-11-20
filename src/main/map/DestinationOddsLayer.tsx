@@ -4,7 +4,8 @@ import type { TerritoryId, WeatherId } from "../engine/types";
 import { glyphs } from "../presentation/glyphs";
 import { type DestinationEstimate, oddsSummary } from "../presentation/odds";
 import type { MapPoint } from "../scenarios/loader";
-import { intersects, type ScreenRect } from "./placement";
+import { SiteIcon } from "../screens/pane/SiteIcons";
+import { intersects, type ScreenRect, type ScreenSize } from "./placement";
 
 interface DestinationOddsLayerProps {
   /** Counter rectangles on screen, which the plaques try not to cover. */
@@ -16,6 +17,20 @@ interface DestinationOddsLayerProps {
   readonly tags?: ReadonlyMap<TerritoryId, string> | undefined;
   /** T3: each destination's weather this turn, shown as a symbol on its plaque. */
   readonly weatherAt?: (territoryId: TerritoryId) => WeatherId | undefined;
+  /** M8: the uncovered map, which every plaque stays inside. */
+  readonly viewport?: ScreenSize | undefined;
+  /** M8: the phone layout, where a route's tag shrinks to its symbol ("Rail, then march" to a rail icon). */
+  readonly compact?: boolean;
+}
+
+/** Plaques keep this far from the map's edges. */
+const edgeMargin = 6;
+
+/** M8, phone: a route tag's symbol; tags without one (a march) are dropped. */
+function tagIcon(tag: string): "rail" | "port" | undefined {
+  if (/rail/iu.test(tag)) return "rail";
+  if (/sea|amphibious/iu.test(tag)) return "port";
+  return undefined;
 }
 
 /** Plaque height and an over-estimate of its glyph width at 12 px bold, in screen pixels. */
@@ -30,8 +45,17 @@ const weatherGlyphs = "xxx";
  */
 export function placeOddsPlaques(
   entries: readonly { readonly at: MapPoint; readonly territoryId: TerritoryId; readonly text: string }[],
-  counters: readonly ScreenRect[]
+  counters: readonly ScreenRect[],
+  viewport?: ScreenSize
 ): ReadonlyMap<TerritoryId, ScreenRect> {
+  // M8: inside the uncovered map where a spot allows, then pulled in from the edges.
+  const inside = (rect: ScreenRect) => viewport === undefined
+    || (rect.x >= edgeMargin && rect.y >= edgeMargin && rect.x + rect.width <= viewport.width - edgeMargin && rect.y + rect.height <= viewport.height - edgeMargin);
+  const clamp = (rect: ScreenRect): ScreenRect => viewport === undefined ? rect : {
+    ...rect,
+    x: Math.max(edgeMargin, Math.min(rect.x, viewport.width - edgeMargin - rect.width)),
+    y: Math.max(edgeMargin, Math.min(rect.y, viewport.height - edgeMargin - rect.height))
+  };
   const placed = new Map<TerritoryId, ScreenRect>();
   for (const { at, territoryId, text } of entries) {
     const width = text.length * glyphWidth + 18;
@@ -43,8 +67,8 @@ export function placeOddsPlaques(
     ];
     const free = (rect: ScreenRect) => ![...counters, ...placed.values()].some((other) => intersects(rect, other));
     const [first] = candidates;
-    const chosen = candidates.find(free) ?? first;
-    if (chosen !== undefined) placed.set(territoryId, chosen);
+    const chosen = candidates.find((rect) => free(rect) && inside(rect)) ?? candidates.map(clamp).find(free) ?? first;
+    if (chosen !== undefined) placed.set(territoryId, clamp(chosen));
   }
   return placed;
 }
@@ -55,19 +79,26 @@ export function placeOddsPlaques(
  * decorative and let clicks through to the map; the Orders pane lists the same odds for
  * keyboard and screen-reader players.
  */
-export function DestinationOddsLayer({ counters, estimates, labelAt, tags, weatherAt }: DestinationOddsLayerProps): JSX.Element {
+export function DestinationOddsLayer({ compact = false, counters, estimates, labelAt, tags, viewport, weatherAt }: DestinationOddsLayerProps): JSX.Element {
   const entries = [...estimates].map(([territoryId, estimate]) => {
     const summary = oddsSummary(estimate);
     const tag = tags?.get(territoryId);
-    return { at: labelAt(territoryId), summary: tag === undefined ? summary : { ...summary, chip: `${tag} ${glyphs.dot} ${summary.chip}` }, territoryId, weatherId: weatherAt?.(territoryId) };
+    const icon = compact && tag !== undefined ? tagIcon(tag) : undefined;
+    const chip = tag === undefined || compact ? summary.chip : `${tag} ${glyphs.dot} ${summary.chip}`;
+    return { at: labelAt(territoryId), icon, summary: { ...summary, chip }, territoryId, weatherId: weatherAt?.(territoryId) };
   });
-  const spots = placeOddsPlaques(entries.map(({ at, summary, territoryId, weatherId }) => ({ at, territoryId, text: weatherId === undefined ? summary.chip : `${summary.chip}${weatherGlyphs}` })), counters);
+  const spots = placeOddsPlaques(entries.map(({ at, icon, summary, territoryId, weatherId }) => ({
+    at,
+    territoryId,
+    text: `${icon === undefined ? "" : weatherGlyphs}${summary.chip}${weatherId === undefined ? "" : weatherGlyphs}`
+  })), counters, viewport);
   return (
     <div aria-hidden="true" className="odds-layer">
-      {entries.map(({ summary, territoryId, weatherId }) => {
+      {entries.map(({ icon, summary, territoryId, weatherId }) => {
         const spot = spots.get(territoryId);
         return spot === undefined ? null : (
           <span className="odds-chip" data-territory-id={territoryId} data-tone={summary.tone} key={territoryId} style={{ left: spot.x, minWidth: spot.width, top: spot.y }}>
+            {icon === undefined ? null : <SiteIcon kind={icon} />}
             {summary.chip}
             {weatherId === undefined ? null : <WeatherIcon weatherId={weatherId} />}
           </span>

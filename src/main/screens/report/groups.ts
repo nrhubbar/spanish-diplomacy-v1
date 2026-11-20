@@ -41,6 +41,9 @@ export const outcomeGroups: readonly OutcomeGroupSpec[] = [
   { icon: { tone: "bounced" }, kinds: ["move-intercepted", "move-held-back"], label: "Stopped on the way", open: true },
   { icon: { site: "withdraw" }, kinds: ["withdrew"], label: "Withdrawals", open: true },
   { icon: { medallion: "recovered" }, kinds: ["recovered"], label: outcomeText.recovered.title, open: true },
+  // U2-U5 (m3r1-air-generals): raids, recon, interceptions and support; generals' changes and rallies.
+  { icon: { economy: "plane" }, kinds: ["raid", "recon", "interception", "air-support", "grounded", "aircraft-rebased", "aircraft-lost"], label: "Air missions", open: true },
+  { icon: { economy: "star" }, kinds: ["general-died", "general-sacked", "replacement-due", "replacement-arrived", "rallied", "general-moved"], label: "Generals", open: true },
   { icon: { medallion: "reinforcement-arrived" }, kinds: ["reinforcement-arrived"], label: outcomeText["reinforcement-arrived"].title, open: false },
   { icon: { tone: "moved" }, kinds: ["successful-move"], label: "Completed moves", open: false },
   { icon: { site: "rail" }, kinds: ["move-transit"], label: "By rail and sea", open: false },
@@ -60,10 +63,7 @@ export const outcomeGroups: readonly OutcomeGroupSpec[] = [
     label: "Building",
     open: any(["build-completed", "build-forfeited", "build-refunded"])
   },
-  { icon: { site: "rail" }, kinds: ["rail-damaged"], label: "Rail damage", open: false },
-  // U2-U5 (m3r1-air-generals): raids, recon, interceptions and support; generals' changes and rallies.
-  { icon: { economy: "plane" }, kinds: ["raid", "recon", "interception", "air-support", "grounded", "aircraft-rebased", "aircraft-lost"], label: "Air missions", open: true },
-  { icon: { economy: "star" }, kinds: ["general-died", "general-sacked", "replacement-due", "replacement-arrived", "rallied", "general-moved"], label: "Generals", open: true }
+  { icon: { site: "rail" }, kinds: ["rail-damaged"], label: "Rail damage", open: false }
 ];
 
 /** The kinds with sections of their own: battle cards, the turn's conditions, the treasury, and holds. */

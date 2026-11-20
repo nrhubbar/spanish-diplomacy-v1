@@ -245,6 +245,13 @@
     order: 2;
   }
 
+  // m17: without readiness chips (resolution), the meters still sit at the right.
+  @media (width > 720px) {
+    > .game-header-title + .header-meter {
+      margin-left: auto;
+    }
+  }
+
   > .game-header-actions {
     order: 3;
   }

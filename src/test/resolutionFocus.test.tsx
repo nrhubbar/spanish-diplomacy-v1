@@ -120,7 +120,7 @@ describe("turn report focus (F1)", () => {
     expect(scroll.mock.contexts).toContain(note);
     expect(focusedCards()).toEqual([]);
     await user.click(region("aragon"));
-    expect(screen.getByRole("region", { name: "What happened in Aragón" })).toHaveTextContent(/changed hands: Republican Government . Southern/);
+    expect(screen.getByRole("region", { name: "What happened in Arag\u00f3n" })).toHaveTextContent(/changed hands: Republican Government . Southern/);
     await user.click(region("galicia"));
     expect(screen.getByText("Nothing happened in Galicia this turn.")).toBeVisible();
     expect(highlighted()).toBe("galicia");

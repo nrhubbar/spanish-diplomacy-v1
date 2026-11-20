@@ -370,8 +370,9 @@
 .battle-tooltip {
   position: absolute;
   z-index: 5;
+  // Overlaps the button, so the pointer can move onto the tooltip without it closing (WCAG 1.4.13).
   top: -14px;
-  left: 16px;
+  left: 8px;
   display: none;
   gap: 2px;
   width: max-content;

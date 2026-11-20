@@ -484,3 +484,13 @@ tr.battle-roll-total {
   line-height: 1;
   padding-bottom: 3px;
 }
+
+// m18: the sub-territory changes, closed under the territory changes.
+.sub-territory-changes {
+  margin-top: 0.5rem;
+
+  summary {
+    font-weight: 650;
+    cursor: pointer;
+  }
+}

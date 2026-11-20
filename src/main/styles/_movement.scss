@@ -157,15 +157,41 @@
   stroke-dasharray: 2 4;
 }
 
+// M7 (`ux-move-a`): one card per destination: the button, its route line and chips, and the
+// breakdown card all sit inside the row's border.
 .destination-row {
   display: grid;
   gap: 0.2rem;
+  overflow: hidden;
+  border: 1px solid rgb(36 29 24 / 30%);
+  border-radius: 6px;
+  background: rgb(255 255 255 / 60%);
+
+  .destination-button {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .destination-button:hover:not(:disabled) {
+    background: rgb(255 255 255 / 70%);
+  }
+
+  .route-card {
+    margin: 0 0.45rem 0.45rem;
+  }
 }
 
 .destination-route {
   display: grid;
   gap: 0.2rem;
-  padding: 0 0.6rem 0.2rem;
+  padding: 0 0.6rem 0.35rem;
+}
+
+.route-card-forecast {
+  margin-top: 0.3rem;
+  color: var(--ink-soft);
+  font-size: 0.78rem;
 }
 
 .route-details-toggle {

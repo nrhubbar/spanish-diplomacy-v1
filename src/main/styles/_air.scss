@@ -198,3 +198,33 @@
   gap: 6px;
   margin: 2px 0 6px 28px;
 }
+
+// M11 (`ux-air-a`): colour keys for the raid's chances.
+.air-chances li {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.air-chance-key {
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 2px;
+  background: #c8bfa8;
+
+  &[data-result="air-eliminated"] {
+    background: #8b2a22;
+  }
+
+  &[data-result="income-cut"] {
+    background: #8aa0b0;
+  }
+
+  &[data-result="building-hit"] {
+    background: #1f2f45;
+  }
+}
+
+.air-target-card dd[data-grounded="true"] {
+  color: var(--accent-dark);
+}

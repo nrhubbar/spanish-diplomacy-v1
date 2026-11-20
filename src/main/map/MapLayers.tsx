@@ -108,7 +108,10 @@ export function MapLayers({ assets, bounds, camera, game, geometry, layout, leve
         toScreen={toScreen}
       />
       {view.destinationEstimates === undefined ? null : (
-        <DestinationOddsLayer counters={[...counters, ...air.rects]} estimates={view.destinationEstimates} labelAt={(id) => toScreen(mapTerritory(map, id).label)} tags={destinationTags(scenario, game, view)} weatherAt={(id) => weatherIn(scenario, game, id)?.id} />
+        <DestinationOddsLayer
+          compact={layout === "sheet"}
+          counters={[...counters, ...air.rects, ...mapControlObstacles(layout, viewport.height)]}
+          viewport={{ height: viewport.height - viewport.insetBottom, width: viewport.width - viewport.insetRight }} estimates={view.destinationEstimates} labelAt={(id) => toScreen(mapTerritory(map, id).label)} tags={destinationTags(scenario, game, view)} weatherAt={(id) => weatherIn(scenario, game, id)?.id} />
       )}
     </>
   );

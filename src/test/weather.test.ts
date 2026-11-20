@@ -37,8 +37,8 @@ describe("the calendar (T1)", () => {
   });
 
   it("puts the date in every turn label of a scenario with a calendar", () => {
-    expect(turnLabel(spain(), 7)).toBe("Turn 7 · Late October 1936");
-    expect(turnLabel(spain(), 1)).toBe("Turn 1 · Late July 1936");
+    expect(turnLabel(spain(), 7)).toBe("Turn 7 \u00b7 Late October 1936");
+    expect(turnLabel(spain(), 1)).toBe("Turn 1 \u00b7 Late July 1936");
     expect(turnLabel(tiny(), 2)).toBe("Turn 2");
   });
 });
@@ -169,7 +169,7 @@ describe("the weather modifier in the odds and battle text (D7)", () => {
     const state = withWeather(initialGameState(spain()), { meseta: "mud" });
     const attackers = Object.values(state.units).filter((candidate) => candidate.factionId === faction("north") && candidate.territoryId === territory("castilla-y-leon"));
     const estimate = destinationEstimates(spain(), state, faction("north"), attackers.map((candidate) => candidate.id), [territory("madrid")]).get(territory("madrid"));
-    expect(estimate?.kind === "battle" ? estimate.modifiers.map(modifierPhrase) : []).toContain("Mud −1");
+    expect(estimate?.kind === "battle" ? estimate.modifiers.map(modifierPhrase) : []).toContain("Mud \u22121");
     const orders = attackers.map((candidate) => move("north", candidate.id, "castilla-y-leon", "madrid"));
     const result = resolveTurn(spain(), state, [{ factionId: faction("north"), orders }], 1);
     const battle = result.outcomes.filter(isD6Battle)[0];
