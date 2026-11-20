@@ -1,5 +1,5 @@
-import { priceReplenishments, replenishQuote } from "../engine/recruitment/rules";
-import type { GameState, Resources, Scenario, TrainingItem, UnitState } from "../engine/types";
+import { capitalOf, priceReplenishments, replenishQuote } from "../engine/recruitment/rules";
+import type { BuildingId, GameState, Resources, Scenario, TerritoryId, TrainingItem, UnitState, UnitTypeDefinition } from "../engine/types";
 import { amountText } from "./economy";
 import { glyphs } from "./glyphs";
 
@@ -57,4 +57,33 @@ export function replenishPriceLabel(scenario: Scenario, paid: Resources): string
 export function trainingStatus(item: TrainingItem): string {
   if (item.paused) return "Paused while the territory is contested";
   return item.turnsLeft <= 1 ? "Ready at the end of this turn" : `Ready in ${turnsLabel(item.turnsLeft)}`;
+}
+
+/** X4: where a territory recruits: its capital sub-territory, else the territory. */
+export function recruitSiteName(scenario: Scenario, territoryId: TerritoryId): string {
+  const capital = capitalOf(scenario, territoryId);
+  return capital === undefined ? scenario.index.territories.get(territoryId)?.name ?? "" : scenario.index.subTerritories.get(capital)?.name ?? "";
+}
+
+/** X4: the buildings standing in the capital, by name. */
+export function capitalBuildingsLabel(scenario: Scenario, standing: readonly BuildingId[]): string {
+  return standing.length === 0 ? "No buildings" : standing.map((id) => scenario.index.buildings.get(id)?.name ?? id).join(` ${glyphs.dot} `);
+}
+
+/** X4: a type's price, men and training time: the row's meta line and its tooltip's line. */
+export function recruitTerms(scenario: Scenario, type: UnitTypeDefinition): { readonly detail: string; readonly meta: string } {
+  const cost = resourcesLabel(scenario, type.recruit?.cost ?? {}, ` ${glyphs.dot} `);
+  const men = menShort(type.recruit?.establishment ?? 0);
+  const turns = turnsLabel(type.recruit?.trainingTurns ?? 0);
+  return { detail: `${cost} ${glyphs.dot} ${men} ${glyphs.dot} trains in ${turns}`, meta: `${cost} ${glyphs.dot} ${men} ${glyphs.dot} ${turns}` };
+}
+
+/** X4: the buildings a type needs in the capital, each marked whether it stands. */
+export function recruitRequirements(scenario: Scenario, type: UnitTypeDefinition, standing: readonly BuildingId[]): readonly { readonly have: boolean; readonly name: string }[] {
+  return (type.recruit?.requires ?? []).map((id) => ({ have: standing.includes(id), name: scenario.index.buildings.get(id)?.name ?? id }));
+}
+
+/** X4: why one more of a type cannot be added: its locks, the turn's Recruit orders used up, or the price. */
+export function recruitAddReason(locked: readonly string[], slotsFull: boolean, shortfall: string): string | undefined {
+  return locked.length > 0 ? locked.join(" ") : slotsFull ? "No Recruit orders left here this turn." : shortfall === "" ? undefined : `Not enough ${shortfall}.`;
 }

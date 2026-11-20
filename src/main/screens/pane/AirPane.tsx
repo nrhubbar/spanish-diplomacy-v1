@@ -6,6 +6,19 @@ import { WeatherChip } from "../../components/weather/WeatherChip";
 import { WeatherIcon } from "../../components/weather/WeatherIcon";
 import { useAppDispatch } from "../../hooks";
 import { glyphs } from "../../presentation/glyphs";
+import {
+  aircraftLine,
+  aircraftMeta,
+  allowedMissions,
+  antiAirLabel,
+  baseWeatherHeading,
+  baseWeatherVerdict,
+  fightersLabel,
+  generalPill,
+  missionHints,
+  missionNames,
+  missionTitle
+} from "../../presentation/airPane";
 import { raidResultNames } from "../../presentation/systemText/air";
 import { clickMapUnit, closeAircraftPane, planAirMission, toggleSackOrder } from "../../state/gameSlice";
 import {
@@ -17,16 +30,6 @@ import {
   type PlanningSession,
   raidPreview
 } from "../../state/planning";
-
-/** U2: mission names as the pane's buttons read them. */
-const missionNames: Readonly<Record<AirMissionKind, string>> = { intercept: "Intercept", raid: "Raid", recon: "Recon", support: "Support" };
-
-const missionHints: Readonly<Record<AirMissionKind, string>> = {
-  intercept: "Fighters over a territory worsen enemy raids there and can shoot raiders down.",
-  raid: "A raid on one sub-territory rolls: air eliminated, nothing hit, income cut for a turn, or a building hit.",
-  recon: "Shows the territory's balances, queues and training next turn.",
-  support: "Bombers over a battle add to their side's roll."
-};
 
 function sameMission(a: AirMission | undefined, b: AirMission): boolean {
   return a !== undefined && JSON.stringify(a) === JSON.stringify(b);
@@ -53,7 +56,7 @@ export function AirPane({ scenario, session, unitId }: AirPaneProps): JSX.Elemen
   if (unit === undefined) return null;
   const type = unitTypeIn(scenario, state.raised, unitId);
   const name = unitDefinitionIn(scenario, state.raised, unitId)?.name ?? unitId;
-  const allowed = type?.air?.missions ?? [];
+  const allowed = allowedMissions(type);
   const base = scenario.index.territories.get(unit.territoryId)?.name ?? unit.territoryId;
   const paved = isAllWeatherAirbaseFor(scenario, state, unit.territoryId, unit.factionId);
   const shown = kind ?? planned?.mission.kind;
@@ -66,7 +69,7 @@ export function AirPane({ scenario, session, unitId }: AirPaneProps): JSX.Elemen
     <section aria-labelledby={headingId} className="air-pane">
       <h3 id={headingId}>{name}</h3>
       <p className="pane-meta">
-        {`${type?.name ?? "Aircraft"} ${glyphs.dot} based at ${base}${paved ? " (paved airfield)" : ""} ${glyphs.dot} range ${String(type?.air?.range ?? 0)} territories`}
+        {aircraftMeta(type, base, paved)}
       </p>
       <div className="territory-meta">
         <WeatherChip scenario={scenario} state={state} territoryId={unit.territoryId} />
@@ -81,7 +84,7 @@ export function AirPane({ scenario, session, unitId }: AirPaneProps): JSX.Elemen
             disabled={!allowed.includes(mission)}
             key={mission}
             onClick={() => { setKind(mission); }}
-            title={allowed.includes(mission) ? missionHints[mission] : `A ${type?.name ?? "aircraft"} cannot fly this mission.`}
+            title={missionTitle(type, mission)}
             type="button"
           >
             {missionNames[mission]}
@@ -128,7 +131,7 @@ export function AirPane({ scenario, session, unitId }: AirPaneProps): JSX.Elemen
               const mission = plannedMission(session.draft, other.id);
               return (
                 <li key={other.id}>
-                  {`${unitDefinitionIn(scenario, state.raised, other.id)?.name ?? other.id} ${glyphs.dot} ${mission === undefined ? "standing down" : missionNames[mission.mission.kind]}`}
+                  {aircraftLine(unitDefinitionIn(scenario, state.raised, other.id)?.name ?? other.id, mission?.mission.kind)}
                 </li>
               );
             })}
@@ -160,9 +163,9 @@ function TargetCard({ range, scenario, session, target, unit }: {
         {raid === undefined ? null : (
           <>
             <dt>{`Anti-air in ${territoryId === undefined ? target.name : scenario.index.territories.get(territoryId)?.name ?? target.name}`}</dt>
-            <dd>{raid.antiAir === 0 ? "none" : `${glyphs.minus}${String(Math.abs(raid.antiAir))}`}</dd>
+            <dd>{antiAirLabel(raid.antiAir)}</dd>
             <dt>Enemy fighters in range</dt>
-            <dd>{raid.fightersInReach === 0 ? "none" : "may intercept"}</dd>
+            <dd>{fightersLabel(raid.fightersInReach)}</dd>
           </>
         )}
       </dl>
@@ -191,11 +194,11 @@ function BaseWeather({ scenario, session, unit }: { readonly scenario: Scenario;
   const grounds = weatherEffectsIn(scenario, state, unit.territoryId, "grounds-aircraft").length > 0;
   const paved = isAllWeatherAirbaseFor(scenario, state, unit.territoryId, unit.factionId);
   const zone = zoneOf(scenario, unit.territoryId)?.name;
-  const verdict = !grounds ? "flies" : paved ? "flies (paved airfield)" : `grounded (${weather.name})`;
+  const verdict = baseWeatherVerdict(grounds, paved, weather.name);
   return (
     <>
       <dt>
-        {`Weather${zone === undefined ? "" : ` ${glyphs.dot} ${zone}`} `}
+        {baseWeatherHeading(zone)}
         <WeatherIcon weatherId={weather.id} />
         {` ${weather.name}`}
       </dt>
@@ -218,7 +221,7 @@ export function AircraftHere({ aircraft, scenario, session }: { readonly aircraf
           return (
             <li key={unit.id}>
               <button className="text-button" onClick={() => dispatch(clickMapUnit(unit.id))} type="button">
-                {`${name} ${glyphs.dot} ${mission === undefined ? "standing down" : missionNames[mission.mission.kind]}`}
+                {aircraftLine(name, mission?.mission.kind)}
               </button>
             </li>
           );
@@ -233,14 +236,14 @@ export function GeneralControls({ scenario, session, unit }: { readonly scenario
   const dispatch = useAppDispatch();
   const general = generalOf(scenario, session.game.state.raised, unit.id);
   if (general === undefined) return null;
-  const trait = scenario.generalTraits.find((candidate) => candidate.id === general.traitId);
+  const pill = generalPill(general, scenario.generalTraits.find((candidate) => candidate.id === general.traitId));
   const sacking = isSackPlanned(session.draft, unit.id);
   const canSack = unitTypeIn(scenario, session.game.state.raised, unit.id)?.orders.includes("sack") ?? false;
   return (
     <div className="general-controls">
-      <span className="general-pill" title={trait === undefined ? general.name : `${general.name}: ${trait.name}`}>
+      <span className="general-pill" title={pill.title}>
         <span aria-hidden="true">{glyphs.star}</span>
-        {`${general.name}${trait === undefined ? "" : ` ${glyphs.dot} ${trait.name}`}`}
+        {pill.text}
       </span>
       {canSack ? (
         <button aria-pressed={sacking} className="text-button" onClick={() => dispatch(toggleSackOrder(unit.id))} type="button">
