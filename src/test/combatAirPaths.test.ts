@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { validateAirMission, validateSack } from "../main/engine/air/validation";
 import { standingHolder } from "../main/engine/d20/front";
 import { pick, rollStream, type BattleDice } from "../main/engine/dice";
 import { generalUnitDefinition } from "../main/engine/generals/identity";
@@ -251,5 +252,31 @@ describe("replacement generals (D7, D27.7)", () => {
     const result = resolveTurn(scenario, present, [], 3);
     expect(ofKind(result, "replacement-arrived")).toEqual([]);
     expect(result.finalState.units[rojo.id]?.territoryId).toBe("valencia");
+  });
+});
+
+describe("air mission and sack validation (U2, U5)", () => {
+  const raid = (unitId: string, subTerritoryId: string) => mission("republic", unitId, { kind: "raid", subTerritoryId: subTerritoryId as SubTerritoryId });
+
+  it("refuses a mission without the air module, for an unknown unit, without an airfield, to an unknown or distant target", () => {
+    const noAir: Scenario = { ...scenario, rules: { ...scenario.rules, air: "none" } };
+    expect(validateAirMission(noAir, opening, raid("rep-breguet-bombers", "burgos")).ok).toBe(false);
+    expect(validateAirMission(scenario, opening, raid("rep-nobody", "burgos")).ok).toBe(false);
+    const grounded = withSite(withSite(opening, "madrid", { buildings: [] }), "henares", { buildings: [] });
+    expect(validateAirMission(scenario, grounded, raid("rep-breguet-bombers", "burgos"))).toEqual({ ok: false, reason: "The aircraft has no airfield to fly from." });
+    expect(validateAirMission(scenario, opening, raid("rep-breguet-bombers", "atlantis")).ok).toBe(false);
+    const fighters = scenario.index.unitTypes.get("fighter-squadron" as UnitTypeId)!;
+    const shortRange: Scenario = { ...scenario, index: { ...scenario.index, unitTypes: new Map([...scenario.index.unitTypes, [fighters.id, { ...fighters, air: { ...fighters.air!, range: 1 } }]]) } };
+    const far = mission("republic", "rep-ni52-fighters", { kind: "intercept", territoryId: territory("valencia") });
+    expect(validateAirMission(scenario, opening, far)).toEqual({ ok: true });
+    expect(validateAirMission(shortRange, opening, far)).toEqual({ ok: false, reason: "The target is out of range." });
+  });
+
+  it("sacks only one's own general", () => {
+    const sack = (factionId: string, unitId: string) => ({ factionId: faction(factionId), kind: "sack" as const, unitId: unit(unitId) });
+    expect(validateSack(scenario, opening, sack("republic", "rep-general-miaja"))).toEqual({ ok: true });
+    expect(validateSack(scenario, opening, sack("republic", "rep-nobody")).ok).toBe(false);
+    expect(validateSack(scenario, opening, sack("north", "rep-general-miaja")).ok).toBe(false);
+    expect(validateSack(scenario, opening, sack("republic", "rep-wad-ras-1")).ok).toBe(false);
   });
 });
