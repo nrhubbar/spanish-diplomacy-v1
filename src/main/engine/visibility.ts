@@ -1,4 +1,4 @@
-import type { FactionId, GameState, Scenario, SubTerritoryId, SubTerritoryState, TerritoryId, TurnOutcome } from "./types";
+import type { FactionId, GameState, Order, Scenario, SubTerritoryId, SubTerritoryState, TerritoryId, TurnOutcome } from "./types";
 
 /**
  * $6, U4: the game state as one faction may see it. Other factions' treasuries, build queue
@@ -81,6 +81,40 @@ export function outcomesFor(scenario: Scenario, state: GameState, outcomes: read
     return privacy.territoryId === undefined
       ? revealed.some((territoryId) => holdersOf(scenario, state, territoryId).some((holder) => privacy.factionIds.includes(holder)))
       : revealed.includes(privacy.territoryId);
+  });
+}
+
+/** Whose private plans an order carries: purchases, replenishment and recon. Moves and visible actions are public. */
+function orderPrivacy(scenario: Scenario, state: GameState, order: Order): Privacy | undefined {
+  const factionIds = [order.factionId];
+  switch (order.kind) {
+    case "recruit":
+      return { factionIds, territoryId: order.territoryId };
+    case "build": {
+      const territoryId = scenario.index.subTerritories.get(order.subTerritoryId)?.territoryId;
+      return { factionIds, ...(territoryId === undefined ? {} : { territoryId }) };
+    }
+    case "replenish": {
+      const territoryId = state.units[order.unitId]?.territoryId;
+      return { factionIds, ...(territoryId === undefined ? {} : { territoryId }) };
+    }
+    case "air-mission":
+      return order.mission.kind === "recon" ? { factionIds } : undefined;
+    default:
+      return undefined;
+  }
+}
+
+/**
+ * $6, U4: the submitted orders one faction may see once a turn is revealed (B13). Moves and
+ * other visible actions stay; other factions' purchases, replenishment and recon stay hidden
+ * unless the viewer's recon reveals that territory.
+ */
+export function ordersFor(scenario: Scenario, state: GameState, orders: readonly Order[], viewer: FactionId | undefined): readonly Order[] {
+  const revealed = activeReveals(state, viewer).map((reveal) => reveal.territoryId);
+  return orders.filter((order) => {
+    const privacy = orderPrivacy(scenario, state, order);
+    return privacy === undefined || order.factionId === viewer || (privacy.territoryId !== undefined && revealed.includes(privacy.territoryId));
   });
 }
 
