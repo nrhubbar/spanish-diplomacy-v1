@@ -127,27 +127,38 @@ export interface RailRide {
  * the first level that reaches a territory gives its ride, so a ride always uses the best line.
  */
 export function railReach(scenario: Scenario, state: GameState, factionId: FactionId, from: TerritoryId): ReadonlyMap<TerritoryId, RailRide> {
-  // States are never changed in place, so a ride map is remembered per state, scenario and start.
-  const byState = reachMemo.get(state) ?? new WeakMap<Scenario, Map<string, ReadonlyMap<TerritoryId, RailRide>>>();
+  return railSearch(scenario, state, factionId, from).rides;
+}
+
+interface RailSearch {
+  readonly rides: ReadonlyMap<TerritoryId, RailRide>;
+  /** X6: every station the search reached within range, at any level: the network the army can ride. */
+  readonly stations: ReadonlySet<SubTerritoryId>;
+}
+
+// States are never changed in place, so a search is remembered per state, scenario and start.
+const reachMemo = new WeakMap<GameState, WeakMap<Scenario, Map<string, RailSearch>>>();
+
+function railSearch(scenario: Scenario, state: GameState, factionId: FactionId, from: TerritoryId): RailSearch {
+  const byState = reachMemo.get(state) ?? new WeakMap<Scenario, Map<string, RailSearch>>();
   reachMemo.set(state, byState);
-  const byKey = byState.get(scenario) ?? new Map<string, ReadonlyMap<TerritoryId, RailRide>>();
+  const byKey = byState.get(scenario) ?? new Map<string, RailSearch>();
   byState.set(scenario, byKey);
   const key = `${factionId}|${from}`;
   const known = byKey.get(key);
   if (known !== undefined) return known;
-  const rides = computeRailReach(scenario, state, factionId, from);
-  byKey.set(key, rides);
-  return rides;
+  const search = computeRailReach(scenario, state, factionId, from);
+  byKey.set(key, search);
+  return search;
 }
 
-const reachMemo = new WeakMap<GameState, WeakMap<Scenario, Map<string, ReadonlyMap<TerritoryId, RailRide>>>>();
-
-function computeRailReach(scenario: Scenario, state: GameState, factionId: FactionId, from: TerritoryId): ReadonlyMap<TerritoryId, RailRide> {
+function computeRailReach(scenario: Scenario, state: GameState, factionId: FactionId, from: TerritoryId): RailSearch {
   const rides = new Map<TerritoryId, RailRide>();
+  const reached = new Set<SubTerritoryId>();
   const boarding = capitalOf(scenario, from);
   const perLevel = scenario.movement?.railRangePerLevel ?? 0;
   const maxLevel = scenario.improvements?.rail.maxLevel ?? 3;
-  if (boarding === undefined || perLevel <= 0 || holderOf(state, boarding) !== factionId) return rides;
+  if (boarding === undefined || perLevel <= 0 || holderOf(state, boarding) !== factionId) return { rides, stations: reached };
   const territoryOf = (id: SubTerritoryId): TerritoryId | undefined => scenario.index.subTerritories.get(id)?.territoryId;
   for (let level = Math.min(maxLevel, railLevel(state, boarding)); level >= 1; level -= 1) {
     const range = perLevel * level;
@@ -169,6 +180,7 @@ function computeRailReach(scenario: Scenario, state: GameState, factionId: Facti
         else queue.push(next);
       }
     }
+    if (distance.size > 1) for (const station of distance.keys()) reached.add(station);
     for (const territory of scenario.territories) {
       const end = territory.id;
       const capital = territory.capitalSubTerritoryId;
@@ -185,7 +197,7 @@ function computeRailReach(scenario: Scenario, state: GameState, factionId: Facti
       rides.set(end, { boarding, crossings, end, level, range, start: from, stations, through });
     }
   }
-  return rides;
+  return { rides, stations: reached };
 }
 
 /**
@@ -199,11 +211,9 @@ export function railLinks(scenario: Scenario, state: GameState): readonly { read
   });
 }
 
-/** X6: the sub-territories an army in `from` can ride through this turn, and the links between them. */
+/** X6: the sub-territories an army in `from` can ride through this turn: every station its rail search reaches within range. */
 export function rideableNetwork(scenario: Scenario, state: GameState, factionId: FactionId, from: TerritoryId): ReadonlySet<SubTerritoryId> {
-  const stations = new Set<SubTerritoryId>();
-  for (const ride of railReach(scenario, state, factionId, from).values()) for (const station of ride.stations) stations.add(station);
-  return stations;
+  return railSearch(scenario, state, factionId, from).stations;
 }
 
 /* ---------------------------------------------------------------- sea (M5) */

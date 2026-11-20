@@ -3,7 +3,7 @@ import { legalMoves, withRoutes } from "../main/ai/orders/move";
 import { initialGameState, resolveTurn } from "../main/engine/resolution";
 import { armyAllowance, truckBonus } from "../main/engine/movement/allowance";
 import { amphibiousModifiers } from "../main/engine/movement/hooks";
-import { holdsWhole, railDepartures, railReach } from "../main/engine/movement/network";
+import { holdsWhole, railDepartures, railReach, rideableNetwork } from "../main/engine/movement/network";
 import { moveRoutes, validateRoute } from "../main/engine/movement/routes";
 import { ownPath, withdrawLegs } from "../main/engine/movement/withdraw";
 import type { GameState, MoveLeg, MoveOrder, Scenario, SubTerritoryId, SubTerritoryState, TerritoryId, TurnResolutionResult } from "../main/engine/types";
@@ -309,5 +309,24 @@ describe("movement: withdraw legs (P6)", () => {
     expect(withdrawLegs(scenario, cut, faction("red"), territory("westfold"), territory("highlands"))).toBeUndefined();
     // Lowlands was blue's at the start of the turn.
     expect(withdrawLegs(scenario, state, faction("red"), territory("westfold"), territory("lowlands"))).toBeUndefined();
+  });
+});
+
+describe("movement: an amphibious assault in play (M5, D7)", () => {
+  it("takes the amphibious modifier in the d20 battle for a coast with no friendly port", () => {
+    const scenario = load();
+    const state = placed(withSubs(initialGameState(scenario), { isle: { holder: faction("red") } }), { "red-rangers": "isle" });
+    const result = play(scenario, { ...state, control: { ...state.control, [territory("isle")]: { factionId: faction("red"), kind: "controlled" } } }, [order("blue", "blue-marines", "harbor", [sea("isle")])]);
+    const battle = result.outcomes.find((outcome) => outcome.kind === "battle");
+    expect(battle?.kind === "battle" ? battle.modifiers : []).toContainEqual({ kind: "amphibious", roll: -4 });
+  });
+});
+
+describe("movement: the rideable network (X6)", () => {
+  it("lights every station the units can reach within range, not only the shortest routes", () => {
+    const scenario = load();
+    const state = initialGameState(scenario);
+    expect([...rideableNetwork(scenario, state, faction("red"), territory("westfold"))].sort()).toEqual(["highlands", "west-hills", "west-town-quarter"]);
+    expect(rideableNetwork(scenario, withSubs(state, { "west-hills": { rail: 0 } }), faction("red"), territory("westfold")).size).toBe(0);
   });
 });

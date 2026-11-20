@@ -39,6 +39,8 @@ export function DestinationChoices({ estimates, moves, scenario }: DestinationCh
   const headingId = useId();
   const listId = useId();
   const [active, setActive] = useState<TerritoryId | undefined>(undefined);
+  // X5: a tap chooses the row, so on touch screens the card opens from its own "Details" toggle.
+  const [opened, setOpened] = useState<TerritoryId | undefined>(undefined);
   return (
     <div className="destination-choices">
       <OddsInfo label="About the destination odds">
@@ -63,7 +65,7 @@ export function DestinationChoices({ estimates, moves, scenario }: DestinationCh
                 onFocus={() => setActive(territoryId)}
                 type="button"
               >
-                <span className="destination-name">{territoryName(scenario, territoryId)}</span>
+                <span className="destination-name" id={`${listId}-${territoryId}-name`}>{territoryName(scenario, territoryId)}</span>
                 <span className="odds-chip" data-tone={summary.tone}>
                   <span aria-hidden="true">{routeChipText(route, summary.label, estimate)}</span>
                   <span className="visually-hidden">{routeChipText(route, summary.sentence, estimate)}</span>
@@ -74,9 +76,20 @@ export function DestinationChoices({ estimates, moves, scenario }: DestinationCh
                 <div className="destination-route" id={describedBy}>
                   {routeLine === undefined ? null : <span className="destination-detail">{routeLine}</span>}
                   <RouteChips chips={chips} leading={<WeatherChip scenario={scenario} state={moves.state} territoryId={territoryId} />} />
+                  {route === undefined ? null : (
+                    <button
+                      aria-expanded={opened === territoryId}
+                      aria-describedby={`${listId}-${territoryId}-name`}
+                      className="text-button route-details-toggle"
+                      onClick={() => setOpened(opened === territoryId ? undefined : territoryId)}
+                      type="button"
+                    >
+                      {opened === territoryId ? "Hide route details" : "Route details"}
+                    </button>
+                  )}
                 </div>
               )}
-              {active === territoryId && route !== undefined && moves !== undefined
+              {(active === territoryId || opened === territoryId) && route !== undefined && moves !== undefined
                 ? <RouteCard allowance={moves.allowance} estimate={estimate} route={route} scenario={scenario} state={moves.state} />
                 : null}
             </li>
