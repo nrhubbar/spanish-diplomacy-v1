@@ -79,6 +79,10 @@ Make-it-work pass (declog D13). Branch `m3r1-sub-territories`, `E2E_PORT=5311`. 
 - `app.test.tsx`: the order-summary regex allows the contested kinds; and in the hot-seat test `getByRole("heading", "Turn resolution")` became `findByRole`. **Flag for make-it-right:** after the UI commit the resolution screen renders a moment late in jsdom (the body was empty right after End Turn); the cause is unknown, and the assertion is weakened from synchronous to awaited.
 - `e2e/capture.spec.ts`: one capture test.
 
+## Known after the `6e32d05` merge
+
+- `sim/smoke.test.ts` "gives the same summary for the same seeds" times out (76 s against 15 s). Games now run long instead of ending early: the integration base, without the sweep, has Republic wins by turn 3 to 8 and fails S1. The time goes to the computer player's attack estimates (`ai/attacks.ts` `bestAttackOn`, `estimateGradedBattle`): about 170 ms of planning a turn by turn 20, against about 16 ms a turn in the short base games. None of it is in `engine/partition/`. This is for the make-it-fast pass.
+
 ## Checks
 
 See the hand-off report for the latest numbers.
