@@ -5,6 +5,7 @@ import { armyAllowance, truckBonus } from "../main/engine/movement/allowance";
 import { amphibiousModifiers } from "../main/engine/movement/hooks";
 import { holdsWhole, railDepartures, railReach } from "../main/engine/movement/network";
 import { moveRoutes, validateRoute } from "../main/engine/movement/routes";
+import { ownPath, withdrawLegs } from "../main/engine/movement/withdraw";
 import type { GameState, MoveLeg, MoveOrder, Scenario, SubTerritoryId, SubTerritoryState, TerritoryId, TurnResolutionResult } from "../main/engine/types";
 import { validateMoveOrder } from "../main/engine/validation";
 import { armyLeaving, routeChips, routeTag } from "../main/presentation/movement";
@@ -293,5 +294,20 @@ describe("movement: what the planning screen says (X5)", () => {
     const step = routes.get(territory("highlands"));
     if (step === undefined) throw new Error("route");
     expect(routeChips(scenario, step, [], 1, undefined).map((chip) => chip.text)).toEqual(["Mountain entry (highlands)"]);
+  });
+});
+
+describe("movement: withdraw legs (P6)", () => {
+  it("leaves through the mover's own sub-territories to a territory it held, or not at all", () => {
+    const scenario = load();
+    const state = initialGameState(scenario);
+    // Westfold's two sub-territories are red; Highlands (red) borders West hills.
+    expect(ownPath(scenario, state, faction("red"), territory("westfold"), territory("highlands"))).toEqual(["west-hills"]);
+    expect(withdrawLegs(scenario, state, faction("red"), territory("westfold"), territory("highlands"))).toEqual([land("highlands")]);
+    // Without West hills there is no way through to Highlands.
+    const cut = withSubs(state, { "west-hills": { holder: faction("blue") } });
+    expect(withdrawLegs(scenario, cut, faction("red"), territory("westfold"), territory("highlands"))).toBeUndefined();
+    // Lowlands was blue's at the start of the turn.
+    expect(withdrawLegs(scenario, state, faction("red"), territory("westfold"), territory("lowlands"))).toBeUndefined();
   });
 });
