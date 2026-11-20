@@ -85,7 +85,10 @@ const groups: readonly OutcomeGroupSpec[] = [
   { icon: { tone: "bounced" }, kinds: ["bounced-move"], label: "Bounced", open: true },
   { icon: { medallion: "recovered" }, kinds: ["recovered"], label: outcomeText.recovered.title, open: true },
   { icon: { medallion: "reinforcement-arrived" }, kinds: ["reinforcement-arrived"], label: outcomeText["reinforcement-arrived"].title, open: false },
-  { icon: { tone: "moved" }, kinds: ["successful-move"], label: "Completed moves", open: false }
+  { icon: { tone: "moved" }, kinds: ["successful-move"], label: "Completed moves", open: false },
+  // U2-U5 (m3r1-air-generals): raids, recon, interceptions and support; generals' changes and rallies.
+  { icon: { tone: "moved" }, kinds: ["raid", "recon", "interception", "air-support", "grounded", "aircraft-rebased", "aircraft-lost"], label: "Air missions", open: true },
+  { icon: { tone: "moved" }, kinds: ["general-died", "general-sacked", "replacement-due", "replacement-arrived", "rallied", "general-moved"], label: "Generals", open: true }
 ];
 
 /** Neutral ring for report icons, which stand for a kind of outcome rather than a faction. */

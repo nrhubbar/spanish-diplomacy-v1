@@ -226,3 +226,32 @@ test("@capture reduced counter in the fixture", async ({ page }) => {
   if (await orders.isVisible()) await orders.click();
   await capture(page, "17c-fixture-army-list");
 });
+
+test("@capture air missions and generals", async ({ page }) => {
+  // U2 (ux-air-a): an aircraft counter at its airfield, its range ring and missions; U5: a general's pill and Sack.
+  await page.goto("./");
+  await page.getByRole("button", { name: "Create Game" }).click();
+  await page.getByRole("button", { name: "Start Campaign" }).click();
+  await waitForMap(page);
+  const orders = page.getByRole("button", { name: "Orders", exact: true });
+  await page.locator('.map-region[data-territory-id="madrid"]').focus();
+  await page.keyboard.press("Enter");
+  if (await orders.isVisible()) await orders.click();
+  await capture(page, "20a-general-pill");
+  await page.locator('.air-counter[data-unit-id="rep-breguet-bombers"]').click();
+  if (await orders.isVisible()) await orders.click();
+  await page.getByRole("button", { exact: true, name: "Raid" }).click();
+  await page.getByRole("combobox").selectOption({ index: 1 });
+  await capture(page, "20b-air-raid");
+  await page.locator('.air-counter[data-unit-id="rep-ni52-fighters"]').click();
+  if (await orders.isVisible()) await orders.click();
+  await page.getByRole("button", { exact: true, name: "Intercept" }).click();
+  await capture(page, "20c-air-intercept");
+  await page.getByRole("button", { name: "End Turn" }).filter({ visible: true }).click();
+  await waitForMap(page);
+  const report = page.getByRole("button", { name: "Turn report", exact: true });
+  if (await report.isVisible()) await report.click();
+  const air = page.locator(".outcome-group summary", { hasText: "Air missions" });
+  if (await air.count() > 0) await air.first().evaluate((element) => { element.scrollIntoView({ block: "start" }); });
+  await capture(page, "20d-air-report");
+});

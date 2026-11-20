@@ -19,6 +19,12 @@ function general(scenario: Scenario, id: GeneralId): string {
   return scenario.index.generals.get(id)?.name ?? id;
 }
 
+/** C5, U5 (D7): a general's rally, a morale outcome that only generals cause. */
+export function describeRally(scenario: Scenario, outcome: Extract<SystemOutcome, { readonly kind: "rallied" }>): string {
+  const count = outcome.unitIds.length;
+  return `${general(scenario, outcome.generalId)} rallied ${String(count)} demoralized ${count === 1 ? "unit" : "units"} in ${scenario.index.territories.get(outcome.territoryId)?.name ?? outcome.territoryId}.`;
+}
+
 /** U5, D7: one full report sentence per generals outcome. */
 export function describeGeneralsOutcome(scenario: Scenario, outcome: GeneralsTurnOutcome): string {
   switch (outcome.kind) {
