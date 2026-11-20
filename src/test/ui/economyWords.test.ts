@@ -83,14 +83,14 @@ describe("projects in words ($3-$5)", () => {
   it("says what every building effect does", () => {
     const cases: readonly (readonly [BuildingEffect, string])[] = [
       [{ extra: 1, kind: "recruit-slots" }, "+1 recruit a turn"],
-      [{ kind: "replenish-rate", share: 0.25 }, "+25% replenishment"],
-      [{ kind: "replenish-cap", share: 0.25 }, "+25% replenishment cap"],
+      [{ kind: "replenish-cap", share: 0.25 }, "replenishes 25% more men a turn"],
+      [{ kind: "replenish-discount", resource: "funds" as never, share: 0.25 }, "replenishing costs 25% less Funds"],
       [{ extra: 1, kind: "rail-departures" }, "+1 rail departure"],
       [{ kind: "airbase" }, "bases aircraft"],
       [{ kind: "all-weather-airbase" }, "flies in Mud and Snow"],
       [{ kind: "defence-roll", roll: 1 }, "+1 defence"]
     ];
-    for (const [effect, text] of cases) expect(buildingEffectText(effect)).toBe(text);
+    for (const [effect, text] of cases) expect(buildingEffectText(scenario, effect)).toBe(text);
   });
 
   it("says what finishing a project gives", () => {
@@ -102,7 +102,7 @@ describe("projects in words ($3-$5)", () => {
     expect(projectEffectText(scenario, building("mystery"))).toBeUndefined();
     // Effects first, then what it unlocks, at most three types named.
     expect(projectEffectText(scenario, building("factory"))).toMatch(/^\+1 recruit a turn, recruits Artillery group, Tank company, Truck column\u2026$/u);
-    expect(projectEffectText(scenario, building("depot"))).toBe("+25% replenishment cap, recruits Tank company, Truck column");
+    expect(projectEffectText(scenario, building("depot"))).toBe("replenishing costs 25% less Funds, recruits Tank company, Truck column");
     expect(projectEffectText(scenario, building("fortifications"))).toBe("+1 defence");
     expect(projectEffectText(scenario, building("barracks"))).toMatch(/^recruits Infantry regiment, Colonial veterans, Security forces\u2026$/u);
   });
