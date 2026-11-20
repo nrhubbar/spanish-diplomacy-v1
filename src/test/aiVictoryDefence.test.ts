@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { assess } from "../main/ai/assessment";
 import { planWithdrawals } from "../main/ai/orders/withdraw";
+import { createPlan } from "../main/ai/plan";
 import { generateComputerSubmission } from "../main/ai/computerPlayer";
 import { seededRandom } from "../main/engine/random";
 import { type GameState, isMoveOrder, type Scenario, type TerritoryControl } from "../main/engine/types";
@@ -69,6 +70,20 @@ describe("victory defence (D23)", () => {
         for (const id of ["galicia", "castilla-y-leon", "la-rioja"]) expect(stillHeld(scenario, state, "north", id, seed), `${id}, seed ${String(seed)}`).toBeGreaterThan(0);
       }
     }
+  });
+
+  it("keeps the last army on an objective even when another is planned to arrive (S3, seed 57)", () => {
+    // A planned arrival can fail (a full railhead, a bounce), so it never frees the last army
+    // standing on an objective to leave it.
+    const scenario = spainD20();
+    const state = withUnits(scenario, [["north-milan-32", "north", "asturias"], ["north-zamora-29", "north", "galicia"], ["rep-asturian-militia", "republic", "cantabria"]]);
+    const own = Object.values(state.units).filter((entry) => entry.factionId === "north");
+    const plan = createPlan(assess(scenario, state, faction("north")), own);
+    const [milan, zamora] = [state.units[unit("north-milan-32")], state.units[unit("north-zamora-29")]];
+    if (milan === undefined || zamora === undefined) throw new Error("missing unit");
+    plan.commit(zamora, territory("asturias"), true);
+    expect(plan.armiesIn(territory("asturias"))).toBe(2);
+    expect(plan.exposure([milan])).toBeUndefined();
   });
 
   it("counts a rail-borne threat (pressureOn reach)", () => {
