@@ -88,3 +88,16 @@ Merge fixes:
 - The harness was updated for the order and battle unions, and its blunder pointer set to `/ai/blunderChance`.
 
 Lint and typecheck pass. Six harness tests that assumed blunders were "pending" are known red, and are left for the make-it-right pass. The contract's remaining CP4 work (cross-area hooks, open turn draft, per-viewer outcomes, UI slots, splits, blunder logic) merges into `milestone-3-rev-1` when it finishes. The feature streams then merge that branch in.
+
+**D15. Contract fully merged.** `m3r1-contract` CP4 (`8b1b36b`) merged into `milestone-3-rev-1` with no conflicts. It brings:
+- the cross-area hooks (`engine/hooks.ts`);
+- per-area turn scratch;
+- `viewFor`, `outcomesFor` and `ordersFor`, with `visibleSession` used by every screen;
+- the UI slots;
+- the hotspot splits (H9);
+- `project/budgets.json` with `npm run budgets:check`;
+- the blunder logic (H6).
+
+Lint and typecheck pass. The same six harness tests as in D14 are red, as known. The feature streams were told to merge `milestone-3-rev-1`.
+
+**D16. First paint still waits for the lazy scenario chunk (contract CT-50).** The initial chunk is 102.99 kB against the 155 kB budget, so the budget is met. `main.tsx` still awaits the registry before the first render. Moving that wait to the setup screen means reworking the app shell, which is deferred to the make-it-fast phase (D13).
