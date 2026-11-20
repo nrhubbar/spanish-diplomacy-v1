@@ -37,7 +37,8 @@ export function replenishDetail(scenario: Scenario, state: GameState, units: rea
   const men = quotes.reduce((sum, quote) => sum + quote.men, 0);
   const cost = quotes.reduce<Resources>((sum, quote) => addResources(sum, quote.cost), {});
   const recovers = quotes.some((quote) => quote.recovers);
-  const gain = men > 0 ? `+${String(men)} men${recovers ? " and morale" : ""}` : "Morale restored";
+  // RR-12: only units below strength replenish, so there are always men to bring.
+  const gain = `+${String(men)} men${recovers ? " and morale" : ""}`;
   const who = units.length === 1 ? "the unit fights" : "a unit fights";
   return [`${gain}, arriving at the end of the turn`, resourcesLabel(scenario, cost), `cancelled and refunded if ${who}`].join(` ${glyphs.dot} `);
 }

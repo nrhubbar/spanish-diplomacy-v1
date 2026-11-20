@@ -236,7 +236,12 @@ export function replenishProblem(scenario: Scenario, state: GameState, unit: Uni
   if (isContested(scenario, state, unit.territoryId)) return `${name} is contested. Units replenish only in uncontested ground.`;
   const control = state.control[unit.territoryId];
   if (control?.kind !== "controlled" || control.factionId !== unit.factionId) return `Units replenish only in territory you hold.`;
-  if (unit.strength >= basics.fullStrength && !unit.morale.demoralized) return "This unit is at full strength and in good order.";
+  // RR-12: Replenish brings men; a demoralized unit at full strength recovers by resting or a general's rally (C5).
+  if (unit.strength >= basics.fullStrength) {
+    return unit.morale.demoralized
+      ? "This unit is at full strength. It recovers its morale by resting, or with a general's rally."
+      : "This unit is at full strength and in good order.";
+  }
   return undefined;
 }
 
