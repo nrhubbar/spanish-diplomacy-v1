@@ -77,7 +77,7 @@ describe("the Recruit tab and the Replenish order (X4, X7)", () => {
     expect(session.phase === "planning" ? session.draft.recruits?.length : 0).toBe(1);
   });
 
-  it("says why a site or a type is closed: contested ground, full slots and a short balance", async () => {
+  it("says why a site is closed: contested ground", async () => {
     const poor: GameState = { ...state, treasuries: { ...state.treasuries, [republic]: { funds: 7, manpower: 30 } as never } };
     const { store, user } = renderPlanning(poor);
     // Pais Vasco is contested from turn 1 (Alava is the North's): the site note locks every row.
@@ -85,8 +85,10 @@ describe("the Recruit tab and the Replenish order (X4, X7)", () => {
     await user.click(await screen.findByRole("tab", { name: "Recruit" }));
     expect(screen.getByRole("note").textContent).toMatch(/contested/u);
     expect(screen.queryByRole("button", { name: "One more Militia column" })).toBeNull();
-    cleanup();
+  });
 
+  it("says why a type is closed: full slots and a short balance", async () => {
+    const poor: GameState = { ...state, treasuries: { ...state.treasuries, [republic]: { funds: 7, manpower: 30 } as never } };
     const again = renderPlanning(poor);
     again.store.dispatch(clickMapTerritory(territory("catalunya")));
     await again.user.click(await screen.findByRole("tab", { name: "Recruit" }));
