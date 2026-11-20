@@ -45,9 +45,14 @@
     }
   }
 
-  &:hover .recruit-details,
-  &:focus-within .recruit-details,
-  &:focus .recruit-details {
+  // Details on hover where a pointer can hover, and on focus of a locked row (tap on a phone).
+  @media (hover: hover) {
+    &:hover .recruit-details {
+      display: grid;
+    }
+  }
+
+  &[data-locked="true"]:focus .recruit-details {
     display: grid;
   }
 }
@@ -96,8 +101,14 @@
   padding: 0;
   border: 1px solid rgb(36 29 24 / 45%);
   border-radius: 4px;
+  color: var(--ink);
   background: #fff;
   font-weight: 700;
+
+  &:disabled {
+    color: rgb(36 29 24 / 35%);
+    background: rgb(255 255 255 / 50%);
+  }
 }
 
 .stepper-value {
@@ -110,8 +121,9 @@
 .recruit-details {
   position: absolute;
   z-index: 3;
-  right: calc(100% + 8px);
-  top: 0;
+  // Below the row: the pane's scroll area clips anything drawn outside it.
+  top: calc(100% + 4px);
+  right: 0;
   display: none;
   gap: 2px;
   width: 15rem;
@@ -122,13 +134,7 @@
   background: var(--paper);
   box-shadow: 0 4px 14px rgb(36 29 24 / 22%);
   font-size: 0.82rem;
-}
-
-@media (width <= 720px) {
-  .recruit-details {
-    right: 0;
-    top: calc(100% + 4px);
-  }
+  pointer-events: none;
 }
 
 .recruit-basket {

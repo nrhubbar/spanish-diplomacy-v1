@@ -226,3 +226,31 @@ test("@capture reduced counter in the fixture", async ({ page }) => {
   if (await orders.isVisible()) await orders.click();
   await capture(page, "17c-fixture-army-list");
 });
+
+test("@capture recruit and replenish", async ({ page }) => {
+  await page.goto("./");
+  await page.getByRole("button", { name: "Create Game" }).click();
+  await page.getByRole("button", { name: "Start Campaign" }).click();
+  await waitForMap(page);
+  const briefingToggle = page.getByRole("button", { exact: true, name: "Briefing" });
+  if (await page.getByRole("complementary", { name: "Briefing" }).isVisible()) await briefingToggle.click();
+
+  await page.locator('.map-region[data-territory-id="catalunya"]').focus();
+  await page.keyboard.press("Enter");
+  await page.getByRole("tab", { name: "Recruit" }).click();
+  await page.getByRole("button", { name: "One more Infantry regiment" }).click();
+  await page.getByRole("button", { name: "One more Militia column" }).click();
+  await capture(page, "20a-recruit-tab");
+  const locked = page.locator('.recruit-row[data-locked="true"]').first();
+  await locked.scrollIntoViewIfNeeded();
+  await locked.hover();
+  await capture(page, "20b-recruit-locked-details");
+  await page.getByRole("tab", { name: "Units" }).click();
+  await page.locator(".training-list").scrollIntoViewIfNeeded();
+  await capture(page, "20c-units-in-training");
+
+  await page.locator('.map-region[data-territory-id="cantabria"]').focus();
+  await page.keyboard.press("Enter");
+  await page.getByRole("tab", { name: "Recruit" }).click();
+  await capture(page, "20d-recruit-tab-provincial");
+});
