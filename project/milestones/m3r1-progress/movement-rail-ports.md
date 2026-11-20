@@ -8,12 +8,22 @@ Mode: make it work (declog D13). Decisions M1-M6, X5, X6; step 3 and the withdra
   - `network.ts`: held-whole ground from sub-territory holders, P8 entry terrain, rail reach (`railReach`), rail links for the map, capital departures, friendly ports, landings, sea closure through a hook.
   - `allowance.ts`: M1 allowance, the truck bonus (`transport`, `mobile` effects from data) as the module's `allowanceDelta` hook, step cost.
   - `routes.ts`: the one route enumerator (`moveRoutes`) and checker (`describeRoute`, `validateRoute`) that the reveal check, the planning screen and the computer player share; army keys and capacity claims.
-  - `transit.ts`: the `allowance` module's step-1 part (`checkArmies`: armies, allowance and capacities) and step-3 part (`moveAlongRoutes`: interception, staging, reinforcements, frostbite).
+  - `transit.ts`: the `allowance` module's step-1 part (`checkArmies`: armies, allowance and capacities) and step-3 part (`moveAlongRoutes`: interception, staging, reinforcements).
+  - `withdraw.ts`: P6 withdraw legs (`withdrawLegs`) on a stand-in path function (`ownPath`).
   - `hooks.ts`: `allowanceDelta` (trucks) and `combatModifiers` (amphibious).
 - **Outcomes**: `move-held-back`, `move-intercepted`, `move-transit` (`types/outcomes/moves.ts`, `MovementTurnOutcome`), with report lines in `presentation/systemText/movement.ts`.
 - **Spain** runs `rules.movement: "allowance"`.
 - **Computer player (H5)**: `legalMoves` returns routed orders (rail, sea, marches with the trucks standing with the unit); `withRoutes` attaches routes, sends free trucks with the largest (marching first) army in their territory, cuts marches the army cannot carry, and keeps armies within departures, landings and lanes.
-- Tests: `src/test/movement.test.ts` (on the modular tiny-front with a lorry and a horse type).
+- **UI (X5, X6, X8)**:
+  - destination rows tagged by route ("By rail", "Rail, then attack", "Amphibious"), with chips (weather via `WeatherChip`, mountain or swamp entry, fatigue, rail level, port or amphibious, transit, moves left) and a route line, as the button's description;
+  - a breakdown card (`screens/movement/RouteCard.tsx`) for the hovered or focused row: odds and every modifier, moves used, terrain, rail level and borders, amphibious, weather, take chance;
+  - "Army leaving <territory>" (`ArmyLeaving.tsx`): units, attack, moves this turn and the truck rule;
+  - map plaques carry the short tag ("Rail + attack");
+  - the rail layer (`map/layers/RailLayer.tsx`): thin curves between sub-territory stations, main lines (level 2+) at full-map zoom, all lines from the operational zoom, tie marks on main lines, the rideable network of the selected units in the route colour, rail and sea routes traced while choosing and once planned;
+  - small line icons (`MoveIcon.tsx`) on chips and the truck rule;
+  - planned orders list each leg ("Madrid \u2192 Castilla-La Mancha (rail) \u2192 Arag\u00f3n").
+- Captures: `@capture movement, rail and ports (X5, X6)` writes `21a-move-destinations`, `21b-move-route-card`, `21c-rail-operational`.
+- Tests: `src/test/movement.test.ts`, 20 tests on the modular tiny-front with a lorry and a horse type: ground, rail reach and range, departures, allowance and trucks, route shapes and checks, ports and amphibious, the amphibious modifier, transit, interception, held-back armies, the computer player, the X5 texts, withdraw legs.
 
 ## Decisions
 
@@ -30,34 +40,55 @@ Mode: make it work (declog D13). Decisions M1-M6, X5, X6; step 3 and the withdra
 11. **MV-11. Amphibious modifier**: the `combatModifiers` hook adds `d20.modifiers.amphibious` for an attacker whose start territory reaches the battle only by sea while its faction holds no port there. Exact because a sea leg is always a move's only leg. Only under `d20-graded`; under the d6 rules it is left out.
 12. **MV-12. Transit**: at step 3, a multi-leg move stops at the first of its transit territories (leg ends before the last) that another faction's valid move enters, and defends there as a reinforcement (`move-intercepted`). Rail rides are checked at their ends only, not at each territory the train passes. Every other multi-leg advance moves to its staging territory (where its last leg starts) and becomes an ordinary one-step move from there for steps 4-6, so a bounce returns it to the staging territory. Its `origins` entry is the staging territory.
 13. **MV-13. Reports**: battle and move outcomes show the last step (from the staging territory); a `move-transit` outcome per army records the whole route. `submittedOrders` keep the full legs. Remapping the move outcomes to the submitted order is left for make-it-right.
-14. **MV-14. Frostbite** (T4, D7) is applied at step 3 to every unit that moves, read from `systems.weather` at its start territory's zone; a unit keeps at least one man. Inert until `m3r1-weather-timer` rolls weather.
+14. **MV-14. Frostbite** is `m3r1-weather-timer`'s step-9 part (WT-5); the movement module does not apply it.
 15. **MV-15. Canonical route per destination** (UI and AI): step or sea first, then a pure ride, a march, step-then-ride, ride-then-step; first found within a shape, in scenario order. Routes with no capacity left given the faction's other planned moves are skipped, so the next shape is offered.
-16. **MV-16. Computer player**: plans per unit on routed destinations; trucks are never planned on their own; post-pass as above. Capacity overflow drops the extra armies' orders (they hold).
+16. **MV-16. Computer player**: plans per unit on routed destinations; trucks are never planned on their own; post-pass as above. Capacity overflow drops the extra armies' orders (they hold). Routes are remembered per state object (`railReach`, the planner's unit routes), which keeps a Spain plan at about 3.4 ms a faction against 2.5 ms on single steps.
+17. **MV-17. Orders keep no legs for a plain land step** (CT-6), from the planning screen and the computer player alike; rail, sea and marches carry theirs.
+18. **MV-18. Route details are the button's description, not its name**: the button names the destination and the odds; the route line and chips sit beside it with `aria-describedby`. The card shows on hover and on keyboard focus.
+19. **MV-19. Sea closure** reads `isSeaRouteClosed` (`engine/weather.ts`). The interim `seaClosed` hook I had added to `hooks.ts` is removed, so `hooks.ts` is back to the contract's version.
+20. **MV-20. The amphibious modifier stays d20-only** (MV-11) although the hook is collected under both dice: the d6 `combat` block has no amphibious number, and the d20 value would swamp a d6. Spain ships on `d20-graded`, so it applies there.
+21. **MV-21. Withdraw legs** (P6): one land step to an adjacent territory the faction controlled at the start of the turn, reached through its own sub-territories of the origin (`ownPath`, a breadth-first search from any held sub-territory to one bordering the target). Undefined means surrender. Not wired: Withdraw still validates in `m3r1-sub-territories`.
 
 ## Stubbed
 
-- Weather's −1 in Mud or Snow: not implemented here, to avoid counting it twice; `m3r1-weather-timer` answers `allowanceDelta`.
-- Sea closure: `seaClosed` hook added; nothing answers it yet.
-- Withdraw legs (P6): see "Needs from".
+- Withdraw legs (P6): `withdrawLegs` and its stand-in `ownPath` are written and tested, not yet called at step 6 (see "Needs from").
+- Weather's −1 in Mud or Snow and sea closure now come from `m3r1-weather-timer` (its `allowanceDelta` hook and `isSeaRouteClosed`).
 
 ## Needs from
 
-- **m3r1-weather-timer**: an `allowanceDelta` hook returning `-amount` of the `movement-penalty` effect of the army's zone outcome; a `seaClosed` hook (T4, winter Rain on a coastal zone touching the connection); `systems.weather` filled at step 0 so frostbite applies.
-- **m3r1-sub-territories**: the P6 path function and Withdraw validation at reveal; control derived from holders (MV-1).
-- **m3r1-recruit-replenish**: Spain starts with no trucks or cavalry; truck behaviour is only tested on the fixture until units can be recruited.
-- **m3r1-d20-combat**: the amphibious modifier arrives through `combatModifiers` with kind `amphibious`.
+- **m3r1-weather-timer**: done after the merge (allowance hook, `isSeaRouteClosed`, `WeatherChip`, frostbite).
+- **m3r1-sub-territories**: the P6 path function (to replace `ownPath`), Withdraw validation at reveal, and a step-6 call of `withdrawLegs`; control derived from holders (MV-1). Its map layer may want `MapPackage.subTerritories`, which I added (below).
+- **m3r1-recruit-replenish**: its recruit planner never recruits truck columns or cavalry in a 3-game, 20-turn probe, so marches never happen in Spain games; the move planner sends trucks along when there are any (tested on the fixture). A truck now and then for an army with two or more units would let H5's truck logic show in the harness.
 - **contract (make-it-right)**: `CombatHookContext` could carry the turn's orders or scratch, so the amphibious rule does not need MV-11's inference.
 
 ## Files outside my ownership
 
-- `src/main/engine/hooks.ts`: `SeaContext`, `seaClosed`, `hookedSeaClosed` (additive).
 - `src/main/engine/validation.ts`: dispatch to `validateRoute` under `allowance`.
+- `src/main/state/planning/selection.ts` (`selectedDestinations` from routes, `selectedRoutes`) and `orders.ts` (legs on the planned order).
+- `src/main/screens/DestinationChoices.tsx` (route tag, route line and chips as a description, the card) and `OrderBuilder.tsx` (`ArmyLeaving`, routes passed in).
+- `src/main/map/DestinationOddsLayer.tsx` (`tags`) and `MapLayers.tsx` (passes them).
+- `src/main/presentation/text.ts`: `route()` names each leg.
+- `src/main/scenarios/loader.ts` and `loader/map.ts`: `MapPackage.subTerritories` (label and capital points from the map's `subTerritories.entries`), for the rail stations.
+- `src/main/style.scss`: one `@use` line for `styles/_movement.scss`.
+- `e2e/capture.spec.ts`: one capture test.
 - `src/main/engine/types/outcomes.ts`: `MovementTurnOutcome` joined into `SystemOutcome`.
 - `src/main/presentation/systemText.ts`: one import, one spread.
 - `src/scenarios/spanish-civil-war-1936/scenario.json`: `rules.movement` to `allowance`.
-- Tests: `pipeline.test.ts` (movement no longer a skeleton), `spainData.test.ts` (rules), `computerPlayer.test.ts` (a reinforcement may now ride through).
+- Tests: `pipeline.test.ts` (movement no longer a skeleton), `spainData.test.ts` (rules), `computerPlayer.test.ts` (a reinforcement may now ride through), `combatScreens.test.tsx` (more destinations than the two neighbours), `d20Combat.test.ts` (two AI boards pinned to `single-step`, as they count on one-step reach).
 
 ## Checks
+
+After merging `milestone-3-rev-1` at `38b68ba` (d20-combat, recruit-replenish, weather-timer):
+- typecheck, lint: pass.
+- test:unit: 754 of 760 pass; the 6 failures are the known sim-harness ones (D14).
+- `@capture movement, rail and ports` on chromium and mobile-chromium: pass.
+- `npm run sim -- --games 50 --variant single-step.json --blunders without` (seeds 1-50, 66 turns, Spain on d20):
+  - allowance: decided 76% [63, 86], freezes 24% [14, 37], stalled 32%, median length 14; wins of decided Republic 74% [58, 85], North 18% [9, 33], South 8% [3, 21]; battles per turn 1.52.
+  - single-step on the same seeds: decided 72%, freezes 28%, stalled 42%; Republic 67%, North 19%, South 14%; battles per turn 1.31.
+  - Difference: freezes -4 points [-24, +16], stalled -10 [-31, +11], Republic +8 [-11, +27]. None significant at 50 games.
+- Probe of 3 games x 20 turns: 605 single steps, 59 rail-then-step, 23 rail, 18 step-then-rail, 24 sea; 40 transit and 18 interception outcomes; no army held back (the planner keeps within capacity).
+
+Before the merge (Spain on d6):
 
 - typecheck, lint: pass.
 - test:unit: all pass except the six known sim-harness failures (D14).
