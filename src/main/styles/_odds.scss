@@ -1,0 +1,287 @@
+// ---------------------------------------------------------------------------------------------
+// Combat presentation (workstream F): army lines, destination odds, and status notes.
+// ---------------------------------------------------------------------------------------------
+
+.formation-button .army-line,
+.other-army-list .army-line {
+  grid-column: 2;
+}
+
+.formation-button .formation-check {
+  grid-row: span 3;
+}
+
+.other-army-list {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.35rem;
+
+  li {
+    display: grid;
+    padding: 0.4rem 0.6rem;
+    border: 1px solid rgb(36 29 24 / 14%);
+    border-radius: 6px;
+    background: rgb(255 255 255 / 45%);
+  }
+
+  li + li {
+    margin-top: 0;
+  }
+}
+
+.army-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.6rem;
+  margin-top: 0.3rem;
+  font-size: 0.78rem;
+}
+
+.army-line-values {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  font-variant-numeric: tabular-nums;
+
+  strong {
+    font-size: 1rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+  }
+
+  s {
+    color: var(--ink-soft);
+    text-decoration-thickness: 1.5px;
+  }
+}
+
+.army-line-strength {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.army-line-bar {
+  width: 2.6rem;
+  height: 0.3rem;
+  border-radius: 2px;
+  background:
+    linear-gradient(to right, var(--ink) calc(var(--strength-share) * 100%), rgb(36 29 24 / 18%) 0);
+}
+
+.army-line-status {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.05rem 0.45rem 0.05rem 0.1rem;
+  border: 1px solid rgb(36 29 24 / 25%);
+  border-radius: 999px;
+  background: var(--paper);
+  font-size: 0.74rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.status-chip-icon {
+  display: inline-flex;
+  width: 1.05rem;
+  height: 1.05rem;
+
+  svg {
+    width: 100%;
+    height: 100%;
+  }
+}
+
+.pane-note {
+  margin-top: 0.55rem;
+  padding: 0.45rem 0.6rem;
+  border-left: 4px solid #c07a14;
+  border-radius: 4px;
+  background: #f8ead2;
+  font-size: 0.84rem;
+}
+
+// Odds plaques on highlighted destinations: paper on an ink casing, like the map's labels, with
+// the take chance's tone on the left edge. The words always carry the number too.
+
+// Above the counters (whose hover and selection z-indexes reach 3), never taking a click.
+.odds-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.odds-chip {
+  --odds-tone: var(--route);
+
+  display: inline-flex;
+  align-items: center;
+  padding: 0.12rem 0.45rem 0.12rem 0.4rem;
+  border: 1.5px solid var(--ink);
+  border-left-width: 5px;
+  border-left-color: var(--odds-tone);
+  border-radius: 4px;
+  color: var(--ink);
+  background: var(--paper);
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.odds-layer .odds-chip {
+  position: absolute;
+  justify-content: center;
+  height: 21px;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 45%);
+}
+
+.odds-chip[data-tone="good"] {
+  --odds-tone: var(--success);
+}
+
+.odds-chip[data-tone="even"] {
+  --odds-tone: var(--gold);
+}
+
+.odds-chip[data-tone="poor"] {
+  --odds-tone: var(--disband);
+}
+
+.odds-chip[data-tone="safe"] {
+  --odds-tone: var(--route);
+
+  color: var(--ink-soft);
+  font-weight: 700;
+}
+
+.destination-choices {
+  margin-bottom: 0.6rem;
+}
+
+// A2: the circled "i" beside a set of odds, and the one sentence it opens. The button keeps a
+// 28 px target for touch; the note reads as a margin note on the pane's paper.
+.odds-info-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+
+  > * {
+    margin-top: 0;
+  }
+}
+
+.odds-info-button {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 1.75rem;
+  min-height: 1.75rem;
+  padding: 0;
+  border: 1.5px solid var(--ink);
+  border-radius: 50%;
+  color: var(--ink);
+  background: var(--paper);
+  font-family: var(--serif);
+  font-size: 0.9rem;
+  font-style: italic;
+  font-weight: 700;
+  line-height: 1;
+}
+
+// A tap leaves touch screens "hovering", so hover feedback is added only where a pointer can
+// hover; the open state always shows.
+.odds-info-button:hover:not(:disabled) {
+  color: var(--ink);
+  background: var(--paper);
+}
+
+.odds-info-button[aria-expanded="true"],
+.odds-info-button[aria-expanded="true"]:hover:not(:disabled) {
+  color: var(--paper);
+  background: var(--ink);
+}
+
+@media (hover: hover) {
+  .odds-info-button:hover:not(:disabled) {
+    color: var(--paper);
+    background: var(--ink);
+  }
+}
+
+// On a phone the destination "i" sits in the collapsed sheet's bar (A2); its note opens upward.
+.map-pane-bar-focus .odds-info {
+  flex: 1;
+  min-width: 0;
+
+  .odds-info-note {
+    font-weight: 400;
+  }
+}
+
+.odds-info-note {
+  margin: 0.35rem 0 0;
+  padding: 0.35rem 0.55rem;
+  border-left: 3px solid var(--ink-soft);
+  border-radius: 4px;
+  color: var(--ink-soft);
+  background: rgb(255 255 255 / 55%);
+  font-size: 0.82rem;
+}
+
+.order-list .planned-odds {
+  justify-self: start;
+  margin-top: 0.2rem;
+}
+
+.destination-list {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0.4rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.destination-button {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.2rem 0.5rem;
+  align-items: center;
+  width: 100%;
+  min-height: 0;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid rgb(36 29 24 / 30%);
+  color: var(--ink);
+  background: rgb(255 255 255 / 60%);
+  text-align: left;
+}
+
+.destination-button:hover:not(:disabled) {
+  color: var(--ink);
+  background: #fff;
+}
+
+.destination-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.destination-detail {
+  grid-column: 1 / -1;
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+  font-weight: 500;
+}

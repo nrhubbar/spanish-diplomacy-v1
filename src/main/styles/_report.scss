@@ -1,0 +1,449 @@
+// ---------------------------------------------------------------------------------------------
+// Combat presentation (workstream F): turn-report battle cards (C14).
+// ---------------------------------------------------------------------------------------------
+
+.battle-summary {
+  margin-top: 0.3rem;
+  color: var(--ink-soft);
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.battle-list {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0.6rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.battle-card {
+  border: 1px solid rgb(36 29 24 / 28%);
+  border-radius: 8px;
+  background: rgb(255 253 247 / 82%);
+  box-shadow: 0 1px 3px rgb(36 29 24 / 12%);
+}
+
+.battle-card-summary {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.65rem;
+  align-items: center;
+  padding: 0.55rem 0.7rem;
+  list-style: none;
+  cursor: pointer;
+}
+
+.battle-card-summary::-webkit-details-marker {
+  display: none;
+}
+
+.battle-card-summary:focus-visible {
+  border-radius: 8px;
+  outline: 3px solid var(--focus);
+  outline-offset: -3px;
+}
+
+.battle-emblem {
+  display: block;
+  width: 3.4rem;
+  height: 3.4rem;
+  color: var(--ink);
+
+  svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+}
+
+.battle-card:not([open]) .battle-emblem {
+  width: 2.4rem;
+  height: 2.4rem;
+}
+
+.battle-card-heading {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.battle-kicker {
+  color: var(--accent);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.battle-title {
+  font-family: var(--serif);
+  font-size: 1.1rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.battle-occupation {
+  color: var(--ink-soft);
+  font-size: 0.82rem;
+}
+
+// A small caret says the summary opens and closes.
+.battle-card-heading::after {
+  position: absolute;
+  right: 0.8rem;
+  width: 0.45rem;
+  height: 0.45rem;
+  margin-top: 0.5rem;
+  border-right: 2px solid var(--ink-soft);
+  border-bottom: 2px solid var(--ink-soft);
+  content: "";
+  transform: rotate(-45deg);
+}
+
+.battle-card {
+  position: relative;
+}
+
+.battle-card[open] .battle-card-heading::after {
+  transform: rotate(45deg);
+}
+
+// F1: the card of the place focused on the map, ringed in the map's selection gold.
+.battle-card {
+  scroll-margin-block: 0.75rem;
+}
+
+.battle-card[data-focused="true"] {
+  border-color: #7a5a06;
+  box-shadow:
+    0 0 0 2px var(--gold),
+    0 0 10px 2px rgb(217 165 32 / 55%);
+}
+
+// F1: what happened at a focused place without a battle, above the rest of the report.
+.focus-note {
+  border-bottom: 1px solid rgb(36 29 24 / 15%);
+  scroll-margin-block: 0.75rem;
+
+  ul {
+    display: grid;
+    gap: 0.35rem;
+    margin: 0.4rem 0 0;
+    padding-left: 1.1rem;
+  }
+}
+
+.battle-card-body {
+  display: grid;
+  gap: 0.7rem;
+  padding: 0 0.7rem 0.7rem;
+}
+
+.battle-engagement {
+  display: grid;
+  gap: 0.5rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid rgb(36 29 24 / 14%);
+}
+
+.battle-engagement-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.88rem;
+  font-weight: 750;
+}
+
+.battle-medallion {
+  display: inline-flex;
+  flex: none;
+  width: 1.5rem;
+  height: 1.5rem;
+
+  svg {
+    width: 100%;
+    height: 100%;
+  }
+}
+
+.battle-flavor {
+  padding-left: 0.6rem;
+  border-left: 3px solid var(--rule);
+  color: var(--ink-soft);
+  font-family: var(--serif);
+  font-size: 0.92rem;
+  font-style: italic;
+  line-height: 1.4;
+}
+
+.battle-sides {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.battle-side {
+  padding: 0.4rem 0.5rem;
+  border-left: 4px solid var(--faction-color);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--faction-color) 9%, #fffdf7);
+  font-size: 0.8rem;
+}
+
+.battle-side-head {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  column-gap: 0.4rem;
+  align-items: baseline;
+}
+
+.battle-side-role {
+  grid-column: 1 / -1;
+  color: var(--ink-soft);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.battle-side-faction {
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.battle-side-value {
+  font-size: 1.25rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.battle-armies {
+  display: grid;
+  gap: 0.15rem;
+  margin: 0.3rem 0 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.4rem;
+    line-height: 1.25;
+  }
+}
+
+.battle-army-from {
+  color: var(--ink-soft);
+}
+
+.battle-army-value {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.battle-roll {
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.82rem;
+}
+
+.battle-odds-label {
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.battle-roll-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+
+  th {
+    padding: 0.18rem 0;
+    font-weight: 500;
+    text-align: left;
+  }
+
+  td {
+    padding: 0.18rem 0;
+    font-weight: 700;
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  tr + tr {
+    border-top: 1px dotted rgb(36 29 24 / 22%);
+  }
+}
+
+.battle-roll-total {
+  th,
+  td {
+    font-weight: 800;
+  }
+}
+
+tr.battle-roll-total {
+  border-top: 1.5px solid rgb(36 29 24 / 55%);
+}
+
+.die-face {
+  width: 1.15rem;
+  height: 1.15rem;
+  margin-right: 0.35rem;
+  vertical-align: -0.25rem;
+
+  rect {
+    fill: var(--paper);
+    stroke: var(--ink);
+    stroke-width: 0.7;
+  }
+
+  circle {
+    fill: var(--ink);
+  }
+}
+
+.battle-effects {
+  display: grid;
+  gap: 0.2rem;
+  margin: 0;
+  padding: 0;
+  font-size: 0.82rem;
+  list-style: none;
+
+  li {
+    position: relative;
+    padding-left: 0.95rem;
+  }
+
+  li::before {
+    position: absolute;
+    top: 0.42em;
+    left: 0.1rem;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background: var(--ink-soft);
+    content: "";
+  }
+
+  li[data-effect="destroyed"]::before,
+  li[data-effect="surrendered"]::before {
+    background: var(--disband);
+  }
+
+  li[data-effect="loss"]::before {
+    background: #b2561c;
+  }
+
+  li[data-effect="demoralized"]::before {
+    background: #c07a14;
+  }
+
+  li[data-effect="retreat"]::before {
+    border-radius: 1px;
+    background: var(--route);
+  }
+}
+
+.battle-effects-none {
+  color: var(--ink-soft);
+  font-size: 0.82rem;
+}
+
+.battle-rule {
+  border-radius: 6px;
+  background: rgb(46 95 135 / 8%);
+  font-size: 0.82rem;
+
+  summary {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.4rem 0.55rem;
+    color: var(--focus);
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  ol {
+    display: grid;
+    gap: 0.3rem;
+    margin: 0;
+    padding: 0 0.7rem 0.6rem 2rem;
+    line-height: 1.4;
+  }
+}
+
+.battle-rule-icon {
+  display: grid;
+  flex: none;
+  width: 1.1rem;
+  height: 1.1rem;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--paper);
+  background: var(--focus);
+  font-family: var(--serif);
+  font-size: 0.78rem;
+  font-style: italic;
+  font-weight: 700;
+}
+
+.outcome-medallion {
+  display: inline-flex;
+  flex: none;
+  width: 1.15rem;
+  height: 1.15rem;
+
+  svg {
+    width: 100%;
+    height: 100%;
+  }
+}
+
+// Map: routes that ended in a battle, and the legend's medallions and counter sample.
+
+.map-route-battle {
+  --route-color: var(--accent);
+}
+
+.map-outcome-battle svg {
+  overflow: visible;
+  filter: drop-shadow(0 0 1.5px rgb(251 246 234 / 95%));
+}
+
+.legend-icon {
+  display: inline-flex;
+  flex: none;
+  justify-content: center;
+  width: 1.4rem;
+}
+
+.legend-icon .unit-counter-works {
+  position: static;
+  filter: none;
+}
+
+.legend-medallion svg {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.legend-counter {
+  display: inline-grid;
+  flex: none;
+  width: 2rem;
+  height: 1.15rem;
+  place-items: center;
+  border: 1.5px solid var(--ink);
+  border-radius: 2px;
+  background:
+    linear-gradient(var(--ink), var(--ink)) 3px calc(100% - 2px) / 60% 2px no-repeat,
+    #f3e9d8;
+  font-size: 0.7rem;
+  font-weight: 800;
+  line-height: 1;
+  padding-bottom: 3px;
+}
