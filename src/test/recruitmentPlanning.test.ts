@@ -123,7 +123,7 @@ describe("wording", () => {
     ] }], 2);
     const lines = result.outcomes.filter((outcome) => outcome.kind.startsWith("training")).map((outcome) => describeOutcome(scenario, outcome));
     expect(lines).toContain("Militia column No. 1 finished training at Barcelona. It can move next turn.");
-    expect(lines.some((line) => line.startsWith("Tank company No. 1 began training at Barcelona for 12 Funds and 1k Manpower; ready in 4 turns."))).toBe(true);
+    expect(lines.some((line) => line.startsWith("Tank company (new) began training at Barcelona for 12 Funds and 1k Manpower; ready in 4 turns."))).toBe(true);
     expect(lines.some((line) => line.includes("was not raised"))).toBe(true);
   });
 });

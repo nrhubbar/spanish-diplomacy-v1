@@ -17,6 +17,7 @@ import type { GameState, Order, Resources, SubTerritoryId, TurnOutcome, UnitId, 
 import { validateOrder } from "../main/engine/validation";
 import { ordersFor, outcomesFor } from "../main/engine/visibility";
 import { loadPackage } from "../main/scenarios/loader";
+import { historyEntry } from "../main/state/history";
 import { emptyDraft, type GameRecord, type Session } from "../main/state/session";
 import { sessionViewer, visibleSession } from "../main/state/visible";
 import { modularMap, modularScenario } from "./modularFixture";
@@ -145,7 +146,7 @@ describe("what each viewer may see ($6, U4)", () => {
   it("gives every screen the session of the faction whose turn it is", () => {
     const game: GameRecord = {
       assignments: { [faction("red")]: "local-human", [faction("blue")]: "local-human" },
-      history: [{ outcomes: all, turnNumber: 1 }],
+      history: [historyEntry(scenario, state, all)],
       locked: { [faction("blue")]: { factionId: faction("blue"), orders: [move("blue", "blue-marines", "harbor", "lowlands")] } },
       scenarioId: scenario.id,
       seed: 1,

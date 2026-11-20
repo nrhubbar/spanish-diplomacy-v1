@@ -234,3 +234,53 @@ Fresh fixers then take their gap lists, at most four at once.
 - `m3r1-fix-economy-recruit`: D28, replenishing units that dig in, the computer player's development builds, and their tests.
 - `m3r1-fix-hidden-info`: every leak. It also owns the timeout fix, which must submit the whole draft and count holds only from public orders.
 - `m3r1-fix-ui`: the UI blockers and majors, the report groups (D25), army and unit wording, and tests for the air UI. It starts when a slot frees.
+
+**D30. AI fixes merged (`m3r1-ai-fixes` at `66373d9`).**
+- **Garrisons (D23, cause 1).** Four sourced garrisons were added:
+  - Argel No. 27 at Cáceres (North);
+  - Flandes No. 5 at Vitoria (North);
+  - Palma No. 36 in the Baleares (South);
+  - Baleares No. 37 at Mahón (Republic).
+
+  The sweep fires only where one faction alone has armies, so a garrison turns a free take into a contest.
+- **Victory defence (D23, cause 2).** Targeted critical ground:
+  - a territory whose loss would win a rival the game is never emptied, is garrisoned if empty, and is weighted in `ai.profiles.victoryAlarm.critical`;
+  - `pressureOn` counts rail, truck and sea reach.
+- **Withdraw (D24).**
+  - "Hopeless" now uses the engine's own odds.
+  - The seat, the last objective and critical ground need a 0.75 take chance before they are given up.
+  - The Republic's turn-1 withdrawals from Asturias and Andalucía, which happened in every game, are gone.
+- **S3** counts withdrawals again.
+
+100 seeds (`build/sim/ai-fixes-merged`):
+
+| Blunders | Decided / freezes | Republic | North | South | S1 | S3 | Median length |
+|---|---|---|---|---|---|---|---|
+| with | 100% / 0% | 17% [11, 26] | 50% [40, 60] | 33% [25, 43] | 0 | 0 | 16 |
+| without | 100% / 0% | 23% [16, 32] | 49% [39, 59] | 28% [20, 38] | 0 | 0 | 14 |
+
+S1 and S3 are met. H7 is missed: with blunders, the shipped setting, the Republic wins 17 percent of decided games, against at least 20. Reported to the owner, not tuned.
+
+**D31. Map-movement and combat-air fixes merged (`b781dcf`, `8ce36a8`).** These close every blocker and major from the map-movement and combat-air reviews:
+- defenders retreat when they lose their last sub-territory;
+- D27.1, through one `canFight` helper in `engine/units/fighting.ts`;
+- withdrawals and retreats respect sea closure and ports;
+- rail rides are intercepted;
+- each sea connection names its ports (Q-CITY-7);
+- the computer player recruits trucks;
+- the artillery-alone rule covers every battle;
+- fatigue 3 can no longer be cleared by a same-turn rally;
+- raid cuts hit only the faction raided;
+- aircraft never count as a staying army;
+- D27.2 to D27.7.
+
+A computer-player bug found during the merge is fixed too: `exposure` counted trucks as the last army on an objective, so Madrid was emptied in seed 1. Branch coverage in both areas is now at or above 90 percent.
+
+100 seeds (`build/sim/m3r1-fix-combat-air-100`):
+
+| Blunders | Decided / freezes | Republic | North | South | S1 | S3 | Median turns |
+|---|---|---|---|---|---|---|---|
+| with | 100% / 0% | 9% | 57% | 34% | 0 | 0 | 13 |
+| without | 100% / 0% | 11% | 66% | 23% | 0 | 0 | 15 |
+
+S1 and S3 are met. H7 is missed: the Republic is at 9 to 11 percent of decided games. Reported to the owner, not tuned.

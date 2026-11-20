@@ -134,7 +134,8 @@ export const aiSchema = z
             stallCap: wholeSchema
           }),
           stakes: z.strictObject({ city: weight, objective: weight, territory: weight }),
-          victoryAlarm: z.strictObject({ perStep: weight, steps: wholeSchema }),
+          victoryAlarm: z.strictObject({ critical: weight, perStep: weight, steps: wholeSchema }),
+          withdraw: z.strictObject({ hopelessTakeChance: shareSchema, lastStandTakeChance: shareSchema }),
           builds: z
             .strictObject({
               spendShare: shareSchema.meta({ description: "Share of each resource left after Recruit orders that builds may spend." }),

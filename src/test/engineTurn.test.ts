@@ -240,7 +240,7 @@ describe("M26 resolution order and dice", () => {
     const scenario = spainM2();
     const state = { ...initialGameState(scenario), turnNumber: 3 };
     const result = resolveTurn(scenario, state, [], 9);
-    expect(battlesOf(result).map((battle) => battle.die)).toEqual([0, 1].map((index) => rollDie(seededRandom(deriveSeed(9, battleStreamTag, 3, index)))));
+    expect(battlesOf(result).map((battle) => battle.die)).toEqual([0, 1, 2, 3, 4].map((index) => rollDie(seededRandom(deriveSeed(9, battleStreamTag, 3, index)))));
     expect(resolveTurn(scenario, state, [], 9, seededBattleDice(9, 3))).toEqual(result);
     expect(deriveSeed(9, battleStreamTag, 3, 0)).not.toBe(deriveSeed(9, 3, 0));
   });
@@ -258,7 +258,7 @@ describe("M27 standing battles in shared territories (D29)", () => {
     const start = initialGameState(scenario);
     const state: GameState = { ...start, fortification: { [territory("andalucia")]: { factionId: faction("republic"), level: 2 } } };
     // South 18 against the Republic's 6 is 3:1, less popular resistance (Malaga); a 4 drives it out.
-    const result = resolveTurn(scenario, state, [], 1, loadedDice([4, 4]));
+    const result = resolveTurn(scenario, state, [], 1, loadedDice([4, 4, 4, 4, 4]));
     const [andalucia] = battlesOf(result);
     expect(andalucia).toMatchObject({
       attackerFactionId: "south",
@@ -276,7 +276,7 @@ describe("M27 standing battles in shared territories (D29)", () => {
   });
 
   it("keeps a losing attacker where it stands", () => {
-    const result = resolveTurn(spainM2(), initialGameState(spainM2()), [], 1, loadedDice([1, 4]));
+    const result = resolveTurn(spainM2(), initialGameState(spainM2()), [], 1, loadedDice([1, 4, 4, 4, 4]));
     const [andalucia] = battlesOf(result);
     // Demoralized from the weakest up until they carry half of 18: Granada (fewest men), Lepanto, Cadiz.
     expect(andalucia).toMatchObject({ demoralizedUnitIds: ["south-granada-6", "south-lepanto-5", "south-cadiz-33"], result: "attacker-demoralized", retreats: [] });
@@ -289,7 +289,7 @@ describe("M27 standing battles in shared territories (D29)", () => {
       ...start,
       units: Object.fromEntries(Object.values(start.units).map((army) => [army.id, army.factionId === "north" && army.territoryId === "asturias" ? { ...army, morale: { demoralized: true, quietTurns: 0 } } : army]))
     };
-    const asturias = battlesOf(resolveTurn(spainM2(), state, [], 1, loadedDice([4, 6])))[1];
+    const asturias = battlesOf(resolveTurn(spainM2(), state, [], 1, loadedDice([4, 6, 4, 4, 4])))[1];
     expect(asturias).toMatchObject({
       attacker: { armies: [{ unitId: "rep-asturian-militia", value: 3 }] },
       attackerFactionId: "republic",
@@ -379,6 +379,10 @@ describe("turn invariants over seeded computer games", () => {
         // U2-U5 (m3r1-air-generals): aircraft shot down or lost on the ground, generals killed or sacked.
         ...result.outcomes.flatMap((outcome) => {
           if (outcome.kind === "raid") return outcome.aircraftLost;
+          // D27.3: support and recon flights shot down by interceptors.
+          if (outcome.kind === "interception") return outcome.lostUnitIds;
+          // D6 (M8): a unit frostbite leaves below the break-up share.
+          if (outcome.kind === "frostbite" && outcome.destroyed === true) return [outcome.unitId];
           if (outcome.kind === "aircraft-lost" || outcome.kind === "general-died") return [outcome.unitId];
           return outcome.kind === "general-sacked" ? [outcome.order.unitId] : [];
         })

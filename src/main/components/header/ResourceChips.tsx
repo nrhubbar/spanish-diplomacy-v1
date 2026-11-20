@@ -5,7 +5,8 @@ import { incomeFor } from "../../engine/economy/income";
 import { amountOf, treasuryOf } from "../../engine/economy/resources";
 import { addResources } from "../../engine/resources";
 import type { ResourceId } from "../../engine/types";
-import { useAppSelector } from "../../hooks";
+import { useSession } from "../../hooks";
+import { isInGame } from "../../state/session";
 import { replenishmentCost } from "../../state/planning/recruitment";
 import { resourceAmount, resourceAmountInFull, signedResourceAmount } from "../../presentation/economy";
 import { EconomyIcon, resourceIcon } from "../economy/EconomyIcon";
@@ -18,13 +19,13 @@ import type { HeaderSlotProps } from "./slots";
  * economy or a viewer.
  */
 function Chips({ scenario, state, viewer }: HeaderSlotProps): JSX.Element | null {
-  // Narrow selections from the raw store, stable while the player selects: the game record's
-  // state (income reads only public data and the viewer's own hooks) and this turn's planned
-  // builds (the viewer's own). The filtered `state` prop is rebuilt on every selection.
-  const record = useAppSelector((root) => ("game" in root.game.session ? root.game.session.game.state : undefined));
-  const builds = useAppSelector((root) => (root.game.session.phase === "planning" ? root.game.session.draft.builds : undefined));
-  const recruits = useAppSelector((root) => (root.game.session.phase === "planning" ? root.game.session.draft.recruits : undefined));
-  const replenishments = useAppSelector((root) => (root.game.session.phase === "planning" ? root.game.session.draft.replenishments : undefined));
+  // Read through the visible session ($6, m3), whose game state stays the same object while the
+  // player selects (`visibleSession`), so next turn's income is not recomputed on each click.
+  const session = useSession();
+  const record = isInGame(session) ? session.game.state : undefined;
+  const builds = session.phase === "planning" ? session.draft.builds : undefined;
+  const recruits = session.phase === "planning" ? session.draft.recruits : undefined;
+  const replenishments = session.phase === "planning" ? session.draft.replenishments : undefined;
   const source = record?.turnNumber === state.turnNumber ? record : state;
   const [open, setOpen] = useState<ResourceId | undefined>(undefined);
   const id = useId();

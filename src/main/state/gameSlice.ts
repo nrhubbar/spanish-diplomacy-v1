@@ -2,7 +2,7 @@ import { createAction, createReducer } from "@reduxjs/toolkit";
 import { initialGameState } from "../engine/resolution";
 import type { ActorKind, AirMission, BuildOrder, FactionId, Scenario, ScenarioId, SubTerritoryId, TerritoryId, UnitId, UnitTypeId } from "../engine/types";
 import type { ScenarioRegistry } from "../scenarios/registry";
-import { advance, lockSubmission, nextTurn } from "./coordinator";
+import { advance, nextTurn } from "./coordinator";
 import {
   cancelBuild,
   cancelOrder,
@@ -11,11 +11,9 @@ import {
   clickTerritory,
   clickUnit,
   closeAircraft,
-  draftOrders,
   focusOn,
   planBuild,
   removeOrder,
-  airDraftOrders,
   selectAllAvailable,
   setAirMission,
   setRecruitQuantity,
@@ -26,6 +24,7 @@ import {
   unfocus
 } from "./planning";
 import { type Assignments, emptyDraft, type OrderKind, type Session } from "./session";
+import { submitDraft } from "./submit";
 import { submitOnTimeout, timeRanOut } from "./timeout";
 
 export interface GameState {
@@ -166,11 +165,7 @@ export function createGameReducer(dependencies: GameReducerDependencies) {
       .addCase(changeRecruitQuantity, (state, { payload }) =>
         set(inPlanning(state.session, (scenario, planning) => setRecruitQuantity(scenario, planning, payload.territoryId, payload.unitTypeId, payload.quantity))))
       .addCase(endTurn, (state) =>
-        set(inPlanning(state.session, (scenario, planning) => advance(
-          scenario,
-          lockSubmission(scenario, planning.game, { factionId: planning.factionId, orders: [...draftOrders(planning.draft), ...airDraftOrders(planning.draft)] }),
-          planning.factionId
-        ))))
+        set(inPlanning(state.session, (scenario, planning) => submitDraft(scenario, planning))))
       .addCase(timeRanOut, (state) =>
         set(inPlanning(state.session, (scenario, planning) => submitOnTimeout(scenario, planning))))
       .addCase(startNextTurn, (state) => {

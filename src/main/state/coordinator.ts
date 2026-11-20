@@ -1,11 +1,11 @@
 import { generateComputerSubmission } from "../ai/computerPlayer";
 import { rollStream } from "../engine/dice";
-import { outcomesFor } from "../engine/visibility";
 import { deriveSeed, seededRandom } from "../engine/random";
 import { resolveTurn } from "../engine/resolution";
 import type { FactionId, PlayerSubmission, Scenario } from "../engine/types";
 import { validateSubmission } from "../engine/validation";
 import { beforePlanning } from "../engine/weather";
+import { historyEntry, seenBy } from "./history";
 import { emptyDraft, type GameRecord, localPlayerCount, type Session } from "./session";
 
 /**
@@ -30,8 +30,8 @@ export function advance(scenario: Scenario, game: GameRecord, fromFactionId?: Fa
       throw new Error(`Faction "${faction.id}" has no supported actor (${String(kind)}).`);
     }
     const random = seededRandom(deriveSeed(current.seed, current.state.turnNumber, index));
-    // $6, U4: a computer player remembers only the outcomes its faction could see.
-    const seen = current.history.map((entry) => outcomesFor(scenario, current.state, entry.outcomes, faction.id));
+    // $6, U4: a computer player remembers only the outcomes its faction saw on each turn.
+    const seen = current.history.map((entry) => seenBy(entry, faction.id));
     const previousOutcomes = seen.at(-1);
     const submission = generateComputerSubmission(scenario, current.state, faction.id, random, {
       blunder: rollStream(current.seed, "blunder", current.state.turnNumber, index),
@@ -65,10 +65,11 @@ export function resolve(scenario: Scenario, game: GameRecord): Session {
     : { game: next, phase: "game-over", result };
 }
 
+/** Records the resolved turn (its board is `game.state`) and starts the next one. */
 export function nextTurn(scenario: Scenario, game: GameRecord, outcomes: GameRecord["history"][number]["outcomes"]): Session {
   return advance(scenario, {
     ...game,
-    history: [...game.history, { outcomes, turnNumber: game.state.turnNumber }],
+    history: [...game.history, historyEntry(scenario, game.state, outcomes)],
     locked: {},
     state: { ...game.state, turnNumber: game.state.turnNumber + 1 }
   });

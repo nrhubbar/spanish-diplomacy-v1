@@ -1,7 +1,9 @@
 import { armyValue, oddsForValues } from "../engine/combat";
-import { citiesIn, neighborsOf, requireAiProfile, requireFaction, requireTerritory } from "../engine/lookup";
+import { citiesIn, requireAiProfile, requireFaction, requireTerritory } from "../engine/lookup";
+import { holdsWhole } from "../engine/partition/holders";
 import type { AiProfile, FactionId, GameState, Scenario, TerritoryId, UnitId, UnitState } from "../engine/types";
 import { victoryProgress } from "../engine/victory";
+import { threatReach } from "./reach";
 
 /**
  * A computer player's reading of the board at the start of a turn, from one faction's point
@@ -28,6 +30,16 @@ export interface Assessment {
    * by moving in this turn, which they may do without a fight (M11). Undefined when none can.
    */
   readonly relief: (territoryId: TerritoryId) => Relief | undefined;
+  /**
+   * D23: whether the territory is victory-critical. The faction holds ground there, and a rival
+   * that can reach it this turn would meet a victory threshold by taking it whole.
+   */
+  readonly isCritical: (territoryId: TerritoryId) => boolean;
+  /**
+   * Where the hostile armies able to reach the territory this turn stand (rail and trucks
+   * included), demoralized ones too, since they may still walk into empty ground.
+   */
+  readonly threatOrigins: (territoryId: TerritoryId) => ReadonlySet<TerritoryId>;
   /** Whether the territory is one of the faction's objectives. */
   readonly isObjective: (territoryId: TerritoryId) => boolean;
   /** What holding the territory is worth to the faction. */
@@ -41,9 +53,9 @@ export interface Relief {
 }
 
 interface Pressure {
-  /** Summed attack values of the faction's armies able to attack the territory. */
+  /** Summed attack values of the faction's armies able to attack the territory, by step, rail, road or sea. */
   readonly attack: number;
-  /** Summed defence values of its armies next to the territory, all of which could move in. */
+  /** Summed defence values of its armies able to reach the territory, all of which could move in. */
   readonly defence: number;
   /** Whether any of its armies could enter the territory if it stood empty. */
   readonly reaches: boolean;
@@ -58,15 +70,18 @@ export function assess(scenario: Scenario, state: GameState, factionId: FactionI
   const stakes = new Map<TerritoryId, number>();
   const pressures = new Map<TerritoryId, ReadonlyMap<FactionId, Pressure>>();
   const dangers = new Map<string, number>();
+  const reaches = new Map<UnitId, ReadonlySet<TerritoryId>>();
+  const criticals = new Map<TerritoryId, boolean>();
 
   const attackOf = (unit: UnitState): number => cached(attackValues, unit.id, () => armyValue(scenario, unit, "attack"));
   const defenceOf = (unit: UnitState): number => cached(defenceValues, unit.id, () => armyValue(scenario, unit, "defence"));
 
+  // D23: each hostile unit's reach is worked out once, rail and trucks included (`threatReach`).
+  const reachOf = (unit: UnitState): ReadonlySet<TerritoryId> => cached(reaches, unit.id, () => threatReach(scenario, state, unit));
   const pressureOn = (territoryId: TerritoryId): ReadonlyMap<FactionId, Pressure> => cached(pressures, territoryId, () => {
-    const reach = new Set([territoryId, ...neighborsOf(scenario, territoryId).map((neighbor) => neighbor.territoryId)]);
     const byFaction = new Map<FactionId, Pressure>();
     for (const unit of hostile) {
-      if (!reach.has(unit.territoryId)) continue;
+      if (!reachOf(unit).has(territoryId)) continue;
       const before = byFaction.get(unit.factionId) ?? { attack: 0, defence: 0, reaches: false };
       // M23: a demoralized army cannot attack, but it may still enter an empty territory.
       byFaction.set(unit.factionId, {
@@ -96,17 +111,40 @@ export function assess(scenario: Scenario, state: GameState, factionId: FactionI
     return worst;
   });
 
-  const alarms = new Map(victoryProgress(scenario, state)
+  const progress = victoryProgress(scenario, state);
+  // The alarm raises a rival's own territories as it nears victory, so the faction attacks the leader.
+  const alarms = new Map(progress
     .filter((entry) => entry.factionId !== factionId)
     .map((entry) => {
       // A territory taken often brings two victory cities with it.
       const gap = Math.min(entry.territoryThreshold - entry.territoriesControlled, Math.ceil((entry.cityThreshold - entry.citiesControlled) / 2));
       return [entry.factionId, Math.max(0, profile.victoryAlarm.steps - gap) * profile.victoryAlarm.perStep] as const;
     }));
-  const alarmFor = (territoryId: TerritoryId): number => {
+  const holdsGround = (territoryId: TerritoryId): boolean => {
     const control = state.control[territoryId];
-    if (control?.kind !== "controlled") return 0;
-    return control.factionId === factionId ? Math.max(0, ...alarms.values()) : alarms.get(control.factionId) ?? 0;
+    if (control?.kind === "controlled") return control.factionId === factionId;
+    return control?.kind === "contested" && control.factionIds.includes(factionId);
+  };
+  // D23: a territory whose change of hands alone would decide the game. On the faction's own
+  // ground, a rival that can reach it would meet a victory threshold by taking it whole; elsewhere,
+  // the faction itself would.
+  const decides = (territoryId: TerritoryId, taker: FactionId): boolean => {
+    const entry = progress.find((candidate) => candidate.factionId === taker);
+    if (entry === undefined) return false;
+    const territory = requireTerritory(scenario, territoryId);
+    const territoryGain = territory.countsForVictory && !holdsWhole(scenario, state, territoryId, taker) ? 1 : 0;
+    const cityGain = citiesIn(scenario, territoryId).filter((city) => city.countsForVictory && state.cityControl[city.id] !== taker).length;
+    const short = (held: number, threshold: number, gain: number): boolean => held < threshold && held + gain >= threshold;
+    return short(entry.territoriesControlled, entry.territoryThreshold, territoryGain) || short(entry.citiesControlled, entry.cityThreshold, cityGain);
+  };
+  const isCritical = (territoryId: TerritoryId): boolean => cached(criticals, territoryId, () =>
+    holdsGround(territoryId) && progress.some((entry) => entry.factionId !== factionId
+      && pressureOn(territoryId).get(entry.factionId)?.reaches === true
+      && decides(territoryId, entry.factionId)));
+  const alarmFor = (territoryId: TerritoryId): number => {
+    if (isCritical(territoryId) || decides(territoryId, factionId)) return profile.victoryAlarm.critical;
+    const control = state.control[territoryId];
+    return control?.kind === "controlled" && control.factionId !== factionId ? alarms.get(control.factionId) ?? 0 : 0;
   };
 
   const stake = (territoryId: TerritoryId): number => cached(stakes, territoryId, () => {
@@ -124,7 +162,10 @@ export function assess(scenario: Scenario, state: GameState, factionId: FactionI
     return defence > 0 ? { defence, factionId: control.factionId } : undefined;
   };
 
-  return { attackOf, danger, defenceOf, factionId, isObjective: (territoryId) => objectives.has(territoryId), profile, relief, stake };
+  const threatOrigins = (territoryId: TerritoryId): ReadonlySet<TerritoryId> =>
+    new Set(hostile.filter((unit) => reachOf(unit).has(territoryId)).map((unit) => unit.territoryId));
+
+  return { attackOf, danger, defenceOf, factionId, isCritical, isObjective: (territoryId) => objectives.has(territoryId), profile, relief, stake, threatOrigins };
 }
 
 function cached<Key, Value>(cache: Map<Key, Value>, key: Key, compute: () => Value): Value {

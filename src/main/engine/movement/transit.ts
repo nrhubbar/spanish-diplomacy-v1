@@ -6,12 +6,14 @@ import type {
   HeldBackReason,
   MoveHeldBackOutcome,
   MoveInterceptedOutcome,
+  MoveLeg,
   MoveOrder,
   MoveTransitOutcome,
   SystemOutcome,
   TerritoryId,
   UnitId
 } from "../types";
+import { hasFighter } from "../units/fighting";
 import { armyAllowance, fitsAllowance, transportOf } from "./allowance";
 import { portLandings, railDepartures } from "./network";
 import { armyKey, describeRoute, legsOf, type MoveRoute, routeClaims } from "./routes";
@@ -45,9 +47,10 @@ export function armiesOf(scenarioKey: (order: MoveOrder) => string, orders: read
  * Step 1, the `allowance` module's part (M1, M3, M5). Each order's legs were checked on their
  * own; here the moves are grouped into armies (W4) and checked as armies: the route must fit the
  * army's allowance, and its boarding capital, landing port or sea lane must have room. Armies
- * are served in the order their first unit was ordered. An army that cannot go stays where it
- * is, with its standing order; nothing is disbanded. The rest are sorted again into
- * reinforcements and advances (M11).
+ * are served in the order their first unit was ordered. D27.1: an army with no unit that can
+ * fight (generals, trucks, anti-air) may not advance; it may only reinforce its own side. An army
+ * that cannot go stays where it is, with its standing order; nothing is disbanded. The rest are
+ * sorted again into reinforcements and advances (M11).
  */
 export const checkArmies: Phase = (draft) => {
   const { scenario, start } = draft.input;
@@ -57,6 +60,7 @@ export const checkArmies: Phase = (draft) => {
   const landings = new Map<string, number>();
   const lanes = new Map<string, number>();
   const heldUnits = new Set<UnitId>();
+  const advancing = new Set(classifyMoves(scenario, start, draft.armies, draft.orders.valid).advances.map((order) => order.unitId));
   for (const army of armiesOf((order) => armyKey(scenario, order), draft.orders.valid)) {
     const [first] = army.orders;
     if (first === undefined) continue;
@@ -66,10 +70,12 @@ export const checkArmies: Phase = (draft) => {
     const reason = ((): HeldBackReason | undefined => {
       if (!check.ok) return "allowance";
       const { route } = check;
+      if (unitIds.some((unitId) => advancing.has(unitId)) && !hasFighter(scenario, start.raised, unitIds)) return "cannot-fight";
       if (!fitsAllowance(route.cost, route.steps, armyAllowance(scenario, start, first.factionId, first.from, unitIds))) return "allowance";
       const claims = routeClaims(route);
       if (claims.departure !== undefined && (departures.get(claims.departure) ?? 0) >= railDepartures(scenario, start, claims.departure)) return "rail-departures";
-      const landingKey = claims.landing === undefined ? undefined : `${first.factionId}|${claims.landing}`;
+      // A port lands only its holder's armies, so landings count per port (M5).
+      const landingKey = claims.landing;
       if (landingKey !== undefined && (landings.get(landingKey) ?? 0) >= portLandings(scenario, route.sea?.level ?? 0)) return "port-landings";
       const laneKey = claims.amphibious === undefined ? undefined : `${first.factionId}|${claims.amphibious}`;
       if (laneKey !== undefined && (lanes.get(laneKey) ?? 0) >= 1) return "amphibious-lane";
@@ -86,7 +92,7 @@ export const checkArmies: Phase = (draft) => {
     }
   }
   const valid = draft.orders.valid.filter((order) => !heldUnits.has(order.unitId));
-  const { advances, reinforcements } = classifyMoves(start.control, draft.armies, valid);
+  const { advances, reinforcements } = classifyMoves(scenario, start, draft.armies, valid);
   const origins = new Map([...draft.orders.origins].filter(([unitId]) => !heldUnits.has(unitId)));
   const submitted = new Map(valid.map((order) => [order.unitId, order]));
   return {
@@ -97,11 +103,22 @@ export const checkArmies: Phase = (draft) => {
   };
 };
 
+/** The legs of a route cut short at `stop`: up to the leg that ends there, or a ride cut at a territory the train passes. */
+export function legsTo(route: MoveRoute, stop: TerritoryId): readonly MoveLeg[] {
+  const legs: MoveLeg[] = [];
+  for (const leg of route.legs) {
+    if (leg.kind === "rail" && route.rail?.through.includes(stop) === true) return [...legs, { kind: "rail", to: stop }];
+    legs.push(leg);
+    if (leg.to === stop) return legs;
+  }
+  return legs;
+}
+
 /**
  * Step 3, the `allowance` module's part (M2-M5, Q-UX-I3, T4).
  * - An army whose route stops in a territory (`transit`) that another faction's army is
  *   entering this turn stops at the first such territory and defends it as a reinforcement.
- *   Rail rides are checked at their ends, not at every territory the train passes.
+ *   A rail ride is stopped at any territory the train passes as well as at its end (Q-MR-16).
  * - Every other move that is not a reinforcement goes to the territory its last leg starts
  *   from, and from there it is an ordinary one-step move for the meeting and territory battles
  *   (steps 4 and 5): a bounced army returns there.
@@ -128,18 +145,18 @@ export const moveAlongRoutes: Phase = (draft) => {
 
   for (const order of draft.orders.valid) {
     const route = routes.get(order.unitId);
-    if (route === undefined || route.legs.length === 1) continue;
+    if (route === undefined || route.transit.length === 0) continue;
     const key = armyKey(scenario, order);
     const stop = route.transit.find((territoryId) => [...(entering.get(territoryId) ?? [])].some((factionId) => factionId !== order.factionId));
     if (stop !== undefined) {
-      const index = route.legs.findIndex((leg) => leg.to === stop);
-      replaced.set(order.unitId, { ...order, legs: route.legs.slice(0, index + 1), to: stop });
+      replaced.set(order.unitId, { ...order, legs: legsTo(route, stop), to: stop });
       intercepted.add(order.unitId);
       const by = [...(entering.get(stop) ?? [])].filter((factionId) => factionId !== order.factionId).sort();
       const outcome = interceptions.get(key);
       interceptions.set(key, { byFactionIds: by, factionId: order.factionId, from: order.from, kind: "move-intercepted", stoppedAt: stop, to: order.to, unitIds: [...(outcome?.unitIds ?? []), order.unitId] });
       continue;
     }
+    if (route.legs.length === 1) continue;
     const transit = transits.get(key);
     transits.set(key, { factionId: order.factionId, from: order.from, kind: "move-transit", legs: route.legs, to: order.to, unitIds: [...(transit?.unitIds ?? []), order.unitId] });
     if (!reinforcing.has(order.unitId)) {

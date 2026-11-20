@@ -13,7 +13,7 @@ import type {
   UnitId,
   UnitState
 } from "../types";
-import { capitalOf, carryOf, chargeReplenish, isContested, nextRaisedSerial, raisedDefinition, raisedUnitId, recruitSlots, replenishQuote, uncharge } from "./rules";
+import { capitalOf, carryOf, chargeReplenish, isContested, nextRaisedSerial, raisedDefinition, raisedUnitId, recruitSlots, replenishQuote, trainingUnitId, uncharge } from "./rules";
 
 /** A Replenish order paid at step 1, settled at step 9. */
 export interface PaidReplenishment {
@@ -82,7 +82,7 @@ export const payForRecruits: Phase = (draft) => {
       }
       used.set(slotKey, count + 1);
       treasuries = adjustTreasury(treasuries, order.factionId, subtractResources({}, recruit.cost));
-      const unitId = raisedUnitId(order.factionId, order.unitTypeId, nextRaisedSerial({ raised: draft.systems.raised, training }, order.factionId, order.unitTypeId));
+      const unitId = trainingUnitId(training, order.factionId, order.unitTypeId, order.territoryId);
       const item: TrainingItem = { factionId: order.factionId, paid: recruit.cost, paused: false, territoryId: order.territoryId, turnsLeft: recruit.trainingTurns, typeId: order.unitTypeId, unitId };
       training = [...training, item];
       events.push({ kind: "training-started", order, paid: recruit.cost, turnsLeft: recruit.trainingTurns, unitId });
@@ -170,9 +170,9 @@ function trainingLost(draft: TurnDraft, state: GameState, item: TrainingItem): b
  * Section 2 step 10 (R4, R7, C8): each unit in training advances one turn. In contested ground,
  * types that train on there (militia) advance and the rest pause. When the capital has fallen,
  * training not yet started (no turn taken off yet, such as a Recruit paid this turn) is
- * refunded, and training under way is lost with its payment, like a build queue ($5, D28.2). A unit whose training runs
- * out appears in its territory at full establishment, healthy and rested, at the end of this
- * turn; it can first move next turn. Its definition joins `raised` (R6).
+ * refunded, and training under way is lost with its payment, like a build queue ($5, D28.2). A
+ * unit whose training runs out appears in its territory at full establishment, healthy and
+ * rested, at the end of this turn; it can first move next turn. Its definition joins `raised` (R6).
  */
 export const advanceTraining: Phase = (draft) => {
   if (draft.systems.training.length === 0) return draft;
@@ -203,18 +203,20 @@ export const advanceTraining: Phase = (draft) => {
       training.push({ ...item, paused: false, turnsLeft });
       continue;
     }
-    const definition = raisedDefinition(scenario, item.unitId);
+    // m7: numbered as it appears, in training-list order, among the faction's raised units of its type.
+    const unitId = raisedUnitId(item.factionId, item.typeId, nextRaisedSerial(raised, item.factionId, item.typeId));
+    const definition = raisedDefinition(scenario, unitId);
     if (definition === undefined) continue;
-    raised[item.unitId] = definition;
-    armies[item.unitId] = {
+    raised[unitId] = definition;
+    armies[unitId] = {
       factionId: item.factionId,
       fatigue: 0,
-      id: item.unitId,
+      id: unitId,
       morale: { demoralized: false, quietTurns: 0 },
       strength: definition.fullStrength,
       territoryId: item.territoryId
     };
-    events.push({ factionId: item.factionId, kind: "training-completed", territoryId: item.territoryId, typeId: item.typeId, unitId: item.unitId });
+    events.push({ factionId: item.factionId, kind: "training-completed", territoryId: item.territoryId, typeId: item.typeId, unitId });
   }
   return { ...draft, armies, events: [...draft.events, ...events], systems: { ...draft.systems, raised, training, treasuries } };
 };

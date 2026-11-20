@@ -1,4 +1,4 @@
-import { isGroundUnit } from "../air/pieces";
+import { isGroundUnit, onGroundBoard } from "../air/pieces";
 import { requireUnitState } from "../lookup";
 import type { BattleSide, FactionId, GameState, Scenario, TerritoryId, UnitId } from "../types";
 import { estimateGradedBattle, type GradedEstimate, gradedOddsForValues } from "../d20/estimate";
@@ -34,10 +34,11 @@ export function estimateAttack(
   if (ordered.length === 0 || ordered.some((unit) => unit.factionId !== factionId)) {
     throw new Error(`Invariant violated: an attack needs one or more armies of "${factionId}".`);
   }
-  // AG-3: only ground units fight; a general with the attack still counts through the hooks.
+  // AG-3: under the d6 table only ground units fight, and a general with the attack counts through the hooks.
   const ground = ordered.filter((unit) => isGroundUnit(scenario, state.raised, unit.id));
   const attackers = ground.length === 0 ? ordered : ground;
-  const present = Object.values(state.units).filter((unit) => unit.territoryId === targetTerritoryId && isGroundUnit(scenario, state.raised, unit.id));
+  // D17, M11: what the ground steps see there: never aircraft; under the d20, generals too (a lone general is defended ground).
+  const present = Object.values(state.units).filter((unit) => unit.territoryId === targetTerritoryId && onGroundBoard(scenario, state.raised, unit.id));
   const control = state.control[targetTerritoryId];
   const own = control?.kind === "controlled" && control.factionId === factionId;
   if (own || present.some((unit) => unit.factionId === factionId)) {

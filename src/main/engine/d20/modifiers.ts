@@ -2,7 +2,8 @@ import { hookedCombatModifiers } from "../hooks";
 import { citiesIn } from "../lookup";
 import type { TurnScratch } from "../phases/draft";
 import type { BattleSide, CombatModifier, CombatRole, D20Rules, FactionId, GameState, Scenario, TerritoryId, UnitState, UnitTypeId, WeatherState } from "../types";
-import { compareText, gradedValue, isGeneralUnit, requireD20, rosterGeneral, typeOf, unitRank, weatherIn } from "./rules";
+import { bestGeneral, commanderModifiers } from "../generals/command";
+import { gradedValue, isGeneralUnit, requireD20, typeOf, weatherIn } from "./rules";
 
 /** One side as it fights: its values, and its units' states (for fatigue and generals). */
 export interface GradedSide {
@@ -19,7 +20,7 @@ export interface GradedContext {
   readonly diggingIn: boolean;
   /**
    * The battle territory. Absent for a head-on meeting on the road (M20), which takes only the
-   * armies' own modifiers: generals, unit bonuses and fatigue.
+   * armies' own modifiers (generals, unit bonuses and fatigue) and the weather (D27.5).
    */
   readonly territoryId?: TerritoryId;
   /** The turn's scratch while a turn resolves, passed on to the hooks (bomber support, m3r1-air-generals). */
@@ -32,7 +33,8 @@ export interface GradedContext {
  * D3-D7, C6: every roll modifier of one d20 battle, signed from the attacker's view.
  * - Situational (not on the road): works x3 (M22, D3), faction modifiers such as Popular
  *   resistance from the d20 block (M24, D3), barricades (D4), and the selected modules'
- *   `combatModifiers` hooks: weather, amphibious, air support, buildings (D7).
+ *   `combatModifiers` hooks: weather, amphibious, air support, buildings (D7). A meeting on the
+ *   road takes the hooks' weather only, from its attackers' destination (D27.5).
  * - The armies' own, always: the best general per side and his trait (D4, U6, declog D5),
  *   unit-type bonuses such as artillery and tanks (D5), and fatigue (C6, declog D6).
  */
@@ -74,7 +76,9 @@ export function gradedModifiers(
     ...fatigueModifier(rules, attacker),
     ...fatigueModifier(rules, defender)
   ];
-  const hooked = territoryId === undefined ? [] : hookedCombatModifiers({
+  // D27.5: a meeting on the road takes only the weather of its attackers' destination from the hooks.
+  const hookTerritoryId = territoryId ?? context.weatherTerritoryId;
+  const hooks = hookTerritoryId === undefined ? [] : hookedCombatModifiers({
     attackerFactionId: context.attackerFactionId,
     attackerUnitIds: attacker.units.map((unit) => unit.id),
     defenderFactionIds: context.defenderFactionIds,
@@ -82,8 +86,9 @@ export function gradedModifiers(
     ...(context.scratch === undefined ? {} : { scratch: context.scratch }),
     scenario,
     state,
-    territoryId
+    territoryId: hookTerritoryId
   });
+  const hooked = territoryId === undefined ? hooks.filter((modifier) => modifier.kind === "weather") : hooks;
   return [...situational, ...own, ...hooked];
 }
 
@@ -95,27 +100,13 @@ function holdsCity(scenario: Scenario, state: GameState, factionId: FactionId, t
 const sign = (role: CombatRole): number => (role === "attack" ? 1 : -1);
 
 /**
- * D4, U6 (declog D5): only the best single general on a side counts: the greatest command bonus
- * plus his trait's roll for the side's role, ties in scenario order. His trait applies with him.
+ * D4, U6 (declog D5): only the best single general on a side counts, chosen by the selector the
+ * rally uses too (`bestGeneral`, M5): the greatest command bonus plus his trait's roll for the
+ * side's role, then roster order. His trait applies with him.
  */
 function generalModifiers(scenario: Scenario, state: GameState, side: GradedSide): readonly CombatModifier[] {
-  const rank = unitRank(scenario);
-  const candidates = side.units.flatMap((unit) => {
-    const type = typeOf(scenario, state.raised, unit.id);
-    const bonus = type.effects.reduce((sum, effect) => sum + (effect.kind === "command-bonus" ? effect.roll : 0), 0);
-    const general = rosterGeneral(scenario, state.raised, unit.id);
-    if (general === undefined || bonus === 0) return [];
-    const trait = scenario.generalTraits.find((candidate) => candidate.id === general.traitId);
-    const traitRoll = (trait?.effects ?? []).reduce((sum, effect) => sum + (effect.kind === "roll-modifier" && effect.role === side.role ? effect.roll : 0), 0);
-    return [{ bonus, general, rank: rank(unit.id), traitRoll, unit }];
-  }).sort((left, right) => (right.bonus + right.traitRoll) - (left.bonus + left.traitRoll) || left.rank - right.rank || compareText(left.unit.id, right.unit.id));
-  const best = candidates[0];
-  if (best === undefined) return [];
-  const modifiers: CombatModifier[] = [{ factionId: best.unit.factionId, generalId: best.general.id, kind: "general", role: side.role, roll: sign(side.role) * best.bonus }];
-  if (best.traitRoll !== 0) {
-    modifiers.push({ generalId: best.general.id, kind: "trait", role: side.role, roll: sign(side.role) * best.traitRoll, traitId: best.general.traitId });
-  }
-  return modifiers;
+  const best = bestGeneral(scenario, state.raised, side.units.map((unit) => unit.id), side.role);
+  return commanderModifiers(best, best === undefined ? undefined : side.units.find((unit) => unit.id === best.unitId)?.factionId, side.role);
 }
 
 /**

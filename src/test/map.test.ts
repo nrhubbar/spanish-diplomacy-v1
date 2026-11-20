@@ -242,7 +242,7 @@ describe("markup and rendering helpers", () => {
       { factionId: faction("republic"), orders: [move("republic", "rep-wad-ras-1", "madrid", "castilla-y-leon")] },
       { factionId: faction("north"), orders: [move("north", "north-san-marcial-22", "castilla-y-leon", "madrid")] }
     ], 1);
-    expect(legendEntries(scenario, state, { ...staticMapView, outcomes: result.outcomes, plannedOrders: result.submittedOrders.filter(isMoveOrder) })).toEqual(["contested", "sea", "planned", "bounced", "attacker-demoralized", "defender-demoralized"]);
+    expect(legendEntries(scenario, state, { ...staticMapView, outcomes: result.outcomes, plannedOrders: result.submittedOrders.filter(isMoveOrder) })).toEqual(["contested", "sea", "planned", "bounced", "attacker-eliminated", "attacker-demoralized", "both-demoralized", "defender-demoralized"]);
   });
 });
 

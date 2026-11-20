@@ -98,7 +98,7 @@ describe("income ($2, $3)", () => {
     const raid: RuleModule = { area: "air", blocks: [], hooks: { incomeDelta: ({ factionId }) => (factionId === "red" ? { ["funds" as never]: -5 } : {}) }, id: "raid-test", steps: {} };
     // The fixture's own air module (m3r1-air-generals) also cuts; this test pins the seam alone.
     const raided: Scenario = { ...scenario, modules: [...scenario.modules.filter((module) => module.area !== "air"), raid] };
-    const state: GameState = { ...start(), raidCuts: [{ subTerritoryId: sub("west-town-quarter"), turnNumber: 1 }, { subTerritoryId: sub("west-hills"), turnNumber: 0 }] };
+    const state: GameState = { ...start(), raidCuts: [{ factionId: faction("red"), subTerritoryId: sub("west-town-quarter"), turnNumber: 1 }, { factionId: faction("red"), subTerritoryId: sub("west-hills"), turnNumber: 0 }] };
     const income = incomeFor(raided, state, faction("red"));
     expect(income.paid).toEqual({ funds: 0, manpower: 3 });
     expect(income.cut).toEqual({ funds: 2 });

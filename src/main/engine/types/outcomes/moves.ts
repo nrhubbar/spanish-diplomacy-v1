@@ -63,12 +63,13 @@ export interface ReinforcementArrivedOutcome {
   readonly order: MoveOrder;
 }
 
-/** M1, M3, M5: why an army's move could not go this turn. */
-export type HeldBackReason = "allowance" | "rail-departures" | "port-landings" | "amphibious-lane";
+/** M1, M3, M5, D27.1: why an army's move could not go this turn. */
+export type HeldBackReason = "allowance" | "rail-departures" | "port-landings" | "amphibious-lane" | "cannot-fight";
 
 /**
  * M1, M3, M5: an army's move did not go. Its route was longer than its allowance, or the
- * boarding capital, the landing port or the sea lane had no room left this turn. The army
+ * boarding capital, the landing port or the sea lane had no room left this turn, or it has no
+ * unit that can fight and was not joining its own side (D27.1). The army
  * stays where it is and takes its standing order; nothing is disbanded.
  */
 export interface MoveHeldBackOutcome {

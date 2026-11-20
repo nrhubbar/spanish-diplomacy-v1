@@ -179,7 +179,19 @@ export interface AiProfile {
     readonly staging: number;
   };
   readonly stakes: { readonly city: number; readonly objective: number; readonly territory: number };
-  readonly victoryAlarm: { readonly perStep: number; readonly steps: number };
+  /**
+   * `steps` and `perStep` raise the stakes of a rival's territories as it nears victory, so the
+   * faction attacks the leader. `critical` raises, by stake times (1 + critical), a territory whose
+   * change of hands alone would decide the game (D23): own ground a rival in reach would win by
+   * taking, and ground the faction itself would win by taking.
+   */
+  readonly victoryAlarm: { readonly critical: number; readonly perStep: number; readonly steps: number };
+  /**
+   * C1, D24: when to Withdraw from contested ground, by the chance (from the engine's odds for
+   * the standing battle) that the enemy takes the territory whole this turn. `lastStandTakeChance`
+   * applies to the faction's seat, its last objective and a victory-critical territory.
+   */
+  readonly withdraw: { readonly hopelessTakeChance: number; readonly lastStandTakeChance: number };
 }
 
 /** E7, H6: computer players' data. */

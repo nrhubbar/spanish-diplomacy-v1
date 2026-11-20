@@ -65,14 +65,14 @@ describe("harness core on the tiny-front fixture", () => {
     expect(() => objectivesOf(without("harbor"))).toThrow(/Faction "red" has objectives that are not territories: harbor/);
   });
 
-  it("judges S3 on units that hold ground, and counts withdrawals as leaving under fire", () => {
-    // Aircraft never hold ground (D17); ground units and generals do.
+  it("judges S3 on units that hold ground, and still counts withdrawals (D24)", () => {
+    // Aircraft never hold ground (D17), nor do units that cannot fight, such as generals (D27.1).
     const spain = loadScenario(sources, defaultScenarioId(scenarioSources()));
     const start = initialGameState(spain);
     expect(holdsGround(spain, start, "rep-catalan-recon")).toBe(false);
     expect(holdsGround(spain, start, "rep-wad-ras-1")).toBe(true);
-    expect(holdsGround(spain, start, "rep-general-miaja")).toBe(true);
-    // Retreats, retreating bounces and Withdraw orders (C1) are driven out, not abandoned.
+    expect(holdsGround(spain, start, "rep-general-miaja")).toBe(false);
+    // Retreats and retreating bounces are driven out; a Withdraw order (C1) is a choice (D24).
     const outcomes = [
       { kind: "battle", retreats: [{ from: "a", to: "b", unitId: "retreated" }] },
       { kind: "bounced-move", order: { unitId: "bounced" }, retreatedTo: "b" },
@@ -80,7 +80,7 @@ describe("harness core on the tiny-front fixture", () => {
       { kind: "withdrew", order: { unitId: "withdrawn" } },
       { kind: "aircraft-rebased", unitId: "rebased" }
     ] as unknown as readonly TurnOutcome[];
-    expect([...retreatedUnits(outcomes)].sort()).toEqual(["bounced", "retreated", "withdrawn"]);
+    expect([...retreatedUnits(outcomes)].sort()).toEqual(["bounced", "retreated"]);
   });
 
   it("stops at the turn limit and calls a game still running a freeze", () => {

@@ -63,7 +63,7 @@ describe("a capital that falls with purchases in it (M4, $5, U3)", () => {
   const ofKindAll = <Kind extends TurnOutcome["kind"]>(outcomes: readonly TurnOutcome[], kind: Kind) =>
     outcomes.filter((outcome): outcome is Extract<TurnOutcome, { kind: Kind }> => outcome.kind === kind);
 
-  it("refunds what had not started, forfeits what had, and pays the new holder less the raid cut", () => {
+  it("refunds what had not started, forfeits what had, and the raid cut stays with the faction raided", () => {
     const base = initialGameState(scenario);
     const attacker = unit("north-milan-32");
     const clm = territory("castilla-la-mancha");
@@ -74,7 +74,7 @@ describe("a capital that falls with purchases in it (M4, $5, U3)", () => {
     const state: GameState = {
       ...base,
       control: { ...base.control, [clm]: { factionId: north, kind: "controlled" } },
-      raidCuts: [{ subTerritoryId: murciaSub, turnNumber: base.turnNumber }],
+      raidCuts: [{ factionId: republic, subTerritoryId: murciaSub, turnNumber: base.turnNumber }],
       subTerritories: {
         ...base.subTerritories,
         ...Object.fromEntries(clmSubs.map((id) => [id, { ...base.subTerritories[id]!, holder: north }])),
@@ -104,9 +104,9 @@ describe("a capital that falls with purchases in it (M4, $5, U3)", () => {
     expect(training.map((outcome) => outcome.typeId)).toEqual(["infantry-regiment", "militia-column"]);
     expect(training.map((outcome) => outcome.refund)).toEqual([{}, { funds: 2, manpower: 3 }]);
     expect(result.finalState.training).toEqual([]);
-    // U3: Murcia pays its new holder, less this turn's raid cut.
+    // U3, B3: the raid cut the Republic, which lost Murcia; its new holder is paid in full.
     const northIncome = ofKindAll(result.outcomes, "income").find((outcome) => outcome.factionId === north)!;
-    expect(northIncome.cutSubTerritoryIds).toContain(murciaSub);
+    expect(northIncome.cut).toEqual({});
     // The books balance: what the Republic paid at reveal all came back but the forfeited head.
     const republicIncome = ofKindAll(result.outcomes, "income").find((outcome) => outcome.factionId === republic)!.paid as Record<string, number>;
     expect(result.finalState.treasuries[republic]).toEqual({ funds: 20 + 6 + (republicIncome["funds"] ?? 0), manpower: 10 + (republicIncome["manpower"] ?? 0) });

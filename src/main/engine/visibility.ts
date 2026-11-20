@@ -35,89 +35,162 @@ function activeReveals(state: GameState, viewer: FactionId | undefined): GameSta
   return state.reveals.filter((reveal) => reveal.viewerFactionId === viewer && reveal.untilTurn >= state.turnNumber);
 }
 
-/** Whose private data an outcome carries, and where; undefined for a public outcome. */
-interface Privacy {
-  readonly factionIds: readonly FactionId[];
-  readonly territoryId?: TerritoryId;
+/**
+ * Whose private data an outcome or order carries, and who else may open it:
+ * - `territory`: the viewer's recon of that territory opens it (queues, training, purchases);
+ * - `holders`: recon of any territory the owner holds opens it (balances and income);
+ * - `owner`: nothing opens it (recon and anything whose place is not known, such as a
+ *   Replenish for a unit that died this turn).
+ */
+type Privacy =
+  | { readonly factionIds: readonly FactionId[]; readonly scope: "holders" | "owner" }
+  | { readonly factionIds: readonly FactionId[]; readonly scope: "territory"; readonly territoryId: TerritoryId };
+
+function located(factionIds: readonly FactionId[], territoryId: TerritoryId | undefined): Privacy {
+  return territoryId === undefined ? { factionIds, scope: "owner" } : { factionIds, scope: "territory", territoryId };
 }
 
 function privacyOf(scenario: Scenario, state: GameState, outcome: TurnOutcome): Privacy | undefined {
   const at = (subTerritoryId: SubTerritoryId): TerritoryId | undefined => scenario.index.subTerritories.get(subTerritoryId)?.territoryId;
-  const place = (territoryId: TerritoryId | undefined): Pick<Privacy, "territoryId"> => (territoryId === undefined ? {} : { territoryId });
   switch (outcome.kind) {
     case "income":
-      return { factionIds: [outcome.factionId] };
+      return { factionIds: [outcome.factionId], scope: "holders" };
     case "build-queued":
-      return { factionIds: [outcome.order.factionId], ...place(at(outcome.order.subTerritoryId)) };
+      return located([outcome.order.factionId], at(outcome.order.subTerritoryId));
     case "build-progressed":
     case "build-refunded":
-      return { factionIds: [outcome.factionId], ...place(at(outcome.subTerritoryId)) };
+      return located([outcome.factionId], at(outcome.subTerritoryId));
     case "build-forfeited":
-      return { factionIds: [outcome.previousHolder, outcome.newHolder], ...place(at(outcome.subTerritoryId)) };
+      return located([outcome.previousHolder, outcome.newHolder], at(outcome.subTerritoryId));
     case "training-started":
-      return { factionIds: [outcome.order.factionId], territoryId: outcome.order.territoryId };
+      return located([outcome.order.factionId], outcome.order.territoryId);
     case "training-paused":
     case "training-refunded":
-      return { factionIds: [outcome.factionId], territoryId: outcome.territoryId };
+      return located([outcome.factionId], outcome.territoryId);
     case "replenish-applied":
     case "replenish-cancelled":
-      return { factionIds: [outcome.order.factionId], ...place(state.units[outcome.order.unitId]?.territoryId) };
     case "recon":
-      return { factionIds: [outcome.order.factionId] };
-    default:
+    case "grounded":
+    case "rejected-order":
+      // The order's own rule (CT-53): a grounded or refused order is as private as the order.
+      return orderPrivacy(scenario, state, outcome.order);
+    case "interception":
+      // A shot-down recon names the territory it flew over: only the fighters and the fliers see it.
+      return outcome.reconFactionIds === undefined ? undefined : { factionIds: [outcome.factionId, ...outcome.reconFactionIds], scope: "owner" };
+    // Public: on the board, or every side's to see (CT-46). Listed one by one, so a new kind
+    // cannot be added without deciding who sees it.
+    case "air-support":
+    case "aircraft-lost":
+    case "aircraft-rebased":
+    case "battle":
+    case "bounced-move":
+    case "build-completed":
+    case "disbanded-move":
+    case "fatigue":
+    case "frostbite":
+    case "general-died":
+    case "general-moved":
+    case "general-sacked":
+    case "invalid-order":
+    case "move-held-back":
+    case "move-intercepted":
+    case "move-transit":
+    case "no-move":
+    case "path-surrender":
+    case "raid":
+    case "rail-damaged":
+    case "rallied":
+    case "recovered":
+    case "reinforcement-arrived":
+    case "replacement-arrived":
+    case "replacement-due":
+    case "successful-move":
+    case "time-ran-out":
+    case "training-completed":
+    case "weather-rolled":
+    case "withdrew":
       return undefined;
+    default: {
+      const unknown: never = outcome;
+      throw new Error(`No privacy rule for outcome ${JSON.stringify(unknown)}.`);
+    }
+  }
+}
+
+/** Whether a viewer may see data with this privacy, given the territories its recon reveals now. */
+function opens(scenario: Scenario, state: GameState, privacy: Privacy | undefined, viewer: FactionId | undefined, revealed: readonly TerritoryId[]): boolean {
+  if (privacy === undefined || (viewer !== undefined && privacy.factionIds.includes(viewer))) return true;
+  switch (privacy.scope) {
+    case "owner":
+      return false;
+    case "territory":
+      return revealed.includes(privacy.territoryId);
+    case "holders":
+      return revealed.some((territoryId) => holdersOf(scenario, state, territoryId).some((holder) => privacy.factionIds.includes(holder)));
   }
 }
 
 /**
  * $6, U4: the outcomes one faction may see. Outcomes carrying another faction's private data
- * (balances, income, queued builds, training, replenishment, recon results) are left out unless
- * the viewer's recon reveals that territory, or, for faction-wide data, a territory that faction
- * holds. With no viewer only public outcomes are left. Every Milestone 2 outcome is public.
+ * (balances, income, queued builds, training, replenishment) are left out unless the viewer's
+ * recon reveals that territory, or, for income, a territory that faction holds. Recon results,
+ * grounded recon included, reach only their flier. With no viewer only public outcomes are
+ * left. Every Milestone 2 outcome is public.
  */
 export function outcomesFor(scenario: Scenario, state: GameState, outcomes: readonly TurnOutcome[], viewer: FactionId | undefined): readonly TurnOutcome[] {
   const revealed = activeReveals(state, viewer).map((reveal) => reveal.territoryId);
-  return outcomes.filter((outcome) => {
-    const privacy = privacyOf(scenario, state, outcome);
-    if (privacy === undefined || (viewer !== undefined && privacy.factionIds.includes(viewer))) return true;
-    return privacy.territoryId === undefined
-      ? revealed.some((territoryId) => holdersOf(scenario, state, territoryId).some((holder) => privacy.factionIds.includes(holder)))
-      : revealed.includes(privacy.territoryId);
-  });
+  return outcomes.filter((outcome) => opens(scenario, state, privacyOf(scenario, state, outcome), viewer, revealed));
 }
 
 /** Whose private plans an order carries: purchases, replenishment and recon. Moves and visible actions are public. */
 function orderPrivacy(scenario: Scenario, state: GameState, order: Order): Privacy | undefined {
+  if (isPublicOrder(order)) return undefined;
   const factionIds = [order.factionId];
   switch (order.kind) {
     case "recruit":
-      return { factionIds, territoryId: order.territoryId };
-    case "build": {
-      const territoryId = scenario.index.subTerritories.get(order.subTerritoryId)?.territoryId;
-      return { factionIds, ...(territoryId === undefined ? {} : { territoryId }) };
-    }
-    case "replenish": {
-      const territoryId = state.units[order.unitId]?.territoryId;
-      return { factionIds, ...(territoryId === undefined ? {} : { territoryId }) };
-    }
-    case "air-mission":
-      return order.mission.kind === "recon" ? { factionIds } : undefined;
+      return located(factionIds, order.territoryId);
+    case "build":
+      return located(factionIds, scenario.index.subTerritories.get(order.subTerritoryId)?.territoryId);
+    case "replenish":
+      // m6: a unit that died this turn has no place left, so its Replenish stays its owner's.
+      return located(factionIds, state.units[order.unitId]?.territoryId);
     default:
-      return undefined;
+      // Recon: its target is the flier's alone, whatever the viewer's own recon reveals.
+      return { factionIds, scope: "owner" };
+  }
+}
+
+/**
+ * $6, T6: whether every other faction sees this order once the turn is revealed: moves and
+ * visible actions (withdraw, sack, raid, interception and support), not purchases,
+ * replenishment or recon. Hold counts read only public orders, so hidden ones never show.
+ */
+export function isPublicOrder(order: Order): boolean {
+  switch (order.kind) {
+    case "recruit":
+    case "build":
+    case "replenish":
+      return false;
+    case "air-mission":
+      return order.mission.kind !== "recon";
+    default:
+      return true;
   }
 }
 
 /**
  * $6, U4: the submitted orders one faction may see once a turn is revealed (B13). Moves and
- * other visible actions stay; other factions' purchases, replenishment and recon stay hidden
- * unless the viewer's recon reveals that territory.
+ * other visible actions stay; other factions' purchases and replenishment stay hidden unless
+ * the viewer's recon reveals that territory, and their recon stays hidden.
  */
 export function ordersFor(scenario: Scenario, state: GameState, orders: readonly Order[], viewer: FactionId | undefined): readonly Order[] {
   const revealed = activeReveals(state, viewer).map((reveal) => reveal.territoryId);
-  return orders.filter((order) => {
-    const privacy = orderPrivacy(scenario, state, order);
-    return privacy === undefined || order.factionId === viewer || (privacy.territoryId !== undefined && revealed.includes(privacy.territoryId));
-  });
+  return orders.filter((order) => opens(scenario, state, orderPrivacy(scenario, state, order), viewer, revealed));
+}
+
+/** U4: whether the viewer's recon reveals this territory now (a viewer's state from `viewFor` keeps only its own reveals). */
+export function isRevealed(state: GameState, viewer: FactionId | undefined, territoryId: TerritoryId): boolean {
+  return activeReveals(state, viewer).some((reveal) => reveal.territoryId === territoryId);
 }
 
 /** The factions holding any part of a territory: its controller, or its sub-territories' holders. */

@@ -308,6 +308,9 @@
                   "victoryAlarm": {
                     "type": "object",
                     "properties": {
+                      "critical": {
+                        "type": "number"
+                      },
                       "perStep": {
                         "type": "number"
                       },
@@ -318,8 +321,29 @@
                       }
                     },
                     "required": [
+                      "critical",
                       "perStep",
                       "steps"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "withdraw": {
+                    "type": "object",
+                    "properties": {
+                      "hopelessTakeChance": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      },
+                      "lastStandTakeChance": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      }
+                    },
+                    "required": [
+                      "hopelessTakeChance",
+                      "lastStandTakeChance"
                     ],
                     "additionalProperties": false
                   },
@@ -379,7 +403,8 @@
                   "computer",
                   "offensive",
                   "stakes",
-                  "victoryAlarm"
+                  "victoryAlarm",
+                  "withdraw"
                 ],
                 "additionalProperties": false
               },
@@ -1166,6 +1191,9 @@
                   "victoryAlarm": {
                     "type": "object",
                     "properties": {
+                      "critical": {
+                        "type": "number"
+                      },
                       "perStep": {
                         "type": "number"
                       },
@@ -1176,8 +1204,29 @@
                       }
                     },
                     "required": [
+                      "critical",
                       "perStep",
                       "steps"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "withdraw": {
+                    "type": "object",
+                    "properties": {
+                      "hopelessTakeChance": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      },
+                      "lastStandTakeChance": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      }
+                    },
+                    "required": [
+                      "hopelessTakeChance",
+                      "lastStandTakeChance"
                     ],
                     "additionalProperties": false
                   },
@@ -1237,7 +1286,8 @@
                   "computer",
                   "offensive",
                   "stakes",
-                  "victoryAlarm"
+                  "victoryAlarm",
+                  "withdraw"
                 ],
                 "additionalProperties": false
               },

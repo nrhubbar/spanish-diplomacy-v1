@@ -1,12 +1,13 @@
 import { hookedOrderVerdict } from "../hooks";
 import { isNeighbor, neighborsOf } from "../lookup";
 import type { FactionId, GameState, MoveLeg, MoveOrder, Scenario, SubTerritoryId, TerritoryId, UnitId } from "../types";
+import { hasFighter } from "../units/fighting";
 import { armyAllowance, fitsAllowance, stepCost, transportOf } from "./allowance";
 import {
   connectionBetween,
   connectionKey,
+  departurePort,
   enemyArmyIn,
-  friendlyPort,
   isFriendlyGround,
   landingAt,
   landNeighbors,
@@ -29,7 +30,9 @@ import {
  * - `rail`: a ride from the territory's capital to another capital in friendly ground (M3).
  * - `step-rail`: one step into friendly ground, then a ride from its capital (M4).
  * - `rail-step`: a ride, then one step that may attack (M4).
- * - `sea`: one sea leg from a friendly port, landing in a friendly port or assaulting the coast (M5).
+ * - `sea`: one sea leg from the lane's port at the origin end, which the faction holds, landing
+ *   in the lane's port at the other end when the faction holds it, else assaulting it (M5,
+ *   Q-CITY-7: each sea connection's `entry` pair names its ports).
  */
 export const routeShapes = ["step", "sea", "rail", "march", "step-rail", "rail-step"] as const;
 export type RouteShape = (typeof routeShapes)[number];
@@ -62,7 +65,7 @@ export interface MoveRoute {
   /** Land and sea steps; rail legs are not steps (M1). */
   readonly steps: number;
   readonly to: TerritoryId;
-  /** M2: territories the route stops in before its last leg, where an enemy arrival stops it. */
+  /** M2: territories the route passes before its destination (leg ends and the territories a train runs through), where an enemy arrival stops it. */
   readonly transit: readonly TerritoryId[];
 }
 
@@ -137,6 +140,12 @@ export function describeRoute(
       const ride = rides(at).get(leg.to);
       if (ride === undefined) return { ok: false, reason: "No rail line your side holds reaches that capital this turn." };
       rail = ride;
+      // M2, Q-MR-16: the territories the train passes are on the way too; an enemy entering one stops it there.
+      for (const passed of ride.through) {
+        if (visited.has(passed)) return { ok: false, reason: "A route may not enter the same territory twice." };
+        visited.add(passed);
+        transit.push(passed);
+      }
     } else if (leg.kind === "land") {
       if (connectionBetween(scenario, at, leg.to, "land") === undefined) return { ok: false, reason: "Destination is not connected to the unit's territory." };
       cost += stepCost(scenario, at, leg.to, allMobile);
@@ -145,10 +154,10 @@ export function describeRoute(
       if (entry !== undefined) rough.push(entry);
     } else {
       if (connectionBetween(scenario, at, leg.to, "sea") === undefined) return { ok: false, reason: "No sea lane joins those territories." };
-      const departure = friendlyPort(scenario, state, factionId, at);
-      if (departure === undefined) return { ok: false, reason: "An army can sail only from a port its side holds." };
+      const departure = departurePort(scenario, state, factionId, at, leg.to);
+      if (departure === undefined) return { ok: false, reason: "An army can sail only from the lane's port, and your side must hold it." };
       if (seaClosed(scenario, state, at, leg.to)) return { ok: false, reason: "The sea is closed by winter storms this turn." };
-      const landing = landingAt(scenario, state, factionId, leg.to);
+      const landing = landingAt(scenario, state, factionId, at, leg.to);
       sea = landing.kind === "port"
         ? { departure: departure.subTerritoryId, kind: "port", level: landing.level, port: landing.subTerritoryId }
         : { departure: departure.subTerritoryId, kind: "amphibious" };
@@ -186,7 +195,8 @@ export function describeRoute(
 export interface RouteUsage {
   readonly amphibious: ReadonlyMap<string, ReadonlySet<string>>;
   readonly departures: ReadonlyMap<SubTerritoryId, ReadonlySet<string>>;
-  readonly landings: ReadonlyMap<TerritoryId, ReadonlySet<string>>;
+  /** Port landings by landing port. */
+  readonly landings: ReadonlyMap<SubTerritoryId, ReadonlySet<string>>;
 }
 
 export const noUsage: RouteUsage = { amphibious: new Map(), departures: new Map(), landings: new Map() };
@@ -197,11 +207,11 @@ function addTo<Key>(map: Map<Key, Set<string>>, key: Key, army: string): void {
   map.set(key, set);
 }
 
-/** The capacity each route takes: a rail departure at its boarding capital, a port landing, or an amphibious lane. */
-export function routeClaims(route: MoveRoute): { readonly amphibious?: string; readonly departure?: SubTerritoryId; readonly landing?: TerritoryId } {
+/** The capacity each route takes: a rail departure at its boarding capital, a landing in a port, or an amphibious lane. */
+export function routeClaims(route: MoveRoute): { readonly amphibious?: string; readonly departure?: SubTerritoryId; readonly landing?: SubTerritoryId } {
   return {
     ...(route.rail === undefined ? {} : { departure: route.rail.boarding }),
-    ...(route.sea?.kind === "port" ? { landing: route.to } : {}),
+    ...(route.sea?.kind === "port" && route.sea.port !== undefined ? { landing: route.sea.port } : {}),
     ...(route.sea?.kind === "amphibious" ? { amphibious: connectionKey(route.staging, route.to) } : {})
   };
 }
@@ -210,7 +220,7 @@ export function routeClaims(route: MoveRoute): { readonly amphibious?: string; r
 export function usageOf(routes: readonly { readonly army: string; readonly route: MoveRoute }[]): RouteUsage {
   const amphibious = new Map<string, Set<string>>();
   const departures = new Map<SubTerritoryId, Set<string>>();
-  const landings = new Map<TerritoryId, Set<string>>();
+  const landings = new Map<SubTerritoryId, Set<string>>();
   for (const { army, route } of routes) {
     const claims = routeClaims(route);
     if (claims.departure !== undefined) addTo(departures, claims.departure, army);
@@ -281,10 +291,13 @@ export function moveRoutes(
   const found = new Map<TerritoryId, MoveRoute>();
   // M23: a demoralized unit cannot attack, so it may not enter where another faction stands.
   const demoralized = unitIds.some((unitId) => state.units[unitId]?.morale.demoralized === true);
+  // D27.1: units that cannot fight only reinforce their own side (M11), as step 1 holds them back otherwise.
+  const fighterless = unitIds.length > 0 && !hasFighter(scenario, state.raised, unitIds);
   const offer = (legs: readonly MoveLeg[]): void => {
     const to = legs[legs.length - 1]?.to;
     if (to === undefined || to === from || found.has(to)) return;
     if (demoralized && enemyArmyIn(state, factionId, to)) return;
+    if (fighterless && !reinforces(state, factionId, to, ordered)) return;
     // C1: a module may refuse the move outright (no move leaves contested ground, `orderVerdict`).
     const [probe] = unitIds;
     if (probe !== undefined && hookedOrderVerdict({ order: { factionId, from, kind: "move", legs, to, unitId: probe }, scenario, state })?.ok === false) return;
@@ -305,6 +318,13 @@ export function moveRoutes(
     for (const next of landNeighbors(scenario, end)) offer([{ kind: "rail", to: end }, { kind: "land", to: next }]);
   }
   return found;
+}
+
+/** M11: a move into ground the faction controls, or where its units that are not moving stand, is a reinforcement. */
+function reinforces(state: GameState, factionId: FactionId, to: TerritoryId, moving: ReadonlySet<UnitId>): boolean {
+  const control = state.control[to];
+  return (control?.kind === "controlled" && control.factionId === factionId)
+    || Object.values(state.units).some((unit) => unit.territoryId === to && unit.factionId === factionId && !moving.has(unit.id));
 }
 
 /** M1, M2: land paths of 2 up to `allowance` steps through friendly ground, shortest first, in scenario order. */

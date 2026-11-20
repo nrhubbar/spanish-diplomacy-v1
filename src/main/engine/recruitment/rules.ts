@@ -13,6 +13,7 @@ import type {
   Scenario,
   SubTerritoryId,
   TerritoryId,
+  TrainingItem,
   UnitId,
   UnitState,
   UnitTypeDefinition,
@@ -121,24 +122,45 @@ export function validateRecruitOrder(scenario: Scenario, state: GameState, order
 // R6: recruited units' ids and definitions. ---------------------------------------------------
 
 const raisedPrefix = "r";
+const trainingPrefix = "t";
 const raisedSeparator = "_";
 
 /**
  * R6: a recruited unit's id: `r_<faction>_<type>_<serial>`, where the serial counts the
- * faction's units of that type raised or in training. Scenario ids are kebab-case, so the
- * underscore never occurs in them and the id parses back unambiguously.
+ * faction's units of that type raised so far. It is given when the unit appears (m7), so a
+ * new unit's number never tells another faction how many are still in training. Scenario ids
+ * are kebab-case, so the underscore never occurs in them and the id parses back unambiguously.
  */
 export function raisedUnitId(factionId: FactionId, typeId: UnitTypeId, serial: number): UnitId {
   return [raisedPrefix, factionId, typeId, String(serial)].join(raisedSeparator) as UnitId;
 }
 
-/** The next serial for a faction's type: one past every serial already raised or in training. */
-export function nextRaisedSerial(state: Pick<GameState, "raised" | "training">, factionId: FactionId, typeId: UnitTypeId): number {
-  const ids = [...Object.keys(state.raised), ...state.training.map((item) => item.unitId)];
-  return ids.reduce((max, id) => {
+/** The next serial for a faction's type: one past every serial already raised. */
+export function nextRaisedSerial(raised: GameState["raised"], factionId: FactionId, typeId: UnitTypeId): number {
+  return Object.keys(raised).reduce((max, id) => {
     const parsed = parseRaisedId(id as UnitId);
     return parsed !== undefined && parsed.factionId === factionId && parsed.typeId === typeId ? Math.max(max, parsed.serial) : max;
   }, 0) + 1;
+}
+
+/**
+ * R6, m7: a unit in training has its own id, `t_<faction>_<type>_<territory>_<serial>`, numbered
+ * among the faction's units of that type training in that territory only, so a recon of one
+ * territory learns nothing of the others. It gets its `r_` id when training completes.
+ */
+export function trainingUnitId(training: readonly TrainingItem[], factionId: FactionId, typeId: UnitTypeId, territoryId: TerritoryId): UnitId {
+  const serial = training.reduce((max, item) => {
+    const parsed = parseTrainingId(item.unitId);
+    return parsed !== undefined && item.factionId === factionId && item.typeId === typeId && item.territoryId === territoryId ? Math.max(max, parsed) : max;
+  }, 0) + 1;
+  return [trainingPrefix, factionId, typeId, territoryId, String(serial)].join(raisedSeparator) as UnitId;
+}
+
+function parseTrainingId(id: UnitId): number | undefined {
+  const parts = id.split(raisedSeparator);
+  if (parts.length !== 5 || parts[0] !== trainingPrefix) return undefined;
+  const serial = Number(parts[4]);
+  return Number.isInteger(serial) && serial >= 1 ? serial : undefined;
 }
 
 function parseRaisedId(id: UnitId): { readonly factionId: FactionId; readonly serial: number; readonly typeId: UnitTypeId } | undefined {
@@ -152,10 +174,11 @@ function parseRaisedId(id: UnitId): { readonly factionId: FactionId; readonly se
 /**
  * R6: the definition of a recruited unit, derived from its id alone: the type's name and
  * establishment, numbered by its serial. `GameState.raised` records the same definition; this
- * lets every lookup that has only the scenario name the unit. Undefined for other ids.
+ * lets every lookup that has only the scenario name the unit. A unit still in training (m7)
+ * has no number yet: it reads "<type> (new)". Undefined for other ids.
  */
 export function raisedDefinition(scenario: Scenario, id: UnitId): RaisedUnitDefinition | undefined {
-  const parsed = parseRaisedId(id);
+  const parsed = parseRaisedId(id) ?? trainingParts(id);
   if (parsed === undefined || !scenario.index.factions.has(parsed.factionId)) return undefined;
   const type = scenario.index.unitTypes.get(parsed.typeId);
   if (type?.recruit === undefined) return undefined;
@@ -163,9 +186,15 @@ export function raisedDefinition(scenario: Scenario, id: UnitId): RaisedUnitDefi
     factionId: parsed.factionId,
     fullStrength: type.recruit.establishment,
     id,
-    name: `${type.name} No. ${String(parsed.serial)}`,
+    name: parsed.serial === undefined ? `${type.name} (new)` : `${type.name} No. ${String(parsed.serial)}`,
     type: type.id
   };
+}
+
+function trainingParts(id: UnitId): { readonly factionId: FactionId; readonly serial?: undefined; readonly typeId: UnitTypeId } | undefined {
+  if (parseTrainingId(id) === undefined) return undefined;
+  const parts = id.split(raisedSeparator);
+  return { factionId: parts[1] as FactionId, typeId: parts[2] as UnitTypeId };
 }
 
 /**

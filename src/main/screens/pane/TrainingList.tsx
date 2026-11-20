@@ -3,16 +3,18 @@ import { raisedDefinition } from "../../engine/recruitment/rules";
 import type { TrainingItem } from "../../engine/types";
 import { glyphs } from "../../presentation/glyphs";
 import { menShort, trainingStatus, turnsLabel } from "../../presentation/recruitment";
+import { factionName } from "../../presentation/text";
 import type { TerritoryTabProps } from "./TerritoryTabs";
 
 /**
- * X7 (Q-UX-13): the player's units in training in this territory, drawn dashed under the Units
- * tab: those already training (with their time left, or paused in contested ground, C8) and
- * those in this turn's Recruit basket.
+ * X7 (Q-UX-13): the units in training in this territory, drawn dashed under the Units tab:
+ * those already training (with their time left, or paused in contested ground, C8) and those
+ * in this turn's Recruit basket. The state is the viewer's (`viewFor`), so other factions'
+ * training shows only where the viewer's recon reveals it (U4), marked with their faction.
  */
 export function TrainingList({ scenario, session, territoryId }: TerritoryTabProps): JSX.Element | null {
   const headingId = useId();
-  const training = session.game.state.training.filter((item: TrainingItem) => item.factionId === session.factionId && item.territoryId === territoryId);
+  const training = session.game.state.training.filter((item: TrainingItem) => item.territoryId === territoryId);
   const basket = (session.draft.recruits ?? []).filter((order) => order.territoryId === territoryId);
   if (training.length === 0 && basket.length === 0) return null;
   return (
@@ -23,7 +25,10 @@ export function TrainingList({ scenario, session, territoryId }: TerritoryTabPro
           const definition = raisedDefinition(scenario, item.unitId);
           return (
             <li className="training-unit" data-paused={item.paused} key={item.unitId}>
-              <span className="formation-name">{definition?.name ?? item.unitId}</span>
+              <span className="formation-name">
+                {definition?.name ?? item.unitId}
+                {item.factionId === session.factionId ? null : ` (${factionName(scenario, item.factionId)}, recon)`}
+              </span>
               <span className="formation-meta">{`${menShort(definition?.fullStrength ?? 0)} ${glyphs.dot} ${trainingStatus(item)}`}</span>
             </li>
           );

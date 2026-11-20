@@ -4,6 +4,7 @@
  */
 import { unitKindIn } from "../main/engine/air/pieces";
 import { initialGameState } from "../main/engine/resolution";
+import { canFight } from "../main/engine/units/fighting";
 import type { FactionId, Scenario, ScenarioId, TurnOutcome, TurnResolutionResult, UnitId } from "../main/engine/types";
 import { isMoveOrder } from "../main/engine/types/orders";
 import { builtInSources } from "../main/scenarios/builtInSources";
@@ -116,10 +117,11 @@ export function objectivesOf(scenario: Scenario): ReadonlyMap<string, ReadonlySe
 /**
  * Whether a unit can hold ground, for S3. Aircraft cannot (D17): they never fight a ground battle
  * and rebase or die when their airfield's territory falls, so one parked in an objective does not
- * hold it. Ground units and generals (who stand with their army under the d20 rules) can.
+ * hold it. Nor can a unit that cannot fight (D27.1, `canFight`): a lone general or truck neither
+ * takes nor keeps ground, so it does not hold an objective either.
  */
 export function holdsGround(scenario: Scenario, state: PlayedTurn["before"], unitId: string): boolean {
-  return unitKindIn(scenario, state.raised, unitId as UnitId) !== "air";
+  return unitKindIn(scenario, state.raised, unitId as UnitId) !== "air" && canFight(scenario, state.raised, unitId as UnitId);
 }
 
 /** Who holds a territory in a state, as a comparable key. Territory level only: never a sub-territory or a city. */
