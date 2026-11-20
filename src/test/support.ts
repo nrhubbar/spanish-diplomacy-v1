@@ -49,11 +49,21 @@ export function onD6Dice(scenario: Scenario): Scenario {
   };
 }
 
-/** Registry with every shipped package plus test fixtures; Spain is pinned to the d6 table (`onD6Dice`). */
+/**
+ * Spain without its starting aircraft and generals (m3r1-air-generals): the Milestone 2 rule,
+ * report and UI tests count Spain's ground armies, so they keep the Milestone 2 board.
+ */
+export function groundForcesOnly(scenario: Scenario): Scenario {
+  const ground = (unit: UnitDefinition): boolean => scenario.index.unitTypes.get(unit.type)?.kind === "ground";
+  const units = scenario.units.filter(ground);
+  return { ...scenario, index: { ...scenario.index, units: new Map(units.map((unit) => [unit.id, unit])) }, units };
+}
+
+/** Registry with every shipped package plus test fixtures; Spain is pinned to the d6 table (`onD6Dice`) and its ground forces (`groundForcesOnly`). */
 export function testRegistry(): ScenarioRegistry {
   if (sharedRegistry === undefined) {
     const registry = shippedRegistry();
-    const pinned = { ...registry.require(spainId), scenario: onD6Dice(registry.require(spainId).scenario) };
+    const pinned = { ...registry.require(spainId), scenario: groundForcesOnly(onD6Dice(registry.require(spainId).scenario)) };
     sharedRegistry = { ...registry, list: () => registry.list(), loadAssets: (id) => registry.loadAssets(id), peekAssets: (id) => registry.peekAssets(id), require: (id) => (id === spainId ? pinned : registry.require(id)) };
   }
   return sharedRegistry;
@@ -62,6 +72,11 @@ export function testRegistry(): ScenarioRegistry {
 /** Spain on the d6 table, for the Milestone 2 rule tests. */
 export function spain(): Scenario {
   return testRegistry().require(spainId).scenario;
+}
+
+/** Spain on the d6 table with its starting aircraft and generals (m3r1-air-generals tests). */
+export function spainWithAir(): Scenario {
+  return onD6Dice(shippedRegistry().require(spainId).scenario);
 }
 
 /** Spain as shipped, on the d20 (D1-D8). */

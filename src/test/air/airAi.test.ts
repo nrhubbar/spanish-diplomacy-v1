@@ -10,14 +10,14 @@ import { seededRandom } from "../../main/engine/random";
 import { initialGameState } from "../../main/engine/resolution";
 import type { GameState, Order, UnitId } from "../../main/engine/types";
 import { validateSubmission } from "../../main/engine/validation";
-import { faction, move, spain, territory, unit } from "../support";
+import { faction, move, spainWithAir, territory, unit } from "../support";
 
 function context(state: GameState, factionId: string, planned: readonly Order[] = []): PlanningContext {
-  return { factionId: faction(factionId), memory: {}, planned, random: seededRandom(1), scenario: spain(), state };
+  return { factionId: faction(factionId), memory: {}, planned, random: seededRandom(1), scenario: spainWithAir(), state };
 }
 
 describe("the computer player's air missions (H5)", () => {
-  const state = initialGameState(spain());
+  const state = initialGameState(spainWithAir());
 
   it("flies every aircraft that can: bombers raid, fighters intercept, recon looks at the enemy", () => {
     const orders = planAirMissions(context(state, "republic"));
@@ -35,15 +35,15 @@ describe("the computer player's air missions (H5)", () => {
 
   it("gives orders the engine accepts, together with every other planner's", () => {
     for (const id of ["republic", "north", "south"]) {
-      const submission = generateComputerSubmission(spain(), state, faction(id), seededRandom(2));
-      expect(validateSubmission(spain(), state, faction(id), submission)).toEqual({ ok: true });
+      const submission = generateComputerSubmission(spainWithAir(), state, faction(id), seededRandom(2));
+      expect(validateSubmission(spainWithAir(), state, faction(id), submission)).toEqual({ ok: true });
       expect(submission.orders.some((order) => order.kind === "air-mission")).toBe(true);
     }
   });
 });
 
 describe("the computer player's generals (H5)", () => {
-  const scenario = spain();
+  const scenario = spainWithAir();
   const state = initialGameState(scenario);
 
   it("sends a general with the biggest attack leaving his territory", () => {
@@ -77,7 +77,7 @@ describe("the computer player's generals (H5)", () => {
 
 describe("the computer player's aircraft and anti-air recruits (H5, U1)", () => {
   it("buys anti-air where enemy bombers reach, and an aircraft when it has too few", () => {
-    const scenario = spain();
+    const scenario = spainWithAir();
     const state = initialGameState(scenario);
     const open = scenario.unitTypes.filter((type) => type.air !== undefined || type.effects.some((effect) => effect.kind === "raid-defence"));
     // The North has one aircraft for twelve ground units, and Republican bombers reach Castilla y Leon.

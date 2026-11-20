@@ -6,7 +6,7 @@ import { estimateAttack } from "../../main/engine/combat";
 import { requireUnitDefinition } from "../../main/engine/lookup";
 import { initialGameState, resolveTurn } from "../../main/engine/resolution";
 import type { GameState, GeneralId, Scenario, SackOrder, TurnOutcome, UnitId, UnitState } from "../../main/engine/types";
-import { faction, move, spain, territory, tiny, unit } from "../support";
+import { faction, move, spainWithAir, territory, tiny, unit } from "../support";
 
 const seed = 3;
 const sack = (factionId: string, unitId: string): SackOrder => ({ factionId: faction(factionId), kind: "sack", unitId: unit(unitId) });
@@ -23,7 +23,7 @@ function without(state: GameState, ...ids: readonly string[]): GameState {
 }
 
 describe("a general's command bonus and trait (D4, U5, U6)", () => {
-  const scenario = spain();
+  const scenario = spainWithAir();
   const state = initialGameState(scenario);
 
   it("gives the defender's best general his +1 and his trait", () => {
@@ -68,7 +68,7 @@ describe("a general's command bonus and trait (D4, U5, U6)", () => {
 });
 
 describe("sacking and replacements (U5, D7)", () => {
-  const scenario = spain();
+  const scenario = spainWithAir();
   const state = initialGameState(scenario);
 
   it("sacks for free and calls the next general on the roster, who arrives the next turn in the seat", () => {
@@ -98,7 +98,7 @@ describe("sacking and replacements (U5, D7)", () => {
 });
 
 describe("rallies and deaths (C5, U5, D7)", () => {
-  const scenario = spain();
+  const scenario = spainWithAir();
   const state = initialGameState(scenario);
 
   it("rallies the demoralized units of the army he moves with", () => {

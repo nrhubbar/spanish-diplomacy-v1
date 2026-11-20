@@ -18,7 +18,7 @@ import type {
   UnitTypeId
 } from "../../main/engine/types";
 import { validateMoveOrder } from "../../main/engine/validation";
-import { faction, move, spain, territory, unit } from "../support";
+import { faction, move, spainWithAir, territory, unit } from "../support";
 
 const seed = 7;
 
@@ -49,7 +49,7 @@ const kinds = (outcomes: readonly TurnOutcome[]): readonly string[] => outcomes.
 const raidOf = (outcomes: readonly TurnOutcome[]) => outcomes.find((outcome): outcome is Extract<TurnOutcome, { kind: "raid" }> => outcome.kind === "raid");
 
 describe("aircraft and their missions (U2)", () => {
-  const scenario = spain();
+  const scenario = spainWithAir();
   const state = initialGameState(scenario);
 
   it("reaches territories within its range, by land and sea connections", () => {
@@ -94,7 +94,7 @@ describe("aircraft and their missions (U2)", () => {
 });
 
 describe("raids (U3)", () => {
-  const scenario = spain();
+  const scenario = spainWithAir();
   const state = initialGameState(scenario);
   const die = pick(rollStream(seed, "raid", 1, 0), 20);
 
@@ -170,7 +170,7 @@ describe("raids (U3)", () => {
 });
 
 describe("recon, support, grounding and rebasing (U2, U4, D7)", () => {
-  const scenario = spain();
+  const scenario = spainWithAir();
   const state = initialGameState(scenario);
 
   it("reveals the target territory to the viewer until the next turn", () => {
