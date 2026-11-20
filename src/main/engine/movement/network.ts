@@ -24,6 +24,11 @@ export function unitTypeOf(scenario: Scenario, state: GameState, unitId: UnitId)
   return typeId === undefined ? undefined : scenario.index.unitTypes.get(typeId);
 }
 
+/** AG-3: a ground unit (an army), as the ground rules and the computer player's ground view see the board. */
+function isArmyUnit(scenario: Scenario, state: GameState, unitId: UnitId): boolean {
+  return (unitTypeOf(scenario, state, unitId)?.kind ?? "ground") === "ground";
+}
+
 /** The sub-territory ids of a territory, in scenario order (`partition/holders.ts`). */
 export function subTerritoriesOf(scenario: Scenario, territoryId: TerritoryId): readonly SubTerritoryId[] {
   return partitionSubTerritories(scenario, territoryId).map((sub) => sub.id);
@@ -117,8 +122,9 @@ export interface RailRide {
 
 /**
  * M3, D7: every territory an army in `from` can reach by rail this turn. It boards at `from`'s
- * capital, rides through rail sub-territories its faction holds, and leaves the train at another
- * territory's capital in friendly ground. The lowest level on the route sets the range in
+ * capital, rides through rail sub-territories its faction holds, in territories where no other
+ * faction's army stands (M2, Q-MR-16; contested ground with no enemy army may be passed), and
+ * leaves the train at another territory's capital in friendly ground. The lowest level on the route sets the range in
  * territory borders crossed (`railRangePerLevel` per level). For each level from the highest
  * down, a search over the sub-territories with at least that level finds the routes it allows;
  * the first level that reaches a territory gives its ride, so a ride always uses the best line.
@@ -157,9 +163,18 @@ function computeRailReach(scenario: Scenario, state: GameState, factionId: Facti
   const maxLevel = scenario.improvements?.rail.maxLevel ?? 3;
   if (boarding === undefined || perLevel <= 0 || holderOf(state, boarding) !== factionId) return { rides, stations: reached };
   const territoryOf = (id: SubTerritoryId): TerritoryId | undefined => scenario.index.subTerritories.get(id)?.territoryId;
+  // M2, Q-MR-16: a train runs only through territories where no other faction's army (ground
+  // units; aircraft at their bases and generals are not armies, AG-3) stands at the start of the turn.
+  const blocked = new Set<TerritoryId>();
+  for (const unit of Object.values(state.units)) {
+    if (unit.factionId !== factionId && unit.territoryId !== from && isArmyUnit(scenario, state, unit.id)) blocked.add(unit.territoryId);
+  }
   for (let level = Math.min(maxLevel, railLevel(state, boarding)); level >= 1; level -= 1) {
     const range = perLevel * level;
-    const usable = (id: SubTerritoryId): boolean => holderOf(state, id) === factionId && railLevel(state, id) >= level;
+    const usable = (id: SubTerritoryId): boolean => {
+      const territoryId = territoryOf(id);
+      return holderOf(state, id) === factionId && railLevel(state, id) >= level && (territoryId === undefined || !blocked.has(territoryId));
+    };
     // 0-1 breadth-first search: crossing a territory border costs 1, a station inside one costs 0.
     const distance = new Map<SubTerritoryId, number>([[boarding, 0]]);
     const previous = new Map<SubTerritoryId, SubTerritoryId>();
@@ -215,7 +230,7 @@ export function rideableNetwork(scenario: Scenario, state: GameState, factionId:
 
 /* ---------------------------------------------------------------- sea (M5) */
 
-/** M5: the faction's best port in a territory: the highest level among the sub-territories it holds. */
+/** M5: the faction's best port in a territory: the highest level among the sub-territories it holds (for connections that name no ports). */
 export function friendlyPort(scenario: Scenario, state: GameState, factionId: FactionId, territoryId: TerritoryId): { readonly level: number; readonly subTerritoryId: SubTerritoryId } | undefined {
   let best: { readonly level: number; readonly subTerritoryId: SubTerritoryId } | undefined;
   for (const id of subTerritoriesOf(scenario, territoryId)) {
@@ -236,11 +251,39 @@ export function seaClosed(scenario: Scenario, state: GameState, from: TerritoryI
   return isSeaRouteClosed(scenario, state, from, to);
 }
 
-/** M5: how a sea leg from `from` lands in `to`: in a friendly port, or as an amphibious assault. */
-export function landingAt(scenario: Scenario, state: GameState, factionId: FactionId, to: TerritoryId):
+/**
+ * M5, Q-CITY-7: the port a sea connection names at one end, its `entry` sub-territory there.
+ * Undefined when the connection names no entry (the faction's best port at that end serves then).
+ */
+export function seaEndPort(scenario: Scenario, from: TerritoryId, to: TerritoryId, end: TerritoryId): SubTerritoryId | undefined {
+  return end === to ? entrySubTerritory(scenario, from, to, "sea") : entrySubTerritory(scenario, to, from, "sea");
+}
+
+function heldPort(state: GameState, factionId: FactionId, subTerritoryId: SubTerritoryId): { readonly level: number; readonly subTerritoryId: SubTerritoryId } | undefined {
+  const sub = state.subTerritories[subTerritoryId];
+  return sub !== undefined && sub.holder === factionId && sub.port > 0 ? { level: sub.port, subTerritoryId } : undefined;
+}
+
+/**
+ * M5, Q-CITY-7: the port a sea leg from `from` to `to` sails from: the connection's port at the
+ * origin end, which the faction must hold. A connection without an `entry` pair sails from the
+ * faction's best port in the origin.
+ */
+export function departurePort(scenario: Scenario, state: GameState, factionId: FactionId, from: TerritoryId, to: TerritoryId): { readonly level: number; readonly subTerritoryId: SubTerritoryId } | undefined {
+  const named = seaEndPort(scenario, from, to, from);
+  return named === undefined ? friendlyPort(scenario, state, factionId, from) : heldPort(state, factionId, named);
+}
+
+/**
+ * M5, Q-CITY-7: how a sea leg from `from` lands in `to`: in the connection's port at that end
+ * when the faction holds it (a port landing), otherwise as an amphibious assault on it. A
+ * connection without an `entry` pair lands in the faction's best port there, if any.
+ */
+export function landingAt(scenario: Scenario, state: GameState, factionId: FactionId, from: TerritoryId, to: TerritoryId):
   | { readonly kind: "port"; readonly level: number; readonly subTerritoryId: SubTerritoryId }
   | { readonly kind: "amphibious" } {
-  const port = friendlyPort(scenario, state, factionId, to);
+  const named = seaEndPort(scenario, from, to, to);
+  const port = named === undefined ? friendlyPort(scenario, state, factionId, to) : heldPort(state, factionId, named);
   return port === undefined ? { kind: "amphibious" } : { kind: "port", ...port };
 }
 
