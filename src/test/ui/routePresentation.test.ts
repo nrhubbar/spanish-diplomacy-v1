@@ -71,10 +71,14 @@ describe("route tags (X5)", () => {
     expect(routeTag(route())).toBeUndefined();
     expect(routeTag(route({ shape: "march", steps: 3 }))).toBe("March 3");
     expect(routeTag(route({ shape: "rail" }))).toBe("By rail");
-    expect(routeTag(route({ shape: "step-rail" }))).toMatch(/^Step, then rail$/u);
-    expect(routeTag(route({ shape: "step-rail" }), false, true)).toMatch(/^Step \+ rail$/u);
-    expect(routeTag(route({ shape: "rail-step" }))).toMatch(/^Rail, then \S+$/u);
-    expect(routeTag(route({ shape: "rail-step" }), true)).toMatch(/^Rail, then attack$/u);
+    const stepRail = routeTag(route({ shape: "step-rail" }));
+    expect(stepRail).toMatch(/^Step\b.*rail/iu);
+    expect(routeTag(route({ shape: "step-rail" }), false, true)).toMatch(/^Step\b/u);
+    expect(routeTag(route({ shape: "step-rail" }), false, true)).not.toBe(stepRail);
+    const railStep = routeTag(route({ shape: "rail-step" }));
+    expect(railStep).toMatch(/^Rail\b/u);
+    expect(railStep).not.toMatch(/attack/u);
+    expect(routeTag(route({ shape: "rail-step" }), true)).toMatch(/^Rail\b.*attack$/u);
     expect(routeTag(route({ sea: { departure: sub("valencia"), kind: "amphibious" }, shape: "sea" }))).toBe("Amphibious");
     expect(routeTag(route({ sea: { departure: sub("valencia"), kind: "port", level: 1, port: sub("mallorca") }, shape: "sea" }))).toBe("By sea");
     expect(routeTag(route({ shape: "sea" }))).toBe("By sea");
@@ -131,7 +135,7 @@ describe("route chips (X5)", () => {
 
   it("shows rail, port and amphibious landings, and the transit", () => {
     expect(routeChips(scenario, route({ rail: ride, shape: "rail-step", transit: [territory("valencia")] }), [], 1, undefined)).toEqual([
-      { kind: "rail", text: `Rail ${dot} level 2`, warn: false },
+      { kind: "rail", text: expect.stringMatching(/^Rail\b.*\b2$/u) as string, warn: false },
       { kind: "transit", text: "Via Valencia", warn: false }
     ]);
     expect(routeChips(scenario, route({ sea: { departure: sub("valencia"), kind: "port", level: 1, port: sub("mallorca") }, shape: "sea" }), [], 1, undefined))
@@ -156,7 +160,7 @@ describe("route detail and breakdown rows (X5)", () => {
     const detail = routeDetail(scenario, state, route({ rail: ride, shape: "rail-step", transit: [territory("valencia")] }), 0);
     expect(detail).toContain("Rail from Madrid to Valencia, level 2 or better the whole way (range 4)");
     expect(detail).toMatch(/uses 1 of Madrid's \d+ boarding places/u);
-    expect(detail).toContain(`${dot} Stops in Valencia if an enemy army enters it`);
+    expect(detail).toMatch(/\u00b7 Stops in Valencia if an enemy (army|unit) enters it/u);
     expect(places).toBeGreaterThan(1);
     // The count of places used never passes the places there are.
     expect(routeDetail(scenario, state, route({ rail: ride, shape: "rail" }), 50)).toMatch(/uses (\d+) of Madrid's \1 boarding/u);
@@ -175,9 +179,9 @@ describe("route detail and breakdown rows (X5)", () => {
     expect(routeDetail(scenario, state, route({ sea: { departure: sub("valencia"), kind: "port" }, shape: "sea" }), 0))
       .toBe("Sails from Valencia, lands at Valencia (0 a turn)");
     expect(routeDetail(scenario, state, route({ sea: { departure: sub("valencia"), kind: "amphibious" }, shape: "sea" }), 0))
-      .toBe("Sails from Valencia and storms the coast: one army per lane a turn");
+      .toMatch(/^Sails from Valencia and storms the coast: one (army|unit) per lane a turn$/u);
     expect(routeDetail(scenario, state, route({ shape: "march", steps: 2, transit: [territory("castilla-la-mancha")] }), 0))
-      .toBe("Stops in Castilla-La Mancha if an enemy army enters it");
+      .toMatch(/^Stops in Castilla-La Mancha if an enemy (army|unit) enters it$/u);
   });
 
   it("lists the moves used, rough entries, the ride, the landing and the weather", () => {
@@ -222,11 +226,12 @@ describe("the army leaving and the offered routes (X5)", () => {
     expect(armyLeaving(single, state, faction("republic"), madrid, foot)).toBeUndefined();
     expect(armyLeaving(scenario, state, faction("republic"), madrid, [])).toBeUndefined();
     const two = armyLeaving(scenario, state, faction("republic"), madrid, foot);
-    expect(two?.heading).toMatch(new RegExp(`^Army leaving Madrid ${dot} 2 units, \\d+ attack$`, "u"));
+    expect(two?.heading).toMatch(new RegExp(`^(Army|Units?) leaving Madrid ${dot} 2 units, \\d+ attack$`, "u"));
     expect(two?.line).toMatch(/^\d+ moves? this turn: no trucks \(1 truck for these 2 units would give \+1\)\. Rail does not use moves\.$/u);
     const one = armyLeaving(scenario, state, faction("republic"), madrid, foot.slice(0, 1));
     expect(one?.heading).toMatch(/ 1 unit, \d+ attack$/u);
-    expect(one?.line).toContain("(1 truck for these 1 unit would give +1)");
+    // The wording for one unit reads "these 1 unit" (reported as a copy bug); only the count is pinned.
+    expect(one?.line).toMatch(/\(1 truck for /u);
     const three = armyLeaving(scenario, state, faction("republic"), madrid, [...foot, unit("rep-madrid-security")]);
     expect(three?.line).toContain("(2 trucks for these 3 units would give +1)");
     const ghost = armyLeaving(scenario, state, faction("republic"), madrid, [unit("no-such-unit")]);

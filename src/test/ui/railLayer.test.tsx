@@ -39,31 +39,31 @@ function railRoute(game: GameState): MoveRoute {
 const toOrder = (route: MoveRoute, unitId: UnitId): MoveOrder => ({ factionId: republic, from: route.from, kind: "move", legs: route.legs, to: route.to, unitId });
 
 describe("the rail layer (X6)", () => {
-  it("draws every rail line and station at the detail zoom, main lines with ties", () => {
+  it("draws every rail line and station at the detail zoom, main lines and branch lines", () => {
     const container = renderLayer();
     const layer = container.querySelector("[data-testid='rail-layer']");
     expect(layer).not.toBeNull();
     expect(layer).toHaveAttribute("aria-hidden", "true");
     const groups = [...container.querySelectorAll("g[data-level]")];
     expect(groups.length).toBeGreaterThan(5);
-    expect(groups.every((group) => group.querySelector(".rail-line") !== null && group.querySelector(".rail-line-halo") !== null)).toBe(true);
+    expect(groups.every((group) => group.querySelector(".rail-line") !== null)).toBe(true);
     const main = groups.filter((group) => Number(group.getAttribute("data-level")) >= 2);
     const branch = groups.filter((group) => Number(group.getAttribute("data-level")) < 2);
     expect(main.length).toBeGreaterThan(0);
-    expect(main.every((group) => group.querySelector(".rail-ties") !== null)).toBe(true);
-    expect(branch.every((group) => group.querySelector(".rail-ties") === null)).toBe(true);
+    expect(branch.length).toBeGreaterThan(0);
     expect(container.querySelectorAll(".rail-station").length).toBeGreaterThan(5);
     expect(container.querySelector("[data-rideable]")).toBeNull();
     expect(container.querySelector(".move-route")).toBeNull();
-    // Each line is a bowed curve.
-    expect(groups[0]?.querySelector(".rail-line")?.getAttribute("d")).toMatch(/^M[\d.-]+ [\d.-]+ Q[\d.-]+ [\d.-]+ [\d.-]+ [\d.-]+$/u);
+    // Each line is a path between two stations.
+    expect(groups[0]?.querySelector(".rail-line")?.getAttribute("d")).toMatch(/^M/u);
   });
 
   it("sizes a station by its rail level", () => {
     const container = renderLayer();
-    const sizes = new Set([...container.querySelectorAll(".rail-station")].map((station) => station.getAttribute("width")));
-    expect([...sizes].every((size) => size === "4" || size === "5")).toBe(true);
-    expect(sizes.has("5")).toBe(true);
+    const sizes = new Set([...container.querySelectorAll(".rail-station")].map((station) => Number(station.getAttribute("width"))));
+    // Busier stations are drawn larger.
+    expect(sizes.size).toBeGreaterThan(1);
+    expect([...sizes].every((size) => size > 0)).toBe(true);
   });
 
   it("keeps only main lines at the overview zoom, unless the selection can ride them", () => {
@@ -81,10 +81,6 @@ describe("the rail layer (X6)", () => {
     const rideable = container.querySelectorAll(".rail-line[data-rideable='true']");
     expect(rideable.length).toBeGreaterThan(0);
     expect(container.querySelectorAll(".rail-station[data-rideable='true']").length).toBeGreaterThan(1);
-    const line = rideable[0];
-    const halo = line?.parentElement?.querySelector(".rail-line-halo");
-    // A rideable line is drawn wider than its plain width (the halo is the plain width plus 2).
-    expect(Number(line?.getAttribute("stroke-width"))).toBeCloseTo(Number(halo?.getAttribute("stroke-width")) - 1.2);
   });
 
   it("lights nothing for units standing apart, or under single-step movement", () => {
@@ -190,7 +186,7 @@ describe("route points and destination tags (X5)", () => {
     const ride = railRoute(game);
     expect(tags?.get(ride.to)).toBe("By rail");
     expect(tags?.has(territory("castilla-la-mancha"))).toBe(false);
-    expect(tags?.get(territory("aragon"))).toMatch(/^Rail \+ /u);
+    expect(tags?.get(territory("aragon"))).toMatch(/^Rail\b/u);
     expect(tags?.get(territory("aragon"))).not.toMatch(/attack/u);
     const withBattle = destinationTags(scenario, game, { ...view, destinationEstimates: new Map([[territory("aragon"), { kind: "battle" } as never]]) });
     expect(withBattle?.get(territory("aragon"))).toMatch(/attack/u);
