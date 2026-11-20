@@ -44,8 +44,8 @@ export function OrderBuilder({ estimates, scenario, session }: BuilderProps & { 
       <section aria-label="Selected territory" className="pane-section">
         {choosingDestination ? (
           <div className="pane-callout" role="status">
-            <p>{`${draft.stage?.orderKind === "withdraw" ? "Withdrawing" : "Moving"} ${armies(draft.selectedUnitIds.length)} from ${territoryId === undefined ? "" : territoryName(scenario, territoryId)}. Choose a highlighted territory on the map.`}</p>
-            <button className="text-button" onClick={() => dispatch(cancelOrderStage())} ref={focusWhenShown} type="button">{draft.stage?.orderKind === "withdraw" ? "Cancel withdrawal" : "Cancel move"}</button>
+            <p>{`${draft.stage.orderKind === "withdraw" ? "Withdrawing" : "Moving"} ${armies(draft.selectedUnitIds.length)} from ${territoryId === undefined ? "" : territoryName(scenario, territoryId)}. Choose a highlighted territory on the map.`}</p>
+            <button className="text-button" onClick={() => dispatch(cancelOrderStage())} ref={focusWhenShown} type="button">{draft.stage.orderKind === "withdraw" ? "Cancel withdrawal" : "Cancel move"}</button>
           </div>
         ) : null}
         {choosingDestination && estimates.size > 0 ? <DestinationChoices estimates={estimates} scenario={scenario} /> : null}

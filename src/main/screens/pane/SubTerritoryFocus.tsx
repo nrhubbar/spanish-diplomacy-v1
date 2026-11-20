@@ -38,7 +38,7 @@ export function SubTerritoryFocus({ factionId, scenario, state, subTerritoryId }
 
   return (
     <div className="sub-territory-focus" data-sub-territory-id={sub.id}>
-      <button className="text-button sub-territory-back" onClick={() => dispatch(focusSubTerritory(undefined))} type="button">
+      <button aria-label={`Back to ${territory.name}`} className="text-button sub-territory-back" onClick={() => dispatch(focusSubTerritory(undefined))} type="button">
         {`${glyphs.back} ${territory.name}`}
       </button>
       <h3>

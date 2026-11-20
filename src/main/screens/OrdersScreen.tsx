@@ -25,9 +25,11 @@ function Orders({ scenario, session }: { readonly scenario: Scenario; readonly s
   const { draft, factionId, game } = session;
   const faction = requireFaction(scenario, factionId);
   const destinations = useMemo(() => selectedDestinations(scenario, session), [scenario, session]);
+  const withdrawing = draft.stage?.step === "choose-destination" && draft.stage.orderKind === "withdraw";
   const estimates = useMemo(
-    () => destinationEstimates(scenario, game.state, factionId, draft.selectedUnitIds, draft.stage?.step === "choose-destination" && draft.stage.orderKind === "withdraw" ? [] : destinations, draft.orders.filter(isMoveOrder)),
-    [destinations, draft.orders, draft.selectedUnitIds, factionId, game.state, scenario]
+    // C1: a Withdraw goes to ground the faction holds, so its destinations carry no odds.
+    () => destinationEstimates(scenario, game.state, factionId, draft.selectedUnitIds, withdrawing ? [] : destinations, draft.orders.filter(isMoveOrder)),
+    [destinations, draft.orders, draft.selectedUnitIds, factionId, game.state, scenario, withdrawing]
   );
   const view = useMemo<MapView>(() => ({
     changedTerritoryIds: [],
