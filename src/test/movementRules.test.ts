@@ -113,3 +113,48 @@ describe("the computer player recruits trucks (M-5, M1, H5)", () => {
     expect(trucks(supplied)).toEqual([]);
   });
 });
+
+describe("capacity and route failures (M-8, M3, M5)", () => {
+  const scenario = spainD20();
+  const sea = (to: string): MoveLeg => ({ kind: "sea", to: territory(to) });
+  // The Republic holds all of the islands, and Mallorca's port is down to level 1: one landing a turn.
+  const islands = (): GameState => {
+    const state = holders(withUnits(scenario, [["rep-durruti-column", "republic", "catalunya"], ["rep-covadonga-4", "republic", "valencia"]]), { ibiza: "republic", mallorca: "republic" });
+    const mallorca = state.subTerritories[sub("mallorca")];
+    if (mallorca === undefined) throw new Error("mallorca");
+    return { ...state, subTerritories: { ...state.subTerritories, [sub("mallorca")]: { ...mallorca, port: 1 } } };
+  };
+
+  it("lands one army a turn in a level-1 port, holding back the next with port-landings", () => {
+    const state = islands();
+    const orders = [routed("republic", "rep-durruti-column", "catalunya", [sea("islas-baleares")]), routed("republic", "rep-covadonga-4", "valencia", [sea("islas-baleares")])];
+    const result = resolveTurn(scenario, state, [{ factionId: faction("republic"), orders }], 1);
+    expect(result.finalState.units[unit("rep-durruti-column")]?.territoryId).toBe("islas-baleares");
+    expect(result.outcomes).toContainEqual(expect.objectContaining({ kind: "move-held-back", reason: "port-landings", unitIds: ["rep-covadonga-4"] }));
+    expect(result.finalState.units[unit("rep-covadonga-4")]?.territoryId).toBe("valencia");
+  });
+
+  it("offers no landing in a port already full with the faction's planned moves", () => {
+    const state = islands();
+    const planned = [routed("republic", "rep-durruti-column", "catalunya", [sea("islas-baleares")])];
+    expect(moveRoutes(scenario, state, faction("republic"), territory("valencia"), [unit("rep-covadonga-4")]).get(territory("islas-baleares"))?.sea?.kind).toBe("port");
+    expect(moveRoutes(scenario, state, faction("republic"), territory("valencia"), [unit("rep-covadonga-4")], planned).has(territory("islas-baleares"))).toBe(false);
+  });
+
+  it("refuses routes that re-enter a territory, ride where no line runs, sail with no lane, or end elsewhere", () => {
+    const state = withUnits(scenario, [["rep-wad-ras-1", "republic", "madrid"]]);
+    const from = territory("madrid");
+    const check = (legs: readonly MoveLeg[]) => {
+      const result = describeRoute(scenario, state, faction("republic"), from, legs);
+      return result.ok ? "ok" : result.reason;
+    };
+    expect(check([{ kind: "land", to: territory("castilla-la-mancha") }, { kind: "land", to: territory("madrid") }])).toBe("A route may not enter the same territory twice.");
+    expect(check([{ kind: "rail", to: territory("galicia") }])).toBe("No rail line your side holds reaches that capital this turn.");
+    expect(check([{ kind: "sea", to: territory("islas-baleares") }])).toBe("No sea lane joins those territories.");
+    expect(check([{ kind: "land", to: territory("catalunya") }])).toBe("Destination is not connected to the unit's territory.");
+    expect(check([])).toBe("That route is not one of the allowed shapes of move.");
+    expect(check([{ kind: "rail", to: territory("catalunya") }, { kind: "land", to: territory("castilla-la-mancha") }])).toBe("A route may not enter the same territory twice.");
+    const astray = { ...routed("republic", "rep-wad-ras-1", "madrid", [{ kind: "land", to: territory("castilla-la-mancha") }]), to: territory("aragon") };
+    expect(validateMoveOrder(scenario, state, astray)).toEqual({ ok: false, reason: "The route does not end at the destination." });
+  });
+});

@@ -154,3 +154,53 @@ describe("Withdraw and retreats across the sea (B3, T4, M5, P6)", () => {
     expect(validateWithdrawOrder(scenario, noPort, withdrawal("islas-baleares", "catalunya"))).toEqual({ ok: false, reason: contestedReasons.withdrawNoPath });
   });
 });
+
+describe("Withdraw refusals (M-7, C1, P6)", () => {
+  const scenario = spainD20();
+  const start = initialGameState(scenario);
+  const order = (factionId: string, unitId: string, from: string, to: string): WithdrawOrder => ({ factionId: faction(factionId), from: territory(from), kind: "withdraw", to: territory(to), unitId: unit(unitId) });
+
+  it.each([
+    ["an unknown unit", order("republic", "nobody", "andalucia", "murcia"), "Unknown unit."],
+    ["another faction's unit", order("republic", "south-granada-6", "andalucia", "murcia"), "Selected unit belongs to another player."],
+    ["a unit that is elsewhere", order("republic", "rep-vitoria-8", "extremadura", "castilla-la-mancha"), "Selected unit is no longer in that territory."],
+    ["an aircraft", order("south", "south-ju52-bombers", "andalucia", "ceuta"), "This unit cannot withdraw."],
+    ["ground that is not contested", order("republic", "rep-wad-ras-1", "madrid", "castilla-la-mancha"), contestedReasons.withdrawNotContested],
+    ["a territory that is not next door", order("republic", "rep-vitoria-8", "andalucia", "catalunya"), contestedReasons.withdrawTarget],
+    ["a neighbour not held whole", order("republic", "rep-vitoria-8", "andalucia", "extremadura"), contestedReasons.withdrawTarget],
+    ["a pocket with no way out", order("north", "north-milan-32", "asturias", "galicia"), contestedReasons.withdrawNoPath]
+  ] as const)("refuses %s", (_name, withdrawal, reason) => {
+    expect(validateWithdrawOrder(scenario, start, withdrawal)).toEqual({ ok: false, reason });
+  });
+
+  it("is not an order at all without the provinces module, which then leaves moves, retreats and works alone", async () => {
+    const { partitionCanDigIn, partitionOrderVerdict, partitionRetreatAllowed, partitionValidateWithdraw } = await import("../main/engine/partition/orders");
+    const { unavailableOrderReason } = await import("../main/engine/hooks");
+    const { spainM2 } = await import("./support");
+    const plain = spainM2();
+    const state = initialGameState(plain);
+    const withdrawal = order("republic", "rep-vitoria-8", "andalucia", "murcia");
+    expect(partitionValidateWithdraw({ order: withdrawal, scenario: plain, state })).toEqual({ ok: false, reason: unavailableOrderReason });
+    expect(partitionOrderVerdict({ order: move("republic", "rep-vitoria-8", "andalucia", "murcia"), scenario: plain, state })).toBeUndefined();
+    expect(partitionRetreatAllowed({ factionId: faction("republic"), from: territory("andalucia"), scenario: plain, state, to: territory("murcia") })).toBe(true);
+    expect(partitionCanDigIn(plain, state, territory("andalucia"))).toBe(true);
+    expect(partitionOrderVerdict({ order: withdrawal, scenario, state: start })).toBeUndefined();
+  });
+
+  it("falls back on territory control where a territory has no sub-territories", async () => {
+    const { holdsWhole } = await import("../main/engine/partition/holders");
+    const { hasPath } = await import("../main/engine/partition/paths");
+    const { tiny } = await import("./support");
+    const small = tiny();
+    const state = initialGameState(small);
+    const [first] = small.territories;
+    if (first === undefined) throw new Error("territory");
+    const control = state.control[first.id];
+    const contested: GameState = { ...state, control: { ...state.control, [first.id]: { factionIds: [faction("red"), faction("blue")], kind: "contested" } } };
+    expect(isContested(small, contested, first.id)).toBe(true);
+    expect(isContested(small, state, first.id)).toBe(false);
+    expect(holdsWhole(small, state, first.id, control?.kind === "controlled" ? control.factionId : faction("red"))).toBe(control?.kind === "controlled");
+    expect(holdsWhole(small, contested, first.id, faction("red"))).toBe(false);
+    expect(hasPath(small, state, faction("red"), first.id, first.id)).toBe(true);
+  });
+});
