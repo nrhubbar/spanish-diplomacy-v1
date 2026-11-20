@@ -284,3 +284,20 @@ A computer-player bug found during the merge is fixed too: `exposure` counted tr
 | without | 100% / 0% | 11% | 66% | 23% | 0 | 0 | 15 |
 
 S1 and S3 are met. H7 is missed: the Republic is at 9 to 11 percent of decided games. Reported to the owner, not tuned.
+
+**D32. All fix streams merged; the 1000-game reading; paused by the owner.**
+- **Merged:** `m3r1-fix-ui` (`65e36c0`) and `m3r1-fix-economy-recruit` (`abb0a37`, plus a test fix in `15663d1`).
+- **Unit tests:** all 1213 pass.
+- **Branch coverage:** 92.32 percent, against the 93 percent gate in `vitest.config.ts`. `m3r1-coverage` was adding tests (3 commits on its branch, not merged) when the owner asked to pause.
+
+**1000 seeds, 66 turns** (`build/sim/m3r1-final-1000`):
+
+| Blunders | Decided / freezes | Republic | North | South | S1 early wins | S3 abandonments | Median turns |
+|---|---|---|---|---|---|---|---|
+| with | 100% / 0% | 9.6% [7.9, 11.6] | 64.8% [61.8, 67.7] | 25.6% [23.0, 28.4] | 3 (0.3%) | 2 | 12 |
+| without | 100% / 0% | 10.3% [8.6, 12.3] | 64.5% [61.5, 67.4] | 25.2% [22.6, 28.0] | 1 (0.1%) | 1 | 12 |
+
+- **H7:** the freeze target is met. The share target is missed: the Republic wins about 10 percent of decided games.
+- **S1** is met.
+- **S3** has 1 to 2 abandonments in 1000 games, against a target of 0.
+- **Not yet done:** the baseline pass, `verify` with `CI=1`, the production smoke test, the timing tests on a quiet machine, the "Streams" summary and the rubric.
