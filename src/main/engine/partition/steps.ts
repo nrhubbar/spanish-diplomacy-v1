@@ -164,7 +164,7 @@ function pathSurrenders(scenario: Scenario, start: GameState, armies: Armies, se
       const control = start.control[to];
       return control?.kind === "controlled" && control.factionId === unit.factionId
         && !armiesIn(armies, to).some((other) => other.factionId !== unit.factionId)
-        && !hasPath(scenario, start.subTerritories, unit.factionId, from, to);
+        && !hasPath(scenario, start, unit.factionId, from, to);
     });
     return blocked ? [{ factionId: unit.factionId, from, kind: "path-surrender", unitId: unit.id }] : [];
   });

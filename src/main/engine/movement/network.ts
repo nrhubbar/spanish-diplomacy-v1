@@ -215,7 +215,7 @@ export function rideableNetwork(scenario: Scenario, state: GameState, factionId:
 
 /* ---------------------------------------------------------------- sea (M5) */
 
-/** M5: the faction's best port in a territory: the highest level among the sub-territories it holds. */
+/** M5: the faction's best port in a territory: the highest level among the sub-territories it holds (for connections that name no ports). */
 export function friendlyPort(scenario: Scenario, state: GameState, factionId: FactionId, territoryId: TerritoryId): { readonly level: number; readonly subTerritoryId: SubTerritoryId } | undefined {
   let best: { readonly level: number; readonly subTerritoryId: SubTerritoryId } | undefined;
   for (const id of subTerritoriesOf(scenario, territoryId)) {
@@ -236,11 +236,39 @@ export function seaClosed(scenario: Scenario, state: GameState, from: TerritoryI
   return isSeaRouteClosed(scenario, state, from, to);
 }
 
-/** M5: how a sea leg from `from` lands in `to`: in a friendly port, or as an amphibious assault. */
-export function landingAt(scenario: Scenario, state: GameState, factionId: FactionId, to: TerritoryId):
+/**
+ * M5, Q-CITY-7: the port a sea connection names at one end, its `entry` sub-territory there.
+ * Undefined when the connection names no entry (the faction's best port at that end serves then).
+ */
+export function seaEndPort(scenario: Scenario, from: TerritoryId, to: TerritoryId, end: TerritoryId): SubTerritoryId | undefined {
+  return end === to ? entrySubTerritory(scenario, from, to, "sea") : entrySubTerritory(scenario, to, from, "sea");
+}
+
+function heldPort(state: GameState, factionId: FactionId, subTerritoryId: SubTerritoryId): { readonly level: number; readonly subTerritoryId: SubTerritoryId } | undefined {
+  const sub = state.subTerritories[subTerritoryId];
+  return sub !== undefined && sub.holder === factionId && sub.port > 0 ? { level: sub.port, subTerritoryId } : undefined;
+}
+
+/**
+ * M5, Q-CITY-7: the port a sea leg from `from` to `to` sails from: the connection's port at the
+ * origin end, which the faction must hold. A connection without an `entry` pair sails from the
+ * faction's best port in the origin.
+ */
+export function departurePort(scenario: Scenario, state: GameState, factionId: FactionId, from: TerritoryId, to: TerritoryId): { readonly level: number; readonly subTerritoryId: SubTerritoryId } | undefined {
+  const named = seaEndPort(scenario, from, to, from);
+  return named === undefined ? friendlyPort(scenario, state, factionId, from) : heldPort(state, factionId, named);
+}
+
+/**
+ * M5, Q-CITY-7: how a sea leg from `from` lands in `to`: in the connection's port at that end
+ * when the faction holds it (a port landing), otherwise as an amphibious assault on it. A
+ * connection without an `entry` pair lands in the faction's best port there, if any.
+ */
+export function landingAt(scenario: Scenario, state: GameState, factionId: FactionId, from: TerritoryId, to: TerritoryId):
   | { readonly kind: "port"; readonly level: number; readonly subTerritoryId: SubTerritoryId }
   | { readonly kind: "amphibious" } {
-  const port = friendlyPort(scenario, state, factionId, to);
+  const named = seaEndPort(scenario, from, to, to);
+  const port = named === undefined ? friendlyPort(scenario, state, factionId, to) : heldPort(state, factionId, named);
   return port === undefined ? { kind: "amphibious" } : { kind: "port", ...port };
 }
 

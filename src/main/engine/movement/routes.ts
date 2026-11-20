@@ -6,8 +6,8 @@ import { armyAllowance, fitsAllowance, stepCost, transportOf } from "./allowance
 import {
   connectionBetween,
   connectionKey,
+  departurePort,
   enemyArmyIn,
-  friendlyPort,
   isFriendlyGround,
   landingAt,
   landNeighbors,
@@ -30,7 +30,9 @@ import {
  * - `rail`: a ride from the territory's capital to another capital in friendly ground (M3).
  * - `step-rail`: one step into friendly ground, then a ride from its capital (M4).
  * - `rail-step`: a ride, then one step that may attack (M4).
- * - `sea`: one sea leg from a friendly port, landing in a friendly port or assaulting the coast (M5).
+ * - `sea`: one sea leg from the lane's port at the origin end, which the faction holds, landing
+ *   in the lane's port at the other end when the faction holds it, else assaulting it (M5,
+ *   Q-CITY-7: each sea connection's `entry` pair names its ports).
  */
 export const routeShapes = ["step", "sea", "rail", "march", "step-rail", "rail-step"] as const;
 export type RouteShape = (typeof routeShapes)[number];
@@ -146,10 +148,10 @@ export function describeRoute(
       if (entry !== undefined) rough.push(entry);
     } else {
       if (connectionBetween(scenario, at, leg.to, "sea") === undefined) return { ok: false, reason: "No sea lane joins those territories." };
-      const departure = friendlyPort(scenario, state, factionId, at);
-      if (departure === undefined) return { ok: false, reason: "An army can sail only from a port its side holds." };
+      const departure = departurePort(scenario, state, factionId, at, leg.to);
+      if (departure === undefined) return { ok: false, reason: "An army can sail only from the lane's port, and your side must hold it." };
       if (seaClosed(scenario, state, at, leg.to)) return { ok: false, reason: "The sea is closed by winter storms this turn." };
-      const landing = landingAt(scenario, state, factionId, leg.to);
+      const landing = landingAt(scenario, state, factionId, at, leg.to);
       sea = landing.kind === "port"
         ? { departure: departure.subTerritoryId, kind: "port", level: landing.level, port: landing.subTerritoryId }
         : { departure: departure.subTerritoryId, kind: "amphibious" };
@@ -187,7 +189,8 @@ export function describeRoute(
 export interface RouteUsage {
   readonly amphibious: ReadonlyMap<string, ReadonlySet<string>>;
   readonly departures: ReadonlyMap<SubTerritoryId, ReadonlySet<string>>;
-  readonly landings: ReadonlyMap<TerritoryId, ReadonlySet<string>>;
+  /** Port landings by landing port. */
+  readonly landings: ReadonlyMap<SubTerritoryId, ReadonlySet<string>>;
 }
 
 export const noUsage: RouteUsage = { amphibious: new Map(), departures: new Map(), landings: new Map() };
@@ -198,11 +201,11 @@ function addTo<Key>(map: Map<Key, Set<string>>, key: Key, army: string): void {
   map.set(key, set);
 }
 
-/** The capacity each route takes: a rail departure at its boarding capital, a port landing, or an amphibious lane. */
-export function routeClaims(route: MoveRoute): { readonly amphibious?: string; readonly departure?: SubTerritoryId; readonly landing?: TerritoryId } {
+/** The capacity each route takes: a rail departure at its boarding capital, a landing in a port, or an amphibious lane. */
+export function routeClaims(route: MoveRoute): { readonly amphibious?: string; readonly departure?: SubTerritoryId; readonly landing?: SubTerritoryId } {
   return {
     ...(route.rail === undefined ? {} : { departure: route.rail.boarding }),
-    ...(route.sea?.kind === "port" ? { landing: route.to } : {}),
+    ...(route.sea?.kind === "port" && route.sea.port !== undefined ? { landing: route.sea.port } : {}),
     ...(route.sea?.kind === "amphibious" ? { amphibious: connectionKey(route.staging, route.to) } : {})
   };
 }
@@ -211,7 +214,7 @@ export function routeClaims(route: MoveRoute): { readonly amphibious?: string; r
 export function usageOf(routes: readonly { readonly army: string; readonly route: MoveRoute }[]): RouteUsage {
   const amphibious = new Map<string, Set<string>>();
   const departures = new Map<SubTerritoryId, Set<string>>();
-  const landings = new Map<TerritoryId, Set<string>>();
+  const landings = new Map<SubTerritoryId, Set<string>>();
   for (const { army, route } of routes) {
     const claims = routeClaims(route);
     if (claims.departure !== undefined) addTo(departures, claims.departure, army);

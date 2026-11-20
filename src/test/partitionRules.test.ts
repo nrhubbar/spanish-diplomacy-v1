@@ -1,13 +1,18 @@
 import { describe, expect, it } from "vitest";
 import { holdersIn, isContested } from "../main/engine/partition/holders";
+import { contestedReasons, validateWithdrawOrder } from "../main/engine/partition/orders";
+import { withdrawRoutes } from "../main/engine/partition/paths";
 import { initialGameState, resolveTurn } from "../main/engine/resolution";
-import type { BattleOutcome, GameState, Scenario, SubTerritoryId, TurnResolutionResult } from "../main/engine/types";
+import { retreatDestination, settleDepartures } from "../main/engine/retreat";
+import type { BattleOutcome, GameState, Scenario, SubTerritoryId, TurnResolutionResult, WithdrawOrder } from "../main/engine/types";
 import { validateMoveOrder } from "../main/engine/validation";
+import { isSeaRouteClosed } from "../main/engine/weather";
 import { faction, move, spainD20, territory, unit, withUnits } from "./support";
 
 /**
  * Make-it-right regressions for the map and movement review: B1 (a partial grade that takes a
- * defender's last sub-territory), B2 (D27.1, only units that can fight take ground).
+ * defender's last sub-territory), B2 (D27.1, only units that can fight take ground), B3 (Withdraw
+ * and retreats across a closed sea, and the lane's ports).
  */
 
 const sub = (id: string): SubTerritoryId => id as SubTerritoryId;
@@ -93,5 +98,59 @@ describe("only units that can fight take ground (B2, D27.1)", () => {
     const result = resolveTurn(scenario, state, [{ factionId: faction("south"), orders: [order] }], 1);
     expect(result.outcomes.some((outcome) => outcome.kind === "move-held-back")).toBe(false);
     expect(result.finalState.units[unit("south-general-yague")]?.territoryId).toBe("andalucia");
+  });
+});
+
+/** Spain in late December with Rain in every zone: the Mediterranean and the Strait are closed (T4). */
+function storm(state: GameState, scenario: Scenario): GameState {
+  const outcomes = Object.fromEntries((scenario.weather?.zones ?? []).map((zone) => [zone.id, "rain"]));
+  return { ...state, turnNumber: 11, weather: { outcomes: outcomes as NonNullable<GameState["weather"]>["outcomes"], roll: 15 } };
+}
+
+function holders(state: GameState, changes: Readonly<Record<string, string>>): GameState {
+  const subTerritories = { ...state.subTerritories };
+  for (const [id, holder] of Object.entries(changes)) {
+    const before = subTerritories[sub(id)];
+    if (before === undefined) throw new Error(id);
+    subTerritories[sub(id)] = { ...before, holder: faction(holder) };
+  }
+  return { ...state, subTerritories };
+}
+
+describe("Withdraw and retreats across the sea (B3, T4, M5, P6)", () => {
+  const scenario = spainD20();
+  const withdrawal = (from: string, to: string): WithdrawOrder => ({ factionId: faction("republic"), from: territory(from), kind: "withdraw", to: territory(to), unitId: unit("rep-castilla-3") });
+  // The Republic holds Mallorca (the lane's port) and Menorca; the South holds Ibiza, so the islands are contested.
+  const islands = holders(withUnits(scenario, [["rep-castilla-3", "republic", "islas-baleares"], ["rep-durruti-column", "republic", "catalunya"]]), { mallorca: "republic", menorca: "republic" });
+
+  it("withdraws over an open sea from the lane's port", () => {
+    expect(isSeaRouteClosed(scenario, islands, territory("islas-baleares"), territory("catalunya"))).toBe(false);
+    expect(validateWithdrawOrder(scenario, islands, withdrawal("islas-baleares", "catalunya"))).toEqual({ ok: true });
+    expect(withdrawRoutes(scenario, islands, faction("republic"), territory("islas-baleares")).map((route) => route.to)).toEqual(["catalunya", "valencia"]);
+  });
+
+  it("refuses a Withdraw and a retreat over a sea the storms closed", () => {
+    const closed = storm(islands, scenario);
+    expect(isSeaRouteClosed(scenario, closed, territory("islas-baleares"), territory("catalunya"))).toBe(true);
+    expect(validateWithdrawOrder(scenario, closed, withdrawal("islas-baleares", "catalunya"))).toEqual({ ok: false, reason: contestedReasons.withdrawSeaClosed });
+    expect(withdrawRoutes(scenario, closed, faction("republic"), territory("islas-baleares"))).toEqual([]);
+    expect(retreatDestination(scenario, closed, Object.values(closed.units), faction("republic"), territory("islas-baleares"))).toBeUndefined();
+    const settled = settleDepartures(scenario, closed, closed.units, [{ from: territory("islas-baleares"), kind: "retreat", report: { battleIndex: 0 }, unitId: unit("rep-castilla-3") }]);
+    expect(settled.settled[0]?.kind).toBe("surrendered");
+  });
+
+  it("keeps the South in Andalucia from retreating across a closed Strait to Ceuta", () => {
+    const state = withUnits(scenario, [["south-granada-6", "south", "andalucia"]]);
+    expect(retreatDestination(scenario, state, Object.values(state.units), faction("south"), territory("andalucia"))).toBe("ceuta");
+    expect(retreatDestination(scenario, storm(state, scenario), Object.values(state.units), faction("south"), territory("andalucia"))).toBeUndefined();
+  });
+
+  it("needs the lane's port: Menorca alone has no way off the islands (Q-CITY-7)", () => {
+    const menorca = withUnits(scenario, [["rep-castilla-3", "republic", "islas-baleares"]]);
+    expect(menorca.subTerritories[sub("mallorca")]?.holder).toBe("south");
+    expect(withdrawRoutes(scenario, menorca, faction("republic"), territory("islas-baleares"))).toEqual([]);
+    // Without a port in the sub-territory it sails from, a sea crossing is no path either.
+    const noPort = { ...islands, subTerritories: { ...islands.subTerritories, [sub("mallorca")]: { ...islands.subTerritories[sub("mallorca")]!, port: 0 } } } as GameState;
+    expect(validateWithdrawOrder(scenario, noPort, withdrawal("islas-baleares", "catalunya"))).toEqual({ ok: false, reason: contestedReasons.withdrawNoPath });
   });
 });

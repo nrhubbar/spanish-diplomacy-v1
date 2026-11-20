@@ -73,7 +73,8 @@ export const checkArmies: Phase = (draft) => {
       if (!fitsAllowance(route.cost, route.steps, armyAllowance(scenario, start, first.factionId, first.from, unitIds))) return "allowance";
       const claims = routeClaims(route);
       if (claims.departure !== undefined && (departures.get(claims.departure) ?? 0) >= railDepartures(scenario, start, claims.departure)) return "rail-departures";
-      const landingKey = claims.landing === undefined ? undefined : `${first.factionId}|${claims.landing}`;
+      // A port lands only its holder's armies, so landings count per port (M5).
+      const landingKey = claims.landing;
       if (landingKey !== undefined && (landings.get(landingKey) ?? 0) >= portLandings(scenario, route.sea?.level ?? 0)) return "port-landings";
       const laneKey = claims.amphibious === undefined ? undefined : `${first.factionId}|${claims.amphibious}`;
       if (laneKey !== undefined && (lanes.get(laneKey) ?? 0) >= 1) return "amphibious-lane";
