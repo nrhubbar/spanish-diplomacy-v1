@@ -119,7 +119,7 @@ Each is a small wiring edit.
 - **`engine/board.ts`:** the `unitOrder` fallback (AG-25).
 - **d20 engine:** `d20/battle.ts`, `d20/phases.ts`, `d20/modifiers.ts` and `d20/estimate.ts` (AG-18, AG-19).
 - **AI:** `ai/orders/recruit.ts`, one call to `airRecruits.ts` (AG-22).
-- **Tests:** `src/test/support.ts` (`groundForcesOnly`, `spainWithAir`) and `src/test/economy.test.ts` (it pins the income seam without the air module).
+- **Tests:** `e2e/acceptance.spec.ts` (Madrid's count), `src/test/support.ts` (`groundForcesOnly`, `spainWithAir`) and `src/test/economy.test.ts` (it pins the income seam without the air module).
 - **Engine:**
   - `validation.ts`: air and sack dispatch; type order kinds on moves;
   - `hooks.ts`: `CombatHookContext.scratch`;
@@ -162,6 +162,7 @@ Each is a small wiring edit.
 - typecheck and lint passed.
 - `src/test/air/*`: 39 passed.
 - Full `vitest` run: 803 passed. The 7 red are all sim-harness tests: the 6 known (D14), plus S1 "early wins at most 5 percent", which is also red on `milestone-3-rev-1` without this stream (10 percent there).
+- `npm run test:e2e` on chromium: 4 visual baseline diffs (setup, planning at every zoom level, flat-map fallback, resolution; Spain's new counters and the merged streams' UI), for the integrator to review. The acceptance specs, with axe, pass (16), after updating Madrid's count to five ("5 of 5 selected", "Planned moves (5)") in `e2e/acceptance.spec.ts`. Mobile and the other browsers were not run.
 - `@capture air missions and generals` on chromium and mobile-chromium: passed. Screenshots in `build/e2e/screenshots/{chromium,mobile-chromium}-22{a,b,c,d}-*.png`.
 - `npm run sim -- --games 50` (Spain as shipped on the d20, turn limit 66):
   - With blunders: decided 100%, freezes 0%, stalled 4%, median length 13.5. Wins of decided games: Republic 94%, North 6%, South 0%. Battles per turn 3.0; early wins 12.
