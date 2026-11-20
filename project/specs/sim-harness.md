@@ -86,7 +86,7 @@ Every interval is `{ value, low, high }`, rounded to 4 decimal places. It is `nu
 | `battles.byColumn` | For each odds column: battles, their share of all battles, and the count of each result. |
 | `losses[faction]` | Men and units lost, in total and per game. |
 | `firstTurn[faction]` | The mean number of turn-1 orders, and the 10 most common routes with the games and share of games that used them. |
-| `sanity.abandonments` | S3: a faction left every objective it held with no unit lost and no army retreated. It is judged from unit positions against the scenario's territory ids. A unit standing anywhere else, or an objective that is not a territory, stops the run with an error, so S3 cannot pass by matching nothing. |
+| `sanity.abandonments` | S3: a faction left every objective it held with no unit lost and no army retreated. It is judged from unit positions against the scenario's territory ids. A unit standing anywhere else, or an objective that is not a territory, stops the run with an error, so S3 cannot pass by matching nothing. Only units that hold ground count: aircraft do not (D17; they never fight a ground battle and rebase when their airfield's territory falls), while ground units and generals do. Leaving under fire is not abandoning: a battle retreat, a bounced move that retreated, or a Withdraw order (C1, only possible from contested ground). A unit that surrenders on the path rule (P6) left the board, so it counts as lost. |
 | `sanity.objectiveChecks` | The total of `objectiveChecks`. The smoke test requires it to be above 0, so S3 is known to have been tested. |
 | `sanity.earlyWins`, `earlyWinRate` | S1: games won before turn 4. |
 | `sanity.longestQuiet` | The distribution of `longestQuiet`. |
@@ -134,13 +134,13 @@ A variant is a JSON file. It is either an object, or a bare patch array, which t
 
 ## Blunders (H6)
 
-The computer player's blunder chance is a scenario value, expected at `/ai/blunderChance` and owned by `m3r1-contract`. The harness's seam is `blunderChancePointer` in `src/sim/engine.ts`, which the integrator sets when the value lands. Until then:
+The computer player's blunder chance is a scenario value at `/ai/blunderChance`, owned by `m3r1-contract`. The harness's seam is `blunderChancePointer` in `src/sim/engine.ts`, and it is set: `blunderControl` is `scenario`.
 
-- `blunderControl` is `pending`;
-- with and without blunders play alike, so `--blunders` defaults to `without` and a run is not doubled;
-- the console says so.
+- A cell without blunders sets the chance to 0 with a JSON Patch `add` after the variant's own patch. `add` works whether or not the scenario states the chance; it needs `/ai` to exist. The loader requires the chance, so a variant that removes it plays only without blunders.
+- `--blunders` defaults to `both`, so every report carries both settings.
+- The smoke run plays `without` only, to stay at 10 games.
 
-When the pointer is set, `blunderControl` becomes `scenario`. A cell without blunders then sets the chance to 0 with a JSON Patch `add` after the variant's own patch. `add` works whether or not the scenario states the chance; it needs `/ai` to exist. and `--blunders` defaults to `both`, so every report carries both settings.
+The seam is passed explicitly (`blunderControl(pointer)`, `blunderPatch(blunders, pointer)`), so the `pending` case stays tested: with no pointer, `blunderControl` is `pending`, no patch is added, `--blunders` would default to `without`, and the console says that both settings play alike.
 
 ## Re-check at the contract merge
 
@@ -149,7 +149,8 @@ Everything the harness reads from the game goes through `src/sim/engine.ts`. Mos
 | Where | What it reads | Used for |
 |---|---|---|
 | `battleColumn` (`engine.ts`), `playGame` (`game.ts`) | outcomes of kind `battle`: `column` and `result` | `battlesByTurn`, `battles` (results by odds column) |
-| `retreatedUnits` (`game.ts`) | `battle.retreats` and `bounced-move.retreatedTo` | S3: an army driven out has not abandoned its objective |
+| `retreatedUnits` (`game.ts`) | `battle.retreats`, `bounced-move.retreatedTo` and `withdrew.order` | S3: an army driven out has not abandoned its objective |
+| `holdsGround` (`engine.ts`) | the unit's type kind (`unitKindIn`), including recruited `r_` units | S3: aircraft do not hold objectives |
 | `orderRoute` (`engine.ts`), `playGame` | `result.submittedOrders` (`from`, `to`, `factionId`) | `firstTurnRoutes` |
 | `playGame` | `result.victory` (`factionIds`, `condition`) | winners and the decided or freeze end |
 | `territoryControlKey` (`engine.ts`) | `state.control[territoryId]` | quiet turns (S2) |

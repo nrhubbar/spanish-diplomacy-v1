@@ -164,6 +164,8 @@ describe("application flow", () => {
     await user.click(screen.getByRole("button", { name: "Continue to Northern Insurgent Command" }));
     expect(await screen.findByRole("heading", { level: 1, name: "Northern Insurgent Command" })).toBeVisible();
     await user.click(screen.getByRole("button", { name: "End Turn" }));
+    // Awaited by design, as in the first test: the session guard redirects with <Navigate> (an
+    // effect, so one render is empty) and the results screen is lazy, so it may suspend once.
     expect(await screen.findByRole("heading", { level: 1, name: "Turn resolution" })).toBeVisible();
     expect(within(await screen.findByRole("complementary", { name: "Turn report" })).getByRole("button", { name: "Start Next Turn" })).toBeVisible();
   });
@@ -172,11 +174,18 @@ describe("application flow", () => {
     const { user } = renderApp();
     await user.click(screen.getByRole("button", { name: "Create Game" }));
     await user.selectOptions(screen.getByLabelText("Player", { selector: "#actor-republic" }), "computer");
+    // A fixed game seed (the setup draws it from Math.random), so the game cannot end on turn 2.
+    const random = vi.spyOn(Math, "random").mockReturnValue(0.5);
     await user.click(screen.getByRole("button", { name: "Start Campaign" }));
+    random.mockRestore();
     expect(await screen.findByRole("heading", { level: 1, name: "Turn resolution" })).toBeVisible();
-    await user.click(screen.getByRole("button", { name: "Start Next Turn" }));
+    // The header renders at once; the pane with the report waits for the map assets, which each
+    // new store loads asynchronously. Wait for the report, not just the heading.
+    const report = await screen.findByRole("complementary", { name: "Turn report" });
+    await user.click(within(report).getByRole("button", { name: "Start Next Turn" }));
     expect(await screen.findByText(/^Turn 2/)).toBeVisible();
     expect(screen.getByRole("heading", { level: 1, name: "Turn resolution" })).toBeVisible();
+    expect(await screen.findByRole("complementary", { name: "Turn report" })).toBeVisible();
   });
 
   it("plays the fixture scenario to a victory and starts again", async () => {

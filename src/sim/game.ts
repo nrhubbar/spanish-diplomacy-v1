@@ -1,6 +1,7 @@
 import {
   battleColumn,
   battleResultKey,
+  holdsGround,
   objectivesOf,
   orderRoute,
   playComputerGame,
@@ -58,9 +59,15 @@ export interface GameSetup {
   readonly variant: string;
 }
 
-function retreatedUnits(outcomes: readonly TurnOutcome[]): ReadonlySet<string> {
+/**
+ * S3: units that left under fire. Battle retreats (M21), bounced moves that retreated, and
+ * Withdraw orders (C1), which are only possible from contested ground, the alternative to
+ * standing and fighting there.
+ */
+export function retreatedUnits(outcomes: readonly TurnOutcome[]): ReadonlySet<string> {
   return new Set(outcomes.flatMap((outcome): string[] => {
     if (outcome.kind === "battle") return outcome.retreats.map((retreat) => retreat.unitId);
+    if (outcome.kind === "withdrew") return [outcome.order.unitId];
     return outcome.kind === "bounced-move" && outcome.retreatedTo !== undefined ? [outcome.order.unitId] : [];
   }));
 }
@@ -74,6 +81,11 @@ export interface Piece {
 
 function piecesOf(state: PlayedTurn["before"]): ReadonlyMap<string, Piece> {
   return new Map(Object.values(state.units).map((unit) => [unit.id as string, unit]));
+}
+
+/** The pieces that can hold ground (S3): every unit but aircraft. */
+function groundPiecesOf(scenario: Scenario, state: PlayedTurn["before"], pieces: ReadonlyMap<string, Piece>): ReadonlyMap<string, Piece> {
+  return new Map([...pieces].filter(([id]) => holdsGround(scenario, state, id)));
 }
 
 /**
@@ -152,18 +164,22 @@ export function playGame(setup: GameSetup, seed: number): GameLine {
     quiet = changed ? 0 : quiet + 1;
     longestQuiet = Math.max(longestQuiet, quiet);
 
-    // S3. Driven out is not abandoned: an army that retreated (M21) left under fire.
+    // S3. Driven out is not abandoned: an army that retreated (M21) or withdrew (C1) left under
+    // fire. Only units that hold ground count, so an aircraft rebased from a lost airfield is not
+    // an objective walked away from.
     const retreated = retreatedUnits(result.outcomes);
+    const groundWas = groundPiecesOf(scenario, before, was);
+    const groundNow = groundPiecesOf(scenario, after, now);
     for (const factionId of factionIds) {
       const held = objectives.get(factionId) ?? new Set<string>();
       const holds = (pieces: ReadonlyMap<string, Piece>) =>
         [...pieces.values()].some((piece) => piece.factionId === factionId && held.has(piece.territoryId));
-      if (!holds(was)) continue;
+      if (!holds(groundWas)) continue;
       objectiveChecks += 1;
-      const own = [...was].filter(([, piece]) => piece.factionId === factionId).map(([id]) => id);
+      const own = [...groundWas].filter(([, piece]) => piece.factionId === factionId).map(([id]) => id);
       const lostUnits = own.some((id) => lost.has(id));
       const drivenOut = own.some((id) => retreated.has(id));
-      if (!holds(now) && !lostUnits && !drivenOut) abandonments += 1;
+      if (!holds(groundNow) && !lostUnits && !drivenOut) abandonments += 1;
     }
     if (result.victory !== undefined) {
       winners = [...result.victory.factionIds];

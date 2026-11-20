@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { fixtureSources } from "../fixtures/scenarios/fixtureSources";
-import { loadScenario, objectivesOf, scenarioSources, territoryIdsOf } from "../../sim/engine";
-import { assertInTerritories, playGame } from "../../sim/game";
+import { faction } from "../support";
+import { defaultScenarioId, holdsGround, loadScenario, objectivesOf, scenarioSources, territoryIdsOf, type TurnOutcome } from "../../sim/engine";
+import { assertInTerritories, playGame, retreatedUnits } from "../../sim/game";
+import { initialGameState } from "../../main/engine/resolution";
 import { applyPatch, PatchError } from "../../sim/patch";
 import {
   baselineName,
@@ -63,6 +65,24 @@ describe("harness core on the tiny-front fixture", () => {
     expect(() => objectivesOf(without("harbor"))).toThrow(/Faction "red" has objectives that are not territories: harbor/);
   });
 
+  it("judges S3 on units that hold ground, and counts withdrawals as leaving under fire", () => {
+    // Aircraft never hold ground (D17); ground units and generals do.
+    const spain = loadScenario(sources, defaultScenarioId(scenarioSources()));
+    const start = initialGameState(spain);
+    expect(holdsGround(spain, start, "rep-catalan-recon")).toBe(false);
+    expect(holdsGround(spain, start, "rep-wad-ras-1")).toBe(true);
+    expect(holdsGround(spain, start, "rep-general-miaja")).toBe(true);
+    // Retreats, retreating bounces and Withdraw orders (C1) are driven out, not abandoned.
+    const outcomes = [
+      { kind: "battle", retreats: [{ from: "a", to: "b", unitId: "retreated" }] },
+      { kind: "bounced-move", order: { unitId: "bounced" }, retreatedTo: "b" },
+      { kind: "bounced-move", order: { unitId: "held" } },
+      { kind: "withdrew", order: { unitId: "withdrawn" } },
+      { kind: "aircraft-rebased", unitId: "rebased" }
+    ] as unknown as readonly TurnOutcome[];
+    expect([...retreatedUnits(outcomes)].sort()).toEqual(["bounced", "retreated", "withdrawn"]);
+  });
+
   it("stops at the turn limit and calls a game still running a freeze", () => {
     const scenario = loadScenario(sources, "tiny-front");
     const line = playGame({ blunders: false, scenario, turnLimit: 1, variant: baselineName }, 3);
@@ -115,14 +135,14 @@ describe("harness core on the tiny-front fixture", () => {
     const { lines, summary } = runInProcess(sources, plan);
     expect(lines.map((line) => cellId(line.variant, line.blunders))).toEqual(cellsOf(plan).flatMap((cell) => [cell.id, cell.id, cell.id]));
     expect(summary.cells[2]?.variantDescription).toBe("No works");
-    expect(summary.blunderControl).toBe("pending");
+    expect(summary.blunderControl).toBe("scenario");
     expect(summary.comparisons.map((comparison) => `${comparison.subject} vs ${comparison.against}`)).toEqual([
       "no-works/with-blunders vs baseline/with-blunders",
       "no-works/without-blunders vs baseline/without-blunders",
       "baseline/with-blunders vs baseline/without-blunders",
       "no-works/with-blunders vs no-works/without-blunders"
     ]);
-    // Blunders do not reach the computer player yet, so both settings play alike.
+    // Tiny-front states a blunder chance of 0, so with and without play alike there.
     const blunderComparison = summary.comparisons[2];
     expect(blunderComparison?.pairs).toBe(3);
     expect(blunderComparison?.freezeRate).toEqual({ high: 0, low: 0, value: 0 });
@@ -130,11 +150,15 @@ describe("harness core on the tiny-front fixture", () => {
   });
 
   it("leaves a seam for the blunder chance: pending plays without, a pointer turns blunders off by patch", () => {
-    expect(blunderControl()).toBe("pending");
-    expect(blunderControl("/ai/blunderChance")).toBe("scenario");
+    // Pending: no pointer, so no patch, and a run plays one setting.
+    expect(blunderControl(undefined)).toBe("pending");
     expect(defaultBlunderMode("pending")).toBe("without");
+    expect(blunderPatch(false, undefined)).toEqual([]);
+    expect(blunderPatch(true, undefined)).toEqual([]);
+    // Scenario: the chance is in scenario data (where the harness points now), so a run plays both.
+    expect(blunderControl("/ai/blunderChance")).toBe("scenario");
     expect(defaultBlunderMode("scenario")).toBe("both");
-    expect(blunderPatch(false)).toEqual([]);
+    expect(defaultBlunderMode()).toBe("both");
     expect(blunderPatch(true, "/ai/blunderChance")).toEqual([]);
     const off = blunderPatch(false, "/ai/blunderChance");
     expect(off).toEqual([{ op: "add", path: "/ai/blunderChance", value: 0 }]);
@@ -143,14 +167,43 @@ describe("harness core on the tiny-front fixture", () => {
     expect(applyPatch({ ai: { profiles: {} } }, off)).toEqual({ ai: { blunderChance: 0, profiles: {} } });
   });
 
+  it("plays a stated blunder chance with blunders, and the chance 0 without", () => {
+    // Present: a variant states a chance of 1, so every unit order blunders with blunders on;
+    // the without-blunders cell patches it back to 0 and plays the planned orders.
+    const plan = tinyPlan({
+      blunders: "both",
+      seeds: [1, 2],
+      turnLimit: 3,
+      variants: [{ name: "always", patch: [{ op: "replace", path: "/ai/blunderChance", value: 1 }] }]
+    });
+    const { lines } = runInProcess(sources, plan);
+    const routes = (variant: string, blunders: boolean) =>
+      lines.filter((line) => line.variant === variant && line.blunders === blunders).map((line) => line.firstTurnRoutes);
+    expect(routes("always", false)).toEqual(routes(baselineName, false));
+    expect(routes("always", true)).not.toEqual(routes("always", false));
+    // Tiny-front's own chance is 0: with and without play the same orders.
+    expect(routes(baselineName, true)).toEqual(routes(baselineName, false));
+  });
+
+  it("restores an absent blunder chance without blunders, and refuses it with them", () => {
+    // Absent: the scenario must state the chance (the loader requires it). The without-blunders
+    // patch adds it back, so that cell loads; the with-blunders cell has nothing to play.
+    const absent = { name: "absent", patch: [{ op: "remove", path: "/ai/blunderChance" }] } as const;
+    expect(prepare(sources, tinyPlan({ blunders: "without", seeds: [1], variants: [absent] }))).toEqual(["red", "blue"]);
+    expect(() => prepare(sources, tinyPlan({ blunders: "with", seeds: [1], variants: [absent] }))).toThrow(/Invalid package .*tiny-front/);
+  });
+
   it("collects factions across every cell, so a variant that adds one is reported", () => {
-    const red = (loadScenario(sources, "tiny-front").factions.find((faction) => faction.id === "red"));
+    const scenario = loadScenario(sources, "tiny-front");
+    const red = scenario.factions.find((faction) => faction.id === "red");
     const plan = tinyPlan({
       seeds: [1],
       variants: [{
         name: "green",
         patch: [
           { op: "add", path: "/factions/-", value: { ...red, abbreviation: "GRN", color: "#2e8b57", id: "green", name: "Green" } },
+          // L23: every faction needs a computer-player profile.
+          { op: "add", path: "/ai/profiles/green", value: scenario.ai.profiles[faction("red")] },
           { op: "test", path: "/territories/3/id", value: "lowlands" },
           { op: "replace", path: "/territories/3/initialControl", value: { factionId: "green", kind: "controlled" } }
         ]
