@@ -134,8 +134,13 @@
           "territory": 4
         },
         "victoryAlarm": {
+          "critical": 3,
           "perStep": 0.5,
           "steps": 4
+        },
+        "withdraw": {
+          "hopelessTakeChance": 0.5,
+          "lastStandTakeChance": 0.75
         }
       },
       "north": {
@@ -161,8 +166,13 @@
           "territory": 4
         },
         "victoryAlarm": {
+          "critical": 3,
           "perStep": 0.5,
           "steps": 4
+        },
+        "withdraw": {
+          "hopelessTakeChance": 0.5,
+          "lastStandTakeChance": 0.75
         }
       },
       "south": {
@@ -188,12 +198,17 @@
           "territory": 4
         },
         "victoryAlarm": {
+          "critical": 3,
           "perStep": 0.5,
           "steps": 4
+        },
+        "withdraw": {
+          "hopelessTakeChance": 0.5,
+          "lastStandTakeChance": 0.75
         }
       }
     },
-    "note": "Design note. The weights are the Revision 7 computer player's constants (computerWeights, offensiveWeights, stakeWeights and victoryAlarm), moved into data unchanged, one profile per faction so a harness variant can change one side (E7, H4). The blunder chance is 1 in 100 orders (H6, Q-MR-33)."
+    "note": "Design note. The weights are the Revision 7 computer player's constants (computerWeights, offensiveWeights, stakeWeights and victoryAlarm), moved into data unchanged, one profile per faction so a harness variant can change one side (E7, H4). The blunder chance is 1 in 100 orders (H6, Q-MR-33). Design note (D23, D24, m3r1-ai-fixes): victoryAlarm.critical raises the stake of an own territory whose loss alone would hand a rival victory, by 1 + 3, above the x2.5 the alarm gives a leader's territory one step short, so holding it outranks attacking the leader. withdraw.hopelessTakeChance 0.5: the computer player gives up contested ground when the standing battle is at least even odds to take it whole this turn, by the engine's own odds. withdraw.lastStandTakeChance 0.75: its seat, last objective or a victory-critical territory is given up only when it would be lost whole at least three times in four. Starting values, not tuned."
   },
   "unitTypes": [
     {

@@ -8,11 +8,15 @@ import type { Assessment } from "./assessment";
 export interface Plan {
   /** Plans an army's move. `arrives` is true for a reinforcement, which joins the destination's defence (M11). */
   readonly commit: (unit: UnitState, to: TerritoryId, arrives: boolean) => void;
+  /** How many own armies the plan leaves standing in a territory. */
+  readonly armiesIn: (territoryId: TerritoryId) => number;
   /**
    * What sending these armies away costs: for each origin, its stake times the rise in its
-   * danger. Undefined when they would leave an objective with no own army in it.
+   * danger. Undefined when they would leave an objective, or a victory-critical territory
+   * (D23), with no own army in it. A critical territory may be left empty only to attack
+   * `target` when every hostile army that threatens it stands there: the attack meets that threat.
    */
-  readonly exposure: (departures: readonly UnitState[]) => number | undefined;
+  readonly exposure: (departures: readonly UnitState[], target?: TerritoryId) => number | undefined;
   /** What one more army in a territory is worth: its stake times the fall in its danger. */
   readonly reinforcementGain: (unit: UnitState, territoryId: TerritoryId) => number;
   /** Whether the army still has no order. */
@@ -30,7 +34,7 @@ export function createPlan(assessment: Assessment, own: readonly UnitState[]): P
     add(count, unit.territoryId, 1);
   }
 
-  const exposure = (departures: readonly UnitState[]): number | undefined => {
+  const exposure = (departures: readonly UnitState[], target?: TerritoryId): number | undefined => {
     const leaving = new Map<TerritoryId, { readonly armies: number; readonly value: number }>();
     for (const unit of departures) {
       const before = leaving.get(unit.territoryId) ?? { armies: 0, value: 0 };
@@ -39,12 +43,18 @@ export function createPlan(assessment: Assessment, own: readonly UnitState[]): P
     let cost = 0;
     for (const [origin, { armies, value }] of leaving) {
       const remaining = (count.get(origin) ?? 0) - armies;
-      if (assessment.isObjective(origin) && remaining <= 0) return undefined;
+      if (remaining <= 0 && assessment.isObjective(origin)) return undefined;
+      // D23: critical ground is never emptied, except by an attack on the one place its threat
+      // stands, which meets the threat.
+      if (remaining <= 0 && assessment.isCritical(origin) && !onlyThreatFrom(origin, target)) return undefined;
       const standing = defence.get(origin) ?? 0;
       cost += assessment.stake(origin) * (assessment.danger(origin, standing - value) - assessment.danger(origin, standing));
     }
     return cost;
   };
+
+  const onlyThreatFrom = (origin: TerritoryId, target: TerritoryId | undefined): boolean =>
+    target !== undefined && [...assessment.threatOrigins(origin)].every((territoryId) => territoryId === target);
 
   const reinforcementGain = (unit: UnitState, territoryId: TerritoryId): number => {
     const standing = defence.get(territoryId) ?? 0;
@@ -64,6 +74,7 @@ export function createPlan(assessment: Assessment, own: readonly UnitState[]): P
   };
 
   return {
+    armiesIn: (territoryId) => count.get(territoryId) ?? 0,
     commit,
     exposure,
     isFree: (unit) => !ordered.has(unit.id),

@@ -134,7 +134,8 @@ export const aiSchema = z
             stallCap: wholeSchema
           }),
           stakes: z.strictObject({ city: weight, objective: weight, territory: weight }),
-          victoryAlarm: z.strictObject({ perStep: weight, steps: wholeSchema })
+          victoryAlarm: z.strictObject({ critical: weight, perStep: weight, steps: wholeSchema }),
+          withdraw: z.strictObject({ hopelessTakeChance: shareSchema, lastStandTakeChance: shareSchema })
         })
       )
       .meta({ description: "E7: one profile per faction, keyed by faction id (L23)." }),

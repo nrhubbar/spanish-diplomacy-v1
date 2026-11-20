@@ -177,10 +177,15 @@ describe("the computer player in contested ground (H5)", () => {
     const { planWithdrawals } = await import("../main/ai/orders/withdraw");
     const { seededRandom } = await import("../main/engine/random");
     const scenario = spain();
-    const state = withUnits(scenario, [
+    // Three regiments against one, 12 to 6 less popular resistance, leave the Republic better
+    // than even odds of holding Andalucia (D24); the Army of Africa's vanguard makes it hopeless.
+    const units = [
       ["rep-vitoria-8", "republic", "andalucia"],
       ["south-granada-6", "south", "andalucia"], ["south-lepanto-5", "south", "andalucia"], ["south-cadiz-33", "south", "andalucia"]
-    ]);
+    ] as const;
+    const holdable = withUnits(scenario, units);
+    expect(planWithdrawals({ factionId: faction("republic"), memory: {}, planned: [], random: seededRandom(1), scenario, state: holdable })).toEqual([]);
+    const state = withUnits(scenario, [...units, ["south-africa-vanguard", "south", "andalucia"]]);
     const orders = planWithdrawals({ factionId: faction("republic"), memory: {}, planned: [], random: seededRandom(1), scenario, state });
     expect(orders).toEqual([withdrawal("republic", "rep-vitoria-8", "andalucia", "castilla-la-mancha")]);
     // The South, stronger there, stays and attacks; the North in the Oviedo pocket has no way out.

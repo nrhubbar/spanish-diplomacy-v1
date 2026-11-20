@@ -61,7 +61,7 @@ The shipped table is the prototype's, corrected so each odds step is exactly one
 
 ### AI profiles
 
-`ai.profiles` is keyed by faction id, one profile per faction (E7), so a harness variant patches `/ai/profiles/<factionId>`; the blunder chance is `/ai/blunderChance`. A profile is `{ computer, offensive, stakes, victoryAlarm }`, the weights of today's computer player. `computer`: `approachObjective`, `bouncedLastTurn`, `caution`, `demoralizedShare`, `enemyLoss`, `ownLoss`. `offensive`: `reach`, `oddsTieBreak`, `staging`, `focus`, `stallStep`, `stallCap`. `stakes`: `city`, `objective`, `territory`. `victoryAlarm`: `perStep`, `steps`. The strategy logic stays in code.
+`ai.profiles` is keyed by faction id, one profile per faction (E7), so a harness variant patches `/ai/profiles/<factionId>`; the blunder chance is `/ai/blunderChance`. A profile is `{ computer, offensive, stakes, victoryAlarm, withdraw }`, the weights of today's computer player. `computer`: `approachObjective`, `bouncedLastTurn`, `caution`, `demoralizedShare`, `enemyLoss`, `ownLoss`. `offensive`: `reach`, `oddsTieBreak`, `staging`, `focus`, `stallStep`, `stallCap`. `stakes`: `city`, `objective`, `territory`. `victoryAlarm`: `critical`, `perStep`, `steps` (`critical` raises an own territory whose loss alone would hand a rival victory; `perStep` and `steps` raise a rival's territories as it nears victory). `withdraw`: `hopelessTakeChance`, `lastStandTakeChance`, shares from 0 to 1 (C1: the enemy's chance to take contested ground whole in the standing battle at which the faction withdraws; the second applies to its seat, last objective and victory-critical ground). The strategy logic stays in code.
 
 ## Milestone 3 blocks (`m3-modular` only)
 
