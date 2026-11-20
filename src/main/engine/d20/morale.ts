@@ -4,14 +4,12 @@ import type { Phase, TurnDraft } from "../phases/draft";
 import type { FactionId, FatigueOutcome, RecoveredOutcome, Scenario, TerritoryId, UnitId, UnitState } from "../types";
 import { isContested, isPartitioned } from "../partition/holders";
 import { digIn } from "../works";
-import { requireD20, unitRank } from "./rules";
+import { isGeneralUnit, requireD20, unitRank } from "./rules";
 
 /**
- * W6, C1: territories contested at the end of the turn: shown as contested by control, or shared
- * by armies of several factions. Sub-territory holders are not read yet: nothing flips them until
- * the partition module lands, so the 1936 start holders would keep mixed territories contested
- * for good, even after one faction takes the whole territory.
- * TODO(m3r1-sub-territories): replace with their contested-territory helper (W6) when it lands.
+ * W6, C1: territories contested at the end of the turn. With a partition module, the
+ * sub-territory holders say so (`isContested`, after step 8); without one, control shows it as
+ * contested, or armies of several factions share it.
  */
 export function contestedAtEnd(scenario: Scenario, draft: TurnDraft): ReadonlySet<TerritoryId> {
   // W6 (m3r1-sub-territories): with the provinces partition, contested ground is the holders' (step 8 has run).
@@ -30,6 +28,18 @@ export function contestedAtEnd(scenario: Scenario, draft: TurnDraft): ReadonlySe
   return contested;
 }
 
+/**
+ * D27.4: units demoralized this turn: by a battle's grade or result (meetings, territory and
+ * standing battles), or by reaching the top of the fatigue track (the `fatigue` outcomes).
+ */
+export function demoralizedThisTurn(draft: TurnDraft): ReadonlySet<UnitId> {
+  return new Set([
+    ...draft.meetings.battles.flatMap((battle) => battle.demoralizedUnitIds),
+    ...[...draft.front.battles, ...draft.standing].flatMap((pending) => pending.report.demoralizedUnitIds),
+    ...draft.events.flatMap((event) => (event.kind === "fatigue" && event.demoralized ? [event.unitId] : []))
+  ]);
+}
+
 /** Every unit that fought on the attacking side of a battle this turn (C2: only attackers tire). */
 export function attackedThisTurn(draft: TurnDraft): ReadonlySet<UnitId> {
   return new Set([
@@ -41,11 +51,13 @@ export function attackedThisTurn(draft: TurnDraft): ReadonlySet<UnitId> {
 /**
  * Step 9 for `d20-graded` (C4-C7, M22, M23):
  * - Fatigue (C6): +1 for a unit that attacked, up to the demoralizing level, which demoralizes
- *   it. A quiet turn in uncontested ground (no move order, no retreat, no attack) resets it to 0.
- *   Defending never tires a unit.
+ *   it; a unit already at that level that attacks is demoralized again (D27.4). Generals never
+ *   tire (DC-5). A quiet turn in uncontested ground (no move order, no retreat, no attack) resets
+ *   it to 0. Defending never tires a unit.
  * - Rest (C5, M23): a demoralized unit recovers after one quiet turn, only in uncontested ground
  *   (C4). Replenish (recruitment) and a general's rally (air) are their modules' later parts of
- *   this step; they run after this one and may clear demoralization themselves.
+ *   this step; they run after this one. The rally never clears a demoralization from this turn
+ *   (D27.4, `demoralizedThisTurn`).
  * - Digging in (M22, D3): works grow by the d20's `worksPerTurn` up to `worksMax`, never in
  *   contested ground (C1), and as the `canDigIn` hooks allow (T4).
  */
@@ -69,8 +81,9 @@ export const updateGradedMorale: Phase = (draft) => {
   for (const unit of [...Object.values(draft.armies)].sort((left, right) => rank(left.id) - rank(right.id) || (left.id < right.id ? -1 : 1))) {
     let next = unit;
     const quiet = !moved.has(unit.id) && !retreated.has(unit.id) && !attacked.has(unit.id) && !contested.has(unit.territoryId);
-    if (attacked.has(unit.id) && unit.fatigue < demoralizedLevel) {
-      const fatigue = unit.fatigue + 1;
+    if (attacked.has(unit.id) && !isGeneralUnit(scenario, start.raised, unit.id)) {
+      // C6, D27.4: at the top of the track a unit that attacks again is demoralized again.
+      const fatigue = Math.min(unit.fatigue + 1, demoralizedLevel);
       const tired = fatigue >= demoralizedLevel;
       next = { ...next, fatigue, ...(tired ? { morale: freshlyDemoralized } : {}) };
       fatigueEvents.push({ demoralized: tired, factionId: unit.factionId, fatigue, kind: "fatigue", unitId: unit.id });

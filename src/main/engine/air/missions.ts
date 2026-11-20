@@ -167,8 +167,9 @@ export const flyAirMissions: Phase = (draft) => {
     const aircraftLost = result === "air-eliminated" ? [order.unitId] : [];
     for (const id of aircraftLost) lost.add(id);
     let buildingHit: { buildingId?: BuildingId; developmentId?: DevelopmentId } = {};
-    if (result === "income-cut") raidCuts.push({ subTerritoryId, turnNumber: start.turnNumber + 1 });
     const sub = subTerritories[subTerritoryId];
+    // U3: the cut falls on the faction raided, never on whoever holds the ground when income is paid.
+    if (result === "income-cut" && sub !== undefined) raidCuts.push({ factionId: sub.holder, subTerritoryId, turnNumber: start.turnNumber + 1 });
     if (result === "building-hit" && sub !== undefined) {
       const hit = hitBuilding(scenario, sub, stream());
       subTerritories = { ...subTerritories, [subTerritoryId]: hit.next };

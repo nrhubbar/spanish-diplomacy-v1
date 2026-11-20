@@ -17,6 +17,7 @@ import type {
   UnitId,
   UnitState
 } from "../types";
+import { attackedThisTurn, demoralizedThisTurn } from "../d20/morale";
 import { bestGeneral, canRally } from "./command";
 import { generalUnitDefinition, generalUnitId } from "./identity";
 import { callReplacement, fieldedGenerals } from "./roster";
@@ -50,12 +51,26 @@ export function sackGenerals(draft: TurnDraft, orders: readonly SackOrder[]): Tu
   };
 }
 
-/** The territory a faction holds whole (or at least controls) nearest its seat: the seat itself, else the first in scenario order. */
+/**
+ * D27.7: where a replacement general appears, and where a surviving general goes when he must
+ * leave: the faction's seat when it holds the seat's capital sub-territory, even while the seat
+ * is contested; otherwise the nearest territory whose capital sub-territory it holds (by
+ * connections from the seat, ties in scenario order). A territory without sub-territories counts
+ * when the faction holds it whole.
+ */
 function fallbackTerritory(scenario: Scenario, state: Pick<GameState, "control" | "subTerritories">, factionId: FactionId): TerritoryId | undefined {
-  const holds = (id: TerritoryId): boolean => holdsWhole(scenario, state, id, factionId);
+  const holds = (id: TerritoryId): boolean => {
+    const capital = scenario.index.territories.get(id)?.capitalSubTerritoryId;
+    const held = capital === undefined ? undefined : state.subTerritories[capital];
+    return held === undefined ? holdsWhole(scenario, state, id, factionId) : held.holder === factionId;
+  };
   const seat = scenario.index.factions.get(factionId)?.seatTerritoryId;
-  if (seat !== undefined && holds(seat)) return seat;
-  return scenario.territories.find((territory) => holds(territory.id))?.id;
+  const distance = seat === undefined ? new Map<TerritoryId, number>() : territoriesWithin(scenario, seat, scenario.territories.length);
+  const far = scenario.territories.length + 1;
+  return scenario.territories
+    .map((territory, order) => ({ distance: distance.get(territory.id) ?? far, id: territory.id, order }))
+    .filter((entry) => holds(entry.id))
+    .sort((a, b) => a.distance - b.distance || a.order - b.order)[0]?.id;
 }
 
 /**
@@ -94,8 +109,9 @@ export const commandChanges: Phase = (draft) => {
   for (const unit of aside) {
     if (unitKindIn(scenario, start.raised, unit.id) !== "air") continue;
     const state = { control, subTerritories: draft.systems.subTerritories };
-    // D17: an aircraft moves only when an enemy takes the whole of the territory holding its airfield.
-    if (!heldWholeByAnother(scenario, state, unit.territoryId, unit.factionId)) {
+    // D17, D27.2: an aircraft rebases whenever its territory is no longer an airbase for its faction:
+    // the airfield destroyed by a raid, its sub-territory lost, or the whole territory taken.
+    if (isAirbaseFor(scenario, state, unit.territoryId, unit.factionId)) {
       restored.push(unit);
       continue;
     }
@@ -202,13 +218,18 @@ export const commandChanges: Phase = (draft) => {
   const generalUnits = Object.values(armies).filter((unit) => unitKindIn(scenario, raised, unit.id) === "general");
   const places = [...new Set(generalUnits.map((unit) => `${unit.factionId}|${unit.territoryId}`))].sort(compareIds);
   const updates: UnitState[] = [];
+  // D27.4: a rally recovers units that started the turn demoralized, never a demoralization from this turn.
+  const fresh = demoralizedThisTurn(draft);
+  const attacked = attackedThisTurn(draft);
   for (const place of places) {
     const [factionId, territoryId] = place.split("|") as [FactionId, TerritoryId];
+    const group = Object.values(armies).filter((other) => other.factionId === factionId && other.territoryId === territoryId);
     const here = generalUnits.filter((unit) => unit.factionId === factionId && unit.territoryId === territoryId).map((unit) => unit.id);
-    const best = bestGeneral(scenario, raised, here);
+    // M5, D5: the general whose +1 counted rallies: the army is ranked for the role it fought in this turn.
+    const best = bestGeneral(scenario, raised, here, group.some((other) => attacked.has(other.id)) ? "attack" : "defence");
     if (best === undefined || !canRally(scenario, raised, best.unitId)) continue;
-    const demoralized = Object.values(armies)
-      .filter((other) => other.factionId === factionId && other.territoryId === territoryId && other.morale.demoralized)
+    const demoralized = group
+      .filter((other) => other.morale.demoralized && start.units[other.id]?.morale.demoralized === true && !fresh.has(other.id))
       .sort((a, b) => compareIds(a.id, b.id));
     if (demoralized.length === 0) continue;
     updates.push(...demoralized.map((other): UnitState => ({ ...other, morale: { demoralized: false, quietTurns: 0 } })));
@@ -247,14 +268,22 @@ export const commandChanges: Phase = (draft) => {
 };
 
 /**
- * AG-8: units on a side that a d20 grade destroyed or routed: the side lost every man
- * (`lossPercent` 100) or was demoralized whole. Read from the grade's catalogue entry, never its id.
+ * AG-8, M6: units on a side whose army a d20 battle destroyed or routed, read from what the
+ * battles did, never a grade's id:
+ * - the grade destroyed the side (`lossPercent` 100) or demoralized all of it (routed);
+ * - or every fighting unit on the side was destroyed by this turn's battles taken together:
+ *   break-up below `breakUpShare` (D6), or losses that add up over several attacks (M17).
  */
 function brokenUnits(scenario: Scenario, draft: TurnDraft): ReadonlySet<UnitId> {
+  const { raised } = draft.input.start;
   const grades = new Map((scenario.d20?.grades ?? []).map((grade) => [grade.id, grade]));
+  const reports = [...draft.meetings.battles, ...[...draft.front.battles, ...draft.standing].map((pending) => pending.report)];
+  const destroyed = new Set(reports.flatMap((report) => report.losses.flatMap((loss) => (loss.destroyed ? [loss.unitId] : []))));
   const broken = new Set<UnitId>();
-  const mark = (side: { readonly armies: readonly { readonly unitId: UnitId }[] }, effect: { readonly demoralized: string; readonly lossPercent: number } | undefined): void => {
-    if (effect !== undefined && (effect.lossPercent >= 100 || effect.demoralized === "all")) for (const army of side.armies) broken.add(army.unitId);
+  const mark = (side: BattleSide, effect: { readonly demoralized: string; readonly lossPercent: number } | undefined): void => {
+    const fighting = side.armies.filter((army) => unitKindIn(scenario, raised, army.unitId) !== "general");
+    const wiped = fighting.length > 0 && fighting.every((army) => destroyed.has(army.unitId));
+    if (wiped || (effect !== undefined && (effect.lossPercent >= 100 || effect.demoralized === "all"))) for (const army of side.armies) broken.add(army.unitId);
   };
   for (const outcome of draft.meetings.battles) {
     if (outcome.dice !== "d20") continue;

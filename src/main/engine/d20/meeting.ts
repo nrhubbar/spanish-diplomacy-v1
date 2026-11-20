@@ -3,6 +3,7 @@ import type { BattleDice } from "../dice";
 import type { MeetingResolution } from "../meeting";
 import type { BattleOutcome, BouncedMoveOutcome, FactionId, MoveOrder, Scenario, TerritoryId, UnitId } from "../types";
 import { fightGraded, type GradedBattle, type GradedInput, gradedOutcome, rollD20 } from "./battle";
+import { cannotAttackAlone } from "./front";
 import { fightingSurvivors } from "./grades";
 import { gradedSide } from "./modifiers";
 
@@ -17,7 +18,9 @@ interface Meeting {
 
 /**
  * M20 on the d20. Exactly two factions moving along one connection in opposite directions meet
- * on the road; the greater attack attacks, and equal attacks bounce both. Meetings take no works,
+ * on the road; the greater attack attacks, and equal attacks bounce both. A side that cannot
+ * attack (D5, D27.1: artillery alone, generals, units with no attack) never attacks: the other
+ * side attacks if it can, else both bounce. Meetings take no works,
  * faction modifiers, barricades or hooks (CT-44), only the armies' own modifiers (generals, unit
  * bonuses, fatigue), with the attackers' destination's weather. A grade with ground "all" lets
  * the attacker continue; a grade that cost the defender nothing lets the defender continue;
@@ -86,7 +89,10 @@ function meetingOf(scenario: Scenario, input: GradedInput, armies: Armies, ahead
   const [behindFactionId, ...moreBehind] = factionsOf(behind);
   if (aheadFactionId === undefined || behindFactionId === undefined || moreAhead.length > 0 || moreBehind.length > 0 || aheadFactionId === behindFactionId) return undefined;
   const attack = (orders: readonly MoveOrder[]) => gradedSide(scenario, input.start, combatantsOf(armies, orders), "attack").value;
-  const difference = attack(ahead) - attack(behind);
+  // D5, D27.1: a side that cannot attack (artillery alone, generals, trucks) never attacks; the other may.
+  const able = (orders: readonly MoveOrder[]) => !cannotAttackAlone(scenario, input.start, combatantsOf(armies, orders).map((combatant) => combatant.unit));
+  const [aheadAble, behindAble] = [able(ahead), able(behind)];
+  const difference = aheadAble && behindAble ? attack(ahead) - attack(behind) : aheadAble ? 1 : behindAble ? -1 : 0;
   if (difference === 0) return undefined;
   const [attackers, defenders, attackerFactionId, defenderFactionId] = difference > 0
     ? [ahead, behind, aheadFactionId, behindFactionId]

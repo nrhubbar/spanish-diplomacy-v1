@@ -86,7 +86,7 @@ export const checkArmies: Phase = (draft) => {
     }
   }
   const valid = draft.orders.valid.filter((order) => !heldUnits.has(order.unitId));
-  const { advances, reinforcements } = classifyMoves(start.control, draft.armies, valid);
+  const { advances, reinforcements } = classifyMoves(scenario, start, draft.armies, valid);
   const origins = new Map([...draft.orders.origins].filter(([unitId]) => !heldUnits.has(unitId)));
   const submitted = new Map(valid.map((order) => [order.unitId, order]));
   return {

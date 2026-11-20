@@ -1,3 +1,4 @@
+import { onGroundBoard } from "./air/pieces";
 import type { Armies } from "./board";
 import type { GameState, InvalidOrderOutcome, MoveOrder, Order, RejectedOrderOutcome, Scenario, UnitId, UnitState } from "./types";
 import { validateOrder } from "./validation";
@@ -53,21 +54,23 @@ export function partitionOrders(
 
 /**
  * M11 (C10): a move is a reinforcement when its faction controls the destination at the start
- * of the turn, or an army of its faction stays there: it has no move order, and was not
- * disbanded for an impossible one (`armies` no longer holds those). Every other move is an
- * advance.
+ * of the turn, or an army of its faction stays there: it has no move order, was not disbanded
+ * for an impossible one (`armies` no longer holds those), and stands on the board through the
+ * ground steps (D17, `onGroundBoard`: never aircraft, nor generals under the d6 table). Every
+ * other move is an advance.
  */
 export function classifyMoves(
-  control: GameState["control"],
+  scenario: Scenario,
+  state: Pick<GameState, "control" | "raised">,
   armies: Armies,
   valid: readonly MoveOrder[]
 ): { readonly advances: readonly MoveOrder[]; readonly reinforcements: readonly MoveOrder[] } {
   const moving = new Set(valid.map((order) => order.unitId));
   const isReinforcement = (order: MoveOrder): boolean => {
-    const destination = control[order.to];
+    const destination = state.control[order.to];
     return (destination?.kind === "controlled" && destination.factionId === order.factionId)
       || Object.values(armies).some((unit) =>
-        unit.territoryId === order.to && unit.factionId === order.factionId && !moving.has(unit.id));
+        unit.territoryId === order.to && unit.factionId === order.factionId && !moving.has(unit.id) && onGroundBoard(scenario, state.raised, unit.id));
   };
   return { advances: valid.filter((order) => !isReinforcement(order)), reinforcements: valid.filter(isReinforcement) };
 }

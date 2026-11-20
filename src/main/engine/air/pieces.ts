@@ -106,6 +106,16 @@ export function generalsSetAside(scenario: Scenario): boolean {
   return scenario.rules.dice === "d6-table";
 }
 
+/**
+ * D17, AG-17: whether a unit stands on the board through the ground steps (3 to 8), where it
+ * holds ground, defends and counts for reinforcement (M11): never an aircraft, and a general
+ * only under the d20 (under the d6 table generals are set aside with the aircraft).
+ */
+export function onGroundBoard(scenario: Scenario, raised: GameState["raised"], id: UnitId): boolean {
+  const kind = unitKindIn(scenario, raised, id);
+  return kind === "ground" || (kind === "general" && !generalsSetAside(scenario));
+}
+
 /** D17, W6: another faction holds the whole territory (`holdsWhole`, from the partition's holders). */
 export function heldWholeByAnother(scenario: Scenario, state: Pick<GameState, "control" | "subTerritories">, territoryId: TerritoryId, factionId: FactionId): boolean {
   return scenario.factions.some((faction) => faction.id !== factionId && holdsWhole(scenario, state, territoryId, faction.id));

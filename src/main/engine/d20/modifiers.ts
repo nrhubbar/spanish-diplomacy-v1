@@ -2,7 +2,8 @@ import { hookedCombatModifiers } from "../hooks";
 import { citiesIn } from "../lookup";
 import type { TurnScratch } from "../phases/draft";
 import type { BattleSide, CombatModifier, CombatRole, D20Rules, FactionId, GameState, Scenario, TerritoryId, UnitState, UnitTypeId, WeatherState } from "../types";
-import { compareText, gradedValue, isGeneralUnit, requireD20, rosterGeneral, typeOf, unitRank, weatherIn } from "./rules";
+import { bestGeneral, commanderModifiers } from "../generals/command";
+import { gradedValue, isGeneralUnit, requireD20, typeOf, weatherIn } from "./rules";
 
 /** One side as it fights: its values, and its units' states (for fatigue and generals). */
 export interface GradedSide {
@@ -95,27 +96,13 @@ function holdsCity(scenario: Scenario, state: GameState, factionId: FactionId, t
 const sign = (role: CombatRole): number => (role === "attack" ? 1 : -1);
 
 /**
- * D4, U6 (declog D5): only the best single general on a side counts: the greatest command bonus
- * plus his trait's roll for the side's role, ties in scenario order. His trait applies with him.
+ * D4, U6 (declog D5): only the best single general on a side counts, chosen by the selector the
+ * rally uses too (`bestGeneral`, M5): the greatest command bonus plus his trait's roll for the
+ * side's role, then roster order. His trait applies with him.
  */
 function generalModifiers(scenario: Scenario, state: GameState, side: GradedSide): readonly CombatModifier[] {
-  const rank = unitRank(scenario);
-  const candidates = side.units.flatMap((unit) => {
-    const type = typeOf(scenario, state.raised, unit.id);
-    const bonus = type.effects.reduce((sum, effect) => sum + (effect.kind === "command-bonus" ? effect.roll : 0), 0);
-    const general = rosterGeneral(scenario, state.raised, unit.id);
-    if (general === undefined || bonus === 0) return [];
-    const trait = scenario.generalTraits.find((candidate) => candidate.id === general.traitId);
-    const traitRoll = (trait?.effects ?? []).reduce((sum, effect) => sum + (effect.kind === "roll-modifier" && effect.role === side.role ? effect.roll : 0), 0);
-    return [{ bonus, general, rank: rank(unit.id), traitRoll, unit }];
-  }).sort((left, right) => (right.bonus + right.traitRoll) - (left.bonus + left.traitRoll) || left.rank - right.rank || compareText(left.unit.id, right.unit.id));
-  const best = candidates[0];
-  if (best === undefined) return [];
-  const modifiers: CombatModifier[] = [{ factionId: best.unit.factionId, generalId: best.general.id, kind: "general", role: side.role, roll: sign(side.role) * best.bonus }];
-  if (best.traitRoll !== 0) {
-    modifiers.push({ generalId: best.general.id, kind: "trait", role: side.role, roll: sign(side.role) * best.traitRoll, traitId: best.general.traitId });
-  }
-  return modifiers;
+  const best = bestGeneral(scenario, state.raised, side.units.map((unit) => unit.id), side.role);
+  return commanderModifiers(best, best === undefined ? undefined : side.units.find((unit) => unit.id === best.unitId)?.factionId, side.role);
 }
 
 /**
