@@ -84,7 +84,7 @@ function Results({ session }: { readonly session: ResultSession }): JSX.Element 
             <TerritoryChanges result={result} scenario={scenario} />
             <BattleReport focusedTerritoryId={focused} result={result} scenario={scenario} seed={game.seed} />
             <TurnConditions result={result} scenario={scenario} />
-            <OutcomeSummary result={result} scenario={scenario} />
+            <OutcomeSummary result={result} scenario={scenario} viewer={sessionViewer(session)} />
             <VictoryProgressPanel result={result} scenario={scenario} />
             <RevealedOrdersPanel revealed={selectRevealedOrders(session)} scenario={scenario} />
           </>
