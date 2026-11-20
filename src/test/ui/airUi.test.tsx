@@ -105,7 +105,7 @@ describe("the air pane (U2, M11, `ux-air-a`)", () => {
     const aircraft = Object.values(start.units).filter((entry) => entry.territoryId === territory("madrid") && entry.factionId === republic && /bomber|fighter/u.test(entry.id));
     withStore(<AircraftHere aircraft={aircraft} scenario={scenario} session={session(start, [raid])} />);
     expect(screen.getByRole("heading", { name: "Aircraft here" })).toBeVisible();
-    expect(screen.getByRole("button", { name: /Breguet XIX Light Bombers · Raid/u })).toBeVisible();
+    expect(screen.getByRole("button", { name: /Breguet XIX Light Bombers \u00b7 Raid/u })).toBeVisible();
     await userEvent.click(screen.getByRole("button", { name: /Breguet/u }));
     const { container: empty } = withStore(<AircraftHere aircraft={[]} scenario={scenario} session={session(start)} />);
     expect(empty).toBeEmptyDOMElement();
@@ -261,7 +261,7 @@ describe("battle icons on the resolution map (B5, D8)", () => {
   it("names the result in a tooltip and opens the territory's card on a click", async () => {
     const onSelectTerritory = vi.fn();
     render(<BattleIconLayer marks={marks} onSelectTerritory={onSelectTerritory} scenario={scenario} toScreen={toScreen} />);
-    const button = screen.getByRole("button", { name: "Battle for Andalucía: Defender routed" });
+    const button = screen.getByRole("button", { name: "Battle for Andaluc\u00eda: Defender routed" });
     expect(button).toHaveAccessibleDescription(/Defender routed.*Click to open its battle card/u);
     await userEvent.click(button);
     expect(onSelectTerritory).toHaveBeenCalledWith("andalucia");
@@ -301,7 +301,7 @@ describe("destination plaques on a phone (M8)", () => {
     expect(container.querySelector(".site-icon[data-icon=\"port\"]")).not.toBeNull();
     cleanup();
     const { container: wide } = render(<DestinationOddsLayer counters={[]} estimates={estimates} labelAt={() => ({ x: 50, y: 50 })} tags={tags} />);
-    expect(wide.textContent).toMatch(/By rail · /u);
+    expect(wide.textContent).toMatch(/By rail \u00b7 /u);
   });
 });
 
@@ -320,7 +320,7 @@ describe("the meta row's contested pills and Recruits-at chip (M5, M12)", () => 
 
   it("in contested ground: you hold n of m, builds paused, no recruiting", () => {
     render(<><ContestedChip {...at("andalucia")} /><RecruitsAtChip {...at("andalucia")} /></>);
-    expect(screen.getByText(/^Contested · you hold \d+ of \d+$/u)).toBeVisible();
+    expect(screen.getByText(/^Contested \u00b7 you hold \d+ of \d+$/u)).toBeVisible();
     expect(screen.getByText("Builds paused")).toHaveAttribute("data-tone", "paused");
     expect(screen.getByText("No recruiting")).toHaveAttribute("data-tone", "paused");
     cleanup();
