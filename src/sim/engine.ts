@@ -4,6 +4,7 @@
  */
 import { initialGameState } from "../main/engine/resolution";
 import type { FactionId, Scenario, ScenarioId, TurnOutcome, TurnResolutionResult, UnitId } from "../main/engine/types";
+import { isMoveOrder } from "../main/engine/types/orders";
 import { builtInSources } from "../main/scenarios/builtInSources";
 import { createScenarioRegistry, normalizeSourcePath, type PackageSources } from "../main/scenarios/registry";
 import { advance, nextTurn } from "../main/state/coordinator";
@@ -24,7 +25,7 @@ export function scenarioSources(): readonly PackageSources[] {
  * owned by `m3r1-contract` and expected at `/ai/blunderChance`; the integrator sets it here when
  * that lands. While it is undefined, blunders are "pending": both settings play alike.
  */
-export const blunderChancePointer: string | undefined = undefined;
+export const blunderChancePointer: string | undefined = "/ai/blunderChance";
 
 /**
  * The scenario a run plays when none is named: the only playable package in `sources`. With
@@ -123,5 +124,10 @@ export function battleColumn(outcome: Extract<TurnOutcome, { kind: "battle" }>):
 
 /** A submitted order as a short route key, `from>to`. Order kinds beyond moves will prefix their kind. */
 export function orderRoute(order: TurnResolutionResult["submittedOrders"][number]): string {
-  return `${order.from}>${order.to}`;
+  return isMoveOrder(order) ? `${order.from}>${order.to}` : order.kind;
+}
+
+/** A battle's result as a stable key: the d6 result, or the d20 grade. */
+export function battleResultKey(outcome: Extract<TurnOutcome, { kind: "battle" }>): string {
+  return outcome.dice === "d20" ? outcome.grade : outcome.result;
 }

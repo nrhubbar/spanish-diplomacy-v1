@@ -15,11 +15,10 @@ interface Scenario {
   readonly cities: readonly { readonly id: string; readonly subTerritoryId?: string }[];
 }
 
-const read = <T>(path: string): T => JSON.parse(readFileSync(path, "utf8")) as T;
 
 describe("scenario topology", () => {
-  const topology = read<Topology>(topologyDocument);
-  const scenario = read<Scenario>(scenarioDocument);
+  const topology = JSON.parse(readFileSync(topologyDocument, "utf8")) as Topology;
+  const scenario = JSON.parse(readFileSync(scenarioDocument, "utf8")) as Scenario;
 
   it("uses the generated sub-territory borders", () => {
     expect(scenario.subTerritoryBorders).toEqual(topology.subTerritoryBorders);

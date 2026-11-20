@@ -1,5 +1,6 @@
 import {
   battleColumn,
+  battleResultKey,
   objectivesOf,
   orderRoute,
   playComputerGame,
@@ -122,7 +123,8 @@ export function playGame(setup: GameSetup, seed: number): GameLine {
       if (outcome.kind !== "battle") continue;
       fought += 1;
       const column = (battles[battleColumn(outcome)] ??= {});
-      column[outcome.result] = (column[outcome.result] ?? 0) + 1;
+      const key = battleResultKey(outcome);
+      column[key] = (column[key] ?? 0) + 1;
     }
     battlesByTurn.push(fought);
 
