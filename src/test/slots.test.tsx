@@ -36,7 +36,7 @@ describe("the territory pane's tabs and focus view (X3)", () => {
     expect(screen.getAllByRole("tab").map((tab) => [tab.textContent, tab.getAttribute("aria-selected")])).toEqual([["Units", "true"], ["Build", "false"], ["Recruit", "false"]]);
     expect(screen.getByRole("tabpanel")).toHaveTextContent("Madrid");
     await userEvent.click(screen.getByRole("tab", { name: "Build" }));
-    expect(screen.getByRole("tabpanel")).toHaveTextContent("");
+    expect(screen.getByRole("tabpanel")).toHaveTextContent("Sub-territories");
     await userEvent.click(screen.getByRole("tab", { name: "Recruit" }));
     expect(screen.getByRole("tab", { name: "Recruit" })).toHaveAttribute("aria-selected", "true");
   });

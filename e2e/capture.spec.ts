@@ -226,3 +226,23 @@ test("@capture reduced counter in the fixture", async ({ page }) => {
   if (await orders.isVisible()) await orders.click();
   await capture(page, "17c-fixture-army-list");
 });
+
+test("@capture economy: resource chips, Build tab and the focused build list", async ({ page }) => {
+  await page.goto("./");
+  await page.getByRole("button", { name: "Create Game" }).click();
+  await page.getByRole("button", { name: "Start Campaign" }).click();
+  await waitForMap(page);
+  await page.locator('.map-region[data-territory-id="catalunya"]').focus();
+  await page.keyboard.press("Enter");
+  const orders = page.getByRole("button", { name: "Orders", exact: true });
+  if (await orders.isVisible()) await orders.click();
+  await page.getByRole("tab", { name: "Build" }).click();
+  await capture(page, "20a-build-tab");
+  await page.getByRole("button", { name: "Build in Barcelona" }).click();
+  await capture(page, "20b-build-focus");
+  await page.getByRole("button", { name: /^Queue / }).first().click();
+  await page.locator(".site-queue").first().evaluate((element) => { element.scrollIntoView({ block: "center" }); });
+  await capture(page, "20c-build-queued");
+  await page.locator(".resource-chip").first().click();
+  await capture(page, "20d-resource-detail");
+});

@@ -1,6 +1,7 @@
 import type { StandingOrder } from "../engine/orders";
 import type {
   ActorKind,
+  BuildOrder,
   FactionId,
   GameState,
   MoveOrder,
@@ -70,7 +71,14 @@ export type Session =
       readonly game: GameRecord;
       readonly phase: "handoff";
     }
-  | { readonly draft: Draft; readonly factionId: FactionId; readonly game: GameRecord; readonly phase: "planning" }
+  | {
+      /** $5: Build orders planned this turn (`planning/builds.ts`), kept apart from the draft that selection rebuilds. */
+      readonly builds?: readonly BuildOrder[];
+      readonly draft: Draft;
+      readonly factionId: FactionId;
+      readonly game: GameRecord;
+      readonly phase: "planning";
+    }
   | { readonly game: GameRecord; readonly phase: "resolution"; readonly result: TurnResolutionResult }
   | { readonly game: GameRecord; readonly phase: "game-over"; readonly result: TurnResolutionResult };
 

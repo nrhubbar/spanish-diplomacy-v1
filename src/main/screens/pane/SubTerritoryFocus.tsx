@@ -3,6 +3,7 @@ import { requireTerritory } from "../../engine/lookup";
 import type { Scenario, SubTerritoryId } from "../../engine/types";
 import { useAppDispatch } from "../../hooks";
 import { focusSubTerritory } from "../../state/gameSlice";
+import { BuildList } from "./build/BuildList";
 
 /**
  * X3: the pane focused on one sub-territory, with a link back to its territory.
@@ -18,6 +19,7 @@ export function SubTerritoryFocus({ scenario, subTerritoryId }: { readonly scena
     <div className="sub-territory-focus">
       <button className="text-button" onClick={() => dispatch(focusSubTerritory(undefined))} type="button">{`Back to ${territory.name}`}</button>
       <h3>{sub.name}</h3>
+      <BuildList scenario={scenario} subTerritoryId={subTerritoryId} />
     </div>
   );
 }
