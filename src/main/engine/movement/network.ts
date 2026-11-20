@@ -117,8 +117,9 @@ export interface RailRide {
 
 /**
  * M3, D7: every territory an army in `from` can reach by rail this turn. It boards at `from`'s
- * capital, rides through rail sub-territories its faction holds, and leaves the train at another
- * territory's capital in friendly ground. The lowest level on the route sets the range in
+ * capital, rides through rail sub-territories its faction holds, in territories where no other
+ * faction's army stands (M2, Q-MR-16; contested ground with no enemy army may be passed), and
+ * leaves the train at another territory's capital in friendly ground. The lowest level on the route sets the range in
  * territory borders crossed (`railRangePerLevel` per level). For each level from the highest
  * down, a search over the sub-territories with at least that level finds the routes it allows;
  * the first level that reaches a territory gives its ride, so a ride always uses the best line.
@@ -157,9 +158,15 @@ function computeRailReach(scenario: Scenario, state: GameState, factionId: Facti
   const maxLevel = scenario.improvements?.rail.maxLevel ?? 3;
   if (boarding === undefined || perLevel <= 0 || holderOf(state, boarding) !== factionId) return { rides, stations: reached };
   const territoryOf = (id: SubTerritoryId): TerritoryId | undefined => scenario.index.subTerritories.get(id)?.territoryId;
+  // M2, Q-MR-16: a train runs only through territories where no other faction's army stands at the start of the turn.
+  const blocked = new Set<TerritoryId>();
+  for (const unit of Object.values(state.units)) if (unit.factionId !== factionId && unit.territoryId !== from) blocked.add(unit.territoryId);
   for (let level = Math.min(maxLevel, railLevel(state, boarding)); level >= 1; level -= 1) {
     const range = perLevel * level;
-    const usable = (id: SubTerritoryId): boolean => holderOf(state, id) === factionId && railLevel(state, id) >= level;
+    const usable = (id: SubTerritoryId): boolean => {
+      const territoryId = territoryOf(id);
+      return holderOf(state, id) === factionId && railLevel(state, id) >= level && (territoryId === undefined || !blocked.has(territoryId));
+    };
     // 0-1 breadth-first search: crossing a territory border costs 1, a station inside one costs 0.
     const distance = new Map<SubTerritoryId, number>([[boarding, 0]]);
     const previous = new Map<SubTerritoryId, SubTerritoryId>();

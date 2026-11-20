@@ -65,7 +65,7 @@ export interface MoveRoute {
   /** Land and sea steps; rail legs are not steps (M1). */
   readonly steps: number;
   readonly to: TerritoryId;
-  /** M2: territories the route stops in before its last leg, where an enemy arrival stops it. */
+  /** M2: territories the route passes before its destination (leg ends and the territories a train runs through), where an enemy arrival stops it. */
   readonly transit: readonly TerritoryId[];
 }
 
@@ -140,6 +140,12 @@ export function describeRoute(
       const ride = rides(at).get(leg.to);
       if (ride === undefined) return { ok: false, reason: "No rail line your side holds reaches that capital this turn." };
       rail = ride;
+      // M2, Q-MR-16: the territories the train passes are on the way too; an enemy entering one stops it there.
+      for (const passed of ride.through) {
+        if (visited.has(passed)) return { ok: false, reason: "A route may not enter the same territory twice." };
+        visited.add(passed);
+        transit.push(passed);
+      }
     } else if (leg.kind === "land") {
       if (connectionBetween(scenario, at, leg.to, "land") === undefined) return { ok: false, reason: "Destination is not connected to the unit's territory." };
       cost += stepCost(scenario, at, leg.to, allMobile);
