@@ -1,6 +1,6 @@
 # `m3r1-air-generals` progress
 
-Mode: make it work (declog D13). Branch `m3r1-air-generals`, merged with `milestone-3-rev-1` at `eb9515f` (contract CP4).
+Mode: make it work (declog D13). Branch `m3r1-air-generals`. It has merged `milestone-3-rev-1` three times: at `eb9515f` (contract CP4), at `38b68ba` (d20-combat, recruit-replenish, weather-timer), and at `6e32d05` (economy-builds).
 
 ## What works
 
@@ -68,10 +68,38 @@ Mode: make it work (declog D13). Branch `m3r1-air-generals`, merged with `milest
   - the roster sources for the generals.
   - The 100 men of each air and HQ counter is a design note.
 
+## After the d20, recruitment, weather and economy merges
+
+- **AG-17. Generals under the d20 (DC-16, DC-5).**
+  - Generals are set aside from the ground steps only under the d6 table (`generalsSetAside`).
+  - Under the d20 they stay on the board, move with ordinary moves, and fight at value 0. The d20 code emits `general` and `trait` itself, and my hook's general modifiers are off.
+  - So AG-2 holds in both: under the d6 a general is set aside, under the d20 he counts 0, and the `m2-strength` preset has none.
+- **AG-18. Aircraft are never ground combatants (D17).**
+  - They are always set aside from the ground steps, so no battle side, loss or retreat ever touches them.
+  - At step 9, an aircraft moves only when another faction controls its whole territory. It rebases to the nearest airbase of its faction in range, else it is destroyed (`aircraft-lost`). This replaces AG-9's broader trigger.
+  - The d20 estimate (`d20/estimate.ts`) leaves aircraft off both sides.
+- **AG-19. Bomber support reaches the d20 battles.**
+  - `GradedInput` and `GradedContext` carry the turn's scratch: `d20/phases.ts` passes it, `d20/battle.ts` adds it to the context, and `d20/modifiers.ts` hands it to `hookedCombatModifiers`.
+- **AG-20. Death under the d20 reads the grade, never its id.** A general dies on the `general-death` roll in three cases:
+  - the grade's side effect destroyed his side (`lossPercent` 100) or demoralized all of it (routed);
+  - the ground steps removed him (destroyed, or surrendered with nowhere to retreat);
+  - he was left alone in ground another faction controls or stands in.
+  - A survivor stays with his side, or goes to the seat (else the first territory his faction controls).
+  - His rally runs in the air module's step-9 part, after the d20 morale part.
+- **AG-21. Replacement ids.** `requireUnitDefinition` chains the scenario, then recruit-replenish's `raisedDefinition` (`r_` ids), then `generalUnitDefinition` (`general-` ids). A replacement general resolves from his id alone and is also in `GameState.raised`.
+- **AG-22. Recruiting aircraft and anti-air** (`ai/orders/airRecruits.ts`, wired into `ai/orders/recruit.ts`).
+  - At each site, before the ground choice, the planner buys anti-air where enemy bombers reach and none of its own stands.
+  - It buys an aircraft when the faction has fewer than one per 6 ground units (a design note), of the mission it has least (raid, then intercept, then recon), at most one a turn.
+  - Locks (Airfield and Factory) come from recruit-replenish's `typeLock`.
+- **AG-23. Income cuts with the economy.**
+  - `collectIncome` calls `incomeFor` on `draftState`, so a cut recorded for turn N+1 is paid at step 11 of turn N+1.
+  - My step-11 part only drops spent cuts and reveals, after the economy's part, so nothing is cut twice.
+  - Airfields are read from `systems.subTerritories[*].buildings` by effect kind.
+- **AG-24. Tests keep Spain's Milestone 2 board.** `testRegistry()` and `spain()` drop Spain's starting aircraft and generals (`groundForcesOnly`), as DC-17 pinned the d6, so the Milestone 2 rule and UI tests count ground armies. Air tests use `spainWithAir()` (d6) and `spainD20()` (as shipped).
+
 ## Stubbed
 
-- **Weather.** `grounded` returns false until `m3r1-weather-timer` fills it. Both the engine and the planner call `hookedGrounded` before flying.
-- **Income.** The raid cut works only once `m3r1-economy-builds` calls `hookedIncome` at step 11.
+- **Weather.** Weather fills `grounded` (Mud and Snow, unless the airfield is paved). The engine and the planner both call `hookedGrounded` before any mission flies.
 - **Building.** Airfields and the paved upgrade come from `m3r1-economy-builds`. The air code reads only their effect kinds.
 - **Recon.** Reveals go through the contract's `viewFor`. The hidden-balance UI that shows them is economy's.
 - **Training.** Aircraft and anti-air are trained by `m3r1-recruit-replenish`. Raised aircraft resolve through `GameState.raised`.
@@ -79,19 +107,17 @@ Mode: make it work (declog D13). Branch `m3r1-air-generals`, merged with `milest
 
 ## Needs from
 
-- **`m3r1-d20-combat`:**
-  - The d20 battle parts pass `scratch: draft.scratch` into the `combatModifiers` context, as the d6 `site.ts` and `standing.ts` now do. Without it, support and moving generals do not count.
-  - Keep `draft.settled` (retreated, surrendered) or an equivalent, so AG-8 can tell a rout.
-  - The morale seam: my rally runs after your morale part and clears demoralization; generals and aircraft are set aside during it, so they gain no fatigue.
-- **`m3r1-economy-builds`:** call `hookedIncome` at step 11 with a state whose `turnNumber` is the current turn and whose `raidCuts` are present; the start or the draft state both work.
-- **`m3r1-weather-timer`:** fill `grounded` (Mud and Snow, unless `isAllWeatherAirbaseFor`; the helper is in `engine/air/pieces.ts`).
-- **`m3r1-recruit-replenish`:** at merge, chain `raisedDefinition` and `generalUnitDefinition` in `requireUnitDefinition`. Both of us changed its return type to the same `UnitIdentity`.
+- **`m3r1-d20-combat`:** please review my minimal edits to `d20/battle.ts`, `d20/phases.ts`, `d20/modifiers.ts` (the scratch for the hooks) and `d20/estimate.ts` (aircraft off both sides).
+- Weather, economy and recruitment: nothing further. The earlier items were met at the merges.
 - **`m3r1-sub-territories`:** set aside generals' Withdraw orders as AG-3 does their moves. Sub-territory flips make airfields change hands, and AG-9 follows them.
 - **`m3r1-movement-rail-ports`:** your reveal part runs before mine. Do not keep scratch for units of a non-ground kind, because mine removes their moves.
 
 ## Files outside my ownership
 
 Each is a small wiring edit.
+- **d20 engine:** `d20/battle.ts`, `d20/phases.ts`, `d20/modifiers.ts` and `d20/estimate.ts` (AG-18, AG-19).
+- **AI:** `ai/orders/recruit.ts`, one call to `airRecruits.ts` (AG-22).
+- **Tests:** `src/test/support.ts` (`groundForcesOnly`, `spainWithAir`) and `src/test/economy.test.ts` (it pins the income seam without the air module).
 - **Engine:**
   - `validation.ts`: air and sack dispatch; type order kinds on moves;
   - `hooks.ts`: `CombatHookContext.scratch`;
@@ -129,6 +155,25 @@ Each is a small wiring edit.
 - **Specs:** `project/specs/scenario-package.md`, the "Air and generals" section.
 
 ## Checks
+
+**After the last merge (`6e32d05`):**
+- typecheck and lint passed.
+- `src/test/air/*`: 38 passed.
+- Full `vitest` run: 803 passed. The 7 red are all sim-harness tests: the 6 known (D14), plus S1 "early wins at most 5 percent", which is also red on `milestone-3-rev-1` without this stream (10 percent there).
+- `@capture air missions and generals` on chromium and mobile-chromium: passed. Screenshots in `build/e2e/screenshots/{chromium,mobile-chromium}-22{a,b,c,d}-*.png`.
+- `npm run sim -- --games 50` (Spain as shipped on the d20, turn limit 66):
+  - With blunders: decided 100%, freezes 0%, stalled 4%, median length 13.5. Wins of decided games: Republic 94%, North 6%, South 0%. Battles per turn 3.0; early wins 12.
+  - Without blunders: decided 100%, median length 11. Wins: Republic 100%. Early wins 11.
+  - For comparison, `milestone-3-rev-1` before economy and without this stream: Republic 96%, early wins 4 and 3. The Republic's dominance is not from air; reported, not tuned (H7).
+- A 10-game, 40-turn count on Spain as shipped saw every new kind:
+  - 216 recon flights and 139 support missions (99 battles with `air-support`);
+  - 50 raids: 9 air eliminated, 17 nothing hit, 12 income cuts, 12 building hits;
+  - 1 interception, 5 rebases, 2 aircraft lost;
+  - 72 rallies, 3 general deaths, 1 sacking, 4 replacements;
+  - recruits of 26 anti-air batteries, 14 bombers, 8 fighters and 7 recon flights.
+  - No `grounded` outcome appeared, because the planner skips grounded aircraft.
+
+**Before the merges:**
 
 - `npm run typecheck`: passed.
 - `npm run lint`: passed.
