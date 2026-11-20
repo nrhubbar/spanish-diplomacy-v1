@@ -10,8 +10,10 @@ import type {
   UnitState
 } from "../../engine/types";
 import { portLandings, railDepartures, unitTypeOf } from "../../engine/movement/network";
-import { armyKey, describeRoute, legsOf, type MoveRoute, moveRoutes, routeClaims } from "../../engine/movement/routes";
+import { armyKey, describeRoute, legsOf, moveRoutes, routeClaims } from "../../engine/movement/routes";
 import { armiesOf } from "../../engine/movement/transit";
+import { classifyMoves } from "../../engine/orders";
+import { canFight, hasFighter } from "../../engine/units/fighting";
 import { validateMoveOrder } from "../../engine/validation";
 import { assess, type Assessment } from "../assessment";
 import { type AttackContext, type AttackPlan, bestAttackOn } from "../attacks";
@@ -19,6 +21,7 @@ import { type Cached, cached, distancesTo, forget, pickBest } from "../choice";
 import { bouncedMoves, moveKey, stalledTurns } from "../memory";
 import { chooseOffensive, prizeFactor } from "../offensive";
 import { createPlan, type Plan } from "../plan";
+import { isTransport, unitRoutes } from "../reach";
 import type { RandomSource } from "../../engine/random";
 import type { OrderPlanner } from "./planner";
 
@@ -44,7 +47,7 @@ export const planMoves: OrderPlanner<MoveOrder> = ({ factionId, memory: context,
   const assessment = assess(scenario, state, factionId);
   const weights = assessment.profile.computer;
   const own = Object.values(state.units).filter((unit) => unit.factionId === factionId);
-  const plan = createPlan(assessment, own);
+  const plan = createPlan(assessment, own, (unit) => canFight(scenario, state.raised, unit.id));
   const bounced = bouncedMoves(context.previousOutcomes ?? [], factionId);
   const moveBias = (unit: UnitState, to: TerritoryId): number =>
     bounced.has(moveKey(unit.id, unit.territoryId, to)) ? weights.bouncedLastTurn : 0;
@@ -62,6 +65,8 @@ export const planMoves: OrderPlanner<MoveOrder> = ({ factionId, memory: context,
     ? 0
     : Math.max(0, (offensive.distance.get(unit.territoryId) ?? 0) - (offensive.distance.get(to) ?? 0)) * assessment.profile.offensive.staging;
   const attackContext: AttackContext = { assessment, factionId, moveBias, plan, prize, scenario, state, weights };
+
+  garrisonCritical(scenario, assessment, plan, ready, friendly, random);
 
   const attacks = new Map<TerritoryId, Cached<AttackPlan>>();
   const reinforcements = new Map<UnitId, Cached<Reinforcement>>();
@@ -159,6 +164,33 @@ function bestReinforcement(
   return pickBest(options, (option) => option.score, random);
 }
 
+/**
+ * D23: before anything else, an army steps into each own victory-critical territory that stands
+ * empty: one a rival can reach this turn and would win by taking (`Assessment.isCritical`). Of the
+ * armies that can reinforce it without emptying an objective or another critical territory, it
+ * sends the one whose move scores best (danger removed there, less danger left at home). The
+ * greedy planner may then add more.
+ */
+function garrisonCritical(
+  scenario: Scenario,
+  assessment: Assessment,
+  plan: Plan,
+  ready: readonly UnitState[],
+  friendly: ReadonlyMap<UnitId, readonly TerritoryId[]>,
+  random: RandomSource
+): void {
+  for (const { id } of scenario.territories) {
+    if (!assessment.isCritical(id) || plan.armiesIn(id) > 0) continue;
+    const options = ready.flatMap((unit) => {
+      if (!plan.isFree(unit) || !(friendly.get(unit.id) ?? []).includes(id)) return [];
+      const cost = plan.exposure([unit]);
+      return cost === undefined ? [] : [{ score: plan.reinforcementGain(unit, id) - cost, unit }];
+    });
+    const chosen = pickBest(options, (option) => option.score, random);
+    if (chosen !== undefined) plan.commit(chosen.unit, id, true);
+  }
+}
+
 /** Objectives the faction does not control yet; all of them once it controls every one. */
 function approachTargets(scenario: Scenario, state: GameState, assessment: Assessment): ReadonlySet<TerritoryId> {
   const objectives = scenario.territories.filter((territory) => assessment.isObjective(territory.id)).map((territory) => territory.id);
@@ -169,32 +201,14 @@ function approachTargets(scenario: Scenario, state: GameState, assessment: Asses
   return new Set(remaining.length > 0 ? remaining : objectives);
 }
 
-/** Routes for a unit with the trucks standing with it, remembered per state for units alike (origin, mobility, morale). */
-function unitRoutes(scenario: Scenario, state: GameState, unit: UnitState): ReadonlyMap<TerritoryId, MoveRoute> {
-  const memo = routeMemo.get(state) ?? new Map<string, ReadonlyMap<TerritoryId, MoveRoute>>();
-  routeMemo.set(state, memo);
-  const mobile = (unitTypeOf(scenario, state, unit.id)?.effects ?? []).some((effect) => effect.kind === "mobile");
-  const key = `${scenario.id}|${unit.factionId}|${unit.territoryId}|${String(mobile)}|${String(unit.morale.demoralized)}`;
-  const known = memo.get(key);
-  if (known !== undefined) return known;
-  const trucks = Object.values(state.units).filter((other) => other.territoryId === unit.territoryId && other.factionId === unit.factionId && isTransport(scenario, state, other.id));
-  const routes = moveRoutes(scenario, state, unit.factionId, unit.territoryId, [unit.id, ...trucks.map((truck) => truck.id)]);
-  memo.set(key, routes);
-  return routes;
-}
-
-const routeMemo = new WeakMap<GameState, Map<string, ReadonlyMap<TerritoryId, MoveRoute>>>();
-
-function isTransport(scenario: Scenario, state: GameState, unitId: UnitId): boolean {
-  return (unitTypeOf(scenario, state, unitId)?.effects ?? []).some((effect) => effect.kind === "transport");
-}
-
 /**
  * H5 for rail, trucks and sea (M1-M5). The planner chose destinations; this gives each order
  * the route the game offers for its unit, then checks the plan as armies (W4):
  * - free trucks go with the largest army leaving their territory, a marching one first;
- * - a march its army's trucks cannot carry is cut to its first step, into friendly ground;
- * - armies beyond a capital's departures, a port's landings or a lane's one assault stay home.
+ * - a march its army's trucks cannot carry takes the army's own route there, or is cut to its
+ *   first step, into friendly ground;
+ * - armies beyond a capital's departures, a port's landings or a lane's one assault stay home;
+ * - an army with no unit that can fight (D27.1) moves only to reinforce its own side.
  */
 export function withRoutes(scenario: Scenario, state: GameState, factionId: FactionId, planned: readonly MoveOrder[]): readonly MoveOrder[] {
   const own = Object.values(state.units).filter((unit) => unit.factionId === factionId);
@@ -204,7 +218,8 @@ export function withRoutes(scenario: Scenario, state: GameState, factionId: Fact
     return route ?? order;
   });
   const ordered = new Set(routed.map((order) => order.unitId));
-  const trucks = own.filter((unit) => !ordered.has(unit.id) && isTransport(scenario, state, unit.id));
+  // A demoralized truck cannot go with an attack (M23), so it rests instead.
+  const trucks = own.filter((unit) => !ordered.has(unit.id) && !unit.morale.demoralized && isTransport(scenario, state, unit.id));
   const result: MoveOrder[] = [...routed];
   for (const truck of trucks) {
     const leaving = armiesOf((order) => armyKey(scenario, order), result.filter((order) => order.from === truck.territoryId));
@@ -216,8 +231,12 @@ export function withRoutes(scenario: Scenario, state: GameState, factionId: Fact
     const legs = order.legs ?? [];
     if (legs.length < 2 || !legs.every((leg) => leg.kind === "land")) return order;
     const army = result.filter((other) => armyKey(scenario, other) === armyKey(scenario, order)).map((other) => other.unitId);
+    // The whole army's route there, which may be a ride rather than the march one unit could make.
     const route = moveRoutes(scenario, state, factionId, order.from, army).get(order.to);
-    if (route !== undefined && route.legs.length === legs.length && route.legs.every((leg, index) => leg.to === legs[index]?.to)) return order;
+    if (route !== undefined) {
+      const step: MoveOrder = { factionId: order.factionId, from: order.from, kind: "move", to: order.to, unitId: order.unitId };
+      return route.shape === "step" ? step : { ...step, legs: route.legs };
+    }
     const first = legs[0];
     return first === undefined ? order : { ...order, legs: [first], to: first.to };
   });
@@ -238,5 +257,10 @@ export function withRoutes(scenario: Scenario, state: GameState, factionId: Fact
     }
     usable.push(...army.orders);
   }
-  return usable;
+  // D27.1: an army with no unit that can fight only reinforces its own side; one left to advance alone holds instead.
+  const advancing = new Set(classifyMoves(scenario, state, state.units, usable).advances.map((order) => order.unitId));
+  const fighting = new Set(armiesOf((order) => armyKey(scenario, order), usable)
+    .filter((army) => hasFighter(scenario, state.raised, army.orders.map((order) => order.unitId)))
+    .flatMap((army) => army.orders.map((order) => order.unitId)));
+  return usable.filter((order) => fighting.has(order.unitId) || !advancing.has(order.unitId));
 }

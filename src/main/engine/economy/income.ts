@@ -42,6 +42,6 @@ export function incomeFor(scenario: Scenario, state: GameState, factionId: Facti
   }));
   const paid = hookedIncome({ factionId, income: gross, scenario, state });
   const cut = Object.fromEntries(Object.entries(subtractResources(gross, paid)).filter(([, value]) => value !== 0));
-  const cutIds = new Set(state.raidCuts.filter((cut) => cut.turnNumber === state.turnNumber).map((cut) => cut.subTerritoryId));
+  const cutIds = new Set(state.raidCuts.filter((cut) => cut.turnNumber === state.turnNumber && cut.factionId === factionId).map((cut) => cut.subTerritoryId));
   return { cut, cutSubTerritoryIds: subTerritoryIds.filter((id) => cutIds.has(id)), gross, paid, subTerritoryIds };
 }

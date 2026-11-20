@@ -19,6 +19,8 @@ function heldBackText(scenario: Scenario, reason: HeldBackReason, from: Territor
       return `the port at ${territoryLabel(scenario, to)} had no room left this turn`;
     case "amphibious-lane":
       return `the sea lane to ${territoryLabel(scenario, to)} already carried a landing this turn`;
+    case "cannot-fight":
+      return `with no unit that can fight, it cannot enter ${territoryLabel(scenario, to)} on its own`;
   }
 }
 

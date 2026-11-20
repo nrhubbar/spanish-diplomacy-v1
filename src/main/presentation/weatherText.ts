@@ -13,5 +13,8 @@ export function describeTimeRanOut(scenario: Scenario, outcome: TimeRanOutOutcom
 export function describeFrostbite(scenario: Scenario, outcome: FrostbiteOutcome): string {
   // Recruited units (R6) are named from their ids, as scenario units are.
   const name = scenario.index.units.get(outcome.unitId)?.name ?? raisedDefinition(scenario, outcome.unitId)?.name ?? "A unit";
-  return `${name} lost ${String(outcome.men)} men to frostbite in ${territoryName(scenario, outcome.territoryId)}.`;
+  const where = territoryName(scenario, outcome.territoryId);
+  return outcome.destroyed === true
+    ? `${name} lost ${String(outcome.men)} men to frostbite in ${where} and broke up.`
+    : `${name} lost ${String(outcome.men)} men to frostbite in ${where}.`;
 }

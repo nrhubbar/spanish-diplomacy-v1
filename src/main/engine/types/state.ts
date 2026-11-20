@@ -114,6 +114,8 @@ export interface ReconReveal {
 
 /** U3: a raid's one-turn income cut on a sub-territory. */
 export interface RaidCut {
+  /** B3: the faction raided, the sub-territory's holder when the raid flew; only its income is cut. */
+  readonly factionId: FactionId;
   readonly subTerritoryId: SubTerritoryId;
   readonly turnNumber: number;
 }

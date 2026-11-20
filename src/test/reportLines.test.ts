@@ -103,7 +103,7 @@ describe("report lines carry the outcome's data (m3r1 contract follow-ups)", () 
     expect(line({ arrived: true, kind: "general-moved", order: general })).toMatch(/ went with his army to Valencia\.$/u);
     expect(line({ arrived: false, kind: "general-moved", order: general })).toMatch(/ stayed behind: his army did not reach Valencia\.$/u);
     expect(line({ factionId: republic, generalId: "vicente-rojo" as GeneralId, kind: "replacement-arrived", territoryId: territory("madrid"), unitId: unit("general-vicente-rojo") })).toBe("Vicente Rojo took command in Madrid.");
-    expect(line({ factionId: south, interceptorIds: [], kind: "interception", lostUnitIds: [], raiderIds: [], territoryId: territory("andalucia") })).toBe("Southern Insurgent Command's fighters intercepted raiders over Andaluc\u00eda.");
+    expect(line({ factionId: south, interceptorIds: [], kind: "interception", lostUnitIds: [], raiderIds: [], territoryId: territory("andalucia") })).toBe("Southern Insurgent Command's fighters intercepted enemy aircraft over Andaluc\u00eda.");
     expect(line({ factionId: south, interceptorIds: [], kind: "interception", lostUnitIds: [unit("rep-breguet-bombers")], raiderIds: [], territoryId: territory("andalucia") })).toMatch(/, shooting down 1\.$/u);
     expect(line({ battleIndex: 0, kind: "air-support", order: bomber, territoryId: territory("andalucia") })).toMatch(/ supported the battle for Andaluc\u00eda\.$/u);
     expect(line({ kind: "air-support", order: bomber, territoryId: territory("andalucia") })).toMatch(/, but no battle was fought there\.$/u);

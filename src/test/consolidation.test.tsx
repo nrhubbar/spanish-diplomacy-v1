@@ -159,7 +159,8 @@ describe("friendly consolidation (engine)", () => {
       ["rep-vitoria-8", "republic", "andalucia"],
       ["south-granada-6", "south", "andalucia"],
       ["rep-sevilla-34", "republic", "murcia"],
-      ["south-legion", "south", "ceuta"]
+      // Melilla: the Alboran lane sails from Republican Malaga (the Strait's port, Cadiz, is the South's; M5, Q-CITY-7).
+      ["south-legion", "south", "melilla"]
     ] as const;
     const leaves = play(scenario, withUnits(scenario, units), [
       move("republic", "rep-vitoria-8", "andalucia", "extremadura"),
@@ -169,7 +170,7 @@ describe("friendly consolidation (engine)", () => {
     expect(battlesOf(leaves)[0]).toMatchObject({ defender: { armies: [{ unitId: "south-granada-6" }] }, site: { territoryId: "andalucia" } });
 
     const staysBehind = play(scenario, withUnits(scenario, units), [
-      move("republic", "rep-vitoria-8", "andalucia", "ceuta"),
+      move("republic", "rep-vitoria-8", "andalucia", "melilla"),
       move("republic", "rep-sevilla-34", "murcia", "andalucia")
     ], loadedDice([4, 4, 4]));
     expect([resultOf(staysBehind, "rep-vitoria-8"), resultOf(staysBehind, "rep-sevilla-34")]).toEqual(["fought", "fought"]);
@@ -184,7 +185,7 @@ describe("friendly consolidation (engine)", () => {
       move("north", "north-aragon-17", "aragon", "castilla-la-mancha"),
       move("south", "south-granada-6", "andalucia", "castilla-la-mancha"),
       move("south", "south-lepanto-5", "andalucia", "castilla-la-mancha")
-    ], loadedDice([1, 1, 4, 4]));
+    ], loadedDice([1, 1, 4, 4, 4, 4, 4]));
     expect([resultOf(result, "rep-wad-ras-1"), resultOf(result, "rep-covadonga-4")]).toEqual(["reinforced", "reinforced"]);
     const attacks = battlesOf(result).filter((battle) => battle.site.kind === "assault");
     expect(attacks.map((battle) => battle.attackerFactionId)).toEqual(["north", "south"]);

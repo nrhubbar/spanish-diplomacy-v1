@@ -74,8 +74,17 @@ describe("computer player: orders (C18)", () => {
   });
 
   it("takes an empty territory, and avoids repeating a move that bounced last turn (A2)", () => {
-    const scenario = tiny();
-    // The Red Guard stays home in Westfold, so the marines can leave the harbor.
+    // Every territory is needed to win, so no territory is critical (D23), and Blue's alarm is
+    // off, so the board tests A2 alone. The Red Guard stays home in Westfold, so the marines can
+    // leave the harbor.
+    const base = tiny();
+    const blue = base.ai.profiles[faction("blue")];
+    if (blue === undefined) throw new Error("missing profile");
+    const scenario = {
+      ...base,
+      ai: { ...base.ai, profiles: { ...base.ai.profiles, [faction("blue")]: { ...blue, victoryAlarm: { critical: 0, perStep: 0, steps: 0 } } } },
+      victory: { ...base.victory, territoryShare: 1 }
+    };
     const state = withUnits(scenario, [["blue-marines", "blue", "harbor"], ["red-guard", "red", "westfold"]]);
     const fresh = ordersOf(scenario, state, "blue");
     expect(fresh).toHaveLength(1);
@@ -135,7 +144,8 @@ describe("computer player: attacks (C18)", () => {
       ["rep-madrid-security", "republic", "madrid"],
       ["rep-madrid-sierra-column", "republic", "madrid"]
     ]);
-    expect(ordersOf(scenario, state, "north")).toEqual([]);
+    // It may shift its army to cover ground the Madrid armies reach by rail, but it does not attack.
+    expect(into(ordersOf(scenario, state, "north"), "madrid")).toEqual([]);
   });
 
   it("combines armies from several origins when that improves the odds", () => {
@@ -246,8 +256,11 @@ describe("computer player: defence and morale (C18, M23)", () => {
     const view = assess(scenario, initialGameState(scenario), faction("south"));
     const { computer: computerWeights, stakes: stakeWeights, victoryAlarm } = view.profile;
     expect(view.stake(territory("andalucia"))).toBe(stakeWeights.territory + 5 * stakeWeights.city + stakeWeights.objective);
-    // The Republic starts three territories short of victory, which raises the South's own stakes.
-    expect(view.stake(territory("ceuta"))).toBe(stakeWeights.territory * (1 + victoryAlarm.perStep));
+    // The Republic starts four territories short of victory: no territory is critical (D23), so
+    // the South's own stakes stay plain, while the Republic's ground is raised by the alarm.
+    expect(view.isCritical(territory("ceuta"))).toBe(false);
+    expect(view.stake(territory("ceuta"))).toBe(stakeWeights.territory);
+    expect(view.stake(territory("murcia"))).toBe((stakeWeights.territory + stakeWeights.city) * (1 + victoryAlarm.perStep));
     expect(view.isObjective(territory("madrid"))).toBe(true);
     expect(computerWeights.ownLoss).toBeGreaterThan(computerWeights.enemyLoss);
   });

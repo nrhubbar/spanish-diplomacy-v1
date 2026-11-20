@@ -109,15 +109,24 @@ describe("computer player: relief and victory alarm", () => {
     expect(into(ordersOf(scenario, relieved, "south"), "murcia")).toEqual([]);
   });
 
-  it("raises the stakes of its own territory as a rival nears victory", () => {
+  it("raises the stakes only of its own territory whose loss would hand a rival victory (D23)", () => {
     const scenario = tiny();
-    // Red holds two of the three territories it needs.
-    const state = withUnits(scenario, [["blue-marines", "blue", "harbor"]]);
-    const view = assess(scenario, state, faction("blue"));
-    const { victoryAlarm } = view.profile;
-    const alarm = (victoryAlarm.steps - 1) * victoryAlarm.perStep;
-    expect(view.stake(territory("lowlands"))).toBe(4 * (1 + alarm));
-    expect(view.stake(territory("isle"))).toBe(4);
-    expect(view.relief(territory("lowlands"))).toBeUndefined();
+    // Red holds two of the three territories it needs. With no Red army able to reach Blue's
+    // ground, nothing Blue holds is critical, and its stakes stay plain.
+    const quiet = assess(scenario, withUnits(scenario, [["blue-marines", "blue", "harbor"]]), faction("blue"));
+    const { victoryAlarm } = quiet.profile;
+    expect(quiet.isCritical(territory("lowlands"))).toBe(false);
+    expect(quiet.stake(territory("lowlands"))).toBe(4);
+    expect(quiet.relief(territory("lowlands"))).toBeUndefined();
+    // The Red Guard in Westfold can walk into the Lowlands, which would win Red the game: they
+    // are critical. The Isle, which no Red army can reach, and the Harbor are not.
+    const view = assess(scenario, withUnits(scenario, [["blue-marines", "blue", "harbor"], ["red-guard", "red", "westfold"]]), faction("blue"));
+    expect(view.isCritical(territory("lowlands"))).toBe(true);
+    expect(view.stake(territory("lowlands"))).toBe(4 * (1 + victoryAlarm.critical));
+    expect(view.isCritical(territory("isle"))).toBe(false);
+    expect(view.isCritical(territory("harbor"))).toBe(false);
+    // Blue is one short too: taking Red's Highlands, a Blue objective, would win it the game.
+    const { stakes } = view.profile;
+    expect(view.stake(territory("highlands"))).toBe((stakes.territory + stakes.objective) * (1 + victoryAlarm.critical));
   });
 });

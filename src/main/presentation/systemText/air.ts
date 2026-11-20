@@ -58,7 +58,7 @@ export const airLines: ReportLines<AirTurnOutcome> = {
     `${flier(context, outcome.order)} flew reconnaissance over ${territoryLabel(context.scenario, outcome.territoryId)}; its balances, queues and training show until turn ${String(outcome.untilTurn)}.`,
   interception: (outcome, { scenario }) => {
     const lost = outcome.lostUnitIds.length;
-    return `${factionLabel(scenario, outcome.factionId)}'s fighters intercepted raiders over ${territoryLabel(scenario, outcome.territoryId)}${lost === 0 ? "." : `, shooting down ${String(lost)}.`}`;
+    return `${factionLabel(scenario, outcome.factionId)}'s fighters intercepted enemy aircraft over ${territoryLabel(scenario, outcome.territoryId)}${lost === 0 ? "." : `, shooting down ${String(lost)}.`}`;
   },
   "air-support": (outcome, context) =>
     outcome.battleIndex === undefined
