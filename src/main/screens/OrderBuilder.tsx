@@ -10,6 +10,8 @@ import { orderCounts, type PlanningSession } from "../state/planning";
 import { ArmyLine } from "./ArmyLine";
 import { ArmyPicker } from "./ArmyPicker";
 import { DestinationChoices } from "./DestinationChoices";
+import { ArmyLeaving } from "./movement/ArmyLeaving";
+import { destinationRoutes } from "./movement/destinationRoutes";
 import { armies } from "./OrderCommand";
 import { SubTerritoryFocus } from "./pane/SubTerritoryFocus";
 import { TerritoryTabs } from "./pane/TerritoryTabs";
@@ -47,7 +49,8 @@ export function OrderBuilder({ estimates, scenario, session }: BuilderProps & { 
             <button className="text-button" onClick={() => dispatch(cancelOrderStage())} ref={focusWhenShown} type="button">Cancel move</button>
           </div>
         ) : null}
-        {choosingDestination && estimates.size > 0 ? <DestinationChoices estimates={estimates} scenario={scenario} /> : null}
+        {choosingDestination && territoryId !== undefined ? <ArmyLeaving scenario={scenario} session={session} territoryId={territoryId} /> : null}
+        {choosingDestination && estimates.size > 0 ? <DestinationChoices estimates={estimates} moves={destinationRoutes(scenario, session)} scenario={scenario} /> : null}
         {territoryId === undefined ? (
           <p className="pane-hint">Select a territory or one of your armies on the map.</p>
         ) : (

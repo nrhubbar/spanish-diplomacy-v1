@@ -127,6 +127,22 @@ export interface RailRide {
  * the first level that reaches a territory gives its ride, so a ride always uses the best line.
  */
 export function railReach(scenario: Scenario, state: GameState, factionId: FactionId, from: TerritoryId): ReadonlyMap<TerritoryId, RailRide> {
+  // States are never changed in place, so a ride map is remembered per state, scenario and start.
+  const byState = reachMemo.get(state) ?? new WeakMap<Scenario, Map<string, ReadonlyMap<TerritoryId, RailRide>>>();
+  reachMemo.set(state, byState);
+  const byKey = byState.get(scenario) ?? new Map<string, ReadonlyMap<TerritoryId, RailRide>>();
+  byState.set(scenario, byKey);
+  const key = `${factionId}|${from}`;
+  const known = byKey.get(key);
+  if (known !== undefined) return known;
+  const rides = computeRailReach(scenario, state, factionId, from);
+  byKey.set(key, rides);
+  return rides;
+}
+
+const reachMemo = new WeakMap<GameState, WeakMap<Scenario, Map<string, ReadonlyMap<TerritoryId, RailRide>>>>();
+
+function computeRailReach(scenario: Scenario, state: GameState, factionId: FactionId, from: TerritoryId): ReadonlyMap<TerritoryId, RailRide> {
   const rides = new Map<TerritoryId, RailRide>();
   const boarding = capitalOf(scenario, from);
   const perLevel = scenario.movement?.railRangePerLevel ?? 0;

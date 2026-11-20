@@ -1,5 +1,6 @@
 import type { JSX } from "react";
 import type { TerritoryId } from "../engine/types";
+import { glyphs } from "../presentation/glyphs";
 import { type DestinationEstimate, oddsSummary } from "../presentation/odds";
 import type { MapPoint } from "../scenarios/loader";
 import { intersects, type ScreenRect } from "./placement";
@@ -10,6 +11,8 @@ interface DestinationOddsLayerProps {
   readonly estimates: ReadonlyMap<TerritoryId, DestinationEstimate>;
   /** Screen position of each territory's name label, where the odds sit just above. */
   readonly labelAt: (territoryId: TerritoryId) => MapPoint;
+  /** X5: the route's tag before the odds, "By rail \u00b7 Reinforce", where a destination has one. */
+  readonly tags?: ReadonlyMap<TerritoryId, string> | undefined;
 }
 
 /** Plaque height and an over-estimate of its glyph width at 12 px bold, in screen pixels. */
@@ -47,8 +50,12 @@ export function placeOddsPlaques(
  * decorative and let clicks through to the map; the Orders pane lists the same odds for
  * keyboard and screen-reader players.
  */
-export function DestinationOddsLayer({ counters, estimates, labelAt }: DestinationOddsLayerProps): JSX.Element {
-  const entries = [...estimates].map(([territoryId, estimate]) => ({ at: labelAt(territoryId), summary: oddsSummary(estimate), territoryId }));
+export function DestinationOddsLayer({ counters, estimates, labelAt, tags }: DestinationOddsLayerProps): JSX.Element {
+  const entries = [...estimates].map(([territoryId, estimate]) => {
+    const summary = oddsSummary(estimate);
+    const tag = tags?.get(territoryId);
+    return { at: labelAt(territoryId), summary: tag === undefined ? summary : { ...summary, chip: `${tag} ${glyphs.dot} ${summary.chip}` }, territoryId };
+  });
   const spots = placeOddsPlaques(entries.map(({ at, summary, territoryId }) => ({ at, territoryId, text: summary.chip })), counters);
   return (
     <div aria-hidden="true" className="odds-layer">

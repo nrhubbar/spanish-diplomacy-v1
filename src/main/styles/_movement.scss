@@ -1,0 +1,171 @@
+// X5, X6: move chips, the breakdown card, the "Army leaving" summary, and the rail map layer.
+
+.army-leaving {
+  margin: 0 0 0.6rem;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid rgb(36 29 24 / 22%);
+  border-radius: 6px;
+  background: rgb(255 255 255 / 55%);
+
+  p {
+    margin: 0;
+  }
+}
+
+.army-leaving-heading {
+  font-family: var(--serif);
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.army-leaving-line {
+  display: flex;
+  gap: 0.35rem;
+  align-items: baseline;
+  margin-top: 0.2rem !important;
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+}
+
+.move-icon {
+  flex: none;
+  vertical-align: -1px;
+}
+
+.route-chips {
+  display: flex;
+  flex-wrap: wrap;
+  grid-column: 1 / -1;
+  gap: 0.25rem;
+}
+
+.route-chip {
+  display: inline-flex;
+  gap: 0.25rem;
+  align-items: center;
+  padding: 0.05rem 0.45rem;
+  border: 1px solid rgb(36 29 24 / 28%);
+  border-radius: 999px;
+  color: var(--ink);
+  background: var(--paper);
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+.route-chip[data-warn="true"] {
+  border-color: var(--bounce);
+  color: #6b4100;
+  background: var(--gold-wash);
+}
+
+.route-card {
+  margin-top: 0.3rem;
+  padding: 0.55rem 0.7rem;
+  border: 1.5px solid var(--ink);
+  border-radius: 6px;
+  background: #fff;
+
+  h5 {
+    margin: 0 0 0.3rem;
+    font-family: var(--serif);
+    font-size: 0.95rem;
+  }
+}
+
+.route-card-rows {
+  display: grid;
+  gap: 0.15rem;
+  margin: 0;
+  font-size: 0.8rem;
+
+  > div {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: space-between;
+  }
+
+  dt {
+    color: var(--ink-soft);
+  }
+
+  dd {
+    margin: 0;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.route-card-total {
+  margin-top: 0.2rem;
+  padding-top: 0.2rem;
+  border-top: 1px solid var(--rule);
+}
+
+.rail-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.rail-line {
+  fill: none;
+  stroke: #3b2f26;
+  stroke-linecap: round;
+  stroke-opacity: 0.55;
+}
+
+.rail-line-halo {
+  fill: none;
+  stroke: var(--route-halo);
+  stroke-linecap: round;
+}
+
+.rail-line[data-rideable="true"] {
+  stroke: var(--route);
+  stroke-opacity: 0.95;
+}
+
+.rail-ties {
+  fill: none;
+  stroke: #3b2f26;
+  stroke-dasharray: 1 5;
+  stroke-opacity: 0.55;
+}
+
+.rail-station {
+  fill: var(--paper);
+  stroke: #3b2f26;
+  stroke-width: 1.2;
+}
+
+.rail-station[data-rideable="true"] {
+  stroke: var(--route);
+  stroke-width: 1.6;
+}
+
+.move-route {
+  fill: none;
+  stroke: var(--route);
+  stroke-dasharray: 6 4;
+  stroke-linecap: round;
+  stroke-width: 2.2;
+}
+
+.move-route[data-kind="sea"] {
+  stroke-dasharray: 2 4;
+}
+
+.destination-row {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.destination-route {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0 0.6rem 0.2rem;
+}

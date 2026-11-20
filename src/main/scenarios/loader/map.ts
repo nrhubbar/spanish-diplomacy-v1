@@ -1,4 +1,4 @@
-import type { CityId, TerritoryId, UnitTypeId } from "../../engine/types";
+import type { CityId, SubTerritoryId, TerritoryId, UnitTypeId } from "../../engine/types";
 import type { MapPackage, MapPoint } from "../loader";
 import type { MapDocument } from "../schema/mapSchema";
 import type { ScenarioDocument } from "../schema/scenarioSchema";
@@ -70,6 +70,10 @@ export function indexMap(document: MapDocument): MapPackage {
     id: document.id,
     regions: new Map(Object.entries(document.regions).map(([regionId, region]) => [regionId, region.territoryId as TerritoryId])),
     stripSelectors: document.geometry.stripSelectors,
+    subTerritories: new Map(Object.entries(document.subTerritories?.entries ?? {}).map(([id, entry]) => [
+      id as SubTerritoryId,
+      { capital: entry.capital, label: entry.label, territoryId: entry.territoryId as TerritoryId }
+    ])),
     ...(document.terrain === undefined
       ? {}
       : {

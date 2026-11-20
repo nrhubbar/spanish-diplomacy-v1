@@ -3,7 +3,6 @@ import { classifyMoves } from "../orders";
 import type { Phase } from "../phases/draft";
 import type {
   FactionId,
-  FrostbiteOutcome,
   HeldBackReason,
   MoveHeldBackOutcome,
   MoveInterceptedOutcome,
@@ -11,8 +10,7 @@ import type {
   MoveTransitOutcome,
   SystemOutcome,
   TerritoryId,
-  UnitId,
-  UnitState
+  UnitId
 } from "../types";
 import { armyAllowance, fitsAllowance, transportOf } from "./allowance";
 import { portLandings, railDepartures } from "./network";
@@ -108,7 +106,7 @@ export const checkArmies: Phase = (draft) => {
  *   from, and from there it is an ordinary one-step move for the meeting and territory battles
  *   (steps 4 and 5): a bounced army returns there.
  * - Reinforcements arrive (M11), as in the preset.
- * - Units that move in a zone whose weather has `frostbite` lose that share of their men.
+ * Frostbite (T4) is the weather module's step-9 part (`m3r1-weather-timer`, WT-5).
  */
 export const moveAlongRoutes: Phase = (draft) => {
   const { scenario } = draft.input;
@@ -165,9 +163,6 @@ export const moveAlongRoutes: Phase = (draft) => {
   let armies = draft.armies;
   armies = replaceArmies(armies, [...staged].map(([unitId, staging]) => placeAt(requireArmy(armies, unitId), staging)));
   armies = replaceArmies(armies, reinforcements.map((order) => placeAt(requireArmy(armies, order.unitId), order.to)));
-  const frostbite = frostbiteOf(draft, valid, armies);
-  armies = replaceArmies(armies, frostbite.units);
-  events.push(...frostbite.outcomes);
 
   return {
     ...draft,
@@ -176,24 +171,3 @@ export const moveAlongRoutes: Phase = (draft) => {
     orders: { ...draft.orders, advances, origins, reinforcements, valid }
   };
 };
-
-/** T4, D7: units that move where the weather has `frostbite` lose that share of their men (at least one stays). */
-function frostbiteOf(draft: Parameters<Phase>[0], moved: readonly MoveOrder[], armies: Readonly<Record<UnitId, UnitState>>): { readonly outcomes: readonly FrostbiteOutcome[]; readonly units: readonly UnitState[] } {
-  const { scenario } = draft.input;
-  const weather = draft.systems.weather;
-  if (weather === undefined || scenario.weather === undefined) return { outcomes: [], units: [] };
-  const outcomes: FrostbiteOutcome[] = [];
-  const units: UnitState[] = [];
-  for (const order of moved) {
-    const zone = scenario.index.territories.get(draft.input.start.units[order.unitId]?.territoryId ?? order.from)?.weatherZoneId;
-    const outcomeId = zone === undefined ? undefined : weather.outcomes[zone];
-    const share = scenario.weather.outcomes.find((outcome) => outcome.id === outcomeId)?.effects.reduce((sum, effect) => sum + (effect.kind === "frostbite" ? effect.share : 0), 0) ?? 0;
-    const unit = armies[order.unitId];
-    if (share <= 0 || unit === undefined) continue;
-    const men = Math.min(unit.strength - 1, Math.round(unit.strength * share));
-    if (men <= 0) continue;
-    units.push({ ...unit, strength: unit.strength - men });
-    outcomes.push({ factionId: unit.factionId, kind: "frostbite", men, territoryId: unit.territoryId, unitId: unit.id });
-  }
-  return { outcomes, units };
-}

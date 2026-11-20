@@ -4,6 +4,7 @@ import { armyAllowance, fitsAllowance, stepCost, transportOf } from "./allowance
 import {
   connectionBetween,
   connectionKey,
+  enemyArmyIn,
   friendlyPort,
   isFriendlyGround,
   landingAt,
@@ -277,9 +278,12 @@ export function moveRoutes(
   const ordered = new Set(unitIds);
   const usage = usageOf(plannedRoutes(scenario, state, planned.filter((order) => order.factionId === factionId && !ordered.has(order.unitId))));
   const found = new Map<TerritoryId, MoveRoute>();
+  // M23: a demoralized unit cannot attack, so it may not enter where another faction stands.
+  const demoralized = unitIds.some((unitId) => state.units[unitId]?.morale.demoralized === true);
   const offer = (legs: readonly MoveLeg[]): void => {
     const to = legs[legs.length - 1]?.to;
     if (to === undefined || to === from || found.has(to)) return;
+    if (demoralized && enemyArmyIn(state, factionId, to)) return;
     const check = describeRoute(scenario, state, factionId, from, legs, movement.allMobile, rides);
     if (!check.ok || !fitsAllowance(check.route.cost, check.route.steps, movement.allowance)) return;
     if (!hasRoom(scenario, state, check.route, armyKey(scenario, { factionId, from, legs, to }), usage)) return;

@@ -3,7 +3,7 @@ import { type StandingOrder, standingOrder } from "../../engine/orders";
 import type { MoveOrder, Scenario, TerritoryId, UnitId } from "../../engine/types";
 import { validateMoveOrder } from "../../engine/validation";
 import type { OrderKind } from "../session";
-import { type PlanningSession, availableUnitIds, feedback, selectedDestinations, selectedUnits, selecting, selectionOf, withDraft } from "./selection";
+import { type PlanningSession, availableUnitIds, feedback, selectedDestinations, selectedRoutes, selectedUnits, selecting, selectionOf, withDraft } from "./selection";
 
 /** "Give Selected Armies Order": opens the order choice, or closes it when it is open. */
 export function toggleOrderChoice(session: PlanningSession): PlanningSession {
@@ -68,10 +68,14 @@ export function chooseDestination(scenario: Scenario, session: PlanningSession, 
   if (!selectedDestinations(scenario, session).includes(territoryId)) {
     return feedback(session, refusal(scenario, session, origin, territoryId));
   }
+  // CT-6: a plain land step keeps no legs; rail, sea and marches carry theirs (M4).
+  const route = selectedRoutes(scenario, session)?.get(territoryId);
+  const legs = route === undefined || route.shape === "step" ? undefined : route.legs;
   const planned: MoveOrder[] = session.draft.selectedUnitIds.map((unitId) => ({
     factionId: session.factionId,
     from: origin,
     kind: "move",
+    ...(legs === undefined ? {} : { legs }),
     to: territoryId,
     unitId
   }));

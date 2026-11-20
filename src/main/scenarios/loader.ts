@@ -1,7 +1,7 @@
 import type { ZodError } from "zod";
 import { builtInModuleRegistry, type ModuleRegistry } from "../engine/modules";
 import { initialGameState } from "../engine/resolution";
-import type { CityId, Scenario, TerritoryId, UnitTypeId } from "../engine/types";
+import type { CityId, Scenario, SubTerritoryId, TerritoryId, UnitTypeId } from "../engine/types";
 import { victoryProgress } from "../engine/victory";
 import { checkCore } from "./loader/coreChecks";
 import { indexScenario } from "./loader/indexScenario";
@@ -37,6 +37,13 @@ export interface TerrainLayerSource {
   readonly imagePath: string;
 }
 
+/** One sub-territory on the map: where its name and its chief town (a rail station, X6) are drawn. */
+export interface MapSubTerritory {
+  readonly capital: MapPoint;
+  readonly label: MapPoint;
+  readonly territoryId: TerritoryId;
+}
+
 /** A validated map package. Asset paths are resolved lazily by the registry. */
 export interface MapPackage {
   readonly attribution: readonly { readonly text: string; readonly url?: string }[];
@@ -49,6 +56,8 @@ export interface MapPackage {
   readonly regions: ReadonlyMap<string, TerritoryId>;
   readonly rivers: readonly MapRiver[];
   readonly stripSelectors: readonly string[];
+  /** Sub-territory label and capital points (the map package's `subTerritories.entries`); empty without them. */
+  readonly subTerritories: ReadonlyMap<SubTerritoryId, MapSubTerritory>;
   readonly terrain?: { readonly layers: readonly TerrainLayerSource[] };
   readonly territories: ReadonlyMap<TerritoryId, MapTerritory>;
   readonly unitSymbolPaths: ReadonlyMap<UnitTypeId, string>;

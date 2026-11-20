@@ -1,6 +1,8 @@
 import { standingOrder } from "../../engine/orders";
 import type { MoveOrder, Scenario, TerritoryId, UnitId, UnitState } from "../../engine/types";
+import type { MoveRoute } from "../../engine/movement/routes";
 import { legalDestinations } from "../../engine/validation";
+import { selectionRoutes } from "../../presentation/movement";
 import type { Draft, OrderKind, Session } from "../session";
 import { chooseDestination } from "./orders";
 
@@ -80,7 +82,15 @@ export function availableUnitIds(session: PlanningSession, territoryId: Territor
 
 export function selectedDestinations(scenario: Scenario, session: PlanningSession): readonly TerritoryId[] {
   if (session.draft.stage?.step !== "choose-destination") return [];
+  const routes = selectedRoutes(scenario, session);
+  if (routes !== undefined) return scenario.territories.map((territory) => territory.id).filter((id) => routes.has(id));
   return legalDestinations(scenario, session.game.state, session.factionId, session.draft.selectedUnitIds);
+}
+
+/** M1-M5: under `allowance`, the route offered for each destination of the selected units. */
+export function selectedRoutes(scenario: Scenario, session: PlanningSession): ReadonlyMap<TerritoryId, MoveRoute> | undefined {
+  const { draft } = session;
+  return selectionRoutes(scenario, session.game.state, session.factionId, draft.selectedTerritoryId, draft.selectedUnitIds, draft.orders);
 }
 
 /** A map click means "select this territory" or, while choosing a destination, "move here". */

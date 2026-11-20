@@ -10,7 +10,7 @@ import type {
   UnitState
 } from "../../engine/types";
 import { portLandings, railDepartures, unitTypeOf } from "../../engine/movement/network";
-import { armyKey, describeRoute, legsOf, moveRoutes, routeClaims } from "../../engine/movement/routes";
+import { armyKey, describeRoute, legsOf, type MoveRoute, moveRoutes, routeClaims } from "../../engine/movement/routes";
 import { armiesOf } from "../../engine/movement/transit";
 import { validateMoveOrder } from "../../engine/validation";
 import { assess, type Assessment } from "../assessment";
@@ -117,10 +117,8 @@ export const planMoves: OrderPlanner<MoveOrder> = ({ factionId, memory: context,
 export function legalMoves(scenario: Scenario, state: GameState, unit: UnitState): readonly MoveOrder[] {
   if (scenario.rules.movement === "allowance") {
     if (isTransport(scenario, state, unit.id)) return [];
-    const trucks = Object.values(state.units).filter((other) => other.territoryId === unit.territoryId && other.factionId === unit.factionId && isTransport(scenario, state, other.id));
-    return [...moveRoutes(scenario, state, unit.factionId, unit.territoryId, [unit.id, ...trucks.map((truck) => truck.id)]).values()]
-      .map((route): MoveOrder => ({ factionId: unit.factionId, from: unit.territoryId, kind: "move", legs: route.legs, to: route.to, unitId: unit.id }))
-      .filter((order) => validateMoveOrder(scenario, state, order).ok);
+    return [...unitRoutes(scenario, state, unit).values()]
+      .map((route): MoveOrder => ({ factionId: unit.factionId, from: unit.territoryId, kind: "move", ...(route.shape === "step" ? {} : { legs: route.legs }), to: route.to, unitId: unit.id }));
   }
   return neighborsOf(scenario, unit.territoryId)
     .map((neighbor): MoveOrder => ({
@@ -169,6 +167,22 @@ function approachTargets(scenario: Scenario, state: GameState, assessment: Asses
   });
   return new Set(remaining.length > 0 ? remaining : objectives);
 }
+
+/** Routes for a unit with the trucks standing with it, remembered per state for units alike (origin, mobility, morale). */
+function unitRoutes(scenario: Scenario, state: GameState, unit: UnitState): ReadonlyMap<TerritoryId, MoveRoute> {
+  const memo = routeMemo.get(state) ?? new Map<string, ReadonlyMap<TerritoryId, MoveRoute>>();
+  routeMemo.set(state, memo);
+  const mobile = (unitTypeOf(scenario, state, unit.id)?.effects ?? []).some((effect) => effect.kind === "mobile");
+  const key = `${scenario.id}|${unit.factionId}|${unit.territoryId}|${String(mobile)}|${String(unit.morale.demoralized)}`;
+  const known = memo.get(key);
+  if (known !== undefined) return known;
+  const trucks = Object.values(state.units).filter((other) => other.territoryId === unit.territoryId && other.factionId === unit.factionId && isTransport(scenario, state, other.id));
+  const routes = moveRoutes(scenario, state, unit.factionId, unit.territoryId, [unit.id, ...trucks.map((truck) => truck.id)]);
+  memo.set(key, routes);
+  return routes;
+}
+
+const routeMemo = new WeakMap<GameState, Map<string, ReadonlyMap<TerritoryId, MoveRoute>>>();
 
 function isTransport(scenario: Scenario, state: GameState, unitId: UnitId): boolean {
   return (unitTypeOf(scenario, state, unitId)?.effects ?? []).some((effect) => effect.kind === "transport");

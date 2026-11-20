@@ -5,7 +5,7 @@ import type { MapAssets } from "../scenarios/registry";
 import { CounterLayer, layoutCounters } from "./CounterLayer";
 import { DestinationOddsLayer } from "./DestinationOddsLayer";
 import { AirLayer } from "./layers/AirLayer";
-import { RailLayer } from "./layers/RailLayer";
+import { destinationTags, RailLayer } from "./layers/RailLayer";
 import type { MapLayerProps } from "./layers/slots";
 import { SubTerritoryLayer } from "./layers/SubTerritoryLayer";
 import { mapControlObstacles } from "./MapControls";
@@ -93,7 +93,7 @@ export function MapLayers({ assets, bounds, camera, game, geometry, layout, leve
       />
       <AirLayer {...layerProps} />
       {view.destinationEstimates === undefined ? null : (
-        <DestinationOddsLayer counters={counters} estimates={view.destinationEstimates} labelAt={(id) => toScreen(mapTerritory(map, id).label)} />
+        <DestinationOddsLayer counters={counters} estimates={view.destinationEstimates} labelAt={(id) => toScreen(mapTerritory(map, id).label)} tags={destinationTags(scenario, game, view)} />
       )}
     </>
   );
