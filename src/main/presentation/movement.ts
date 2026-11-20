@@ -137,7 +137,9 @@ export function routeDetail(scenario: Scenario, state: GameState, route: MoveRou
 /** X5: the rows of the breakdown card for a destination: what the route costs and why. */
 export function routeRows(scenario: Scenario, state: GameState, route: MoveRoute, allowance: number): readonly { readonly label: string; readonly value: string }[] {
   const rows: { label: string; value: string }[] = [];
-  rows.push({ label: "Moves this turn", value: `${String(route.cost)} of ${String(allowance)}` });
+  // M1: a single step always fits, using at most the whole allowance.
+  const used = route.steps <= 1 ? Math.min(route.cost, allowance) : route.cost;
+  rows.push({ label: "Moves this turn", value: `${String(used)} of ${String(allowance)}` });
   for (const entry of route.shape === "step" || route.shape === "march" ? route.rough : []) rows.push({ label: `Enters ${subTerritoryName(scenario, entry)} (${scenario.index.subTerritories.get(entry)?.terrain ?? "mountain"})`, value: "+1 move" });
   if (route.rail !== undefined) rows.push({ label: `Rail, level ${String(route.rail.level)}`, value: `${String(route.rail.crossings)} of ${String(route.rail.range)} borders` });
   if (route.sea?.kind === "amphibious") rows.push({ label: "Amphibious assault", value: signedRoll(scenario.d20?.modifiers.amphibious ?? 0) });
