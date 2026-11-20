@@ -11,6 +11,8 @@ import { ArmyLine } from "./ArmyLine";
 import { ArmyPicker } from "./ArmyPicker";
 import { DestinationChoices } from "./DestinationChoices";
 import { armies } from "./OrderCommand";
+import { SubTerritoryFocus } from "./pane/SubTerritoryFocus";
+import { TerritoryTabs } from "./pane/TerritoryTabs";
 import { PlannedOddsInfo, PlannedOrderOdds } from "./PlannedOrderOdds";
 
 /**
@@ -49,7 +51,11 @@ export function OrderBuilder({ estimates, scenario, session }: BuilderProps & { 
         {territoryId === undefined ? (
           <p className="pane-hint">Select a territory or one of your armies on the map.</p>
         ) : (
-          <TerritoryDetails scenario={scenario} session={session} territoryId={territoryId} />
+          draft.focusedSubTerritoryId === undefined ? (
+            <TerritoryTabs key={territoryId} scenario={scenario} session={session} territoryId={territoryId}>
+              <TerritoryDetails scenario={scenario} session={session} territoryId={territoryId} />
+            </TerritoryTabs>
+          ) : <SubTerritoryFocus scenario={scenario} subTerritoryId={draft.focusedSubTerritoryId} />
         )}
         {draft.feedback === undefined ? null : <p className="inline-feedback" role="status">{draft.feedback}</p>}
       </section>

@@ -1,6 +1,7 @@
 import { type JSX, useCallback, useMemo, useState } from "react";
-import type { TerritoryId, UnitState } from "../engine/types";
+import type { Scenario, TerritoryId, UnitState } from "../engine/types";
 import { GameHeader } from "../components/GameHeader";
+import type { HeaderSlotProps } from "../components/header/slots";
 import { useAppDispatch, useRegistry, useSessionIn } from "../hooks";
 import type { MapView } from "../map/view";
 import { glyphs } from "../presentation/glyphs";
@@ -9,6 +10,7 @@ import { turnLabel } from "../presentation/turn";
 import { openSetup, startNextTurn } from "../state/gameSlice";
 import { selectRevealedOrders } from "../state/selectors";
 import type { Session } from "../state/session";
+import { sessionViewer } from "../state/visible";
 import { MapScreenFrame } from "./MapScreenFrame";
 import { BattleReport } from "./report/BattleReport";
 import { FocusNote, OutcomeSummary, RevealedOrdersPanel, TerritoryChanges, VictoryProgressPanel } from "./ResultPanels";
@@ -65,7 +67,7 @@ function Results({ session }: { readonly session: ResultSession }): JSX.Element 
   return (
     <MapScreenFrame
       game={game.state}
-      header={<GameHeader kicker={`${turnLabel(scenario, game.state.turnNumber)} ${glyphs.dot} ${over ? "Campaign concluded" : "Orders revealed"}`} title={title} />}
+      header={<GameHeader kicker={`${turnLabel(scenario, game.state.turnNumber)} ${glyphs.dot} ${over ? "Campaign concluded" : "Orders revealed"}`} slots={headerSlots(scenario, session)} title={title} />}
       label={title}
       pane={{
         // A focused place opens a collapsed pane, so the player sees its card or note.
@@ -94,4 +96,10 @@ function Results({ session }: { readonly session: ResultSession }): JSX.Element 
       view={view}
     />
   );
+}
+
+/** The header slots of a report: the visible final state, seen by the report's viewer. */
+function headerSlots(scenario: Scenario, session: ResultSession): HeaderSlotProps {
+  const viewer = sessionViewer(session);
+  return { scenario, state: session.result.finalState, ...(viewer === undefined ? {} : { viewer }) };
 }

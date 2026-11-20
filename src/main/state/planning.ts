@@ -3,5 +3,6 @@
  * armies (`planning/selection.ts`), and giving and removing orders (`planning/orders.ts`).
  * Import from here.
  */
+export * from "./planning/focus";
 export * from "./planning/orders";
 export * from "./planning/selection";

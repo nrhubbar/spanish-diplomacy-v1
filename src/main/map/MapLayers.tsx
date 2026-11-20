@@ -4,6 +4,10 @@ import type { MapRect, ScenarioPackage } from "../scenarios/loader";
 import type { MapAssets } from "../scenarios/registry";
 import { CounterLayer, layoutCounters } from "./CounterLayer";
 import { DestinationOddsLayer } from "./DestinationOddsLayer";
+import { AirLayer } from "./layers/AirLayer";
+import { RailLayer } from "./layers/RailLayer";
+import type { MapLayerProps } from "./layers/slots";
+import { SubTerritoryLayer } from "./layers/SubTerritoryLayer";
 import { mapControlObstacles } from "./MapControls";
 import type { PaneLayout } from "./MapPane";
 import { TerrainLayer } from "./TerrainLayer";
@@ -44,6 +48,7 @@ export function MapLayers({ assets, bounds, camera, game, geometry, layout, leve
   });
   const { height, width } = counterLayout.metrics;
   const counters = [...counterLayout.positions.values()].map((position) => ({ ...position, height, width }));
+  const layerProps: MapLayerProps = { game, level, scenarioPackage, toScreen, view };
 
   return (
     <>
@@ -75,6 +80,9 @@ export function MapLayers({ assets, bounds, camera, game, geometry, layout, leve
           viewport: { height: viewport.height - viewport.insetBottom, width: viewport.width - viewport.insetRight - (viewport.insetRight > 0 ? 12 : 0) }
         })}
       />
+      {/* Milestone 3 layers, between the map and the counters: sub-territories, then rail. */}
+      <SubTerritoryLayer {...layerProps} />
+      <RailLayer {...layerProps} />
       <CounterLayer
         game={game}
         layout={counterLayout}
@@ -83,6 +91,7 @@ export function MapLayers({ assets, bounds, camera, game, geometry, layout, leve
         unitSymbols={assets.unitSymbols}
         view={view}
       />
+      <AirLayer {...layerProps} />
       {view.destinationEstimates === undefined ? null : (
         <DestinationOddsLayer counters={counters} estimates={view.destinationEstimates} labelAt={(id) => toScreen(mapTerritory(map, id).label)} />
       )}

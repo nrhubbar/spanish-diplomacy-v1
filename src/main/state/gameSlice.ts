@@ -1,6 +1,6 @@
 import { createAction, createReducer } from "@reduxjs/toolkit";
 import { initialGameState } from "../engine/resolution";
-import type { ActorKind, FactionId, Scenario, ScenarioId, TerritoryId, UnitId } from "../engine/types";
+import type { ActorKind, FactionId, Scenario, ScenarioId, SubTerritoryId, TerritoryId, UnitId } from "../engine/types";
 import type { ScenarioRegistry } from "../scenarios/registry";
 import { advance, lockSubmission, nextTurn } from "./coordinator";
 import {
@@ -9,11 +9,13 @@ import {
   clearSelection,
   clickTerritory,
   clickUnit,
-  type PlanningSession,
+  focusOn,
   removeOrder,
   selectAllAvailable,
   toggleOrderChoice,
-  toggleUnit
+  toggleUnit,
+  type PlanningSession,
+  unfocus
 } from "./planning";
 import { type Assignments, emptyDraft, type OrderKind, type Session } from "./session";
 
@@ -47,6 +49,8 @@ export const chooseOrderKind = createAction<OrderKind>("game/chooseOrderKind");
 export const cancelOrderStage = createAction("game/cancelOrderStage");
 export const removePlannedOrder = createAction<UnitId>("game/removePlannedOrder");
 export const endTurn = createAction("game/endTurn");
+/** X3: focus the pane on a sub-territory, or (undefined) back to its territory. */
+export const focusSubTerritory = createAction<SubTerritoryId | undefined>("game/focusSubTerritory");
 export const startNextTurn = createAction("game/startNextTurn");
 
 function setupFor(scenario: Scenario): Session {
@@ -121,6 +125,8 @@ export function createGameReducer(dependencies: GameReducerDependencies) {
         set(inPlanning(state.session, (_scenario, planning) => clearSelection(planning))))
       .addCase(toggleOrderMenu, (state) =>
         set(inPlanning(state.session, (_scenario, planning) => toggleOrderChoice(planning))))
+      .addCase(focusSubTerritory, (state, { payload }) =>
+        set(inPlanning(state.session, (scenario, planning) => (payload === undefined ? unfocus(planning) : focusOn(scenario, planning, payload)))))
       .addCase(chooseOrderKind, (state, { payload }) =>
         set(inPlanning(state.session, (scenario, planning) => chooseOrder(scenario, planning, payload))))
       .addCase(cancelOrderStage, (state) =>
