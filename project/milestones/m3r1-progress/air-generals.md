@@ -163,7 +163,7 @@ Each is a small wiring edit.
 - `src/test/air/*`: 39 passed.
 - Full `vitest` run: 803 passed. The 7 red are all sim-harness tests: the 6 known (D14), plus S1 "early wins at most 5 percent", which is also red on `milestone-3-rev-1` without this stream (10 percent there).
 - `npm run test:e2e` on chromium: 4 visual baseline diffs (setup, planning at every zoom level, flat-map fallback, resolution; Spain's new counters and the merged streams' UI), for the integrator to review. The acceptance specs, with axe, pass (16), after updating Madrid's count to five ("5 of 5 selected", "Planned moves (5)") in `e2e/acceptance.spec.ts`. Mobile and the other browsers were not run.
-- `@capture air missions and generals` on chromium and mobile-chromium: passed. Screenshots in `build/e2e/screenshots/{chromium,mobile-chromium}-22{a,b,c,d}-*.png`.
+- `@capture air missions and generals` on chromium and mobile-chromium: passed. Screenshots in `build/e2e/screenshots/{chromium,mobile-chromium}-24{a,b,c,d}-*.png`.
 - `npm run sim -- --games 50` (Spain as shipped on the d20, turn limit 66):
   - With blunders: decided 100%, freezes 0%, stalled 4%, median length 13.5. Wins of decided games: Republic 94%, North 6%, South 0%. Battles per turn 3.0; early wins 12.
   - Without blunders: decided 100%, median length 11. Wins: Republic 100%. Early wins 11.
