@@ -1,4 +1,5 @@
 import { subTerritoryYield } from "../../engine/economy/income";
+import { holdsWhole } from "../../engine/partition/holders";
 import type { AirMissionOrder, AirTurnOutcome, RaidFlownOutcome, RaidOutcome } from "../../engine/types";
 import { amountText } from "../economy";
 import { factionLabel, type ReportLineContext, type ReportLines, subTerritoryLabel, territoryLabel, unitLabel } from "./lines";
@@ -31,9 +32,13 @@ function raidEffect(context: ReportLineContext, outcome: RaidFlownOutcome): stri
     case "nothing-hit":
       return "nothing hit";
     case "income-cut": {
+      // U3, $2: as `raidIncomeDelta`, the cut is the site's yield, and only a territory held whole pays any.
       const site = state?.subTerritories[outcome.subTerritoryId];
-      const cut = site === undefined ? "nothing" : amountText(scenario, subTerritoryYield(scenario, site), " and ");
-      return cut === "nothing" ? "income cut next turn" : `income cut by ${cut} next turn`;
+      const territoryId = scenario.index.subTerritories.get(outcome.subTerritoryId)?.territoryId;
+      if (state === undefined || site === undefined || territoryId === undefined) return "income cut next turn";
+      if (!holdsWhole(scenario, state, territoryId, site.holder)) return `no income to cut while ${territoryLabel(scenario, territoryId)} is contested`;
+      const cut = amountText(scenario, subTerritoryYield(scenario, site), " and ");
+      return cut === "nothing" ? "no income to cut there" : `income cut by ${cut} next turn`;
     }
     case "building-hit":
       if (outcome.buildingId !== undefined) return `${scenario.index.buildings.get(outcome.buildingId)?.name ?? outcome.buildingId} hit`;
