@@ -96,6 +96,12 @@ Mode: make it work (declog D13). Branch `m3r1-air-generals`. It has merged `mile
   - My step-11 part only drops spent cuts and reveals, after the economy's part, so nothing is cut twice.
   - Airfields are read from `systems.subTerritories[*].buildings` by effect kind.
 - **AG-25. Replacement generals in tie-breaks.** `unitOrder` (`board.ts`) falls back to `generalUnitOrder`, after every other unit, by roster order. A general disbanded for an impossible move (M9) is not rolled for.
+- **AG-26. Sub-territories merge (`5e70c86`).**
+  - Every held-whole and contested test goes through the partition's W6 helpers, `holdsWhole` and `isContested`, through `heldWholeByAnother` in `air/pieces.ts`. That covers the airbase test, the D17 rebase, the recon target, the raid cut's whole-territory check, a lone general's ground, and the general's fallback territory.
+  - Under the d6 table, a set-aside general's Withdraw goes where his withdrawing army goes, like a move. Sub-territories' `withdraw()` skips him because he is not on the board. Their Withdraw code is unchanged.
+  - Aircraft never reach `settleDepartures` or `retreatAllowed`, because they are off the board in steps 1 to 8.
+  - `validation.ts` keeps every case: move, recruit, replenish, air-mission, sack, build, then `orderVerdict`.
+  - The air layer sits beside the sub-territory layers.
 - **AG-24. Tests keep Spain's Milestone 2 board.** `testRegistry()` and `spain()` drop Spain's starting aircraft and generals (`groundForcesOnly`), as DC-17 pinned the d6, so the Milestone 2 rule and UI tests count ground armies. Air tests use `spainWithAir()` (d6) and `spainD20()` (as shipped).
 
 ## Stubbed
