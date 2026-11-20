@@ -52,6 +52,7 @@ function Orders({ scenario, session }: { readonly scenario: Scenario; readonly s
       header={(
         <GameHeader
           kicker={`${turnLabel(scenario, game.state.turnNumber)} ${glyphs.dot} Planning`}
+          slots={{ scenario, state: game.state, viewer: factionId }}
           status={selectSubmissionStatus(scenario, session)}
           title={faction.name}
         />

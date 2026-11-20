@@ -1,4 +1,5 @@
 import type {
+  AiProfile,
   CityDefinition,
   FactionDefinition,
   FactionId,
@@ -32,6 +33,11 @@ export function requireUnitDefinition(scenario: Scenario, id: UnitId): UnitDefin
 
 export function requireUnitType(scenario: Scenario, id: UnitTypeId): UnitTypeDefinition {
   return required(scenario.index.unitTypes.get(id), "unit type", id);
+}
+
+/** E7: the computer player's weights for a faction; the loader gives every faction one (L23). */
+export function requireAiProfile(scenario: Scenario, id: FactionId): AiProfile {
+  return required(scenario.ai.profiles[id], "AI profile for faction", id);
 }
 
 export function requireUnitState(state: GameState, id: UnitId): UnitState {

@@ -18,6 +18,7 @@ function session(outcomes: readonly TurnOutcome[], phase: "game-over" | "resolut
   const scenario = spain();
   const state: GameState = initialGameState(scenario);
   const result: TurnResolutionResult = {
+    subTerritoryChanges: [],
     cityChanges: [],
     controlChanges: [{ after: { factionId: faction("south"), kind: "controlled" }, before: { factionId: faction("republic"), kind: "controlled" }, territoryId: territory("aragon") }],
     finalState: state,

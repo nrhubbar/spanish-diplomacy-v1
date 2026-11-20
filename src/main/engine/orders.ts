@@ -1,6 +1,6 @@
 import type { Armies } from "./board";
-import type { GameState, InvalidOrderOutcome, MoveOrder, Scenario, UnitId, UnitState } from "./types";
-import { validateMoveOrder } from "./validation";
+import type { GameState, InvalidOrderOutcome, MoveOrder, Order, RejectedOrderOutcome, Scenario, UnitId, UnitState } from "./types";
+import { validateOrder } from "./validation";
 
 /** The orders an army follows when it has no move order. They are derived, never submitted (O5). */
 export type StandingOrder = "entrench" | "rest";
@@ -13,30 +13,42 @@ export function standingOrder(unit: Pick<UnitState, "morale">): StandingOrder {
   return unit.morale.demoralized ? "rest" : "entrench";
 }
 
-/** M1, M9, M23: orders validate against the start-of-turn state; every order of a unit ordered twice is invalid. */
+/**
+ * M1, M9, M23: orders validate against the start-of-turn state; every order of a unit ordered
+ * twice is invalid. Impossible moves disband their army (`invalid`); other failed orders are
+ * rejected without disbanding (`rejected`).
+ */
 export function partitionOrders(
   scenario: Scenario,
   state: GameState,
-  orders: readonly MoveOrder[]
-): { readonly invalid: readonly InvalidOrderOutcome[]; readonly valid: readonly MoveOrder[] } {
+  orders: readonly Order[]
+): {
+  readonly invalid: readonly InvalidOrderOutcome[];
+  readonly rejected: readonly RejectedOrderOutcome[];
+  readonly valid: readonly MoveOrder[];
+} {
   const orderCount = new Map<UnitId, number>();
-  for (const order of orders) orderCount.set(order.unitId, (orderCount.get(order.unitId) ?? 0) + 1);
+  for (const order of orders) {
+    if ("unitId" in order) orderCount.set(order.unitId, (orderCount.get(order.unitId) ?? 0) + 1);
+  }
 
   const invalid: InvalidOrderOutcome[] = [];
+  const rejected: RejectedOrderOutcome[] = [];
   const valid: MoveOrder[] = [];
+  const fail = (order: Order, reason: string): void => {
+    if (order.kind === "move") invalid.push({ kind: "invalid-order", order, reason });
+    else rejected.push({ kind: "rejected-order", order, reason });
+  };
   for (const order of orders) {
-    if ((orderCount.get(order.unitId) ?? 0) > 1) {
-      invalid.push({ kind: "invalid-order", order, reason: "A unit can receive only one order per turn." });
+    if ("unitId" in order && (orderCount.get(order.unitId) ?? 0) > 1) {
+      fail(order, "A unit can receive only one order per turn.");
       continue;
     }
-    const validation = validateMoveOrder(scenario, state, order);
-    if (validation.ok) {
-      valid.push(order);
-    } else {
-      invalid.push({ kind: "invalid-order", order, reason: validation.reason });
-    }
+    const validation = validateOrder(scenario, state, order);
+    if (!validation.ok) fail(order, validation.reason);
+    else if (order.kind === "move") valid.push(order);
   }
-  return { invalid, valid };
+  return { invalid, rejected, valid };
 }
 
 /**

@@ -4,23 +4,13 @@ import {
   type CameraBounds,
   cameraLimits,
   initialCamera,
-  panCamera,
   type Viewport,
   type ViewportInsets,
   zoomCameraAt
 } from "./camera";
 import { idleGesture, pointerDown, pointerMove, pointerUp } from "./gesture";
-import {
-  advancePan,
-  classifyKeyTarget,
-  idlePan,
-  isPanning,
-  mapKeyIntent,
-  panKeyDown,
-  panKeyUp,
-  type PanState,
-  shouldHandleMapKey
-} from "./keyboard";
+import { classifyKeyTarget, mapKeyIntent, panKeyDown, shouldHandleMapKey } from "./keyboard";
+import { keyCode, useKeyPan } from "./useKeyPan";
 
 export interface MapCameraControls {
   readonly camera: Camera;
@@ -41,11 +31,6 @@ export interface MapCameraControls {
 
 const unmeasured: Viewport = { height: 0, insetBottom: 0, insetRight: 0, width: 0 };
 
-/** The physical key, so Shift or a layout change between keydown and keyup cannot strand it. */
-function keyCode(event: { readonly code: string; readonly key: string }): string {
-  return event.code === "" ? event.key.toLowerCase() : event.code;
-}
-
 /**
  * Owns the camera: measures the container, frames the focus area once, and turns wheel,
  * pointer, and keyboard input into camera changes through the pure camera/gesture modules.
@@ -61,14 +46,6 @@ export function useMapCamera(
   const gesture = useRef(idleGesture);
   const dragged = useRef(false);
   const framed = useRef(false);
-  const pan = useRef<PanState>(idlePan);
-  const panFrame = useRef<number | undefined>(undefined);
-  const panGeometry = useRef({ bounds, viewport });
-
-  useEffect(() => {
-    panGeometry.current = { bounds, viewport };
-  }, [bounds, viewport]);
-
   // Re-measures on resize and whenever the pane insets change; frames the map only once.
   useEffect(() => {
     if (element === null) return undefined;
@@ -101,48 +78,7 @@ export function useMapCamera(
     return () => { element.removeEventListener("wheel", handleWheel); };
   }, [element, viewport, bounds]);
 
-  // K1: the only impure part of keyboard panning. A frame loop runs only while a pan key is
-  // held or a tap is gliding; the motion itself is the pure `advancePan`.
-  const stopPan = useCallback(() => {
-    pan.current = idlePan;
-    if (panFrame.current !== undefined) cancelAnimationFrame(panFrame.current);
-    panFrame.current = undefined;
-  }, []);
-
-  const startPan = useCallback(() => {
-    if (panFrame.current !== undefined) return;
-    let last = performance.now();
-    const frame = (now: number): void => {
-      const step = advancePan(pan.current, now - last);
-      last = now;
-      pan.current = step.state;
-      if (step.deltaX !== 0 || step.deltaY !== 0) {
-        const { bounds: currentBounds, viewport: currentViewport } = panGeometry.current;
-        setCamera((current) => panCamera(current, step.deltaX, step.deltaY, currentViewport, currentBounds));
-      }
-      panFrame.current = isPanning(pan.current) ? requestAnimationFrame(frame) : undefined;
-    };
-    panFrame.current = requestAnimationFrame(frame);
-  }, []);
-
-  useEffect(() => {
-    const release = (event: globalThis.KeyboardEvent): void => {
-      pan.current = panKeyUp(pan.current, keyCode(event));
-    };
-    const hidden = (): void => {
-      if (document.hidden) stopPan();
-    };
-    // Keyup is heard on the window, so a key released after focus left the map still stops.
-    window.addEventListener("keyup", release);
-    window.addEventListener("blur", stopPan);
-    document.addEventListener("visibilitychange", hidden);
-    return () => {
-      window.removeEventListener("keyup", release);
-      window.removeEventListener("blur", stopPan);
-      document.removeEventListener("visibilitychange", hidden);
-      stopPan();
-    };
-  }, [stopPan]);
+  const { panRef, startPan } = useKeyPan(setCamera, bounds, viewport);
 
   const local = useCallback((event: { readonly clientX: number; readonly clientY: number }) => {
     const rect = element?.getBoundingClientRect();
@@ -178,7 +114,7 @@ export function useMapCamera(
       case "pan":
         // Auto-repeat is ignored: a held key already pans continuously.
         if (event.repeat) return;
-        pan.current = panKeyDown(pan.current, keyCode(event), intent.direction);
+        panRef.current = panKeyDown(panRef.current, keyCode(event), intent.direction);
         startPan();
         return;
       case "zoom-in":
@@ -190,7 +126,7 @@ export function useMapCamera(
       case "reset":
         reset();
     }
-  }, [onSelect, zoomBy, reset, startPan]);
+  }, [onSelect, zoomBy, reset, startPan, panRef]);
 
   const onPointerDown = useCallback((event: PointerEvent<HTMLDivElement>) => {
     if (event.button > 0) return;

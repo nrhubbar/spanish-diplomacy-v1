@@ -1,6 +1,6 @@
 import { citiesIn } from "../engine/lookup";
 import { deriveSeed } from "../engine/random";
-import type { BattleOutcome, Scenario, TerritoryId, UnitId } from "../engine/types";
+import type { D6BattleOutcome, Scenario, TerritoryId, UnitId } from "../engine/types";
 import { type BattleGroup, changedHands, menLost, sideFactions, sideLosses } from "./battle";
 import { glyphs } from "./glyphs";
 import { fillLine, linePlaceholders, outcomeLine, outcomeText, type OutcomeValues } from "./outcomeText";
@@ -20,13 +20,13 @@ export function roadName(scenario: Scenario, between: readonly [TerritoryId, Ter
 }
 
 /** Where a battle was fought, as a place name for headings and flavor text. */
-export function placeName(scenario: Scenario, battle: BattleOutcome): string {
+export function placeName(scenario: Scenario, battle: D6BattleOutcome): string {
   const { site } = battle;
   return site.kind === "meeting" ? roadName(scenario, site.between) : territoryName(scenario, site.territoryId);
 }
 
 /** The placeholder values `outcomeLine` needs for one battle (H's contract). */
-export function flavorValues(scenario: Scenario, battle: BattleOutcome): OutcomeValues {
+export function flavorValues(scenario: Scenario, battle: D6BattleOutcome): OutcomeValues {
   const { site } = battle;
   const territoryId = site.kind === "meeting" ? undefined : site.territoryId;
   const city = territoryId === undefined ? undefined : citiesIn(scenario, territoryId)[0];
@@ -60,12 +60,12 @@ export function columnLabel(column: number): string {
 }
 
 /** The unclamped table row, so the breakdown can say when the 0..6 limit applied. */
-export function rawRow(battle: BattleOutcome): number {
+export function rawRow(battle: D6BattleOutcome): number {
   return battle.modifiers.reduce((sum, modifier) => sum + modifier.roll, battle.die);
 }
 
 /** Who holds the place now, in one line. */
-export function occupationLine(scenario: Scenario, battle: BattleOutcome): string {
+export function occupationLine(scenario: Scenario, battle: D6BattleOutcome): string {
   const { site } = battle;
   if (site.kind === "meeting") {
     return site.winner === undefined
@@ -84,7 +84,7 @@ export function occupationLine(scenario: Scenario, battle: BattleOutcome): strin
 }
 
 /** Armies a battle destroyed, outright or by surrender. */
-export function lostArmies(battle: BattleOutcome): readonly UnitId[] {
+export function lostArmies(battle: D6BattleOutcome): readonly UnitId[] {
   return [...battle.losses.filter((loss) => loss.destroyed).map((loss) => loss.unitId), ...battle.surrenderedUnitIds];
 }
 
@@ -113,7 +113,7 @@ const occupationClaim = /\b(took|taken|occupied|occupy|now hold|held every road|
  * returned), a line that says the attacker took or holds it would contradict the headline, so
  * only lines that claim no occupation are used, and a plain line stands in if none fits.
  */
-export function cardFlavor(scenario: Scenario, battle: BattleOutcome, seed: number): string {
+export function cardFlavor(scenario: Scenario, battle: D6BattleOutcome, seed: number): string {
   const values = flavorValues(scenario, battle);
   const { site } = battle;
   if (site.kind === "meeting" || site.occupation.kind !== "left-empty") return sentenceCase(outcomeLine(battle.result, values, seed));

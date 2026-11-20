@@ -1,0 +1,329 @@
+// The campaign map.
+
+.campaign-map {
+  position: relative;
+  flex: 1;
+  min-height: 24rem;
+  margin: 0 clamp(0.4rem, 1vw, 0.75rem) clamp(0.4rem, 1vw, 0.75rem);
+  overflow: hidden;
+  border: 5px solid var(--wood);
+  border-radius: 12px;
+  background: var(--map-background);
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 12%),
+    0 0.75rem 2rem rgb(36 29 24 / 22%);
+}
+
+.map-surface {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  overscroll-behavior: contain;
+}
+
+.map-surface:active {
+  cursor: grabbing;
+}
+
+.map-surface:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: -3px;
+}
+
+// The relief look (tint, light, quiet sea) is baked into the layer images by the map build.
+.terrain-layer {
+  position: absolute;
+  inset: 0;
+  background: var(--map-background);
+  pointer-events: none;
+}
+
+.terrain-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.terrain-fallback {
+  position: absolute;
+  inset: 0;
+}
+
+.terrain-image {
+  position: absolute;
+  max-width: none;
+}
+
+.terrain-layer[data-renderer="webgl"] .terrain-fallback {
+  visibility: hidden;
+}
+
+.map-vector {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+// Regions carry the faction wash; their borders are a separate layer (.map-borders) so rivers
+// can sit between the two.
+.map-region {
+  fill: #d8c59d;
+  fill-opacity: var(--wash-opacity);
+  stroke: none;
+  vector-effect: non-scaling-stroke;
+  cursor: pointer;
+  transition: fill-opacity 120ms ease;
+}
+
+.map-shape,
+.map-borders * {
+  stroke: rgb(36 29 24 / 60%);
+  stroke-width: 1.1px;
+  vector-effect: non-scaling-stroke;
+}
+
+.map-borders * {
+  fill: none;
+  pointer-events: none;
+}
+
+// Rivers: the relief's shore water (#76929c) with a paler centre line, widths in screen pixels.
+.map-rivers {
+  pointer-events: none;
+
+  path {
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .map-river-water {
+    stroke: #76929c;
+  }
+
+  .map-river-centre {
+    stroke: #b4c8cc;
+    stroke-opacity: 0.85;
+  }
+
+  .map-river-mouth {
+    stroke-linecap: butt;
+  }
+}
+
+// Water names: italic serif in deep sea blue on a pale halo; open seas are widely spaced capitals.
+.map-water-labels {
+  pointer-events: none;
+
+  text {
+    fill: #1f4a63;
+    font-family: var(--serif);
+    font-style: italic;
+    paint-order: stroke;
+    stroke: rgb(232 240 241 / 72%);
+    stroke-linejoin: round;
+  }
+
+  .map-water-overview {
+    font-weight: 600;
+  }
+
+  .map-river-label {
+    fill: #2c5a70;
+  }
+
+  defs path {
+    fill: none;
+  }
+}
+
+.map-region:hover {
+  fill-opacity: 0.52;
+}
+
+.map-region:focus {
+  outline: none;
+}
+
+.map-region:focus-visible {
+  stroke: var(--focus);
+  stroke-width: 3px;
+}
+
+.map-highlights * {
+  fill: none !important;
+  pointer-events: none;
+  vector-effect: non-scaling-stroke;
+}
+
+// Gold marks selection (solid, glowing origin) and selectable places (shimmering destinations).
+// Both sit on an ink casing so they read on pale terrain and on the mustard and gold washes.
+
+.map-highlight * {
+  stroke-linejoin: round;
+}
+
+.map-highlight-casing {
+  stroke: rgb(36 29 24 / 62%);
+  stroke-width: 5.5px;
+}
+
+.map-highlight-destination .map-highlight-line {
+  stroke: var(--gold-bright);
+  stroke-width: 2.25px;
+}
+
+// The shimmer: light travelling along the border. A soft halo and a bright core share one
+// dash period (screen pixels, through non-scaling strokes) so the glint has a feathered edge.
+.map-highlight-glint-halo,
+.map-highlight-glint {
+  stroke-linecap: round;
+  animation: destination-glint 2.8s linear infinite;
+}
+
+.map-highlight-glint-halo {
+  stroke: #ffe49a;
+  stroke-width: 4.5px;
+  stroke-dasharray: 34 126;
+  stroke-opacity: 0.7;
+}
+
+.map-highlight-glint {
+  stroke: var(--gold-glint);
+  stroke-width: 2px;
+  stroke-dasharray: 14 146;
+  stroke-dashoffset: -10px;
+  animation-name: destination-glint-core;
+}
+
+@keyframes destination-glint {
+  from { stroke-dashoffset: 0; }
+  to { stroke-dashoffset: -160px; }
+}
+
+@keyframes destination-glint-core {
+  from { stroke-dashoffset: -10px; }
+  to { stroke-dashoffset: -170px; }
+}
+
+.map-highlight-origin .map-highlight-casing {
+  stroke-width: 7px;
+}
+
+.map-highlight-origin .map-highlight-line {
+  stroke: var(--gold);
+  stroke-width: 4px;
+  filter: drop-shadow(0 0 4px rgb(217 165 32 / 95%));
+}
+
+.map-highlight-changed {
+  stroke: #fffaf0;
+  stroke-width: 2.5px;
+  filter: drop-shadow(0 0 2px rgb(36 29 24 / 70%));
+}
+
+.map-sea-lanes path {
+  fill: none;
+  stroke: #eef6f7;
+  stroke-linecap: round;
+  opacity: 0.85;
+}
+
+// Names, cities, sea lanes, routes, and their medallions only decorate: a click on one reaches
+// the territory beneath, so it never reads as a click on empty map (F1).
+.map-sea-lanes,
+.map-context-labels,
+.map-territory-labels,
+.map-cities,
+.map-routes {
+  pointer-events: none;
+}
+
+.map-context-labels text {
+  fill: rgb(46 44 40 / 55%);
+  font-family: var(--serif);
+  font-weight: 700;
+}
+
+.map-territory-labels text {
+  fill: #2b221c;
+  font-family: var(--serif);
+  font-variant: small-caps;
+  font-weight: 700;
+  paint-order: stroke;
+  stroke: rgb(251 246 234 / 88%);
+  stroke-linejoin: round;
+}
+
+.map-cities text {
+  fill: var(--ink);
+  font-family: var(--sans);
+  font-weight: 650;
+  paint-order: stroke;
+  stroke: rgb(251 246 234 / 92%);
+  stroke-linejoin: round;
+}
+
+// Routes: ink navy for moves, amber for bounces, crimson for losses, each on a paper halo.
+
+.map-route {
+  --route-color: var(--route);
+}
+
+.map-route-bounced {
+  --route-color: var(--bounce);
+}
+
+.map-route-disbanded {
+  --route-color: var(--disband);
+}
+
+.map-route-halo,
+.map-route-line {
+  fill: none;
+  stroke-linecap: round;
+}
+
+.map-route-halo {
+  stroke: var(--route-halo);
+}
+
+.map-route-line {
+  stroke: var(--route-color);
+}
+
+.map-route-head {
+  fill: var(--route-color);
+  stroke: var(--route-halo);
+  stroke-linejoin: round;
+  paint-order: stroke;
+}
+
+.map-outcome-bounced .map-outcome-body {
+  fill: var(--bounce);
+}
+
+.map-outcome-disbanded .map-outcome-body {
+  fill: var(--disband);
+}
+
+.map-route-faction circle,
+.map-outcome-ring {
+  paint-order: stroke;
+  filter: drop-shadow(0 0 1.5px rgb(251 246 234 / 95%));
+}
+
+.map-route-count {
+  fill: var(--ink);
+}
+
+.map-route-count-text {
+  fill: var(--paper);
+  font-family: var(--sans);
+  font-weight: 700;
+}

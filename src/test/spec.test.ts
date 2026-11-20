@@ -1,8 +1,10 @@
 import { createHash } from "node:crypto";
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
+import { scenarioBlocks } from "../main/engine/modules";
+import * as engineWords from "../main/engine/types";
 import { checkGeometry, loadPackage, PackageValidationError } from "../main/scenarios/loader";
 import { builtInSources } from "../main/scenarios/builtInSources";
 import { createScenarioRegistry } from "../main/scenarios/registry";
@@ -39,14 +41,14 @@ const modifier = (scenario: Json): Json => list(combat(scenario)["factionModifie
 describe("published specification", () => {
   it("keeps the committed JSON Schemas in sync with the Zod sources (spec:check)", () => {
     for (const [file, schema] of [["scenario.schema.json", scenarioSchema], ["map.schema.json", mapSchema]] as const) {
-      const committed: unknown = JSON.parse(readFileSync(`src/main/scenarios/schema/${file}`, "utf8"));
+      const committed: unknown = JSON.parse(readFileSync(`src/scenarios/${file}`, "utf8"));
       expect(committed, `${file} is stale; run npm run spec:build`).toEqual(JSON.parse(JSON.stringify(z.toJSONSchema(schema, { io: "input" }))));
     }
   });
 
   it("loads every registered package without problems", () => {
     expect(testRegistry().problems.map((problem) => problem.message)).toEqual([]);
-    expect(testRegistry().list().map((summary) => summary.id)).toEqual(["spain-1936-07-31", "tiny-front"]);
+    expect(testRegistry().list().map((summary) => summary.id)).toEqual(["spanish-civil-war-1936", "tiny-front"]);
     expect(createScenarioRegistry(builtInSources).problems).toEqual([]);
   });
 
@@ -75,7 +77,7 @@ describe("loader rules", () => {
 
   it.each([
     ["L1 schema", (scenario: Json) => { scenario["ruleset"] = "m4-combined-arms"; }, "ruleset"],
-    ["L1 map schema", (_scenario: Json, map: Json) => { map["specVersion"] = 2; }, "specVersion"],
+    ["L1 map schema", (_scenario: Json, map: Json) => { map["specVersion"] = 1; }, "specVersion"],
     ["L2 duplicate ids", (scenario: Json) => { list(scenario["units"]).push(clone(list(scenario["units"])[0]!)); }, "(L2)"],
     ["L3 unknown reference", (scenario: Json) => { list(scenario["units"])[0]!["cityId"] = "las-palmas"; }, "unknown city"],
     ["L3 unknown objective", (scenario: Json) => { list(scenario["factions"])[0]!["objectiveTerritoryIds"] = ["atlantis"]; }, "unknown territory"],
@@ -166,23 +168,40 @@ describe("loader rules", () => {
 });
 
 /** Section 5.10: code contains no scenario-specific identifiers; scenario folders are reached only through the registry. */
+/** Every string in the engine's exported word lists, such as `unitSymbols` and `builtInModules`. */
+function codedWords(): ReadonlySet<string> {
+  const words = new Set<string>(scenarioBlocks);
+  const collect = (value: unknown): void => {
+    if (typeof value === "string") words.add(value);
+    else if (Array.isArray(value)) value.forEach(collect);
+    else if (typeof value === "object" && value !== null) Object.values(value).forEach(collect);
+  };
+  for (const value of Object.values(engineWords)) if (typeof value !== "function") collect(value);
+  return words;
+}
+
 describe("no scenario knowledge in code", () => {
   const sourceFiles = (directory: string): string[] =>
     readdirSync(directory).flatMap((entry) => {
       const path = join(directory, entry);
-      if (statSync(path).isDirectory()) return /scenarios$/.test(path) ? sourceFiles(path).filter((file) => !/scenarios\/[^/]+\//.test(file.replace(/^.*src\/main\//, ""))) : sourceFiles(path);
+      // A scenario package folder (it holds a scenario.json) may name its own ids, in its plugin.
+      if (statSync(path).isDirectory()) return existsSync(join(path, "scenario.json")) ? [] : sourceFiles(path);
       return /\.(ts|tsx)$/.test(path) ? [path] : [];
     });
 
-  it("never mentions a faction, territory, city, unit, or region id", () => {
+  it("never mentions a faction, territory, city, unit, region, or Milestone 3 catalogue id", () => {
     const ids = new Set<string>();
     for (const summary of testRegistry().list()) {
       const { map, scenario } = testRegistry().require(summary.id);
-      for (const collection of [scenario.factions, scenario.territories, scenario.cities, scenario.units, scenario.unitTypes]) {
+      const systems = [scenario.subTerritories, scenario.resources, scenario.development, scenario.buildings, scenario.generals];
+      for (const collection of [scenario.factions, scenario.territories, scenario.cities, scenario.units, scenario.unitTypes, ...systems]) {
         for (const item of collection) ids.add(item.id);
       }
       for (const regionId of map.regions.keys()) ids.add(regionId);
     }
+    // The engine's coded word lists (symbols, effect kinds, module names, ...) are vocabulary, not
+    // scenario knowledge, so a data id may equal one of them.
+    for (const word of codedWords()) ids.delete(word);
     const offenders = sourceFiles("src/main").flatMap((file) => {
       const text = readFileSync(file, "utf8");
       return [...ids].filter((id) => new RegExp(`["'\`]${id}["'\`]`).test(text)).map((id) => `${file}: "${id}"`);

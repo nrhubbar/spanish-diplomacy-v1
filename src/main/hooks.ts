@@ -1,10 +1,11 @@
-import { createContext, useContext, useEffect } from "react";
+import { createContext, useContext, useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { ScenarioId } from "./engine/types";
 import type { ScenarioPackage } from "./scenarios/loader";
 import type { MapAssets, ScenarioRegistry } from "./scenarios/registry";
 import { loadMapAssets } from "./state/mapAssetsSlice";
-import type { Phase, Session } from "./state/session";
+import { isInGame, type Phase, type Session } from "./state/session";
+import { visibleSession } from "./state/visible";
 import type { AppDispatch, RootState } from "./state/store";
 
 export const useAppDispatch = useDispatch.withTypes<AppDispatch>();
@@ -18,8 +19,14 @@ export function useRegistry(): ScenarioRegistry {
   return registry;
 }
 
+/**
+ * The session as the player at the screen may see it (`visibleSession`): every screen reads
+ * state through here, so no screen sees another faction's hidden information.
+ */
 export function useSession(): Session {
-  return useAppSelector((state) => state.game.session);
+  const session = useAppSelector((state) => state.game.session);
+  const registry = useRegistry();
+  return useMemo(() => (isInGame(session) ? visibleSession(registry.require(session.game.scenarioId).scenario, session) : session), [registry, session]);
 }
 
 function inPhase<P extends Phase>(session: Session, phases: readonly P[]): session is Extract<Session, { readonly phase: P }> {

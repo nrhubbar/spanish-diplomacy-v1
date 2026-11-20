@@ -3,7 +3,7 @@ import { battleStreamTag, rollDie, seededBattleDice } from "../main/engine/dice"
 import { deriveSeed, seededRandom } from "../main/engine/random";
 import { standingOrder } from "../main/engine/orders";
 import { initialGameState, resolveTurn } from "../main/engine/resolution";
-import type { GameState, Scenario, TurnResolutionResult } from "../main/engine/types";
+import { type GameState, isMoveOrder, type Scenario, type TurnResolutionResult } from "../main/engine/types";
 import { demoralizedAttackReason, legalDestinations, validateMoveOrder } from "../main/engine/validation";
 import { advance, nextTurn } from "../main/state/coordinator";
 import type { GameRecord, Session } from "../main/state/session";
@@ -360,10 +360,10 @@ describe("turn invariants over seeded computer games", () => {
   it("reports every valid move once: as a move, or through the battles its army fought", () => {
     for (const { result } of games) {
       const invalid = new Set(result.outcomes.flatMap((outcome) => (outcome.kind === "invalid-order" ? [outcome.order.unitId] : [])));
-      const moveOutcomes = result.outcomes.flatMap((outcome) => (outcome.kind !== "battle" && "order" in outcome && outcome.kind !== "invalid-order" ? [outcome.order.unitId] : []));
+      const moveOutcomes = result.outcomes.flatMap((outcome) => (outcome.kind !== "battle" && "order" in outcome && outcome.kind !== "invalid-order" && "unitId" in outcome.order ? [outcome.order.unitId] : []));
       expect(new Set(moveOutcomes).size).toBe(moveOutcomes.length);
       const inBattle = new Set(battlesOf(result).flatMap((battle) => [...battle.attacker.armies, ...battle.defender.armies].map((army) => army.unitId)));
-      for (const order of result.submittedOrders.filter((candidate) => !invalid.has(candidate.unitId))) {
+      for (const order of result.submittedOrders.filter(isMoveOrder).filter((candidate) => !invalid.has(candidate.unitId))) {
         expect(moveOutcomes.includes(order.unitId) || inBattle.has(order.unitId)).toBe(true);
       }
     }

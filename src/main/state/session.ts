@@ -6,6 +6,7 @@ import type {
   MoveOrder,
   PlayerSubmission,
   ScenarioId,
+  SubTerritoryId,
   TerritoryId,
   TurnOutcome,
   TurnResolutionResult,
@@ -47,6 +48,8 @@ export type OrderStage =
 /** The current local player's private working set. */
 export interface Draft {
   readonly feedback?: string;
+  /** X3: the sub-territory the pane is focused on, inside the selected territory. */
+  readonly focusedSubTerritoryId?: SubTerritoryId;
   readonly orders: readonly MoveOrder[];
   readonly selectedTerritoryId?: TerritoryId;
   readonly selectedUnitIds: readonly UnitId[];

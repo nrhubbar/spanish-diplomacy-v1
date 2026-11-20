@@ -44,6 +44,7 @@ function resolution(outcomes: readonly TurnOutcome[]): Session {
   const result: TurnResolutionResult = {
     cityChanges: [],
     controlChanges: [],
+    subTerritoryChanges: [],
     finalState: state,
     outcomes,
     progress: victoryProgress(scenario, state),

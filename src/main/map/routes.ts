@@ -1,4 +1,4 @@
-import type { BattleOutcome, BattleResult, FactionId, MoveOrder, TerritoryId, TurnOutcome, UnitId } from "../engine/types";
+import { type BattleResult, type D6BattleOutcome, type FactionId, isD6Battle, type MoveOrder, type TerritoryId, type TurnOutcome, type UnitId } from "../engine/types";
 import { affectedFaction } from "../presentation/battle";
 import type { MapPoint } from "../scenarios/loader";
 
@@ -37,7 +37,7 @@ interface RouteEntry {
  * the other side too) from where they set out to where they fought. Standing battles (M27)
  * moved nobody, so they draw no route.
  */
-export function battleRoutes(battle: BattleOutcome): readonly RouteEntry[] {
+export function battleRoutes(battle: D6BattleOutcome): readonly RouteEntry[] {
   const mark: RouteBattle = { affectedFactionId: affectedFaction(battle), result: battle.result };
   const { site } = battle;
   const armies = site.kind === "assault" ? battle.attacker.armies : [...battle.attacker.armies, ...battle.defender.armies];
@@ -56,7 +56,7 @@ export const laneBend = 0.16;
  */
 export function groupRoutes(planned: readonly MoveOrder[], outcomes: readonly TurnOutcome[]): readonly RouteGroup[] {
   const fromOrder = (kind: RouteKind, order: MoveOrder): RouteEntry => ({ factionId: order.factionId, from: order.from, kind, to: order.to, unitId: order.unitId });
-  const fought = outcomes.flatMap((outcome) => (outcome.kind === "battle" ? battleRoutes(outcome) : []));
+  const fought = outcomes.flatMap((outcome) => (isD6Battle(outcome) ? battleRoutes(outcome) : []));
   // A move that ended in a battle shows the battle, not a bounce or loss icon.
   const inBattle = new Set(fought.map((entry) => `${entry.unitId}:${entry.from}:${entry.to}`));
   const fromOutcome = (outcome: TurnOutcome): readonly RouteEntry[] => {

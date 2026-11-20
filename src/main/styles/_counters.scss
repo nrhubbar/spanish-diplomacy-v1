@@ -1,0 +1,280 @@
+// ---------------------------------------------------------------------------------------------
+// Combat presentation (workstream F): unit counters.
+// HTML in screen space so text stays crisp at every zoom. A counter prints the values that fight
+// now in large type, the full values small and struck through when they differ, a strength bar,
+// and (at the detail zoom) the men. Every text size stays at or above 11 px (V5).
+// ---------------------------------------------------------------------------------------------
+
+.counter-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.unit-counter {
+  position: absolute;
+  display: grid;
+  align-content: start;
+  justify-items: center;
+  min-height: 0;
+  margin: 0;
+  padding: 2px 3px 8px 5px;
+  overflow: visible;
+  border: 1.5px solid var(--ink);
+  border-radius: 3px;
+  color: var(--ink);
+  background: color-mix(in srgb, var(--faction-color) 24%, #fbf6ea);
+  box-shadow:
+    inset 3px 0 0 var(--faction-color),
+    0 1px 3px rgb(0 0 0 / 40%);
+  font-family: var(--sans);
+  line-height: 1;
+  pointer-events: auto;
+}
+
+.unit-counter:hover:not(:disabled) {
+  z-index: 2;
+  background: color-mix(in srgb, var(--faction-color) 36%, #fbf6ea);
+  transform: translateY(-1px);
+}
+
+.unit-counter:focus-visible {
+  z-index: 3;
+  outline: 3px solid var(--focus);
+  outline-offset: 1px;
+}
+
+.unit-counter[data-selected="true"] {
+  z-index: 2;
+  border-color: #7a5a06;
+  box-shadow:
+    0 0 0 2px var(--gold),
+    0 0 10px 2px rgb(217 165 32 / 75%);
+}
+
+.unit-counter[data-ordered="true"] {
+  border-style: dashed;
+}
+
+// A demoralized army's counter is washed out, so a shaken stack reads at a glance.
+.unit-counter[data-demoralized="true"] {
+  background: color-mix(in srgb, var(--faction-color) 12%, #e9e2d3);
+}
+
+.unit-counter-head {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.unit-counter-symbol {
+  display: flex;
+  flex: none;
+  width: 15px;
+  height: 10px;
+
+  svg {
+    width: 100%;
+    height: 100%;
+  }
+}
+
+.unit-counter-designation {
+  display: none;
+  overflow: hidden;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.unit-counter-values {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 3px;
+  white-space: nowrap;
+}
+
+.unit-counter-current {
+  font-size: 12px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+.unit-counter-full {
+  display: none;
+  color: var(--ink-soft);
+  font-size: 11px;
+  font-weight: 600;
+  text-decoration-thickness: 1.5px;
+}
+
+.unit-counter-men {
+  display: none;
+  color: var(--ink-soft);
+  font-size: 11px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+// The strength bar: current men over full strength, ink on a pale track.
+.unit-counter-bar {
+  position: absolute;
+  right: 4px;
+  bottom: 3px;
+  left: 6px;
+  height: 3px;
+  border-radius: 2px;
+  background:
+    linear-gradient(to right, var(--ink) calc(var(--strength-share) * 100%), rgb(36 29 24 / 20%) 0);
+}
+
+// Overview: the values alone, large, over the strength bar; the head appears from operational.
+.counter-layer[data-level="overview"] .unit-counter {
+  align-content: center;
+  padding: 1px 2px 6px 5px;
+
+  .unit-counter-head {
+    display: none;
+  }
+
+  .unit-counter-current {
+    font-size: 13px;
+  }
+}
+
+.counter-layer[data-level="operational"] .unit-counter-designation,
+.counter-layer[data-level="detail"] .unit-counter-designation {
+  display: block;
+}
+
+.counter-layer[data-level="operational"] .unit-counter,
+.counter-layer[data-level="detail"] .unit-counter {
+  row-gap: 2px;
+}
+
+.counter-layer[data-level="operational"] .unit-counter-current {
+  font-size: 13px;
+}
+
+.counter-layer[data-level="operational"] .unit-counter-full,
+.counter-layer[data-level="detail"] .unit-counter-full {
+  display: inline;
+}
+
+.counter-layer[data-level="detail"] .unit-counter {
+  padding-top: 3px;
+  padding-bottom: 10px;
+
+  .unit-counter-symbol {
+    width: 18px;
+    height: 12px;
+  }
+}
+
+.counter-layer[data-level="detail"] .unit-counter-current {
+  font-size: 15px;
+}
+
+.counter-layer[data-level="detail"] .unit-counter-men {
+  display: block;
+}
+
+// Status badges: the planned-order check top right, H's medallions on the left corners.
+.unit-counter-badge {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  display: grid;
+  width: 15px;
+  height: 15px;
+  place-items: center;
+  border: 1.5px solid var(--paper);
+  border-radius: 50%;
+  color: var(--paper);
+  background: var(--success);
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.unit-counter-demoralized {
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  display: block;
+  width: 17px;
+  height: 17px;
+  filter: drop-shadow(0 0 1px rgb(251 246 234 / 95%));
+
+  svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+}
+
+// Compact overview: several armies of one faction drawn as a small stack of counters, with
+// their combined values and an "xN" tab.
+.unit-counter.unit-counter-group {
+  align-content: center;
+  padding-right: 5px;
+  padding-left: 6px;
+}
+
+.counter-layer[data-level="operational"] .unit-counter-group .unit-counter-current {
+  font-size: 15px;
+}
+
+// Combined totals of five or more characters stay inside the fixed counter width (and at
+// least 11 px, the counter text floor).
+.counter-layer .unit-counter-group[data-long="true"] .unit-counter-current {
+  font-size: 11px;
+  letter-spacing: 0;
+}
+
+.counter-layer[data-level="operational"] .unit-counter-group[data-long="true"] .unit-counter-current {
+  font-size: 13px;
+}
+
+.unit-counter-group {
+  box-shadow:
+    inset 3px 0 0 var(--faction-color),
+    2px 2px 0 -0.5px color-mix(in srgb, var(--faction-color) 24%, #fbf6ea),
+    2px 2px 0 1px var(--ink),
+    0 1px 3px rgb(0 0 0 / 40%);
+}
+
+// Above the top edge, clear of the values.
+.unit-counter-count {
+  position: absolute;
+  top: -12px;
+  right: -8px;
+  min-width: 19px;
+  padding: 1px 3px;
+  border: 1.5px solid var(--paper);
+  border-radius: 8px;
+  color: var(--paper);
+  background: var(--ink);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  text-align: center;
+}
+
+// Bottom right, so the strength bar keeps its start and the values stay clear.
+.unit-counter-works {
+  position: absolute;
+  right: -7px;
+  bottom: -8px;
+  filter: drop-shadow(0 1px 1px rgb(0 0 0 / 35%));
+}
+
+.counter-layer[data-level="detail"] .unit-counter-demoralized {
+  width: 20px;
+  height: 20px;
+}

@@ -1,0 +1,164 @@
+// Fixed map controls.
+
+.map-controls {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.map-zoom {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid rgb(36 29 24 / 35%);
+  border-radius: 8px;
+  background: rgb(251 246 234 / 92%);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 20%);
+
+  button {
+    width: 2.6rem;
+    min-height: 2.4rem;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    color: var(--ink);
+    background: transparent;
+    font-size: 1.15rem;
+  }
+
+  button + button {
+    border-top: 1px solid rgb(36 29 24 / 18%);
+  }
+
+  button:hover:not(:disabled) {
+    color: var(--paper);
+    background: var(--ink);
+  }
+}
+
+.map-zoom .map-zoom-level {
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+// The "i" Briefing toggle: same surface as the zoom group, pressed while the Briefing shows.
+.map-briefing-toggle {
+  width: 2.6rem;
+  min-height: 2.6rem;
+  padding: 0;
+  border: 1px solid rgb(36 29 24 / 35%);
+  border-radius: 8px;
+  color: var(--ink);
+  background: rgb(251 246 234 / 92%);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 20%);
+  font-family: var(--serif);
+  font-size: 1.25rem;
+  font-style: italic;
+  font-weight: 700;
+}
+
+// A tap leaves touch screens "hovering", so the plain button hover is cancelled and hover
+// feedback is added back only where a pointer can hover. The pressed state always shows.
+.map-briefing-toggle:hover:not(:disabled) {
+  color: var(--ink);
+  background: rgb(251 246 234 / 92%);
+}
+
+.map-briefing-toggle[aria-pressed="true"],
+.map-briefing-toggle[aria-pressed="true"]:hover:not(:disabled) {
+  color: var(--paper);
+  background: var(--accent);
+}
+
+@media (hover: hover) {
+  .map-briefing-toggle:hover:not(:disabled) {
+    color: var(--paper);
+    background: var(--ink);
+  }
+
+  .map-briefing-toggle[aria-pressed="true"]:hover:not(:disabled) {
+    background: var(--accent-dark);
+  }
+}
+
+.map-legend {
+  position: absolute;
+  bottom: 0.75rem;
+  left: 0.75rem;
+  max-width: calc(100% - 1.5rem);
+  border: 1px solid rgb(36 29 24 / 30%);
+  border-radius: 8px;
+  background: rgb(251 246 234 / 90%);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 18%);
+  font-size: 0.8rem;
+
+  summary {
+    padding: 0.4rem 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  ul {
+    display: grid;
+    gap: 0.3rem;
+    margin: 0;
+    padding: 0 0.75rem 0.6rem;
+    list-style: none;
+  }
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+}
+
+.legend-swatch {
+  display: inline-block;
+  flex: none;
+  width: 1.1rem;
+  height: 0.8rem;
+  border: 1px solid rgb(36 29 24 / 60%);
+  border-radius: 2px;
+}
+
+.legend-contested {
+  background: repeating-linear-gradient(45deg, #b1493f 0 3px, #b39232 3px 6px);
+}
+
+.legend-sea {
+  height: 0;
+  border: 0;
+  border-top: 2px dotted #5b7f8c;
+}
+
+.legend-destination {
+  border: 2px solid var(--gold-bright);
+  background: linear-gradient(115deg, transparent 35%, rgb(255 246 216 / 90%) 50%, transparent 65%), rgb(242 200 75 / 22%);
+  box-shadow: 0 0 0 1px rgb(36 29 24 / 62%), inset 0 0 0 1px rgb(36 29 24 / 35%);
+}
+
+.legend-planned,
+.legend-moved,
+.legend-bounced,
+.legend-disbanded {
+  height: 0;
+  border: 0;
+  border-top: 3px dashed var(--route);
+}
+
+.legend-moved {
+  border-top-style: solid;
+}
+
+.legend-bounced {
+  border-top-color: var(--bounce);
+}
+
+.legend-disbanded {
+  border-top-color: var(--disband);
+}

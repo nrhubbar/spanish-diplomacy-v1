@@ -1,25 +1,19 @@
-import { type JSX, useCallback, useMemo } from "react";
 import type { GameState } from "../engine/types";
-import type { MapRect, ScenarioPackage } from "../scenarios/loader";
-import type { MapAssets } from "../scenarios/registry";
 import { cssVariables } from "../presentation/style";
 import { territoryName } from "../presentation/text";
-import { type Camera, type CameraBounds, type Viewport, mapToScreen, pixelsPerUnit, semanticLevel, visibleRect } from "./camera";
-import { CounterLayer, layoutCounters } from "./CounterLayer";
-import { DestinationOddsLayer } from "./DestinationOddsLayer";
-import { mapTerritory } from "./anchors";
+import type { ScenarioPackage } from "../scenarios/loader";
+import type { MapAssets } from "../scenarios/registry";
+import { MapControls } from "./MapControls";
+import { MapLayers } from "./MapLayers";
 import { MapLegend } from "./MapLegend";
-import { mapControlObstacles, MapControls } from "./MapControls";
-import { MapPane, type PaneContent, type PaneLayout, paneLayoutFor, paneWidthFor } from "./MapPane";
-import { prepareGeometry, type PreparedGeometry } from "./markup";
-import { type ScreenRect, visibleContextLabels } from "./placement";
-import { TerrainLayer } from "./TerrainLayer";
+import { MapPane, type PaneContent, paneLayoutFor, paneWidthFor } from "./MapPane";
+import { type CameraBounds, semanticLevel } from "./camera";
+import { prepareGeometry } from "./markup";
 import { useFocusRescue } from "./useFocusRescue";
 import { useMapCamera } from "./useMapCamera";
 import { type MapBriefing, usePaneView } from "./usePaneView";
-import { VectorLayer } from "./VectorLayer";
-import { visibleWater } from "./waterLabels";
 import { highlightedTerritoryId, type MapView } from "./view";
+import { type JSX, useCallback, useMemo } from "react";
 
 interface CampaignMapProps {
   readonly assets: MapAssets;
@@ -134,103 +128,4 @@ export function CampaignMap({ assets, briefing, game, onTerrainFallback, pane, s
       )}
     </section>
   );
-}
-
-interface MapLayersProps {
-  readonly assets: MapAssets;
-  readonly bounds: CameraBounds;
-  readonly camera: Camera;
-  readonly game: GameState;
-  readonly geometry: PreparedGeometry;
-  readonly layout: PaneLayout;
-  readonly level: ReturnType<typeof semanticLevel>;
-  readonly onTerrainFallback: ((reason: string) => void) | undefined;
-  readonly scenarioPackage: ScenarioPackage;
-  readonly view: MapView;
-  readonly viewport: Viewport;
-}
-
-function MapLayers({ assets, bounds, camera, game, geometry, layout, level, onTerrainFallback, scenarioPackage, view, viewport }: MapLayersProps): JSX.Element {
-  const { map, scenario } = scenarioPackage;
-  const scale = pixelsPerUnit(camera, viewport, bounds);
-  const visible = visibleRect(camera, viewport, bounds);
-  const toScreen = (point: { readonly x: number; readonly y: number }) => mapToScreen(point, camera, viewport, bounds);
-  const place = (rect: MapRect): MapRect => ({ ...toScreen(rect), height: rect.height * scale, width: rect.width * scale });
-  const landLabels = labelObstacles(scenarioPackage, level, toScreen, viewport.height, layout);
-  const expandedTerritoryId = highlightedTerritoryId(view);
-  const counterLayout = layoutCounters(game, map, camera.zoom, toScreen, landLabels, {
-    ...(expandedTerritoryId === undefined ? {} : { expandedTerritoryId }),
-    narrow: layout === "sheet"
-  });
-  const { height, width } = counterLayout.metrics;
-  const counters = [...counterLayout.positions.values()].map((position) => ({ ...position, height, width }));
-
-  return (
-    <>
-      {assets.terrain === undefined ? null : (
-        <TerrainLayer
-          layers={assets.terrain.layers}
-          onFallback={(reason) => { onTerrainFallback?.(reason); }}
-          place={place}
-          visible={visible}
-        />
-      )}
-      <VectorLayer
-        contextLabels={visibleContextLabels(map.contextLabels, toScreen, viewport, counters)}
-        game={game}
-        geometry={geometry}
-        level={level}
-        map={map}
-        scenario={scenario}
-        unit={1 / scale}
-        view={view}
-        visible={visible}
-        water={visibleWater(map, {
-          level,
-          // landLabels already holds the fixed controls and legend for this layout.
-          obstacles: [...counters, ...landLabels],
-          scale,
-          toScreen,
-          // The open pane floats 0.75rem in from the edge, so names keep clear of its full width.
-          viewport: { height: viewport.height - viewport.insetBottom, width: viewport.width - viewport.insetRight - (viewport.insetRight > 0 ? 12 : 0) }
-        })}
-      />
-      <CounterLayer
-        game={game}
-        layout={counterLayout}
-        level={level}
-        scenario={scenario}
-        unitSymbols={assets.unitSymbols}
-        view={view}
-      />
-      {view.destinationEstimates === undefined ? null : (
-        <DestinationOddsLayer counters={counters} estimates={view.destinationEstimates} labelAt={(id) => toScreen(mapTerritory(map, id).label)} />
-      )}
-    </>
-  );
-}
-
-/** Screen rectangles counters should avoid: visible labels and the fixed map controls (V4, V7). */
-function labelObstacles(
-  { map, scenario }: ScenarioPackage,
-  level: ReturnType<typeof semanticLevel>,
-  toScreen: (point: { readonly x: number; readonly y: number }) => { readonly x: number; readonly y: number },
-  height: number,
-  layout: PaneLayout
-): readonly ScreenRect[] {
-  const rects: ScreenRect[] = [...mapControlObstacles(layout, height)];
-  for (const city of scenario.cities) {
-    const position = map.cities.get(city.id);
-    if (position === undefined || (position.tier === "detail" && level === "overview")) continue;
-    const point = toScreen(position);
-    rects.push({ height: 15, width: city.name.length * 6.6 + 10, x: point.x - 4, y: point.y - 9 });
-  }
-  for (const [territoryId, entry] of map.territories) {
-    if (entry.label.tier === "detail" && level === "overview") continue;
-    const name = territoryName(scenario, territoryId);
-    const point = toScreen(entry.label);
-    const width = name.length * 7.4;
-    rects.push({ height: 16, width, x: point.x - width / 2, y: point.y - 12 });
-  }
-  return rects;
 }

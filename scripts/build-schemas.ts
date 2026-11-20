@@ -6,8 +6,8 @@ import { mapSchema } from "../src/main/scenarios/schema/mapSchema.ts";
 import { scenarioSchema } from "../src/main/scenarios/schema/scenarioSchema.ts";
 
 const outputs = [
-  ["src/main/scenarios/schema/scenario.schema.json", scenarioSchema],
-  ["src/main/scenarios/schema/map.schema.json", mapSchema]
+  ["src/scenarios/scenario.schema.json", scenarioSchema],
+  ["src/scenarios/map.schema.json", mapSchema]
 ] as const;
 
 for (const [path, schema] of outputs) {

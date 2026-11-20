@@ -1,17 +1,18 @@
-# Scenario Package Specification (spec version 1)
+# Scenario Package Specification (spec version 2)
 
 A scenario package is the rules data for one playable scenario: factions, territories and how they connect, cities, units and their combat values, the combat rules' numbers, and victory parameters. The game engine interprets it; it contains no presentation. Its companion map package (`map-package.md`) holds everything visual.
 
-- Machine-readable schema: `src/main/scenarios/schema/scenario.schema.json` (JSON Schema draft 2020-12), generated from `scenarioSchema.ts` by `npm run spec:build`. A unit test fails if the two drift.
-- Reference packages: `src/main/scenarios/spain-1936-07-31/` (shipped) and `src/test/fixtures/scenarios/tiny-front/` (minimal test fixture).
+- Machine-readable schema: `src/scenarios/scenario.schema.json` (JSON Schema draft 2020-12), generated from `scenarioSchema.ts` and its parts (`coreSchema.ts`, `modularSchema.ts`, `systemsSchema.ts`) by `npm run spec:build`. A unit test fails if the two drift. The schema has one variant per ruleset, so it states which blocks each ruleset takes.
+- Version 1 is dropped: both packages were migrated in one commit (E1). A package with `specVersion: 1` fails to load.
+- Reference packages: `src/scenarios/spanish-civil-war-1936/` (shipped, `m3-modular`) and `src/test/fixtures/scenarios/tiny-front/` (minimal test fixture, `m2-strength`). `src/scenarios/MANIFEST.md` describes the folder layout.
 
 ## Adding a scenario
 
-1. Create `src/main/scenarios/<scenario-id>/` with `scenario.json` and `map.json`. Start each file with the `$schema` line, so editors validate as you type.
+1. Create `src/scenarios/<scenario-id>/` with `scenario.json` and `map.json`. Start each file with the `$schema` line, so editors validate as you type.
 2. Put map assets anywhere under `assets/` and reference them by repository-relative path from `map.json`.
 3. Run `npm run test:unit`. The contract tests load every package and report each problem with its JSON path and rule id. A package that fails validation is left out of the game and reported in a notification; it never crashes the app.
 
-No code changes are needed, provided the scenario fits the `m2-strength` ruleset below. A scenario that needs different rules needs a new ruleset in the engine, and its `ruleset` value makes that explicit.
+No code changes are needed, provided the scenario fits the `m2-strength` ruleset or the modules of `m3-modular` below. A scenario that needs different rules registers a named module (Milestone 3: through the scenario's own `plugin.ts`), and its `rules` value makes that explicit.
 
 ## Fields
 
@@ -19,16 +20,17 @@ All ids are lowercase kebab-case (`[a-z0-9]+(-[a-z0-9]+)*`) and are never shown 
 
 | Field | Type | Meaning |
 |---|---|---|
-| `specVersion` | `1` | Spec version. |
+| `specVersion` | `2` | Spec version. |
 | `id` | id | Scenario id; unique across packages. |
 | `name` | text | Shown in the scenario picker. |
 | `snapshotLabel` | text | Starting date or moment; shown on setup and turn 1 only. |
-| `ruleset` | `"m2-strength"` | Rules the engine applies. Unknown values fail to load. |
+| `ruleset` | `"m2-strength"` or `"m3-modular"` | Rules the engine applies. Unknown values fail to load. `m3-modular` adds the fields in "Milestone 3 blocks" below; `m2-strength` takes none of them. |
 | `map` | path | The map package, relative to this file. |
 | `victory.territoryShare` | 0-1 | Share of victory-eligible territories that wins (rounded up). |
 | `victory.cityShare` | 0-1 | Share of victory-eligible cities that wins (rounded up). |
 | `victory.tieBreak` | list of `cities` / `territories` | Order in which qualifying factions are compared. |
-| `combat` | see below | The numbers of the battle rules: results table, below-1:1 rule, digging in, demoralization, faction modifiers. |
+| `combat` | see below | The numbers of the d6 battle rules: results table, below-1:1 rule, digging in, demoralization, faction modifiers. Required under both rulesets while `d6-table` is the only implemented dice module (decision CT-3 in `project/milestones/m3r1-progress/contract.md`). |
+| `ai` | `{ blunderChance, profiles: { [factionId]: profile }, sources?, note? }` | E7, H6: one computer-player profile per faction (see "AI profiles"), and the chance, 0 to 1, that one computer order is a blunder. |
 | `unitTypes[]` | `{ id, name, attack, defence }` | Unit types. `attack` and `defence` are positive whole numbers: the values of a full-strength army of the type (C4). Symbols come from the map package. |
 | `factions[]` | see below | At least two. |
 | `territories[]` | see below | At least two. |
@@ -57,6 +59,69 @@ Combat (`combat`), every field required:
 
 The shipped table is the prototype's, corrected so each odds step is exactly one result better for the attacker (C2): column `k` is `SEQ[k..k+6]` over `SEQ = AE AE AA AD BD BD DD DX DE DE DE DE DE` (attacker-eliminated, attacker-attrition, attacker-demoralized, both-demoralized, defender-demoralized, defender-exchange, defender-eliminated).
 
+### AI profiles
+
+`ai.profiles` is keyed by faction id, one profile per faction (E7), so a harness variant patches `/ai/profiles/<factionId>`; the blunder chance is `/ai/blunderChance`. A profile is `{ computer, offensive, stakes, victoryAlarm }`, the weights of today's computer player. `computer`: `approachObjective`, `bouncedLastTurn`, `caution`, `demoralizedShare`, `enemyLoss`, `ownLoss`. `offensive`: `reach`, `oddsTieBreak`, `staging`, `focus`, `stallStep`, `stallCap`. `stakes`: `city`, `objective`, `territory`. `victoryAlarm`: `perStep`, `steps`. The strategy logic stays in code.
+
+## Milestone 3 blocks (`m3-modular` only)
+
+Every block below is optional in the schema; the loader requires each one that a selected module reads (L15). Ids of sub-territories, resources, development tracks, buildings, grades, weather outcomes, seasons, zones, traits and generals are each their own namespace.
+
+Every block and catalogue entry that carries numbers (`ai`, unit types, sub-territories, development tracks, buildings, `improvements`, `recruitment`, `movement`, `d20`, `weather`, `calendar`, `air`, `generals`) takes the same two optional fields: `sources` (citations, as on units) and `note` (a design note for numbers no source gives). Every number in data has one or the other; sub-territories must (L18).
+
+| Field | Type | Meaning |
+|---|---|---|
+| `rules` | `{ dice, economy, recruitment, weather, movement, partition, air }` | E2: one module name per area. See "Rule modules". |
+| `unitTypes[]` | see "Unit types" | W5: replaces the `m2-strength` unit type. |
+| `factions[].startingStock` | resource amounts | $7: the treasury on turn 1. Required when `resources` is not empty (L24). |
+| `factions[].seatTerritoryId` | territory id | D7: where a replacement general appears. Required with `generals` (L21). Factions also take `sources` and `note`. |
+| `units[].generalId` | general id | U5: the roster general a unit of a `general` type stands for (L21). |
+| `territories[].capitalSubTerritoryId` | sub-territory id | W3: the capital. Required with sub-territories (L16). |
+| `territories[].weatherZone` | zone id | T2. Required with `weather` (L20). |
+| `connections[].entry` | `[sub-territory id, sub-territory id]` | P8: the sub-territory entered on each side, in `between` order. Required with sub-territories (L19). |
+| `cities[].subTerritoryId` | sub-territory id | The sub-territory the city stands in. Required with sub-territories (L16). |
+| `subTerritories[]` | see below | W2, P1. |
+| `subTerritoryBorders[]` | `[id, id]` | Undirected sub-territory adjacency, inside and across territories, generated from the map geometry. |
+| `resources[]` | `{ id, name }` | $1: Funds and Manpower for Spain. Amounts elsewhere are `{ [resourceId]: whole number }`; a missing resource is 0. |
+| `development[]` | `{ id, name, resource, yieldPerLevel, maxLevel, cityOnly, upgrade: { cost, turns } }` | $3: Farms, Mines, Industry. |
+| `buildings[]` | `{ id, name, cost, turns, capitalOnly, cityOnly, upgradeOf?, effects[] }` | $4. Building effects: `recruit-slots { extra }`, `replenish-rate { share }`, `replenish-cap { share }`, `rail-departures { extra }`, `airbase`, `all-weather-airbase`, `defence-roll { roll }`. |
+| `improvements` | `{ rail: { cost, turns, maxLevel }, port: { ... }, railDamageOnContest }` | $4, $8: the levelled rail (0-3) and port (0-2). |
+| `recruitment` | `{ maxPerTerritory, replenishCostShare, replenishShare }` | R2, R5, D7. |
+| `movement` | `{ landingsPerPortLevel, railRangePerLevel }` | M3, M5, D7. |
+| `d20` | see below | D1-D7, C6. |
+| `weather` | `{ outcomes[], seasons[], zones[] }` | T2, T4. |
+| `calendar` | `{ start: { year, month, half }, turnsPerYear: 24 }` | T1: half-month turns; turn 1 is the start. |
+| `air` | `{ raidTable[], interceptRoll, reconTurns }` | U2-U4. |
+| `generals` | `{ traits[], roster[] }` | U5. |
+
+Sub-territory: `id`, `name`, `territoryId`, `terrain` (`open`, `mountain`, `swamp`), `startHolder` (P1: the holder on the start date, whatever the territory's controller), `development` (`{ [trackId]: level }`), `buildings` (ids), `rail` (0-3), `port` (0-2), and `sources` and/or `note` (every number has a source or a design note, L18).
+
+Unit type: `id`, `name`, `kind` (`ground`, `air`, `general`), `attack` and `defence` (whole numbers, 0 or more), `symbol` (the NATO APP-6A function: `infantry`, `militia`, `security`, `artillery`, `cavalry`, `armour`, `transport`, `air-defence`, `fixed-wing`, `headquarters`; the map package still names the drawn asset), `orders` (the unit order kinds it may take: `move`, `withdraw`, `replenish`, `air-mission`, `sack`), `effects[]`, optional `recruit: { cost, establishment, trainingTurns, requires[], factionIds? }`, `air: { range, missions[] }` for air types only (L17), and `sources` and `note`. Unit effects (E6): `roll-bonus-per-points { role, per, bonus, max, exceptWeather[] }`, `cannot-attack-alone`, `transport { carries }`, `mobile`, `raid-defence { roll }`, `trains-in-contested`, `command-bonus { roll }`, `rally`, `battle-support { roll }`.
+
+d20: `grades[]` (`{ id, name, attacker: { lossPercent, demoralized }, defender: { lossPercent, demoralized, weakestDestroyed }, ground }`, with `lossPercent` 0, 10, 20, 35 or 100, `demoralized` `none`, `half` or `all`, and `ground` 0, 1, 2 or `all`), `table` (7 odds columns by 21 modified scores, 0 to 20, of grade ids), `modifiers` (`worksPerTurn`, `worksMax`, `belowOneToOnePenalty`, `barricades`, `fatigued`, `amphibious`), `fatigue` (`fatiguedLevel`, `demoralizedLevel`), `breakUpShare`, and `factionModifiers[]` (as in `combat`).
+
+Weather: `outcomes[]` (`{ id, name, attackRoll, effects[] }`, effects `blocks-digging-in`, `grounds-aircraft`, `movement-penalty { amount }`, `frostbite { share }`, `closes-sea { months }`), `seasons[]` (`{ id, name, months[] }`, covering each month once), and `zones[]` (`{ id, name, coastal, tables: { [seasonId]: [{ outcome, upTo }] } }`, each table running from the best weather to the worst and ending at 20).
+
+Generals: `traits[]` (`{ id, name, effects[] }`, effects `roll-modifier { role, roll }` and `no-rally`) and `roster[]` (`{ id, name, factionId, trait, sources[] }`, in roster order).
+
+### Rule modules
+
+| Area | Built-in modules (the first is the `m2-strength` preset) | Blocks the module needs (L15) |
+|---|---|---|
+| `dice` | `d6-table`, `d20-graded` | `d20-graded`: `d20` |
+| `economy` | `none`, `development` | `subTerritories`, `resources`, `development`, `buildings`, `improvements` |
+| `recruitment` | `none`, `buildings` | `subTerritories`, `resources`, `buildings`, `recruitment` |
+| `weather` | `none`, `seasonal-zones` | `weather`, `calendar` |
+| `movement` | `single-step`, `allowance` | `subTerritories`, `movement` |
+| `partition` | `none`, `provinces` | `subTerritories` |
+| `air` | `none`, `missions` | `air` |
+
+The catalogue is `src/main/engine/modules.ts`. Until its owning stream lands, a module runs its area's preset parts and pass-through skeletons: selecting it changes nothing in resolution.
+
+### Outcomes
+
+A turn reports one flat list of outcomes (`TurnResolutionResult.outcomes`), plus `subTerritoryChanges` for every sub-territory that changed hands (by occupation, a battle's ground, or the contested sweep). The types are split by area under `src/main/engine/types/outcomes/` (moves, battle, morale, recruitment, economy, contested, air, generals, weather) and joined into one union in `types/outcomes.ts`. Each area file exports its own union, and `SystemOutcome` joins them. A battle is a `d6` or a `d20` variant: the d6 one has the die (1-6), the row (0-6) and a result; the d20 one has the die (1-20), the score (0-20), a grade id and the ground taken (0, 1, 2 or all). For both, `losses` (men lost and units destroyed) and `demoralizedUnitIds` are the one record of what the battle did to units. Battle modifiers add `general`, `trait`, `barricades`, `unit-bonus` (artillery, tanks), `fatigue`, `weather`, `amphibious`, `air-support` and `building` to the Milestone 2 kinds.
+
 ## Validation rules
 
 The loader applies these when the app starts. Each failure names the JSON path and the rule.
@@ -72,10 +137,28 @@ The loader applies these when the app starts. Each failure names the JSON path a
 | L7 | Every territory has a connection, unless it is declared `isolated`; an isolated territory has none. |
 | L8 | Every faction starts with at least one unit or controlled territory. |
 | L9 | No faction starts at or above a victory threshold. |
-| L10 | The map package covers every territory, city, and unit type (see `map-package.md`). |
+| L10 | The map package covers every territory, city, and unit type (see `map-package.md`). When the map lists sub-territory entries, they match the scenario's sub-territories one to one, each in the same territory. |
 | L11 | Every asset the map package names exists. |
 | L12 | A unit's `strength` is no greater than its `fullStrength`. |
 | L13 | Every faction modifier changes something: its `attack` or `defence` is above 0. |
+| L14 | `m3-modular`: every `rules` module is a known module for its area. |
+| L15 | `m3-modular`: every block a selected module needs is present (and not empty, for lists). |
+| L16 | With sub-territories: every territory names a capital sub-territory of its own, and every city names a sub-territory of its own territory. |
+| L17 | Air unit types, and only they, carry `air`; buildings, factions and weather outcomes that a unit type names exist. |
+| L18 | Every sub-territory has sources or a note; development levels are within their track's `maxLevel`, city-only tracks are above 0 only where a city stands; buildings exist, are listed once, respect `capitalOnly`, `cityOnly` and `upgradeOf`; rail and port are within the improvement caps. |
+| L19 | Sub-territory borders join two known, different sub-territories once; with sub-territories, every connection names an entry on each side, inside that side's territory. |
+| L20 | With `weather`: every territory names a known zone; seasons cover each month once; every zone has a table for each known season, rising to 20, naming known outcomes. |
+| L21 | With `generals`: traits and sources resolve; every faction has 3 to 5 generals and a known seat territory. Units of a `general` type, and only they, name a roster general of their own faction, each fielded once. |
+| L22 | `d20`: the table names known grades; `fatiguedLevel` is below `demoralizedLevel`; `worksPerTurn` is at most `worksMax`; d20 faction modifiers name known factions. |
+| L23 | `ai.profiles` has one profile for each faction and none for unknown factions. |
+| L24 | Every resource amount names a known resource; with resources, every faction has a `startingStock`. |
+| L25 | `air.raidTable` rises to 20. |
+
+## The `m3-modular` ruleset
+
+`m3-modular` resolves a turn as the ordered steps of tasks section 2, one file per step in `src/main/engine/phases/` (`00-weather` to `12-victory`). Each step runs the engine's own part (step 1, reveal; step 12, victory), then each selected module's part in area order (`dice`, `economy`, `recruitment`, `weather`, `movement`, `partition`, `air`). A module names the data blocks it needs and its parts of each step; the engine's own modules are one file per area under `src/main/engine/modules/`, joined in `src/main/engine/modules.ts`. Parts run in area order, each on the draft the previous part returned, so a later area cannot undo an earlier one: a rule that must shape an earlier part (Snow blocking digging in, read by the dice module's morale part from `systems.weather`) is read inside that part. a scenario's optional `plugin.ts` exports `plugin: { modules }` and registers modules through the same interface, and a name registered twice is a package problem. The presets carry today's rules: `d6-table` takes steps 4, 5, 7 and 9, `single-step` step 3, partition `none` steps 6 and 8. Until each slice lands, its Milestone 3 module runs its area's preset parts plus pass-through skeletons, so a package moved to `m3-modular` plays as it did. Orders are one flat list per faction (E8): Move (with an optional path of `land`, `rail` and `sea` legs; absent means one step), Withdraw, Replenish, Recruit, Build, AirMission and Sack. A Move whose path is more than one step, and every other kind, is not yet available: a move is an impossible order (M9), and any other order is reported as `rejected-order` without disbanding anything.
+
+Every roll kind draws from its own seeded streams, `deriveSeed(game seed, tag, turn, index)`, with one tag per kind: battle (the M26 tag, so battle rolls are unchanged), weather, raid, general death and blunder (`src/main/engine/dice.ts`). A faction sees the state through `viewFor` (`src/main/engine/visibility.ts`): other factions' treasuries, queue items and units in training are hidden unless its recon reveals their territory this turn ($6, U4); the computer player plans on that view.
 
 ## The `m2-strength` ruleset
 

@@ -1,0 +1,28 @@
+// The territory pane's tabs (X3) and the sub-territory focus view. Slices style their own tab
+// bodies in their own partials.
+.pane-tab-list {
+  display: flex;
+  gap: 4px;
+  margin: 0 0 8px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.pane-tab {
+  min-height: 32px;
+  padding: 4px 12px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+
+  &[aria-selected="true"] {
+    border-bottom-color: var(--ink);
+    font-weight: 600;
+  }
+}
+
+.sub-territory-focus h3 {
+  margin-top: 4px;
+}

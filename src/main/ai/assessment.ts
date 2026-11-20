@@ -1,24 +1,7 @@
 import { armyValue, battleOdds, situationalModifiers } from "../engine/combat";
-import { citiesIn, neighborsOf, requireFaction, requireTerritory } from "../engine/lookup";
-import type { FactionId, GameState, Scenario, TerritoryId, UnitId, UnitState } from "../engine/types";
+import { citiesIn, neighborsOf, requireAiProfile, requireFaction, requireTerritory } from "../engine/lookup";
+import type { AiProfile, FactionId, GameState, Scenario, TerritoryId, UnitId, UnitState } from "../engine/types";
 import { victoryProgress } from "../engine/victory";
-
-/** What each part of a territory is worth to a computer player. */
-export const stakeWeights = {
-  /** Each city that counts for victory. */
-  city: 2,
-  /** A territory the faction's objectives name. */
-  objective: 5,
-  /** A territory that counts for victory. */
-  territory: 4
-} as const;
-
-/**
- * Victory alarm: when a rival is within `steps` territories of winning, territories the
- * faction holds, and those the rival holds, are worth `perStep` more of their stake for each
- * step closer. Holding the line and taking ground back then outweigh lesser gains.
- */
-export const victoryAlarm = { perStep: 0.5, steps: 4 } as const;
 
 /**
  * A computer player's reading of the board at the start of a turn, from one faction's point
@@ -28,6 +11,8 @@ export const victoryAlarm = { perStep: 0.5, steps: 4 } as const;
  */
 export interface Assessment {
   readonly factionId: FactionId;
+  /** E7: the faction's weights, from scenario data (`ai.profiles`). */
+  readonly profile: AiProfile;
   /** The army's attack value (M12) at the start of the turn. */
   readonly attackOf: (unit: UnitState) => number;
   /**
@@ -66,6 +51,7 @@ interface Pressure {
 
 export function assess(scenario: Scenario, state: GameState, factionId: FactionId): Assessment {
   const objectives = new Set<TerritoryId>(requireFaction(scenario, factionId).objectiveTerritoryIds);
+  const profile = requireAiProfile(scenario, factionId);
   const hostile = Object.values(state.units).filter((unit) => unit.factionId !== factionId);
   const attackValues = new Map<UnitId, number>();
   const defenceValues = new Map<UnitId, number>();
@@ -116,7 +102,7 @@ export function assess(scenario: Scenario, state: GameState, factionId: FactionI
     .map((entry) => {
       // A territory taken often brings two victory cities with it.
       const gap = Math.min(entry.territoryThreshold - entry.territoriesControlled, Math.ceil((entry.cityThreshold - entry.citiesControlled) / 2));
-      return [entry.factionId, Math.max(0, victoryAlarm.steps - gap) * victoryAlarm.perStep] as const;
+      return [entry.factionId, Math.max(0, profile.victoryAlarm.steps - gap) * profile.victoryAlarm.perStep] as const;
     }));
   const alarmFor = (territoryId: TerritoryId): number => {
     const control = state.control[territoryId];
@@ -126,9 +112,9 @@ export function assess(scenario: Scenario, state: GameState, factionId: FactionI
 
   const stake = (territoryId: TerritoryId): number => cached(stakes, territoryId, () => {
     const cities = citiesIn(scenario, territoryId).filter((city) => city.countsForVictory).length;
-    const base = (requireTerritory(scenario, territoryId).countsForVictory ? stakeWeights.territory : 0)
-      + cities * stakeWeights.city
-      + (objectives.has(territoryId) ? stakeWeights.objective : 0);
+    const base = (requireTerritory(scenario, territoryId).countsForVictory ? profile.stakes.territory : 0)
+      + cities * profile.stakes.city
+      + (objectives.has(territoryId) ? profile.stakes.objective : 0);
     return base * (1 + alarmFor(territoryId));
   });
 
@@ -139,7 +125,7 @@ export function assess(scenario: Scenario, state: GameState, factionId: FactionI
     return defence > 0 ? { defence, factionId: control.factionId } : undefined;
   };
 
-  return { attackOf, danger, defenceOf, factionId, isObjective: (territoryId) => objectives.has(territoryId), relief, stake };
+  return { attackOf, danger, defenceOf, factionId, isObjective: (territoryId) => objectives.has(territoryId), profile, relief, stake };
 }
 
 function cached<Key, Value>(cache: Map<Key, Value>, key: Key, compute: () => Value): Value {

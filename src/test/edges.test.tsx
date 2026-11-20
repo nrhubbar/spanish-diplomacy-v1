@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { cleanup, render, renderHook, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Provider } from "react-redux";
@@ -110,7 +111,7 @@ describe("engine and computer edge cases", () => {
     const scenario = tiny();
     const state: GameState = { ...withUnits(scenario, [["blue-marines", "blue", "harbor"]]), control: { ...initialGameState(scenario).control, westfold: { factionId: faction("blue"), kind: "controlled" }, highlands: { factionId: faction("blue"), kind: "controlled" } } as GameState["control"] };
     const submission = generateComputerSubmission(scenario, state, faction("blue"), seededRandom(4));
-    expect(submission.orders.every((order) => order.unitId === unit("blue-marines"))).toBe(true);
+    expect(submission.orders.every((order) => "unitId" in order && order.unitId === unit("blue-marines"))).toBe(true);
     const crowded = withUnits(scenario, [["red-guard", "red", "westfold"], ["red-rangers", "red", "westfold"]]);
     expect(generateComputerSubmission(scenario, crowded, faction("red"), () => 0.999).orders.length).toBeGreaterThan(0);
   });
@@ -189,7 +190,7 @@ describe("selectors and small helpers", () => {
     // The case under test is a loader that rejects with something other than an Error.
     // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors
     const store = createAppStore({ registry: { ...failing, loadAssets: () => Promise.reject("plain failure") } });
-    await store.dispatch(loadMapAssets("spain-1936-07-31" as never));
+    await store.dispatch(loadMapAssets("spanish-civil-war-1936" as never));
     expect(store.getState().notifications.notifications[0]?.message).toBe("The map for this scenario could not be loaded.");
     store.dispatch({ error: {}, meta: { arg: "x", requestId: "r", requestStatus: "rejected" }, payload: undefined, type: "other/thing/rejected" });
     expect(store.getState().notifications.notifications.at(-1)?.message).toBe("Unexpected application error.");
@@ -204,7 +205,8 @@ describe("component edge cases", () => {
     const quiet = vi.spyOn(console, "error").mockImplementation(() => undefined);
     expect(() => renderHook(() => useRegistry())).toThrow("RegistryContext is missing");
     const store = testStore();
-    expect(() => renderHook(() => useSessionIn("planning"), { wrapper: ({ children }) => <Provider store={store}>{children}</Provider> })).toThrow("rendered during idle");
+    const wrapper = ({ children }: { readonly children: ReactNode }) => <Provider store={store}><RegistryContext value={testRegistry()}>{children}</RegistryContext></Provider>;
+    expect(() => renderHook(() => useSessionIn("planning"), { wrapper })).toThrow("rendered during idle");
     quiet.mockRestore();
   });
 

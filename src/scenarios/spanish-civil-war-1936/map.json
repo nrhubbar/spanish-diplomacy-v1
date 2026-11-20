@@ -1,6 +1,6 @@
 {
-  "$schema": "../schema/map.schema.json",
-  "specVersion": 1,
+  "$schema": "../map.schema.json",
+  "specVersion": 2,
   "id": "iberia-1936",
   "viewBox": {
     "x": -680,
@@ -816,7 +816,16 @@
     "infantry-regiment": "assets/icons/nato/infantry.svg",
     "militia-column": "assets/icons/nato/militia.svg",
     "colonial-veterans": "assets/icons/nato/colonial.svg",
-    "security-forces": "assets/icons/nato/security.svg"
+    "security-forces": "assets/icons/nato/security.svg",
+    "artillery-group": "assets/icons/nato/artillery.svg",
+    "cavalry-regiment": "assets/icons/nato/cavalry.svg",
+    "tank-company": "assets/icons/nato/armor.svg",
+    "truck-column": "assets/icons/nato/transport.svg",
+    "anti-air-battery": "assets/icons/nato/air-defence.svg",
+    "recon-flight": "assets/icons/nato/recon-aircraft.svg",
+    "fighter-squadron": "assets/icons/nato/fighter.svg",
+    "bomber-squadron": "assets/icons/nato/bomber.svg",
+    "general": "assets/icons/nato/headquarters.svg"
   },
   "attribution": [
     {
