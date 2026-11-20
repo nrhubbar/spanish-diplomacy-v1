@@ -47,6 +47,8 @@ Mode: make it work (declog D13). Decisions M1-M6, X5, X6; step 3 and the withdra
 18. **MV-18. Route details are the button's description, not its name**: the button names the destination and the odds; the route line and chips sit beside it with `aria-describedby`. The card shows on hover and on keyboard focus.
 19. **MV-19. Sea closure** reads `isSeaRouteClosed` (`engine/weather.ts`). The interim `seaClosed` hook I had added to `hooks.ts` is removed, so `hooks.ts` is back to the contract's version.
 20. **MV-20. The amphibious modifier stays d20-only** (MV-11) although the hook is collected under both dice: the d6 `combat` block has no amphibious number, and the d20 value would swamp a d6. Spain ships on `d20-graded`, so it applies there.
+22. **MV-22. The rideable network (X6)** is every station the rail search reaches within range at any level, not only the stations on the chosen rides.
+23. **MV-23. The breakdown card on touch screens** opens from a "Route details" toggle beside each row, because a tap on the row chooses it; hover and keyboard focus still open it.
 21. **MV-21. Withdraw legs** (P6): one land step to an adjacent territory the faction controlled at the start of the turn, reached through its own sub-territories of the origin (`ownPath`, a breadth-first search from any held sub-territory to one bordering the target). Undefined means surrender. Not wired: Withdraw still validates in `m3r1-sub-territories`.
 
 ## Stubbed
@@ -60,6 +62,12 @@ Mode: make it work (declog D13). Decisions M1-M6, X5, X6; step 3 and the withdra
 - **m3r1-sub-territories**: the P6 path function (to replace `ownPath`), Withdraw validation at reveal, and a step-6 call of `withdrawLegs`; control derived from holders (MV-1). Its map layer may want `MapPackage.subTerritories`, which I added (below).
 - **m3r1-recruit-replenish**: its recruit planner never recruits truck columns or cavalry in a 3-game, 20-turn probe, so marches never happen in Spain games; the move planner sends trucks along when there are any (tested on the fixture). A truck now and then for an army with two or more units would let H5's truck logic show in the harness.
 - **contract (make-it-right)**: `CombatHookContext` could carry the turn's orders or scratch, so the amphibious rule does not need MV-11's inference.
+
+## For make-it-right
+
+- `RouteLayer` still draws a planned multi-leg move as one arc from its origin to its destination, beside the traced route (a Catalunya rail-then-step to Extremadura arcs across the map). It should follow the legs or leave them to the rail layer.
+- Move and battle outcomes show the last step from the staging territory (MV-13).
+- The amphibious inference (MV-11) would be simpler with the turn's orders on `CombatHookContext`.
 
 ## Files outside my ownership
 
@@ -80,7 +88,8 @@ Mode: make it work (declog D13). Decisions M1-M6, X5, X6; step 3 and the withdra
 
 After merging `milestone-3-rev-1` at `38b68ba` (d20-combat, recruit-replenish, weather-timer):
 - typecheck, lint: pass.
-- test:unit: 754 of 760 pass; the 6 failures are the known sim-harness ones (D14).
+- test:unit: 757 of 763 pass; the 6 failures are the known sim-harness ones (D14). `movement.test.ts` has 22 tests, one of them an amphibious assault resolved on the d20 with `{ kind: "amphibious", roll: -4 }` in the battle's modifiers.
+- `npm run test:e2e -- --project=chromium`: 21 passed, 2 skipped, 5 failed. Four are visual baseline diffs (setup, planning at every zoom level, resolution, flat-map fallback), the allowed kind; the rail layer and the merged streams change the map. `performance.spec.ts` P2/P3 failed once and passed on two reruns (pan script about 8 ms a frame); worth a look in make-it-fast.
 - `@capture movement, rail and ports` on chromium and mobile-chromium: pass.
 - `npm run sim -- --games 50 --variant single-step.json --blunders without` (seeds 1-50, 66 turns, Spain on d20):
   - allowance: decided 76% [63, 86], freezes 24% [14, 37], stalled 32%, median length 14; wins of decided Republic 74% [58, 85], North 18% [9, 33], South 8% [3, 21]; battles per turn 1.52.
