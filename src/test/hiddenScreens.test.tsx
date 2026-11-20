@@ -151,7 +151,7 @@ describe("only the session hook reads the raw session (m3)", () => {
       const path = join(dir, name);
       return statSync(path).isDirectory() ? files(path) : /\.tsx?$/.test(name) ? [path] : [];
     });
-    const readers = files("src/main").filter((path) => /\.game\.session\b/.test(readFileSync(path, "utf8")));
+    const readers = files("src/main").filter((path) => /\bgame\.session\b/.test(readFileSync(path, "utf8")));
     expect(readers).toEqual([join("src/main", "hooks.ts")]);
   });
 });

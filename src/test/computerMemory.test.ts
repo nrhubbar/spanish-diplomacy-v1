@@ -2,9 +2,10 @@ import { describe, expect, it, vi } from "vitest";
 import type { PlanningContext } from "../main/ai/orders/planner";
 import { initialGameState } from "../main/engine/resolution";
 import type { FactionId, GameState, SubTerritoryId, TurnOutcome, UnitId, UnitTypeId } from "../main/engine/types";
-import { advance } from "../main/state/coordinator";
+import { advance, nextTurn, resolve } from "../main/state/coordinator";
 import { historyEntry } from "../main/state/history";
-import type { GameRecord } from "../main/state/session";
+import { emptyDraft, type GameRecord, type Session } from "../main/state/session";
+import { submitDraft } from "../main/state/submit";
 import { visibleSession } from "../main/state/visible";
 import { faction, spainWithAir, territory } from "./support";
 
@@ -93,5 +94,27 @@ describe("a computer player's memory (CT-37, CT-38, M1)", () => {
     const scouted = historyEntry(scenario, { ...initialGameState(scenario), reveals: [{ territoryId: territory("aragon"), untilTurn: 3, viewerFactionId: republic }], turnNumber: 2 }, privateOutcomes());
     expect(scouted.seen.byFaction[republic]?.filter((outcome) => ownerOf(outcome) === north).map((outcome) => outcome.kind)).toEqual(["income", "training-started"]);
     expect(scouted.seen.byFaction[south]?.every((outcome) => ownerOf(outcome) === south)).toBe(true);
+  });
+});
+
+describe("history written by nextTurn (M1, D7)", () => {
+  it("opens a recon's reveal for its own turn only", () => {
+    const assignments = Object.fromEntries(scenario.factions.map((entry) => [entry.id, entry.id === republic ? "local-human" as const : "computer" as const]));
+    const recon = { factionId: republic, kind: "air-mission" as const, mission: { kind: "recon" as const, territoryId: territory("aragon") }, unitId: "rep-catalan-recon" as UnitId };
+    const start: GameRecord = { assignments, history: [], locked: Object.fromEntries(scenario.factions.map((entry) => [entry.id, { factionId: entry.id, orders: entry.id === republic ? [recon] : [] }])), scenarioId: scenario.id, seed: 5, state: initialGameState(scenario) };
+    const northIncome = (outcomes: readonly TurnOutcome[] | undefined) => (outcomes ?? []).some((outcome) => outcome.kind === "income" && outcome.factionId === north);
+    const turnOne = resolve(scenario, start);
+    if (turnOne.phase !== "resolution") throw new Error("Turn 1 did not resolve.");
+    const planning: Session = nextTurn(scenario, turnOne.game, turnOne.result.outcomes);
+    if (planning.phase !== "planning") throw new Error("Not planning turn 2.");
+    expect(northIncome(planning.game.history[0]?.seen.byFaction[republic])).toBe(true);
+    expect(northIncome(planning.game.history[0]?.seen.byFaction[south])).toBe(false);
+    const turnTwo = submitDraft(scenario, { ...planning, draft: emptyDraft });
+    if (turnTwo.phase !== "resolution") throw new Error("Turn 2 did not resolve.");
+    const after = nextTurn(scenario, turnTwo.game, turnTwo.result.outcomes);
+    if (after.phase !== "planning") throw new Error("Not planning turn 3.");
+    expect(after.game.history.map((entry) => entry.turnNumber)).toEqual([1, 2]);
+    expect(northIncome(after.game.history[1]?.seen.byFaction[republic])).toBe(false);
+    expect(northIncome(after.game.history[0]?.seen.byFaction[republic])).toBe(true);
   });
 });
