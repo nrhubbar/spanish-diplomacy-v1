@@ -16,7 +16,7 @@ All of Milestone 3 is built, reviewed, fixed and merged on the integration branc
 - calendar, weather and the turn timer;
 - the simulation harness.
 
-The work took about 9 hours of wall-clock time on 19 November, plus the close-out on 20 November. There are 18 work streams and the coverage stream, and 230-plus commits. They change about 400 files in `src`, `scripts` and `e2e` (+49k / −8k lines, about 11k of them tests).
+The work took about 9 hours of wall-clock time on 19 November, plus the close-out on 20 November. There are 18 work streams and the coverage stream, and 230-plus commits. They change about 400 files in `src`, `scripts` and `e2e` (+49k / -8k lines, about 11k of them tests).
 
 | Phase | Delivered | Status |
 |---|---|---|
@@ -136,6 +136,6 @@ The largest agents:
 - Rail is damaged only on the first contested turn. Is that right?
 - Should recon's reveal also cover the next turn's report?
 - A lone replacement general in a contested seat rolls for death every turn. Is that acceptable?
-- Spain's sea game changed: there is no Málaga–Ceuta crossing, the Baleares can be reached only via Mallorca, and Menorca can be trapped. Is that acceptable?
+- Spain's sea game changed: there is no Malaga-Ceuta crossing, the Baleares can be reached only via Mallorca, and Menorca can be trapped. Is that acceptable?
 
 **4. Process.** For Revision 2, is a fuller contract before any slice starts worth the planning time? Here the contract and the reconciliation rounds were the largest avoidable cost.
