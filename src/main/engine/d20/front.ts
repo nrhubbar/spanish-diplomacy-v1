@@ -7,7 +7,7 @@ import type { FactionId, GameState, MoveOrder, Occupation, ReinforcementArrivedO
 import { fightGraded, type GradedBattle, type GradedInput, rollD20 } from "./battle";
 import { fightingSurvivors } from "./grades";
 import { gradedSide } from "./modifiers";
-import { canFight } from "../units/canFight";
+import { canFight, hasFighter } from "../units/fighting";
 import { gradedValue, isGeneralUnit, typeOf } from "./rules";
 
 /** What the d20 territory-battle step reads (M17-M19). */
@@ -96,7 +96,10 @@ function siteOf(scenario: Scenario, front: GradedFront, territoryId: TerritoryId
     factionId,
     value: gradedSide(scenario, front.start, combatantsOf(front.armies, advancing.filter((order) => order.factionId === factionId)), "attack").value
   }));
-  const holder = factionIds.length >= 3 ? standingHolder(scenario, front.start, territoryId, factionIds) : undefined;
+  // C3 with D27.1: the capital holder stands only with an entrant that can fight.
+  const capitalHolder = factionIds.length >= 3 ? standingHolder(scenario, front.start, territoryId, factionIds) : undefined;
+  const holder = capitalHolder !== undefined
+    && hasFighter(scenario, front.start.raised, advancing.filter((order) => order.factionId === capitalHolder).map((order) => order.unitId)) ? capitalHolder : undefined;
   const greatest = Math.max(...attack.map((entry) => entry.value));
   const leaders = attack.filter((entry) => entry.value === greatest).map((entry) => entry.factionId);
   const [leader] = holder === undefined ? leaders : [holder];
@@ -132,7 +135,7 @@ export function partialGroundApplies(scenario: Scenario, territoryId: TerritoryI
 export function cannotAttackAlone(scenario: Scenario, start: Pick<GameState, "raised">, units: readonly UnitState[]): boolean {
   return !units.some((unit) => {
     const type = typeOf(scenario, start.raised, unit.id);
-    return canFight(type) && !type.effects.some((effect) => effect.kind === "cannot-attack-alone");
+    return canFight(scenario, start.raised, unit.id) && !type.effects.some((effect) => effect.kind === "cannot-attack-alone");
   });
 }
 

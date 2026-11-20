@@ -26,7 +26,12 @@ export interface Plan {
   readonly orders: () => readonly MoveOrder[];
 }
 
-export function createPlan(assessment: Assessment, own: readonly UnitState[]): Plan {
+/**
+ * `holds` says which own units hold ground (D27.1: units that can fight). Only they count as the
+ * army left standing on an objective: trucks follow the armies that leave (`withRoutes`) and
+ * generals are planned on their own, so neither keeps an objective held.
+ */
+export function createPlan(assessment: Assessment, own: readonly UnitState[], holds: (unit: UnitState) => boolean = () => true): Plan {
   const defence = new Map<TerritoryId, number>();
   const count = new Map<TerritoryId, number>();
   // Own armies standing in each territory now and still without an order.
@@ -36,14 +41,14 @@ export function createPlan(assessment: Assessment, own: readonly UnitState[]): P
   for (const unit of own) {
     add(defence, unit.territoryId, assessment.defenceOf(unit));
     add(count, unit.territoryId, 1);
-    add(staying, unit.territoryId, 1);
+    if (holds(unit)) add(staying, unit.territoryId, 1);
   }
 
   const exposure = (departures: readonly UnitState[], target?: TerritoryId): number | undefined => {
     const leaving = new Map<TerritoryId, { readonly armies: number; readonly value: number }>();
     for (const unit of departures) {
       const before = leaving.get(unit.territoryId) ?? { armies: 0, value: 0 };
-      leaving.set(unit.territoryId, { armies: before.armies + 1, value: before.value + assessment.defenceOf(unit) });
+      leaving.set(unit.territoryId, { armies: before.armies + (holds(unit) ? 1 : 0), value: before.value + assessment.defenceOf(unit) });
     }
     let cost = 0;
     for (const [origin, { armies, value }] of leaving) {
@@ -72,7 +77,7 @@ export function createPlan(assessment: Assessment, own: readonly UnitState[]): P
     orders.push({ factionId: unit.factionId, from: unit.territoryId, kind: "move", to, unitId: unit.id });
     add(defence, unit.territoryId, -assessment.defenceOf(unit));
     add(count, unit.territoryId, -1);
-    add(staying, unit.territoryId, -1);
+    if (holds(unit)) add(staying, unit.territoryId, -1);
     if (arrives) {
       add(defence, to, assessment.defenceOf(unit));
       add(count, to, 1);

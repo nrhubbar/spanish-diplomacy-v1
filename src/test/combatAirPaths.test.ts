@@ -100,6 +100,27 @@ describe("territory battles with three factions (M19, C3)", () => {
     ]);
   });
 
+  it("does not let a capital holder stand with only a general entering (D27.1)", () => {
+    // Under `allowance` such an army is held back at step 1; `single-step` lets it reach the front.
+    const singleStep = builtInModuleRegistry.require("movement", "single-step");
+    const plain: Scenario = { ...scenario, modules: scenario.modules.map((module) => (module.area === "movement" ? singleStep : module)), rules: { ...scenario.rules, movement: "single-step" } };
+    const placed = battlefield(plain, [
+      { faction: "north", id: "n1", territory: "castilla-y-leon", type: "infantry-regiment" },
+      { faction: "south", id: "s1", territory: "andalucia", type: "colonial-veterans" }
+    ]);
+    const rojo = generalUnitDefinition(scenario, unit("general-vicente-rojo"))!;
+    const state: GameState = holdWhole(scenario, {
+      ...placed.state,
+      raised: { [rojo.id]: rojo },
+      units: { ...placed.state.units, [rojo.id]: { factionId: faction("republic"), fatigue: 0, id: rojo.id, morale: { demoralized: false, quietTurns: 0 }, strength: rojo.fullStrength, territoryId: territory("castilla-la-mancha") } }
+    }, territory("andalucia"), faction("south"));
+    const result = resolveTurn(placed.scenario, state, submit(
+      move("republic", rojo.id, "castilla-la-mancha", "extremadura"), move("north", "n1", "castilla-y-leon", "extremadura"), move("south", "s1", "andalucia", "extremadura")
+    ), 3, loadedD20([10, 10]));
+    expect(battles(result).map((battle) => [battle.attackerFactionId, battle.defender.armies.map((army) => army.unitId)])).toEqual([["north", ["s1"]]]);
+    expect(result.finalState.units[rojo.id]?.territoryId).toBe("castilla-la-mancha");
+  });
+
   it("sends an ousted standing entrant back where it came from", () => {
     // The South (attack 7, fatigued) stands; the North (6, with Mola) attacks it below 1:1.
     const placed = southern([

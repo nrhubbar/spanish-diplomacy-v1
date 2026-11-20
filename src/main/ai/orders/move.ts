@@ -13,7 +13,7 @@ import { portLandings, railDepartures, unitTypeOf } from "../../engine/movement/
 import { armyKey, describeRoute, legsOf, moveRoutes, routeClaims } from "../../engine/movement/routes";
 import { armiesOf } from "../../engine/movement/transit";
 import { classifyMoves } from "../../engine/orders";
-import { hasFighter } from "../../engine/units/fighting";
+import { canFight, hasFighter } from "../../engine/units/fighting";
 import { validateMoveOrder } from "../../engine/validation";
 import { assess, type Assessment } from "../assessment";
 import { type AttackContext, type AttackPlan, bestAttackOn } from "../attacks";
@@ -47,7 +47,7 @@ export const planMoves: OrderPlanner<MoveOrder> = ({ factionId, memory: context,
   const assessment = assess(scenario, state, factionId);
   const weights = assessment.profile.computer;
   const own = Object.values(state.units).filter((unit) => unit.factionId === factionId);
-  const plan = createPlan(assessment, own);
+  const plan = createPlan(assessment, own, (unit) => canFight(scenario, state.raised, unit.id));
   const bounced = bouncedMoves(context.previousOutcomes ?? [], factionId);
   const moveBias = (unit: UnitState, to: TerritoryId): number =>
     bounced.has(moveKey(unit.id, unit.territoryId, to)) ? weights.bouncedLastTurn : 0;
@@ -258,7 +258,7 @@ export function withRoutes(scenario: Scenario, state: GameState, factionId: Fact
     usable.push(...army.orders);
   }
   // D27.1: an army with no unit that can fight only reinforces its own side; one left to advance alone holds instead.
-  const advancing = new Set(classifyMoves(state.control, state.units, usable).advances.map((order) => order.unitId));
+  const advancing = new Set(classifyMoves(scenario, state, state.units, usable).advances.map((order) => order.unitId));
   const fighting = new Set(armiesOf((order) => armyKey(scenario, order), usable)
     .filter((army) => hasFighter(scenario, state.raised, army.orders.map((order) => order.unitId)))
     .flatMap((army) => army.orders.map((order) => order.unitId)));

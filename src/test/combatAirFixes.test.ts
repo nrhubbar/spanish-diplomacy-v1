@@ -24,7 +24,7 @@ import type {
   UnitId,
   UnitState
 } from "../main/engine/types";
-import { canFight } from "../main/engine/units/canFight";
+import { canFight } from "../main/engine/units/fighting";
 import { type ArmySpec, battlefield, faction, move, onD6Dice, spainD20, territory, unit } from "./support";
 
 /**
@@ -98,9 +98,10 @@ const weatherIn = (state: GameState, zone: string, outcome: string): GameState =
 
 describe("canFight (D27.1)", () => {
   it("is a ground unit with an attack value", () => {
-    const type = (id: string) => scenario.index.unitTypes.get(id as never);
-    expect(["infantry-regiment", "artillery-group", "militia-column"].map((id) => canFight(type(id)!))).toEqual([true, true, true]);
-    expect(["truck-column", "anti-air-battery", "general", "bomber-squadron"].map((id) => canFight(type(id)!))).toEqual([false, false, false, false]);
+    const { scenario: field, state } = battlefield(scenario, ["infantry-regiment", "artillery-group", "militia-column", "truck-column", "anti-air-battery", "bomber-squadron"]
+      .map((type): ArmySpec => ({ faction: "north", id: type, territory: "castilla-y-leon", type })));
+    expect(Object.keys(state.units).map((id) => canFight(field, state.raised, unit(id)))).toEqual([true, true, true, false, false, false]);
+    expect(canFight(scenario, opening.raised, unit("rep-general-miaja"))).toBe(false);
   });
 });
 
@@ -122,11 +123,11 @@ describe("B1, D27.1: forces that cannot attack alone never attack", () => {
   it("bounces both sides of a meeting where neither can attack", () => {
     const { scenario: field, state } = board([
       { faction: "north", id: "art1", territory: "castilla-y-leon", type: "artillery-group" },
-      { faction: "republic", id: "truck1", territory: "madrid", type: "truck-column" }
+      { faction: "republic", id: "art2", territory: "madrid", type: "artillery-group" }
     ]);
-    const result = resolveTurn(field, state, submit(move("north", "art1", "castilla-y-leon", "madrid"), move("republic", "truck1", "madrid", "castilla-y-leon")), 7);
+    const result = resolveTurn(field, state, submit(move("north", "art1", "castilla-y-leon", "madrid"), move("republic", "art2", "madrid", "castilla-y-leon")), 7);
     expect(battles(result)).toEqual([]);
-    expect(ofKind(result, "bounced-move").map((outcome) => outcome.order.unitId).sort()).toEqual(["art1", "truck1"]);
+    expect(ofKind(result, "bounced-move").map((outcome) => outcome.order.unitId).sort()).toEqual(["art1", "art2"]);
   });
 
   it("turns back a lone general, a truck or anti-air battery attacking defended ground, without a battle", () => {

@@ -60,7 +60,7 @@ export const checkArmies: Phase = (draft) => {
   const landings = new Map<string, number>();
   const lanes = new Map<string, number>();
   const heldUnits = new Set<UnitId>();
-  const advancing = new Set(classifyMoves(start.control, draft.armies, draft.orders.valid).advances.map((order) => order.unitId));
+  const advancing = new Set(classifyMoves(scenario, start, draft.armies, draft.orders.valid).advances.map((order) => order.unitId));
   for (const army of armiesOf((order) => armyKey(scenario, order), draft.orders.valid)) {
     const [first] = army.orders;
     if (first === undefined) continue;

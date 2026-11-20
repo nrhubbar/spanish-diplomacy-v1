@@ -1,8 +1,8 @@
 import { type Casualties, freshlyDemoralized } from "../battleResults";
 import type { Armies } from "../board";
 import type { ArmyLoss, BattleArmy, BattleSide, GameState, GradeSideEffect, Scenario, UnitId, UnitState } from "../types";
-import { canFight } from "../units/canFight";
-import { definitionOf, isGeneralUnit, typeOf, unitRank } from "./rules";
+import { canFight } from "../units/fighting";
+import { definitionOf, isGeneralUnit, unitRank } from "./rules";
 
 /**
  * D2, D6: what one grade does to one side.
@@ -52,7 +52,7 @@ export function applyGradeSide(
     }
   }
   // D27.6: demoralization takes combat units weakest first; units that cannot fight (trucks, anti-air) come last.
-  const fights = (member: Member): boolean => canFight(typeOf(scenario, state.raised, member.unit.id));
+  const fights = (member: Member): boolean => canFight(scenario, state.raised, member.unit.id);
   const standing = weakestFirst.filter((member) => after.has(member.unit.id));
   const demoralized = demoralizedIds(effect, side.value, [...standing.filter(fights), ...standing.filter((member) => !fights(member))]);
   for (const id of demoralized) {
