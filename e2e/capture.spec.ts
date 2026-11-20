@@ -201,7 +201,7 @@ test("@capture combat presentation", async ({ page }) => {
   if (await graded.count() > 0) {
     if (await graded.getAttribute("open") === null) await graded.locator("summary").first().click();
     await graded.locator(".battle-bands").first().evaluate((element) => { element.scrollIntoView({ block: "center" }); });
-    await capture(page, "20a-d20-battle-card");
+    await capture(page, "19f-d20-battle-card");
   }
   const threeSided = page.locator('.battle-card[data-sides="3"]').first();
   if (await threeSided.count() > 0) {
@@ -216,6 +216,13 @@ test("@capture combat presentation", async ({ page }) => {
   await capture(page, "19d-battle-cards-collapsed");
   await page.locator(".map-legend summary").click();
   await capture(page, "19e-battle-legend");
+  await page.locator(".map-legend summary").click();
+  // B5, D8 (ux-battle-icon): hovering a battle medallion names its result.
+  const icon = page.locator(".battle-icon-button").first();
+  if (await icon.count() > 0) {
+    await icon.hover();
+    await capture(page, "19g-battle-icon-tooltip");
+  }
 });
 
 test("@capture reduced counter in the fixture", async ({ page }) => {
@@ -247,19 +254,59 @@ test("@capture recruit and replenish", async ({ page }) => {
   await page.getByRole("tab", { name: "Recruit" }).click();
   await page.getByRole("button", { name: "One more Infantry regiment" }).click();
   await page.getByRole("button", { name: "One more Militia column" }).click();
-  await capture(page, "20a-recruit-tab");
+  await capture(page, "25a-recruit-tab");
   const locked = page.locator('.recruit-row[data-locked="true"]').first();
   await locked.scrollIntoViewIfNeeded();
   await locked.hover();
-  await capture(page, "20b-recruit-locked-details");
+  await capture(page, "25b-recruit-locked-details");
   await page.getByRole("tab", { name: "Units" }).click();
   await page.locator(".training-list").scrollIntoViewIfNeeded();
-  await capture(page, "20c-units-in-training");
+  await capture(page, "25c-units-in-training");
 
   await page.locator('.map-region[data-territory-id="cantabria"]').focus();
   await page.keyboard.press("Enter");
   await page.getByRole("tab", { name: "Recruit" }).click();
-  await capture(page, "20d-recruit-tab-provincial");
+  await capture(page, "25d-recruit-tab-provincial");
+});
+
+test("@capture replenish (X7, ux-orders-replenish)", async ({ page }) => {
+  // Turn 2: a Republican unit that lost men on turn 1, in ground the Republic holds whole.
+  await page.goto("./");
+  await page.getByRole("button", { name: "Create Game" }).click();
+  await page.getByRole("button", { name: "Start Campaign" }).click();
+  await waitForMap(page);
+  await page.getByRole("button", { name: "End Turn" }).filter({ visible: true }).click();
+  await waitForMap(page);
+  await page.getByRole("button", { name: "Start Next Turn" }).filter({ visible: true }).click();
+  await waitForMap(page);
+  const toggle = page.getByRole("button", { exact: true, name: "Briefing" });
+  if (await toggle.isVisible() && await toggle.getAttribute("aria-pressed") === "true") await toggle.click();
+  const orders = page.getByRole("button", { name: "Orders", exact: true });
+  const territories = await page.locator(".map-region[data-territory-id]").evaluateAll((elements) => elements.map((element) => element.getAttribute("data-territory-id") ?? ""));
+  for (const territoryId of territories) {
+    await page.locator(`.map-region[data-territory-id="${territoryId}"]`).focus();
+    await page.keyboard.press("Enter");
+    if (await orders.isVisible()) await orders.click();
+    const rows = page.locator(".formation-button");
+    const texts = await rows.locator(".army-line-strength").allTextContents();
+    const index = texts.findIndex((text) => {
+      const men = /^(\d+)\/(\d+) men$/u.exec(text.trim());
+      return men !== null && Number(men[1]) < Number(men[2]);
+    });
+    if (index === -1) continue;
+    const clear = page.getByRole("button", { name: "Clear" });
+    if (await clear.isVisible()) await clear.click();
+    await rows.nth(index).click();
+    await page.getByRole("button", { name: "Give Selected Units Order" }).click();
+    const replenish = page.locator(".order-choice-button", { hasText: "Replenish" });
+    if (await replenish.count() > 0 && await replenish.first().isEnabled()) {
+      await replenish.first().scrollIntoViewIfNeeded();
+      await capture(page, "26-replenish");
+      return;
+    }
+    await page.getByRole("button", { name: "Give Selected Units Order" }).click();
+  }
+  test.skip(true, "no uncontested Republican unit lost men on turn 1");
 });
 
 test("@capture weather and turn timer", async ({ page }) => {
@@ -359,6 +406,7 @@ test("@capture air missions and generals", async ({ page }) => {
   await page.locator('.map-region[data-territory-id="madrid"]').focus();
   await page.keyboard.press("Enter");
   if (await orders.isVisible()) await orders.click();
+  await page.locator(".general-pill").first().evaluate((element) => { element.scrollIntoView({ block: "center" }); });
   await capture(page, "24a-general-pill");
   await page.locator('.air-counter[data-unit-id="rep-breguet-bombers"]').click();
   if (await orders.isVisible()) await orders.click();
