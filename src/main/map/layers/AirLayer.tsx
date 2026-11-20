@@ -1,7 +1,8 @@
 import { type JSX, useMemo } from "react";
-import { territoriesWithin, unitDefinitionIn, unitKindIn, unitTypeIn } from "../../engine/air/pieces";
+import { territoriesWithin, unitKindIn, unitTypeIn } from "../../engine/air/pieces";
 import { compareIds } from "../../engine/board";
-import type { AirMissionKind, GameState, Scenario, UnitId, UnitState } from "../../engine/types";
+import type { GameState, Scenario, UnitId, UnitState } from "../../engine/types";
+import { aircraftCounterText } from "../../presentation/airPane";
 import { glyphs } from "../../presentation/glyphs";
 import { cssVariables } from "../../presentation/style";
 import { missionTerritoryId } from "../../state/planning/air";
@@ -15,13 +16,6 @@ import type { MapLayerProps } from "./slots";
 export function withoutAircraft(scenario: Scenario, game: GameState): GameState {
   const units = Object.fromEntries(Object.entries(game.units).filter(([id]) => unitKindIn(scenario, game.raised, id as UnitId) !== "air"));
   return Object.keys(units).length === Object.keys(game.units).length ? game : { ...game, units };
-}
-
-/** U2: the counter's short tag, from the missions its type flies. */
-export function aircraftTag(missions: readonly AirMissionKind[]): string {
-  if (missions.includes("raid") || missions.includes("support")) return "BOMB";
-  if (missions.includes("intercept")) return "FTR";
-  return "RCN";
 }
 
 /** Where an airbase is drawn: the city of the faction's airfield sub-territory there, else the territory's label. */
@@ -142,13 +136,7 @@ export function AirLayer({ game, placements, scenarioPackage, toScreen, unitSymb
         ))}
       </svg>
       {counters.map(({ position, unit }) => {
-        const definition = unitDefinitionIn(scenario, game.raised, unit.id);
-        const type = unitTypeIn(scenario, game.raised, unit.id);
-        const faction = scenario.index.factions.get(unit.factionId);
-        const tag = aircraftTag(type?.air?.missions ?? []);
-        const planned = view.plannedAirMissions?.find((order) => order.unitId === unit.id);
-        const name = definition?.name ?? unit.id;
-        const label = `${name}, ${type?.name ?? "aircraft"}, ${faction?.name ?? unit.factionId}${planned === undefined ? "" : `, ${planned.mission.kind} mission planned`}`;
+        const { color, label, name, planned, symbolKey, tag } = aircraftCounterText(scenario, game.raised, unit, view.plannedAirMissions);
         return (
           <button
             aria-pressed={view.onSelectUnit === undefined ? undefined : view.selectedAircraftId === unit.id}
@@ -161,13 +149,13 @@ export function AirLayer({ game, placements, scenarioPackage, toScreen, unitSymb
               event.stopPropagation();
               view.onSelectUnit?.(unit);
             }}
-            style={cssVariables({ "--faction-color": faction?.color ?? "#888888" }, { height: airCounterHeight, left: position.x, top: position.y, width: airCounterWidth })}
+            style={cssVariables({ "--faction-color": color }, { height: airCounterHeight, left: position.x, top: position.y, width: airCounterWidth })}
             tabIndex={view.onSelectUnit === undefined ? -1 : 0}
             title={name}
             type="button"
           >
             <span className="visually-hidden">{label}</span>
-            <span aria-hidden="true" className="air-counter-symbol" dangerouslySetInnerHTML={{ __html: airSymbol(symbols.get(`${unit.factionId}:${definition?.type ?? ""}`) ?? "") }} />
+            <span aria-hidden="true" className="air-counter-symbol" dangerouslySetInnerHTML={{ __html: airSymbol(symbols.get(symbolKey) ?? "") }} />
             <span aria-hidden="true" className="air-counter-tag">{tag}</span>
             {planned === undefined ? null : <span aria-hidden="true" className="air-counter-badge">{glyphs.check}</span>}
           </button>

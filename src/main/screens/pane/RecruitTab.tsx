@@ -1,7 +1,6 @@
 import { type JSX, useId, useMemo } from "react";
 import {
   capitalBuildings,
-  capitalOf,
   recruitSiteProblem,
   recruitSlots,
   recruitableTypes,
@@ -12,7 +11,15 @@ import type { UnitTypeDefinition } from "../../engine/types";
 import { useAppDispatch, useMapAssets } from "../../hooks";
 import { prepareSymbol } from "../../map/markup";
 import { glyphs } from "../../presentation/glyphs";
-import { menShort, resourcesLabel, shortfallLabel, turnsLabel } from "../../presentation/recruitment";
+import {
+  capitalBuildingsLabel,
+  recruitAddReason,
+  recruitRequirements,
+  recruitSiteName,
+  recruitTerms,
+  resourcesLabel,
+  shortfallLabel
+} from "../../presentation/recruitment";
 import { changeRecruitQuantity } from "../../state/gameSlice";
 import { balanceAfterBasket, basketCost, recruitQuantity } from "../../state/planning";
 import type { TerritoryTabProps } from "./TerritoryTabs";
@@ -29,8 +36,7 @@ export function RecruitTab({ scenario, session, territoryId }: TerritoryTabProps
   const { factionId, game } = session;
   const state = game.state;
   const faction = scenario.index.factions.get(factionId);
-  const capital = capitalOf(scenario, territoryId);
-  const capitalName = capital === undefined ? scenario.index.territories.get(territoryId)?.name ?? "" : scenario.index.subTerritories.get(capital)?.name ?? "";
+  const capitalName = recruitSiteName(scenario, territoryId);
   const site = recruitSiteProblem(scenario, state, factionId, territoryId);
   const standing = capitalBuildings(scenario, state, territoryId);
   const slots = recruitSlots(scenario, state, territoryId);
@@ -47,7 +53,7 @@ export function RecruitTab({ scenario, session, territoryId }: TerritoryTabProps
       <div className="recruit-header">
         <h4 id={headingId}>{`Recruit at ${capitalName}`}</h4>
         <span className="recruit-buildings" title="Buildings in the capital">
-          {standing.length === 0 ? "No buildings" : standing.map((id) => scenario.index.buildings.get(id)?.name ?? id).join(` ${glyphs.dot} `)}
+          {capitalBuildingsLabel(scenario, standing)}
         </span>
       </div>
       {site === undefined ? (
@@ -64,8 +70,8 @@ export function RecruitTab({ scenario, session, territoryId }: TerritoryTabProps
             slotsFull={here >= slots}
             symbol={symbols.get(type.id) ?? ""}
             type={type}
-            requirements={(type.recruit?.requires ?? []).map((id) => ({ have: standing.includes(id), name: scenario.index.buildings.get(id)?.name ?? id }))}
-            costLabel={resourcesLabel(scenario, type.recruit?.cost ?? {}, ` ${glyphs.dot} `)}
+            requirements={recruitRequirements(scenario, type, standing)}
+            terms={recruitTerms(scenario, type)}
           />
         ))}
       </ul>
@@ -78,7 +84,6 @@ export function RecruitTab({ scenario, session, territoryId }: TerritoryTabProps
 }
 
 interface RecruitRowProps {
-  readonly costLabel: string;
   readonly locked: readonly string[];
   readonly onChange: (quantity: number) => void;
   readonly quantity: number;
@@ -86,15 +91,15 @@ interface RecruitRowProps {
   readonly shortfall: string;
   readonly slotsFull: boolean;
   readonly symbol: string;
+  readonly terms: { readonly detail: string; readonly meta: string };
   readonly type: UnitTypeDefinition;
 }
 
-function RecruitRow({ costLabel, locked, onChange, quantity, requirements, shortfall, slotsFull, symbol, type }: RecruitRowProps): JSX.Element {
+function RecruitRow({ locked, onChange, quantity, requirements, shortfall, slotsFull, symbol, terms, type }: RecruitRowProps): JSX.Element {
   const ids = useId();
-  const recruit = type.recruit;
   const isLocked = locked.length > 0;
   const name = type.name;
-  const addReason = isLocked ? locked.join(" ") : slotsFull ? "No Recruit orders left here this turn." : shortfall === "" ? undefined : `Not enough ${shortfall}.`;
+  const addReason = recruitAddReason(locked, slotsFull, shortfall);
   const detailsId = `${ids}-details`;
   return (
     <li aria-describedby={detailsId} className="recruit-row" data-locked={isLocked} tabIndex={isLocked ? 0 : undefined}>
@@ -104,7 +109,7 @@ function RecruitRow({ costLabel, locked, onChange, quantity, requirements, short
       <span className="recruit-meta">
         {isLocked
           ? <span className="recruit-lock"><span aria-hidden="true">{"\u{1F512}"} </span>{locked[0]}</span>
-          : `${costLabel} ${glyphs.dot} ${menShort(recruit?.establishment ?? 0)} ${glyphs.dot} ${turnsLabel(recruit?.trainingTurns ?? 0)}`}
+          : terms.meta}
       </span>
       {isLocked ? null : (
         <span className="recruit-stepper" role="group" aria-label={`${name} to recruit`}>
@@ -125,7 +130,7 @@ function RecruitRow({ costLabel, locked, onChange, quantity, requirements, short
       <span className="recruit-details" id={detailsId} role="tooltip">
         <strong>{isLocked ? `${name}: locked` : name}</strong>
         {isLocked ? locked.map((reason) => <span key={reason}>{reason}</span>) : null}
-        <span>{`${costLabel} ${glyphs.dot} ${menShort(recruit?.establishment ?? 0)} ${glyphs.dot} trains in ${turnsLabel(recruit?.trainingTurns ?? 0)}`}</span>
+        <span>{terms.detail}</span>
         {requirements.length === 0
           ? <span>Needs no buildings.</span>
           : <span>{`Needs: ${requirements.map((entry) => `${entry.name} ${entry.have ? glyphs.check : glyphs.close}`).join(", ")}`}</span>}

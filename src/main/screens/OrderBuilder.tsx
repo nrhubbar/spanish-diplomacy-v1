@@ -4,7 +4,7 @@ import type { Scenario, TerritoryId } from "../engine/types";
 import { useAppDispatch } from "../hooks";
 import { armyFigures, orderStatus } from "../presentation/army";
 import type { DestinationEstimate } from "../presentation/odds";
-import { factionName, route, territoryName, unitName } from "../presentation/text";
+import { destinationCallout, factionName, plannedOrderRoute, unitName } from "../presentation/text";
 import { cancelOrderStage, removePlannedOrder } from "../state/gameSlice";
 import { isAircraft, orderCounts, type PlanningSession } from "../state/planning";
 import { ArmyLine } from "./ArmyLine";
@@ -12,7 +12,6 @@ import { ArmyPicker } from "./ArmyPicker";
 import { DestinationChoices } from "./DestinationChoices";
 import { ArmyLeaving } from "./movement/ArmyLeaving";
 import { destinationRoutes } from "./movement/destinationRoutes";
-import { armies } from "./OrderCommand";
 import { AircraftHere, AirPane } from "./pane/AirPane";
 import { SubTerritoryFocus } from "./pane/SubTerritoryFocus";
 import { SubTerritoryList } from "./pane/SubTerritoryList";
@@ -42,16 +41,17 @@ export function OrderBuilder({ estimates, scenario, session }: BuilderProps & { 
   const { draft } = session;
   const territoryId = draft.selectedTerritoryId;
   const choosingDestination = draft.stage?.step === "choose-destination";
+  const callout = draft.stage?.step === "choose-destination" ? destinationCallout(scenario, draft.stage.orderKind, draft.selectedUnitIds.length, territoryId) : undefined;
 
   return (
     <>
       <section aria-label="Selected territory" className="pane-section">
-        {choosingDestination ? (
+        {callout === undefined ? null : (
           <div className="pane-callout" role="status">
-            <p>{`${draft.stage.orderKind === "withdraw" ? "Withdrawing" : "Moving"} ${armies(draft.selectedUnitIds.length)} from ${territoryId === undefined ? "" : territoryName(scenario, territoryId)}. Choose a highlighted territory on the map.`}</p>
-            <button className="text-button" onClick={() => dispatch(cancelOrderStage())} ref={focusWhenShown} type="button">{draft.stage.orderKind === "withdraw" ? "Cancel withdrawal" : "Cancel move"}</button>
+            <p>{callout.text}</p>
+            <button className="text-button" onClick={() => dispatch(cancelOrderStage())} ref={focusWhenShown} type="button">{callout.cancel}</button>
           </div>
-        ) : null}
+        )}
         {choosingDestination && territoryId !== undefined && draft.stage.orderKind !== "withdraw" ? <ArmyLeaving scenario={scenario} session={session} territoryId={territoryId} /> : null}
         {choosingDestination && estimates.size > 0 ? <DestinationChoices estimates={estimates} moves={draft.stage.orderKind === "withdraw" ? undefined : destinationRoutes(scenario, session)} scenario={scenario} /> : null}
         {draft.selectedAircraftId !== undefined ? (
@@ -78,7 +78,7 @@ export function OrderBuilder({ estimates, scenario, session }: BuilderProps & { 
               <li key={order.unitId}>
                 <span>
                   <span className="order-unit">{unitName(scenario, order.unitId)}</span>
-                  <span className="order-route">{order.kind === "withdraw" ? `Withdraw: ${route(scenario, { ...order, kind: "move" })}` : route(scenario, order)}</span>
+                  <span className="order-route">{plannedOrderRoute(scenario, order)}</span>
                   {order.kind === "move" ? <PlannedOrderOdds scenario={scenario} session={session} territoryId={order.to} /> : null}
                 </span>
                 <button aria-label={`Remove order for ${unitName(scenario, order.unitId)}`} className="text-button" onClick={() => dispatch(removePlannedOrder(order.unitId))} type="button">Remove</button>

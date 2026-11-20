@@ -7,6 +7,7 @@ import type { BuildingId, GameState, Scenario, SubTerritoryId, WeatherId, Weathe
 import { beforePlanning, forecast, isSeaRouteClosed, rollWeather, weatherIn } from "../main/engine/weather";
 import { destinationEstimates, modifierName, modifierPhrase } from "../main/presentation/odds";
 import { turnLabel } from "../main/presentation/turn";
+import { forecastEntries } from "../main/presentation/weatherText";
 import { advance } from "../main/state/coordinator";
 import { faction, move, spain, territory, tiny, unit, withUnits } from "./support";
 
@@ -86,6 +87,26 @@ describe("the weather roll (T2)", () => {
     expect(winter.reduce((sum, entry) => sum + entry.chance, 0)).toBeCloseTo(1);
     expect(winter[0]?.outcome.id).toBe("rain");
     expect(forecast(tiny(), "meseta" as WeatherZoneId, 1)).toEqual([]);
+  });
+
+  it("shows next turn's two likeliest outcomes at a destination, none without weather in play (T3)", () => {
+    const state = withWeather(initialGameState(spain()), { cantabrian: "rain", mediterranean: "clear", meseta: "clear", south: "hot" });
+    const madrid = forecastEntries(spain(), state, territory("madrid"));
+    const expected = forecast(spain(), "meseta" as WeatherZoneId, state.turnNumber + 1).slice(0, 2);
+    expect(madrid).toEqual(expected.map(({ chance, outcome }, index) => ({
+      lead: index === 0 ? " " : " \u00b7 ",
+      text: ` ${outcome.name} ${String(Math.round(chance * 100))}%`,
+      weatherId: outcome.id
+    })));
+    expect(madrid).toHaveLength(2);
+    expect(madrid.map((entry) => entry.lead)).toEqual([" ", " \u00b7 "]);
+    // Before the first roll there is no weather on the board; Tiny Front has no weather at all.
+    expect(forecastEntries(spain(), initialGameState(spain()), territory("madrid"))).toEqual([]);
+    expect(forecastEntries(tiny(), initialGameState(tiny()), tiny().territories[0]!.id)).toEqual([]);
+    // A scenario without a calendar has no forecast to show.
+    const undated = { ...spain() };
+    delete (undated as { calendar?: unknown }).calendar;
+    expect(forecastEntries(undated, state, territory("madrid"))).toEqual([]);
   });
 
   it("records the turn's weather in the report", () => {

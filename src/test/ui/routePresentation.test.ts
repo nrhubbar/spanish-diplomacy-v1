@@ -14,6 +14,7 @@ import {
   selectionRoutes,
   subTerritoryName
 } from "../../main/presentation/movement";
+import { armies, destinationCallout, plannedOrderRoute } from "../../main/presentation/text";
 import { faction, spainD20, territory, unit } from "../support";
 
 const sub = (id: string): SubTerritoryId => id as SubTerritoryId;
@@ -246,5 +247,28 @@ describe("the army leaving and the offered routes (X5)", () => {
     const horse = armyLeaving(scenario, mounted, faction("republic"), madrid, [cavalry]);
     expect(horse?.line).toMatch(/: all mounted\./u);
     expect(horse?.line).toMatch(/^(1 move|\d+ moves) this turn/u);
+  });
+});
+
+describe("the destination callout and the planned order list (O1, C1)", () => {
+  const scenario = spainD20();
+  const arrow = "\u2192";
+
+  it("counts units in the singular and plural", () => {
+    expect(armies(1)).toBe("1 unit");
+    expect(armies(3)).toBe("3 units");
+  });
+
+  it("says what is moving or withdrawing from where, and how to cancel it", () => {
+    expect(destinationCallout(scenario, "move", 2, territory("madrid"))).toEqual({ cancel: "Cancel move", text: "Moving 2 units from Madrid. Choose a highlighted territory on the map." });
+    expect(destinationCallout(scenario, "withdraw", 1, territory("andalucia"))).toEqual({ cancel: "Cancel withdrawal", text: "Withdrawing 1 unit from Andaluc\u00eda. Choose a highlighted territory on the map." });
+    // No territory selected (the pane never shows this, but the text stays well formed).
+    expect(destinationCallout(scenario, "move", 0, undefined).text).toBe("Moving 0 units from . Choose a highlighted territory on the map.");
+  });
+
+  it("reads a planned Withdraw as the move it makes", () => {
+    const order = { factionId: faction("republic"), from: territory("andalucia"), to: territory("murcia"), unitId: unit("rep-vitoria-8") };
+    expect(plannedOrderRoute(scenario, { ...order, kind: "move" })).toBe(`Andaluc\u00eda ${arrow} Murcia`);
+    expect(plannedOrderRoute(scenario, { ...order, kind: "withdraw" })).toBe(`Withdraw: Andaluc\u00eda ${arrow} Murcia`);
   });
 });

@@ -5,19 +5,21 @@ import { Provider } from "react-redux";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { initialGameState } from "../../main/engine/resolution";
 import { zoneOf } from "../../main/engine/weather";
-import type { AirMissionOrder, GameState, SubTerritoryId, WeatherId } from "../../main/engine/types";
-import { aircraftTag, AirLayer, placeAircraft, withoutAircraft } from "../../main/map/layers/AirLayer";
+import type { AirMissionOrder, GameState, RaisedUnitDefinition, SubTerritoryId, UnitTypeId, WeatherId } from "../../main/engine/types";
+import { AirLayer, placeAircraft, withoutAircraft } from "../../main/map/layers/AirLayer";
 import { BattleIconLayer } from "../../main/map/BattleIconLayer";
 import { placeOddsPlaques, DestinationOddsLayer } from "../../main/map/DestinationOddsLayer";
 import { staticMapView } from "../../main/map/view";
 import type { ScenarioPackage } from "../../main/scenarios/loader";
+import { aircraftCounterText, aircraftTag } from "../../main/presentation/airPane";
 import { AircraftHere, AirPane } from "../../main/screens/pane/AirPane";
 import { ContestedChip } from "../../main/screens/pane/ContestedChip";
 import { RecruitsAtChip } from "../../main/screens/pane/RecruitsAtChip";
 import { tabCount } from "../../main/screens/pane/TerritoryTabs";
 import type { PlanningSession } from "../../main/state/planning";
 import { emptyDraft } from "../../main/state/session";
-import { faction, spain, spainId, spainWithAir, territory, testStore, unit } from "../support";
+import { createAppStore } from "../../main/state/store";
+import { faction, shippedRegistry, spain, spainId, spainWithAir, territory, testStore, unit } from "../support";
 
 afterEach(cleanup);
 
@@ -103,10 +105,79 @@ describe("the air pane (U2, M11, `ux-air-a`)", () => {
     const aircraft = Object.values(start.units).filter((entry) => entry.territoryId === territory("madrid") && entry.factionId === republic && /bomber|fighter/u.test(entry.id));
     withStore(<AircraftHere aircraft={aircraft} scenario={scenario} session={session(start, [raid])} />);
     expect(screen.getByRole("heading", { name: "Aircraft here" })).toBeVisible();
-    expect(screen.getByRole("button", { name: /Breguet XIX Light Bombers · Raid/u })).toBeVisible();
+    expect(screen.getByRole("button", { name: /Breguet XIX Light Bombers \u00b7 Raid/u })).toBeVisible();
     await userEvent.click(screen.getByRole("button", { name: /Breguet/u }));
     const { container: empty } = withStore(<AircraftHere aircraft={[]} scenario={scenario} session={session(start)} />);
     expect(empty).toBeEmptyDOMElement();
+  });
+});
+
+/** A unit raised in play (R6), so a test can put a type the board does not start with where it needs one. */
+function withRaised(state: GameState, id: string, factionId: string, type: string, territoryId: string): GameState {
+  const definition: RaisedUnitDefinition = { factionId: faction(factionId), fullStrength: 300, id: unit(id), name: id, type: type as UnitTypeId };
+  return {
+    ...state,
+    raised: { ...state.raised, [id]: definition },
+    units: { ...state.units, [id]: { factionId: faction(factionId), fatigue: 0, id: unit(id), morale: { demoralized: false, quietTurns: 0 }, strength: 300, territoryId: territory(territoryId) } }
+  };
+}
+
+describe("the air pane's targets and cards (U2, U3)", () => {
+  const fighter = unit("rep-ni52-fighters");
+
+  it("warns of anti-air at the target and of enemy fighters that can reach it", () => {
+    const defended = withRaised(withRaised(start, "north-flak", "north", "anti-air-battery", "castilla-y-leon"), "north-fighters", "north", "fighter-squadron", "castilla-y-leon");
+    withStore(<AirPane scenario={scenario} session={session(defended, [raid])} unitId={bomber} />);
+    const card = screen.getByText(/^Raid Burgos/u).closest(".air-target-card") as HTMLElement;
+    const castilla = scenario.index.territories.get(territory("castilla-y-leon"))!.name;
+    expect(within(card).getByText(`Anti-air in ${castilla}`).nextElementSibling).toHaveTextContent("\u22123");
+    expect(within(card).getByText("Enemy fighters in range").nextElementSibling).toHaveTextContent("may intercept");
+  });
+
+  it("gives a support mission a card with its range but no raid figures", () => {
+    const support: AirMissionOrder = { ...raid, mission: { kind: "support", territoryId: territory("castilla-la-mancha") } };
+    withStore(<AirPane scenario={scenario} session={session(start, [support])} unitId={bomber} />);
+    expect(screen.getByRole("button", { name: "Support" })).toHaveAttribute("aria-pressed", "true");
+    const card = screen.getByText(/^Support /u).closest(".air-target-card") as HTMLElement;
+    expect(within(card).getByText("Range").nextElementSibling).toHaveTextContent(/^1 of 4$/u);
+    expect(within(card).queryByText(/^Anti-air/u)).toBeNull();
+    expect(screen.queryByRole("list", { name: "Raid chances before interception" })).toBeNull();
+  });
+
+  it("plans the target picked from the list, and shows the planner's feedback", async () => {
+    const planning = session(start);
+    const store = createAppStore({ preloadedState: { game: { session: planning } }, registry: shippedRegistry() });
+    render(<Provider store={store}><AirPane scenario={scenario} session={{ ...planning, draft: { ...planning.draft, feedback: "The target is out of range." } }} unitId={bomber} /></Provider>);
+    expect(screen.getByRole("status")).toHaveTextContent("The target is out of range.");
+    await userEvent.click(screen.getByRole("button", { name: "Raid" }));
+    const picker = screen.getByRole("combobox");
+    const burgos = within(picker).getAllByRole("option").find((option) => option.textContent.startsWith("Burgos"))!;
+    await userEvent.selectOptions(picker, burgos);
+    const after = store.getState().game.session;
+    expect(after.phase === "planning" ? after.draft.airOrders : undefined).toEqual([raid]);
+  });
+
+  it("says when nothing is in range: an aircraft without an airfield it holds cannot fly", async () => {
+    const madridSubs = new Set((scenario.index.subTerritoriesByTerritory.get(territory("madrid")) ?? []).map((entry) => entry.id));
+    const unpaved: GameState = {
+      ...start,
+      subTerritories: Object.fromEntries(Object.entries(start.subTerritories).map(([id, site]) => [id, madridSubs.has(id as SubTerritoryId) ? { ...site, buildings: [] } : site]))
+    };
+    withStore(<AirPane scenario={scenario} session={session(unpaved)} unitId={bomber} />);
+    await userEvent.click(screen.getByRole("button", { name: "Support" }));
+    expect(screen.getByText("Nothing in range for this mission.")).toBeVisible();
+    expect(screen.queryByRole("combobox")).toBeNull();
+  });
+
+  it("lists the other aircraft at the base with their planned missions, and none for a lone flight", () => {
+    withStore(<AirPane scenario={scenario} session={session(start, [raid])} unitId={fighter} />);
+    const madrid = scenario.index.territories.get(territory("madrid"))!.name;
+    const list = screen.getByRole("heading", { name: `Other aircraft at ${madrid}` }).nextElementSibling as HTMLElement;
+    expect(list).toHaveTextContent("Breguet XIX Light Bombers \u00b7 Raid");
+    cleanup();
+    // The Catalan recon flight is alone at its field.
+    withStore(<AirPane scenario={scenario} session={session(start)} unitId={unit("rep-catalan-recon")} />);
+    expect(screen.queryByRole("heading", { name: /^Other aircraft/u })).toBeNull();
   });
 });
 
@@ -153,6 +224,34 @@ describe("the air layer (B1, M3)", () => {
     const { container: none } = render(<AirLayer game={start} level="overview" placements={[]} scenarioPackage={pkg} toScreen={toScreen} unitSymbols={new Map()} view={staticMapView} />);
     expect(none).toBeEmptyDOMElement();
   });
+
+  it("leaves the counters out of the tab order and unpressed on a map that cannot select", () => {
+    const pkg = { map: mapStub(), scenario } as unknown as ScenarioPackage;
+    const toScreen = (point: { readonly x: number; readonly y: number }) => point;
+    const { placements } = placeAircraft(pkg, start, toScreen, []);
+    render(<AirLayer game={start} level="overview" placements={placements} scenarioPackage={pkg} toScreen={toScreen} unitSymbols={new Map()} view={staticMapView} />);
+    const counter = screen.getByRole("button", { name: /^Breguet XIX Light Bombers, /u });
+    expect(counter).toHaveAttribute("tabindex", "-1");
+    expect(counter).not.toHaveAttribute("aria-pressed");
+    expect(counter).toHaveAttribute("data-planned", "false");
+  });
+
+  it("names a counter's aircraft, type, faction and planned mission, in its faction's colour", () => {
+    const counter = aircraftCounterText(scenario, start.raised, start.units[bomber]!, [raid]);
+    const type = scenario.index.unitTypes.get(scenario.index.units.get(bomber)!.type)!;
+    expect(counter).toEqual({
+      color: scenario.index.factions.get(republic)!.color,
+      label: `Breguet XIX Light Bombers, ${type.name}, ${scenario.index.factions.get(republic)!.name}, raid mission planned`,
+      name: "Breguet XIX Light Bombers",
+      planned: raid,
+      symbolKey: `republic:${type.id}`,
+      tag: "BOMB"
+    });
+    expect(aircraftCounterText(scenario, start.raised, start.units[bomber]!, undefined).label).not.toMatch(/planned/u);
+    // A unit the scenario no longer knows (or of an unknown faction) still gets a readable counter.
+    const stray = { ...start.units[bomber]!, factionId: faction("nobody"), id: unit("stray") };
+    expect(aircraftCounterText(scenario, start.raised, stray, [])).toEqual({ color: "#888888", label: "stray, aircraft, nobody", name: "stray", planned: undefined, symbolKey: "nobody:", tag: "RCN" });
+  });
 });
 
 describe("battle icons on the resolution map (B5, D8)", () => {
@@ -162,7 +261,7 @@ describe("battle icons on the resolution map (B5, D8)", () => {
   it("names the result in a tooltip and opens the territory's card on a click", async () => {
     const onSelectTerritory = vi.fn();
     render(<BattleIconLayer marks={marks} onSelectTerritory={onSelectTerritory} scenario={scenario} toScreen={toScreen} />);
-    const button = screen.getByRole("button", { name: "Battle for Andalucía: Defender routed" });
+    const button = screen.getByRole("button", { name: "Battle for Andaluc\u00eda: Defender routed" });
     expect(button).toHaveAccessibleDescription(/Defender routed.*Click to open its battle card/u);
     await userEvent.click(button);
     expect(onSelectTerritory).toHaveBeenCalledWith("andalucia");
@@ -202,7 +301,7 @@ describe("destination plaques on a phone (M8)", () => {
     expect(container.querySelector(".site-icon[data-icon=\"port\"]")).not.toBeNull();
     cleanup();
     const { container: wide } = render(<DestinationOddsLayer counters={[]} estimates={estimates} labelAt={() => ({ x: 50, y: 50 })} tags={tags} />);
-    expect(wide.textContent).toMatch(/By rail · /u);
+    expect(wide.textContent).toMatch(/By rail \u00b7 /u);
   });
 });
 
@@ -221,7 +320,7 @@ describe("the meta row's contested pills and Recruits-at chip (M5, M12)", () => 
 
   it("in contested ground: you hold n of m, builds paused, no recruiting", () => {
     render(<><ContestedChip {...at("andalucia")} /><RecruitsAtChip {...at("andalucia")} /></>);
-    expect(screen.getByText(/^Contested · you hold \d+ of \d+$/u)).toBeVisible();
+    expect(screen.getByText(/^Contested \u00b7 you hold \d+ of \d+$/u)).toBeVisible();
     expect(screen.getByText("Builds paused")).toHaveAttribute("data-tone", "paused");
     expect(screen.getByText("No recruiting")).toHaveAttribute("data-tone", "paused");
     cleanup();

@@ -2,11 +2,10 @@ import type { JSX } from "react";
 import type { MoveRoute } from "../../engine/movement/routes";
 import type { GameState, Scenario } from "../../engine/types";
 import { WeatherIcon } from "../../components/weather/WeatherIcon";
-import { forecast, zoneOf } from "../../engine/weather";
-import { glyphs } from "../../presentation/glyphs";
 import { routeRows } from "../../presentation/movement";
 import { type DestinationEstimate, modifierName, percent, signed } from "../../presentation/odds";
 import { territoryName } from "../../presentation/text";
+import { forecastEntries } from "../../presentation/weatherText";
 
 interface RouteCardProps {
   readonly allowance: number;
@@ -56,18 +55,16 @@ export function RouteCard({ allowance, estimate, route, scenario, state }: Route
 
 /** T3: next turn's two likeliest outcomes at the destination: "Next turn: Rain 30% \u00b7 Clear 55%". */
 function Forecast({ scenario, state, territoryId }: { readonly scenario: Scenario; readonly state: GameState; readonly territoryId: MoveRoute["to"] }): JSX.Element | null {
-  const zone = zoneOf(scenario, territoryId);
-  if (zone === undefined || state.weather === undefined) return null;
-  const next = forecast(scenario, zone.id, state.turnNumber + 1).slice(0, 2);
-  if (next.length === 0) return null;
+  const entries = forecastEntries(scenario, state, territoryId);
+  if (entries.length === 0) return null;
   return (
     <p className="route-card-forecast">
       <span>Next turn:</span>
-      {next.map(({ chance, outcome }, index) => (
-        <span key={outcome.id}>
-          {index === 0 ? " " : ` ${glyphs.dot} `}
-          <WeatherIcon weatherId={outcome.id} />
-          {` ${outcome.name} ${String(Math.round(chance * 100))}%`}
+      {entries.map((entry) => (
+        <span key={entry.weatherId}>
+          {entry.lead}
+          <WeatherIcon weatherId={entry.weatherId} />
+          {entry.text}
         </span>
       ))}
     </p>

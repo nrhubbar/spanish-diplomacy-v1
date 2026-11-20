@@ -10,7 +10,8 @@ import type {
   TerritoryControl,
   TerritoryId,
   TurnOutcome,
-  UnitId
+  UnitId,
+  WithdrawOrder
 } from "../engine/types";
 import { battleTitle } from "./grades";
 import { glyphs } from "./glyphs";
@@ -30,6 +31,28 @@ export function unitName(scenario: Scenario, id: UnitId): string {
 }
 
 export { listNames };
+
+/** "1 unit", "3 units". */
+export function armies(count: number): string {
+  return `${String(count)} ${count === 1 ? "unit" : "units"}`;
+}
+
+/**
+ * O1, C1: the pane's callout while a destination is chosen: what is moving or withdrawing from
+ * where, and the label of the button that cancels it.
+ */
+export function destinationCallout(scenario: Scenario, orderKind: "move" | "withdraw", count: number, from: TerritoryId | undefined): { readonly cancel: string; readonly text: string } {
+  const verb = orderKind === "withdraw" ? "Withdrawing" : "Moving";
+  return {
+    cancel: orderKind === "withdraw" ? "Cancel withdrawal" : "Cancel move",
+    text: `${verb} ${armies(count)} from ${from === undefined ? "" : territoryName(scenario, from)}. Choose a highlighted territory on the map.`
+  };
+}
+
+/** A planned order's route in the order list; a Withdraw (C1) reads as the move it makes. */
+export function plannedOrderRoute(scenario: Scenario, order: MoveOrder | WithdrawOrder): string {
+  return order.kind === "withdraw" ? `Withdraw: ${route(scenario, { ...order, kind: "move" })}` : route(scenario, order);
+}
 
 export function route(scenario: Scenario, order: MoveOrder): string {
   const legs = order.legs ?? [];
