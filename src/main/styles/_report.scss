@@ -391,6 +391,43 @@ tr.battle-roll-total {
   font-weight: 700;
 }
 
+// X8: the line icons of the Milestone 3 report groups, at the medallions' size.
+.outcome-line-icon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 1.15rem;
+  height: 1.15rem;
+  color: var(--ink-soft);
+
+  svg {
+    width: 0.95rem;
+    height: 0.95rem;
+  }
+}
+
+// D25: the viewer's treasury for the turn.
+.treasury-lines {
+  display: grid;
+  gap: 0.3rem;
+  margin: 0.25rem 0 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    gap: 0.4rem;
+    align-items: baseline;
+  }
+
+  svg {
+    flex: none;
+    align-self: center;
+    color: var(--ink-soft);
+  }
+}
+
 .outcome-medallion {
   display: inline-flex;
   flex: none;

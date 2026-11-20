@@ -16,6 +16,7 @@ import { BattleReport } from "./report/BattleReport";
 import { FocusNote, OutcomeSummary, RevealedOrdersPanel, TerritoryChanges, VictoryProgressPanel } from "./ResultPanels";
 import { battleKeysAt } from "./report/focus";
 import { TurnConditions } from "./report/TurnConditions";
+import { Treasury } from "./report/Treasury";
 import { groupBattles } from "../presentation/battle";
 
 type ResultSession = Extract<Session, { readonly phase: "resolution" | "game-over" }>;
@@ -75,7 +76,7 @@ function Results({ session }: { readonly session: ResultSession }): JSX.Element 
         ...(focused === undefined ? {} : { attentionKey: focused }),
         body: (
           <>
-            <FocusNote battle={focusedBattle} focusedTerritoryId={focused} result={result} scenario={scenario} />
+            <FocusNote battle={focusedBattle} focusedTerritoryId={focused} result={result} scenario={scenario} viewer={sessionViewer(session)} />
             {over && victory !== undefined ? (
               <section className="pane-section victory-callout">
                 <p>{`${winners} ${victory.factionIds.length > 1 ? "share the victory" : "won"} ${conditionText[victory.condition]}.`}</p>
@@ -85,6 +86,7 @@ function Results({ session }: { readonly session: ResultSession }): JSX.Element 
             <BattleReport focusedTerritoryId={focused} result={result} scenario={scenario} seed={game.seed} />
             <TurnConditions result={result} scenario={scenario} />
             <OutcomeSummary result={result} scenario={scenario} viewer={sessionViewer(session)} />
+            <Treasury result={result} scenario={scenario} viewer={sessionViewer(session)} />
             <VictoryProgressPanel result={result} scenario={scenario} />
             <RevealedOrdersPanel revealed={selectRevealedOrders(session)} scenario={scenario} />
           </>

@@ -28,6 +28,9 @@ const systemLines = {
   ...weatherLines
 } satisfies ReportLines<SystemOutcome>;
 
+/** Every Milestone 3 outcome kind, for checks that each one is shown somewhere in the report. */
+export const systemOutcomeKinds = Object.keys(systemLines) as readonly SystemOutcome["kind"][];
+
 export function isSystemOutcome(outcome: TurnOutcome): outcome is SystemOutcome {
   return outcome.kind in systemLines;
 }
