@@ -1,3 +1,4 @@
+import { plannedSpend } from "../../engine/economy/catalogue";
 import { recruitSiteProblem, recruitSlots, replenishProblem, replenishQuote, typeLock } from "../../engine/recruitment/rules";
 import { addResources, subtractResources, treasuryOf } from "../../engine/resources";
 import type { Order, RecruitOrder, ReplenishOrder, Resources, Scenario, TerritoryId, UnitTypeId } from "../../engine/types";
@@ -10,9 +11,9 @@ import { type PlanningSession, availableUnitIds, feedback, selectedUnits, select
  * has at most one order, and a territory's basket never exceeds its D7 number of orders.
  */
 
-/** Every order the draft submits at End Turn: moves, then Recruit and Replenish orders. */
+/** Every order the draft submits at End Turn: moves, then Recruit, Replenish and Build orders. */
 export function draftOrders(draft: Draft): readonly Order[] {
-  return [...draft.orders, ...(draft.replenishments ?? []), ...(draft.recruits ?? [])];
+  return [...draft.orders, ...(draft.replenishments ?? []), ...(draft.recruits ?? []), ...(draft.builds ?? [])];
 }
 
 /** The draft's Recruit orders for one type at one territory. */
@@ -31,9 +32,10 @@ export function basketCost(scenario: Scenario, session: PlanningSession): Resour
   }, recruits);
 }
 
-/** The balance left after the draft's purchases. TODO(m3r1-economy-builds): subtract the build basket too. */
+/** The balance left after the draft's purchases: Recruit and Replenish orders, and Build orders ($5). */
 export function balanceAfterBasket(scenario: Scenario, session: PlanningSession): Resources {
-  return subtractResources(treasuryOf(session.game.state, session.factionId), basketCost(scenario, session));
+  const builds = plannedSpend(scenario, session.draft.builds ?? []);
+  return subtractResources(subtractResources(treasuryOf(session.game.state, session.factionId), basketCost(scenario, session)), builds);
 }
 
 /**
@@ -94,9 +96,10 @@ export function replenishWithout(draft: Draft, unitIds: Iterable<string>): Pick<
   return draft.replenishments === undefined ? {} : { replenishments: draft.replenishments.filter((order) => !dropped.has(order.unitId)) };
 }
 
-/** The draft's Recruit basket and Replenish orders, to carry into a rebuilt draft. */
-export function keepBasket(draft: Draft): Pick<Draft, "recruits" | "replenishments"> {
+/** The draft's Recruit basket, Replenish and Build orders, to carry into a rebuilt draft. */
+export function keepBasket(draft: Draft): Pick<Draft, "builds" | "recruits" | "replenishments"> {
   return {
+    ...(draft.builds === undefined ? {} : { builds: draft.builds }),
     ...(draft.recruits === undefined ? {} : { recruits: draft.recruits }),
     ...(draft.replenishments === undefined ? {} : { replenishments: draft.replenishments })
   };

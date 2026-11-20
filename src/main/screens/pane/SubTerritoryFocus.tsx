@@ -6,8 +6,8 @@ import { useAppDispatch } from "../../hooks";
 import { glyphs } from "../../presentation/glyphs";
 import { factionName } from "../../presentation/text";
 import { focusSubTerritory } from "../../state/gameSlice";
+import { BuildList } from "./build/BuildList";
 import { SiteIcon } from "./SiteIcons";
-import { SubTerritoryBuild } from "./SubTerritoryBuild";
 
 const terrainNames: Readonly<Record<TerrainKind, string>> = { mountain: "Mountains", open: "Open ground", swamp: "Marsh" };
 
@@ -21,9 +21,9 @@ export interface SubTerritoryFocusProps {
 /**
  * X3 (Q-UX-04): the pane focused on one sub-territory: a link back to its territory, its name
  * (with the capital star, W3), who holds it, and a summary of its terrain, port, rail and cities
- * (P8, M3, M5). The card and build list below belong to `m3r1-economy-builds` (`SubTerritoryBuild`).
+ * (P8, M3, M5). The card and build list below are `m3r1-economy-builds`' (`build/BuildList`).
  */
-export function SubTerritoryFocus({ factionId, scenario, state, subTerritoryId }: SubTerritoryFocusProps): JSX.Element | null {
+export function SubTerritoryFocus({ scenario, state, subTerritoryId }: SubTerritoryFocusProps): JSX.Element | null {
   const dispatch = useAppDispatch();
   const sub = scenario.index.subTerritories.get(subTerritoryId);
   if (sub === undefined) return null;
@@ -60,7 +60,7 @@ export function SubTerritoryFocus({ factionId, scenario, state, subTerritoryId }
           {`${territory.name} is contested: it pays no income, and nothing is recruited or built here until one side holds all of it.`}
         </p>
       ) : null}
-      <SubTerritoryBuild factionId={factionId} scenario={scenario} state={state} subTerritoryId={sub.id} />
+      <BuildList scenario={scenario} subTerritoryId={sub.id} />
     </div>
   );
 }

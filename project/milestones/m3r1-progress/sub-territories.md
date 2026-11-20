@@ -1,6 +1,6 @@
 # `m3r1-sub-territories` progress
 
-Make-it-work pass (declog D13). Branch `m3r1-sub-territories`, `E2E_PORT=5311`. Merged `milestone-3-rev-1` at `eb9515f` (contract CP4) before building, and again at `38b68ba` (d20-combat, recruit-replenish, weather-timer).
+Make-it-work pass (declog D13). Branch `m3r1-sub-territories`, `E2E_PORT=5311`. Merged `milestone-3-rev-1` at `eb9515f` (contract CP4) before building, again at `38b68ba` (d20-combat, recruit-replenish, weather-timer), and at `6e32d05` (economy-builds).
 
 ## What works
 
@@ -11,7 +11,7 @@ Make-it-work pass (declog D13). Branch `m3r1-sub-territories`, `E2E_PORT=5311`. 
   - P5 partial ground: one-sub-territory territories take nothing;
   - P6 path rule for forced retreats (all of them, through a `retreatAllowed` hook in `settleDepartures`) and for Withdraw;
   - C1: moves out of contested ground refused (`orderVerdict` hook), Withdraw validated and carried out at step 6, no works in contested ground (`canDigIn`);
-  - $8 rail damage at step 8;
+  - $8 rail damage is the economy's (step 10);
   - P7 needs no victory change (test pins it);
   - `subTerritoryChanges` filled; outcomes `withdrew`, `path-surrender`, `rail-damaged`.
 - **Data and loader:** L26 (initialControl and city controllers agree with holders). Pais Vasco and Extremadura `initialControl` fixed to the holders.
@@ -34,7 +34,7 @@ Make-it-work pass (declog D13). Branch `m3r1-sub-territories`, `E2E_PORT=5311`. 
 - ST-7. d6 preset: a battle whose site is `taken` is ground "all", gained by the occupier. A d20 battle's `ground` is read from the battle when `m3r1-d20-combat` puts it there, and the battle's attacker gains it.
 - ST-8. The sweep applies to any territory where one faction alone has armies and others hold ground, including on the turn the armies enter. Demoralized armies sweep too.
 - ST-9. Occupation (M6/P3) applies only when the entering faction held nothing there and one other faction held all of it; a contested territory falls by the sweep instead.
-- ST-10. Rail damage: when a territory not contested at the start of the turn is contested at its end, every sub-territory there held by a faction that held nothing there at the start loses `railDamageOnContest` levels.
+- ST-10. Rail damage ($8) is applied once, by the economy at step 10 (`economy/queues.ts` `damageRail`, EB-6), and my step-8 copy is removed. The two rules were the same: a territory held whole at the start and contested at the end loses rail in every sub-territory its former whole holder no longer holds, which are exactly the newcomers' sub-territories. Economy's test pins it (`economy.test.ts`).
 - ST-11. Two new hooks on `RuleHooks` instead of edits in each rule: `orderVerdict` (first refusal wins; a non-move kind needs an acceptance; any module may refuse a move) and `retreatAllowed` (all must agree). Other order kinds (Replenish, Recruit, Build, AirMission, Sack) can use `orderVerdict` the same way.
 - ST-12. Contested ground in planning: units default to Attack (Hold when demoralized). Choosing Attack drops a planned Withdraw.
 - ST-13. The planning draft's `orders` widened to `PlannedOrder = MoveOrder | WithdrawOrder`, so every draft rebuild keeps withdrawals. `OrderKind` and `ArmyOrder` gain `attack`, `hold` and `withdraw`.
@@ -45,6 +45,7 @@ Make-it-work pass (declog D13). Branch `m3r1-sub-territories`, `E2E_PORT=5311`. 
 - ST-18. M2 rule tests on the Spanish board now use `spainM2()` (Spain with partition `none`), because `provinces` replaces M6/M7 there. One AI test sets the Milestone 2 start control explicitly.
 
 - ST-19. After the `38b68ba` merge: `isContested` in `engine/partition/holders.ts` is the one W6 test. `recruitment/rules.ts` re-exports it, and `d20/morale.ts`'s `contestedAtEnd` reads it under `provinces` (its army-based fallback stays for unpartitioned scenarios). A d20 battle's `ground` flips sub-territories: partial ground goes to the battle's attacker, "all" only to the occupier (nobody gains it when the attackers fell too).
+- ST-21. At the `6e32d05` merge: `economy/holdings.ts` keeps its sub-territory-state entry points (`holdersIn`, `wholeHolder`, `isContested`, `territoriesHeldWhole`) but delegates to `engine/partition/holders.ts`, so W6 has one implementation. Economy's `BuildList` replaces my `SubTerritoryBuild` slot in the focus view (slot file removed). My captures are renumbered `22a` to `22e`. Every flip (battle ground, occupation, sweep) writes `systems.subTerritories[*].holder`, which the economy reads at step 10.
 - ST-20. The territory meta row (WT-17) carries a "Contested · you hold n of m" chip (`ContestedChip.tsx`). The planning draft keeps `orders: PlannedOrder[]` (moves and withdrawals) beside recruit-replenish's `recruits` and `replenishments`.
 
 ## Stubbed or not done
@@ -53,13 +54,13 @@ Make-it-work pass (declog D13). Branch `m3r1-sub-territories`, `E2E_PORT=5311`. 
 - C8 training pause: `isContested` is exported for `m3r1-recruit-replenish`.
 - P8 entry terrain: movement's (connection `entry` is used here only for distances and paths).
 - Withdraw report lines are fixed text per kind (`systemText` takes no outcome data); the turn report lists sub-territory changes in full.
-- e2e, coverage and baselines are for the make-it-right pass. Capture added: `@capture sub-territories and contested ground` (`21a` to `21e`, renumbered at the merge; the recruit and weather captures keep `20a` to `20f`).
+- e2e, coverage and baselines are for the make-it-right pass. Capture added: `@capture sub-territories and contested ground` (`22a` to `22e`; recruit and weather use `20`, economy `21`).
 
 ## Needs from other streams
 
 - **`m3r1-d20-combat`:** done at the merge (`ground` on the pending battle, `contestedAtEnd` on `isContested`). Keep calling `settleDepartures` for retreats so the P6 hook applies.
 - **`m3r1-recruit-replenish`:** done at the merge (their `isContested` re-exports mine).
-- **`m3r1-economy-builds`:** fill `screens/pane/SubTerritoryBuild.tsx` (card and build list); queues pause with `isContested`; income only from whole territories (`holdsWhole`).
+- **`m3r1-economy-builds`:** done at the merge (Build list in the focus view, helpers delegate to mine, rail damage theirs).
 - **`m3r1-movement-rail-ports`:** multi-leg moves must stay refused out of contested ground (the `orderVerdict` refusal covers any Move whose `from` is contested). Withdraw is one step; P6 paths are `pathThrough` in `partition/paths.ts`.
 - **Integrator:** `systemText` lines take no outcome data, so report lines cannot name units or places.
 

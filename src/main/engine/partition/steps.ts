@@ -10,21 +10,19 @@ import type {
   GameState,
   Scenario,
   SubTerritoryChange,
-  SubTerritoryId,
-  SubTerritoryState,
   TerritoryId,
   UnitId,
   WithdrawOrder
 } from "../types";
 import { attackSources, flip, flipOrder, type Ground, groundTaken } from "./flips";
-import { type Holdings, heldBy, holdersIn, isContested, controlFromHolders } from "./holders";
+import { type Holdings, heldBy, holdersIn, controlFromHolders } from "./holders";
 import { hasPath } from "./paths";
 
 /**
  * The `provinces` partition module's parts of steps 6, 7 and 8 (tasks section 2): sub-territory
  * flips from battles (P4), whole-territory occupation (P3, M6), returns and retreats along the
  * path rule (P6, through the `retreatAllowed` hook), withdrawals (C1), the one-a-turn sweep in
- * contested ground (P3), rail damage ($8), and control derived from the holders (P2, P7).
+ * contested ground (P3), and control derived from the holders (P2, P7).
  */
 
 /** A battle's effect on the ground: who gains, from whom, how much, and from where it came. */
@@ -133,29 +131,6 @@ export function sweep(scenario: Scenario, start: GameState, armies: Armies, hold
   return { changes, holdings: current };
 }
 
-/**
- * $8 (Q-RAIL-4 note): when a territory becomes contested, rail in the sub-territories the
- * newcomers hold drops by the scenario's `railDamageOnContest`.
- */
-export function railDamage(scenario: Scenario, start: GameState, holdings: Holdings): { readonly events: readonly ContestedTurnOutcome[]; readonly holdings: Holdings } {
-  const drop = scenario.improvements?.railDamageOnContest ?? 0;
-  if (drop <= 0) return { events: [], holdings };
-  const next: Record<SubTerritoryId, SubTerritoryState> = { ...holdings };
-  const events: ContestedTurnOutcome[] = [];
-  for (const territory of scenario.territories) {
-    if (isContested(scenario, start, territory.id) || holdersIn(scenario, holdings, territory.id).length < 2) continue;
-    const before = new Set(holdersIn(scenario, start.subTerritories, territory.id));
-    for (const sub of scenario.index.subTerritoriesByTerritory.get(territory.id) ?? []) {
-      const state = next[sub.id];
-      if (state === undefined || before.has(state.holder) || state.rail === 0) continue;
-      const after = Math.max(0, state.rail - drop);
-      next[sub.id] = { ...state, rail: after };
-      events.push({ after, before: state.rail, kind: "rail-damaged", subTerritoryId: sub.id });
-    }
-  }
-  return { events, holdings: events.length === 0 ? holdings : next };
-}
-
 /** P6: retreats that ended in surrender only because no path led out, reported as such. */
 function pathSurrenders(scenario: Scenario, start: GameState, armies: Armies, settled: readonly Settled[]): readonly ContestedTurnOutcome[] {
   return settled.flatMap((entry): ContestedTurnOutcome[] => {
@@ -239,11 +214,14 @@ export const provincesStanding: Phase = (draft) => {
   return withHoldings({ ...draft, events: [...draft.events, ...surrenders] }, ground.holdings, ground.changes);
 };
 
-/** Step 8 under `provinces`: the sweep, rail damage, then territory and city control from the holders. */
+/**
+ * Step 8 under `provinces`: the sweep, then territory and city control from the holders. Rail
+ * damage ($8) is the economy's, at step 10 (`economy/queues.ts` `damageRail`, EB-6): it diffs
+ * the holders against the start of the turn, which is the same rule.
+ */
 export const provincesControl: Phase = (draft) => {
   const { scenario, start } = draft.input;
   const swept = sweep(scenario, start, draft.armies, draft.systems.subTerritories);
-  const damaged = railDamage(scenario, start, swept.holdings);
-  const next = withHoldings({ ...draft, events: [...draft.events, ...damaged.events] }, damaged.holdings, swept.changes);
-  return { ...next, control: controlFromHolders(scenario, damaged.holdings, draft.control) };
+  const next = withHoldings(draft, swept.holdings, swept.changes);
+  return { ...next, control: controlFromHolders(scenario, swept.holdings, draft.control) };
 };

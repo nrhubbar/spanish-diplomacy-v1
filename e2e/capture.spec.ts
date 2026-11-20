@@ -299,6 +299,28 @@ test("@capture weather and turn timer", async ({ page }) => {
   if (await hide.isVisible()) await hide.click();
 });
 
+test("@capture economy: resource chips, Build tab and the focused build list", async ({ page }) => {
+  await page.goto("./");
+  await page.getByRole("button", { name: "Create Game" }).click();
+  await page.getByRole("button", { name: "Start Campaign" }).click();
+  await waitForMap(page);
+  const briefingToggle = page.getByRole("button", { exact: true, name: "Briefing" });
+  if (await page.getByRole("complementary", { name: "Briefing" }).isVisible()) await briefingToggle.click();
+  await page.locator('.map-region[data-territory-id="catalunya"]').focus();
+  await page.keyboard.press("Enter");
+  const orders = page.getByRole("button", { name: "Orders", exact: true });
+  if (await orders.isVisible()) await orders.click();
+  await page.getByRole("tab", { name: "Build" }).click();
+  await capture(page, "21a-build-tab");
+  await page.getByRole("button", { name: "Build in Barcelona" }).click();
+  await capture(page, "21b-build-focus");
+  await page.getByRole("button", { name: /^Queue / }).first().click();
+  await page.locator(".site-queue").first().evaluate((element) => { element.scrollIntoView({ block: "center" }); });
+  await capture(page, "21c-build-queued");
+  await page.locator(".resource-chip").first().click();
+  await capture(page, "21d-resource-detail");
+});
+
 test("@capture sub-territories and contested ground", async ({ isMobile, page }) => {
   await page.goto("./");
   await page.getByRole("button", { name: "Create Game" }).click();
@@ -307,17 +329,17 @@ test("@capture sub-territories and contested ground", async ({ isMobile, page })
   await page.locator('.map-region[data-territory-id="andalucia"]').focus();
   await page.keyboard.press("Enter");
   await expect(page.locator(".sub-territory-wash")).toBeAttached();
-  await capture(page, "21a-contested-overview");
+  await capture(page, "22a-contested-overview");
   await page.getByRole("button", { name: "Give Selected Armies Order" }).click();
-  await capture(page, "21b-contested-orders");
+  await capture(page, "22b-contested-orders");
   await page.getByRole("button", { exact: true, name: "Withdraw" }).click();
-  await capture(page, "21c-withdraw-destination");
+  await capture(page, "22c-withdraw-destination");
   await page.getByRole("button", { name: /Cancel withdrawal|Cancel/ }).first().click();
   for (let step = 0; step < 3; step += 1) await page.getByRole("button", { name: "Zoom in" }).click();
-  await capture(page, "21d-contested-zoom");
+  await capture(page, "22d-contested-zoom");
   await page.getByRole("button", { name: /^M\u00e1laga, held by/ }).click();
   await expect(page.locator(".sub-territory-focus")).toBeVisible();
-  await capture(page, "21e-sub-territory-focus");
+  await capture(page, "22e-sub-territory-focus");
   // X3: zoomed in, a click inside the selected territory focuses the pane on the sub-territory there.
   // On a phone the sheet covers Jaen at this zoom; the pane's list (above) is the phone's way in.
   if (isMobile) return;

@@ -1,9 +1,10 @@
 import { createAction, createReducer } from "@reduxjs/toolkit";
 import { initialGameState } from "../engine/resolution";
-import type { ActorKind, FactionId, Scenario, ScenarioId, SubTerritoryId, TerritoryId, UnitId, UnitTypeId } from "../engine/types";
+import type { ActorKind, BuildOrder, FactionId, Scenario, ScenarioId, SubTerritoryId, TerritoryId, UnitId, UnitTypeId } from "../engine/types";
 import type { ScenarioRegistry } from "../scenarios/registry";
 import { advance, lockSubmission, nextTurn } from "./coordinator";
 import {
+  cancelBuild,
   cancelOrder,
   chooseOrder,
   clearSelection,
@@ -11,6 +12,7 @@ import {
   clickUnit,
   draftOrders,
   focusOn,
+  planBuild,
   removeOrder,
   selectAllAvailable,
   setRecruitQuantity,
@@ -57,6 +59,9 @@ export const focusSubTerritory = createAction<SubTerritoryId | undefined>("game/
 /** X4: how many units of a type the draft recruits at a territory (m3r1-recruit-replenish). */
 export const changeRecruitQuantity = createAction<{ readonly quantity: number; readonly territoryId: TerritoryId; readonly unitTypeId: UnitTypeId }>("game/changeRecruitQuantity");
 export const startNextTurn = createAction("game/startNextTurn");
+/** $5: plan a Build order for this turn, or cancel the one at an index. */
+export const queueBuildOrder = createAction<BuildOrder>("game/queueBuildOrder");
+export const cancelBuildOrder = createAction<number>("game/cancelBuildOrder");
 
 function setupFor(scenario: Scenario): Session {
   const assignments: Record<FactionId, ActorKind> = {};
@@ -132,6 +137,10 @@ export function createGameReducer(dependencies: GameReducerDependencies) {
         set(inPlanning(state.session, (_scenario, planning) => toggleOrderChoice(planning))))
       .addCase(focusSubTerritory, (state, { payload }) =>
         set(inPlanning(state.session, (scenario, planning) => (payload === undefined ? unfocus(planning) : focusOn(scenario, planning, payload)))))
+      .addCase(queueBuildOrder, (state, { payload }) =>
+        set(inPlanning(state.session, (scenario, planning) => planBuild(scenario, planning, payload))))
+      .addCase(cancelBuildOrder, (state, { payload }) =>
+        set(inPlanning(state.session, (scenario, planning) => cancelBuild(scenario, planning, payload))))
       .addCase(chooseOrderKind, (state, { payload }) =>
         set(inPlanning(state.session, (scenario, planning) => chooseOrder(scenario, planning, payload))))
       .addCase(cancelOrderStage, (state) =>
