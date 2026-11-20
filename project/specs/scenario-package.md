@@ -167,6 +167,20 @@ The loader applies these when the app starts. Each failure names the JSON path a
 
 Every roll kind draws from its own seeded streams, `deriveSeed(game seed, tag, turn, index)`, with one tag per kind: battle (the M26 tag, so battle rolls are unchanged), weather, raid, general death and blunder (`src/main/engine/dice.ts`). A faction sees the state through `viewFor` (`src/main/engine/visibility.ts`): other factions' treasuries, queue items and units in training are hidden unless its recon reveals their territory this turn ($6, U4); the computer player plans on that view.
 
+### Calendar, weather and the turn timer (`seasonal-zones`, T1-T6)
+
+- **Date (T1).** Turn 1 is `calendar.start`. Each later turn is the next half-month, 24 a year. The date derives from the turn number and is never stored; it reads "Turn 7 · Late October 1936" wherever the turn is shown.
+- **Roll (T2).** Before anyone plans a turn (step 0), the coordinator sets `GameState.weather`: one d20 from the weather stream, `deriveSeed(seed, weather, turn, 0)`, read against every zone's table for the season holding the turn's month. Each table runs best to worst, so one roll moves the whole map the same way. The roll is a pure function of the seed and turn, so replays match. Inside `resolveTurn`, step 0 only reports `weather-rolled` from the start state.
+- **Forecast (T3).** Next turn's chances in a zone come from next turn's season table. They are never taken from the seeded roll.
+- **Effects (T4).** These use the start-of-turn weather of a territory's zone, through the hooks:
+  - `combatModifiers`: the battle territory's `attackRoll`, under `d20-graded`. Under `d6-table` it is a third of that, truncated (Q-WX-6). A zero adds nothing.
+  - `canDigIn`: false with `blocks-digging-in`.
+  - `allowanceDelta`: minus `movement-penalty.amount` at the origin. The movement module keeps the allowance at 1 or more.
+  - `grounded`: true with `grounds-aircraft`, unless the aircraft's faction holds a sub-territory of that territory with an `all-weather-airbase` building.
+- **Sea closure.** A sea connection is closed when a coastal zone at either end has an outcome whose `closes-sea` lists the turn's month (`isSeaConnectionClosed` in `engine/weather.ts`).
+- **Frostbite.** At step 9, a unit with a valid move whose origin or destination has `frostbite` loses that share of its men, rounded to the nearest man. This produces a `frostbite` outcome.
+- **Turn timer (T5, T6).** This rule applies to every ruleset. A submission may carry `timedOut: true`, set when the player's planning clock ran out. The engine then reports `time-ran-out` at step 0, with the faction's units that had no unit order (`heldUnitCount`). The clock itself lives only in the UI; the engine never reads time.
+
 ## The `m2-strength` ruleset
 
 Each turn every faction submits orders in secret; all orders resolve together against the start-of-turn state. Armies have men (`strength`), morale, and values; territories can be dug in. Rule ids M1-M10 keep their Revision 5 meaning where they survive. Revision 5's movement-only rules M3, M4, M5, and M8 are retired: the battle rules M11 and M17-M21 replace them, and their ids are not reused.
