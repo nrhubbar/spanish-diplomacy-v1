@@ -60,6 +60,16 @@ Mode: make it work (declog D13). Base: `milestone-3-rev-1` at `eb9515f` (contrac
     - Both constants are code with a design note, waiting for an AI profile field.
     - It builds only in territories held whole.
 16. **EB-16. Desktop header order**, when resource chips are present: title, readiness, then the resources beside Exit, by CSS `order` from `_economy.scss`. On a phone: title and Exit, then the resources row, then readiness.
+18. **EB-18. The territory income chip** (`build/TerritoryIncomeChip.tsx`) shows one of three things:
+    - "Pays +N ... a turn", when the viewer holds the territory whole;
+    - "... to <holder>", when another faction holds it whole;
+    - "Contested: pays nobody".
+    Development is public, so the chip is too. Its interim home is the top of the Build tab, until `m3r1-weather-timer`'s meta-row slot lands.
+19. **EB-19. Each resource chip's root has the `header-meter` class,** for the weather-timer's header row.
+20. **EB-20. Render cost.**
+    - The Build panel renders only while open: one condition in `TerritoryTabs`.
+    - The chips read the game record's state and planned builds through narrow store selections, behind a `memo`, so selecting territories does not re-render them.
+    - Desktop P2 selection was 50.5 ms, against a 50 ms budget, before this work. Run alone it is now 33 to 43 ms.
 17. **EB-17. Parts return the draft unchanged when they have nothing to do** (no Build orders, no queue changes, no treasuries). `tiny-front` and the pipeline's pass-through pin still hold.
 
 ## Stubbed or interim
@@ -111,6 +121,18 @@ Mode: make it work (declog D13). Base: `milestone-3-rev-1` at `eb9515f` (contrac
 - `e2e/capture.spec.ts`: one new `@capture` test.
 - `project/specs/scenario-package.md`: rules EC-1 to EC-10.
 
-## Checks
+## Checks (at `7a7aeea`)
 
-Recorded in the hand-off report.
+- `npm run lint`: passed.
+- `npm run typecheck`: passed.
+- `npx vitest run`: 690 passed. The only 6 failures are the known-red sim-harness tests (D14).
+- `npm run build`: passed. `npm run budgets:check`: initial chunk 106.89 kB gzip against 155 kB, met.
+- `npm run test:e2e` on chromium and mobile-chromium (`E2E_PORT=5313`): 45 passed, 5 skipped, 6 failed.
+  - 5 of the failures are visual baseline diffs, as expected: the header chips (chromium `planning-overview` and `fallback`; mobile `planning-overview`, `resolution` and `fallback`).
+  - The sixth is the desktop P2 selection budget under the parallel run. It passes run alone (33 to 43 ms). Mobile at 4x throttle is noisy around its 120 ms budget, with or without the chips.
+  - Axe is clean (the acceptance specs pass).
+- `npm run sim -- --games 50`, without blunders: decided 50.0%, freezes 50.0%, stalled 60.0%. Wins of decided games: Republic 36%, North 40%, South 24%.
+- `npm run sim -- --games 50`, with blunders: decided 30.0%, freezes 70.0%. Wins: Republic 40%, North 40%, South 20%.
+- A 50-game probe (66 turns, with blunders) counted builds per game: Republic 104 queued, North 65, South 11.5. No build orders were rejected, and no rail was damaged, because holders do not change yet.
+  - The Republic banks unspent Funds, about 2,400 a game by the end, since Recruit is not live yet.
+  - The South earns about 1 Fund a turn (Andalucía is contested at the start; $7 says to raise Ceuta's and Melilla's yields if the harness asks).
