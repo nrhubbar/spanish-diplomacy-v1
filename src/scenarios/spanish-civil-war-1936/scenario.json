@@ -134,8 +134,13 @@
           "territory": 4
         },
         "victoryAlarm": {
+          "critical": 3,
           "perStep": 0.5,
           "steps": 4
+        },
+        "withdraw": {
+          "hopelessTakeChance": 0.5,
+          "lastStandTakeChance": 0.75
         },
         "builds": {
           "spendShare": 0.6,
@@ -166,8 +171,13 @@
           "territory": 4
         },
         "victoryAlarm": {
+          "critical": 3,
           "perStep": 0.5,
           "steps": 4
+        },
+        "withdraw": {
+          "hopelessTakeChance": 0.5,
+          "lastStandTakeChance": 0.75
         },
         "builds": {
           "spendShare": 0.6,
@@ -198,8 +208,13 @@
           "territory": 4
         },
         "victoryAlarm": {
+          "critical": 3,
           "perStep": 0.5,
           "steps": 4
+        },
+        "withdraw": {
+          "hopelessTakeChance": 0.5,
+          "lastStandTakeChance": 0.75
         },
         "builds": {
           "spendShare": 0.6,
@@ -208,7 +223,7 @@
         }
       }
     },
-    "note": "Design note. The weights are the Revision 7 computer player's constants (computerWeights, offensiveWeights, stakeWeights and victoryAlarm), moved into data unchanged, one profile per faction so a harness variant can change one side (E7, H4). The blunder chance is 1 in 100 orders (H6, Q-MR-33). The Build budget (EB-15) is economy-builds' starting value: builds spend at most 60 percent of what Recruit orders leave, at most 3 orders a turn, one new item per sub-territory with an empty queue; a design note for the harness to tune (H7)."
+    "note": "Design note. The weights are the Revision 7 computer player's constants (computerWeights, offensiveWeights, stakeWeights and victoryAlarm), moved into data unchanged, one profile per faction so a harness variant can change one side (E7, H4). The blunder chance is 1 in 100 orders (H6, Q-MR-33). The Build budget (EB-15) is economy-builds' starting value: builds spend at most 60 percent of what Recruit orders leave, at most 3 orders a turn, one new item per sub-territory with an empty queue; a design note for the harness to tune (H7). Design note (D23, D24, m3r1-ai-fixes): victoryAlarm.critical raises, by 1 + 3, the stake of a territory whose change of hands alone would decide the game: own ground a rival in reach would win by taking, and ground the faction itself would win by taking. It sits above the x2.5 the alarm gives a leader's territory one step short, so holding the deciding ground outranks attacking the leader, and taking it is weighed as much as holding it. withdraw.hopelessTakeChance 0.5: the computer player gives up contested ground when the standing battle is at least even odds to take it whole this turn, by the engine's own odds. withdraw.lastStandTakeChance 0.75: its seat, last objective or a victory-critical territory is given up only when it would be lost whole at least three times in four. Starting values, not tuned."
   },
   "unitTypes": [
     {
@@ -1838,6 +1853,29 @@
       "historicalNote": "The Santander garrison. Strength assumes VI Division's Republican-zone barracks rate."
     },
     {
+      "id": "rep-baleares-37",
+      "name": "Baleares Infantry Regiment No. 37",
+      "factionId": "republic",
+      "type": "infantry-regiment",
+      "formationKind": "regiment",
+      "strength": 655,
+      "fullStrength": 655,
+      "territoryId": "islas-baleares",
+      "sources": [
+        {
+          "sourceId": "arzanegui-1993",
+          "reference": "infantry regiment list; Balearics barracks-strength row (655, 52%)"
+        },
+        {
+          "sourceId": "ubc-july-map"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "The Mah\u00f3n garrison. It stayed loyal and held Menorca for the Republic all war. Strength is the Mah\u00f3n barracks figure. It stands in the Islas Baleares, where units are territory-level, facing Palma No. 36 across the islands."
+    },
+    {
       "id": "north-zamora-29",
       "name": "Zamora Infantry Regiment No. 29",
       "factionId": "north",
@@ -2099,6 +2137,52 @@
       "historicalNote": "Mola's columns at Somosierra and the Alto del Leon under Garcia Escamez, Serrador, and Gistau: regulars with requete and Falange companies. Total estimated."
     },
     {
+      "id": "north-argel-27",
+      "name": "Argel Infantry Regiment No. 27",
+      "factionId": "north",
+      "type": "infantry-regiment",
+      "formationKind": "regiment",
+      "strength": 700,
+      "fullStrength": 700,
+      "territoryId": "extremadura",
+      "sources": [
+        {
+          "sourceId": "arzanegui-1993",
+          "reference": "infantry regiment list (citing the Nafziger Collection); VII Division barracks-strength row"
+        },
+        {
+          "sourceId": "ubc-july-map"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "The C\u00e1ceres garrison, in VII Organic Division (Valladolid). It rose with the division on 19 July and held C\u00e1ceres for the rising. Strength from VII Division's barracks figures, as San Quint\u00edn No. 25. It stands in Extremadura, where units are territory-level; the province it held is C\u00e1ceres."
+    },
+    {
+      "id": "north-flandes-5",
+      "name": "Flandes Mountain Battalion No. 5",
+      "factionId": "north",
+      "type": "infantry-regiment",
+      "formationKind": "battalion",
+      "strength": 450,
+      "fullStrength": 450,
+      "territoryId": "pais-vasco",
+      "sources": [
+        {
+          "sourceId": "arzanegui-1993",
+          "reference": "mountain battalion list"
+        },
+        {
+          "sourceId": "ubc-july-map"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "The Vitoria garrison, which rose with Mola and held \u00c1lava. Vitoria also quartered the Numancia No. 6 cavalry and the No. 2 mountain artillery, which are folded in. No barracks figure was found for the battalion: the strength is an estimate (tier 3), a mountain battalion at VI Division's Nationalist-zone rate of about 55 percent. It stands in Pa\u00eds Vasco, where units are territory-level."
+    },
+    {
       "id": "south-granada-6",
       "name": "Granada Infantry Regiment No. 6",
       "factionId": "south",
@@ -2285,6 +2369,29 @@
         }
       ],
       "historicalNote": "The Tetuan No. 1, Ceuta No. 3, and Larache No. 4 groups of Regulares, less a proportional share already in Seville. Estimated."
+    },
+    {
+      "id": "south-palma-36",
+      "name": "Palma Infantry Regiment No. 36",
+      "factionId": "south",
+      "type": "infantry-regiment",
+      "formationKind": "regiment",
+      "strength": 729,
+      "fullStrength": 729,
+      "territoryId": "islas-baleares",
+      "sources": [
+        {
+          "sourceId": "arzanegui-1993",
+          "reference": "infantry regiment list; Balearics barracks-strength row (729, 57%)"
+        },
+        {
+          "sourceId": "ubc-july-map"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "The Palma garrison of Goded's Baleares command. It held Mallorca, and with it Ibiza, for the rising after Goded left for Barcelona on 19 July. Strength is the Palma barracks figure. It stands in the Islas Baleares, where units are territory-level, so it garrisons Ibiza too."
     },
     {
       "id": "rep-ni52-fighters",

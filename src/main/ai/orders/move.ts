@@ -10,7 +10,7 @@ import type {
   UnitState
 } from "../../engine/types";
 import { portLandings, railDepartures, unitTypeOf } from "../../engine/movement/network";
-import { armyKey, describeRoute, legsOf, type MoveRoute, moveRoutes, routeClaims } from "../../engine/movement/routes";
+import { armyKey, describeRoute, legsOf, moveRoutes, routeClaims } from "../../engine/movement/routes";
 import { armiesOf } from "../../engine/movement/transit";
 import { validateMoveOrder } from "../../engine/validation";
 import { assess, type Assessment } from "../assessment";
@@ -19,6 +19,7 @@ import { type Cached, cached, distancesTo, forget, pickBest } from "../choice";
 import { bouncedMoves, moveKey, stalledTurns } from "../memory";
 import { chooseOffensive, prizeFactor } from "../offensive";
 import { createPlan, type Plan } from "../plan";
+import { isTransport, unitRoutes } from "../reach";
 import type { RandomSource } from "../../engine/random";
 import type { OrderPlanner } from "./planner";
 
@@ -62,6 +63,8 @@ export const planMoves: OrderPlanner<MoveOrder> = ({ factionId, memory: context,
     ? 0
     : Math.max(0, (offensive.distance.get(unit.territoryId) ?? 0) - (offensive.distance.get(to) ?? 0)) * assessment.profile.offensive.staging;
   const attackContext: AttackContext = { assessment, factionId, moveBias, plan, prize, scenario, state, weights };
+
+  garrisonCritical(scenario, assessment, plan, ready, friendly, random);
 
   const attacks = new Map<TerritoryId, Cached<AttackPlan>>();
   const reinforcements = new Map<UnitId, Cached<Reinforcement>>();
@@ -159,6 +162,33 @@ function bestReinforcement(
   return pickBest(options, (option) => option.score, random);
 }
 
+/**
+ * D23: before anything else, an army steps into each own victory-critical territory that stands
+ * empty: one a rival can reach this turn and would win by taking (`Assessment.isCritical`). Of the
+ * armies that can reinforce it without emptying an objective or another critical territory, it
+ * sends the one whose move scores best (danger removed there, less danger left at home). The
+ * greedy planner may then add more.
+ */
+function garrisonCritical(
+  scenario: Scenario,
+  assessment: Assessment,
+  plan: Plan,
+  ready: readonly UnitState[],
+  friendly: ReadonlyMap<UnitId, readonly TerritoryId[]>,
+  random: RandomSource
+): void {
+  for (const { id } of scenario.territories) {
+    if (!assessment.isCritical(id) || plan.armiesIn(id) > 0) continue;
+    const options = ready.flatMap((unit) => {
+      if (!plan.isFree(unit) || !(friendly.get(unit.id) ?? []).includes(id)) return [];
+      const cost = plan.exposure([unit]);
+      return cost === undefined ? [] : [{ score: plan.reinforcementGain(unit, id) - cost, unit }];
+    });
+    const chosen = pickBest(options, (option) => option.score, random);
+    if (chosen !== undefined) plan.commit(chosen.unit, id, true);
+  }
+}
+
 /** Objectives the faction does not control yet; all of them once it controls every one. */
 function approachTargets(scenario: Scenario, state: GameState, assessment: Assessment): ReadonlySet<TerritoryId> {
   const objectives = scenario.territories.filter((territory) => assessment.isObjective(territory.id)).map((territory) => territory.id);
@@ -167,26 +197,6 @@ function approachTargets(scenario: Scenario, state: GameState, assessment: Asses
     return !(control?.kind === "controlled" && control.factionId === assessment.factionId);
   });
   return new Set(remaining.length > 0 ? remaining : objectives);
-}
-
-/** Routes for a unit with the trucks standing with it, remembered per state for units alike (origin, mobility, morale). */
-function unitRoutes(scenario: Scenario, state: GameState, unit: UnitState): ReadonlyMap<TerritoryId, MoveRoute> {
-  const memo = routeMemo.get(state) ?? new Map<string, ReadonlyMap<TerritoryId, MoveRoute>>();
-  routeMemo.set(state, memo);
-  const mobile = (unitTypeOf(scenario, state, unit.id)?.effects ?? []).some((effect) => effect.kind === "mobile");
-  const key = `${scenario.id}|${unit.factionId}|${unit.territoryId}|${String(mobile)}|${String(unit.morale.demoralized)}`;
-  const known = memo.get(key);
-  if (known !== undefined) return known;
-  const trucks = Object.values(state.units).filter((other) => other.territoryId === unit.territoryId && other.factionId === unit.factionId && isTransport(scenario, state, other.id));
-  const routes = moveRoutes(scenario, state, unit.factionId, unit.territoryId, [unit.id, ...trucks.map((truck) => truck.id)]);
-  memo.set(key, routes);
-  return routes;
-}
-
-const routeMemo = new WeakMap<GameState, Map<string, ReadonlyMap<TerritoryId, MoveRoute>>>();
-
-function isTransport(scenario: Scenario, state: GameState, unitId: UnitId): boolean {
-  return (unitTypeOf(scenario, state, unitId)?.effects ?? []).some((effect) => effect.kind === "transport");
 }
 
 /**

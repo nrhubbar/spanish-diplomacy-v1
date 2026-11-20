@@ -10,7 +10,7 @@ import type { FactionId, GameState, SubTerritoryId, WithdrawOrder } from "../mai
 import { validateMoveOrder, validateOrder } from "../main/engine/validation";
 import { victoryProgress } from "../main/engine/victory";
 import { type Json } from "./modularFixture";
-import { faction, move, spain, spainD20, territory, unit, withUnits } from "./support";
+import { faction, loadedDice, move, spain, spainD20, territory, unit, withUnits } from "./support";
 
 const sub = (id: string): SubTerritoryId => id as SubTerritoryId;
 
@@ -98,6 +98,26 @@ describe("occupation and the sweep (P3)", () => {
     for (let turn = 0; turn < 5; turn += 1) current = resolveTurn(scenario, { ...current, turnNumber: current.turnNumber + 1 }, [], 1).finalState;
     expect(holdersIn(scenario, current.subTerritories, territory("andalucia"))).toEqual(["republic"]);
   });
+
+  it("does not sweep where a territory-level garrison stands: C\u00e1ceres, \u00c1lava, Mallorca, Ibiza and Menorca (D23)", () => {
+    // Units stand in a territory, not a sub-territory, so a garrison anywhere in Extremadura
+    // defends C\u00e1ceres: the faction there is not alone, and the turn is a standing battle.
+    const scenario = spain();
+    const start = initialGameState(scenario);
+    const garrisons = [["extremadura", "north-argel-27"], ["islas-baleares", "south-palma-36"], ["islas-baleares", "rep-baleares-37"], ["pais-vasco", "north-flandes-5"]] as const;
+    for (const [territoryId, unitId] of garrisons) expect(start.units[unit(unitId)]?.territoryId).toBe(territoryId);
+    // Dice that leave every standing battle's sides in place, so only the sweep rule is tested.
+    const swept = (state: GameState): readonly string[] => resolveTurn(scenario, state, [], 1, loadedDice([3, 4, 5, 4, 3])).subTerritoryChanges
+      .filter((change) => change.cause === "sweep")
+      .map((change) => change.subTerritoryId);
+    expect(swept(start).filter((id) => ["caceres", "alava", "mallorca", "ibiza", "menorca"].includes(id))).toEqual([]);
+    // Without the C\u00e1ceres garrison, the Republic's regiment at Badajoz sweeps it on turn 1.
+    const ungarrisoned = { ...start, units: Object.fromEntries(Object.entries(start.units).filter(([id]) => id !== "north-argel-27")) };
+    expect(swept(ungarrisoned)).toContain("caceres");
+    // Without the Mah\u00f3n regiment, Palma No. 36 stands alone in the Balearics and sweeps Menorca.
+    const noMahon = { ...start, units: Object.fromEntries(Object.entries(start.units).filter(([id]) => id !== "rep-baleares-37")) };
+    expect(swept(noMahon)).toContain("menorca");
+  });
 });
 
 describe("contested ground orders (C1) and the path rule (P6)", () => {
@@ -160,10 +180,15 @@ describe("the computer player in contested ground (H5)", () => {
     const { planWithdrawals } = await import("../main/ai/orders/withdraw");
     const { seededRandom } = await import("../main/engine/random");
     const scenario = spain();
-    const state = withUnits(scenario, [
+    // Three regiments against one, 12 to 6 less popular resistance, leave the Republic better
+    // than even odds of holding Andalucia (D24); the Army of Africa's vanguard makes it hopeless.
+    const units = [
       ["rep-vitoria-8", "republic", "andalucia"],
       ["south-granada-6", "south", "andalucia"], ["south-lepanto-5", "south", "andalucia"], ["south-cadiz-33", "south", "andalucia"]
-    ]);
+    ] as const;
+    const holdable = withUnits(scenario, units);
+    expect(planWithdrawals({ factionId: faction("republic"), memory: {}, planned: [], random: seededRandom(1), scenario, state: holdable })).toEqual([]);
+    const state = withUnits(scenario, [...units, ["south-africa-vanguard", "south", "andalucia"]]);
     const orders = planWithdrawals({ factionId: faction("republic"), memory: {}, planned: [], random: seededRandom(1), scenario, state });
     expect(orders).toEqual([withdrawal("republic", "rep-vitoria-8", "andalucia", "castilla-la-mancha")]);
     // The South, stronger there, stays and attacks; the North in the Oviedo pocket has no way out.

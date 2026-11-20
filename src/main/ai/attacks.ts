@@ -89,7 +89,7 @@ export function bestAttackOn(
   const next = (chosen: readonly UnitState[], remaining: readonly UnitState[]): { readonly cost: number; readonly unit: UnitState } | undefined => {
     let pick: { readonly cost: number; readonly unit: UnitState } | undefined;
     for (const unit of remaining) {
-      const cost = plan.exposure([...chosen, unit]);
+      const cost = plan.exposure([...chosen, unit], target);
       if (cost === undefined) continue;
       const better = pick === undefined
         || cost < pick.cost
