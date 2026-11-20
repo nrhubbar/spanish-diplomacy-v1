@@ -101,3 +101,18 @@ Lint and typecheck pass. Six harness tests that assumed blunders were "pending" 
 Lint and typecheck pass. The same six harness tests as in D14 are red, as known. The feature streams were told to merge `milestone-3-rev-1`.
 
 **D16. First paint still waits for the lazy scenario chunk (contract CT-50).** The initial chunk is 102.99 kB against the 155 kB budget, so the budget is met. `main.tsx` still awaits the registry before the first render. Moving that wait to the setup screen means reworking the app shell, which is deferred to the make-it-fast phase (D13).
+
+**D17. Aircraft are not ground combatants (integrator default).** The answers make aircraft units (U2, Q-UX-10) but say nothing about ground battles. Default:
+- aircraft never join a ground battle on either side, take no losses from it, and do not retreat with ground units;
+- if an enemy takes the whole territory that holds their airfield, they rebase to the nearest friendly airfield within range, or are destroyed.
+
+Reported to the owner.
+
+**D18. Interim merges of the first finished slices.** `m3r1-d20-combat` (`c61e09e`), `m3r1-recruit-replenish` (`84afb1d`) and `m3r1-weather-timer` (`dad7589`, including WT-17) were merged into `milestone-3-rev-1` as each finished, so the four streams still running build on them. The conflicts were all additive (`presentation/text.ts`, `presentation/odds.ts` comments, `style.scss` uses, `e2e/capture.spec.ts`, `scenario-package.md`), and both sides were kept. Typecheck and lint pass. Seven unit tests are red:
+- the six known harness tests (D14);
+- the smoke test's S1 check: early wins in 1 of 10 games, against a limit of 5 percent.
+
+For make-it-right:
+- **Capture name collisions:** three streams use the prefix `20a`-`20f` in `e2e/capture.spec.ts`; renumber them.
+- **S1 early wins under the d20:** in d20-combat's 50-game run, 8 of 50 games ended before turn 4. The computer players leave the contested territories on turn 1, so control settles a territory short of the Republic's threshold. This should change once control comes from sub-territory holders, which `m3r1-sub-territories` is building. Re-measure after that merge.
+- **Republic dominance:** in both the d20 and the recruit runs, the Republic wins 70 to 80 percent of decided games. It starts with 40 Funds against 15, and nobody has income yet. Re-measure once economy merges. Reported, not tuned (H7).

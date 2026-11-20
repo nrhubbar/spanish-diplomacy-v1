@@ -3,6 +3,7 @@ import { territoryName } from "../presentation/text";
 import type { MapRect, ScenarioPackage } from "../scenarios/loader";
 import type { MapAssets } from "../scenarios/registry";
 import { CounterLayer, layoutCounters } from "./CounterLayer";
+import { weatherIn } from "../engine/weather";
 import { DestinationOddsLayer } from "./DestinationOddsLayer";
 import { AirLayer } from "./layers/AirLayer";
 import { destinationTags, RailLayer } from "./layers/RailLayer";
@@ -93,7 +94,7 @@ export function MapLayers({ assets, bounds, camera, game, geometry, layout, leve
       />
       <AirLayer {...layerProps} />
       {view.destinationEstimates === undefined ? null : (
-        <DestinationOddsLayer counters={counters} estimates={view.destinationEstimates} labelAt={(id) => toScreen(mapTerritory(map, id).label)} tags={destinationTags(scenario, game, view)} />
+        <DestinationOddsLayer counters={counters} estimates={view.destinationEstimates} labelAt={(id) => toScreen(mapTerritory(map, id).label)} tags={destinationTags(scenario, game, view)} weatherAt={(id) => weatherIn(scenario, game, id)?.id} />
       )}
     </>
   );

@@ -287,11 +287,11 @@ describe("movement: what the planning screen says (X5)", () => {
     if (harbor === undefined) throw new Error("route");
     expect(routeTag(harbor, true)).toBe("Rail, then attack");
     expect(routeTag(harbor, true, true)).toBe("Rail + attack");
-    expect(routeChips(scenario, state, harbor, [], 1, undefined).map((chip) => chip.kind)).toEqual(["rail", "transit"]);
+    expect(routeChips(scenario, harbor, [], 1, undefined).map((chip) => chip.kind)).toEqual(["rail", "transit"]);
     expect(armyLeaving(scenario, state, faction("red"), territory("westfold"), [unit("red-guard"), unit("red-second")])?.line)
       .toBe("1 move this turn: no trucks (1 truck for these 2 units would give +1). Rail does not use moves.");
     const step = routes.get(territory("highlands"));
     if (step === undefined) throw new Error("route");
-    expect(routeChips(scenario, state, step, [], 1, undefined).map((chip) => chip.text)).toEqual(["Mountain entry (highlands)"]);
+    expect(routeChips(scenario, step, [], 1, undefined).map((chip) => chip.text)).toEqual(["Mountain entry (highlands)"]);
   });
 });

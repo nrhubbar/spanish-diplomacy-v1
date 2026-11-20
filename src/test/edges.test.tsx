@@ -212,7 +212,7 @@ describe("component edge cases", () => {
 
   it("shows ready chips and hides the scenario picker with one scenario", () => {
     render(<GameHeader kicker="k" status={[{ abbreviation: "R", factionId: faction("red"), name: "Red", ready: true }]} title="t" />, { wrapper: ({ children }) => <Provider store={testStore()}>{children}</Provider> });
-    expect(screen.getByText("Ready:")).toBeInTheDocument();
+    expect(screen.getByText("ready")).toBeInTheDocument();
     cleanup();
     const registry = createScenarioRegistry(builtInSources);
     const store = createAppStore({ registry });

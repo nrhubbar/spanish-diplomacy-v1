@@ -1,5 +1,6 @@
 import type { JSX } from "react";
-import type { TerritoryId } from "../engine/types";
+import { WeatherIcon } from "../components/weather/WeatherIcon";
+import type { TerritoryId, WeatherId } from "../engine/types";
 import { glyphs } from "../presentation/glyphs";
 import { type DestinationEstimate, oddsSummary } from "../presentation/odds";
 import type { MapPoint } from "../scenarios/loader";
@@ -13,11 +14,15 @@ interface DestinationOddsLayerProps {
   readonly labelAt: (territoryId: TerritoryId) => MapPoint;
   /** X5: the route's tag before the odds, "By rail \u00b7 Reinforce", where a destination has one. */
   readonly tags?: ReadonlyMap<TerritoryId, string> | undefined;
+  /** T3: each destination's weather this turn, shown as a symbol on its plaque. */
+  readonly weatherAt?: (territoryId: TerritoryId) => WeatherId | undefined;
 }
 
 /** Plaque height and an over-estimate of its glyph width at 12 px bold, in screen pixels. */
 const plaqueHeight = 21;
 const glyphWidth = 6.8;
+/** T3: the weather symbol and its gap, in characters' worth of width. */
+const weatherGlyphs = "xxx";
 
 /**
  * Where each plaque goes: above the territory's name, else below it, else beside it, taking
@@ -50,20 +55,21 @@ export function placeOddsPlaques(
  * decorative and let clicks through to the map; the Orders pane lists the same odds for
  * keyboard and screen-reader players.
  */
-export function DestinationOddsLayer({ counters, estimates, labelAt, tags }: DestinationOddsLayerProps): JSX.Element {
+export function DestinationOddsLayer({ counters, estimates, labelAt, tags, weatherAt }: DestinationOddsLayerProps): JSX.Element {
   const entries = [...estimates].map(([territoryId, estimate]) => {
     const summary = oddsSummary(estimate);
     const tag = tags?.get(territoryId);
-    return { at: labelAt(territoryId), summary: tag === undefined ? summary : { ...summary, chip: `${tag} ${glyphs.dot} ${summary.chip}` }, territoryId };
+    return { at: labelAt(territoryId), summary: tag === undefined ? summary : { ...summary, chip: `${tag} ${glyphs.dot} ${summary.chip}` }, territoryId, weatherId: weatherAt?.(territoryId) };
   });
-  const spots = placeOddsPlaques(entries.map(({ at, summary, territoryId }) => ({ at, territoryId, text: summary.chip })), counters);
+  const spots = placeOddsPlaques(entries.map(({ at, summary, territoryId, weatherId }) => ({ at, territoryId, text: weatherId === undefined ? summary.chip : `${summary.chip}${weatherGlyphs}` })), counters);
   return (
     <div aria-hidden="true" className="odds-layer">
-      {entries.map(({ summary, territoryId }) => {
+      {entries.map(({ summary, territoryId, weatherId }) => {
         const spot = spots.get(territoryId);
         return spot === undefined ? null : (
           <span className="odds-chip" data-territory-id={territoryId} data-tone={summary.tone} key={territoryId} style={{ left: spot.x, minWidth: spot.width, top: spot.y }}>
             {summary.chip}
+            {weatherId === undefined ? null : <WeatherIcon weatherId={weatherId} />}
           </span>
         );
       })}

@@ -109,7 +109,8 @@ describe("turn coordination", () => {
     expect(selectSubmissionStatus(spain(), session(store))).toEqual([
       { abbreviation: "REP", factionId: "republic", name: "Republican Government", ready: true },
       { abbreviation: "NIC", factionId: "north", name: "Northern Insurgent Command", ready: false },
-      { abbreviation: "SIC", factionId: "south", name: "Southern Insurgent Command", ready: false }
+      // T6: a local computer player is always ready.
+      { abbreviation: "SIC", factionId: "south", name: "Southern Insurgent Command", ready: true }
     ]);
     expect(selectRevealedOrders(session(store))).toEqual([]);
     const waiting = session(store);
@@ -321,11 +322,11 @@ describe("standing orders: Entrench and Rest (O1-O5)", () => {
 
   it("gives every army without a move its standing order: healthy armies entrench, demoralized ones rest", () => {
     const planning = planningOf(startWith({}));
-    expect(orderCounts(planning)).toEqual({ entrench: republicArmies.length, move: 0, rest: 0 });
+    expect(orderCounts(planning)).toEqual({ entrench: republicArmies.length, move: 0, replenish: 0, rest: 0 });
     const tired = shaken(planning, ["rep-otumba-9"]);
     expect(orderOf(tired, armyIn(tired.game.state, "rep-otumba-9"))).toBe("rest");
     expect(orderOf(tired, armyIn(tired.game.state, "rep-guadalajara-10"))).toBe("entrench");
-    expect(orderCounts(tired)).toEqual({ entrench: republicArmies.length - 1, move: 0, rest: 1 });
+    expect(orderCounts(tired)).toEqual({ entrench: republicArmies.length - 1, move: 0, replenish: 0, rest: 1 });
   });
 
   it("selects armies that entrench by default, and offers Entrench to healthy armies only", () => {
@@ -378,7 +379,7 @@ describe("standing orders: Entrench and Rest (O1-O5)", () => {
     store.dispatch(removePlannedOrder(unit("rep-guadalajara-10")));
     const cleared = planningOf(store);
     expect(cleared.draft.orders).toEqual([]);
-    expect(orderCounts(cleared)).toEqual({ entrench: republicArmies.length, move: 0, rest: 0 });
+    expect(orderCounts(cleared)).toEqual({ entrench: republicArmies.length, move: 0, replenish: 0, rest: 0 });
   });
 });
 

@@ -1,4 +1,5 @@
 import { describeSystemOutcome, isSystemOutcome } from "./systemText";
+import { fatigueSentence } from "./systemText/morale";
 import { requireFaction, requireTerritory, requireUnitDefinition } from "../engine/lookup";
 import type {
   BounceCause,
@@ -10,8 +11,8 @@ import type {
   TurnOutcome,
   UnitId
 } from "../engine/types";
+import { battleTitle } from "./grades";
 import { glyphs } from "./glyphs";
-import { outcomeText } from "./outcomeText";
 
 /** Player-facing wording for engine data. The engine itself produces no prose. */
 
@@ -150,7 +151,8 @@ export function describeOutcome(scenario: Scenario, outcome: TurnOutcome, outcom
 /** One report line for a group: the faction first, then what its formations did together. */
 export function describeOutcomeGroup(scenario: Scenario, group: OutcomeGroup, outcomes: readonly TurnOutcome[] = []): string {
   const { outcome } = group;
-  if (isSystemOutcome(outcome)) return describeSystemOutcome(outcome);
+  if (outcome.kind === "fatigue") return fatigueSentence(outcome, unitName(scenario, outcome.unitId));
+  if (isSystemOutcome(outcome)) return describeSystemOutcome(outcome, scenario);
   if (outcome.kind === "no-move") {
     return outcome.unitId === undefined
       ? `${factionName(scenario, outcome.factionId)} had no armies to order.`
@@ -167,7 +169,7 @@ export function describeOutcomeGroup(scenario: Scenario, group: OutcomeGroup, ou
     const place = outcome.site.kind === "meeting"
       ? `on the road between ${listNames(outcome.site.between.map((id) => territoryName(scenario, id)))}`
       : `for ${territoryName(scenario, outcome.site.territoryId)}`;
-    return outcome.dice === "d6" ? `Battle ${place}: ${outcomeText[outcome.result].title}.` : `Battle ${place}.`;
+    return `Battle ${place}: ${battleTitle(scenario, outcome)}.`;
   }
   const { order } = outcome;
   const actor = factionName(scenario, order.factionId);

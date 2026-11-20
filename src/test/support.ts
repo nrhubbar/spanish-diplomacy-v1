@@ -18,6 +18,7 @@ import {
   type UnitTypeDefinition,
   type UnitTypeId
 } from "../main/engine/types";
+import { builtInModuleRegistry } from "../main/engine/modules";
 import { builtInSources } from "../main/scenarios/builtInSources";
 import { createScenarioRegistry, type ScenarioRegistry } from "../main/scenarios/registry";
 import { createAppStore } from "../main/state/store";
@@ -27,15 +28,45 @@ export const spainId = "spanish-civil-war-1936" as ScenarioId;
 export const tinyId = "tiny-front" as ScenarioId;
 
 let sharedRegistry: ScenarioRegistry | undefined;
+let shipped: ScenarioRegistry | undefined;
 
-/** Registry with every shipped package plus test fixtures. */
+/** Registry with every shipped package, as shipped, plus test fixtures. */
+export function shippedRegistry(): ScenarioRegistry {
+  shipped ??= createScenarioRegistry(builtInSources, fixtureSources);
+  return shipped;
+}
+
+/**
+ * Spain on the d6 preset's dice. The Milestone 2 rule and report tests were written against
+ * Spain's map with the d6 table; they keep testing it (declog D3's intent), while Spain ships
+ * with `d20-graded` (`spainD20`).
+ */
+export function onD6Dice(scenario: Scenario): Scenario {
+  return {
+    ...scenario,
+    modules: scenario.modules.map((module) => (module.area === "dice" ? builtInModuleRegistry.require("dice", "d6-table") : module)),
+    rules: { ...scenario.rules, dice: "d6-table" }
+  };
+}
+
+/** Registry with every shipped package plus test fixtures; Spain is pinned to the d6 table (`onD6Dice`). */
 export function testRegistry(): ScenarioRegistry {
-  sharedRegistry ??= createScenarioRegistry(builtInSources, fixtureSources);
+  if (sharedRegistry === undefined) {
+    const registry = shippedRegistry();
+    const pinned = { ...registry.require(spainId), scenario: onD6Dice(registry.require(spainId).scenario) };
+    sharedRegistry = { ...registry, list: () => registry.list(), loadAssets: (id) => registry.loadAssets(id), peekAssets: (id) => registry.peekAssets(id), require: (id) => (id === spainId ? pinned : registry.require(id)) };
+  }
   return sharedRegistry;
 }
 
+/** Spain on the d6 table, for the Milestone 2 rule tests. */
 export function spain(): Scenario {
   return testRegistry().require(spainId).scenario;
+}
+
+/** Spain as shipped, on the d20 (D1-D8). */
+export function spainD20(): Scenario {
+  return shippedRegistry().require(spainId).scenario;
 }
 
 export function tiny(): Scenario {

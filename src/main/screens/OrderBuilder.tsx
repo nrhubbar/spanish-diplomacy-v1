@@ -1,10 +1,10 @@
 import type { JSX } from "react";
-import { citiesIn, requireFaction } from "../engine/lookup";
+import { requireFaction } from "../engine/lookup";
 import type { Scenario, TerritoryId } from "../engine/types";
 import { useAppDispatch } from "../hooks";
 import { armyFigures } from "../presentation/army";
 import type { DestinationEstimate } from "../presentation/odds";
-import { controlDescription, factionName, route, territoryName, unitName } from "../presentation/text";
+import { factionName, route, territoryName, unitName } from "../presentation/text";
 import { cancelOrderStage, removePlannedOrder } from "../state/gameSlice";
 import { orderCounts, type PlanningSession } from "../state/planning";
 import { ArmyLine } from "./ArmyLine";
@@ -15,6 +15,7 @@ import { destinationRoutes } from "./movement/destinationRoutes";
 import { armies } from "./OrderCommand";
 import { SubTerritoryFocus } from "./pane/SubTerritoryFocus";
 import { TerritoryTabs } from "./pane/TerritoryTabs";
+import { TrainingList } from "./pane/TrainingList";
 import { PlannedOddsInfo, PlannedOrderOdds } from "./PlannedOrderOdds";
 
 /**
@@ -92,24 +93,22 @@ function OrderSummary({ session }: { readonly session: PlanningSession }): JSX.E
   const counts = orderCounts(session);
   return (
     <p className="pane-meta order-summary">
-      {`${String(counts.move)} moving, ${String(counts.entrench)} entrenching, ${String(counts.rest)} resting`}
+      {`${String(counts.move)} moving, ${counts.replenish > 0 ? `${String(counts.replenish)} replenishing, ` : ""}${String(counts.entrench)} entrenching, ${String(counts.rest)} resting`}
     </p>
   );
 }
 
+/** The Units tab: the player's armies here, then everyone else's. The heading sits above the tabs (`TerritoryHeading`). */
 function TerritoryDetails({ scenario, session, territoryId }: BuilderProps & { readonly territoryId: TerritoryId }): JSX.Element {
   const { factionId, game } = session;
   const unitsHere = Object.values(game.state.units).filter((unit) => unit.territoryId === territoryId);
   const own = unitsHere.filter((unit) => unit.factionId === factionId);
   const others = unitsHere.filter((unit) => unit.factionId !== factionId);
-  const cities = citiesIn(scenario, territoryId);
 
   return (
     <>
-      <h3>{territoryName(scenario, territoryId)}</h3>
-      <p className="pane-meta">{controlDescription(scenario, game.state.control[territoryId])}</p>
-      {cities.length === 0 ? null : <p className="pane-meta">{`Cities: ${cities.map((city) => city.name).join(", ")}`}</p>}
       {own.length === 0 ? null : <ArmyPicker own={own} scenario={scenario} session={session} />}
+      <TrainingList scenario={scenario} session={session} territoryId={territoryId} />
       {others.length === 0 ? null : (
         <div className="other-formations">
           <h4>Other armies here</h4>

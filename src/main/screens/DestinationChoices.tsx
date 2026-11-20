@@ -7,6 +7,7 @@ import { type DestinationEstimate, modifierPhrase, oddsSummary } from "../presen
 import { routeChips, routeChipText, routeDetail } from "../presentation/movement";
 import { territoryName } from "../presentation/text";
 import { clickMapTerritory } from "../state/gameSlice";
+import { WeatherChip } from "../components/weather/WeatherChip";
 import { RouteCard } from "./movement/RouteCard";
 import { RouteChips } from "./movement/RouteChips";
 import { OddsInfo } from "./OddsInfo";
@@ -49,8 +50,8 @@ export function DestinationChoices({ estimates, moves, scenario }: DestinationCh
           const route = moves?.routes.get(territoryId);
           const detail = estimateDetail(estimate);
           const routeLine = route === undefined || moves === undefined ? undefined : routeDetail(scenario, moves.state, route, moves.departuresUsed(route));
-          const chips = route === undefined || moves === undefined ? [] : routeChips(scenario, moves.state, route, moves.units, moves.allowance, estimate);
-          const describedBy = routeLine === undefined && chips.length === 0 ? undefined : `${listId}-${territoryId}`;
+          const chips = route === undefined || moves === undefined ? [] : routeChips(scenario, route, moves.units, moves.allowance, estimate);
+          const describedBy = moves === undefined ? undefined : `${listId}-${territoryId}`;
           return (
             <li className="destination-row" key={territoryId} onMouseEnter={() => setActive(territoryId)} onMouseLeave={() => setActive(undefined)}>
               <button
@@ -69,10 +70,10 @@ export function DestinationChoices({ estimates, moves, scenario }: DestinationCh
                 </span>
                 {detail === undefined ? null : <span className="destination-detail">{detail}</span>}
               </button>
-              {describedBy === undefined ? null : (
+              {describedBy === undefined || moves === undefined ? null : (
                 <div className="destination-route" id={describedBy}>
                   {routeLine === undefined ? null : <span className="destination-detail">{routeLine}</span>}
-                  <RouteChips chips={chips} />
+                  <RouteChips chips={chips} leading={<WeatherChip scenario={scenario} state={moves.state} territoryId={territoryId} />} />
                 </div>
               )}
               {active === territoryId && route !== undefined && moves !== undefined

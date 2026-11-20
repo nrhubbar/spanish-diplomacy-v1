@@ -1,5 +1,5 @@
-import { hookedSeaClosed } from "../hooks";
 import { neighborsOf } from "../lookup";
+import { isSeaRouteClosed } from "../weather";
 import type {
   ConnectionDefinition,
   FactionId,
@@ -224,9 +224,9 @@ export function portLandings(scenario: Scenario, level: number): number {
   return level * (scenario.movement?.landingsPerPortLevel ?? 1);
 }
 
-/** T4: the sea between two territories is closed this turn (winter Rain), by the weather module's hook. */
+/** T4: the sea between two territories is closed this turn (winter Rain on a touching coastal zone, `m3r1-weather-timer`). */
 export function seaClosed(scenario: Scenario, state: GameState, from: TerritoryId, to: TerritoryId): boolean {
-  return hookedSeaClosed({ from, scenario, state, to });
+  return isSeaRouteClosed(scenario, state, from, to);
 }
 
 /** M5: how a sea leg from `from` lands in `to`: in a friendly port, or as an amphibious assault. */

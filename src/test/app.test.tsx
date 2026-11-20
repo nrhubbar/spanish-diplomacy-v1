@@ -49,7 +49,7 @@ describe("application flow", () => {
     await user.click(screen.getByRole("button", { name: "Start Campaign" }));
     await screen.findByRole("application", { name: /map/ });
     expect(screen.getByRole("heading", { level: 1, name: "Republican Government" })).toBeVisible();
-    expect(screen.getByText(/Turn 1 . 31 July 1936/)).toBeVisible();
+    expect(screen.getByText(/Turn 1 . Late July 1936/)).toBeVisible();
 
     await user.click(region("madrid"));
     const pane = screen.getByRole("complementary", { name: "Orders" });
@@ -83,7 +83,7 @@ describe("application flow", () => {
     await user.click(within(report).getByRole("button", { name: "Start Next Turn" }));
     await screen.findByRole("application", { name: /map/ });
     expect(screen.getByText(/^Turn 2/)).toBeVisible();
-    expect(screen.queryByText(/31 July 1936/)).not.toBeInTheDocument();
+    expect(screen.getByText(/^Turn 2 . Early August 1936/)).toBeVisible();
   });
 
   it("selects every army by default and lets the player unselect before ordering", async () => {

@@ -46,8 +46,8 @@ describe("the turn pipeline (section 2)", () => {
     const draft = startDraft({ dice: () => seededRandom(1), scenario, seed: 1, start: initialGameState(scenario), streams: seededRollStreams(1, 1), submissions: [] });
     for (const phase of [weatherStep, airStep, trainingStep, incomeStep]) expect(phase(draft)).toBe(draft);
     const presets = new Set(ruleAreas.flatMap((area) => Object.values(builtInModuleRegistry.require(area, builtInModules[area][0]).steps)));
-    // Landed slices: movement (`allowance`).
-    const landed = new Set<string>(["movement"]);
+    // Landed slices: dice (m3r1-d20-combat) and movement (`allowance`), so their second modules are no longer skeletons.
+    const landed = new Set<string>(["dice", "movement"]);
     const skeletons = ruleAreas.filter((area) => !landed.has(area)).flatMap((area) => Object.values(builtInModuleRegistry.require(area, builtInModules[area][1]).steps)).filter((part) => !presets.has(part));
     expect(skeletons.length).toBeGreaterThan(5);
     for (const part of skeletons) expect(part(draft)).toBe(draft);

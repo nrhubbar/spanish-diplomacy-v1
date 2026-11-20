@@ -1,6 +1,7 @@
 import { type JSX, useId } from "react";
 import type { Scenario } from "../engine/types";
-import { type BattleExample, battleExample } from "../presentation/battleBasics";
+import { type BattleExample, battleExample, digRates } from "../presentation/battleBasics";
+import { usesD20 } from "../engine/d20/rules";
 import { percent } from "../presentation/odds";
 
 const counted = ["no", "one", "two", "three"];
@@ -9,7 +10,9 @@ const count = (n: number): string => counted[n] ?? String(n);
 /** The "How battles work" card in the Briefing: the rules in brief, then a worked example. */
 export function BattleBasics({ scenario }: { readonly scenario: Scenario }): JSX.Element {
   const headingId = useId();
-  const { demoralizationFactor, diggingIn } = scenario.combat;
+  const { demoralizationFactor } = scenario.combat;
+  const diggingIn = digRates(scenario);
+  const d20 = scenario.d20 !== undefined && usesD20(scenario) ? scenario.d20 : undefined;
   const example = battleExample(scenario);
   const weakened = demoralizationFactor === 0.5 ? "half its values" : `${percent(demoralizationFactor)} of its values`;
   return (
@@ -21,6 +24,11 @@ export function BattleBasics({ scenario }: { readonly scenario: Scenario }): JSX
           Moving into a territory another faction holds starts a battle. Your armies attacking it fight together, even from
           different territories, and the odds of attack against defence, with a roll of the die, decide the result.
         </li>
+        {d20 === undefined ? null : (
+          <li>
+            {`Battles roll a d20. Each result costs each side a share of its men, may demoralize some armies, and may take part or all of the territory. Attacking tires an army: at fatigue ${String(d20.fatigue.fatiguedLevel)} it fights Fatigued (${String(d20.modifiers.fatigued)}), and at ${String(d20.fatigue.demoralizedLevel)} it is demoralized. A quiet turn in uncontested ground rests it.`}
+          </li>
+        )}
         <li>Every army has one order each turn: Move, Entrench, or Rest. An army you do not move entrenches, or rests if it is demoralized.</li>
         <li>
           {`Entrenching armies dig the territory in: each turn shifts the die ${String(diggingIn.perTurn)} in the defenders' favour, up to ${String(diggingIn.max)}. `}

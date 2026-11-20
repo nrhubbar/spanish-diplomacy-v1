@@ -1,34 +1,38 @@
 import { standingOrder } from "../../engine/orders";
-import type { MoveOrder, Scenario, TerritoryId, UnitId, UnitState } from "../../engine/types";
+import type { MoveOrder, ReplenishOrder, Scenario, TerritoryId, UnitId, UnitState } from "../../engine/types";
 import type { MoveRoute } from "../../engine/movement/routes";
 import { legalDestinations } from "../../engine/validation";
 import { selectionRoutes } from "../../presentation/movement";
 import type { Draft, OrderKind, Session } from "../session";
 import { chooseDestination } from "./orders";
+import { canReplenishSelection, keepBasket } from "./recruitment";
 
 export type PlanningSession = Extract<Session, { readonly phase: "planning" }>;
 
 /** Menu order of the order types. */
-const menuOrder: readonly OrderKind[] = ["move", "entrench", "rest"];
+const menuOrder: readonly OrderKind[] = ["replenish", "move", "entrench", "rest"];
 
 /**
  * The order types offered for the selected armies, in menu order (O2): Move, plus Entrench when
  * every selected army is healthy or Rest when every one is demoralized. A mixed selection is
  * offered Move only, so a healthy army is never offered Rest.
  */
-export function orderKindsFor(session: PlanningSession): readonly OrderKind[] {
+export function orderKindsFor(session: PlanningSession, scenario?: Scenario): readonly OrderKind[] {
   const standing = new Set(selectedUnits(session).map(standingOrder));
-  return menuOrder.filter((kind) => kind === "move" || (standing.size === 1 && standing.has(kind)));
+  // R5 (m3r1-recruit-replenish): Replenish leads the menu when every selected unit may take it.
+  const replenish = scenario !== undefined && canReplenishSelection(scenario, session);
+  return menuOrder.filter((kind) => kind === "move" || (kind === "replenish" ? replenish : standing.size === 1 && standing.has(kind)));
 }
 
-/** The order an army has in the draft: its move, or else its standing order (O1, O5). */
+/** The order an army has in the draft: its move or Replenish, or else its standing order (O1, O5). */
 export function orderOf(session: PlanningSession, unit: UnitState): OrderKind {
-  return session.draft.orders.some((order) => order.unitId === unit.id) ? "move" : standingOrder(unit);
+  if (session.draft.orders.some((order) => order.unitId === unit.id)) return "move";
+  return session.draft.replenishments?.some((order) => order.unitId === unit.id) === true ? "replenish" : standingOrder(unit);
 }
 
-/** How many of the player's armies move, entrench, and rest under the draft. */
+/** How many of the player's armies move, replenish, entrench, and rest under the draft. */
 export function orderCounts(session: PlanningSession): Readonly<Record<OrderKind, number>> {
-  const counts: Record<OrderKind, number> = { entrench: 0, move: 0, rest: 0 };
+  const counts: Record<OrderKind, number> = { entrench: 0, move: 0, replenish: 0, rest: 0 };
   for (const unit of Object.values(session.game.state.units)) {
     if (unit.factionId === session.factionId) counts[orderOf(session, unit)] += 1;
   }
@@ -45,7 +49,8 @@ export function orderCounts(session: PlanningSession): Readonly<Record<OrderKind
  * order choice, so an order never applies to a stale selection.
  */
 export function withDraft(session: PlanningSession, draft: Draft): PlanningSession {
-  return { ...session, draft };
+  // The Recruit basket and Replenish orders outlive selection changes unless the new draft sets them.
+  return { ...session, draft: { ...keepBasket(session.draft), ...draft } };
 }
 
 export function feedback(session: PlanningSession, message: string): PlanningSession {
@@ -74,9 +79,14 @@ function ownUnitIdsIn(session: PlanningSession, territoryId: TerritoryId): reado
     .map((unit) => unit.id);
 }
 
-/** The player's armies in a territory that have no move order in `orders`. */
-export function availableUnitIds(session: PlanningSession, territoryId: TerritoryId, orders: readonly MoveOrder[]): readonly UnitId[] {
-  const ordered = new Set(orders.map((order) => order.unitId));
+/** The player's armies in a territory that have no move order in `orders`, nor a Replenish order (R5). */
+export function availableUnitIds(
+  session: PlanningSession,
+  territoryId: TerritoryId,
+  orders: readonly MoveOrder[],
+  replenishments: readonly ReplenishOrder[] = session.draft.replenishments ?? []
+): readonly UnitId[] {
+  const ordered = new Set([...orders, ...replenishments].map((order) => order.unitId));
   return ownUnitIdsIn(session, territoryId).filter((id) => !ordered.has(id));
 }
 

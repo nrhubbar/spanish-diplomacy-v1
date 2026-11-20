@@ -5,6 +5,8 @@ import type {
   GameState,
   MoveOrder,
   PlayerSubmission,
+  RecruitOrder,
+  ReplenishOrder,
   ScenarioId,
   SubTerritoryId,
   TerritoryId,
@@ -35,7 +37,7 @@ export interface GameRecord {
  * Every order an army can have (O1): a move, or the standing order it follows without one,
  * Entrench when healthy and Rest when demoralized. Only moves are submitted (O5).
  */
-export type OrderKind = MoveOrder["kind"] | StandingOrder;
+export type OrderKind = MoveOrder["kind"] | ReplenishOrder["kind"] | StandingOrder;
 
 /**
  * Where the player is in giving an order to the selected armies: choosing the order type,
@@ -51,6 +53,10 @@ export interface Draft {
   /** X3: the sub-territory the pane is focused on, inside the selected territory. */
   readonly focusedSubTerritoryId?: SubTerritoryId;
   readonly orders: readonly MoveOrder[];
+  /** X4, R2: the Recruit basket (m3r1-recruit-replenish). Carried through selection changes by `withDraft`. */
+  readonly recruits?: readonly RecruitOrder[];
+  /** R5: Replenish orders, one per unit, never alongside a move (m3r1-recruit-replenish). */
+  readonly replenishments?: readonly ReplenishOrder[];
   readonly selectedTerritoryId?: TerritoryId;
   readonly selectedUnitIds: readonly UnitId[];
   readonly stage?: OrderStage;

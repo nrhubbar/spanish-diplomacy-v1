@@ -1,6 +1,7 @@
 import { battleSide } from "../engine/combat";
 import { armyMovement, type MoveRoute, moveRoutes } from "../engine/movement/routes";
 import { portLandings, railDepartures } from "../engine/movement/network";
+import { weatherIn } from "../engine/weather";
 import type { FactionId, GameState, MoveOrder, Scenario, SubTerritoryId, TerritoryId, UnitId, UnitState } from "../engine/types";
 import { glyphs } from "./glyphs";
 import type { DestinationEstimate } from "./odds";
@@ -71,30 +72,21 @@ export interface RouteChip {
   readonly warn: boolean;
 }
 
-/** T3: the weather in a territory's zone this turn, when it has been rolled. */
-export function weatherIn(scenario: Scenario, state: GameState, territoryId: TerritoryId): string | undefined {
-  const zone = scenario.index.territories.get(territoryId)?.weatherZoneId;
-  const outcomeId = zone === undefined ? undefined : state.weather?.outcomes[zone];
-  return scenario.weather?.outcomes.find((outcome) => outcome.id === outcomeId)?.name;
-}
-
 function fatiguedUnits(scenario: Scenario, units: readonly UnitState[]): number {
   const level = scenario.d20?.fatigue.fatiguedLevel;
   return level === undefined ? 0 : units.filter((unit) => unit.fatigue >= level).length;
 }
 
-/** X5: the chips on a destination row: weather, terrain, fatigue, rail or sea, and moves left. */
+/** X5: the chips on a destination row: terrain, fatigue, rail or sea, transit and moves left (weather is `WeatherChip`). */
 export function routeChips(
   scenario: Scenario,
-  state: GameState,
   route: MoveRoute,
   units: readonly UnitState[],
   allowance: number,
   estimate: DestinationEstimate | undefined
 ): readonly RouteChip[] {
+  // The weather chip is `m3r1-weather-timer`'s `WeatherChip`, drawn beside these.
   const chips: RouteChip[] = [];
-  const weather = weatherIn(scenario, state, route.to);
-  if (weather !== undefined) chips.push({ kind: "weather", text: weather, warn: false });
   // A single step always fits (M1), so terrain is a cost only on a step or a march.
   for (const entry of route.shape === "step" || route.shape === "march" ? route.rough : []) {
     const terrain = scenario.index.subTerritories.get(entry)?.terrain ?? "mountain";
@@ -150,7 +142,7 @@ export function routeRows(scenario: Scenario, state: GameState, route: MoveRoute
   if (route.rail !== undefined) rows.push({ label: `Rail, level ${String(route.rail.level)}`, value: `${String(route.rail.crossings)} of ${String(route.rail.range)} borders` });
   if (route.sea?.kind === "amphibious") rows.push({ label: "Amphibious assault", value: signedRoll(scenario.d20?.modifiers.amphibious ?? 0) });
   const weather = weatherIn(scenario, state, route.to);
-  if (weather !== undefined) rows.push({ label: `Weather ${glyphs.dot} ${territoryName(scenario, route.to)}`, value: weather });
+  if (weather !== undefined) rows.push({ label: `Weather ${glyphs.dot} ${territoryName(scenario, route.to)}`, value: weather.name });
   return rows;
 }
 
