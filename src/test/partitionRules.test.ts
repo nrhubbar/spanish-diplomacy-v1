@@ -230,3 +230,13 @@ describe("partition helpers at their edges", () => {
     expect(routeNames(scenario, { through: [sub("nowhere")], to: territory("murcia") })).toEqual(["nowhere"]);
   });
 });
+
+describe("an enemy general alone in contested ground (B2, D27.1, M27)", () => {
+  it("does not stop the ground changing: the standing battle fights him", () => {
+    const scenario = spainD20();
+    const state = withUnits(scenario, [["rep-castilla-3", "republic", "extremadura"], ["north-general-mola", "north", "extremadura"]]);
+    const result = resolveTurn(scenario, state, [], 1, () => () => 0.9);
+    expect(result.outcomes.some((outcome) => outcome.kind === "battle" && "territoryId" in outcome.site && outcome.site.territoryId === "extremadura")).toBe(true);
+    expect(result.subTerritoryChanges.some((change) => change.subTerritoryId === "caceres" && change.after === "republic")).toBe(true);
+  });
+});
