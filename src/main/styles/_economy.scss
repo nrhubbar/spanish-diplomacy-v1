@@ -11,6 +11,12 @@
 // X1: Funds and Manpower chips with next turn's income.
 .resource-chip-wrap {
   position: relative;
+
+  // The first chip's detail opens rightwards, so it never leaves the screen on a phone.
+  &.resource-chip-first .resource-detail {
+    right: auto;
+    left: 0;
+  }
 }
 
 .resource-chip {
@@ -28,6 +34,10 @@
   font-weight: 650;
   white-space: nowrap;
   cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: var(--paper-deep);
+  }
 
   &[aria-expanded="true"] {
     border-color: var(--ink);
@@ -292,7 +302,6 @@
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  margin: 0 0 0.5rem;
   padding: 0.15rem 0.6rem;
   border: 1px solid var(--rule);
   border-radius: 999px;

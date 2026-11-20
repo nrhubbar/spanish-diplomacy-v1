@@ -5,6 +5,7 @@ import { deriveSeed, seededRandom } from "../engine/random";
 import { resolveTurn } from "../engine/resolution";
 import type { FactionId, PlayerSubmission, Scenario } from "../engine/types";
 import { validateSubmission } from "../engine/validation";
+import { beforePlanning } from "../engine/weather";
 import { emptyDraft, type GameRecord, localPlayerCount, type Session } from "./session";
 
 /**
@@ -13,7 +14,8 @@ import { emptyDraft, type GameRecord, localPlayerCount, type Session } from "./s
  * validation gateway as people. Bounded by the number of factions; never loops unboundedly.
  */
 export function advance(scenario: Scenario, game: GameRecord, fromFactionId?: FactionId): Session {
-  let current = game;
+  // Step 0 (T2, T3): the turn's weather is in the state before anyone plans. Idempotent.
+  let current = { ...game, state: beforePlanning(scenario, game.state, game.seed) };
   for (const [index, faction] of scenario.factions.entries()) {
     if (current.locked[faction.id] !== undefined) {
       continue;

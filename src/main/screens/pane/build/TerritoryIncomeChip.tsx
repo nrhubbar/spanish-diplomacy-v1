@@ -1,7 +1,7 @@
 import type { JSX } from "react";
 import { holdersIn, subTerritoriesOf } from "../../../engine/economy/holdings";
 import { subTerritoryYield } from "../../../engine/economy/income";
-import { addResources } from "../../../engine/economy/resources";
+import { sumResources } from "../../../engine/economy/resources";
 import type { FactionId, GameState, Scenario, TerritoryId } from "../../../engine/types";
 import { signedAmountText } from "../../../presentation/economy";
 import { factionName } from "../../../presentation/text";
@@ -17,7 +17,7 @@ export function TerritoryIncomeChip({ scenario, state, territoryId, viewer }: { 
   const holders = holdersIn(scenario, state.subTerritories, territoryId);
   if (holders.length === 0) return null;
   if (holders.length > 1) return <span className="income-chip income-chip-none"><EconomyIcon name="coin" />Contested: pays nobody</span>;
-  const total = addResources(...subTerritoriesOf(scenario, territoryId).flatMap((sub) => {
+  const total = sumResources(...subTerritoriesOf(scenario, territoryId).flatMap((sub) => {
     const site = state.subTerritories[sub.id];
     return site === undefined ? [] : [subTerritoryYield(scenario, site)];
   }));

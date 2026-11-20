@@ -1,5 +1,6 @@
 import { validateBuildOrder } from "./economy/catalogue";
 import { isNeighbor } from "./lookup";
+import { validateRecruitOrder, validateReplenishOrder } from "./recruitment/rules";
 import type {
   FactionId,
   GameState,
@@ -21,8 +22,20 @@ export const unavailableOrderReason = "This order is not available in this scena
  * TODO(m3r1-economy-builds), TODO(m3r1-sub-territories), TODO(m3r1-air-generals)).
  */
 export function validateOrder(scenario: Scenario, state: GameState, order: Order): ValidationResult {
-  if (order.kind === "build") return validateBuildOrder(scenario, state, order);
-  return order.kind === "move" ? validateMoveOrder(scenario, state, order) : { ok: false, reason: unavailableOrderReason };
+  switch (order.kind) {
+    case "move":
+      return validateMoveOrder(scenario, state, order);
+    // R2, R5: the recruitment module's orders (m3r1-recruit-replenish).
+    case "recruit":
+      return scenario.rules.recruitment === "none" ? { ok: false, reason: unavailableOrderReason } : validateRecruitOrder(scenario, state, order);
+    case "replenish":
+      return scenario.rules.recruitment === "none" ? { ok: false, reason: unavailableOrderReason } : validateReplenishOrder(scenario, state, order);
+    // $5: the economy module's Build orders (m3r1-economy-builds).
+    case "build":
+      return validateBuildOrder(scenario, state, order);
+    default:
+      return { ok: false, reason: unavailableOrderReason };
+  }
 }
 
 /** M23 (C6): why a demoralized army may not enter where another faction stands. */

@@ -1,6 +1,6 @@
-import { applyBuildOrder, isCapital, plannedSpend, projectCost, queuedLevel, siteRefusal, validateBuildOrder } from "../../engine/economy/catalogue";
+import { applyBuildOrder, isCapital, projectCost, queuedLevel, siteRefusal, validateBuildOrder } from "../../engine/economy/catalogue";
 import { holdersIn, subTerritoriesOf, territoriesHeldWhole } from "../../engine/economy/holdings";
-import { amountOf, subtractResources, treasuryOf } from "../../engine/economy/resources";
+import { amountOf, treasuryOf } from "../../engine/economy/resources";
 import type {
   BuildOrder,
   BuildProject,
@@ -13,6 +13,7 @@ import type {
   TerritoryId
 } from "../../engine/types";
 import type { OrderPlanner, PlanningContext } from "./planner";
+import { balanceLeft } from "./spending";
 
 /**
  * H5: the computer player's Build orders ($3-$5, $8). It builds only in territories it holds
@@ -42,7 +43,7 @@ interface Candidate {
 export const planBuilds: OrderPlanner<BuildOrder> = (context) => {
   const { factionId, scenario, state } = context;
   if (scenario.rules.economy === "none" || state.treasuries[factionId] === undefined) return [];
-  const left = subtractResources(treasuryOf(state, factionId), plannedSpend(scenario, context.planned));
+  const left = balanceLeft(context);
   const budget = scaleBalance(scenario, left, buildSpendShare);
   const candidates = [...candidatesFor(context)].sort((a, b) => b.score - a.score);
 

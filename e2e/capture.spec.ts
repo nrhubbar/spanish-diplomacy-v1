@@ -196,6 +196,13 @@ test("@capture combat presentation", async ({ page }) => {
   await battles.scrollIntoViewIfNeeded();
   await page.locator(".battle-report h3").evaluate((element) => { element.scrollIntoView({ block: "start" }); });
   await capture(page, "19a-battle-cards");
+  // D8: a d20 card shows the die, the modifiers and the score, then its column as bands.
+  const graded = page.locator('.battle-card[data-dice="d20"]').first();
+  if (await graded.count() > 0) {
+    if (await graded.getAttribute("open") === null) await graded.locator("summary").first().click();
+    await graded.locator(".battle-bands").first().evaluate((element) => { element.scrollIntoView({ block: "center" }); });
+    await capture(page, "20a-d20-battle-card");
+  }
   const threeSided = page.locator('.battle-card[data-sides="3"]').first();
   if (await threeSided.count() > 0) {
     if (await threeSided.getAttribute("open") === null) await threeSided.locator("summary").first().click();
@@ -227,22 +234,89 @@ test("@capture reduced counter in the fixture", async ({ page }) => {
   await capture(page, "17c-fixture-army-list");
 });
 
+test("@capture recruit and replenish", async ({ page }) => {
+  await page.goto("./");
+  await page.getByRole("button", { name: "Create Game" }).click();
+  await page.getByRole("button", { name: "Start Campaign" }).click();
+  await waitForMap(page);
+  const briefingToggle = page.getByRole("button", { exact: true, name: "Briefing" });
+  if (await page.getByRole("complementary", { name: "Briefing" }).isVisible()) await briefingToggle.click();
+
+  await page.locator('.map-region[data-territory-id="catalunya"]').focus();
+  await page.keyboard.press("Enter");
+  await page.getByRole("tab", { name: "Recruit" }).click();
+  await page.getByRole("button", { name: "One more Infantry regiment" }).click();
+  await page.getByRole("button", { name: "One more Militia column" }).click();
+  await capture(page, "20a-recruit-tab");
+  const locked = page.locator('.recruit-row[data-locked="true"]').first();
+  await locked.scrollIntoViewIfNeeded();
+  await locked.hover();
+  await capture(page, "20b-recruit-locked-details");
+  await page.getByRole("tab", { name: "Units" }).click();
+  await page.locator(".training-list").scrollIntoViewIfNeeded();
+  await capture(page, "20c-units-in-training");
+
+  await page.locator('.map-region[data-territory-id="cantabria"]').focus();
+  await page.keyboard.press("Enter");
+  await page.getByRole("tab", { name: "Recruit" }).click();
+  await capture(page, "20d-recruit-tab-provincial");
+});
+
+test("@capture weather and turn timer", async ({ page }) => {
+  // The clock is Playwright's, so the countdown is the same on every run.
+  await page.clock.install();
+  await page.goto("./");
+  await page.getByRole("button", { name: "Create Game" }).click();
+  await page.getByRole("radio", { name: "5 min" }).check();
+  await capture(page, "20a-setup-timer");
+  await page.getByRole("button", { name: "Start Campaign" }).click();
+  await waitForMap(page);
+  const hide = page.getByRole("button", { name: /Hide (orders|briefing)/ });
+  const toggle = page.getByRole("button", { exact: true, name: "Briefing" });
+  if (await toggle.isVisible() && await toggle.getAttribute("aria-pressed") === "true") await toggle.click();
+  await page.locator('.map-region[data-territory-id="catalunya"]').focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("timer")).toBeVisible();
+  await capture(page, "20b-planning-timer-weather");
+  await page.locator('.map-region[data-territory-id="madrid"]').focus();
+  await page.keyboard.press("Enter");
+  await page.getByRole("button", { name: "Give Selected Armies Order" }).click();
+  await page.getByRole("button", { exact: true, name: "Move" }).click();
+  await capture(page, "20c-destination-weather");
+  await page.getByRole("button", { name: "Pause the turn timer" }).click();
+  await expect(page.getByRole("dialog", { name: "Paused" })).toBeVisible();
+  await capture(page, "20d-paused");
+  await page.getByRole("button", { name: "Resume" }).click();
+  await page.clock.fastForward("09:52");
+  await expect(page.getByRole("timer")).toHaveAttribute("aria-label", /0:0\d/);
+  await capture(page, "20e-ten-seconds");
+  await page.clock.fastForward("00:15");
+  await waitForMap(page);
+  const report = page.getByRole("button", { name: "Turn report", exact: true });
+  if (await report.isVisible()) await report.click();
+  await page.getByRole("heading", { name: "Conditions" }).scrollIntoViewIfNeeded();
+  await capture(page, "20f-time-ran-out");
+  if (await hide.isVisible()) await hide.click();
+});
+
 test("@capture economy: resource chips, Build tab and the focused build list", async ({ page }) => {
   await page.goto("./");
   await page.getByRole("button", { name: "Create Game" }).click();
   await page.getByRole("button", { name: "Start Campaign" }).click();
   await waitForMap(page);
+  const briefingToggle = page.getByRole("button", { exact: true, name: "Briefing" });
+  if (await page.getByRole("complementary", { name: "Briefing" }).isVisible()) await briefingToggle.click();
   await page.locator('.map-region[data-territory-id="catalunya"]').focus();
   await page.keyboard.press("Enter");
   const orders = page.getByRole("button", { name: "Orders", exact: true });
   if (await orders.isVisible()) await orders.click();
   await page.getByRole("tab", { name: "Build" }).click();
-  await capture(page, "20a-build-tab");
+  await capture(page, "21a-build-tab");
   await page.getByRole("button", { name: "Build in Barcelona" }).click();
-  await capture(page, "20b-build-focus");
+  await capture(page, "21b-build-focus");
   await page.getByRole("button", { name: /^Queue / }).first().click();
   await page.locator(".site-queue").first().evaluate((element) => { element.scrollIntoView({ block: "center" }); });
-  await capture(page, "20c-build-queued");
+  await capture(page, "21c-build-queued");
   await page.locator(".resource-chip").first().click();
-  await capture(page, "20d-resource-detail");
+  await capture(page, "21d-resource-detail");
 });

@@ -1,6 +1,9 @@
 import { requireUnitState } from "../lookup";
 import type { BattleSide, FactionId, GameState, Scenario, TerritoryId, UnitId } from "../types";
-import { type BattleOdds, battleOdds, situationalModifiers } from "./odds";
+import { estimateGradedBattle, type GradedEstimate, gradedOddsForValues } from "../d20/estimate";
+import type { GradedOdds } from "../d20/odds";
+import { usesD20 } from "../d20/rules";
+import { type BattleContext, type BattleOdds, battleOdds, situationalModifiers } from "./odds";
 import { battleSide } from "./values";
 
 /** What a move into a territory would meet, judged from the start-of-turn state. */
@@ -9,7 +12,9 @@ export type AttackEstimate =
   | { readonly kind: "reinforcement" }
   /** No army of another faction is there; the move is unopposed unless another faction also enters. */
   | { readonly kind: "unopposed" }
-  | (BattleOdds & { readonly attacker: BattleSide; readonly defender: BattleSide; readonly kind: "battle" });
+  | (BattleOdds & { readonly attacker: BattleSide; readonly defender: BattleSide; readonly kind: "battle" })
+  /** D1-D8: the same on the d20, with grade chances in place of d6 results. */
+  | GradedEstimate;
 
 /**
  * C15: the odds and the chance to take a territory if `unitIds` of `factionId` attack it,
@@ -37,6 +42,7 @@ export function estimateAttack(
   if (present.length === 0) {
     return { kind: "unopposed" };
   }
+  if (usesD20(scenario)) return estimateGradedBattle(scenario, state, factionId, unitIds, targetTerritoryId);
   const attacker = battleSide(scenario, attackers, "attack");
   const defender = battleSide(scenario, present, "defence");
   const situational = situationalModifiers(scenario, state, {
@@ -51,4 +57,13 @@ export function estimateAttack(
     defender,
     kind: "battle"
   };
+}
+
+/**
+ * C15: the odds for bare side values under the scenario's dice, d6 or d20, with the situational
+ * modifiers of `context`. The computer player's threat checks use it.
+ */
+export function oddsForValues(scenario: Scenario, state: GameState, context: BattleContext, attack: number, defence: number): BattleOdds | GradedOdds {
+  if (usesD20(scenario)) return gradedOddsForValues(scenario, state, context, attack, defence);
+  return battleOdds(scenario.combat, attack, defence, situationalModifiers(scenario, state, context));
 }

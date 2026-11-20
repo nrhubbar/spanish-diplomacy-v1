@@ -1,14 +1,17 @@
 import type { JSX } from "react";
-import { type BattleResult, type D6BattleOutcome, type FactionId, isD6Battle, type TerritoryId, type TurnOutcome } from "../engine/types";
-import { affectedFaction, battleKind } from "../presentation/battle";
+import type { BattleOutcome, FactionId, Scenario, TerritoryId, TurnOutcome } from "../engine/types";
+import { battleKind } from "../presentation/battle";
+import { isBattle } from "../presentation/grades";
 import { medallionMarkup } from "../presentation/outcomeArt";
 import type { MapPoint } from "../scenarios/loader";
-import { arrowHead, groupRoutes, laneBend, pointOnCurve, type RouteGroup, routeCurve, shortenCurve } from "./routes";
+import { arrowHead, groupRoutes, laneBend, pointOnCurve, type RouteBattle, routeBattle, type RouteGroup, routeCurve, shortenCurve } from "./routes";
 import type { MapView } from "./view";
 
 interface RouteLayerProps {
   readonly anchor: (id: TerritoryId) => MapPoint;
   readonly factionColor: (id: FactionId) => string;
+  /** Names d20 grades (D8); optional so d6-only callers need not pass it. */
+  readonly scenario?: Scenario;
   /** Map units per screen pixel. */
   readonly unit: number;
   readonly view: MapView;
@@ -18,18 +21,18 @@ interface RouteLayerProps {
  * Planned moves and last turn's results, one route per group (V10). Battles fought where nobody
  * moved (standing battles, M27) are marked at the territory instead.
  */
-export function RouteLayer({ anchor, factionColor, unit, view }: RouteLayerProps): JSX.Element {
+export function RouteLayer({ anchor, factionColor, scenario, unit, view }: RouteLayerProps): JSX.Element {
   return (
     <g className="map-routes" aria-hidden="true">
-      {groupRoutes(view.plannedOrders, view.outcomes).map((route) => (
+      {groupRoutes(view.plannedOrders, view.outcomes, scenario).map((route) => (
         <Route anchor={anchor} factionColor={factionColor} key={route.key} route={route} unit={unit} />
       ))}
       {standingBattles(view.outcomes).map(({ battle, territoryId }) => (
         <BattleMark
           at={anchor(territoryId)}
           key={`standing-${territoryId}-${battle.attackerFactionId}`}
-          result={battle.result}
-          ring={factionColor(affectedFaction(battle))}
+          mark={routeBattle(battle, scenario)}
+          ring={factionColor(routeBattle(battle, scenario).affectedFactionId)}
           unit={unit}
         />
       ))}
@@ -38,22 +41,25 @@ export function RouteLayer({ anchor, factionColor, unit, view }: RouteLayerProps
 }
 
 /** M27 battles, fought where the armies stood; they have no route, so they are marked in place. */
-function standingBattles(outcomes: readonly TurnOutcome[]): readonly { readonly battle: D6BattleOutcome; readonly territoryId: TerritoryId }[] {
+function standingBattles(outcomes: readonly TurnOutcome[]): readonly { readonly battle: BattleOutcome; readonly territoryId: TerritoryId }[] {
   return outcomes.flatMap((outcome) =>
-    isD6Battle(outcome) && outcome.site.kind !== "meeting" && battleKind(outcome) === "standing"
+    isBattle(outcome) && outcome.site.kind !== "meeting" && battleKind(outcome) === "standing"
       ? [{ battle: outcome, territoryId: outcome.site.territoryId }]
       : []);
 }
 
 /** A battle medallion just above a territory's counters. */
-function BattleMark({ at, result, ring, unit }: { readonly at: MapPoint; readonly result: BattleResult; readonly ring: string; readonly unit: number }): JSX.Element {
+function BattleMark({ at, mark, ring, unit }: { readonly at: MapPoint; readonly mark: RouteBattle; readonly ring: string; readonly unit: number }): JSX.Element {
   return (
-    <g
-      className="map-outcome map-outcome-battle"
-      dangerouslySetInnerHTML={{ __html: medallionMarkup(result, ring) }}
-      data-battle-result={result}
-      transform={`translate(${String(at.x)} ${String(at.y - 14 * unit)}) scale(${String(unit)})`}
-    />
+    <g className="map-outcome-hover" transform={`translate(${String(at.x)} ${String(at.y - 14 * unit)}) scale(${String(unit)})`}>
+      <title>{mark.title}</title>
+      <g
+        className="map-outcome map-outcome-battle"
+        dangerouslySetInnerHTML={{ __html: medallionMarkup(mark.result, ring) }}
+        data-battle-result={mark.result}
+        data-battle-title={mark.title}
+      />
+    </g>
   );
 }
 
@@ -104,13 +110,16 @@ function Route({ anchor, factionColor: colorOf, route, unit }: RouteProps): JSX.
       {route.battle === undefined ? (
         <RouteMedallion center={middle} factionColor={factionColor} kind={route.kind} unit={unit} />
       ) : (
-        <g
-          className="map-outcome map-outcome-battle"
-          dangerouslySetInnerHTML={{ __html: medallionMarkup(route.battle.result, colorOf(route.battle.affectedFactionId)) }}
-          data-battle-result={route.battle.result}
-          data-faction-mark=""
-          transform={`translate(${String(middle.x)} ${String(middle.y)}) scale(${String(unit)})`}
-        />
+        <g className="map-outcome-hover" transform={`translate(${String(middle.x)} ${String(middle.y)}) scale(${String(unit)})`}>
+          <title>{route.battle.title}</title>
+          <g
+            className="map-outcome map-outcome-battle"
+            dangerouslySetInnerHTML={{ __html: medallionMarkup(route.battle.result, colorOf(route.battle.affectedFactionId)) }}
+            data-battle-result={route.battle.result}
+            data-battle-title={route.battle.title}
+            data-faction-mark=""
+          />
+        </g>
       )}
       {route.count > 1 ? (
         <g className="map-route-badge" transform={`translate(${String(badge.x)} ${String(badge.y)}) scale(${String(unit)})`}>

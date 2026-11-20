@@ -14,7 +14,7 @@ import type {
   ValidationResult
 } from "../types";
 import { isContested } from "./holdings";
-import { addResources, canAfford, shortfall, subtractResources } from "./resources";
+import { sumResources, canAfford, shortfall, subtractResources } from "./resources";
 
 /**
  * $3-$5: what a sub-territory may build, what each project costs, and whether a Build order is
@@ -184,7 +184,7 @@ export function withBuildOrders<S extends EconomyState>(scenario: Scenario, stat
 
 /** What a list of planned orders costs at step 1: Build orders and Recruit orders (R2). */
 export function plannedSpend(scenario: Scenario, orders: readonly Order[]): Resources {
-  return addResources(...orders.flatMap((order): Resources[] => {
+  return sumResources(...orders.flatMap((order): Resources[] => {
     if (order.kind === "build") {
       const cost = projectCost(scenario, order.project);
       return cost === undefined ? [] : [cost.cost];

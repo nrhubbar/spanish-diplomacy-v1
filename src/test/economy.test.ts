@@ -4,7 +4,7 @@ import { buildingCombatModifiers, buildingReplenishBonus } from "../main/engine/
 import { isContested, territoriesHeldWhole, wholeHolder } from "../main/engine/economy/holdings";
 import { incomeFor, subTerritoryYield } from "../main/engine/economy/income";
 import { advanceQueues, damageRail, handOverQueues } from "../main/engine/economy/queues";
-import { addResources, canAfford, credit, isEmptyAmount, pay, shortfall, subtractResources } from "../main/engine/economy/resources";
+import { sumResources, canAfford, credit, isEmptyAmount, pay, shortfall, subtractResources } from "../main/engine/economy/resources";
 import type { SystemState } from "../main/engine/phases/draft";
 import { initialGameState, resolveTurn } from "../main/engine/resolution";
 import type {
@@ -55,7 +55,7 @@ const start = (): GameState => initialGameState(scenario);
 
 describe("resource arithmetic ($1)", () => {
   it("adds, subtracts, checks and pays", () => {
-    expect(addResources(funds(2), funds(3), { ["manpower" as never]: 1 })).toEqual({ funds: 5, manpower: 1 });
+    expect(sumResources(funds(2), funds(3), { ["manpower" as never]: 1 })).toEqual({ funds: 5, manpower: 1 });
     expect(subtractResources(funds(2), funds(3))).toEqual({ funds: -1 });
     expect(canAfford(funds(4), funds(4))).toBe(true);
     expect(canAfford({}, funds(1))).toBe(false);
@@ -106,7 +106,7 @@ describe("income ($2, $3)", () => {
     const state = start();
     const preview = incomeFor(scenario, state, faction("red")).paid;
     const result = resolveTurn(scenario, state, [], 7);
-    expect(result.finalState.treasuries[faction("red")]).toEqual(addResources(state.treasuries[faction("red")]!, preview));
+    expect(result.finalState.treasuries[faction("red")]).toEqual(sumResources(state.treasuries[faction("red")]!, preview));
     expect(result.outcomes.flatMap((outcome) => (outcome.kind === "income" ? [outcome.factionId] : []))).toEqual(["red", "blue"]);
   });
 });

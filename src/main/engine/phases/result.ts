@@ -1,4 +1,5 @@
 import { battleOutcome, type PendingBattle } from "../battle";
+import { gradedOutcome, isGradedBattle } from "../d20/battle";
 import { diffCities, diffControl } from "../control";
 import type { Settled } from "../retreat";
 import type {
@@ -62,7 +63,8 @@ function withDepartures(pending: PendingBattle, settled: readonly Settled[]): Ba
   const retreats = mine.flatMap((entry): Retreat[] =>
     entry.kind === "retreated" ? [{ from: entry.leaving.from, to: entry.to, unitId: entry.leaving.unitId }] : []);
   const surrenderedUnitIds = mine.flatMap((entry) => (entry.kind === "surrendered" ? [entry.leaving.unitId] : []));
-  return battleOutcome(pending.battle, pending.site, { ...pending.report, retreats, surrenderedUnitIds });
+  const report = { ...pending.report, retreats, surrenderedUnitIds };
+  return isGradedBattle(pending.battle) ? gradedOutcome(pending.battle, pending.site, report) : battleOutcome(pending.battle, pending.site, report);
 }
 
 /** M19, M21: an entry tie bounces without a battle; the move reports where its army ended. */

@@ -1,7 +1,7 @@
 import { hookedIncome } from "../hooks";
 import type { FactionId, GameState, ResourceId, Resources, Scenario, SubTerritoryId, SubTerritoryState } from "../types";
 import { subTerritoriesOf, territoriesHeldWhole } from "./holdings";
-import { addResources, subtractResources } from "./resources";
+import { sumResources, subtractResources } from "./resources";
 
 /**
  * $2, $3: income is the sum of the development of the sub-territories in the territories a
@@ -36,7 +36,7 @@ export interface IncomeBreakdown {
 export function incomeFor(scenario: Scenario, state: GameState, factionId: FactionId): IncomeBreakdown {
   const subTerritoryIds = territoriesHeldWhole(scenario, state.subTerritories, factionId)
     .flatMap((territoryId) => subTerritoriesOf(scenario, territoryId).map((sub) => sub.id));
-  const gross = addResources(...subTerritoryIds.flatMap((id) => {
+  const gross = sumResources(...subTerritoryIds.flatMap((id) => {
     const site = state.subTerritories[id];
     return site === undefined ? [] : [subTerritoryYield(scenario, site)];
   }));

@@ -20,14 +20,16 @@ function Chips({ scenario, state, viewer }: HeaderSlotProps): JSX.Element | null
   // state (income reads only public data and the viewer's own hooks) and this turn's planned
   // builds (the viewer's own). The filtered `state` prop is rebuilt on every selection.
   const record = useAppSelector((root) => ("game" in root.game.session ? root.game.session.game.state : undefined));
-  const builds = useAppSelector((root) => (root.game.session.phase === "planning" ? root.game.session.builds : undefined));
+  const builds = useAppSelector((root) => (root.game.session.phase === "planning" ? root.game.session.draft.builds : undefined));
+  const recruits = useAppSelector((root) => (root.game.session.phase === "planning" ? root.game.session.draft.recruits : undefined));
   const source = record?.turnNumber === state.turnNumber ? record : state;
   const [open, setOpen] = useState<ResourceId | undefined>(undefined);
   const id = useId();
   const income = useMemo(() => (viewer === undefined || scenario.rules.economy === "none" ? undefined : incomeFor(scenario, source, viewer)), [scenario, source, viewer]);
   if (viewer === undefined || income === undefined || state.treasuries[viewer] === undefined) return null;
   const balance = treasuryOf(state, viewer);
-  const spend = plannedSpend(scenario, builds ?? []);
+  // Builds and Recruit orders; Replenish prices are left to the Recruit tab's basket line.
+  const spend = plannedSpend(scenario, [...(builds ?? []), ...(recruits ?? [])]);
   const whole = open === undefined ? 0 : territoriesHeldWhole(scenario, source.subTerritories, viewer).length;
   const contested = open === undefined ? 0 : scenario.territories.filter((territory) => {
     const holders = holdersIn(scenario, source.subTerritories, territory.id);
@@ -37,12 +39,12 @@ function Chips({ scenario, state, viewer }: HeaderSlotProps): JSX.Element | null
 
   return (
     <>
-      {scenario.resources.map((resource) => {
+      {scenario.resources.map((resource, index) => {
         const expanded = open === resource.id;
         const gain = amountOf(income.paid, resource.id);
         const spent = amountOf(spend, resource.id);
         return (
-          <div className="resource-chip-wrap header-meter" key={resource.id}>
+          <div className={`resource-chip-wrap header-meter${index === 0 ? " resource-chip-first" : ""}`} key={resource.id}>
             <button
               aria-controls={`${id}-${resource.id}`}
               aria-expanded={expanded}

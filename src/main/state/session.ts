@@ -6,6 +6,8 @@ import type {
   GameState,
   MoveOrder,
   PlayerSubmission,
+  RecruitOrder,
+  ReplenishOrder,
   ScenarioId,
   SubTerritoryId,
   TerritoryId,
@@ -36,7 +38,7 @@ export interface GameRecord {
  * Every order an army can have (O1): a move, or the standing order it follows without one,
  * Entrench when healthy and Rest when demoralized. Only moves are submitted (O5).
  */
-export type OrderKind = MoveOrder["kind"] | StandingOrder;
+export type OrderKind = MoveOrder["kind"] | ReplenishOrder["kind"] | StandingOrder;
 
 /**
  * Where the player is in giving an order to the selected armies: choosing the order type,
@@ -48,10 +50,16 @@ export type OrderStage =
 
 /** The current local player's private working set. */
 export interface Draft {
+  /** $5: Build orders planned this turn (m3r1-economy-builds, `planning/builds.ts`). Carried through selection changes by `keepBasket`. */
+  readonly builds?: readonly BuildOrder[];
   readonly feedback?: string;
   /** X3: the sub-territory the pane is focused on, inside the selected territory. */
   readonly focusedSubTerritoryId?: SubTerritoryId;
   readonly orders: readonly MoveOrder[];
+  /** X4, R2: the Recruit basket (m3r1-recruit-replenish). Carried through selection changes by `withDraft`. */
+  readonly recruits?: readonly RecruitOrder[];
+  /** R5: Replenish orders, one per unit, never alongside a move (m3r1-recruit-replenish). */
+  readonly replenishments?: readonly ReplenishOrder[];
   readonly selectedTerritoryId?: TerritoryId;
   readonly selectedUnitIds: readonly UnitId[];
   readonly stage?: OrderStage;
@@ -71,14 +79,7 @@ export type Session =
       readonly game: GameRecord;
       readonly phase: "handoff";
     }
-  | {
-      /** $5: Build orders planned this turn (`planning/builds.ts`), kept apart from the draft that selection rebuilds. */
-      readonly builds?: readonly BuildOrder[];
-      readonly draft: Draft;
-      readonly factionId: FactionId;
-      readonly game: GameRecord;
-      readonly phase: "planning";
-    }
+  | { readonly draft: Draft; readonly factionId: FactionId; readonly game: GameRecord; readonly phase: "planning" }
   | { readonly game: GameRecord; readonly phase: "resolution"; readonly result: TurnResolutionResult }
   | { readonly game: GameRecord; readonly phase: "game-over"; readonly result: TurnResolutionResult };
 
