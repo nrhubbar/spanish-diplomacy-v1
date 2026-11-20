@@ -1,3 +1,5 @@
+import { unitTypeIn } from "./air/pieces";
+import { validateAirMission, validateSack } from "./air/validation";
 import { isNeighbor } from "./lookup";
 import type {
   FactionId,
@@ -20,6 +22,9 @@ export const unavailableOrderReason = "This order is not available in this scena
  * TODO(m3r1-economy-builds), TODO(m3r1-sub-territories), TODO(m3r1-air-generals)).
  */
 export function validateOrder(scenario: Scenario, state: GameState, order: Order): ValidationResult {
+  // U2, U5: air missions and sackings (m3r1-air-generals).
+  if (order.kind === "air-mission") return validateAirMission(scenario, state, order);
+  if (order.kind === "sack") return validateSack(scenario, state, order);
   return order.kind === "move" ? validateMoveOrder(scenario, state, order) : { ok: false, reason: unavailableOrderReason };
 }
 
@@ -41,6 +46,10 @@ export function validateMoveOrder(
   }
   if (unit.territoryId !== order.from) {
     return { ok: false, reason: "Selected unit is no longer in that territory." };
+  }
+  // W5: a unit takes only the order kinds its type allows (aircraft fly missions, they do not march).
+  if (!(unitTypeIn(scenario, state.raised, unit.id)?.orders.includes("move") ?? true)) {
+    return { ok: false, reason: "This unit cannot move." };
   }
   if (order.from === order.to) {
     return { ok: false, reason: "Choose a different territory as the destination." };

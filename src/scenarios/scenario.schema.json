@@ -3451,6 +3451,12 @@
               "exclusiveMinimum": 0,
               "maximum": 9007199254740991
             },
+            "generalDeathRoll": {
+              "description": "U5: a general whose army is destroyed or routed dies on a d20 at or under this.",
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 20
+            },
             "sources": {
               "default": [],
               "description": "Citations for the numbers.",

@@ -1,3 +1,4 @@
+import type { TurnScratch } from "./phases/draft";
 import type {
   CombatModifier,
   FactionId,
@@ -30,6 +31,8 @@ export interface CombatHookContext extends HookContext {
   readonly attackerUnitIds?: readonly UnitId[];
   readonly defenderFactionIds: readonly FactionId[];
   readonly diggingIn: boolean;
+  /** The turn's scratch while a turn resolves (bombers on support, generals on the move); absent for planning estimates. */
+  readonly scratch?: TurnScratch;
   readonly territoryId: TerritoryId;
 }
 

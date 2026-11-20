@@ -6,5 +6,7 @@ export const airLines: Readonly<Record<AirTurnOutcome["kind"], string>> = {
   grounded: "An aircraft could not fly.",
   interception: "Fighters intercepted a raid.",
   raid: "Aircraft raided a province.",
-  recon: "Aircraft flew a reconnaissance mission."
+  recon: "Aircraft flew a reconnaissance mission.",
+  "aircraft-lost": "An aircraft lost its airfield and was destroyed on the ground.",
+  "aircraft-rebased": "An aircraft lost its airfield and flew to another."
 };

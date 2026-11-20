@@ -1,29 +1,32 @@
+import { airHooks } from "../air/hooks";
+import { flyAirMissions, setAside } from "../air/missions";
+import type { AirScratch } from "../air/scratch";
+import { commandChanges, expireAirEffects } from "../generals/changes";
 import type { RuleModule } from "../modules";
-import type { AirMissionOrder } from "../types";
-import type { Phase } from "../phases/draft";
 
 declare module "../phases/draft" {
   interface TurnScratch {
-    /** The air area's turn-only data. TODO(m3r1-air-generals): shape it as the slice needs. */
-    readonly air?: {
-      /** D7: bombers flying battle support, set at step 2 and read by the battle parts. */
-      readonly support: readonly AirMissionOrder[];
-    };
+    /** The air area's turn-only data (`air/scratch.ts`). */
+    readonly air?: AirScratch;
   }
 }
 
-/** TODO(m3r1-air-generals): recon, interception and raids from the `raid` stream; support missions recorded for the dice part to read (U2-U4, D7). */
-const flyAirMissions: Phase = (draft) => draft;
-/** TODO(m3r1-air-generals): general deaths from the `general-death` stream, rallies, replacements (U5, D7). */
-const commandChanges: Phase = (draft) => draft;
-/** TODO(m3r1-air-generals): raid income cuts, after the economy's income part (U3). */
-const cutIncome: Phase = (draft) => draft;
-
 /**
- * The air area's modules (U1-U6). Generals have no area of their own (CT-4), so their step-9
- * part lives here with the stream that owns them. Pass-through parts until the slice lands.
+ * The air area's modules (U1-U6). Generals have no area of their own (CT-4), so their parts live
+ * here with the stream that owns them:
+ * - step 1: sackings, and aircraft and generals set aside from the ground steps (AG-3);
+ * - step 2: recon, interception, raids, and bombers assigned to battle support;
+ * - step 5: support and generals reach the battles through the `combatModifiers` hook;
+ * - step 9: aircraft and generals back on the board, rebasing, general deaths, rallies, replacements;
+ * - step 11: raid cuts (through the `incomeDelta` hook) and recon reveals expire.
  */
 export const airModules: readonly RuleModule[] = [
   { area: "air", blocks: [], id: "none", steps: {} },
-  { area: "air", blocks: ["air"], id: "missions", steps: { air: flyAirMissions, income: cutIncome, morale: commandChanges } }
+  {
+    area: "air",
+    blocks: ["air"],
+    hooks: airHooks,
+    id: "missions",
+    steps: { air: flyAirMissions, income: expireAirEffects, morale: commandChanges, reveal: setAside }
+  }
 ];

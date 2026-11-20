@@ -1,5 +1,6 @@
 import { hookedCombatModifiers } from "../hooks";
 import { citiesIn } from "../lookup";
+import type { TurnScratch } from "../phases/draft";
 import type { BattleResult, CombatModifier, CombatRole, CombatRules, FactionId, FactionModifier, GameState, ModifierCondition, Scenario, TerritoryId } from "../types";
 import { dieFaces, isSuccessful, lastColumn, lastRow, requireSideValue } from "./values";
 
@@ -57,6 +58,8 @@ export interface BattleContext {
   readonly defenderFactionIds: readonly FactionId[];
   /** Whether the territory's works count: false for empty-territory entries (M19). */
   readonly diggingIn: boolean;
+  /** The turn's scratch, passed on to the hooks while a turn resolves (air support, generals). */
+  readonly scratch?: TurnScratch;
   readonly territoryId: TerritoryId;
 }
 
