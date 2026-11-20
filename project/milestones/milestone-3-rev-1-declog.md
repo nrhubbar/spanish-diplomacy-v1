@@ -130,3 +130,13 @@ The owner's answer to Q-MR-10 was to leave the South poor and, if needed, raise 
 - an order-validation hook per module;
 - a report-line API that takes the whole outcome;
 - an AI profile field for the build budget.
+
+**D20. Sub-territories merged, reconciled with economy.** `m3r1-sub-territories` (`744c51e`) merged into `milestone-3-rev-1` with no conflicts; typecheck and lint pass. Before the merge, the stream reconciled with economy:
+- **Rail damage:** applied once, at economy's step 10. The two rules were the same.
+- **Focus view:** economy's `BuildList` is mounted there.
+- **Contested and held-whole:** one implementation, `engine/partition/holders.ts`. Economy's helpers delegate to it.
+- **Captures:** renumbered `22a` to `22e`.
+
+A new red for make-it-fast: the smoke determinism test times out (76 s against 15 s). Games now run longer, and the computer player's attack estimates (`bestAttackOn`, `estimateGradedBattle`) take about 170 ms of planning a turn by turn 20.
+
+Merge order for the last two streams: air-generals, then movement-rail-ports. Each merges the integration branch first and keeps one Withdraw implementation and one contested test. Capture numbers: economy `21`, sub-territories `22`, movement `23`, air-generals `24`.
