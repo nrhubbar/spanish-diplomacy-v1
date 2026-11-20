@@ -1,3 +1,5 @@
+import { updateGradedMorale } from "../d20/morale";
+import { fightGradedBattles, fightGradedMeetings, fightGradedStanding } from "../d20/phases";
 import type { RuleModule } from "../modules";
 import { fightMeetings } from "../phases/04-meetings";
 import { fightBattles } from "../phases/05-battles";
@@ -8,12 +10,14 @@ import { updateMorale } from "../phases/09-morale";
 const d6Steps = { battles: fightBattles, meetings: fightMeetings, morale: updateMorale, standing: fightStandingBattles };
 
 /**
- * The dice area's modules (D1-D8, C2-C7). TODO(m3r1-d20-combat): give `d20-graded` its own
- * parts here: the graded meetings, battles and standing battles, and a morale part with fatigue
- * (C6). Weather's "no digging in" (T4) must be read inside that morale part from
- * `systems.weather`, because parts run in area order and weather's own parts run after dice's.
+ * The d20's parts (D1-D8, C2-C7, U6, `engine/d20/`): graded meetings, battles and standing
+ * battles, and a morale part with fatigue, rest and digging in at the d20's rates. Weather's "no
+ * digging in" (T4) reaches the morale part through the `canDigIn` hook.
  */
+const d20Steps = { battles: fightGradedBattles, meetings: fightGradedMeetings, morale: updateGradedMorale, standing: fightGradedStanding };
+
+/** The dice area's modules (D1-D8, C2-C7). */
 export const diceModules: readonly RuleModule[] = [
   { area: "dice", blocks: [], id: "d6-table", steps: d6Steps },
-  { area: "dice", blocks: ["d20"], id: "d20-graded", steps: d6Steps }
+  { area: "dice", blocks: ["d20"], id: "d20-graded", steps: d20Steps }
 ];

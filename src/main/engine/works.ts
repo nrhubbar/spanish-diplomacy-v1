@@ -19,9 +19,11 @@ export function digIn(
   start: GameState,
   end: { readonly armies: Armies; readonly control: GameState["control"] },
   foughtIn: ReadonlySet<TerritoryId>,
-  moved: ReadonlySet<UnitId>
+  moved: ReadonlySet<UnitId>,
+  /** The gain per turn and the cap: the d6 block's, or the d20's x3 (D3). */
+  rates: { readonly max: number; readonly perTurn: number } = scenario.combat.diggingIn
 ): GameState["fortification"] {
-  const { max, perTurn } = scenario.combat.diggingIn;
+  const { max, perTurn } = rates;
   const fortification: Record<TerritoryId, Fortification> = {};
   for (const { id } of scenario.territories) {
     const holder = holderOf(end.control, end.armies, id);

@@ -196,6 +196,13 @@ test("@capture combat presentation", async ({ page }) => {
   await battles.scrollIntoViewIfNeeded();
   await page.locator(".battle-report h3").evaluate((element) => { element.scrollIntoView({ block: "start" }); });
   await capture(page, "19a-battle-cards");
+  // D8: a d20 card shows the die, the modifiers and the score, then its column as bands.
+  const graded = page.locator('.battle-card[data-dice="d20"]').first();
+  if (await graded.count() > 0) {
+    if (await graded.getAttribute("open") === null) await graded.locator("summary").first().click();
+    await graded.locator(".battle-bands").first().evaluate((element) => { element.scrollIntoView({ block: "center" }); });
+    await capture(page, "20a-d20-battle-card");
+  }
   const threeSided = page.locator('.battle-card[data-sides="3"]').first();
   if (await threeSided.count() > 0) {
     if (await threeSided.getAttribute("open") === null) await threeSided.locator("summary").first().click();

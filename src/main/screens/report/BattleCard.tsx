@@ -3,7 +3,7 @@ import type { GameState, Scenario } from "../../engine/types";
 import { type BattleGroup, type BattleKind, decisiveBattle } from "../../presentation/battle";
 import { cardFlavor, flavorSeed, occupationLine, placeName } from "../../presentation/battleText";
 import { emblemMarkup } from "../../presentation/outcomeArt";
-import { outcomeText } from "../../presentation/outcomeText";
+import { battleTitle, resultKeyOf } from "../../presentation/grades";
 import { BattleEngagement } from "./BattleEngagement";
 import { BattleRule } from "./BattleRule";
 import { revealInPane } from "./focus";
@@ -39,7 +39,7 @@ export function BattleCard({ finalState, focused, group, onToggle, open, reveal,
     if (reveal && card.current !== null) revealInPane(card.current);
   }, [reveal]);
   const lead = decisiveBattle(group);
-  const { result } = lead.battle;
+  const result = resultKeyOf(scenario, lead.battle);
   const several = group.battles.length > 1;
   const line = cardFlavor(scenario, lead.battle, flavorSeed(seed, finalState.turnNumber, lead.index));
   return (
@@ -48,6 +48,7 @@ export function BattleCard({ finalState, focused, group, onToggle, open, reveal,
       data-battle-kind={group.kind}
       data-focused={focused}
       data-places={placesOf(group).join(" ")}
+      data-dice={lead.battle.dice}
       data-result={result}
       data-sides={several ? group.battles.length + 1 : 2}
       // Read the element, not a flipped flag: the event also fires when React sets `open`.
@@ -59,7 +60,7 @@ export function BattleCard({ finalState, focused, group, onToggle, open, reveal,
         <span aria-hidden="true" className="battle-emblem" dangerouslySetInnerHTML={{ __html: emblemMarkup(result) }} />
         <span className="battle-card-heading">
           <span className="battle-kicker">{`${kindLabels[group.kind]} ${placeName(scenario, lead.battle)}`}</span>
-          <span className="battle-title">{outcomeText[result].title}</span>
+          <span className="battle-title">{battleTitle(scenario, lead.battle)}</span>
           <span className="battle-occupation">{occupationLine(scenario, lead.battle)}</span>
         </span>
       </summary>

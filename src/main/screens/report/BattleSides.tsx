@@ -1,13 +1,13 @@
 import type { JSX } from "react";
 import { requireFaction } from "../../engine/lookup";
-import type { D6BattleOutcome, BattleSide, Scenario, TerritoryId } from "../../engine/types";
+import type { BattleOutcome, BattleSide, Scenario, TerritoryId } from "../../engine/types";
 import { sideFactions } from "../../presentation/battle";
 import { glyphs } from "../../presentation/glyphs";
 import { cssVariables } from "../../presentation/style";
 import { factionName, listNames, territoryName, unitName } from "../../presentation/text";
 
 /** Both sides of one battle: factions, each army with its value, and the side totals. */
-export function BattleSides({ battle, scenario }: { readonly battle: D6BattleOutcome; readonly scenario: Scenario }): JSX.Element {
+export function BattleSides({ battle, scenario }: { readonly battle: BattleOutcome; readonly scenario: Scenario }): JSX.Element {
   const site = battle.site.kind === "meeting" ? undefined : battle.site.territoryId;
   return (
     <div className="battle-sides">

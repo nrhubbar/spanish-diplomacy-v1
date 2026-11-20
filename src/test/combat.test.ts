@@ -288,7 +288,7 @@ describe("attack estimates (C15)", () => {
       oddsLabel: "1:1",
       rollModifier: -2
     });
-    if (estimate.kind !== "battle") throw new Error("expected a battle");
+    if (estimate.kind !== "battle" || !("faces" in estimate)) throw new Error("expected a d6 battle");
     expect(estimate.modifiers.map((modifier) => modifier.kind)).toEqual(["dug-in", "faction"]);
     expect(estimate.faces.map((face) => face.row)).toEqual([0, 0, 1, 2, 3, 4]);
     expect(estimate.takeChance).toBe(0);

@@ -115,7 +115,8 @@ export function signed(value: number): string {
  * A modifier by name, as the battle breakdown lists it. Defender bonuses read as the bonus
  * ("Dug in +2", "Popular resistance +1"); the roll column shows their effect on the die.
  */
-export function modifierName(modifier: CombatModifier): string {
+/** A modifier's name; with the scenario, unit bonuses name their unit type (D5). */
+export function modifierName(modifier: CombatModifier, scenario?: Scenario): string {
   switch (modifier.kind) {
     case "dug-in":
       return `Dug in +${String(modifier.level)}`;
@@ -126,7 +127,7 @@ export function modifierName(modifier: CombatModifier): string {
     case "odds-halving":
       return `Odds below 1:1 (${String(modifier.halvings)} ${modifier.halvings === 1 ? "halving" : "halvings"})`;
     // Placeholder names for the d20 modifiers; each owner replaces its own case:
-    // TODO(m3r1-d20-combat): barricades, unit-bonus, fatigue. TODO(m3r1-air-generals): general,
+    // TODO(m3r1-air-generals): general,
     // trait, air-support. TODO(m3r1-weather-timer): weather. TODO(m3r1-movement-rail-ports):
     // amphibious. TODO(m3r1-economy-builds): building.
     case "general":
@@ -134,11 +135,11 @@ export function modifierName(modifier: CombatModifier): string {
     case "trait":
       return "General's trait";
     case "barricades":
-      return "City barricades";
+      return "Barricades (city held)";
     case "unit-bonus":
-      return "Supporting arms";
+      return scenario?.index.unitTypes.get(modifier.unitTypeId)?.name ?? "Supporting arms";
     case "fatigue":
-      return "Fatigued";
+      return modifier.role === "attack" ? "Fatigued" : "Defenders fatigued";
     case "weather":
       return "Weather";
     case "amphibious":
