@@ -64,7 +64,7 @@ export function controlFromHolders(
   const control: Record<TerritoryId, TerritoryControl> = { ...previous.control };
   for (const territory of scenario.territories) {
     const derived = territoryControlFrom(scenario, holdings, territory.id);
-    if (derived !== undefined) control[territory.id] = derived;
+    if (derived !== undefined && !sameControl(derived, previous.control[territory.id])) control[territory.id] = derived;
   }
   const cityControl: Record<CityId, FactionId> = { ...previous.cityControl };
   for (const city of scenario.cities) {
@@ -92,4 +92,13 @@ export function holdsWhole(scenario: Scenario, state: Pick<GameState, "control" 
   }
   const holders = holdersIn(scenario, state.subTerritories, territoryId);
   return holders.length === 1 && holders[0] === factionId;
+}
+
+/** Equal control, contested factions compared as a set (so a stated order is kept). */
+function sameControl(left: TerritoryControl, right: TerritoryControl | undefined): boolean {
+  if (right === undefined || left.kind !== right.kind) return false;
+  if (left.kind === "controlled" && right.kind === "controlled") return left.factionId === right.factionId;
+  const ids = left.kind === "contested" ? left.factionIds : [];
+  const others = right.kind === "contested" ? right.factionIds : [];
+  return ids.length === others.length && ids.every((id) => others.includes(id));
 }
