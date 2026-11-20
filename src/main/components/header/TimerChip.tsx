@@ -1,12 +1,15 @@
 import { type JSX, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useAppDispatch, useAppSelector } from "../../hooks";
-import { addInfoNotification, addWarningNotification } from "../../state/notificationSlice";
 import { timeRanOut } from "../../state/timeout";
 import { clockWarned, pauseClock, planningBudgetMs, remainingMs, resumeClock, startClock, type PlanningClock } from "../../state/timerSlice";
 import type { HeaderSlotProps } from "./slots";
 
-/** T6: warnings at 1 minute and at 10 seconds left. */
+/**
+ * T6: warnings at 1 minute and at 10 seconds left. The chip turns amber, then red, and a polite
+ * live region says it once each. They stay in the chip, not the notification shelf, which on a
+ * phone would cover End Turn in the last seconds.
+ */
 const warnings = [
   { message: "One minute left to plan this turn.", seconds: 60 },
   { message: "Ten seconds left. Planned orders go in when time runs out.", seconds: 10 }
@@ -79,7 +82,6 @@ function RunningClock({ budgetMs, clock, clockId, pausable }: RunningClockProps)
     for (const warning of warnings) {
       if (left <= warning.seconds * 1000 && left > 0 && budgetMs > warning.seconds * 1000 && !current.warned.includes(warning.seconds)) {
         dispatch(clockWarned(warning.seconds));
-        dispatch(warning.seconds === 60 ? addInfoNotification(warning.message) : addWarningNotification(warning.message));
       }
     }
     if (left <= 0 && fired.current !== clockId) {
@@ -89,6 +91,8 @@ function RunningClock({ budgetMs, clock, clockId, pausable }: RunningClockProps)
   }, [budgetMs, clockId, current, dispatch, left, running]);
 
   const level = left <= 10_000 ? "urgent" : left <= 60_000 ? "warning" : "calm";
+  const lastWarning = current?.warned.at(-1);
+  const announcement = warnings.find((warning) => warning.seconds === lastWarning)?.message ?? "";
   return (
     <div className="timer-chip header-meter" data-level={level}>
       <span className="timer-face" role="timer" aria-label={`Time left to plan: ${clockText(left)}`}>
@@ -98,6 +102,7 @@ function RunningClock({ budgetMs, clock, clockId, pausable }: RunningClockProps)
         </svg>
         <span aria-hidden="true">{clockText(left)}</span>
       </span>
+      <span aria-live="polite" className="visually-hidden">{announcement}</span>
       {pausable ? (
         <button aria-label="Pause the turn timer" className="timer-pause" onClick={() => dispatch(pauseClock({ now: Date.now() }))} type="button">
           <svg aria-hidden="true" fill="currentColor" focusable="false" height="0.9em" viewBox="0 0 24 24" width="0.9em"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" /></svg>

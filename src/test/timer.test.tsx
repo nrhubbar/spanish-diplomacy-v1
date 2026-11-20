@@ -11,6 +11,8 @@ import { initialGameState, resolveTurn } from "../main/engine/resolution";
 import type { GameState, TurnResolutionResult, WeatherId, WeatherZoneId } from "../main/engine/types";
 import { RegistryContext } from "../main/hooks";
 import { TurnConditions } from "../main/screens/report/TurnConditions";
+import { beginPlanning, endTurn } from "../main/state/gameSlice";
+import { timeRanOut } from "../main/state/timeout";
 import { chooseTimer, pauseClock, planningBudgetMs, remainingMs, resumeClock, startClock, timerSlice } from "../main/state/timerSlice";
 import { emptyDraft } from "../main/state/session";
 import { faction, move, spain, spainId, territory, testRegistry, testStore, unit, withUnits } from "./support";
@@ -74,7 +76,9 @@ describe("the timer chip (T5, T6)", () => {
     expect(screen.getByRole("timer")).toHaveAccessibleName("Time left to plan: 1:00");
     act(() => { vi.advanceTimersByTime(51_000); });
     expect(screen.getByRole("timer")).toHaveAccessibleName("Time left to plan: 0:09");
-    expect(store.getState().notifications.notifications.map((item) => item.message)).toEqual(["Ten seconds left. Planned orders go in when time runs out."]);
+    expect(screen.getByText("Ten seconds left. Planned orders go in when time runs out.")).toHaveAttribute("aria-live", "polite");
+    expect(store.getState().timer.clock?.warned).toEqual([10]);
+    expect(store.getState().notifications.notifications).toEqual([]);
     act(() => { vi.advanceTimersByTime(10_000); });
     const session = store.getState().game.session;
     expect(session.phase).toBe("resolution");
@@ -133,5 +137,25 @@ describe("weather in the UI (T3)", () => {
     expect(screen.getByLabelText("Weather this turn")).toHaveTextContent("Meseta: Severe cold");
     expect(screen.getByText(/lost 5 men to frostbite in Castilla-La Mancha/)).toBeInTheDocument();
     expect(result.finalState.units[unit("r1")]?.strength).toBe(95);
+  });
+});
+
+describe("time running out in hot-seat play (T5)", () => {
+  it("hands over to the next player, who gets a fresh full clock, and reports only the player who ran out", () => {
+    const session = planningStore(5).getState().game.session;
+    if (session.phase !== "planning") throw new Error("Not planning.");
+    const hotSeat = testStore({ game: { session: { draft: emptyDraft, factionId: faction("republic"), game: { ...session.game, assignments: { ...session.game.assignments, [faction("north")]: "local-human" } }, phase: "planning" } } });
+    hotSeat.dispatch(startClock({ budgetMs: planningBudgetMs(5, 2), key: "1:2:republic", now: 0 }));
+    hotSeat.dispatch(timeRanOut());
+    expect(hotSeat.getState().game.session).toMatchObject({ factionId: "north", fromFactionId: "republic", phase: "handoff" });
+    hotSeat.dispatch(beginPlanning());
+    hotSeat.dispatch(startClock({ budgetMs: planningBudgetMs(5, 2), key: "1:2:north", now: 500_000 }));
+    const clock = hotSeat.getState().timer.clock;
+    if (clock === undefined) throw new Error("No clock.");
+    expect(remainingMs(clock, 500_000)).toBe(300_000);
+    hotSeat.dispatch(endTurn());
+    const after = hotSeat.getState().game.session;
+    expect(after.phase).toBe("resolution");
+    if (after.phase === "resolution") expect(after.result.outcomes.filter((outcome) => outcome.kind === "time-ran-out")).toEqual([{ factionId: "republic", heldUnitCount: expect.any(Number) as number, kind: "time-ran-out" }]);
   });
 });

@@ -264,6 +264,11 @@
     .timer-chip {
       font-size: 0.82rem;
     }
+
+    // The phone rule in _notifications hides the name outright; keep it for screen readers.
+    .status-chips .chip-name.visually-hidden {
+      display: inline;
+    }
   }
 }
 

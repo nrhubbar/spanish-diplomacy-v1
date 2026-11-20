@@ -257,8 +257,6 @@ test("@capture weather and turn timer", async ({ page }) => {
   await capture(page, "20e-ten-seconds");
   await page.clock.fastForward("00:15");
   await waitForMap(page);
-  const dismiss = page.getByRole("button", { name: "Dismiss" });
-  while (await dismiss.count() > 0) await dismiss.first().click();
   const report = page.getByRole("button", { name: "Turn report", exact: true });
   if (await report.isVisible()) await report.click();
   await page.getByRole("heading", { name: "Conditions" }).scrollIntoViewIfNeeded();

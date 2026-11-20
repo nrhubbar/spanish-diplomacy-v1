@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 import { dateLabel, turnDate } from "../main/engine/calendar";
 import { hookedAllowanceDelta, hookedCanDigIn, hookedCombatModifiers, hookedGrounded } from "../main/engine/hooks";
 import { initialGameState, resolveTurn } from "../main/engine/resolution";
+import { isD6Battle } from "../main/engine/types";
 import type { BuildingId, GameState, Scenario, SubTerritoryId, WeatherId, WeatherState, WeatherZoneId } from "../main/engine/types";
 import { beforePlanning, forecast, isSeaRouteClosed, rollWeather, weatherIn } from "../main/engine/weather";
+import { destinationEstimates, modifierName, modifierPhrase } from "../main/presentation/odds";
 import { turnLabel } from "../main/presentation/turn";
 import { advance } from "../main/state/coordinator";
 import { faction, move, spain, territory, tiny, unit, withUnits } from "./support";
@@ -159,5 +161,19 @@ describe("time running out (T5, T6)", () => {
     expect(result.outcomes).toContainEqual({ factionId: "republic", heldUnitCount: 2, kind: "time-ran-out" });
     const tinyResult = resolveTurn(tiny(), initialGameState(tiny()), [{ factionId: faction("red"), orders: [], timedOut: true }], 1);
     expect(tinyResult.outcomes.filter((outcome) => outcome.kind === "time-ran-out")).toHaveLength(1);
+  });
+});
+
+describe("the weather modifier in the odds and battle text (D7)", () => {
+  it("names the weather and its roll change on destination rows and battle cards", () => {
+    const state = withWeather(initialGameState(spain()), { meseta: "mud" });
+    const attackers = Object.values(state.units).filter((candidate) => candidate.factionId === faction("north") && candidate.territoryId === territory("castilla-y-leon"));
+    const estimate = destinationEstimates(spain(), state, faction("north"), attackers.map((candidate) => candidate.id), [territory("madrid")]).get(territory("madrid"));
+    expect(estimate?.kind === "battle" ? estimate.modifiers.map(modifierPhrase) : []).toContain("Mud −1");
+    const orders = attackers.map((candidate) => move("north", candidate.id, "castilla-y-leon", "madrid"));
+    const result = resolveTurn(spain(), state, [{ factionId: faction("north"), orders }], 1);
+    const battle = result.outcomes.filter(isD6Battle)[0];
+    expect(battle?.modifiers).toContainEqual({ kind: "weather", roll: -1, weatherId: "mud" });
+    expect(modifierName({ kind: "weather", roll: -6, weatherId: "severe-cold" as WeatherId })).toBe("Severe cold");
   });
 });

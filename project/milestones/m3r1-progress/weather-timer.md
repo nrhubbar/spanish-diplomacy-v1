@@ -42,17 +42,27 @@ Mode: make it work (declog D13). Decisions T1-T6, the timer and readiness parts 
 - WT-10. **The timer lives in its own Redux slice, `timer`.** Reducers stay pure. Every time arrives in an action payload, read from `Date.now()` by the chip, and the engine sees only `timedOut`. The setup choice is a preference: it defaults to Off and survives across games; Exit and Start Campaign clear only the clock.
 - WT-11. **Each player's clock is keyed by game seed, turn and faction.** It starts when that player's planning screen shows its timer chip, which in hot-seat play is right after Continue on the handoff screen (Q-TIMER-2), or at once with one local player. The budget is minutes × 60 s, doubled on turn 1. Unused time is dropped: every turn and player gets a fresh clock.
 - WT-12. **At zero, the chip dispatches `timeRanOut` once.** The game reducer submits `draft.orders` with `timedOut: true` and drops any order still being built (the open stage). Units without an order take their defaults (entrench, or rest), and the coordinator moves on as for End Turn. `heldUnitCount` counts the faction's units that had no unit order.
-- WT-13. **Warnings go through the notification shelf:** info at 1 minute, warning at 10 seconds. The 1-minute warning is skipped when the whole budget is 1 minute or less. The chip itself turns amber in the last minute and red in the last 10 seconds, and carries `role="timer"` with the time left in its name.
+- WT-13. **The warnings stay in the chip.** It turns amber in the last minute and red in the last 10 seconds, and a polite live region says "One minute left" and then "Ten seconds left", once each. The 1-minute warning is skipped when the whole budget is 1 minute or less. The chip has `role="timer"`, with the time left in its name. The notification shelf is not used: it has no auto-dismiss, and on a phone it covered the pane toggle and End Turn.
 - WT-14. **Pause** covers the whole screen with a dialog (a portal to `body`), like the handoff screen, and keeps the time left (Q-TIMER-4). It is offered only when no faction is an online player, which today is always.
 - WT-15. **Readiness chips** show the abbreviation and a visible "ready" or "planning", as in the capture. The full name is visually hidden for screen readers.
 - WT-16. **The header layout is set by CSS `order`** in `_weather-timer.scss`; `GameHeader` is not edited.
   - Desktop: title, readiness chips, then the meters on the right before Exit.
   - Phone: title and Exit, a forced break, one compact row of meters (timer, Funds, Manpower), then the readiness chips.
   - A meter chip is any header child with the class `header-meter`. The timer has it, and economy's chips need it (Needs from).
-- WT-17. **The weather pill and forecast sit in the Units tab, under the "Held by" line.** The capture shows them above the tabs, but the territory heading lives inside the tab panel today; moving both up is a pane-frame change. The forecast names next turn's two likeliest outcomes in the zone, from next turn's season table, never from the seeded roll. Ties keep table order.
+- WT-17. **Open deviation for the integrator: the weather pill and forecast sit in the Units tab, under the "Held by" line.** The approved capture puts them above the tabs, with economy's "Pays +11 Funds" chip. Today the territory heading lives inside the Units panel, so the pill disappears on Build and Recruit. Moving the heading, the pill and economy's chip above the tabs is a pane-frame change I did not make. The forecast names next turn's two likeliest outcomes in the zone, from next turn's season table, never from the seeded roll. Ties keep table order.
 - WT-18. **Icons** are inline SVG in `currentColor`, one per outcome id (sun, thermometer, rain cloud, mud ripples, snowflake, cold thermometer with a flake), with a cloud fallback. They are decorative, and the name is always written or labelled. Each outcome has its own shape and tone, never colour alone. The timer chip and Pause carry icons too (X8).
 - WT-19. **The map's odds plaques** get the destination's weather symbol through a new optional `weatherAt` prop on `DestinationOddsLayer`, passed from `MapLayers`. Plaque placement counts the symbol's width.
+- WT-21. **The `weather` battle modifier** (`modifierName` in `presentation/odds.ts`, owned here per CT-30) is named after its outcome, "Mud" or "Severe cold", taken from the id because these helpers have no scenario (`presentation/weatherName.ts`). On destination rows, `modifierPhrase` adds the roll: "Mud \u22121".
+- WT-22. **The `DateChip` slot renders nothing on purpose.** The date is in the kicker (WT-7).
 - WT-20. **The computer player** reads weather through its odds: `estimateAttack` calls `situationalModifiers`, which calls the hooks. It does not yet avoid moving in Severe cold.
+
+## Stubbed or inert until another stream calls it
+
+- **Grounding:** `weatherHooks.grounded` is written and tested. Nothing calls `hookedGrounded` yet (`m3r1-air-generals`).
+- **Movement penalty:** `weatherHooks.allowanceDelta` is written and tested. Nothing calls `hookedAllowanceDelta` yet (`m3r1-movement-rail-ports`).
+- **Sea closure:** `isSeaConnectionClosed` and `isSeaRouteClosed` are written and tested. No validation calls them yet (`m3r1-movement-rail-ports`).
+- **Weather on destination rows:** `WeatherChip` is exported. `DestinationChoices` belongs to `m3r1-movement-rail-ports`, and I did not edit it.
+- So the sim's weather difference measures only the attack modifier, the dig-in block and frostbite.
 
 ## Needs from
 
@@ -62,7 +72,7 @@ Mode: make it work (declog D13). Decisions T1-T6, the timer and readiness parts 
   - use `WeatherChip` on destination rows (to come);
   - leave frostbite to this stream.
 - **`m3r1-economy-builds`:** put the class `header-meter` on each Funds and Manpower chip, the root element of each child the header renders, so the shared row orders them after the timer (WT-16).
-- **`m3r1-d20-combat`:** the `weather` modifier arrives through `combatModifiers`. Give it a battle-card name; `presentation/odds.ts` `modifierName` has the weather case.
+- **`m3r1-d20-combat`:** the `weather` modifier arrives through `combatModifiers` with the d20 value (−3 or −6) once `rules.dice` is `d20-graded`. Its name and phrase are done (WT-21).
 - **`m3r1-air-generals`:** call `hookedGrounded` before a mission flies.
 
 ## Files outside my ownership
@@ -77,6 +87,8 @@ Mode: make it work (declog D13). Decisions T1-T6, the timer and readiness parts 
 - `src/main/screens/ResolutionScreen.tsx`: `<TurnConditions />`.
 - `src/main/map/DestinationOddsLayer.tsx` and `src/main/map/MapLayers.tsx`: the weather symbol on the plaques.
 - `src/main/style.scss`: one `@use` line.
+- `src/main/presentation/odds.ts`: the `weather` case of `modifierName`, and the weather roll in `modifierPhrase`.
+- `src/main/components/header/DateChip.tsx`: its comment only.
 - `src/main/presentation/systemText/weather.ts`: this area's own file; the placeholder lines are now generic sentences.
 - Tests and e2e:
   - `src/test/state.test.ts`: SIC is now ready.
@@ -87,8 +99,8 @@ Mode: make it work (declog D13). Decisions T1-T6, the timer and readiness parts 
 ## Checks
 
 - lint and typecheck passed.
-- `vitest`: 684 passed. The only failures are the six known-red sim-harness tests (D14).
-- New tests: `src/test/weather.test.ts` (15) and `src/test/timer.test.tsx` (10).
+- `vitest`: 686 passed. The only failures are the six known-red sim-harness tests (D14).
+- New tests: `src/test/weather.test.ts` (16) and `src/test/timer.test.tsx` (11, including a hot-seat timeout).
 - e2e on chromium and mobile-chromium (`E2E_PORT=5317`): 44 passed and 5 skipped. The 7 failures are all visual baseline diffs, the allowed kind, from the setup timer, the date in the kicker, the readiness words and the weather pill. No baselines were regenerated.
 - `@capture weather and turn timer` passes on both projects. The captures are `build/e2e/screenshots/{chromium,mobile-chromium}-20a-setup-timer`, `20b-planning-timer-weather`, `20c-destination-weather`, `20d-paused`, `20e-ten-seconds` and `20f-time-ran-out`.
 - `npm run sim -- --games 50`, with a variant that turns weather off, on seeds 1-50 with a 66-turn limit:
