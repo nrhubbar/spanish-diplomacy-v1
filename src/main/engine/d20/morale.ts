@@ -6,9 +6,11 @@ import { digIn } from "../works";
 import { requireD20, unitRank } from "./rules";
 
 /**
- * W6, C1: territories contested at the end of the turn: shown as contested by control, shared by
- * armies of several factions, or with sub-territories held by several factions.
- * TODO(m3r1-sub-territories): replace with their contested-territory helper when it lands.
+ * W6, C1: territories contested at the end of the turn: shown as contested by control, or shared
+ * by armies of several factions. Sub-territory holders are not read yet: nothing flips them until
+ * the partition module lands, so the 1936 start holders would keep mixed territories contested
+ * for good, even after one faction takes the whole territory.
+ * TODO(m3r1-sub-territories): replace with their contested-territory helper (W6) when it lands.
  */
 export function contestedAtEnd(scenario: Scenario, draft: TurnDraft): ReadonlySet<TerritoryId> {
   const contested = new Set<TerritoryId>();
@@ -18,10 +20,6 @@ export function contestedAtEnd(scenario: Scenario, draft: TurnDraft): ReadonlySe
   const factions = new Map<TerritoryId, Set<FactionId>>();
   const note = (territoryId: TerritoryId, factionId: FactionId) => factions.set(territoryId, (factions.get(territoryId) ?? new Set()).add(factionId));
   for (const unit of Object.values(draft.armies)) note(unit.territoryId, unit.factionId);
-  for (const subTerritory of scenario.subTerritories) {
-    const holder = draft.systems.subTerritories[subTerritory.id]?.holder;
-    if (holder !== undefined) note(subTerritory.territoryId, holder);
-  }
   for (const [territoryId, held] of factions) if (held.size > 1) contested.add(territoryId);
   return contested;
 }
