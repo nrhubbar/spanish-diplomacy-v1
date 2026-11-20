@@ -8,28 +8,7 @@
   vertical-align: -0.15em;
 }
 
-// X1: the header reads title, readiness, then timer, Funds and Manpower beside Exit.
-.game-header:has(.resource-chips) {
-  .game-header-title { order: 0; }
-  .status-chips { order: 1; }
-  // The chips grow to take the free space and sit at its right end, beside Exit; Exit keeps its
-  // auto margin so it stays right when it wraps alone.
-  .resource-chips {
-    flex: 1 1 auto;
-    justify-content: flex-end;
-    order: 3;
-  }
-
-  .game-header-actions { order: 4; }
-}
-
 // X1: Funds and Manpower chips with next turn's income.
-.resource-chips {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 0.4rem;
-}
-
 .resource-chip-wrap {
   position: relative;
 }
@@ -100,26 +79,9 @@
   font-style: italic;
 }
 
-// X1 on a phone: the title and Exit share the first row, then timer, Funds and Manpower in one
-// compact row, then the readiness chips.
-@media (width <= 640px) {
-  .game-header:has(.resource-chips) {
-    .game-header-title { order: 0; }
-
-    .game-header-actions {
-      order: 1;
-      margin-left: auto;
-    }
-
-    .resource-chips {
-      justify-content: flex-start;
-    }
-    .status-chips {
-      order: 4;
-      flex-basis: 100%;
-    }
-  }
-
+// X1 on a phone: smaller chips. The row itself (timer, Funds, Manpower, then readiness) is
+// m3r1-weather-timer's `.header-meter` layout; each chip's root carries that class.
+@media (width <= 720px) {
   .resource-chip {
     gap: 0.25rem;
     padding: 0.15rem 0.55rem;

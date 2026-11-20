@@ -36,7 +36,7 @@ function Chips({ scenario, state, viewer }: HeaderSlotProps): JSX.Element | null
   const others = scenario.factions.filter((faction) => faction.id !== viewer);
 
   return (
-    <div className="resource-chips" role="group" aria-label="Resources">
+    <>
       {scenario.resources.map((resource) => {
         const expanded = open === resource.id;
         const gain = amountOf(income.paid, resource.id);
@@ -81,7 +81,7 @@ function Chips({ scenario, state, viewer }: HeaderSlotProps): JSX.Element | null
           </div>
         );
       })}
-    </div>
+    </>
   );
 }
 

@@ -115,6 +115,6 @@ describe("the Funds and Manpower chips (X1, $6)", () => {
     const store = planning();
     const scenario = spain();
     render(<Provider store={store}><RegistryContext value={testRegistry()}><GameHeader kicker="Turn 1" slots={{ scenario, state: initialGameState(scenario) }} title="Report" /></RegistryContext></Provider>);
-    expect(screen.queryByRole("group", { name: "Resources" })).toBeNull();
+    expect(screen.queryByRole("button", { name: /^Funds/ })).toBeNull();
   });
 });

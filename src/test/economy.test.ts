@@ -20,6 +20,7 @@ import type {
 } from "../main/engine/types";
 import type { RuleModule } from "../main/engine/modules";
 import { validateOrder } from "../main/engine/validation";
+import { outcomesFor } from "../main/engine/visibility";
 import { loadPackage } from "../main/scenarios/loader";
 import { modularMap, modularScenario } from "./modularFixture";
 import { faction, spain, territory, unit } from "./support";
@@ -149,14 +150,18 @@ describe("Build orders ($4, $5)", () => {
     expect(plannedSpend(scenario, [build("red", "west-hills", rail), recruit as never])).toEqual({ funds: 7, manpower: 2 });
   });
 
-  it("pays when queued at step 1 and rejects what the balance no longer covers", () => {
+  it("pays when queued at step 1 and refuses, privately, what the balance no longer covers", () => {
     const orders = [build("red", "west-town-quarter", building("palace")), build("red", "west-hills", rail), build("red", "west-hills", develop("farms"))];
     const result = resolveTurn(scenario, start(), [{ factionId: faction("red"), orders }], 3);
     const queued = result.outcomes.filter((outcome) => outcome.kind === "build-queued");
-    const rejected = result.outcomes.filter((outcome) => outcome.kind === "rejected-order");
+    const failed = result.outcomes.filter((outcome) => outcome.kind === "build-refunded");
     expect(queued).toHaveLength(1);
-    expect(rejected).toHaveLength(2);
-    expect(rejected[0]).toMatchObject({ reason: "Needs 2 more Funds." });
+    expect(failed).toHaveLength(2);
+    expect(failed[0]).toMatchObject({ reason: "Needs 2 more Funds.", refund: {} });
+    expect(result.outcomes.some((outcome) => outcome.kind === "rejected-order")).toBe(false);
+    // $6: the failure is private: another faction does not see it.
+    const seenByBlue = outcomesFor(scenario, result.finalState, result.outcomes, faction("blue"));
+    expect(seenByBlue.some((outcome) => outcome.kind === "build-refunded" || outcome.kind === "build-queued")).toBe(false);
     // 10 - 9 paid, + 2 income.
     expect(result.finalState.treasuries[faction("red")]).toMatchObject({ funds: 3 });
     expect(result.finalState.subTerritories[sub("west-town-quarter")]?.queue[0]).toMatchObject({ progress: 1 });

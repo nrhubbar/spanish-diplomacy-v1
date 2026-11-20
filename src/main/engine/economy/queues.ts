@@ -2,7 +2,6 @@ import type {
   BuildProject,
   EconomyTurnOutcome,
   RailDamagedOutcome,
-  RejectedOrderOutcome,
   Scenario,
   SubTerritoryId,
   SubTerritoryState,
@@ -27,8 +26,9 @@ type Sites = SystemState["subTerritories"];
 /**
  * Step 1 ($5): every Build order that passed validation against the start-of-turn state is paid
  * and queued, in submission order, against a running ledger: an order the balance can no longer
- * cover, or a second order for the same building, is rejected (nothing was paid, so nothing is
- * refunded). Builds pay before Recruit orders, since the economy part runs first (area order).
+ * cover, or a second order for the same building, fails as a private `build-refunded` with an
+ * empty refund (nothing was paid), so other factions never learn where or how short it was ($6).
+ * Builds pay before Recruit orders, since the economy part runs first (area order).
  */
 export const payForBuilds: Phase = (draft) => {
   const { scenario, submissions } = draft.input;
@@ -36,7 +36,6 @@ export const payForBuilds: Phase = (draft) => {
   const alreadyRejected = new Set(draft.orders.rejected.map((outcome) => outcome.order));
   let ledger: SystemState = draft.systems;
   const events: EconomyTurnOutcome[] = [];
-  const rejected: RejectedOrderOutcome[] = [];
   for (const submission of submissions) {
     for (const order of submission.orders) {
       if (order.kind !== "build" || alreadyRejected.has(order)) continue;
@@ -45,14 +44,13 @@ export const payForBuilds: Phase = (draft) => {
         ledger = applied.state;
         events.push({ kind: "build-queued", order, paid: applied.paid, position: applied.position });
       } else {
-        rejected.push({ kind: "rejected-order", order, reason: applied.reason });
+        events.push({ factionId: order.factionId, kind: "build-refunded", project: order.project, reason: applied.reason, refund: {}, subTerritoryId: order.subTerritoryId });
       }
     }
   }
   return {
     ...draft,
     events: [...draft.events, ...events],
-    orders: { ...draft.orders, rejected: [...draft.orders.rejected, ...rejected] },
     systems: ledger
   };
 };

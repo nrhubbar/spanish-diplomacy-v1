@@ -33,9 +33,9 @@ Mode: make it work (declog D13). Base: `milestone-3-rev-1` at `eb9515f` (contrac
      - North: 5 Funds and 27 Manpower.
      - South: 1 Fund.
 2. **EB-2. Orders are paid at reveal in submission order, against a running ledger.**
-   - An order the balance no longer covers is a `rejected-order`, and nothing is paid. So is a duplicate.
+   - An order the balance no longer covers, or a duplicate, fails as a private `build-refunded` with `refund: {}` and the reason. It is not a public `rejected-order`, which would show other factions where you tried to build and how short you were ($6).
    - Builds pay before Recruit orders (area order).
-   - Each order must also be valid on its own, because `lockSubmission` checks every order against the start state.
+   - Each order must also be valid on its own, because `lockSubmission` checks every order against the start state. So a Build order the core gateway rejects (public `rejected-order`) cannot reach resolution from the UI or the computer player.
 3. **EB-3. No new queue items in a contested territory,** besides the pause in $5.
 4. **EB-4. "In progress" means the head item with at least one turn of progress.**
    - Such an item is forfeited to the new holder, and its `paid` becomes `{}`.
@@ -59,18 +59,18 @@ Mode: make it work (declog D13). Base: `milestone-3-rev-1` at `eb9515f` (contrac
     - Builds spend at most 60 percent of what Recruit orders leave (`buildSpendShare`), at most 3 orders a turn, and one new item per sub-territory with an empty queue.
     - Both constants are code with a design note, waiting for an AI profile field.
     - It builds only in territories held whole.
-16. **EB-16. Desktop header order**, when resource chips are present: title, readiness, then the resources beside Exit, by CSS `order` from `_economy.scss`. On a phone: title and Exit, then the resources row, then readiness.
+16. **EB-16. The resource chips are direct children of the header,** one `.header-meter` element per resource, with no wrapper. `m3r1-weather-timer`'s `.game-header > .header-meter` rules lay out the row: timer, Funds and Manpower beside Exit on desktop; title and Exit, then the meters, then readiness on a phone. `_economy.scss` sets no header order of its own. Until that branch merges, the chips sit in DOM order.
+17. **EB-17. Parts return the draft unchanged when they have nothing to do** (no Build orders, no queue changes, no treasuries). `tiny-front` and the pipeline's pass-through pin still hold.
 18. **EB-18. The territory income chip** (`build/TerritoryIncomeChip.tsx`) shows one of three things:
     - "Pays +N ... a turn", when the viewer holds the territory whole;
     - "... to <holder>", when another faction holds it whole;
     - "Contested: pays nobody".
     Development is public, so the chip is too. Its interim home is the top of the Build tab, until `m3r1-weather-timer`'s meta-row slot lands.
-19. **EB-19. Each resource chip's root has the `header-meter` class,** for the weather-timer's header row.
+19. **EB-19. The chips deviate from the approved captures.** `ux-header-a.webp` shows "Manpower 18k +9k", and the pane shows "+1k men". I show raw amounts with the scenario's resource names ("Manpower 10 +27"), because code knows no resource ids and data has no display scale. See "Needs from" (contract).
 20. **EB-20. Render cost.**
     - The Build panel renders only while open: one condition in `TerritoryTabs`.
     - The chips read the game record's state and planned builds through narrow store selections, behind a `memo`, so selecting territories does not re-render them.
     - Desktop P2 selection was 50.5 ms, against a 50 ms budget, before this work. Run alone it is now 33 to 43 ms.
-17. **EB-17. Parts return the draft unchanged when they have nothing to do** (no Build orders, no queue changes, no treasuries). `tiny-front` and the pipeline's pass-through pin still hold.
 
 ## Stubbed or interim
 
@@ -96,14 +96,15 @@ Mode: make it work (declog D13). Base: `milestone-3-rev-1` at `eb9515f` (contrac
   - Record `raidCuts` with the turn number. `IncomeOutcome.cutSubTerritoryIds` reads them.
   - A "building downgraded or destroyed" raid result edits `subTerritories[*].buildings` directly.
 - **`m3r1-weather-timer`**:
-  - The header's phone row is CSS order only. Give `TimerChip` an order between 1 and 3 (I use 3 for resources), or wrap Timer and Resources together in `GameHeader`.
-  - Readiness chips with abbreviations would stop the desktop header wrapping.
+  - Done on my side: each chip root is a direct `.header-meter` child of the header, matching your `_weather-timer.scss` row.
+  - Your meta-row slot above the tabs: mount `screens/pane/build/TerritoryIncomeChip.tsx` (props: `scenario`, `state`, `territoryId`, `viewer`). After the merge I move it out of the Build tab.
 - **`m3r1-movement-rail-ports`**: rail and port levels are `systems.subTerritories[*].rail` and `.port`; Rail yard is the `rail-departures` effect.
 - **`m3r1-contract` (integrator)**:
   - An order-validation hook per module, so slices stop editing `validateOrder`.
   - A planning-session slot for non-move orders (I added `builds`).
   - A per-outcome report line API.
   - An AI profile field for the build budget.
+  - A per-resource display scale or suffix in `resources[]` (for example "k men"), so the chips can match the approved "Manpower 18k" without code knowing ids.
 
 ## Files touched outside my ownership
 
@@ -112,8 +113,8 @@ Mode: make it work (declog D13). Base: `milestone-3-rev-1` at `eb9515f` (contrac
 - `src/main/state/gameSlice.ts`: two actions, and the builds added to the End Turn submission.
 - `src/main/state/planning.ts`: one re-export line.
 - `src/main/screens/pane/SubTerritoryFocus.tsx`: mounts `BuildList` (2 lines).
+- `src/main/screens/pane/TerritoryTabs.tsx`: the Build panel renders only while open (one condition).
 - `src/main/style.scss`: one `@use` line.
-- `src/main/styles/_economy.scss`: reorders `.game-header` children by CSS, within my own partial.
 - Tests:
   - `src/test/visibility.test.ts`: `planBuilds` dropped from the stub list;
   - `src/test/consolidation.test.tsx`: three income outcomes in Spain's report;
