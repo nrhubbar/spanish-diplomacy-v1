@@ -162,3 +162,35 @@ Typecheck, lint and build pass. The initial chunk is 142.44 kB gzip against the 
 With blunders, which is the shipped setting, H7 is met at 100 games: freezes at or under 15 percent, and every faction wins at least 20 percent of decided games. The 1000-game run comes at the end. Two invariants fail and are make-it-right items:
 - S1: early wins are 10 to 12 percent against a 5 percent limit;
 - S3: 3 abandonments without blunders, against a limit of 0.
+
+**D22. Test health (`m3r1-test-health`, merged at `b71044c`).**
+- The six blunder tests, the smoke line count and the two timeouts are fixed. The timeouts were fixed by shortening the test games, not by raising limits.
+- The S3 metric no longer counts aircraft (D17).
+- The all-computer app flake was test-side and is fixed.
+
+What remains red:
+- the S1 smoke check, deliberately;
+- branch coverage at 83.6 percent (statements 93.6, functions 94.0, lines 95.5), against the 90 percent bar. The air UI is the least covered.
+
+e2e on all five projects:
+- Desktop Firefox and WebKit pass.
+- Real failures:
+  - axe `target-size` on map unit counters on phones;
+  - a mobile-webkit click intercepted by `.order-command`;
+  - mobile-chromium selection at 148 to 169 ms against a 120 ms budget (make-it-fast).
+- The 8 visual diffs are expected and go to the baseline pass.
+
+**D23. Cause of S1 (early wins).** All 22 early wins are the Republic reaching 10 of 18 whole territories on turn 2 or 3. Two causes, both needed:
+1. **Data gap: territories that should be garrisoned are not.** The one-a-turn sweep (P3) gives the Republic territories with no fight:
+   - Extremadura on turn 1 in every game: Cáceres is held by the North, with no North army there;
+   - País Vasco (Álava) in about half the games;
+   - Baleares by turn 2: no South army on Mallorca or Ibiza.
+
+   Those sub-territories had Nationalist garrisons in July 1936 (Cáceres, Vitoria, Goded's Mallorca). The scenario holds them without units, so the sweep takes them unopposed. This is a scenario-data correctness gap, not a balance number. The fix is sourced garrison units, made in make-it-right.
+2. **Computer-player bug:** the North gives up the deciding tenth territory, entering La Rioja empty or emptying Galicia or Castilla y León. The causes:
+   - `ai/plan.ts` `exposure` refuses only to empty an objective;
+   - the victory alarm in `ai/assessment.ts` is one ×2.5 multiplier on every stake, so attacking the leader still outranks holding the territory that would lose the game.
+
+   Fixed in make-it-right as computer-player behaviour.
+
+**D24. S3 keeps counting withdrawals (integrator decision).** The test-health stream exempted Withdraw from S3. That hides a real planner fault: in seed 100, the South withdrew all 7 units from Andalucía, its seat. S3 exists to catch the computer player walking off objectives, so the exemption is reverted. The withdraw planner is fixed so it never abandons a faction's seat or last objective while it can still hold.
