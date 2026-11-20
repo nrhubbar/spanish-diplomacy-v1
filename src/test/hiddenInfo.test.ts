@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
 import type { RuleModule } from "../main/engine/modules";
 import { initialGameState, resolveTurn } from "../main/engine/resolution";
-import type { AirMissionOrder, BuildOrder, GameState, Order, PlayerSubmission, RecruitOrder, ReplenishOrder, Scenario, TurnOutcome } from "../main/engine/types";
+import { raisedDefinition, raisedUnitId, trainingUnitId } from "../main/engine/recruitment/rules";
+import type { AirMissionOrder, BuildOrder, GameState, Order, PlayerSubmission, RecruitOrder, ReplenishOrder, Scenario, TrainingItem, TurnOutcome, UnitTypeId } from "../main/engine/types";
 import { isPublicOrder, ordersFor, outcomesFor } from "../main/engine/visibility";
 import { emptyDraft, type Draft } from "../main/state/session";
 import { submitDraft, submittedDraftOrders } from "../main/state/submit";
 import { submitOnTimeout } from "../main/state/timeout";
-import { faction, spainId, spainWithAir, territory, unit } from "./support";
+import { faction, spain, spainId, spainWithAir, territory, unit } from "./support";
 
 const scenario = spainWithAir();
 const start = initialGameState(scenario);
@@ -133,5 +134,25 @@ describe("time running out submits the whole draft (T5, T6)", () => {
     const nothing = submitOnTimeout(scenario, { ...planning, draft: emptyDraft });
     const count = (session: typeof nothing) => (session.phase === "resolution" ? session.result.outcomes.find((outcome) => outcome.kind === "time-ran-out") : undefined);
     expect(count(hiddenOnly)).toEqual(count(nothing));
+  });
+});
+
+describe("raised units are numbered as they appear (m7)", () => {
+  it("names a unit by the units already raised, never by those still in training", () => {
+    const ground = spain();
+    const base = initialGameState(ground);
+    const infantry = "infantry-regiment" as UnitTypeId;
+    const item = (turnsLeft: number): TrainingItem => ({ factionId: republic, paid: {}, paused: false, territoryId: territory("catalunya"), turnsLeft, typeId: infantry, unitId: trainingUnitId([], republic, infantry, territory("catalunya")) });
+    const slow = item(3);
+    const fast = { ...item(1), unitId: trainingUnitId([slow], republic, infantry, territory("catalunya")) };
+    expect([slow.unitId, fast.unitId]).toEqual(["t_republic_infantry-regiment_catalunya_1", "t_republic_infantry-regiment_catalunya_2"]);
+    const result = resolveTurn(ground, { ...base, training: [slow, fast] }, [], 4);
+    const completed = result.outcomes.filter((outcome) => outcome.kind === "training-completed");
+    expect(completed.map((outcome) => outcome.unitId)).toEqual([raisedUnitId(republic, infantry, 1)]);
+    expect(result.finalState.raised[raisedUnitId(republic, infantry, 1)]?.name).toBe("Infantry regiment No. 1");
+    expect(result.finalState.training.map((entry) => entry.unitId)).toEqual([slow.unitId]);
+    // In training it has no number: "Infantry regiment (new)".
+    expect(raisedDefinition(ground, slow.unitId)?.name).toBe("Infantry regiment (new)");
+    expect(outcomesFor(ground, result.finalState, completed, north)).toEqual(completed);
   });
 });
