@@ -6,11 +6,12 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { initialGameState } from "../../main/engine/resolution";
 import { zoneOf } from "../../main/engine/weather";
 import type { AirMissionOrder, GameState, RaisedUnitDefinition, SubTerritoryId, UnitTypeId, WeatherId } from "../../main/engine/types";
-import { aircraftTag, AirLayer, placeAircraft, withoutAircraft } from "../../main/map/layers/AirLayer";
+import { AirLayer, placeAircraft, withoutAircraft } from "../../main/map/layers/AirLayer";
 import { BattleIconLayer } from "../../main/map/BattleIconLayer";
 import { placeOddsPlaques, DestinationOddsLayer } from "../../main/map/DestinationOddsLayer";
 import { staticMapView } from "../../main/map/view";
 import type { ScenarioPackage } from "../../main/scenarios/loader";
+import { aircraftCounterText, aircraftTag } from "../../main/presentation/airPane";
 import { AircraftHere, AirPane } from "../../main/screens/pane/AirPane";
 import { ContestedChip } from "../../main/screens/pane/ContestedChip";
 import { RecruitsAtChip } from "../../main/screens/pane/RecruitsAtChip";
@@ -222,6 +223,34 @@ describe("the air layer (B1, M3)", () => {
     cleanup();
     const { container: none } = render(<AirLayer game={start} level="overview" placements={[]} scenarioPackage={pkg} toScreen={toScreen} unitSymbols={new Map()} view={staticMapView} />);
     expect(none).toBeEmptyDOMElement();
+  });
+
+  it("leaves the counters out of the tab order and unpressed on a map that cannot select", () => {
+    const pkg = { map: mapStub(), scenario } as unknown as ScenarioPackage;
+    const toScreen = (point: { readonly x: number; readonly y: number }) => point;
+    const { placements } = placeAircraft(pkg, start, toScreen, []);
+    render(<AirLayer game={start} level="overview" placements={placements} scenarioPackage={pkg} toScreen={toScreen} unitSymbols={new Map()} view={staticMapView} />);
+    const counter = screen.getByRole("button", { name: /^Breguet XIX Light Bombers, /u });
+    expect(counter).toHaveAttribute("tabindex", "-1");
+    expect(counter).not.toHaveAttribute("aria-pressed");
+    expect(counter).toHaveAttribute("data-planned", "false");
+  });
+
+  it("names a counter's aircraft, type, faction and planned mission, in its faction's colour", () => {
+    const counter = aircraftCounterText(scenario, start.raised, start.units[bomber]!, [raid]);
+    const type = scenario.index.unitTypes.get(scenario.index.units.get(bomber)!.type)!;
+    expect(counter).toEqual({
+      color: scenario.index.factions.get(republic)!.color,
+      label: `Breguet XIX Light Bombers, ${type.name}, ${scenario.index.factions.get(republic)!.name}, raid mission planned`,
+      name: "Breguet XIX Light Bombers",
+      planned: raid,
+      symbolKey: `republic:${type.id}`,
+      tag: "BOMB"
+    });
+    expect(aircraftCounterText(scenario, start.raised, start.units[bomber]!, undefined).label).not.toMatch(/planned/u);
+    // A unit the scenario no longer knows (or of an unknown faction) still gets a readable counter.
+    const stray = { ...start.units[bomber]!, factionId: faction("nobody"), id: unit("stray") };
+    expect(aircraftCounterText(scenario, start.raised, stray, [])).toEqual({ color: "#888888", label: "stray, aircraft, nobody", name: "stray", planned: undefined, symbolKey: "nobody:", tag: "RCN" });
   });
 });
 

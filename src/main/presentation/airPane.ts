@@ -1,4 +1,5 @@
-import type { AirMissionKind, GeneralDefinition, GeneralTrait, UnitTypeDefinition } from "../engine/types";
+import { unitDefinitionIn, unitTypeIn } from "../engine/air/pieces";
+import type { AirMissionKind, AirMissionOrder, GameState, GeneralDefinition, GeneralTrait, Scenario, UnitState, UnitTypeDefinition } from "../engine/types";
 import { glyphs } from "./glyphs";
 
 /**
@@ -59,4 +60,37 @@ export function generalPill(general: GeneralDefinition, trait: GeneralTrait | un
   return trait === undefined
     ? { text: general.name, title: general.name }
     : { text: `${general.name} ${glyphs.dot} ${trait.name}`, title: `${general.name}: ${trait.name}` };
+}
+
+/** U2: the counter's short tag, from the missions its type flies. */
+export function aircraftTag(missions: readonly AirMissionKind[]): string {
+  if (missions.includes("raid") || missions.includes("support")) return "BOMB";
+  if (missions.includes("intercept")) return "FTR";
+  return "RCN";
+}
+
+/** B1, U2: what an aircraft's counter on the map says: its name, tag, colour and planned mission. */
+export interface AircraftCounterText {
+  readonly color: string;
+  readonly label: string;
+  readonly name: string;
+  readonly planned: AirMissionOrder | undefined;
+  readonly symbolKey: string;
+  readonly tag: string;
+}
+
+export function aircraftCounterText(scenario: Scenario, raised: GameState["raised"], unit: UnitState, plannedAirMissions: readonly AirMissionOrder[] | undefined): AircraftCounterText {
+  const definition = unitDefinitionIn(scenario, raised, unit.id);
+  const type = unitTypeIn(scenario, raised, unit.id);
+  const faction = scenario.index.factions.get(unit.factionId);
+  const planned = plannedAirMissions?.find((order) => order.unitId === unit.id);
+  const name = definition?.name ?? unit.id;
+  return {
+    color: faction?.color ?? "#888888",
+    label: `${name}, ${type?.name ?? "aircraft"}, ${faction?.name ?? unit.factionId}${planned === undefined ? "" : `, ${planned.mission.kind} mission planned`}`,
+    name,
+    planned,
+    symbolKey: `${unit.factionId}:${definition?.type ?? ""}`,
+    tag: aircraftTag(type?.air?.missions ?? [])
+  };
 }
