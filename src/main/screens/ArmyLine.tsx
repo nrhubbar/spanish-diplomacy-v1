@@ -1,5 +1,5 @@
 import type { JSX } from "react";
-import { type ArmyFigures, dugInLabel, figuresDescription, menLabel, strengthShare, valuesLabel } from "../presentation/army";
+import { type ArmyFigures, dugInLabel, fatigueLabel, figuresDescription, menLabel, strengthShare, valuesLabel } from "../presentation/army";
 import { medallionMarkup } from "../presentation/outcomeArt";
 import { cssVariables } from "../presentation/style";
 
@@ -20,9 +20,10 @@ export function ArmyLine({ factionColor, figures }: { readonly factionColor: str
         <span className="army-line-bar" />
         {`${menLabel(figures)} men`}
       </span>
-      {!figures.demoralized && figures.dugIn === undefined ? null : (
+      {!figures.demoralized && figures.fatigue === 0 && figures.dugIn === undefined ? null : (
         <span aria-hidden="true" className="army-line-status">
           {figures.demoralized ? <StatusChip icon={medallionMarkup("demoralized", factionColor)} label="Demoralized" tone="demoralized" /> : null}
+          {figures.fatigue > 0 ? <StatusChip icon={fatigueIcon(figures.fatigue)} label={fatigueLabel(figures.fatigue)} tone="fatigue" /> : null}
           {figures.dugIn === undefined ? null : (
             <StatusChip icon={medallionMarkup("dug-in", factionColor, figures.dugIn)} label={dugInLabel(figures.dugIn)} tone="dug-in" />
           )}
@@ -39,4 +40,10 @@ function StatusChip({ icon, label, tone }: { readonly icon: string; readonly lab
       {label}
     </span>
   );
+}
+
+/** C6, X8: the fatigue track as three pips, filled up to the unit's level. Decorative. */
+function fatigueIcon(level: number): string {
+  const pips = [0, 1, 2].map((index) => `<rect x="${String(1 + index * 4.4)}" y="${String(9 - index * 3)}" width="3.4" height="${String(4 + index * 3)}" rx="0.8" fill="${index < level ? "currentColor" : "none"}" stroke="currentColor" stroke-width="1"/>`).join("");
+  return `<svg viewBox="0 0 15 15" aria-hidden="true" focusable="false">${pips}</svg>`;
 }

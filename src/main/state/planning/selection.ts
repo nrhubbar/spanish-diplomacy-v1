@@ -1,14 +1,15 @@
 import { standingOrder } from "../../engine/orders";
-import type { Scenario, TerritoryId, UnitId, UnitState } from "../../engine/types";
+import type { ReplenishOrder, Scenario, TerritoryId, UnitId, UnitState } from "../../engine/types";
 import { legalDestinations } from "../../engine/validation";
 import type { Draft, OrderKind, PlannedOrder, Session } from "../session";
 import { inContestedGround, withdrawDestinations } from "./contested";
 import { chooseDestination } from "./orders";
+import { canReplenishSelection, keepBasket } from "./recruitment";
 
 export type PlanningSession = Extract<Session, { readonly phase: "planning" }>;
 
 /** Menu order of the order types. */
-const menuOrder: readonly OrderKind[] = ["move", "entrench", "rest"];
+const menuOrder: readonly OrderKind[] = ["replenish", "move", "entrench", "rest"];
 
 /**
  * The order types offered for the selected armies, in menu order (O2): Move, plus Entrench when
@@ -17,26 +18,29 @@ const menuOrder: readonly OrderKind[] = ["move", "entrench", "rest"];
  */
 export function orderKindsFor(session: PlanningSession, scenario?: Scenario): readonly OrderKind[] {
   const units = selectedUnits(session);
-  // C1: in contested ground the choice is Attack (the default) or Withdraw.
+  // C1: in contested ground the choice is Attack (the default) or Withdraw (m3r1-sub-territories).
   if (units.length > 0 && units.every((unit) => inContestedGround(scenario, session, unit))) return ["attack", "withdraw"];
   const standing = new Set(units.map(standingOrder));
-  return menuOrder.filter((kind) => kind === "move" || (standing.size === 1 && standing.has(kind as "entrench" | "rest")));
+  // R5 (m3r1-recruit-replenish): Replenish leads the menu when every selected unit may take it.
+  const replenish = scenario !== undefined && canReplenishSelection(scenario, session);
+  return menuOrder.filter((kind) => kind === "move" || (kind === "replenish" ? replenish : standing.size === 1 && standing.has(kind as "entrench" | "rest")));
 }
 
 /**
- * The order an army has in the draft: its move or withdrawal, or else its default: Attack in
- * contested ground (Hold when demoralized, C1, C4), otherwise its standing order (O1, O5).
+ * The order an army has in the draft: its move, withdrawal or Replenish, or else its default:
+ * Attack in contested ground (Hold when demoralized, C1, C4), otherwise its standing order (O1, O5).
  */
 export function orderOf(session: PlanningSession, unit: UnitState, scenario?: Scenario): OrderKind {
   const planned = session.draft.orders.find((order) => order.unitId === unit.id);
   if (planned !== undefined) return planned.kind;
+  if (session.draft.replenishments?.some((order) => order.unitId === unit.id) === true) return "replenish";
   if (inContestedGround(scenario, session, unit)) return unit.morale.demoralized ? "hold" : "attack";
   return standingOrder(unit);
 }
 
-/** How many of the player's armies move, entrench, and rest under the draft; contested-ground kinds appear once used. */
-export function orderCounts(session: PlanningSession, scenario?: Scenario): Readonly<Partial<Record<OrderKind, number>> & Record<"entrench" | "move" | "rest", number>> {
-  const counts: Partial<Record<OrderKind, number>> & Record<"entrench" | "move" | "rest", number> = { entrench: 0, move: 0, rest: 0 };
+/** How many of the player's armies move, replenish, entrench, and rest under the draft; contested-ground kinds appear once used. */
+export function orderCounts(session: PlanningSession, scenario?: Scenario): Readonly<Partial<Record<OrderKind, number>> & Record<"entrench" | "move" | "replenish" | "rest", number>> {
+  const counts: Partial<Record<OrderKind, number>> & Record<"entrench" | "move" | "replenish" | "rest", number> = { entrench: 0, move: 0, replenish: 0, rest: 0 };
   for (const unit of Object.values(session.game.state.units)) {
     if (unit.factionId !== session.factionId) continue;
     const kind = orderOf(session, unit, scenario);
@@ -55,7 +59,8 @@ export function orderCounts(session: PlanningSession, scenario?: Scenario): Read
  * order choice, so an order never applies to a stale selection.
  */
 export function withDraft(session: PlanningSession, draft: Draft): PlanningSession {
-  return { ...session, draft };
+  // The Recruit basket and Replenish orders outlive selection changes unless the new draft sets them.
+  return { ...session, draft: { ...keepBasket(session.draft), ...draft } };
 }
 
 export function feedback(session: PlanningSession, message: string): PlanningSession {
@@ -84,9 +89,14 @@ function ownUnitIdsIn(session: PlanningSession, territoryId: TerritoryId): reado
     .map((unit) => unit.id);
 }
 
-/** The player's armies in a territory that have no move order in `orders`. */
-export function availableUnitIds(session: PlanningSession, territoryId: TerritoryId, orders: readonly PlannedOrder[]): readonly UnitId[] {
-  const ordered = new Set(orders.map((order) => order.unitId));
+/** The player's armies in a territory that have no move or withdrawal in `orders`, nor a Replenish order (R5). */
+export function availableUnitIds(
+  session: PlanningSession,
+  territoryId: TerritoryId,
+  orders: readonly PlannedOrder[],
+  replenishments: readonly ReplenishOrder[] = session.draft.replenishments ?? []
+): readonly UnitId[] {
+  const ordered = new Set([...orders, ...replenishments].map((order) => order.unitId));
   return ownUnitIdsIn(session, territoryId).filter((id) => !ordered.has(id));
 }
 

@@ -1,10 +1,10 @@
 import type { JSX } from "react";
-import { citiesIn, requireFaction } from "../engine/lookup";
+import { requireFaction } from "../engine/lookup";
 import type { Scenario, TerritoryId } from "../engine/types";
 import { useAppDispatch } from "../hooks";
 import { armyFigures, orderStatus } from "../presentation/army";
 import type { DestinationEstimate } from "../presentation/odds";
-import { controlDescription, factionName, route, territoryName, unitName } from "../presentation/text";
+import { factionName, route, territoryName, unitName } from "../presentation/text";
 import { cancelOrderStage, removePlannedOrder } from "../state/gameSlice";
 import { orderCounts, type PlanningSession } from "../state/planning";
 import { ArmyLine } from "./ArmyLine";
@@ -14,6 +14,7 @@ import { armies } from "./OrderCommand";
 import { SubTerritoryFocus } from "./pane/SubTerritoryFocus";
 import { SubTerritoryList } from "./pane/SubTerritoryList";
 import { TerritoryTabs } from "./pane/TerritoryTabs";
+import { TrainingList } from "./pane/TrainingList";
 import { PlannedOddsInfo, PlannedOrderOdds } from "./PlannedOrderOdds";
 
 /**
@@ -89,7 +90,7 @@ export function OrderBuilder({ estimates, scenario, session }: BuilderProps & { 
 function OrderSummary({ scenario, session }: { readonly scenario: Scenario; readonly session: PlanningSession }): JSX.Element {
   const counts = orderCounts(session, scenario);
   // C1: contested-ground kinds join the line once any army has one.
-  const extra = (["withdraw", "attack", "hold"] as const).flatMap((kind) => {
+  const extra = (["withdraw", "attack", "replenish", "hold"] as const).flatMap((kind) => {
     const count = counts[kind] ?? 0;
     return count === 0 ? [] : [`${String(count)} ${orderStatus[kind].toLowerCase()}`];
   });
@@ -100,19 +101,17 @@ function OrderSummary({ scenario, session }: { readonly scenario: Scenario; read
   );
 }
 
+/** The Units tab: the player's armies here, then everyone else's. The heading sits above the tabs (`TerritoryHeading`). */
 function TerritoryDetails({ scenario, session, territoryId }: BuilderProps & { readonly territoryId: TerritoryId }): JSX.Element {
   const { factionId, game } = session;
   const unitsHere = Object.values(game.state.units).filter((unit) => unit.territoryId === territoryId);
   const own = unitsHere.filter((unit) => unit.factionId === factionId);
   const others = unitsHere.filter((unit) => unit.factionId !== factionId);
-  const cities = citiesIn(scenario, territoryId);
 
   return (
     <>
-      <h3>{territoryName(scenario, territoryId)}</h3>
-      <p className="pane-meta">{controlDescription(scenario, game.state.control[territoryId])}</p>
-      {cities.length === 0 ? null : <p className="pane-meta">{`Cities: ${cities.map((city) => city.name).join(", ")}`}</p>}
       {own.length === 0 ? null : <ArmyPicker own={own} scenario={scenario} session={session} />}
+      <TrainingList scenario={scenario} session={session} territoryId={territoryId} />
       {others.length === 0 ? null : (
         <div className="other-formations">
           <h4>Other armies here</h4>

@@ -133,7 +133,7 @@ describe("M13-M15 odds, modifiers, and the table (C2, C3)", () => {
         const modifier = column === 0 ? -1 : 0;
         expect([battle.column, battle.oddsLabel, battle.row, battle.result]).toEqual([column, label, tableRow(die, modifier), tableResult(scenario.combat, column, tableRow(die, modifier))]);
         const estimate = estimateAttack(scenario, state, faction("red"), [unit("r1")], territory("lowlands"));
-        expect(estimate.kind === "battle" && estimate.faces[die - 1]?.result).toBe(battle.result);
+        expect(estimate.kind === "battle" && "faces" in estimate && estimate.faces[die - 1]?.result).toBe(battle.result);
       }
     }
   });
@@ -149,7 +149,7 @@ describe("M13-M15 odds, modifiers, and the table (C2, C3)", () => {
     const base = battlefield(tiny(), [a("r1", "red", "highlands"), a("r2", "red", "highlands"), a("b1", "blue", "harbor")]);
     const state: GameState = { ...base.state, fortification: { [territory("harbor")]: { factionId: faction("blue"), level: 2 } } };
     const estimate = estimateAttack(base.scenario, state, faction("red"), [unit("r1"), unit("r2")], territory("harbor"));
-    if (estimate.kind !== "battle") throw new Error("Expected a battle estimate.");
+    if (estimate.kind !== "battle" || !("faces" in estimate)) throw new Error("Expected a d6 battle estimate.");
     for (const face of estimate.faces) {
       const battle = only(play(base.scenario, state, [move("red", "r1", "highlands", "harbor"), move("red", "r2", "highlands", "harbor")], loadedDice([face.die])));
       expect(battle.attacker).toEqual(estimate.attacker);

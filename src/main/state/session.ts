@@ -5,6 +5,8 @@ import type {
   GameState,
   MoveOrder,
   PlayerSubmission,
+  RecruitOrder,
+  ReplenishOrder,
   ScenarioId,
   SubTerritoryId,
   TerritoryId,
@@ -37,9 +39,9 @@ export interface GameRecord {
  * Entrench when healthy and Rest when demoralized (O5). In contested ground (C1) the choice is
  * Attack, the derived default (Hold for a demoralized army, C4), or a submitted Withdraw.
  */
-export type OrderKind = MoveOrder["kind"] | WithdrawOrder["kind"] | StandingOrder | "attack" | "hold";
+export type OrderKind = MoveOrder["kind"] | WithdrawOrder["kind"] | ReplenishOrder["kind"] | StandingOrder | "attack" | "hold";
 
-/** The orders a player plans and submits for armies: moves and withdrawals (C1). */
+/** The orders a player plans with a destination for armies: moves and withdrawals (C1). */
 export type PlannedOrder = MoveOrder | WithdrawOrder;
 
 /**
@@ -56,6 +58,10 @@ export interface Draft {
   /** X3: the sub-territory the pane is focused on, inside the selected territory. */
   readonly focusedSubTerritoryId?: SubTerritoryId;
   readonly orders: readonly PlannedOrder[];
+  /** X4, R2: the Recruit basket (m3r1-recruit-replenish). Carried through selection changes by `withDraft`. */
+  readonly recruits?: readonly RecruitOrder[];
+  /** R5: Replenish orders, one per unit, never alongside a move (m3r1-recruit-replenish). */
+  readonly replenishments?: readonly ReplenishOrder[];
   readonly selectedTerritoryId?: TerritoryId;
   readonly selectedUnitIds: readonly UnitId[];
   readonly stage?: OrderStage;

@@ -1,0 +1,183 @@
+// X4, X7 (m3r1-recruit-replenish): the Recruit tab, and units in training drawn dashed.
+.recruit-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  align-items: baseline;
+  justify-content: space-between;
+
+  h4 {
+    margin: 0;
+  }
+}
+
+.recruit-buildings {
+  color: var(--ink-soft);
+  font-size: 0.82rem;
+}
+
+.recruit-list {
+  display: grid;
+  gap: 6px;
+  margin: 8px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.recruit-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 2.1rem 1fr auto auto;
+  column-gap: 0.55rem;
+  align-items: center;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid rgb(36 29 24 / 30%);
+  background: rgb(255 255 255 / 60%);
+
+  &[data-locked="true"] {
+    border-style: dashed;
+    color: var(--ink-soft);
+    background: rgb(255 255 255 / 30%);
+
+    .recruit-symbol {
+      filter: grayscale(1);
+      opacity: 0.5;
+    }
+  }
+
+  // Details on hover where a pointer can hover, and on focus of a locked row (tap on a phone).
+  @media (hover: hover) {
+    &:hover .recruit-details {
+      display: grid;
+    }
+  }
+
+  &[data-locked="true"]:focus .recruit-details {
+    display: grid;
+  }
+}
+
+.recruit-symbol {
+  grid-row: span 2;
+  width: 2.1rem;
+  height: 1.4rem;
+
+  svg {
+    width: 100%;
+    height: 100%;
+  }
+}
+
+.recruit-name {
+  font-weight: 600;
+}
+
+.recruit-values {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.recruit-meta {
+  grid-column: 2 / span 2;
+  color: var(--ink-soft);
+  font-size: 0.82rem;
+}
+
+.recruit-lock {
+  color: #7a4a06;
+}
+
+.recruit-stepper {
+  display: inline-flex;
+  grid-row: 1 / span 2;
+  grid-column: 4;
+  gap: 4px;
+  align-items: center;
+}
+
+.stepper-button {
+  width: 1.7rem;
+  min-height: 1.7rem;
+  padding: 0;
+  border: 1px solid rgb(36 29 24 / 45%);
+  border-radius: 4px;
+  color: var(--ink);
+  background: #fff;
+  font-weight: 700;
+
+  &:disabled {
+    color: rgb(36 29 24 / 35%);
+    background: rgb(255 255 255 / 50%);
+  }
+}
+
+.stepper-value {
+  min-width: 1.2rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+// Hover and focus details (X4): what a type needs, and what it lacks.
+.recruit-details {
+  position: absolute;
+  z-index: 3;
+  // Below the row: the pane's scroll area clips anything drawn outside it.
+  top: calc(100% + 4px);
+  right: 0;
+  display: none;
+  gap: 2px;
+  width: 15rem;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  color: var(--ink);
+  background: var(--paper);
+  box-shadow: 0 4px 14px rgb(36 29 24 / 22%);
+  font-size: 0.82rem;
+  pointer-events: none;
+}
+
+.recruit-basket {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  justify-content: space-between;
+  margin: 0;
+  padding: 0.45rem 0.6rem;
+  border-top: 1px solid var(--rule);
+  font-weight: 600;
+  font-size: 0.86rem;
+}
+
+.training-list {
+  margin-top: 10px;
+
+  h4 {
+    margin: 0 0 6px;
+  }
+}
+
+.training-unit {
+  display: grid;
+  margin-bottom: 6px;
+  padding: 0.45rem 0.6rem;
+  border: 1.5px dashed rgb(36 29 24 / 45%);
+  color: var(--ink-soft);
+  background: rgb(255 255 255 / 25%);
+
+  &[data-paused="true"] {
+    border-color: #9e6b2b;
+  }
+}
+
+// X7: the Replenish capture's "Below strength" chip on a unit card.
+.below-strength-chip {
+  grid-column: 2;
+  justify-self: start;
+  margin: 2px 0;
+  padding: 0 0.45rem;
+  border: 1px solid rgb(36 29 24 / 40%);
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}

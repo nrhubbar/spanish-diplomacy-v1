@@ -50,7 +50,10 @@ export function groundOf(pending: PendingBattle): GroundResult | undefined {
   const base = { battleIndex: battle.index, losers, origins, territoryId: site.territoryId };
   const stated = "ground" in battle ? (battle as { readonly ground?: Ground }).ground : undefined;
   if (stated !== undefined) {
-    return stated === 0 ? undefined : { ...base, gainer: battle.engagement.attackerFactionId, ground: stated };
+    if (stated === 0) return undefined;
+    // "all" goes to whoever occupies; nobody gains it when the attackers were destroyed too.
+    if (stated === "all") return site.occupation.kind === "taken" ? { ...base, gainer: site.occupation.factionId, ground: "all" } : undefined;
+    return { ...base, gainer: battle.engagement.attackerFactionId, ground: stated };
   }
   return site.occupation.kind === "taken" ? { ...base, gainer: site.occupation.factionId, ground: "all" } : undefined;
 }

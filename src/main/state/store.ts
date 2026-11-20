@@ -5,13 +5,15 @@ import { createGameReducer } from "./gameSlice";
 import { mapAssetsSlice } from "./mapAssetsSlice";
 import { notificationMiddleware } from "./notificationMiddleware";
 import { notificationReducer } from "./notificationSlice";
+import { timerSlice } from "./timerSlice";
 
 export function createRootReducer(registry: ScenarioRegistry) {
   return combineReducers({
     briefing: briefingSlice.reducer,
     game: createGameReducer({ registry }),
     mapAssets: mapAssetsSlice.reducer,
-    notifications: notificationReducer
+    notifications: notificationReducer,
+    timer: timerSlice.reducer
   });
 }
 

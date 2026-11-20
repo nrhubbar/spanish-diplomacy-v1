@@ -11,6 +11,7 @@ const orderLabels: Readonly<Record<OrderKind, { readonly description: string; re
   hold: { description: "Default for demoralized armies here: hold and defend.", label: "Hold" },
   move: { description: "March to a neighboring territory.", label: "Move" },
   rest: { description: "Stay and recover. Demoralized armies rest instead of entrenching.", label: "Rest" },
+  replenish: { description: "Restore men and morale. Cancelled and refunded if the unit fights.", label: "Replenish" },
   withdraw: { description: "Leave for a neighbouring territory you hold, through your own sub-territories.", label: "Withdraw" }
 };
 
@@ -28,8 +29,10 @@ interface OrderCommandProps {
   readonly availableCount: number;
   /** C1: order kinds shown greyed out, with the reason (contested ground). */
   readonly blocked?: readonly BlockedOrder[];
-  /** Descriptions that depend on the board, such as where a Withdraw leads. */
+  /** Descriptions that depend on the board, such as where a Withdraw leads (C1). */
   readonly descriptions?: Partial<Readonly<Record<OrderKind, string>>>;
+  /** A description for this selection in place of the general one (R5: Replenish's men, cost and arrival). */
+  readonly details?: Partial<Readonly<Record<OrderKind, string>>>;
   /** The order types offered for the selected armies, in menu order. */
   readonly kinds: readonly OrderKind[];
   readonly menuOpen: boolean;
@@ -37,7 +40,7 @@ interface OrderCommandProps {
 }
 
 /** "Give Selected Armies Order" and, once open, the order types it offers. */
-export function OrderCommand({ availableCount, blocked = [], descriptions = {}, kinds, menuOpen, selectedCount }: OrderCommandProps): JSX.Element {
+export function OrderCommand({ availableCount, blocked = [], descriptions = {}, details, kinds, menuOpen, selectedCount }: OrderCommandProps): JSX.Element {
   const dispatch = useAppDispatch();
   const ids = useId();
   const hintId = `${ids}-hint`;
@@ -77,7 +80,7 @@ export function OrderCommand({ availableCount, blocked = [], descriptions = {}, 
               >
                 {orderLabels[kind].label}
               </button>
-              <span className="order-choice-description" id={`${ids}-${kind}`}>{descriptions[kind] ?? orderLabels[kind].description}</span>
+              <span className="order-choice-description" id={`${ids}-${kind}`}>{details?.[kind] ?? descriptions[kind] ?? orderLabels[kind].description}</span>
             </div>
           ))}
           {blocked.map((entry, index) => (

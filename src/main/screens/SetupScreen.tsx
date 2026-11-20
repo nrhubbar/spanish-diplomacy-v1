@@ -1,5 +1,6 @@
 import type { JSX } from "react";
 import type { ActorKind } from "../engine/types";
+import { TimerChoice } from "../components/timer/TimerChoice";
 import { useAppDispatch, useRegistry, useSessionIn } from "../hooks";
 import { glyphs } from "../presentation/glyphs";
 import { cssVariables } from "../presentation/style";
@@ -37,6 +38,7 @@ export function SetupScreen(): JSX.Element {
           </select>
         </label>
       ) : null}
+      <TimerChoice />
       <p className="screen-copy">Assign each command to someone at this device or to a computer player.</p>
       <div className="faction-grid">
         {scenario.factions.map((faction) => (
