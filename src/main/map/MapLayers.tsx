@@ -6,6 +6,8 @@ import { CounterLayer, layoutCounters } from "./CounterLayer";
 import { weatherIn } from "../engine/weather";
 import { DestinationOddsLayer } from "./DestinationOddsLayer";
 import { AirLayer, placeAircraft, withoutAircraft } from "./layers/AirLayer";
+import { BattleIconLayer } from "./BattleIconLayer";
+import { battleMarkPoints } from "./RouteLayer";
 import { destinationTags, RailLayer } from "./layers/RailLayer";
 import type { MapLayerProps } from "./layers/slots";
 import { SubTerritoryLayer, SubTerritoryWash } from "./layers/SubTerritoryLayer";
@@ -99,6 +101,12 @@ export function MapLayers({ assets, bounds, camera, game, geometry, layout, leve
         view={view}
       />
       <AirLayer {...layerProps} placements={air.placements} />
+      <BattleIconLayer
+        marks={battleMarkPoints(view, scenario, (id) => territoryAnchor(map, id), 1 / scale)}
+        onSelectTerritory={view.onSelectTerritory}
+        scenario={scenario}
+        toScreen={toScreen}
+      />
       {view.destinationEstimates === undefined ? null : (
         <DestinationOddsLayer counters={[...counters, ...air.rects]} estimates={view.destinationEstimates} labelAt={(id) => toScreen(mapTerritory(map, id).label)} tags={destinationTags(scenario, game, view)} weatherAt={(id) => weatherIn(scenario, game, id)?.id} />
       )}

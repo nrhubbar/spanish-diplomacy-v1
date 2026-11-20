@@ -393,7 +393,7 @@ describe("friendly consolidation (turn report)", () => {
     expect(groupOutcomes(outcomes).map((group) => describeOutcomeGroup(scenario, group))).toEqual([
       "Red Guard held.",
       "Red Rangers held.",
-      "Blue Union had no armies to order.",
+      "Blue Union had no units to order.",
       "Red League: Red Guard was disbanded after an impossible order: Destination is not connected to the unit's territory."
     ]);
   });
@@ -402,7 +402,7 @@ describe("friendly consolidation (turn report)", () => {
     render(<OutcomeSummary result={reportedCase(false)} scenario={spainM2()} />);
     const bounced = screen.getByText("Bounced (6)").closest("details");
     expect(within(bounced!).getAllByRole("listitem")).toHaveLength(3);
-    expect(screen.getByText(/A faction's own armies never block each other/)).toBeVisible();
+    expect(screen.getByText(/A faction's own units never block each other/)).toBeVisible();
     cleanup();
 
     const scenario = spainM2();

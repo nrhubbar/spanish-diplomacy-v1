@@ -108,7 +108,7 @@ export function OutcomeSummary({ result, scenario, viewer }: { readonly result: 
   return (
     <section aria-labelledby="outcomes-title" className="pane-section">
       <h3 id="outcomes-title">What happened</h3>
-      {bounced ? <p className="pane-hint">{"Only another faction's armies can stop a move. A faction's own armies never block each other."}</p> : null}
+      {bounced ? <p className="pane-hint">{"Only another faction's units can stop a move. A faction's own units never block each other."}</p> : null}
       {groups.map((group) => {
         const outcomes = result.outcomes.filter((outcome) => group.kinds.includes(outcome.kind));
         if (outcomes.length === 0) return null;
@@ -128,7 +128,7 @@ export function OutcomeSummary({ result, scenario, viewer }: { readonly result: 
           </details>
         );
       })}
-      {holds === 0 ? null : <p className="pane-hint">{`${String(holds)} ${holds === 1 ? "army" : "armies"} held without orders.`}</p>}
+      {holds === 0 ? null : <p className="pane-hint">{`${String(holds)} ${holds === 1 ? "unit" : "units"} held without orders.`}</p>}
     </section>
   );
 }

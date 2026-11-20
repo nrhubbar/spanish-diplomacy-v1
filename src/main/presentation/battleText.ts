@@ -101,8 +101,8 @@ export function battleSummary(groups: readonly BattleGroup[]): string {
     count(groups.length, "battle", "battles"),
     ...(taken > 0 ? [`${count(taken, "territory", "territories")} changed hands`] : []),
     ...(men > 0 ? [`${formatMen(men)} men lost`] : []),
-    ...(destroyed > 0 ? [`${count(destroyed, "army", "armies")} destroyed`] : []),
-    ...(shaken > 0 ? [`${count(shaken, "army", "armies")} demoralized`] : [])
+    ...(destroyed > 0 ? [`${count(destroyed, "unit", "units")} destroyed`] : []),
+    ...(shaken > 0 ? [`${count(shaken, "unit", "units")} demoralized`] : [])
   ].join(` ${glyphs.dot} `);
 }
 

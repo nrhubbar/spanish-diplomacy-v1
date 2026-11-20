@@ -35,7 +35,7 @@ export function ArmyPicker({ own, scenario, session }: ArmyPickerProps): JSX.Ele
   return (
     <div className="army-picker">
       <div className="army-picker-header">
-        <h4 id={headingId}>Your armies</h4>
+        <h4 id={headingId}>Your units</h4>
         <span className="selection-count">{available.length === 0 && selectedCount === 0 ? "All moving" : `${String(selectedCount)} of ${String(own.length)} selected`}</span>
       </div>
       <ul aria-labelledby={headingId} className="formation-list">

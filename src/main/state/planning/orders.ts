@@ -10,7 +10,7 @@ import { type PlanningSession, availableUnitIds, feedback, selectedDestinations,
 /** "Give Selected Armies Order": opens the order choice, or closes it when it is open. */
 export function toggleOrderChoice(session: PlanningSession): PlanningSession {
   if (session.draft.selectedUnitIds.length === 0) {
-    return feedback(session, "Select at least one army first.");
+    return feedback(session, "Select at least one unit first.");
   }
   const base = selectionOf(session.draft);
   return withDraft(session, session.draft.stage?.step === "choose-order" ? base : { ...base, stage: { step: "choose-order" } });
@@ -23,7 +23,7 @@ export function toggleOrderChoice(session: PlanningSession): PlanningSession {
  */
 export function chooseOrder(scenario: Scenario, session: PlanningSession, orderKind: OrderKind): PlanningSession {
   if (session.draft.selectedUnitIds.length === 0) {
-    return feedback(session, "Select at least one army first.");
+    return feedback(session, "Select at least one unit first.");
   }
   switch (orderKind) {
     case "move":
@@ -47,7 +47,7 @@ function chooseDefault(session: PlanningSession, kind: "attack" | "hold"): Plann
   const orders = session.draft.orders.filter((order) => !chosen.has(order.unitId));
   const territoryId = session.draft.selectedTerritoryId;
   const draft = territoryId === undefined ? { orders, selectedUnitIds: [] } : selecting(territoryId, availableUnitIds(session, territoryId, orders), orders);
-  const who = chosen.size === 1 ? "1 army" : `${String(chosen.size)} armies`;
+  const who = chosen.size === 1 ? "1 unit" : `${String(chosen.size)} units`;
   return withDraft(session, { ...draft, feedback: `${who} will ${kind === "attack" ? "attack where they stand" : "hold"}.` });
 }
 
@@ -55,7 +55,7 @@ function chooseDefault(session: PlanningSession, kind: "attack" | "hold"): Plann
 function chooseWithdraw(scenario: Scenario, session: PlanningSession): PlanningSession {
   const routes = selectedWithdrawRoutes(scenario, session);
   const [only] = routes;
-  if (only === undefined) return feedback(session, "These armies have no way out through your own sub-territories.");
+  if (only === undefined) return feedback(session, "These units have no way out through your own sub-territories.");
   const choosing = withDraft(session, { ...selectionOf(session.draft), stage: { orderKind: "withdraw", step: "choose-destination" } });
   return routes.length === 1 ? chooseDestination(scenario, choosing, only.to) : choosing;
 }
@@ -63,7 +63,7 @@ function chooseWithdraw(scenario: Scenario, session: PlanningSession): PlanningS
 function chooseStanding(session: PlanningSession, kind: StandingOrder, scenario?: Scenario): PlanningSession {
   const fitting = new Set(selectedUnits(session).filter((unit) => standingOrder(unit) === kind).map((unit) => unit.id));
   if (fitting.size === 0) {
-    return feedback(session, kind === "entrench" ? "Demoralized armies cannot entrench. They rest instead." : "Only demoralized armies rest.");
+    return feedback(session, kind === "entrench" ? "Demoralized units cannot entrench. They rest instead." : "Only demoralized units rest.");
   }
   const orders = session.draft.orders.filter((order) => !fitting.has(order.unitId));
   const territoryId = session.draft.selectedTerritoryId;
@@ -72,14 +72,14 @@ function chooseStanding(session: PlanningSession, kind: StandingOrder, scenario?
     ...(territoryId === undefined ? { orders, selectedUnitIds: [] } : selecting(territoryId, availableUnitIds(session, territoryId, orders, kept.replenishments, scenario), orders)),
     ...kept
   };
-  const who = fitting.size === 1 ? "1 army" : `${String(fitting.size)} armies`;
+  const who = fitting.size === 1 ? "1 unit" : `${String(fitting.size)} units`;
   return withDraft(session, { ...draft, feedback: `${who} will ${kind === "entrench" ? "entrench" : "rest"}.` });
 }
 
 function chooseMove(scenario: Scenario, session: PlanningSession): PlanningSession {
   const choosing = withDraft(session, { ...selectionOf(session.draft), stage: { orderKind: "move", step: "choose-destination" } });
   return selectedDestinations(scenario, choosing).length === 0
-    ? feedback(session, "These armies cannot move anywhere together this turn.")
+    ? feedback(session, "These units cannot move anywhere together this turn.")
     : choosing;
 }
 
@@ -96,7 +96,7 @@ export function cancelOrder(session: PlanningSession): PlanningSession {
 export function chooseDestination(scenario: Scenario, session: PlanningSession, territoryId: TerritoryId): PlanningSession {
   const origin = session.draft.selectedTerritoryId;
   if (session.draft.stage?.step !== "choose-destination" || origin === undefined) {
-    return feedback(session, "Select armies and choose Move first.");
+    return feedback(session, "Select units and choose Move first.");
   }
   if (territoryId === origin) {
     return feedback(session, "Choose a different territory as the destination.");
@@ -145,5 +145,5 @@ function refusal(scenario: Scenario, session: PlanningSession, from: TerritoryId
     const validation = validateMoveOrder(scenario, session.game.state, { factionId: session.factionId, from, kind: "move", to, unitId });
     return validation.ok ? [] : [validation.reason];
   });
-  return reasons[0] ?? "These armies cannot move there together. Choose a highlighted territory.";
+  return reasons[0] ?? "These units cannot move there together. Choose a highlighted territory.";
 }

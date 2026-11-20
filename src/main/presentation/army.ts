@@ -127,7 +127,7 @@ export function groupOrdersDescription(orders: readonly ArmyOrder[]): string {
 export function demoralizedRule(scenario: Scenario): string {
   const factor = scenario.combat.demoralizationFactor;
   const values = factor === 0.5 ? "half their values" : `${String(Math.round(factor * 100))} percent of their values`;
-  return `Demoralized armies fight at ${values} and cannot attack. They may move only into empty or friendly territory, and recover after a full turn without moving.`;
+  return `Demoralized units fight at ${values} and cannot attack. They may move only into empty or friendly territory, and recover after a full turn without moving.`;
 }
 
 /**
@@ -169,7 +169,7 @@ export function groupFigures(scenario: Scenario, state: GameState, units: readon
 /** A compact counter's accessible name: whose armies, how many, where, and their totals. */
 export function groupLabel(factionName: string, territoryName: string, figures: GroupFigures): string {
   return [
-    `${factionName}, ${String(figures.count)} armies in ${territoryName}`,
+    `${factionName}, ${String(figures.count)} units in ${territoryName}`,
     `combined attack ${String(figures.attack)}, defence ${String(figures.defence)}`,
     `${String(figures.strength)} of ${String(figures.fullStrength)} men`,
     ...(figures.demoralizedCount > 0 ? [`${String(figures.demoralizedCount)} demoralized`] : []),

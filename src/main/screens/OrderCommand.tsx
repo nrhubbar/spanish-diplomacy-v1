@@ -7,16 +7,16 @@ import type { OrderKind } from "../state/session";
 /** Player-facing name and one-line explanation for each order type. */
 const orderLabels: Readonly<Record<OrderKind, { readonly description: string; readonly label: string }>> = {
   attack: { description: "Default here. Fight for the territory where you stand.", label: "Attack" },
-  entrench: { description: "Stay and dig in. Only healthy armies entrench.", label: "Entrench" },
-  hold: { description: "Default for demoralized armies here: hold and defend.", label: "Hold" },
+  entrench: { description: "Stay and dig in. Only healthy units entrench.", label: "Entrench" },
+  hold: { description: "Default for demoralized units here: hold and defend.", label: "Hold" },
   move: { description: "March to a neighboring territory.", label: "Move" },
-  rest: { description: "Stay and recover. Demoralized armies rest instead of entrenching.", label: "Rest" },
+  rest: { description: "Stay and recover. Demoralized units rest instead of entrenching.", label: "Rest" },
   replenish: { description: "Restore men and morale. Cancelled and refunded if the unit fights.", label: "Replenish" },
   withdraw: { description: "Leave for a neighbouring territory you hold, through your own sub-territories.", label: "Withdraw" }
 };
 
 export function armies(count: number): string {
-  return `${String(count)} ${count === 1 ? "army" : "armies"}`;
+  return `${String(count)} ${count === 1 ? "unit" : "units"}`;
 }
 
 /** Brings the order choice into view as it opens, for the short mobile sheet. */
@@ -39,7 +39,7 @@ interface OrderCommandProps {
   readonly selectedCount: number;
 }
 
-/** "Give Selected Armies Order" and, once open, the order types it offers. */
+/** "Give Selected Units Order" and, once open, the order types it offers. */
 export function OrderCommand({ availableCount, blocked = [], descriptions = {}, details, kinds, menuOpen, selectedCount }: OrderCommandProps): JSX.Element {
   const dispatch = useAppDispatch();
   const ids = useId();
@@ -56,14 +56,14 @@ export function OrderCommand({ availableCount, blocked = [], descriptions = {}, 
         onClick={() => dispatch(toggleOrderMenu())}
         type="button"
       >
-        <span>Give Selected Armies Order</span>
+        <span>Give Selected Units Order</span>
         <svg aria-hidden="true" className="order-button-caret" focusable="false" viewBox="0 0 12 8">
           <path d="M1.5 1.75 6 6.25l4.5-4.5" />
         </svg>
       </button>
       {selectedCount === 0 ? (
         <p className="pane-hint" id={hintId}>
-          {availableCount === 0 ? "Every army here is moving. Select one to change its order." : "Select at least one army to give an order."}
+          {availableCount === 0 ? "Every unit here is moving. Select one to change its order." : "Select at least one unit to give an order."}
         </p>
       ) : null}
       {menuOpen ? (

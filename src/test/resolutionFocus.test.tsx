@@ -173,7 +173,7 @@ describe("turn report focus (F1)", () => {
 
   it("splits only the focused place into single armies below 125% zoom (Z2)", async () => {
     const { user } = await renderReport(session(spainShowcaseOutcomes()));
-    const madridGroup = /^Republican Government, 4 armies in Madrid/;
+    const madridGroup = /^Republican Government, 4 units in Madrid/;
     expect(screen.getByRole("button", { name: madridGroup })).toBeInTheDocument();
     expect(document.querySelector('.unit-counter[data-unit-id="rep-wad-ras-1"]')).toBeNull();
     await user.click(region("madrid"));

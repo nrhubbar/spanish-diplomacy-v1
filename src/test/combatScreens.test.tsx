@@ -159,7 +159,7 @@ describe("planning with strength and morale (C5, C6, C15)", () => {
     expect(within(pane).getByRole("button", { name: /Covadonga Infantry Regiment No. 4/ })).toHaveAccessibleName(
       /370 of 550 men, demoralized, cannot attack, dug in \+2/
     );
-    expect(within(pane).getByText(/Demoralized armies fight at half their values and cannot attack/)).toBeVisible();
+    expect(within(pane).getByText(/Demoralized units fight at half their values and cannot attack/)).toBeVisible();
   });
 
   it("shows the odds at every destination and lets the pane choose one", async () => {
@@ -171,7 +171,7 @@ describe("planning with strength and morale (C5, C6, C15)", () => {
     const pane = screen.getByRole("complementary", { name: "Orders" });
     await user.click(within(pane).getByRole("button", { name: "Clear" }));
     await user.click(within(pane).getByRole("button", { name: /^Wad-Ras Infantry Regiment No. 1/ }));
-    await user.click(within(pane).getByRole("button", { name: "Give Selected Armies Order" }));
+    await user.click(within(pane).getByRole("button", { name: "Give Selected Units Order" }));
     await user.click(within(pane).getByRole("button", { name: "Move" }));
     const list = within(pane).getByRole("list", { name: "Destinations" });
     // Under `allowance` rail adds destinations beyond the two neighbours (M3, M4).
@@ -205,7 +205,7 @@ describe("planning with strength and morale (C5, C6, C15)", () => {
     await user.click(screen.getByRole("button", { name: /^Wad-Ras Infantry Regiment No. 1/ }));
     await user.click(within(pane).getByRole("button", { name: "Clear" }));
     await user.click(within(pane).getByRole("button", { name: /^Wad-Ras Infantry Regiment No. 1/ }));
-    await user.click(within(pane).getByRole("button", { name: "Give Selected Armies Order" }));
+    await user.click(within(pane).getByRole("button", { name: "Give Selected Units Order" }));
     await user.click(within(pane).getByRole("button", { name: "Move" }));
     const list = within(pane).getByRole("list", { name: "Destinations" });
     // Wad-Ras (attack 4) joins Castilla No. 3 (attack 4), already ordered there.
@@ -241,7 +241,7 @@ describe("planning with strength and morale (C5, C6, C15)", () => {
     await user.click(screen.getByRole("button", { name: "Zoom in" }));
     await user.click(screen.getByRole("button", { name: /^Covadonga Infantry Regiment No. 4/ }));
     const pane = screen.getByRole("complementary", { name: "Orders" });
-    await user.click(within(pane).getByRole("button", { name: "Give Selected Armies Order" }));
+    await user.click(within(pane).getByRole("button", { name: "Give Selected Units Order" }));
     await user.click(within(pane).getByRole("button", { name: "Move" }));
     // The engine offers a demoralized army only empty or friendly destinations (M23).
     const list = within(pane).getByRole("list", { name: "Destinations" });

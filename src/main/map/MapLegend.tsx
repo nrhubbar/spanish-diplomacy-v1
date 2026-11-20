@@ -32,7 +32,7 @@ const labels: Readonly<Record<string, string>> = {
   contested: "Contested",
   "destination-odds": "Possible destination: approximate odds and chance to take it",
   destination: "Possible destination",
-  disbanded: "Army lost or surrendered",
+  disbanded: "Units lost or surrendered",
   moved: "Completed move",
   planned: "Planned move",
   sea: "Sea crossing",

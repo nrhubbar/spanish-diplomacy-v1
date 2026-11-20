@@ -144,8 +144,8 @@ export function selectTerritory(session: PlanningSession, territoryId: Territory
   const own = ownUnitIdsIn(session, territoryId, scenario);
   const available = availableUnitIds(session, territoryId, session.draft.orders, undefined, scenario);
   const message = own.length === 0
-    ? "None of your armies are in this territory."
-    : available.length === 0 ? "Every army here is moving. Select one to change its order." : undefined;
+    ? "None of your units are in this territory."
+    : available.length === 0 ? "Every unit here is moving. Select one to change its order." : undefined;
   return withDraft(session, {
     ...selecting(territoryId, available, session.draft.orders),
     ...(message === undefined ? {} : { feedback: message })
@@ -156,7 +156,7 @@ export function selectTerritory(session: PlanningSession, territoryId: Territory
 export function toggleUnit(session: PlanningSession, unitId: UnitId, scenario?: Scenario): PlanningSession {
   const unit = session.game.state.units[unitId];
   if (unit?.factionId !== session.factionId) {
-    return feedback(session, "Select one of your own armies.");
+    return feedback(session, "Select one of your own units.");
   }
   if (session.draft.selectedTerritoryId !== unit.territoryId) {
     return selectTerritory(session, unit.territoryId, scenario);

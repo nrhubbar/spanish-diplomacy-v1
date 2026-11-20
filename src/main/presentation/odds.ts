@@ -90,7 +90,7 @@ export function oddsSummary(estimate: DestinationEstimate): OddsSummary {
     case "reinforcement":
       return { chip: "Reinforce", label: "Reinforce", sentence: "Reinforcement: it always arrives and joins the defence.", tone: "safe" };
     case "unopposed":
-      return { chip: "Unopposed", label: "Unopposed", sentence: "Unopposed: no other faction's army is there.", tone: "safe" };
+      return { chip: "Unopposed", label: "Unopposed", sentence: "Unopposed: no other faction's units are there.", tone: "safe" };
     case "battle": {
       const odds = `${estimate.oddsLabel} ${glyphs.dot} ${percent(estimate.takeChance)}`;
       return {

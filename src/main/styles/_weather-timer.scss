@@ -250,9 +250,22 @@
   }
 }
 
-// Phone: title and Exit, then one compact row of meters, then the readiness chips.
+// Phone (X1, Q-UX-12, M1): title and Exit, then one compact row of meters, then the readiness
+// chips. The meters keep a small gap and drop their visible names (the icon carries the name;
+// screen readers still hear it).
 @media (max-width: 720px) {
   .game-header {
+    column-gap: 0.35rem;
+
+    .resource-name {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+
     &::after {
       flex-basis: 100%;
       order: 2;

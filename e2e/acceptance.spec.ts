@@ -30,7 +30,7 @@ async function pane(page: Page, name: string) {
 /** Gives the selected armies a Move order from the Orders pane and waits for destination choice. */
 async function orderMove(page: Page): Promise<void> {
   const orders = await pane(page, "Orders");
-  await orders.getByRole("button", { name: "Give Selected Armies Order" }).click();
+  await orders.getByRole("button", { name: "Give Selected Units Order" }).click();
   await orders.getByRole("button", { exact: true, name: "Move" }).click();
   await expect(page.locator('[data-highlight="destination"]').first()).toBeAttached();
 }
@@ -42,7 +42,7 @@ async function orderMove(page: Page): Promise<void> {
  */
 async function activateArmy(page: Page, army: RegExp, territory: string, how: "click" | "keyboard" = "click"): Promise<void> {
   const counters = page.locator(".counter-layer");
-  const group = counters.getByRole("button", { name: new RegExp(`armies in ${territory}`) });
+  const group = counters.getByRole("button", { name: new RegExp(`units in ${territory}`) });
   const target = await group.count() > 0 ? group.first() : counters.getByRole("button", { name: army }).first();
   if (how === "click") {
     await target.click();
@@ -69,7 +69,7 @@ test("plays a mixed local and computer turn straight through to the results", as
   const orders = await pane(page, "Orders");
   // Madrid holds four ground armies and General Miaja (m3r1-air-generals); its aircraft are selected on their own.
   await expect(orders.getByText("5 of 5 selected")).toBeVisible();
-  await orders.getByRole("button", { name: "Give Selected Armies Order" }).click();
+  await orders.getByRole("button", { name: "Give Selected Units Order" }).click();
   await expectAccessible(page);
   await orders.getByRole("button", { exact: true, name: "Move" }).click();
   await expectAccessible(page);
@@ -184,7 +184,7 @@ test("gives two colocated armies different destinations", async ({ page }) => {
   const covadongaCounter = page.locator(".counter-layer").getByRole("button", { name: /Covadonga Infantry Regiment No. 4/ });
   await activateArmy(page, /Wad-Ras Infantry Regiment No. 1/, "Madrid");
   await expect(covadongaCounter).toHaveAttribute("aria-pressed", "true");
-  const armies = (await pane(page, "Orders")).getByRole("list", { name: "Your armies" });
+  const armies = (await pane(page, "Orders")).getByRole("list", { name: "Your units" });
   await armies.getByRole("button", { name: /Covadonga/ }).click();
   await expect(covadongaCounter).toHaveAttribute("aria-pressed", "false");
   await orderMove(page);
@@ -229,7 +229,7 @@ test("plays a turn with the keyboard alone (B3)", async ({ page }) => {
   await activateArmy(page, /Wad-Ras Infantry Regiment No. 1/, "Madrid", "keyboard");
   await expect(counter).toHaveAttribute("aria-pressed", "true");
   const orders = await pane(page, "Orders");
-  await orders.getByRole("button", { name: "Give Selected Armies Order" }).focus();
+  await orders.getByRole("button", { name: "Give Selected Units Order" }).focus();
   await page.keyboard.press("Enter");
   await orders.getByRole("button", { exact: true, name: "Move" }).focus();
   await page.keyboard.press("Enter");

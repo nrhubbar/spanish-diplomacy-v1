@@ -5,7 +5,8 @@
   flex: 1;
   min-height: 24rem;
   margin: 0 clamp(0.4rem, 1vw, 0.75rem) clamp(0.4rem, 1vw, 0.75rem);
-  overflow: hidden;
+  // B3: clip, not hidden, so focus or scrollIntoView can never scroll the frame itself.
+  overflow: clip;
   border: 5px solid var(--wood);
   border-radius: 12px;
   background: var(--map-background);
@@ -326,4 +327,79 @@
   fill: var(--paper);
   font-family: var(--sans);
   font-weight: 700;
+}
+
+// B5, D8 (`ux-battle-icon`): a button over each battle medallion, with a hoverable tooltip.
+.battle-icon-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.battle-icon {
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+
+.battle-icon-button {
+  position: absolute;
+  top: -11px;
+  left: -11px;
+  width: 22px;
+  min-height: 0;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  pointer-events: auto;
+
+  &:hover:not(:disabled) {
+    background: transparent;
+  }
+
+  &:disabled {
+    cursor: default;
+    opacity: 1;
+  }
+}
+
+.battle-tooltip {
+  position: absolute;
+  z-index: 5;
+  top: -14px;
+  left: 16px;
+  display: none;
+  gap: 2px;
+  width: max-content;
+  max-width: 15rem;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid rgb(36 29 24 / 35%);
+  border-radius: 6px;
+  color: var(--ink);
+  background: var(--paper);
+  box-shadow: 0 4px 14px rgb(20 14 10 / 25%);
+  font-size: 0.8rem;
+  pointer-events: auto;
+}
+
+.battle-tooltip-title {
+  font-family: var(--serif);
+  font-size: 0.95rem;
+}
+
+.battle-tooltip-hint {
+  color: var(--ink-soft);
+}
+
+.battle-icon:hover .battle-tooltip,
+.battle-icon:focus-within .battle-tooltip {
+  display: grid;
+}
+
+.battle-icon:hover,
+.battle-icon:focus-within {
+  z-index: 5;
 }

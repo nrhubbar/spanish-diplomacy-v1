@@ -46,6 +46,18 @@ export function controlDescription(scenario: Scenario, control: TerritoryControl
   return `Contested by ${listNames(control.factionIds.map((id) => factionName(scenario, id)))}`;
 }
 
+/**
+ * M6 (`ux-world`): the pane heading's holding line. With sub-territories it says whether the
+ * territory is held whole and how many sub-territories it has: "Held whole by Republican
+ * Government \u00b7 4 sub-territories".
+ */
+export function holdingDescription(scenario: Scenario, control: TerritoryControl | undefined, subTerritories: number): string {
+  if (subTerritories === 0 || control === undefined) return controlDescription(scenario, control);
+  const count = `${String(subTerritories)} ${subTerritories === 1 ? "sub-territory" : "sub-territories"}`;
+  if (control.kind === "controlled") return `Held whole by ${factionName(scenario, control.factionId)} ${glyphs.dot} ${count}`;
+  return `${controlDescription(scenario, control)} ${glyphs.dot} ${count}`;
+}
+
 /** Short controller name for change lists: a faction or "Contested". */
 export function controllerName(scenario: Scenario, control: TerritoryControl): string {
   return control.kind === "controlled" ? factionName(scenario, control.factionId) : "Contested";
@@ -162,7 +174,7 @@ export function describeOutcomeGroup(scenario: Scenario, group: OutcomeGroup, ou
   if (isSystemOutcome(outcome)) return describeSystemOutcome(outcome, { scenario, ...view });
   if (outcome.kind === "no-move") {
     return outcome.unitId === undefined
-      ? `${factionName(scenario, outcome.factionId)} had no armies to order.`
+      ? `${factionName(scenario, outcome.factionId)} had no units to order.`
       : `${unitName(scenario, outcome.unitId)} held.`;
   }
   if (outcome.kind === "rejected-order") {

@@ -32,7 +32,7 @@ test("@capture walks every screen", async ({ page }) => {
   await page.locator('.map-region[data-territory-id="madrid"]').focus();
   await page.keyboard.press("Enter");
   await capture(page, "04a-territory-selected");
-  await page.getByRole("button", { name: "Give Selected Armies Order" }).click();
+  await page.getByRole("button", { name: "Give Selected Units Order" }).click();
   await capture(page, "04b-order-menu");
   await page.getByRole("button", { exact: true, name: "Move" }).click();
   await capture(page, "04-choosing-destination");
@@ -99,7 +99,7 @@ test("@capture handoff and game over", async ({ page }) => {
   await capture(page, "12-fixture-planning");
   await page.locator('.map-region[data-territory-id="westfold"]').focus();
   await page.keyboard.press("Enter");
-  await page.getByRole("button", { name: "Give Selected Armies Order" }).click();
+  await page.getByRole("button", { name: "Give Selected Units Order" }).click();
   await page.getByRole("button", { exact: true, name: "Move" }).click();
   await page.locator('.map-region[data-territory-id="lowlands"]').focus();
   await page.keyboard.press("Enter");
@@ -180,7 +180,7 @@ test("@capture combat presentation", async ({ page }) => {
   await page.keyboard.press("Enter");
   const orders = page.getByRole("button", { name: "Orders", exact: true });
   if (await orders.isVisible()) await orders.click();
-  await page.getByRole("button", { name: "Give Selected Armies Order" }).click();
+  await page.getByRole("button", { name: "Give Selected Units Order" }).click();
   await page.getByRole("button", { exact: true, name: "Move" }).click();
   await expect(page.locator(".odds-chip").first()).toBeVisible();
   await capture(page, "18-destination-odds");
@@ -280,7 +280,7 @@ test("@capture weather and turn timer", async ({ page }) => {
   await capture(page, "20b-planning-timer-weather");
   await page.locator('.map-region[data-territory-id="madrid"]').focus();
   await page.keyboard.press("Enter");
-  await page.getByRole("button", { name: "Give Selected Armies Order" }).click();
+  await page.getByRole("button", { name: "Give Selected Units Order" }).click();
   await page.getByRole("button", { exact: true, name: "Move" }).click();
   await capture(page, "20c-destination-weather");
   await page.getByRole("button", { name: "Pause the turn timer" }).click();
@@ -330,7 +330,7 @@ test("@capture sub-territories and contested ground", async ({ isMobile, page })
   await page.keyboard.press("Enter");
   await expect(page.locator(".sub-territory-wash")).toBeAttached();
   await capture(page, "22a-contested-overview");
-  await page.getByRole("button", { name: "Give Selected Armies Order" }).click();
+  await page.getByRole("button", { name: "Give Selected Units Order" }).click();
   await capture(page, "22b-contested-orders");
   await page.getByRole("button", { exact: true, name: "Withdraw" }).click();
   await capture(page, "22c-withdraw-destination");
@@ -389,7 +389,7 @@ test("@capture movement, rail and ports (X5, X6)", async ({ page }) => {
   if (await toggle.isVisible() && await toggle.getAttribute("aria-pressed") === "true") await toggle.click();
   await page.locator('.map-region[data-territory-id="madrid"]').focus();
   await page.keyboard.press("Enter");
-  await page.getByRole("button", { name: "Give Selected Armies Order" }).click();
+  await page.getByRole("button", { name: "Give Selected Units Order" }).click();
   await page.getByRole("button", { exact: true, name: "Move" }).click();
   await expect(page.locator(".army-leaving").first()).toBeAttached();
   await capture(page, "23a-move-destinations");

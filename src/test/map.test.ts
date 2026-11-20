@@ -258,7 +258,7 @@ describe("player-facing text", () => {
     const text = result.outcomes.map((outcome) => describeOutcome(scenario, outcome)).join(" | ");
     expect(text).toContain("met Blue Union head-on");
     expect(text).toContain("impossible order");
-    expect(describeOutcome(scenario, { factionId: faction("red"), kind: "no-move" })).toContain("no armies");
+    expect(describeOutcome(scenario, { factionId: faction("red"), kind: "no-move" })).toContain("no units");
     expect(describeOutcome(scenario, { factionId: faction("red"), kind: "no-move", unitId: "red-guard" as never })).toBe("Red Guard held.");
     expect(bounceReason(scenario, { holdingFactionIds: [faction("blue")], kind: "held" })).toBe("held by Blue Union");
     expect(bounceReason(scenario, { kind: "standoff", opposingFactionIds: [faction("blue"), faction("red")] })).toBe("standoff with Blue Union and Red League");

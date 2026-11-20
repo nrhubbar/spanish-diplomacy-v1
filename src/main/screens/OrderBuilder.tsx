@@ -57,7 +57,7 @@ export function OrderBuilder({ estimates, scenario, session }: BuilderProps & { 
         {draft.selectedAircraftId !== undefined ? (
           <AirPane key={draft.selectedAircraftId} scenario={scenario} session={session} unitId={draft.selectedAircraftId} />
         ) : territoryId === undefined ? (
-          <p className="pane-hint">Select a territory or one of your armies on the map.</p>
+          <p className="pane-hint">Select a territory or one of your units on the map.</p>
         ) : (
           draft.focusedSubTerritoryId === undefined ? (
             <TerritoryTabs key={territoryId} scenario={scenario} session={session} territoryId={territoryId}>
@@ -123,7 +123,7 @@ function TerritoryDetails({ scenario, session, territoryId }: BuilderProps & { r
       <AircraftHere aircraft={aircraft} scenario={scenario} session={session} />
       {others.length === 0 ? null : (
         <div className="other-formations">
-          <h4>Other armies here</h4>
+          <h4>Other units here</h4>
           <ul className="plain-list other-army-list">
             {others.map((unit) => (
               <li key={unit.id}>

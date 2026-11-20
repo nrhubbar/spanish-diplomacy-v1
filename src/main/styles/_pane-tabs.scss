@@ -1,25 +1,37 @@
 // The territory pane's tabs (X3) and the sub-territory focus view. Slices style their own tab
 // bodies in their own partials.
+.pane-tabs {
+  display: flex;
+  flex-direction: column;
+}
+
+// M6 (`ux-pane-a-units`): boxed tabs on a rule, each with its count.
 .pane-tab-list {
   display: flex;
-  gap: 4px;
-  margin: 0 0 8px;
+  gap: 2px;
+  margin: 6px 0 8px;
   border-bottom: 1px solid var(--rule);
 }
 
 .pane-tab {
-  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  margin-bottom: -1px;
   padding: 4px 12px;
-  border: 0;
-  border-bottom: 2px solid transparent;
+  border: 1px solid transparent;
+  border-bottom: 0;
+  border-radius: 6px 6px 0 0;
   background: none;
   color: inherit;
   font: inherit;
+  font-weight: 600;
   cursor: pointer;
 
   &[aria-selected="true"] {
-    border-bottom-color: var(--ink);
-    font-weight: 600;
+    border-color: var(--rule);
+    background: var(--paper);
   }
 
   // B2: its own hover, so the plain button hover never paints the tab maroon.
@@ -28,10 +40,37 @@
     background: none;
   }
 
+  &[aria-selected="true"]:hover:not(:disabled) {
+    background: var(--paper);
+  }
+
   @media (hover: hover) {
-    &:hover:not(:disabled) {
+    &:not([aria-selected="true"]):hover:not(:disabled) {
       background: var(--paper-deep);
     }
+  }
+}
+
+.pane-tab-count {
+  min-width: 1.3em;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: rgb(36 29 24 / 10%);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+// M2 (`ux-phone-pane-a`): on the phone sheet the tabs come first and stay at the top of the
+// scroll area; the heading and meta row follow them and scroll away with the tab's content.
+.campaign-map[data-pane-layout="sheet"] {
+  .pane-tab-list {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    order: -1;
+    margin-top: 0;
+    background: rgb(246 241 230 / 97%);
   }
 }
 

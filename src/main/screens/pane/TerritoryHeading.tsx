@@ -1,8 +1,9 @@
 import type { JSX } from "react";
 import { TerritoryWeather } from "../../components/weather/TerritoryWeather";
 import { citiesIn } from "../../engine/lookup";
+import { subTerritoriesOf } from "../../engine/partition/holders";
 import type { Scenario } from "../../engine/types";
-import { controlDescription, territoryName } from "../../presentation/text";
+import { holdingDescription, territoryName } from "../../presentation/text";
 import { ContestedChip } from "./ContestedChip";
 import { IncomeChip } from "./IncomeChip";
 import { RecruitsAtChip } from "./RecruitsAtChip";
@@ -16,15 +17,18 @@ export function hasTerritoryMeta(scenario: Scenario): boolean {
 
 /**
  * The selected territory's heading, shown above the pane's tabs so it stays on every tab
- * (approved capture `ux-world`): the name, who holds it, its cities, then the meta row.
+ * (approved capture `ux-world`): the name, who holds it (whole or not) and how many
+ * sub-territories it has (M6), then the meta row. With sub-territories the cities are in the
+ * sub-territory list; without them (Milestone 2 scenarios) they get their own line.
  */
 export function TerritoryHeading(props: TerritoryTabProps): JSX.Element {
   const { scenario, session, territoryId } = props;
-  const cities = citiesIn(scenario, territoryId);
+  const subs = subTerritoriesOf(scenario, territoryId).length;
+  const cities = subs === 0 ? citiesIn(scenario, territoryId) : [];
   return (
     <>
       <h3>{territoryName(scenario, territoryId)}</h3>
-      <p className="pane-meta">{controlDescription(scenario, session.game.state.control[territoryId])}</p>
+      <p className="pane-meta">{holdingDescription(scenario, session.game.state.control[territoryId], subs)}</p>
       {cities.length === 0 ? null : <p className="pane-meta">{`Cities: ${cities.map((city) => city.name).join(", ")}`}</p>}
       {hasTerritoryMeta(scenario) ? <TerritoryMetaRow {...props} /> : null}
     </>
