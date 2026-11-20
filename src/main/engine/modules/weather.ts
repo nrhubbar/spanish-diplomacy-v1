@@ -1,4 +1,5 @@
 import { removeArmies } from "../board";
+import { requireD20, usesD20 } from "../d20/rules";
 import type { RuleHooks } from "../hooks";
 import type { RuleModule } from "../modules";
 import type { Phase } from "../phases/draft";
@@ -43,7 +44,7 @@ const takeFrostbite: Phase = (draft) => {
     if (men <= 0) continue;
     const left = Math.max(0, unit.strength - men);
     const fullStrength = (scenario.index.units.get(unit.id) ?? start.raised[unit.id])?.fullStrength ?? unit.strength;
-    const breaksUp = left <= 0 || (scenario.d20 !== undefined && left < scenario.d20.breakUpShare * fullStrength);
+    const breaksUp = left <= 0 || (usesD20(scenario) && left < requireD20(scenario).breakUpShare * fullStrength);
     if (breaksUp) brokenUp.push(unit.id);
     else armies[order.unitId] = { ...unit, strength: left };
     events.push({ factionId: unit.factionId, kind: "frostbite", men, territoryId: unit.territoryId, unitId: unit.id, ...(breaksUp ? { destroyed: true as const } : {}) });

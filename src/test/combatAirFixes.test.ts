@@ -426,5 +426,8 @@ describe("M8: frostbite and break-up", () => {
     ]);
     expect(result.finalState.units[unit("worn")]).toBeUndefined();
     expect(result.finalState.units[unit("fresh")]?.strength).toBe(950);
+    // The d6 table has no break-up (D6 is a d20 rule).
+    const d6 = resolveTurn(onD6Dice(field), cold, submit(move("republic", "worn", "madrid", "castilla-la-mancha")), 3);
+    expect(d6.finalState.units[unit("worn")]?.strength).toBe(99);
   });
 });
