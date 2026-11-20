@@ -5,7 +5,7 @@ import { idSet, type Issues } from "./issues";
 import { checkPartition } from "./partitionChecks";
 import { checkSubTerritories } from "./subTerritoryChecks";
 
-/** Rules L14-L17, L24 and L26 for `m3-modular` packages. */
+/** Rules L14-L17, L24, L26 and L27 for `m3-modular` packages. */
 export function checkModular(document: ModularScenarioDocument, issues: Issues, modules: ModuleRegistry): void {
   for (const area of ruleAreas) {
     const moduleId = document.rules[area];
@@ -21,8 +21,17 @@ export function checkModular(document: ModularScenarioDocument, issues: Issues, 
   checkSubTerritories(document, issues);
   checkPartition(document, issues);
   checkResources(document, issues);
+  checkBuildBudgets(document, issues);
   checkUnitTypes(document, issues);
   checkBases(document, issues);
+}
+
+/** L27: with an economy module, every computer player has a Build budget (EB-15). */
+function checkBuildBudgets(document: ModularScenarioDocument, issues: Issues): void {
+  if (document.rules.economy === "none") return;
+  for (const [factionId, profile] of Object.entries(document.ai.profiles)) {
+    if (profile.builds === undefined) issues.add(`ai.profiles.${factionId}: needs a builds budget with the economy module "${document.rules.economy}" (L27)`);
+  }
 }
 
 /** L3: the sources every block and catalogue entry cites exist. */

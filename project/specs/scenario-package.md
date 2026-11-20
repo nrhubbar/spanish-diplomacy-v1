@@ -61,7 +61,7 @@ The shipped table is the prototype's, corrected so each odds step is exactly one
 
 ### AI profiles
 
-`ai.profiles` is keyed by faction id, one profile per faction (E7), so a harness variant patches `/ai/profiles/<factionId>`; the blunder chance is `/ai/blunderChance`. A profile is `{ computer, offensive, stakes, victoryAlarm }`, the weights of today's computer player. `computer`: `approachObjective`, `bouncedLastTurn`, `caution`, `demoralizedShare`, `enemyLoss`, `ownLoss`. `offensive`: `reach`, `oddsTieBreak`, `staging`, `focus`, `stallStep`, `stallCap`. `stakes`: `city`, `objective`, `territory`. `victoryAlarm`: `perStep`, `steps`. The strategy logic stays in code.
+`ai.profiles` is keyed by faction id, one profile per faction (E7), so a harness variant patches `/ai/profiles/<factionId>`; the blunder chance is `/ai/blunderChance`. A profile is `{ computer, offensive, stakes, victoryAlarm }`, the weights of today's computer player. `computer`: `approachObjective`, `bouncedLastTurn`, `caution`, `demoralizedShare`, `enemyLoss`, `ownLoss`. `offensive`: `reach`, `oddsTieBreak`, `staging`, `focus`, `stallStep`, `stallCap`. `stakes`: `city`, `objective`, `territory`. `victoryAlarm`: `perStep`, `steps`. `builds` (EB-15, required with an economy module, L27): `spendShare`, the share of each resource left after Recruit orders that Build orders may spend; `maxOrdersPerTurn`; and `itemsPerEmptyQueue`, the new items one sub-territory with an empty queue may take in a turn. The strategy logic stays in code.
 
 ## Milestone 3 blocks (`m3-modular` only)
 
@@ -162,6 +162,7 @@ The loader applies these when the app starts. Each failure names the JSON path a
 | L24 | Every resource amount names a known resource; with resources, every faction has a `startingStock`. |
 | L25 | `air.raidTable` rises to 20. |
 | L26 | With the `provinces` partition module: a territory's `initialControl` matches its sub-territories' start holders (one holder: controlled by it; two or more: contested by exactly them), and a city's `initialController` is its sub-territory's start holder. |
+| L27 | With an economy module other than `none`, every AI profile has a `builds` budget. |
 
 ## The `m3-modular` ruleset
 

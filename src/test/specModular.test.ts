@@ -155,6 +155,8 @@ describe("m3-modular loader rules", () => {
     ["L22 works step above the cap", (s: Json) => { block(block(s, "d20"), "modifiers")["worksPerTurn"] = 10; }, "worksPerTurn cannot exceed worksMax (L22)"],
     ["L22 d20 modifier for an unknown faction", (s: Json) => { list(block(s, "d20")["factionModifiers"])[0]!["factionId"] = "green"; }, "unknown faction \"green\""],
     ["L23 faction without a profile", (s: Json) => { delete block(block(s, "ai"), "profiles")["red"]; }, "ai.profiles: missing a profile for \"red\" (L23)"],
+    ["L27 economy without a Build budget", (s: Json) => { delete block(block(block(s, "ai"), "profiles"), "red")["builds"]; }, "ai.profiles.red: needs a builds budget with the economy module \"development\" (L27)"],
+    ["L27 Build budget share above 1", (s: Json) => { block(block(block(block(s, "ai"), "profiles"), "red"), "builds")["spendShare"] = 1.5; }, "spendShare"],
     ["L23 profile for an unknown faction", (s: Json) => { block(block(s, "ai"), "profiles")["green"] = block(block(s, "ai"), "profiles")["red"]; }, "ai.profiles: unknown faction \"green\" (L3)"],
     ["L21 general unit without a roster entry", (s: Json) => { delete list(s["units"])[3]!["generalId"]; }, "is a general and needs a generalId (L21)"],
     ["L21 unknown general", (s: Json) => { list(s["units"])[3]!["generalId"] = "napoleon"; }, "unknown general \"napoleon\""],

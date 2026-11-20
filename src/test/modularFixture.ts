@@ -28,10 +28,13 @@ const sub = (id: string, territoryId: string, startHolder: string, extra: Json =
 export function modularScenario(): Json {
   const base = structuredClone(tinyScenario) as unknown as Json;
   const factions = (base["factions"] as Json[]).map((faction) => ({ ...faction, startingStock: { funds: 10, manpower: 5 }, seatTerritoryId: faction["id"] === "red" ? "westfold" : "harbor" }));
+  const ai = base["ai"] as Json;
+  const profiles = Object.fromEntries(Object.entries(ai["profiles"] as Record<string, Json>).map(([id, profile]) => [id, { ...profile, builds: { spendShare: 0.6, maxOrdersPerTurn: 3, itemsPerEmptyQueue: 1 } }]));
   const capitals: Record<string, string> = { westfold: "west-town-quarter", highlands: "highlands", harbor: "port-quarter", lowlands: "lowlands", isle: "isle" };
   return {
     ...base,
     ruleset: "m3-modular",
+    ai: { ...ai, profiles },
     rules: { dice: "d20-graded", economy: "development", recruitment: "buildings", weather: "seasonal-zones", movement: "allowance", partition: "provinces", air: "missions" },
     factions,
     territories: (base["territories"] as Json[]).map((territory) => ({ ...territory, capitalSubTerritoryId: capitals[territory["id"] as string], weatherZone: "plains" })),

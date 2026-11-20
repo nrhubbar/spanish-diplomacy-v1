@@ -1,6 +1,7 @@
 import { applyBuildOrder, isCapital, projectCost, queuedLevel, siteRefusal, validateBuildOrder } from "../../engine/economy/catalogue";
 import { holdersIn, subTerritoriesOf, territoriesHeldWhole } from "../../engine/economy/holdings";
 import { amountOf, treasuryOf } from "../../engine/economy/resources";
+import { requireAiProfile } from "../../engine/lookup";
 import type {
   BuildOrder,
   BuildProject,
@@ -17,8 +18,9 @@ import { balanceLeft } from "./spending";
 
 /**
  * H5: the computer player's Build orders ($3-$5, $8). It builds only in territories it holds
- * whole (queues pause in contested ground), one new item per sub-territory with an empty queue,
- * and spends only part of what the earlier planners (Recruit) left. In priority order:
+ * whole (queues pause in contested ground) and only where a sub-territory's queue is empty. Its
+ * profile's `builds` budget (EB-15, L27) sets the share of what the earlier planners (Recruit)
+ * left that it may spend, the orders a turn, and the new items per empty queue. In priority order:
  * - repair rail lost to fighting ($8);
  * - buildings that unlock unit types at a capital (Barracks, then Factory and the rest);
  * - Fortifications (any `defence-roll` building) at the front;
@@ -27,14 +29,6 @@ import { balanceLeft } from "./spending";
  * It never draws from the tie-break source: ties go by scenario order.
  */
 
-/**
- * Share of the Funds left after this turn's Recruit orders that builds may spend. Design note:
- * a starting value, to move into the AI profiles (E7) when the contract adds the field.
- */
-export const buildSpendShare = 0.6;
-/** Build orders per turn, so a rich treasury does not vanish into queues at once. Design note, as above. */
-export const maxBuildsPerTurn = 3;
-
 interface Candidate {
   readonly order: BuildOrder;
   readonly score: number;
@@ -42,21 +36,23 @@ interface Candidate {
 
 export const planBuilds: OrderPlanner<BuildOrder> = (context) => {
   const { factionId, scenario, state } = context;
-  if (scenario.rules.economy === "none" || state.treasuries[factionId] === undefined) return [];
+  const limits = requireAiProfile(scenario, factionId).builds;
+  if (scenario.rules.economy === "none" || limits === undefined || state.treasuries[factionId] === undefined) return [];
   const left = balanceLeft(context);
-  const budget = scaleBalance(scenario, left, buildSpendShare);
+  const budget = scaleBalance(scenario, left, limits.spendShare);
   const candidates = [...candidatesFor(context)].sort((a, b) => b.score - a.score);
 
   const chosen: BuildOrder[] = [];
   let ledger: GameState = { ...state, treasuries: { ...state.treasuries, [factionId]: budget } };
-  const used = new Set<string>();
+  const used = new Map<string, number>();
   for (const { order } of candidates) {
-    if (chosen.length >= maxBuildsPerTurn) break;
-    if (used.has(order.subTerritoryId) || !validateBuildOrder(scenario, state, order).ok) continue;
+    if (chosen.length >= limits.maxOrdersPerTurn) break;
+    const items = used.get(order.subTerritoryId) ?? 0;
+    if (items >= limits.itemsPerEmptyQueue || !validateBuildOrder(scenario, state, order).ok) continue;
     const applied = applyBuildOrder(scenario, ledger, order);
     if (!applied.ok) continue;
     ledger = applied.state;
-    used.add(order.subTerritoryId);
+    used.set(order.subTerritoryId, items + 1);
     chosen.push(order);
   }
   return chosen;

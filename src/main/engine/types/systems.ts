@@ -133,8 +133,23 @@ export interface GeneralDefinition {
   readonly traitId: TraitId;
 }
 
+/**
+ * E7, EB-15: how much of what Recruit orders leave a computer player spends on Build orders. It
+ * builds only where a sub-territory's queue is empty.
+ */
+export interface AiBuildBudget {
+  /** New items one sub-territory with an empty queue may take in a turn. */
+  readonly itemsPerEmptyQueue: number;
+  /** Build orders a turn, so a rich treasury does not vanish into queues at once. */
+  readonly maxOrdersPerTurn: number;
+  /** Share of each resource left after this turn's Recruit orders that builds may spend. */
+  readonly spendShare: number;
+}
+
 /** E7: a computer player's weights for one faction. The strategy logic stays in code. */
 export interface AiProfile {
+  /** EB-15: the Build budget; required with an economy module (L27). */
+  readonly builds?: AiBuildBudget;
   readonly computer: {
     readonly approachObjective: number;
     readonly bouncedLastTurn: number;

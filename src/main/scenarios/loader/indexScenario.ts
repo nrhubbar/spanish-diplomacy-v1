@@ -1,6 +1,7 @@
 import { type ModuleRegistry, selectModules } from "../../engine/modules";
 import { m2StrengthRules } from "../../engine/types";
 import type {
+  AiProfile,
   CityDefinition,
   CityId,
   CombatRules,
@@ -117,7 +118,7 @@ export function indexScenario(document: ScenarioDocument, modules: ModuleRegistr
 
   return {
     ...parts.scenario,
-    ai: { blunderChance: document.ai.blunderChance, profiles: document.ai.profiles },
+    ai: { blunderChance: document.ai.blunderChance, profiles: aiProfiles(document.ai.profiles) },
     cities,
     combat,
     connections,
@@ -144,4 +145,9 @@ export function indexScenario(document: ScenarioDocument, modules: ModuleRegistr
     units,
     victory: document.victory
   };
+}
+
+/** E7: the profiles as the engine reads them; a profile without a Build budget leaves the key out. */
+function aiProfiles(profiles: ScenarioDocument["ai"]["profiles"]): Readonly<Record<FactionId, AiProfile>> {
+  return Object.fromEntries(Object.entries(profiles).map(([id, { builds, ...weights }]) => [id, builds === undefined ? weights : { ...weights, builds }]));
 }
