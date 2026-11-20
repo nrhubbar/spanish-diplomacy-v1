@@ -133,6 +133,20 @@ describe("withdrawals from the seat and the last objective (D24)", () => {
     expect(planWithdrawals(context(scenario, state, "south")).map((order) => order.unitId)).toEqual([unit("south-granada-6")]);
   });
 
+  it("never gives up two objectives at once: the second becomes the last stand", () => {
+    // The North holds contested Pais Vasco and Aragon, its only objectives with units, and both
+    // stands look hopeless by the ordinary rule (at least even odds of losing them whole).
+    const scenario = spain();
+    const state = withUnits(scenario, [
+      ["north-flandes-5", "north", "pais-vasco"], ["rep-basque-column", "republic", "pais-vasco"], ["rep-santander-column", "republic", "pais-vasco"],
+      ["rep-vitoria-8", "republic", "pais-vasco"], ["rep-sevilla-34", "republic", "pais-vasco"],
+      ["north-aragon-17", "north", "aragon"], ["rep-durruti-column", "republic", "aragon"], ["rep-catalan-columns", "republic", "aragon"],
+      ["rep-barcelona-security", "republic", "aragon"], ["rep-otumba-9", "republic", "aragon"]
+    ]);
+    const orders = planWithdrawals(context(scenario, state, "north"));
+    expect(orders.map((order) => order.from)).toHaveLength(1);
+  });
+
   it("holds its last objective while it can, even when every unit there is demoralized", () => {
     // The North's only objective with units is Pais Vasco (not its seat), held by a shaken battalion.
     const scenario = spain();

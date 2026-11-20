@@ -30,7 +30,7 @@ export const planWithdrawals: OrderPlanner<WithdrawOrder> = (context) => {
   if (!isPartitioned(scenario)) return [];
   const ordered = new Set(planned.flatMap((order) => ("unitId" in order ? [order.unitId] : [])));
   const units = Object.values(state.units);
-  const lastStand = lastStandsOf(context);
+  const stands = lastStandsOf(context);
   return scenario.territories.flatMap((territory): WithdrawOrder[] => {
     if (!isContested(scenario, state, territory.id)) return [];
     const own = units.filter((unit) => unit.territoryId === territory.id && unit.factionId === factionId && !ordered.has(unit.id) && canWithdraw(scenario, state, unit.id));
@@ -38,7 +38,8 @@ export const planWithdrawals: OrderPlanner<WithdrawOrder> = (context) => {
     if (own.length === 0 || enemies.length === 0) return [];
     const to = bestRoute(context, territory.id);
     if (to === undefined) return [];
-    const leaving = hopeless(context, territory.id, own, enemies, lastStand(territory.id)) ? own : leavingDemoralized(own);
+    const leaving = hopeless(context, territory.id, own, enemies, stands.isLastStand(territory.id)) ? own : leavingDemoralized(own);
+    stands.leave(territory.id, leaving);
     return leaving.map((unit) => order(factionId, unit.id, territory.id, to));
   });
 };
@@ -72,20 +73,35 @@ function hopeless(
   return odds.takeChance >= (lastStand ? withdraw.lastStandTakeChance : withdraw.hopelessTakeChance);
 }
 
+interface LastStands {
+  /** Whether the faction makes a last stand in the territory. */
+  readonly isLastStand: (territoryId: TerritoryId) => boolean;
+  /** Records the planned withdrawals, so an objective they empty no longer counts as held. */
+  readonly leave: (territoryId: TerritoryId, leaving: readonly UnitState[]) => void;
+}
+
 /**
  * D24: the territories the faction makes a last stand in: its seat, its last objective (when it
- * has units in only one), and victory-critical ground.
+ * has units in only one), and victory-critical ground. Objectives emptied by withdrawals planned
+ * earlier this turn no longer count, so two hopeless objectives are never both given up at once.
  */
-function lastStandsOf({ factionId, scenario, state }: PlanningContext): (territoryId: TerritoryId) => boolean {
+function lastStandsOf({ factionId, scenario, state }: PlanningContext): LastStands {
   const faction = requireFaction(scenario, factionId);
   // Aircraft hold no ground (D17), so only ground units keep an objective held.
   const ground = groundView(scenario, state);
-  const held = faction.objectiveTerritoryIds.filter((id) => Object.values(ground.units).some((unit) => unit.factionId === factionId && unit.territoryId === id));
+  const standing = (territoryId: TerritoryId): readonly UnitState[] => Object.values(ground.units).filter((unit) => unit.factionId === factionId && unit.territoryId === territoryId);
+  const held = new Set(faction.objectiveTerritoryIds.filter((id) => standing(id).length > 0));
   let assessment: Assessment | undefined;
-  return (territoryId) => {
-    if (territoryId === faction.seatTerritoryId || (held.length === 1 && held[0] === territoryId)) return true;
-    assessment ??= assess(scenario, ground, factionId);
-    return assessment.isCritical(territoryId);
+  return {
+    isLastStand: (territoryId) => {
+      if (territoryId === faction.seatTerritoryId || (held.size === 1 && held.has(territoryId))) return true;
+      assessment ??= assess(scenario, ground, factionId);
+      return assessment.isCritical(territoryId);
+    },
+    leave: (territoryId, leaving) => {
+      const gone = new Set(leaving.map((unit) => unit.id));
+      if (standing(territoryId).every((unit) => gone.has(unit.id))) held.delete(territoryId);
+    }
   };
 }
 

@@ -154,8 +154,9 @@ export interface AiProfile {
   readonly stakes: { readonly city: number; readonly objective: number; readonly territory: number };
   /**
    * `steps` and `perStep` raise the stakes of a rival's territories as it nears victory, so the
-   * faction attacks the leader. `critical` raises the stake of an own territory whose loss alone
-   * would hand a rival victory (D23): stake times (1 + critical).
+   * faction attacks the leader. `critical` raises, by stake times (1 + critical), a territory whose
+   * change of hands alone would decide the game (D23): own ground a rival in reach would win by
+   * taking, and ground the faction itself would win by taking.
    */
   readonly victoryAlarm: { readonly critical: number; readonly perStep: number; readonly steps: number };
   /**
