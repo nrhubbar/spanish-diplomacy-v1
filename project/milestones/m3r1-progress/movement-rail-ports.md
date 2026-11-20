@@ -22,7 +22,7 @@ Mode: make it work (declog D13). Decisions M1-M6, X5, X6; step 3 and the withdra
   - the rail layer (`map/layers/RailLayer.tsx`): thin curves between sub-territory stations, main lines (level 2+) at full-map zoom, all lines from the operational zoom, tie marks on main lines, the rideable network of the selected units in the route colour, rail and sea routes traced while choosing and once planned;
   - small line icons (`MoveIcon.tsx`) on chips and the truck rule;
   - planned orders list each leg ("Madrid \u2192 Castilla-La Mancha (rail) \u2192 Arag\u00f3n").
-- Captures: `@capture movement, rail and ports (X5, X6)` writes `21a-move-destinations`, `21b-move-route-card`, `21c-rail-operational`.
+- Captures: `@capture movement, rail and ports (X5, X6)` writes `23a-move-destinations`, `23b-move-route-card`, `23c-rail-operational`.
 - Tests: `src/test/movement.test.ts`, 20 tests on the modular tiny-front with a lorry and a horse type: ground, rail reach and range, departures, allowance and trucks, route shapes and checks, ports and amphibious, the amphibious modifier, transit, interception, held-back armies, the computer player, the X5 texts, withdraw legs.
 
 ## Decisions
