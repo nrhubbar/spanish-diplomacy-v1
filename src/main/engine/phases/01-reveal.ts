@@ -12,7 +12,7 @@ export const revealOrders: Phase = (draft) => {
   const { scenario, start, submissions } = draft.input;
   const { invalid, rejected, valid } = partitionOrders(scenario, start, submissions.flatMap((submission) => submission.orders));
   const armies = removeArmies(start.units, invalid.map((outcome) => outcome.order.unitId));
-  const { advances, reinforcements } = classifyMoves(start.control, armies, valid);
+  const { advances, reinforcements } = classifyMoves(scenario, start, armies, valid);
   const origins = new Map(valid.map((order) => [order.unitId, order.from]));
   return { ...draft, armies, orders: { advances, invalid, origins, reinforcements, rejected, valid } };
 };

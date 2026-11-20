@@ -32,14 +32,14 @@ export function supportModifiers(context: CombatHookContext): readonly CombatMod
 /**
  * U3 (AG-5): a raid's income cut. The cut names the turn whose income it removes (the turn after
  * the raid), so it reads the same whether the economy passes the start-of-turn or the current
- * state. It removes the cut sub-territory's development yield from its holder, when the holder
- * holds the whole territory (only whole territories pay, $2).
+ * state. It removes the cut sub-territory's development yield from the faction raided, only while
+ * that faction still holds it and the whole territory (only whole territories pay, $2).
  */
 export function raidIncomeDelta(context: IncomeContext): Resources {
   const { factionId, scenario, state } = context;
   const delta: Record<string, number> = {};
   for (const cut of state.raidCuts) {
-    if (cut.turnNumber !== state.turnNumber) continue;
+    if (cut.turnNumber !== state.turnNumber || cut.factionId !== factionId) continue;
     const sub = state.subTerritories[cut.subTerritoryId];
     const definition = scenario.index.subTerritories.get(cut.subTerritoryId);
     if (sub === undefined || definition === undefined || sub.holder !== factionId) continue;

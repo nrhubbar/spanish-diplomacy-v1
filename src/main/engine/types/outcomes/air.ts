@@ -28,12 +28,13 @@ export interface ReconFlownOutcome {
   readonly untilTurn: number;
 }
 
-/** U2, U3: fighters intercepted a raid over a territory. */
+/** U2, U3, D27.3: fighters intercepted enemy aircraft (raids, support, and recon they shot down) over a territory. */
 export interface InterceptionOutcome {
   readonly factionId: FactionId;
   readonly interceptorIds: readonly UnitId[];
   readonly kind: "interception";
   readonly lostUnitIds: readonly UnitId[];
+  /** The enemy aircraft intercepted, whatever their mission. */
   readonly raiderIds: readonly UnitId[];
   readonly territoryId: TerritoryId;
 }
