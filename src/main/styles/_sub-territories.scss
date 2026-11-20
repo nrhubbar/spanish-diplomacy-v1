@@ -145,9 +145,16 @@
   font: inherit;
   cursor: pointer;
 
-  &:hover {
-    border-color: #7a5a06;
-    background: var(--gold-wash);
+  &:hover:not(:disabled) {
+    color: var(--ink);
+    background: var(--paper);
+  }
+
+  @media (hover: hover) {
+    &:hover:not(:disabled) {
+      border-color: #7a5a06;
+      background: var(--gold-wash);
+    }
   }
 }
 

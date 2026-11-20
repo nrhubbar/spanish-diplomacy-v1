@@ -21,6 +21,18 @@
     border-bottom-color: var(--ink);
     font-weight: 600;
   }
+
+  // B2: its own hover, so the plain button hover never paints the tab maroon.
+  &:hover:not(:disabled) {
+    color: inherit;
+    background: none;
+  }
+
+  @media (hover: hover) {
+    &:hover:not(:disabled) {
+      background: var(--paper-deep);
+    }
+  }
 }
 
 .sub-territory-focus h3 {

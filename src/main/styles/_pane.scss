@@ -66,6 +66,7 @@
 
 .map-pane-toggle:hover:not(:disabled) {
   color: var(--paper);
+  background: var(--accent-dark);
 }
 
 .map-pane[data-open="false"] .map-pane-toggle {

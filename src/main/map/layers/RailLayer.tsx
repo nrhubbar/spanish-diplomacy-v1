@@ -9,15 +9,23 @@ import type { MapLayerProps } from "./slots";
 
 type Point = { readonly x: number; readonly y: number };
 
+interface RailLayerProps extends MapLayerProps {
+  /** The phone sheet layout: branch lines (level 1) wait for the detail zoom (M4). */
+  readonly narrow?: boolean;
+}
+
 /**
  * X6: rail on the map. Lines are thin curves between sub-territory stations (each one's chief
  * town), joining every two bordering sub-territories that both have rail. Main lines (level 2
- * and up) show at full-map zoom, every line from the operational zoom. When units are selected,
- * the network they can ride this turn is drawn in the route colour, and while a destination is
- * being chosen each rail or sea route is traced (X5). Planned rail and sea moves stay traced.
- * Decorative: the Orders pane says the same in words.
+ * and up) show at full-map zoom, every line from the operational zoom (the detail zoom on a
+ * phone, M4). When units are selected, the network they can ride this turn is drawn in the route
+ * colour, and while a destination is being chosen each rail or sea route is traced (X5). Planned
+ * rail and sea moves stay traced. Decorative: the Orders pane says the same in words.
+ *
+ * A `<g>` in screen pixels, drawn inside the vector layer under the names and cities (B4); see
+ * `VectorLayer`'s `underlay`.
  */
-export function RailLayer({ game, level, scenarioPackage, toScreen, view }: MapLayerProps): JSX.Element | null {
+export function RailLayer({ game, level, narrow = false, scenarioPackage, toScreen, view }: RailLayerProps): JSX.Element | null {
   const { map, scenario } = scenarioPackage;
   const links = useMemo(() => railLinks(scenario, game), [scenario, game]);
   const selection = useMemo(() => selectedArmy(game, [...view.selectedUnitIds]), [game, view.selectedUnitIds]);
@@ -37,12 +45,13 @@ export function RailLayer({ game, level, scenarioPackage, toScreen, view }: MapL
     const entry = stationPoints(map).get(id);
     return entry === undefined ? undefined : toScreen(entry.capital);
   };
-  const shown = links.filter((link) => level !== "overview" || link.level >= 2 || (rideable.has(link.a) && rideable.has(link.b)));
+  const branchLines = narrow ? level === "detail" : level !== "overview";
+  const shown = links.filter((link) => branchLines || link.level >= 2 || (rideable.has(link.a) && rideable.has(link.b)));
   const stations = new Set(shown.flatMap((link) => [link.a, link.b]));
   const traced = [...routes.filter((route) => route.shape !== "step" && route.shape !== "march"), ...planned];
 
   return (
-    <svg aria-hidden="true" className="rail-layer" data-testid="rail-layer">
+    <g aria-hidden="true" className="rail-layer" data-testid="rail-layer">
       {shown.map((link) => {
         const a = station(link.a);
         const b = station(link.b);
@@ -52,9 +61,9 @@ export function RailLayer({ game, level, scenarioPackage, toScreen, view }: MapL
         const ride = rideable.has(link.a) && rideable.has(link.b);
         return (
           <g data-level={link.level} key={`${link.a}|${link.b}`}>
-            <path className="rail-line-halo" d={d} strokeWidth={width + 2} />
+            <path className="rail-line-halo" d={d} strokeWidth={width + 1} />
             <path className="rail-line" d={d} data-rideable={ride ? "true" : undefined} strokeWidth={ride ? width + 0.8 : width} />
-            {link.level >= 2 ? <path className="rail-ties" d={d} strokeWidth={width + 3} /> : null}
+            {link.level >= 2 ? <path className="rail-ties" d={d} strokeWidth={width + 1.6} /> : null}
           </g>
         );
       })}
@@ -76,7 +85,7 @@ export function RailLayer({ game, level, scenarioPackage, toScreen, view }: MapL
           />
         );
       })}
-    </svg>
+    </g>
   );
 }
 

@@ -1,11 +1,11 @@
 import type { GameState } from "../engine/types";
 import { territoryName } from "../presentation/text";
-import type { MapRect, ScenarioPackage } from "../scenarios/loader";
+import type { MapPackage, MapPoint, MapRect, ScenarioPackage } from "../scenarios/loader";
 import type { MapAssets } from "../scenarios/registry";
 import { CounterLayer, layoutCounters } from "./CounterLayer";
 import { weatherIn } from "../engine/weather";
 import { DestinationOddsLayer } from "./DestinationOddsLayer";
-import { AirLayer, withoutAircraft } from "./layers/AirLayer";
+import { AirLayer, placeAircraft, withoutAircraft } from "./layers/AirLayer";
 import { destinationTags, RailLayer } from "./layers/RailLayer";
 import type { MapLayerProps } from "./layers/slots";
 import { SubTerritoryLayer, SubTerritoryWash } from "./layers/SubTerritoryLayer";
@@ -13,7 +13,7 @@ import { mapControlObstacles } from "./MapControls";
 import type { PaneLayout } from "./MapPane";
 import { TerrainLayer } from "./TerrainLayer";
 import { VectorLayer } from "./VectorLayer";
-import { mapTerritory } from "./anchors";
+import { mapTerritory, territoryAnchor } from "./anchors";
 import { type Camera, type CameraBounds, type Viewport, mapToScreen, pixelsPerUnit, semanticLevel, visibleRect } from "./camera";
 import type { PreparedGeometry } from "./markup";
 import { type ScreenRect, visibleContextLabels } from "./placement";
@@ -45,7 +45,9 @@ export function MapLayers({ assets, bounds, camera, game, geometry, layout, leve
   const expandedTerritoryId = highlightedTerritoryId(view);
   // U2 (m3r1-air-generals): aircraft are drawn by the air layer at their airfields, not as army counters.
   const groundGame = withoutAircraft(scenario, game);
-  const counterLayout = layoutCounters(groundGame, map, camera.zoom, toScreen, landLabels, {
+  // B1: aircraft are placed first, clear of the names, and the army counters are laid out around them.
+  const air = placeAircraft(scenarioPackage, game, toScreen, landLabels, stackSpots(groundGame, map, toScreen));
+  const counterLayout = layoutCounters(groundGame, map, camera.zoom, toScreen, [...landLabels, ...air.rects], {
     ...(expandedTerritoryId === undefined ? {} : { expandedTerritoryId }),
     narrow: layout === "sheet"
   });
@@ -72,22 +74,22 @@ export function MapLayers({ assets, bounds, camera, game, geometry, layout, leve
         level={level}
         map={map}
         scenario={scenario}
+        underlay={<RailLayer {...layerProps} narrow={layout === "sheet"} />}
         unit={1 / scale}
         view={view}
         visible={visible}
         water={visibleWater(map, {
           level,
           // landLabels already holds the fixed controls and legend for this layout.
-          obstacles: [...counters, ...landLabels],
+          obstacles: [...counters, ...air.rects, ...landLabels],
           scale,
           toScreen,
           // The open pane floats 0.75rem in from the edge, so names keep clear of its full width.
           viewport: { height: viewport.height - viewport.insetBottom, width: viewport.width - viewport.insetRight - (viewport.insetRight > 0 ? 12 : 0) }
         })}
       />
-      {/* Milestone 3 layers, between the map and the counters: sub-territories, then rail. */}
+      {/* Milestone 3 layers, between the map and the counters: sub-territories (rail is in the vector layer's underlay). */}
       <SubTerritoryLayer {...layerProps} />
-      <RailLayer {...layerProps} />
       <CounterLayer
         game={groundGame}
         layout={counterLayout}
@@ -96,12 +98,21 @@ export function MapLayers({ assets, bounds, camera, game, geometry, layout, leve
         unitSymbols={assets.unitSymbols}
         view={view}
       />
-      <AirLayer {...layerProps} />
+      <AirLayer {...layerProps} placements={air.placements} />
       {view.destinationEstimates === undefined ? null : (
-        <DestinationOddsLayer counters={counters} estimates={view.destinationEstimates} labelAt={(id) => toScreen(mapTerritory(map, id).label)} tags={destinationTags(scenario, game, view)} weatherAt={(id) => weatherIn(scenario, game, id)?.id} />
+        <DestinationOddsLayer counters={[...counters, ...air.rects]} estimates={view.destinationEstimates} labelAt={(id) => toScreen(mapTerritory(map, id).label)} tags={destinationTags(scenario, game, view)} weatherAt={(id) => weatherIn(scenario, game, id)?.id} />
       )}
     </>
   );
+}
+
+/** Where each territory's army stack is first placed: under its anchor, about one compact counter. */
+function stackSpots(game: GameState, map: MapPackage, toScreen: (point: MapPoint) => MapPoint): readonly ScreenRect[] {
+  const territories = new Set(Object.values(game.units).map((unit) => unit.territoryId));
+  return [...territories].map((id) => {
+    const anchor = toScreen(territoryAnchor(map, id));
+    return { height: 30, width: 56, x: anchor.x - 28, y: anchor.y };
+  });
 }
 
 /** Screen rectangles counters should avoid: visible labels and the fixed map controls (V4, V7). */

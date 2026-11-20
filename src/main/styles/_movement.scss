@@ -101,27 +101,25 @@
   border-top: 1px solid var(--rule);
 }
 
+// B4: the rail is a group inside the vector layer, under the names and cities; it never takes a click.
 .rail-layer {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  width: 100%;
-  height: 100%;
-  overflow: visible;
   pointer-events: none;
 }
 
+// M4 (`ux-rail-b`): thin, dark, slightly translucent lines, a hairline of paper to lift them off the
+// relief, and fine ties within the line's own width.
 .rail-line {
   fill: none;
-  stroke: #3b2f26;
+  stroke: #241d18;
   stroke-linecap: round;
-  stroke-opacity: 0.55;
+  stroke-opacity: 0.62;
 }
 
 .rail-line-halo {
   fill: none;
-  stroke: var(--route-halo);
+  stroke: var(--paper);
   stroke-linecap: round;
+  stroke-opacity: 0.45;
 }
 
 .rail-line[data-rideable="true"] {
@@ -131,9 +129,9 @@
 
 .rail-ties {
   fill: none;
-  stroke: #3b2f26;
-  stroke-dasharray: 1 5;
-  stroke-opacity: 0.55;
+  stroke: #241d18;
+  stroke-dasharray: 0.9 4;
+  stroke-opacity: 0.6;
 }
 
 .rail-station {

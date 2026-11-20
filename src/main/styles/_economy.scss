@@ -36,7 +36,13 @@
   cursor: pointer;
 
   &:hover:not(:disabled) {
-    background: var(--paper-deep);
+    background: var(--paper);
+  }
+
+  @media (hover: hover) {
+    &:hover:not(:disabled) {
+      background: var(--paper-deep);
+    }
   }
 
   &[aria-expanded="true"] {
