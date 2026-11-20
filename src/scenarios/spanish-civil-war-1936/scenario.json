@@ -1853,6 +1853,29 @@
       "historicalNote": "The Santander garrison. Strength assumes VI Division's Republican-zone barracks rate."
     },
     {
+      "id": "rep-baleares-37",
+      "name": "Baleares Infantry Regiment No. 37",
+      "factionId": "republic",
+      "type": "infantry-regiment",
+      "formationKind": "regiment",
+      "strength": 655,
+      "fullStrength": 655,
+      "territoryId": "islas-baleares",
+      "sources": [
+        {
+          "sourceId": "arzanegui-1993",
+          "reference": "infantry regiment list; Balearics barracks-strength row (655, 52%)"
+        },
+        {
+          "sourceId": "ubc-july-map"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "The Mah\u00f3n garrison. It stayed loyal and held Menorca for the Republic all war. Strength is the Mah\u00f3n barracks figure. It stands in the Islas Baleares, where units are territory-level, facing Palma No. 36 across the islands."
+    },
+    {
       "id": "north-zamora-29",
       "name": "Zamora Infantry Regiment No. 29",
       "factionId": "north",

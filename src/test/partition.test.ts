@@ -99,21 +99,24 @@ describe("occupation and the sweep (P3)", () => {
     expect(holdersIn(scenario, current.subTerritories, territory("andalucia"))).toEqual(["republic"]);
   });
 
-  it("does not sweep where a territory-level garrison stands: C\u00e1ceres, \u00c1lava, Mallorca and Ibiza (D23)", () => {
+  it("does not sweep where a territory-level garrison stands: C\u00e1ceres, \u00c1lava, Mallorca, Ibiza and Menorca (D23)", () => {
     // Units stand in a territory, not a sub-territory, so a garrison anywhere in Extremadura
     // defends C\u00e1ceres: the faction there is not alone, and the turn is a standing battle.
     const scenario = spain();
     const start = initialGameState(scenario);
-    const garrisons = { extremadura: "north-argel-27", "islas-baleares": "south-palma-36", "pais-vasco": "north-flandes-5" } as const;
-    for (const [territoryId, unitId] of Object.entries(garrisons)) expect(start.units[unit(unitId)]?.territoryId).toBe(territoryId);
+    const garrisons = [["extremadura", "north-argel-27"], ["islas-baleares", "south-palma-36"], ["islas-baleares", "rep-baleares-37"], ["pais-vasco", "north-flandes-5"]] as const;
+    for (const [territoryId, unitId] of garrisons) expect(start.units[unit(unitId)]?.territoryId).toBe(territoryId);
     // Dice that leave every standing battle's sides in place, so only the sweep rule is tested.
-    const swept = (state: GameState): readonly string[] => resolveTurn(scenario, state, [], 1, loadedDice([3, 4, 5, 3])).subTerritoryChanges
+    const swept = (state: GameState): readonly string[] => resolveTurn(scenario, state, [], 1, loadedDice([3, 4, 5, 4, 3])).subTerritoryChanges
       .filter((change) => change.cause === "sweep")
       .map((change) => change.subTerritoryId);
-    expect(swept(start).filter((id) => ["caceres", "alava", "mallorca", "ibiza"].includes(id))).toEqual([]);
+    expect(swept(start).filter((id) => ["caceres", "alava", "mallorca", "ibiza", "menorca"].includes(id))).toEqual([]);
     // Without the C\u00e1ceres garrison, the Republic's regiment at Badajoz sweeps it on turn 1.
     const ungarrisoned = { ...start, units: Object.fromEntries(Object.entries(start.units).filter(([id]) => id !== "north-argel-27")) };
     expect(swept(ungarrisoned)).toContain("caceres");
+    // Without the Mah\u00f3n regiment, Palma No. 36 stands alone in the Balearics and sweeps Menorca.
+    const noMahon = { ...start, units: Object.fromEntries(Object.entries(start.units).filter(([id]) => id !== "rep-baleares-37")) };
+    expect(swept(noMahon)).toContain("menorca");
   });
 });
 
