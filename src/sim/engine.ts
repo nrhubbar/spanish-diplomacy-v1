@@ -2,6 +2,7 @@
  * The harness's only door into the game. Every import from `src/main/**` lives here, so a
  * change to the engine, the computer player or the scenario folder is repointed in one file.
  */
+import { unitKindIn } from "../main/engine/air/pieces";
 import { initialGameState } from "../main/engine/resolution";
 import type { FactionId, Scenario, ScenarioId, TurnOutcome, TurnResolutionResult, UnitId } from "../main/engine/types";
 import { isMoveOrder } from "../main/engine/types/orders";
@@ -110,6 +111,15 @@ export function objectivesOf(scenario: Scenario): ReadonlyMap<string, ReadonlySe
     if (unknown.length > 0) throw new Error(`Faction "${faction.id}" has objectives that are not territories: ${unknown.join(", ")}.`);
     return [faction.id, new Set<string>(faction.objectiveTerritoryIds)];
   }));
+}
+
+/**
+ * Whether a unit can hold ground, for S3. Aircraft cannot (D17): they never fight a ground battle
+ * and rebase or die when their airfield's territory falls, so one parked in an objective does not
+ * hold it. Ground units and generals (who stand with their army under the d20 rules) can.
+ */
+export function holdsGround(scenario: Scenario, state: PlayedTurn["before"], unitId: string): boolean {
+  return unitKindIn(scenario, state.raised, unitId as UnitId) !== "air";
 }
 
 /** Who holds a territory in a state, as a comparable key. Territory level only: never a sub-territory or a city. */

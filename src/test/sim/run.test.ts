@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { fixtureSources } from "../fixtures/scenarios/fixtureSources";
 import { faction } from "../support";
-import { loadScenario, objectivesOf, scenarioSources, territoryIdsOf } from "../../sim/engine";
-import { assertInTerritories, playGame } from "../../sim/game";
+import { defaultScenarioId, holdsGround, loadScenario, objectivesOf, scenarioSources, territoryIdsOf, type TurnOutcome } from "../../sim/engine";
+import { assertInTerritories, playGame, retreatedUnits } from "../../sim/game";
+import { initialGameState } from "../../main/engine/resolution";
 import { applyPatch, PatchError } from "../../sim/patch";
 import {
   baselineName,
@@ -62,6 +63,24 @@ describe("harness core on the tiny-front fixture", () => {
     expect(() => { assertInTerritories([["red-guard", { ...piece, territoryId: "westfold" }]], territoryIdsOf(scenario)); }).not.toThrow();
     // An objective that is not a territory.
     expect(() => objectivesOf(without("harbor"))).toThrow(/Faction "red" has objectives that are not territories: harbor/);
+  });
+
+  it("judges S3 on units that hold ground, and counts withdrawals as leaving under fire", () => {
+    // Aircraft never hold ground (D17); ground units and generals do.
+    const spain = loadScenario(sources, defaultScenarioId(scenarioSources()));
+    const start = initialGameState(spain);
+    expect(holdsGround(spain, start, "rep-catalan-recon")).toBe(false);
+    expect(holdsGround(spain, start, "rep-wad-ras-1")).toBe(true);
+    expect(holdsGround(spain, start, "rep-general-miaja")).toBe(true);
+    // Retreats, retreating bounces and Withdraw orders (C1) are driven out, not abandoned.
+    const outcomes = [
+      { kind: "battle", retreats: [{ from: "a", to: "b", unitId: "retreated" }] },
+      { kind: "bounced-move", order: { unitId: "bounced" }, retreatedTo: "b" },
+      { kind: "bounced-move", order: { unitId: "held" } },
+      { kind: "withdrew", order: { unitId: "withdrawn" } },
+      { kind: "aircraft-rebased", unitId: "rebased" }
+    ] as unknown as readonly TurnOutcome[];
+    expect([...retreatedUnits(outcomes)].sort()).toEqual(["bounced", "retreated", "withdrawn"]);
   });
 
   it("stops at the turn limit and calls a game still running a freeze", () => {
