@@ -38,7 +38,7 @@ describe("route chips and rows for each shape (X5)", () => {
     expect(chips[3]?.text).toBe("1 move left after");
     expect(routeChips(scenario, march, [...tired, ...tired], 5, { kind: "battle" } as never).map((chip) => chip.text)).toEqual(expect.arrayContaining(["2 moves left after", expect.stringContaining("2 units")]));
     expect(routeTag(march)).toBe("March 2");
-    expect(routeDetail(scenario, state, march, 0)).toBe("Stops in Aragón if an enemy army enters it");
+    expect(routeDetail(scenario, state, march, 0)).toBe("Stops in Arag\u00f3n if an enemy army enters it");
     const rows = routeRows(scenario, state, march, 4);
     expect(rows[0]).toEqual({ label: "Moves this turn", value: "3 of 4" });
     expect(rows[1]).toEqual({ label: "Enters Huesca (mountain)", value: "+1 move" });
@@ -55,9 +55,9 @@ describe("route chips and rows for each shape (X5)", () => {
 
   it("describes a ride, the places left to board and where it may be stopped", () => {
     const rail = route({ legs: [{ kind: "rail", to: t("catalunya") }], rail: ride, shape: "rail", steps: 0, to: t("catalunya"), transit: ride.through });
-    expect(routeChips(scenario, rail, [], 1, undefined).map((chip) => chip.text)).toEqual(["Rail · level 2", "Via Castilla-La Mancha, Valencia"]);
+    expect(routeChips(scenario, rail, [], 1, undefined).map((chip) => chip.text)).toEqual(["Rail \u00b7 level 2", "Via Castilla-La Mancha, Valencia"]);
     const detail = routeDetail(scenario, state, rail, 0) ?? "";
-    expect(detail).toContain("Rail from Madrid to Cataluña, level 2 or better the whole way (range 4)");
+    expect(detail).toContain("Rail from Madrid to Catalu\u00f1a, level 2 or better the whole way (range 4)");
     expect(detail).toContain("Stops in Castilla-La Mancha, Valencia if an enemy army enters it");
     expect(routeRows(scenario, state, rail, 1)).toContainEqual({ label: "Rail, level 2", value: "2 of 4 borders" });
     expect(routeTag(route({ shape: "step-rail", to: t("catalunya") }))).toBe("Step, then rail");
@@ -70,8 +70,8 @@ describe("route chips and rows for each shape (X5)", () => {
     expect(routeDetail(scenario, state, port, 0)).toBe("Sails from Barcelona, lands at Mallorca (2 a turn)");
     expect(routeTag(port)).toBe("By sea");
     const assault = route({ legs: [{ kind: "sea", to: t("islas-baleares") }], sea: { departure: sub("barcelona"), kind: "amphibious" }, shape: "sea", to: t("islas-baleares") });
-    expect(routeChips(scenario, assault, [], 1, undefined)[0]).toEqual({ kind: "sea", text: "Amphibious −4", warn: true });
-    expect(routeRows(scenario, state, assault, 1)).toContainEqual({ label: "Amphibious assault", value: "−4" });
+    expect(routeChips(scenario, assault, [], 1, undefined)[0]).toEqual({ kind: "sea", text: "Amphibious \u22124", warn: true });
+    expect(routeRows(scenario, state, assault, 1)).toContainEqual({ label: "Amphibious assault", value: "\u22124" });
     expect(routeDetail(scenario, state, assault, 0)).toBe("Sails from Barcelona and storms the coast: one army per lane a turn");
     expect(routeTag(assault)).toBe("Amphibious");
     const d6 = onD6Dice(scenario);
@@ -82,7 +82,7 @@ describe("route chips and rows for each shape (X5)", () => {
   it("adds the weather row for the destination when the turn has weather", () => {
     const zones = Object.fromEntries((scenario.weather?.zones ?? []).map((zone) => [zone.id, "rain"]));
     const wet: GameState = { ...state, weather: { outcomes: zones as NonNullable<GameState["weather"]>["outcomes"], roll: 15 } };
-    expect(routeRows(scenario, wet, route({ shape: "step", to: t("aragon") }), 1).at(-1)?.label).toBe("Weather · Aragón");
+    expect(routeRows(scenario, wet, route({ shape: "step", to: t("aragon") }), 1).at(-1)?.label).toBe("Weather \u00b7 Arag\u00f3n");
   });
 });
 
@@ -93,7 +93,7 @@ describe("the army leaving (X5, M1)", () => {
     const state = withUnits(scenario, [["rep-wad-ras-1", "republic", "madrid"], ["rep-sevilla-34", "republic", "madrid"], ["rep-vitoria-8", "republic", "madrid"]]);
     const three = [unit("rep-wad-ras-1"), unit("rep-sevilla-34"), unit("rep-vitoria-8")];
     expect(armyLeaving(scenario, state, faction("republic"), t("madrid"), three)?.line).toBe("1 move this turn: no trucks (2 trucks for these 3 units would give +1). Rail does not use moves.");
-    expect(armyLeaving(scenario, state, faction("republic"), t("madrid"), [unit("rep-wad-ras-1")])?.heading).toMatch(/^Army leaving Madrid · 1 unit, \d+ attack$/);
+    expect(armyLeaving(scenario, state, faction("republic"), t("madrid"), [unit("rep-wad-ras-1")])?.heading).toMatch(/^Army leaving Madrid \u00b7 1 unit, \d+ attack$/);
     expect(armyLeaving(scenario, state, faction("republic"), t("madrid"), [])).toBeUndefined();
     expect(armyLeaving(tiny(), state, faction("republic"), t("madrid"), three)).toBeUndefined();
   });
@@ -127,7 +127,7 @@ describe("the route breakdown card (X5)", () => {
   it("shows the odds, modifiers and take chance for an attack", () => {
     const estimate = { attack: 12, defence: 6, kind: "battle", modifiers: [{ kind: "amphibious", roll: -4 }], oddsLabel: "2:1", takeChance: 0.5 } as never;
     render(<RouteCard allowance={1} estimate={estimate} route={step} scenario={scenario} state={state} />);
-    expect(screen.getByRole("heading", { name: "Attack Aragón" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Attack Arag\u00f3n" })).toBeInTheDocument();
     expect(screen.getByText("Odds (attack 12 v defence 6)")).toBeInTheDocument();
     expect(screen.getByText("Chance to take it")).toBeInTheDocument();
   });
@@ -135,10 +135,10 @@ describe("the route breakdown card (X5)", () => {
   it("names a reinforcement and a plain move", () => {
     cleanup();
     const { unmount } = render(<RouteCard allowance={1} estimate={{ kind: "reinforcement" } as never} route={step} scenario={scenario} state={state} />);
-    expect(screen.getByRole("heading", { name: "Reinforce Aragón" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Reinforce Arag\u00f3n" })).toBeInTheDocument();
     unmount();
     render(<RouteCard allowance={1} estimate={undefined} route={step} scenario={scenario} state={state} />);
-    expect(screen.getByRole("heading", { name: "Move to Aragón" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Move to Arag\u00f3n" })).toBeInTheDocument();
     expect(screen.queryByText("Chance to take it")).toBeNull();
   });
 });

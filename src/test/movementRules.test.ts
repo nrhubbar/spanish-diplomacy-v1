@@ -34,7 +34,7 @@ describe("rail rides past enemy armies (M-1, M2, Q-MR-16)", () => {
 
   it("does not run a train through contested ground where an enemy army stands", () => {
     const start = initialGameState(scenario);
-    // The Basque column holds País Vasco's Republican half at the start.
+    // The Basque column holds Pa\u00eds Vasco's Republican half at the start.
     for (const ride of railReach(scenario, start, faction("north"), territory("castilla-y-leon")).values()) {
       expect(ride.through).not.toContain("pais-vasco");
     }

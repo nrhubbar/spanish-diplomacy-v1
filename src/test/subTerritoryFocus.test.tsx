@@ -20,8 +20,8 @@ function show(id: string, state: GameState = initialGameState(spain())) {
 describe("the sub-territory focus (X3)", () => {
   it("shows a capital port with rail and its city", () => {
     show("barcelona");
-    expect(screen.getByRole("button", { name: "Back to Cataluña" })).toBeInTheDocument();
-    expect(screen.getByText(/Capital sub-territory of Cataluña/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Back to Catalu\u00f1a" })).toBeInTheDocument();
+    expect(screen.getByText(/Capital sub-territory of Catalu\u00f1a/)).toBeInTheDocument();
     expect(screen.getByText(/port 2/)).toBeInTheDocument();
     expect(screen.getByText(/^Rail \d$/)).toBeInTheDocument();
     expect(screen.getByText(/Cities: /)).toBeInTheDocument();
