@@ -1,17 +1,14 @@
 import { replenishQuote } from "../engine/recruitment/rules";
 import { addResources } from "../engine/resources";
 import type { GameState, Resources, Scenario, TrainingItem, UnitState } from "../engine/types";
+import { amountText } from "./economy";
 import { glyphs } from "./glyphs";
 
 /** Player-facing wording for recruiting and replenishing (X4, X7). */
 
-/** "6 Funds and 1 Manpower", in the scenario's resource order; "nothing" when free. */
+/** "6 Funds and 1k Manpower", in the scenario's resource order, read through each display scale (EB-12); "nothing" when free. */
 export function resourcesLabel(scenario: Scenario, amount: Resources, joiner = " and "): string {
-  const parts = scenario.resources.flatMap((resource) => {
-    const value = amount[resource.id] ?? 0;
-    return value === 0 ? [] : [`${String(value)} ${resource.name}`];
-  });
-  return parts.length === 0 ? "nothing" : parts.join(joiner);
+  return amountText(scenario, amount, joiner);
 }
 
 /** The resources a balance lacks to pay a price: "Funds", "Funds and Manpower", or "". */
@@ -33,14 +30,15 @@ export function turnsLabel(turns: number): string {
 
 /**
  * X7, R5: the Replenish choice for the selected units: "+700 men, arriving at the end of the
- * turn · 4 Funds and 1 Manpower · cancelled and refunded if the unit fights".
+ * turn \u00b7 4 Funds and 1k Manpower \u00b7 cancelled and refunded if the unit fights".
  */
 export function replenishDetail(scenario: Scenario, state: GameState, units: readonly UnitState[]): string {
   const quotes = units.flatMap((unit) => replenishQuote(scenario, state, unit) ?? []);
   const men = quotes.reduce((sum, quote) => sum + quote.men, 0);
   const cost = quotes.reduce<Resources>((sum, quote) => addResources(sum, quote.cost), {});
   const recovers = quotes.some((quote) => quote.recovers);
-  const gain = men > 0 ? `+${String(men)} men${recovers ? " and morale" : ""}` : "Morale restored";
+  // RR-12: only units below strength replenish, so there are always men to bring.
+  const gain = `+${String(men)} men${recovers ? " and morale" : ""}`;
   const who = units.length === 1 ? "the unit fights" : "a unit fights";
   return [`${gain}, arriving at the end of the turn`, resourcesLabel(scenario, cost), `cancelled and refunded if ${who}`].join(` ${glyphs.dot} `);
 }

@@ -5,7 +5,7 @@ import { incomeFor } from "../../engine/economy/income";
 import { amountOf, treasuryOf } from "../../engine/economy/resources";
 import type { ResourceId } from "../../engine/types";
 import { useAppSelector } from "../../hooks";
-import { signed } from "../../presentation/economy";
+import { resourceAmount, resourceAmountInFull, signedResourceAmount } from "../../presentation/economy";
 import { EconomyIcon, resourceIcon } from "../economy/EconomyIcon";
 import type { HeaderSlotProps } from "./slots";
 
@@ -43,6 +43,10 @@ function Chips({ scenario, state, viewer }: HeaderSlotProps): JSX.Element | null
         const expanded = open === resource.id;
         const gain = amountOf(income.paid, resource.id);
         const spent = amountOf(spend, resource.id);
+        // EB-12: every amount reads through the resource's display scale ("Manpower 18k +9k").
+        const shown = (value: number): string => resourceAmount(scenario, resource.id, value);
+        const gainText = signedResourceAmount(scenario, resource.id, gain);
+        const held = amountOf(balance, resource.id);
         return (
           <div className={`resource-chip-wrap header-meter${index === 0 ? " resource-chip-first" : ""}`} key={resource.id}>
             <button
@@ -54,16 +58,19 @@ function Chips({ scenario, state, viewer }: HeaderSlotProps): JSX.Element | null
             >
               <EconomyIcon name={resourceIcon(scenario, resource.id)} />
               <span className="resource-name">{resource.name}</span>{" "}
-              <span className="resource-balance">{String(amountOf(balance, resource.id) - spent)}</span>{" "}
-              <span className="resource-income">{signed(gain)}</span>
+              <span className="resource-balance">{shown(held - spent)}</span>{" "}
+              <span className="resource-income">{gainText}</span>
               <span className="visually-hidden"> next turn</span>
             </button>
             {expanded ? (
               <div className="resource-detail" id={`${id}-${resource.id}`} role="region" aria-label={`${resource.name} detail`}>
-                <p><strong>{`${resource.name}: ${String(amountOf(balance, resource.id))}`}</strong></p>
-                {spent > 0 ? <p>{`This turn's orders spend ${String(spent)} when revealed.`}</p> : null}
-                <p>{`Next turn ${signed(gain)} from ${String(whole)} ${whole === 1 ? "territory" : "territories"} held whole.`}</p>
-                {amountOf(income.cut, resource.id) > 0 ? <p>{`Raids cut ${String(amountOf(income.cut, resource.id))}.`}</p> : null}
+                <p>
+                  <strong>{`${resource.name}: ${shown(held)}`}</strong>
+                  {resource.display === undefined ? null : ` (${resourceAmountInFull(scenario, resource.id, held)})`}
+                </p>
+                {spent > 0 ? <p>{`This turn's orders spend ${shown(spent)} when revealed.`}</p> : null}
+                <p>{`Next turn ${gainText} from ${String(whole)} ${whole === 1 ? "territory" : "territories"} held whole.`}</p>
+                {amountOf(income.cut, resource.id) > 0 ? <p>{`Raids cut ${shown(amountOf(income.cut, resource.id))}.`}</p> : null}
                 {contested > 0 ? <p>{`${String(contested)} contested ${contested === 1 ? "territory pays" : "territories pay"} nothing.`}</p> : null}
                 <ul aria-label="Other factions" className="resource-others">
                   {others.map((faction) => {
@@ -72,7 +79,7 @@ function Chips({ scenario, state, viewer }: HeaderSlotProps): JSX.Element | null
                       <li key={faction.id}>
                         <span>{faction.name}</span>
                         <span className={theirs === undefined ? "resource-hidden" : "resource-revealed"}>
-                          {theirs === undefined ? "hidden" : `${String(amountOf(theirs, resource.id))} (recon)`}
+                          {theirs === undefined ? "hidden" : `${shown(amountOf(theirs, resource.id))} (recon)`}
                         </span>
                       </li>
                     );

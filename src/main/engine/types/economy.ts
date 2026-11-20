@@ -14,7 +14,19 @@ import type { SourceCitation } from "./scenario";
 /** $1: an amount of each resource, keyed by resource id. Missing ids are zero. */
 export type Resources = Readonly<Record<ResourceId, number>>;
 
+/**
+ * EB-12: how a resource's amounts read. One point stands for `unit` of the real thing (Spain: one
+ * Manpower is about 1,000 men); amounts show as points followed by `suffix` ("18k"), and in full
+ * (points times `unit`, "18,000") where there is room.
+ */
+export interface ResourceDisplay {
+  readonly suffix: string;
+  readonly unit: number;
+}
+
 export interface ResourceDefinition {
+  /** EB-12: absent means plain numbers ("42"). */
+  readonly display?: ResourceDisplay;
   readonly id: ResourceId;
   readonly name: string;
 }

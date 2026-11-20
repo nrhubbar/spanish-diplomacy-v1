@@ -1,9 +1,10 @@
 import { describeSystemOutcome, isSystemOutcome } from "./systemText";
-import { fatigueSentence } from "./systemText/morale";
+import { listNames } from "./systemText/lines";
 import { requireFaction, requireTerritory, requireUnitDefinition } from "../engine/lookup";
 import type {
   BounceCause,
   FactionId,
+  GameState,
   MoveOrder,
   Scenario,
   TerritoryControl,
@@ -28,10 +29,7 @@ export function unitName(scenario: Scenario, id: UnitId): string {
   return requireUnitDefinition(scenario, id).name;
 }
 
-export function listNames(names: readonly string[]): string {
-  const last = names.length - 1;
-  return last < 1 ? names.join("") : `${names.slice(0, last).join(", ")} and ${String(names[last])}`;
-}
+export { listNames };
 
 export function route(scenario: Scenario, order: MoveOrder): string {
   const legs = order.legs ?? [];
@@ -143,16 +141,25 @@ function standoffParty(
   return origins.length === 0 ? name : `${name} (from ${listNames(origins.map((id) => territoryName(scenario, id)))})`;
 }
 
+/**
+ * Who reads a report line, for the Milestone 3 lines (`systemText/lines.ts`): the viewer, and the
+ * turn's final state as that viewer sees it. Both are optional; without them a line names only
+ * what its outcome and the scenario say.
+ */
+export interface ReportView {
+  readonly state?: GameState;
+  readonly viewer?: FactionId;
+}
+
 /** One report line for a single outcome; pass the turn's outcomes to name standoff origins. */
-export function describeOutcome(scenario: Scenario, outcome: TurnOutcome, outcomes: readonly TurnOutcome[] = []): string {
-  return describeOutcomeGroup(scenario, { outcome, unitIds: unitIdsOf(outcome) }, outcomes);
+export function describeOutcome(scenario: Scenario, outcome: TurnOutcome, outcomes: readonly TurnOutcome[] = [], view: ReportView = {}): string {
+  return describeOutcomeGroup(scenario, { outcome, unitIds: unitIdsOf(outcome) }, outcomes, view);
 }
 
 /** One report line for a group: the faction first, then what its formations did together. */
-export function describeOutcomeGroup(scenario: Scenario, group: OutcomeGroup, outcomes: readonly TurnOutcome[] = []): string {
+export function describeOutcomeGroup(scenario: Scenario, group: OutcomeGroup, outcomes: readonly TurnOutcome[] = [], view: ReportView = {}): string {
   const { outcome } = group;
-  if (outcome.kind === "fatigue") return fatigueSentence(outcome, unitName(scenario, outcome.unitId));
-  if (isSystemOutcome(outcome)) return describeSystemOutcome(outcome, scenario);
+  if (isSystemOutcome(outcome)) return describeSystemOutcome(outcome, { scenario, ...view });
   if (outcome.kind === "no-move") {
     return outcome.unitId === undefined
       ? `${factionName(scenario, outcome.factionId)} had no armies to order.`

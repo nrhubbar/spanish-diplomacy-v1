@@ -5,6 +5,7 @@ import {
   combatSchema,
   connectionShape,
   factionShape,
+  positiveWholeSchema,
   resourcesSchema,
   slugSchema,
   sourceSchema,
@@ -109,7 +110,21 @@ const m3ModularSchema = z
     ),
     subTerritories: z.array(subTerritorySchema).default([]),
     subTerritoryBorders: subTerritoryBordersSchema.default([]),
-    resources: z.array(z.strictObject({ id: slugSchema, name: textSchema })).default([]),
+    resources: z
+      .array(
+        z.strictObject({
+          id: slugSchema,
+          name: textSchema,
+          display: z
+            .strictObject({
+              unit: positiveWholeSchema.meta({ description: "How many of the real thing one point stands for (one Manpower is about 1,000 men)." }),
+              suffix: textSchema.meta({ description: "Written after the points: \"k\" makes 18 points read \"18k\"." })
+            })
+            .optional()
+            .meta({ description: "EB-12: how amounts read. Absent means plain numbers." })
+        })
+      )
+      .default([]),
     development: z.array(developmentSchema).default([]),
     buildings: z.array(buildingSchema).default([]),
     improvements: improvementsSchema.optional(),

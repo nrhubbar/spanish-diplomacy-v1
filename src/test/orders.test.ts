@@ -55,12 +55,12 @@ describe("the flat order union (E8)", () => {
 });
 
 describe("outcomes of the Milestone 3 systems", () => {
-  it("gives every system outcome a placeholder report line", () => {
+  it("recognises every area's outcomes as system outcomes, each with a report line", () => {
     for (const kind of ["weather-rolled", "build-queued", "raid", "general-died", "withdrew", "income"]) {
-      const outcome = { kind } as unknown as TurnOutcome;
-      expect(isSystemOutcome(outcome)).toBe(true);
-      expect(describeSystemOutcome(outcome as SystemOutcome)).toMatch(/\.$/);
+      expect(isSystemOutcome({ kind } as unknown as TurnOutcome)).toBe(true);
     }
+    const income = { cut: {}, cutSubTerritoryIds: [], factionId: faction("red"), kind: "income", paid: {} } as SystemOutcome;
+    expect(describeSystemOutcome(income, { scenario: tiny() })).toBe("Red League's income from territories held whole: nothing.");
   });
 
   it("tells d20 battles apart from d6 ones, and heads them with their grade (D8)", () => {

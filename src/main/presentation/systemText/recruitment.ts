@@ -1,39 +1,29 @@
-import { requireUnitDefinition } from "../../engine/lookup";
-import type { RecruitmentTurnOutcome, Scenario, TerritoryId, UnitTypeId } from "../../engine/types";
+import type { RecruitmentTurnOutcome, Resources, Scenario } from "../../engine/types";
 import { resourcesLabel, turnsLabel } from "../recruitment";
+import { capitalLabel, type ReportLines, territoryLabel, typeLabel, unitLabel } from "./lines";
 
-/** Short report lines for the recruitment outcomes, when no scenario is at hand. */
-export const recruitmentLines: Readonly<Record<RecruitmentTurnOutcome["kind"], string>> = {
-  "replenish-applied": "A unit was replenished.",
-  "replenish-cancelled": "A replenishment was cancelled and refunded.",
-  "training-completed": "A new unit finished training.",
-  "training-paused": "Training was paused while the territory is contested.",
-  "training-refunded": "A Recruit order was refunded.",
-  "training-started": "A new unit began training."
+/** " 6 Funds refunded." after a reason, or nothing when nothing comes back. */
+function refunded(scenario: Scenario, amount: Resources): string {
+  const label = resourcesLabel(scenario, amount);
+  return label === "nothing" ? "" : ` ${label} refunded.`;
+}
+
+/**
+ * R2-R7, C8: the recruitment outcomes as report sentences, naming the unit, where it trains and
+ * what it cost. Every kind but `training-completed` is private (CT-46), so it reaches only its
+ * own faction or a viewer whose recon reveals the territory.
+ */
+export const recruitmentLines: ReportLines<RecruitmentTurnOutcome> = {
+  "training-started": (outcome, { scenario }) =>
+    `${unitLabel(scenario, outcome.unitId)} began training at ${capitalLabel(scenario, outcome.order.territoryId)} for ${resourcesLabel(scenario, outcome.paid)}; ready in ${turnsLabel(outcome.turnsLeft)}.`,
+  "training-completed": (outcome, { scenario }) =>
+    `${unitLabel(scenario, outcome.unitId)} finished training at ${capitalLabel(scenario, outcome.territoryId)}. It can move next turn.`,
+  "training-paused": (outcome, { scenario }) =>
+    `${unitLabel(scenario, outcome.unitId)} stopped training at ${capitalLabel(scenario, outcome.territoryId)} while ${territoryLabel(scenario, outcome.territoryId)} is contested.`,
+  "training-refunded": (outcome, { scenario }) =>
+    `A ${typeLabel(scenario, outcome.typeId)} at ${capitalLabel(scenario, outcome.territoryId)} was not raised. ${outcome.reason}${refunded(scenario, outcome.refund)}`,
+  "replenish-applied": (outcome, { scenario }) =>
+    `${unitLabel(scenario, outcome.order.unitId)} took in ${String(outcome.men)} men for ${resourcesLabel(scenario, outcome.paid)}${outcome.recovered ? " and recovered its morale" : ""}.`,
+  "replenish-cancelled": (outcome, { scenario }) =>
+    `${unitLabel(scenario, outcome.order.unitId)} was not replenished: ${outcome.reason}${refunded(scenario, outcome.refund)}`
 };
-
-const recruitmentKinds = new Set<string>(Object.keys(recruitmentLines));
-
-export function isRecruitmentOutcome(outcome: { readonly kind: string }): outcome is RecruitmentTurnOutcome {
-  return recruitmentKinds.has(outcome.kind);
-}
-
-/** R2-R7, C8: full report sentences, naming units, territories and amounts. */
-export function describeRecruitmentOutcome(scenario: Scenario, outcome: RecruitmentTurnOutcome): string {
-  const place = (id: TerritoryId): string => scenario.index.territories.get(id)?.name ?? id;
-  const typeName = (id: UnitTypeId): string => scenario.index.unitTypes.get(id)?.name ?? id;
-  switch (outcome.kind) {
-    case "training-started":
-      return `${requireUnitDefinition(scenario, outcome.unitId).name} began training in ${place(outcome.order.territoryId)} for ${resourcesLabel(scenario, outcome.paid)}; ready in ${turnsLabel(outcome.turnsLeft)}.`;
-    case "training-completed":
-      return `${requireUnitDefinition(scenario, outcome.unitId).name} finished training in ${place(outcome.territoryId)}. It can move next turn.`;
-    case "training-paused":
-      return `${requireUnitDefinition(scenario, outcome.unitId).name} stopped training while ${place(outcome.territoryId)} is contested.`;
-    case "training-refunded":
-      return `A ${typeName(outcome.typeId)} in ${place(outcome.territoryId)} was not raised. ${outcome.reason}`;
-    case "replenish-applied":
-      return `${requireUnitDefinition(scenario, outcome.order.unitId).name} took in ${String(outcome.men)} men${outcome.recovered ? " and recovered its morale" : ""}.`;
-    case "replenish-cancelled":
-      return `${requireUnitDefinition(scenario, outcome.order.unitId).name} was not replenished: ${outcome.reason} ${resourcesLabel(scenario, outcome.refund)} refunded.`;
-  }
-}

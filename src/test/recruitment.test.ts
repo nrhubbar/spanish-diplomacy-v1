@@ -178,6 +178,14 @@ describe("Replenish (R5)", () => {
 
   it("is refused at full strength and in contested ground", () => {
     expect(replenishProblem(scenario, base, base.units[durruti.id]!)).toMatch(/full strength/u);
+    // RR-12: a demoralized unit at full strength cannot replenish for nothing; it rests or is rallied.
+    const shaken = { ...base.units[durruti.id]!, morale: { ...base.units[durruti.id]!.morale, demoralized: true } };
+    const shakenState: GameState = { ...base, units: { ...base.units, [durruti.id]: shaken } };
+    expect(replenishProblem(scenario, shakenState, shaken)).toMatch(/full strength\. It recovers its morale by resting, or with a general's rally\./u);
+    expect(validateOrder(scenario, shakenState, replenishOrder("republic", durruti.id))).toEqual({ ok: false, reason: replenishProblem(scenario, shakenState, shaken) });
+    // Below strength, a demoralized unit still replenishes and recovers (C5).
+    const short = { ...shaken, strength: shaken.strength - 100 };
+    expect(replenishProblem(scenario, { ...shakenState, units: { ...shakenState.units, [durruti.id]: short } }, short)).toBeUndefined();
     const inAsturias = Object.values(base.units).find((entry) => entry.territoryId === "asturias")!;
     expect(replenishProblem(scenario, base, { ...inAsturias, strength: 1 })).toMatch(/contested/u);
   });
