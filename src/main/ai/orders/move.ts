@@ -12,6 +12,8 @@ import type {
 import { portLandings, railDepartures, unitTypeOf } from "../../engine/movement/network";
 import { armyKey, describeRoute, legsOf, type MoveRoute, moveRoutes, routeClaims } from "../../engine/movement/routes";
 import { armiesOf } from "../../engine/movement/transit";
+import { classifyMoves } from "../../engine/orders";
+import { hasFighter } from "../../engine/units/fighting";
 import { validateMoveOrder } from "../../engine/validation";
 import { assess, type Assessment } from "../assessment";
 import { type AttackContext, type AttackPlan, bestAttackOn } from "../attacks";
@@ -193,8 +195,10 @@ function isTransport(scenario: Scenario, state: GameState, unitId: UnitId): bool
  * H5 for rail, trucks and sea (M1-M5). The planner chose destinations; this gives each order
  * the route the game offers for its unit, then checks the plan as armies (W4):
  * - free trucks go with the largest army leaving their territory, a marching one first;
- * - a march its army's trucks cannot carry is cut to its first step, into friendly ground;
- * - armies beyond a capital's departures, a port's landings or a lane's one assault stay home.
+ * - a march its army's trucks cannot carry takes the army's own route there, or is cut to its
+ *   first step, into friendly ground;
+ * - armies beyond a capital's departures, a port's landings or a lane's one assault stay home;
+ * - an army with no unit that can fight (D27.1) moves only to reinforce its own side.
  */
 export function withRoutes(scenario: Scenario, state: GameState, factionId: FactionId, planned: readonly MoveOrder[]): readonly MoveOrder[] {
   const own = Object.values(state.units).filter((unit) => unit.factionId === factionId);
@@ -204,7 +208,8 @@ export function withRoutes(scenario: Scenario, state: GameState, factionId: Fact
     return route ?? order;
   });
   const ordered = new Set(routed.map((order) => order.unitId));
-  const trucks = own.filter((unit) => !ordered.has(unit.id) && isTransport(scenario, state, unit.id));
+  // A demoralized truck cannot go with an attack (M23), so it rests instead.
+  const trucks = own.filter((unit) => !ordered.has(unit.id) && !unit.morale.demoralized && isTransport(scenario, state, unit.id));
   const result: MoveOrder[] = [...routed];
   for (const truck of trucks) {
     const leaving = armiesOf((order) => armyKey(scenario, order), result.filter((order) => order.from === truck.territoryId));
@@ -216,8 +221,12 @@ export function withRoutes(scenario: Scenario, state: GameState, factionId: Fact
     const legs = order.legs ?? [];
     if (legs.length < 2 || !legs.every((leg) => leg.kind === "land")) return order;
     const army = result.filter((other) => armyKey(scenario, other) === armyKey(scenario, order)).map((other) => other.unitId);
+    // The whole army's route there, which may be a ride rather than the march one unit could make.
     const route = moveRoutes(scenario, state, factionId, order.from, army).get(order.to);
-    if (route !== undefined && route.legs.length === legs.length && route.legs.every((leg, index) => leg.to === legs[index]?.to)) return order;
+    if (route !== undefined) {
+      const step: MoveOrder = { factionId: order.factionId, from: order.from, kind: "move", to: order.to, unitId: order.unitId };
+      return route.shape === "step" ? step : { ...step, legs: route.legs };
+    }
     const first = legs[0];
     return first === undefined ? order : { ...order, legs: [first], to: first.to };
   });
@@ -238,5 +247,10 @@ export function withRoutes(scenario: Scenario, state: GameState, factionId: Fact
     }
     usable.push(...army.orders);
   }
-  return usable;
+  // D27.1: an army with no unit that can fight only reinforces its own side; one left to advance alone holds instead.
+  const advancing = new Set(classifyMoves(state.control, state.units, usable).advances.map((order) => order.unitId));
+  const fighting = new Set(armiesOf((order) => armyKey(scenario, order), usable)
+    .filter((army) => hasFighter(scenario, state.raised, army.orders.map((order) => order.unitId)))
+    .flatMap((army) => army.orders.map((order) => order.unitId)));
+  return usable.filter((order) => fighting.has(order.unitId) || !advancing.has(order.unitId));
 }

@@ -91,3 +91,25 @@ describe("each sea lane names its ports (M-10, M5, Q-CITY-7)", () => {
     expect(moveRoutes(scenario, base, faction("republic"), territory("catalunya"), [unit("rep-durruti-column")]).get(territory("islas-baleares"))?.shape).toBe("sea");
   });
 });
+
+describe("the computer player recruits trucks (M-5, M1, H5)", () => {
+  it("adds a truck column where a Factory and a Depot allow it, while its trucks carry too few", async () => {
+    const { planRecruits } = await import("../main/ai/orders/recruit");
+    const { seededRandom } = await import("../main/engine/random");
+    const scenario = spainD20();
+    const start = initialGameState(scenario);
+    const plan = (state: GameState) => planRecruits({ factionId: faction("republic"), memory: {}, planned: [], random: seededRandom(1), scenario, state });
+    const trucks = (state: GameState) => plan(state).filter((order) => order.unitTypeId === "truck-column");
+    expect(trucks(start)).toHaveLength(1);
+    // The North has no capital with both a Factory and a Depot at the start.
+    expect(planRecruits({ factionId: faction("north"), memory: {}, planned: [], random: seededRandom(1), scenario, state: start }).some((order) => order.unitTypeId === "truck-column")).toBe(false);
+    // Enough trucks already: one for every two Republican units.
+    const republicans = Object.values(start.units).filter((entry) => entry.factionId === "republic");
+    const { raisedDefinition, raisedUnitId } = await import("../main/engine/recruitment/rules");
+    const ids = republicans.map((_entry, index) => raisedUnitId(faction("republic"), "truck-column" as never, index + 1));
+    const raised = Object.fromEntries(ids.map((id) => [id, raisedDefinition(scenario, id)]));
+    const parked = Object.fromEntries(republicans.map((entry, index) => [ids[index], { ...entry, id: ids[index] }]));
+    const supplied = { ...start, raised: { ...start.raised, ...raised }, units: { ...start.units, ...parked } } as GameState;
+    expect(trucks(supplied)).toEqual([]);
+  });
+});
