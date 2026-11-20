@@ -22,7 +22,16 @@ import type {
 export type Assignments = Readonly<Record<FactionId, ActorKind>>;
 
 export interface TurnHistoryEntry {
+  /** Every outcome of the turn. A visible session's entries hold only their viewer's. */
   readonly outcomes: readonly TurnOutcome[];
+  /**
+   * $6, U4: what each faction, and a shared screen, saw of the turn, filtered when it was
+   * written (`state/history.ts`). Read history through `seenBy`, never by filtering again.
+   */
+  readonly seen: {
+    readonly byFaction: Readonly<Partial<Record<FactionId, readonly TurnOutcome[]>>>;
+    readonly shared: readonly TurnOutcome[];
+  };
   readonly turnNumber: number;
 }
 

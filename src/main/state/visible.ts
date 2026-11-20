@@ -1,5 +1,6 @@
 import type { FactionId, Scenario } from "../engine/types";
 import { ordersFor, outcomesFor, viewFor } from "../engine/visibility";
+import { entryFor } from "./history";
 import { type InGameSession, isInGame, localPlayerCount, type Session } from "./session";
 
 /**
@@ -26,7 +27,8 @@ export function visibleSession<S extends Session>(scenario: Scenario, session: S
   const state = viewFor(scenario, game.state, viewer);
   const visibleGame = {
     ...game,
-    history: game.history.map((entry) => ({ ...entry, outcomes: outcomesFor(scenario, game.state, entry.outcomes, viewer) })),
+    // Each turn as the viewer saw it then (M1): a reveal now never opens an earlier turn.
+    history: game.history.map((entry) => entryFor(entry, viewer)),
     // Readiness is public; the orders stay private until the turn reveals them.
     locked: Object.fromEntries(Object.entries(game.locked).map(([factionId, submission]) =>
       [factionId, factionId === viewer ? submission : { factionId: submission.factionId, orders: [] }])),
