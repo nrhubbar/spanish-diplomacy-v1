@@ -1,3 +1,4 @@
+import { hookedOrderVerdict } from "./hooks";
 import { isNeighbor } from "./lookup";
 import type {
   FactionId,
@@ -20,7 +21,9 @@ export const unavailableOrderReason = "This order is not available in this scena
  * TODO(m3r1-economy-builds), TODO(m3r1-sub-territories), TODO(m3r1-air-generals)).
  */
 export function validateOrder(scenario: Scenario, state: GameState, order: Order): ValidationResult {
-  return order.kind === "move" ? validateMoveOrder(scenario, state, order) : { ok: false, reason: unavailableOrderReason };
+  if (order.kind === "move") return validateMoveOrder(scenario, state, order);
+  // Other kinds are valid only when a selected module accepts them (`RuleHooks.orderVerdict`).
+  return hookedOrderVerdict({ order, scenario, state }) ?? { ok: false, reason: unavailableOrderReason };
 }
 
 /** M23 (C6): why a demoralized army may not enter where another faction stands. */
@@ -56,7 +59,9 @@ export function validateMoveOrder(
   if (unit.morale.demoralized && Object.values(state.units).some((other) => other.territoryId === order.to && other.factionId !== unit.factionId)) {
     return { ok: false, reason: demoralizedAttackReason };
   }
-  return { ok: true };
+  // C1 and the like: a selected module may refuse a move the base rules allow.
+  const verdict = hookedOrderVerdict({ order, scenario, state });
+  return verdict === undefined || verdict.ok ? { ok: true } : verdict;
 }
 
 export function validateSubmission(

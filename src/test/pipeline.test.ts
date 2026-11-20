@@ -46,7 +46,9 @@ describe("the turn pipeline (section 2)", () => {
     const draft = startDraft({ dice: () => seededRandom(1), scenario, seed: 1, start: initialGameState(scenario), streams: seededRollStreams(1, 1), submissions: [] });
     for (const phase of [weatherStep, airStep, trainingStep, incomeStep]) expect(phase(draft)).toBe(draft);
     const presets = new Set(ruleAreas.flatMap((area) => Object.values(builtInModuleRegistry.require(area, builtInModules[area][0]).steps)));
-    const skeletons = ruleAreas.flatMap((area) => Object.values(builtInModuleRegistry.require(area, builtInModules[area][1]).steps)).filter((part) => !presets.has(part));
+    const skeletons = ruleAreas.flatMap((area) => Object.values(builtInModuleRegistry.require(area, builtInModules[area][1]).steps)).filter((part) => !presets.has(part))
+      // Landed slices are no longer skeletons: m3r1-sub-territories (partition `provinces`).
+      .filter((part) => !Object.values(builtInModuleRegistry.require("partition", "provinces").steps).includes(part));
     expect(skeletons.length).toBeGreaterThan(5);
     for (const part of skeletons) expect(part(draft)).toBe(draft);
   });

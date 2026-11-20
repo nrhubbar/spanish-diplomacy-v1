@@ -2,9 +2,10 @@ import type { ModuleRegistry, ScenarioBlock } from "../../engine/modules";
 import { ruleAreas } from "../../engine/types";
 import type { ModularScenarioDocument } from "../schema/scenarioSchema";
 import { idSet, type Issues } from "./issues";
+import { checkPartition } from "./partitionChecks";
 import { checkSubTerritories } from "./subTerritoryChecks";
 
-/** Rules L14-L17 and L24 for `m3-modular` packages. */
+/** Rules L14-L17, L24 and L26 for `m3-modular` packages. */
 export function checkModular(document: ModularScenarioDocument, issues: Issues, modules: ModuleRegistry): void {
   for (const area of ruleAreas) {
     const moduleId = document.rules[area];
@@ -18,6 +19,7 @@ export function checkModular(document: ModularScenarioDocument, issues: Issues, 
   }
   for (const name of ["subTerritories", "resources", "development", "buildings"] as const) issues.unique(name, document[name]);
   checkSubTerritories(document, issues);
+  checkPartition(document, issues);
   checkResources(document, issues);
   checkUnitTypes(document, issues);
   checkBases(document, issues);

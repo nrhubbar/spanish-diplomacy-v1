@@ -1,4 +1,5 @@
 import type { BattleDice } from "../main/engine/dice";
+import { builtInModuleRegistry } from "../main/engine/modules";
 import { initialGameState, resolveTurn } from "../main/engine/resolution";
 import {
   type D6BattleOutcome,
@@ -36,6 +37,25 @@ export function testRegistry(): ScenarioRegistry {
 
 export function spain(): Scenario {
   return testRegistry().require(spainId).scenario;
+}
+
+let unpartitioned: Scenario | undefined;
+
+/**
+ * Spain with the `none` partition module: control follows armies (M6, M7) and nothing is
+ * contested-ground only. For tests of the Milestone 2 rules (M6-M27) on the Spanish board,
+ * which the `provinces` module replaces (P2-P7, C1).
+ */
+export function spainM2(): Scenario {
+  if (unpartitioned !== undefined) return unpartitioned;
+  const scenario = spain();
+  const none = builtInModuleRegistry.require("partition", "none");
+  unpartitioned = {
+    ...scenario,
+    modules: scenario.modules.map((module) => (module.area === "partition" ? none : module)),
+    rules: { ...scenario.rules, partition: "none" }
+  };
+  return unpartitioned;
 }
 
 export function tiny(): Scenario {

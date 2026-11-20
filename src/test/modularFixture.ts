@@ -53,9 +53,11 @@ export function modularScenario(): Json {
       sub("highlands", "highlands", "red", { terrain: "mountain" }),
       sub("port-quarter", "harbor", "blue", { port: 2, buildings: ["barracks"], development: { industry: 2 } }),
       sub("lowlands", "lowlands", "blue"),
-      sub("isle", "isle", "blue", { port: 1, rail: 0, sources: [{ sourceId: "fixture" }] })
+      sub("isle", "isle", "blue", { port: 1, rail: 0, sources: [{ sourceId: "fixture" }] }),
+      // The isle starts contested (red and blue), so red holds a cove there (L26).
+      sub("isle-cove", "isle", "red", { rail: 0 })
     ],
-    subTerritoryBorders: [["west-town-quarter", "west-hills"], ["west-hills", "highlands"], ["highlands", "port-quarter"], ["port-quarter", "lowlands"], ["lowlands", "west-town-quarter"]],
+    subTerritoryBorders: [["isle", "isle-cove"], ["west-town-quarter", "west-hills"], ["west-hills", "highlands"], ["highlands", "port-quarter"], ["port-quarter", "lowlands"], ["lowlands", "west-town-quarter"]],
     resources: [{ id: "funds", name: "Funds" }, { id: "manpower", name: "Manpower" }],
     development: [
       { id: "farms", name: "Farms", resource: "manpower", yieldPerLevel: 1, maxLevel: 3, upgrade: { cost: { funds: 3 }, turns: 2 } },
