@@ -3,6 +3,7 @@ import { type StandingOrder, standingOrder } from "../../engine/orders";
 import type { MoveOrder, Scenario, TerritoryId, UnitId } from "../../engine/types";
 import { validateMoveOrder } from "../../engine/validation";
 import type { OrderKind } from "../session";
+import { chooseReplenish, replenishWithout } from "./recruitment";
 import { type PlanningSession, availableUnitIds, feedback, selectedDestinations, selectedUnits, selecting, selectionOf, withDraft } from "./selection";
 
 /** "Give Selected Armies Order": opens the order choice, or closes it when it is open. */
@@ -23,6 +24,7 @@ export function chooseOrder(scenario: Scenario, session: PlanningSession, orderK
   if (session.draft.selectedUnitIds.length === 0) {
     return feedback(session, "Select at least one army first.");
   }
+  if (orderKind === "replenish") return chooseReplenish(scenario, session);
   return orderKind === "move" ? chooseMove(scenario, session) : chooseStanding(session, orderKind);
 }
 
@@ -33,9 +35,10 @@ function chooseStanding(session: PlanningSession, kind: StandingOrder): Planning
   }
   const orders = session.draft.orders.filter((order) => !fitting.has(order.unitId));
   const territoryId = session.draft.selectedTerritoryId;
-  const draft = territoryId === undefined
-    ? { orders, selectedUnitIds: [] }
-    : selecting(territoryId, availableUnitIds(session, territoryId, orders), orders);
+  const draft = {
+    ...(territoryId === undefined ? { orders, selectedUnitIds: [] } : selecting(territoryId, availableUnitIds(session, territoryId, orders), orders)),
+    ...replenishWithout(session.draft, fitting)
+  };
   const who = fitting.size === 1 ? "1 army" : `${String(fitting.size)} armies`;
   return withDraft(session, { ...draft, feedback: `${who} will ${kind === "entrench" ? "entrench" : "rest"}.` });
 }
@@ -77,14 +80,15 @@ export function chooseDestination(scenario: Scenario, session: PlanningSession, 
   }));
   const replanned = new Set(session.draft.selectedUnitIds);
   const orders = [...session.draft.orders.filter((order) => !replanned.has(order.unitId)), ...planned];
-  return withDraft(session, selecting(origin, availableUnitIds(session, origin, orders), orders));
+  return withDraft(session, { ...selecting(origin, availableUnitIds(session, origin, orders), orders), ...replenishWithout(session.draft, replanned) });
 }
 
-/** Clears an army's move order, which returns it to its standing order (O5). */
+/** Clears an army's move or Replenish order, which returns it to its standing order (O5). */
 export function removeOrder(session: PlanningSession, unitId: UnitId): PlanningSession {
   return withDraft(session, {
     ...session.draft,
-    orders: session.draft.orders.filter((order) => order.unitId !== unitId)
+    orders: session.draft.orders.filter((order) => order.unitId !== unitId),
+    ...replenishWithout(session.draft, [unitId])
   });
 }
 

@@ -1,4 +1,5 @@
 import type { Scenario, SubTerritoryId } from "../../engine/types";
+import { keepBasket } from "./recruitment";
 import type { PlanningSession } from "./selection";
 
 /**
@@ -12,7 +13,7 @@ export function focusOn(scenario: Scenario, session: PlanningSession, subTerrito
   if (sub === undefined) return session;
   const draft = session.draft.selectedTerritoryId === sub.territoryId
     ? { ...session.draft, focusedSubTerritoryId: subTerritoryId }
-    : { orders: session.draft.orders, focusedSubTerritoryId: subTerritoryId, selectedTerritoryId: sub.territoryId, selectedUnitIds: [] };
+    : { ...keepBasket(session.draft), orders: session.draft.orders, focusedSubTerritoryId: subTerritoryId, selectedTerritoryId: sub.territoryId, selectedUnitIds: [] };
   return { ...session, draft };
 }
 
@@ -21,6 +22,7 @@ export function unfocus(session: PlanningSession): PlanningSession {
   return {
     ...session,
     draft: {
+      ...keepBasket(session.draft),
       orders,
       selectedUnitIds,
       ...(feedback === undefined ? {} : { feedback }),
