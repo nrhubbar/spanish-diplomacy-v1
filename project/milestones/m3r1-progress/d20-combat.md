@@ -39,7 +39,7 @@ Mode: make it work (declog D13). Branch `m3r1-d20-combat`, merged with `mileston
 - DC-12. Meetings: ground all, the attacker continues; ground 0 with no defender losses, the defender continues; else both bounce. Meetings take only the armies' own modifiers, no hooks.
 - DC-13. Artillery alone (D5): a side made only of `cannot-attack-alone` units does not fight; its move bounces as a standoff. Generals and value-0 units do not count as company.
 - DC-14. C3: with three or more factions, the defender is the capital sub-territory's holder, else the territory's last controller; with two, M27 and M19 are unchanged.
-- DC-15. Fatigue: +1 for each unit on the attacking side of any battle this turn (meetings, assaults, standing). A quiet turn means no move order, no retreat, no attack, and uncontested ground at the end of the turn; it resets fatigue and lets a demoralized unit recover (M23). Contested means control says so, armies of several factions share it, or its sub-territories have several holders.
+- DC-15. Fatigue: +1 for each unit on the attacking side of any battle this turn (meetings, assaults, standing). A quiet turn means no move order, no retreat, no attack, and uncontested ground at the end of the turn; it resets fatigue and lets a demoralized unit recover (M23). Contested means control says so, or armies of several factions share it. Sub-territory holders are not read yet: nothing flips them before `m3r1-sub-territories` lands, so Spain's 1936 holders would keep six territories contested for good.
 - DC-16. The best general per side is the greatest command bonus plus his trait's roll for the side's role. I emit both `general` and `trait`; `m3r1-air-generals` should not add them through the hook.
 - DC-17. Tests keep Spain on the d6 table: `support.ts` pins Spain to `d6-table` in `testRegistry()` and `spain()`, so the Milestone 2 rule and report tests keep testing the d6 (declog D3's intent). `spainD20()` and `shippedRegistry()` give Spain as shipped.
 - DC-18. The art and legend reuse the seven d6 result keys; each grade maps to one by its catalogue entry, never its id (`gradeFamily`).
@@ -55,12 +55,14 @@ Mode: make it work (declog D13). Branch `m3r1-d20-combat`, merged with `mileston
 ## Needs from other streams
 
 - **Needs from m3r1-sub-territories:** read `D20BattleOutcome.ground` (and the attackers' origins) to flip sub-territories (P4); a shared contested-territory helper to replace `contestedAtEnd`.
-- **Needs from m3r1-air-generals:** do not emit `general` or `trait` modifiers (DC-16); bombers' support through `combatModifiers`; a general's death roll on destroyed or routed armies, read from the battle outcome; the rally in the air module's step-9 part, after mine.
+- **Needs from m3r1-air-generals:** aircraft based in a defended territory are units there, so today they join the defending side, take grade losses and retreat with it; exclude `kind: "air"` from battle sides (`d20/front.ts`, `d20/standing.ts`) or decide what happens to them. Also: do not emit `general` or `trait` modifiers (DC-16); bombers' support through `combatModifiers`; a general's death roll on destroyed or routed armies, read from the battle outcome; the rally in the air module's step-9 part, after mine.
 - **Needs from m3r1-weather-timer:** the weather modifier through `combatModifiers`; `canDigIn` for Snow and Severe cold. Tanks read `systems.weather` (else the start's) for their exceptions.
 - **Needs from m3r1-movement-rail-ports:** the amphibious modifier through `combatModifiers`.
 - **Needs from m3r1-recruit-replenish:** Replenish clears demoralization in its own step-9 part; raised units go in `state.raised` (my lookups read it).
 
 ## Files outside my ownership that I touched
+
+**Read first: `src/test/support.ts` (DC-17).** After the merge, `spain()` and `testRegistry()` give every stream's tests Spain on the d6 table, store-backed UI tests included. Tests that expect d20 battles on Spain (for example `ground` for sub-territory flips) must use `spainD20()` or `shippedRegistry()`.
 
 - `src/main/engine/battle.ts`: `PendingBattle.battle` widened (DC-2).
 - `src/main/engine/phases/result.ts`: picks the d20 outcome builder.
@@ -76,6 +78,19 @@ Mode: make it work (declog D13). Branch `m3r1-d20-combat`, merged with `mileston
 - Tests: `support.ts` (DC-17), `pipeline.test.ts` (dice no longer a skeleton), `orders.test.ts`, `combat.test.ts`, `engineBattles.test.ts`, `combatPresentation.test.ts` (type narrowing).
 - `e2e/capture.spec.ts`: the `20a` capture.
 
-## Checks
+## Checks (on `884cea1` plus the contested fix)
 
-See the hand-off report for the latest run.
+- `npm run typecheck`, `npm run lint`: pass.
+- `npm run test:unit`: 680 passed, 6 failed (the six known-red harness tests of declog D14). `d20Combat.test.ts`: 21 passed.
+- `npm run build`: pass. `npm run budgets:check`: initial chunk 108.19 kB gzip against 155 kB.
+- `@capture combat presentation` on chromium and mobile-chromium: pass (`build/e2e/screenshots/*-20a-d20-battle-card.png`). Full e2e and coverage left for make-it-right.
+- `npm run sim -- --games 50`, with a d6 variant on the same seeds for comparison:
+
+| Run | Decided | Freezes | Stalled | Republic / North / South (of decided) | Battles per turn | Early wins |
+|---|---|---|---|---|---|---|
+| d20, blunders | 68% | 32% | 48% | 71 / 18 / 12 | 1.05 | 8 |
+| d20, no blunders | 60% | 40% | 56% | 83 / 17 / 0 | 0.88 | 8 |
+| d6, blunders | 48% | 52% | 80% | 50 / 33 / 17 | 0.47 | 0 |
+| d6, no blunders | 54% | 46% | 58% | 41 / 44 / 15 | 0.48 | 0 |
+
+**For the owner (H7, not tuned):** the d20 freezes less and fights twice as often, but the Republic wins most decided games and 8 of 50 games end before turn 4 (S1 band: at most 5 percent). A no-orders turn on Spain fights the expected standing battles in Andalucía and Asturias, so the engine is not skipping them; in the early wins the computer players leave the contested territories on turn 1, control settles, and the Republic sits one territory from its threshold. The 10-game smoke test passes only because its seeds miss those games.
