@@ -1,13 +1,13 @@
 import { type JSX, useMemo } from "react";
 import { requireFaction } from "../engine/lookup";
-import type { Scenario, UnitState } from "../engine/types";
+import { isMoveOrder, type MoveOrder, type Scenario, type UnitState } from "../engine/types";
 import { GameHeader } from "../components/GameHeader";
 import { useAppDispatch, useRegistry, useSessionIn } from "../hooks";
 import type { MapView } from "../map/view";
 import { glyphs } from "../presentation/glyphs";
 import { destinationEstimates } from "../presentation/odds";
 import { turnLabel } from "../presentation/turn";
-import { cancelOrderStage, clickMapTerritory, clickMapUnit, endTurn } from "../state/gameSlice";
+import { cancelOrderStage, clickMapTerritory, clickMapUnit, endTurn, focusSubTerritory } from "../state/gameSlice";
 import { orderOf, type PlanningSession, selectedDestinations } from "../state/planning";
 import { selectSubmissionStatus } from "../state/selectors";
 import { MapScreenFrame } from "./MapScreenFrame";
@@ -26,7 +26,7 @@ function Orders({ scenario, session }: { readonly scenario: Scenario; readonly s
   const faction = requireFaction(scenario, factionId);
   const destinations = useMemo(() => selectedDestinations(scenario, session), [scenario, session]);
   const estimates = useMemo(
-    () => destinationEstimates(scenario, game.state, factionId, draft.selectedUnitIds, destinations, draft.orders),
+    () => destinationEstimates(scenario, game.state, factionId, draft.selectedUnitIds, draft.stage?.step === "choose-destination" && draft.stage.orderKind === "withdraw" ? [] : destinations, draft.orders.filter(isMoveOrder)),
     [destinations, draft.orders, draft.selectedUnitIds, factionId, game.state, scenario]
   );
   const view = useMemo<MapView>(() => ({
@@ -34,16 +34,23 @@ function Orders({ scenario, session }: { readonly scenario: Scenario; readonly s
     ...(estimates.size === 0 ? {} : { destinationEstimates: estimates }),
     destinationIds: destinations,
     onSelectTerritory: (territoryId) => dispatch(clickMapTerritory(territoryId)),
+    // X3: zoomed in, a second click inside the selected territory focuses the pane on the sub-territory.
+    onSelectSubTerritory: (subTerritoryId) => {
+      const territoryId = scenario.index.subTerritories.get(subTerritoryId)?.territoryId;
+      if (draft.stage === undefined && territoryId !== undefined && territoryId === draft.selectedTerritoryId) dispatch(focusSubTerritory(subTerritoryId));
+    },
+    ...(draft.focusedSubTerritoryId === undefined ? {} : { focusedSubTerritoryId: draft.focusedSubTerritoryId }),
     onSelectUnit: (unit: UnitState) => dispatch(clickMapUnit(unit.id)),
     orderedUnitIds: new Set(draft.orders.map((order) => order.unitId)),
     outcomes: [],
-    plannedOrders: draft.orders,
+    // A Withdraw is drawn as the move it makes (C1).
+    plannedOrders: draft.orders.map((order): MoveOrder => (isMoveOrder(order) ? order : { ...order, kind: "move" })),
     selectedUnitIds: new Set(draft.selectedUnitIds),
     ...(draft.selectedTerritoryId === undefined ? {} : { selectedTerritoryId: draft.selectedTerritoryId }),
     unitOrders: new Map(Object.values(game.state.units)
       .filter((unit) => unit.factionId === factionId)
-      .map((unit) => [unit.id, orderOf(session, unit)]))
-  }), [destinations, dispatch, draft, estimates, factionId, game.state.units, session]);
+      .map((unit) => [unit.id, orderOf(session, unit, scenario)]))
+  }), [destinations, dispatch, draft, estimates, factionId, game.state.units, scenario, session]);
 
   return (
     <MapScreenFrame

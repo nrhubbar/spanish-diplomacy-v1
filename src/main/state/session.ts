@@ -10,7 +10,8 @@ import type {
   TerritoryId,
   TurnOutcome,
   TurnResolutionResult,
-  UnitId
+  UnitId,
+  WithdrawOrder
 } from "../engine/types";
 
 export type Assignments = Readonly<Record<FactionId, ActorKind>>;
@@ -33,9 +34,13 @@ export interface GameRecord {
 
 /**
  * Every order an army can have (O1): a move, or the standing order it follows without one,
- * Entrench when healthy and Rest when demoralized. Only moves are submitted (O5).
+ * Entrench when healthy and Rest when demoralized (O5). In contested ground (C1) the choice is
+ * Attack, the derived default (Hold for a demoralized army, C4), or a submitted Withdraw.
  */
-export type OrderKind = MoveOrder["kind"] | StandingOrder;
+export type OrderKind = MoveOrder["kind"] | WithdrawOrder["kind"] | StandingOrder | "attack" | "hold";
+
+/** The orders a player plans and submits for armies: moves and withdrawals (C1). */
+export type PlannedOrder = MoveOrder | WithdrawOrder;
 
 /**
  * Where the player is in giving an order to the selected armies: choosing the order type,
@@ -43,14 +48,14 @@ export type OrderKind = MoveOrder["kind"] | StandingOrder;
  */
 export type OrderStage =
   | { readonly step: "choose-order" }
-  | { readonly orderKind: MoveOrder["kind"]; readonly step: "choose-destination" };
+  | { readonly orderKind: PlannedOrder["kind"]; readonly step: "choose-destination" };
 
 /** The current local player's private working set. */
 export interface Draft {
   readonly feedback?: string;
   /** X3: the sub-territory the pane is focused on, inside the selected territory. */
   readonly focusedSubTerritoryId?: SubTerritoryId;
-  readonly orders: readonly MoveOrder[];
+  readonly orders: readonly PlannedOrder[];
   readonly selectedTerritoryId?: TerritoryId;
   readonly selectedUnitIds: readonly UnitId[];
   readonly stage?: OrderStage;

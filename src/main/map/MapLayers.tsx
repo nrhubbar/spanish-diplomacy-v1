@@ -7,7 +7,7 @@ import { DestinationOddsLayer } from "./DestinationOddsLayer";
 import { AirLayer } from "./layers/AirLayer";
 import { RailLayer } from "./layers/RailLayer";
 import type { MapLayerProps } from "./layers/slots";
-import { SubTerritoryLayer } from "./layers/SubTerritoryLayer";
+import { SubTerritoryLayer, SubTerritoryWash } from "./layers/SubTerritoryLayer";
 import { mapControlObstacles } from "./MapControls";
 import type { PaneLayout } from "./MapPane";
 import { TerrainLayer } from "./TerrainLayer";
@@ -60,6 +60,8 @@ export function MapLayers({ assets, bounds, camera, game, geometry, layout, leve
           visible={visible}
         />
       )}
+      {/* X2: the sub-territory wash sits under the vector layer's borders, rivers, cities and names. */}
+      <SubTerritoryWash {...layerProps} />
       <VectorLayer
         contextLabels={visibleContextLabels(map.contextLabels, toScreen, viewport, counters)}
         game={game}

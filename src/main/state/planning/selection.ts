@@ -1,7 +1,8 @@
 import { standingOrder } from "../../engine/orders";
-import type { MoveOrder, Scenario, TerritoryId, UnitId, UnitState } from "../../engine/types";
+import type { Scenario, TerritoryId, UnitId, UnitState } from "../../engine/types";
 import { legalDestinations } from "../../engine/validation";
-import type { Draft, OrderKind, Session } from "../session";
+import type { Draft, OrderKind, PlannedOrder, Session } from "../session";
+import { inContestedGround, withdrawDestinations } from "./contested";
 import { chooseDestination } from "./orders";
 
 export type PlanningSession = Extract<Session, { readonly phase: "planning" }>;
@@ -14,21 +15,32 @@ const menuOrder: readonly OrderKind[] = ["move", "entrench", "rest"];
  * every selected army is healthy or Rest when every one is demoralized. A mixed selection is
  * offered Move only, so a healthy army is never offered Rest.
  */
-export function orderKindsFor(session: PlanningSession): readonly OrderKind[] {
-  const standing = new Set(selectedUnits(session).map(standingOrder));
-  return menuOrder.filter((kind) => kind === "move" || (standing.size === 1 && standing.has(kind)));
+export function orderKindsFor(session: PlanningSession, scenario?: Scenario): readonly OrderKind[] {
+  const units = selectedUnits(session);
+  // C1: in contested ground the choice is Attack (the default) or Withdraw.
+  if (units.length > 0 && units.every((unit) => inContestedGround(scenario, session, unit))) return ["attack", "withdraw"];
+  const standing = new Set(units.map(standingOrder));
+  return menuOrder.filter((kind) => kind === "move" || (standing.size === 1 && standing.has(kind as "entrench" | "rest")));
 }
 
-/** The order an army has in the draft: its move, or else its standing order (O1, O5). */
-export function orderOf(session: PlanningSession, unit: UnitState): OrderKind {
-  return session.draft.orders.some((order) => order.unitId === unit.id) ? "move" : standingOrder(unit);
+/**
+ * The order an army has in the draft: its move or withdrawal, or else its default: Attack in
+ * contested ground (Hold when demoralized, C1, C4), otherwise its standing order (O1, O5).
+ */
+export function orderOf(session: PlanningSession, unit: UnitState, scenario?: Scenario): OrderKind {
+  const planned = session.draft.orders.find((order) => order.unitId === unit.id);
+  if (planned !== undefined) return planned.kind;
+  if (inContestedGround(scenario, session, unit)) return unit.morale.demoralized ? "hold" : "attack";
+  return standingOrder(unit);
 }
 
-/** How many of the player's armies move, entrench, and rest under the draft. */
-export function orderCounts(session: PlanningSession): Readonly<Record<OrderKind, number>> {
-  const counts: Record<OrderKind, number> = { entrench: 0, move: 0, rest: 0 };
+/** How many of the player's armies move, entrench, and rest under the draft; contested-ground kinds appear once used. */
+export function orderCounts(session: PlanningSession, scenario?: Scenario): Readonly<Partial<Record<OrderKind, number>> & Record<"entrench" | "move" | "rest", number>> {
+  const counts: Partial<Record<OrderKind, number>> & Record<"entrench" | "move" | "rest", number> = { entrench: 0, move: 0, rest: 0 };
   for (const unit of Object.values(session.game.state.units)) {
-    if (unit.factionId === session.factionId) counts[orderOf(session, unit)] += 1;
+    if (unit.factionId !== session.factionId) continue;
+    const kind = orderOf(session, unit, scenario);
+    counts[kind] = (counts[kind] ?? 0) + 1;
   }
   return counts;
 }
@@ -51,7 +63,7 @@ export function feedback(session: PlanningSession, message: string): PlanningSes
 }
 
 /** A draft with a territory and armies selected, no order stage, and no feedback. */
-export function selecting(territoryId: TerritoryId, selectedUnitIds: readonly UnitId[], orders: readonly MoveOrder[]): Draft {
+export function selecting(territoryId: TerritoryId, selectedUnitIds: readonly UnitId[], orders: readonly PlannedOrder[]): Draft {
   return { orders, selectedTerritoryId: territoryId, selectedUnitIds };
 }
 
@@ -73,13 +85,14 @@ function ownUnitIdsIn(session: PlanningSession, territoryId: TerritoryId): reado
 }
 
 /** The player's armies in a territory that have no move order in `orders`. */
-export function availableUnitIds(session: PlanningSession, territoryId: TerritoryId, orders: readonly MoveOrder[]): readonly UnitId[] {
+export function availableUnitIds(session: PlanningSession, territoryId: TerritoryId, orders: readonly PlannedOrder[]): readonly UnitId[] {
   const ordered = new Set(orders.map((order) => order.unitId));
   return ownUnitIdsIn(session, territoryId).filter((id) => !ordered.has(id));
 }
 
 export function selectedDestinations(scenario: Scenario, session: PlanningSession): readonly TerritoryId[] {
   if (session.draft.stage?.step !== "choose-destination") return [];
+  if (session.draft.stage.orderKind === "withdraw") return withdrawDestinations(scenario, session);
   return legalDestinations(scenario, session.game.state, session.factionId, session.draft.selectedUnitIds);
 }
 

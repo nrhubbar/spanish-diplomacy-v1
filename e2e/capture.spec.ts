@@ -226,3 +226,31 @@ test("@capture reduced counter in the fixture", async ({ page }) => {
   if (await orders.isVisible()) await orders.click();
   await capture(page, "17c-fixture-army-list");
 });
+
+test("@capture sub-territories and contested ground", async ({ isMobile, page }) => {
+  await page.goto("./");
+  await page.getByRole("button", { name: "Create Game" }).click();
+  await page.getByRole("button", { name: "Start Campaign" }).click();
+  await waitForMap(page);
+  await page.locator('.map-region[data-territory-id="andalucia"]').focus();
+  await page.keyboard.press("Enter");
+  await expect(page.locator(".sub-territory-wash")).toBeAttached();
+  await capture(page, "20a-contested-overview");
+  await page.getByRole("button", { name: "Give Selected Armies Order" }).click();
+  await capture(page, "20b-contested-orders");
+  await page.getByRole("button", { exact: true, name: "Withdraw" }).click();
+  await capture(page, "20c-withdraw-destination");
+  await page.getByRole("button", { name: /Cancel withdrawal|Cancel/ }).first().click();
+  for (let step = 0; step < 3; step += 1) await page.getByRole("button", { name: "Zoom in" }).click();
+  await capture(page, "20d-contested-zoom");
+  await page.getByRole("button", { name: /^Málaga, held by/ }).click();
+  await expect(page.locator(".sub-territory-focus")).toBeVisible();
+  await capture(page, "20e-sub-territory-focus");
+  // X3: zoomed in, a click inside the selected territory focuses the pane on the sub-territory there.
+  // On a phone the sheet covers Jaen at this zoom; the pane's list (above) is the phone's way in.
+  if (isMobile) return;
+  await page.locator(".sub-territory-back").click();
+  const jaen = await page.locator('.sub-territory-wash [data-sub-territory-id="jaen"] path').first().boundingBox();
+  if (jaen !== null) await page.mouse.click(jaen.x + jaen.width / 2, jaen.y + jaen.height / 2);
+  await expect(page.locator(".sub-territory-focus h3")).toHaveText(/Ja\u00e9n/);
+});
