@@ -3,6 +3,7 @@ import { TerritoryWeather } from "../../components/weather/TerritoryWeather";
 import { citiesIn } from "../../engine/lookup";
 import type { Scenario } from "../../engine/types";
 import { controlDescription, territoryName } from "../../presentation/text";
+import { ContestedChip } from "./ContestedChip";
 import { IncomeChip } from "./IncomeChip";
 import { RecruitsAtChip } from "./RecruitsAtChip";
 import type { TerritoryTabProps } from "./TerritoryTabs";
@@ -35,6 +36,7 @@ export function TerritoryHeading(props: TerritoryTabProps): JSX.Element {
  * renders nothing when it has nothing to say:
  * - the weather pill and next turn's forecast (T3, `m3r1-weather-timer`);
  * - the income chip, "Pays +11 Funds · +4k men a turn" (X1, `m3r1-economy-builds`, `IncomeChip.tsx`);
+ * - contested ground, "Contested · you hold 3 of 8" (W6, `m3r1-sub-territories`, `ContestedChip.tsx`);
  * - the recruiting chip, "Recruits at Barcelona" (R2, `m3r1-recruit-replenish`, `RecruitsAtChip.tsx`).
  */
 function TerritoryMetaRow(props: TerritoryTabProps): JSX.Element {
@@ -42,6 +44,7 @@ function TerritoryMetaRow(props: TerritoryTabProps): JSX.Element {
   return (
     <div className="territory-meta">
       <TerritoryWeather scenario={scenario} state={session.game.state} territoryId={territoryId} />
+      <ContestedChip {...props} />
       <IncomeChip {...props} />
       <RecruitsAtChip {...props} />
     </div>

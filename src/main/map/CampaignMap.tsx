@@ -8,6 +8,7 @@ import { MapLayers } from "./MapLayers";
 import { MapLegend } from "./MapLegend";
 import { MapPane, type PaneContent, paneLayoutFor, paneWidthFor } from "./MapPane";
 import { type CameraBounds, semanticLevel } from "./camera";
+import { subTerritoryAt } from "./layers/SubTerritoryLayer";
 import { prepareGeometry } from "./markup";
 import { useFocusRescue } from "./useFocusRescue";
 import { useMapCamera } from "./useMapCamera";
@@ -80,7 +81,13 @@ export function CampaignMap({ assets, briefing, game, onTerrainFallback, pane, s
         data-semantic-level={level}
         data-zoom={camera.zoom.toFixed(2)}
         onClick={(event) => {
-          if (!consumeDrag()) selectFrom(event.target);
+          if (consumeDrag()) return;
+          selectFrom(event.target);
+          // X3: zoomed in, the click may also focus the pane on the sub-territory under it.
+          if (level !== "overview" && view.onSelectSubTerritory !== undefined) {
+            const subTerritoryId = subTerritoryAt(event.clientX, event.clientY);
+            if (subTerritoryId !== undefined) view.onSelectSubTerritory(subTerritoryId);
+          }
         }}
         onBlur={focusRescue.onBlur}
         onFocus={focusRescue.onFocus}

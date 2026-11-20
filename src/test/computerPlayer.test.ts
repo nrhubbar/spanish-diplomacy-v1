@@ -9,13 +9,13 @@ import { initialGameState, resolveTurn } from "../main/engine/resolution";
 import { type GameState, isMoveOrder, type PlayerSubmission } from "../main/engine/types";
 import { validateSubmission } from "../main/engine/validation";
 import { board, demoralize, into, ordersOf, type Placement } from "./aiBoards";
-import { armyIn, faction, loadedDice, spain, territory, tiny, unit, withUnits } from "./support";
+import { armyIn, faction, loadedDice, spainM2, territory, tiny, unit, withUnits } from "./support";
 
 describe("computer player: orders (C18)", () => {
   afterEach(() => { vi.restoreAllMocks(); });
 
   it("submits valid, seed-deterministic orders for every faction", () => {
-    const scenario = spain();
+    const scenario = spainM2();
     const state = initialGameState(scenario);
     for (const entry of scenario.factions) {
       const first = generateComputerSubmission(scenario, state, entry.id, seededRandom(7));
@@ -26,7 +26,7 @@ describe("computer player: orders (C18)", () => {
   });
 
   it("replays a whole game identically from one seed and never uses Math.random", () => {
-    const scenario = spain();
+    const scenario = spainM2();
     const spy = vi.spyOn(Math, "random");
     const play = (seed: number): readonly (readonly PlayerSubmission[])[] => {
       let state = initialGameState(scenario);
@@ -51,14 +51,24 @@ describe("computer player: orders (C18)", () => {
   });
 
   it("keeps the last defender on a threatened objective (A1)", () => {
-    const scenario = spain();
+    const scenario = spainM2();
     const state = withUnits(scenario, [["rep-wad-ras-1", "republic", "madrid"], ["north-san-marcial-22", "north", "castilla-y-leon"]]);
     expect(ordersOf(scenario, state, "republic")).toEqual([]);
   });
 
   it("does not shuttle armies between objectives it already holds (A1)", () => {
-    const scenario = spain();
-    const orders = ordersOf(scenario, initialGameState(scenario), "republic", 3);
+    const scenario = spainM2();
+    // The Milestone 2 start, before Alava and Caceres made Pais Vasco and Extremadura contested (P1).
+    const start = initialGameState(scenario);
+    const state = {
+      ...start,
+      control: {
+        ...start.control,
+        [territory("extremadura")]: { factionIds: [faction("republic"), faction("south")], kind: "contested" as const },
+        [territory("pais-vasco")]: { factionId: faction("republic"), kind: "controlled" as const }
+      }
+    };
+    const orders = ordersOf(scenario, state, "republic", 3);
     const shuttles = orders.filter((order) => ["valencia", "catalunya"].includes(order.from) && ["valencia", "catalunya"].includes(order.to));
     expect(shuttles).toEqual([]);
   });
@@ -97,7 +107,7 @@ describe("computer player: orders (C18)", () => {
 
 describe("computer player: attacks (C18)", () => {
   it("attacks where the odds are good, not where the defence is strong", () => {
-    const scenario = spain();
+    const scenario = spainM2();
     // From Andalucia, Ceuta holds one militia column and Melilla two regiments.
     const state = board(scenario, "south", ["ceuta", "melilla"], [
       ["south-legion", "south", "andalucia"],
@@ -117,7 +127,7 @@ describe("computer player: attacks (C18)", () => {
   });
 
   it("does not attack at hopeless odds", () => {
-    const scenario = spain();
+    const scenario = spainM2();
     const state = board(scenario, "north", ["madrid"], [
       ["north-la-victoria-28", "north", "castilla-y-leon"],
       ["rep-wad-ras-1", "republic", "madrid"],
@@ -129,7 +139,7 @@ describe("computer player: attacks (C18)", () => {
   });
 
   it("combines armies from several origins when that improves the odds", () => {
-    const scenario = spain();
+    const scenario = spainM2();
     // Madrid borders only Castilla y Leon and Castilla-La Mancha; each holds two regiments.
     // One regiment against Madrid's militia column has poor odds; one from each does better.
     const state = board(scenario, "north", ["madrid"], [
@@ -150,19 +160,19 @@ describe("computer player: attacks (C18)", () => {
   });
 
   it("weighs the expected losses of every result", () => {
-    const odds = battleOdds(spain().combat, 12, 6, []);
+    const odds = battleOdds(spainM2().combat, 12, 6, []);
     // 2:1 with no modifiers: rolls 1-6 give AD, BD, BD, DD, DX, DE.
     const losses = expectedLosses(odds, 0.5);
     expect(losses.attacker).toBeCloseTo((1 / 6) * 6 + (3 / 6) * 12 * 0.5);
     expect(losses.defender).toBeCloseTo((2 / 6) * 6 + (3 / 6) * 6 * 0.5);
-    const hopeless = expectedLosses(battleOdds(spain().combat, 1, 8, []), 0);
+    const hopeless = expectedLosses(battleOdds(spainM2().combat, 1, 8, []), 0);
     expect(hopeless.attacker).toBeCloseTo((4 / 6) * 1 + (1 / 6) * 1);
   });
 });
 
 describe("computer player: defence and morale (C18, M23)", () => {
   it("reinforces a threatened territory it controls, and only when it is threatened", () => {
-    const scenario = spain();
+    const scenario = spainM2();
     const placement: Placement = [
       ["rep-sevilla-34", "republic", "castilla-la-mancha"],
       ["rep-otumba-9", "republic", "valencia"],
@@ -181,7 +191,7 @@ describe("computer player: defence and morale (C18, M23)", () => {
   });
 
   it("defends a threatened objective before taking a lesser free territory", () => {
-    const scenario = spain();
+    const scenario = spainM2();
     // Catalunya stands empty with a regiment next door in Aragon; the Balearics are empty and
     // free to take. Either needs an army from Valencia, and one of the two must stay there.
     const state = board(scenario, "republic", ["aragon", "islas-baleares"], [
@@ -195,7 +205,7 @@ describe("computer player: defence and morale (C18, M23)", () => {
   });
 
   it("never orders a demoralized army, and attacks with the others", () => {
-    const scenario = spain();
+    const scenario = spainM2();
     const placement: Placement = [
       ["north-san-marcial-22", "north", "castilla-y-leon"],
       ["north-san-quintin-25", "north", "castilla-y-leon"],
@@ -217,7 +227,7 @@ describe("computer player: defence and morale (C18, M23)", () => {
   });
 
   it("counts demoralized hostile armies only as able to walk into empty ground", () => {
-    const scenario = spain();
+    const scenario = spainM2();
     const state = demoralize(withUnits(scenario, [
       ["rep-wad-ras-1", "republic", "madrid"],
       ["north-san-marcial-22", "north", "castilla-y-leon"]
@@ -231,7 +241,7 @@ describe("computer player: defence and morale (C18, M23)", () => {
   });
 
   it("values territories by victory weight, cities, and objectives", () => {
-    const scenario = spain();
+    const scenario = spainM2();
     const view = assess(scenario, initialGameState(scenario), faction("south"));
     const { computer: computerWeights, stakes: stakeWeights, victoryAlarm } = view.profile;
     expect(view.stake(territory("andalucia"))).toBe(stakeWeights.territory + 5 * stakeWeights.city + stakeWeights.objective);

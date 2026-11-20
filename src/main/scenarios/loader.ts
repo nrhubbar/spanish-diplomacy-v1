@@ -1,7 +1,7 @@
 import type { ZodError } from "zod";
 import { builtInModuleRegistry, type ModuleRegistry } from "../engine/modules";
 import { initialGameState } from "../engine/resolution";
-import type { CityId, Scenario, TerritoryId, UnitTypeId } from "../engine/types";
+import type { CityId, Scenario, SubTerritoryId, TerritoryId, UnitTypeId } from "../engine/types";
 import { victoryProgress } from "../engine/victory";
 import { checkCore } from "./loader/coreChecks";
 import { indexScenario } from "./loader/indexScenario";
@@ -31,6 +31,13 @@ export interface MapTerritory {
   readonly unitAnchor: MapPoint;
 }
 
+/** X2: where a sub-territory's name and capital star are drawn; its path is in the lazy `svgPath`. */
+export interface MapSubTerritory {
+  readonly capital: MapPoint;
+  readonly label: MapPoint;
+  readonly territoryId: TerritoryId;
+}
+
 /** One relief image and the view box rectangle it covers. */
 export interface TerrainLayerSource {
   readonly bounds: MapRect;
@@ -49,6 +56,8 @@ export interface MapPackage {
   readonly regions: ReadonlyMap<string, TerritoryId>;
   readonly rivers: readonly MapRiver[];
   readonly stripSelectors: readonly string[];
+  /** X2: the sub-territory geometry (one path per id, read even-odd) and its label and capital points. */
+  readonly subTerritories?: { readonly entries: ReadonlyMap<SubTerritoryId, MapSubTerritory>; readonly svgPath: string };
   readonly terrain?: { readonly layers: readonly TerrainLayerSource[] };
   readonly territories: ReadonlyMap<TerritoryId, MapTerritory>;
   readonly unitSymbolPaths: ReadonlyMap<UnitTypeId, string>;

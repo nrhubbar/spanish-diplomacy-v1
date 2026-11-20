@@ -2,7 +2,7 @@ import type { JSX } from "react";
 import { requireFaction } from "../engine/lookup";
 import type { Scenario, TerritoryId } from "../engine/types";
 import { useAppDispatch } from "../hooks";
-import { armyFigures } from "../presentation/army";
+import { armyFigures, orderStatus } from "../presentation/army";
 import type { DestinationEstimate } from "../presentation/odds";
 import { factionName, route, territoryName, unitName } from "../presentation/text";
 import { cancelOrderStage, removePlannedOrder } from "../state/gameSlice";
@@ -12,6 +12,7 @@ import { ArmyPicker } from "./ArmyPicker";
 import { DestinationChoices } from "./DestinationChoices";
 import { armies } from "./OrderCommand";
 import { SubTerritoryFocus } from "./pane/SubTerritoryFocus";
+import { SubTerritoryList } from "./pane/SubTerritoryList";
 import { TerritoryTabs } from "./pane/TerritoryTabs";
 import { TrainingList } from "./pane/TrainingList";
 import { PlannedOddsInfo, PlannedOrderOdds } from "./PlannedOrderOdds";
@@ -44,8 +45,8 @@ export function OrderBuilder({ estimates, scenario, session }: BuilderProps & { 
       <section aria-label="Selected territory" className="pane-section">
         {choosingDestination ? (
           <div className="pane-callout" role="status">
-            <p>{`Moving ${armies(draft.selectedUnitIds.length)} from ${territoryId === undefined ? "" : territoryName(scenario, territoryId)}. Choose a highlighted territory on the map.`}</p>
-            <button className="text-button" onClick={() => dispatch(cancelOrderStage())} ref={focusWhenShown} type="button">Cancel move</button>
+            <p>{`${draft.stage.orderKind === "withdraw" ? "Withdrawing" : "Moving"} ${armies(draft.selectedUnitIds.length)} from ${territoryId === undefined ? "" : territoryName(scenario, territoryId)}. Choose a highlighted territory on the map.`}</p>
+            <button className="text-button" onClick={() => dispatch(cancelOrderStage())} ref={focusWhenShown} type="button">{draft.stage.orderKind === "withdraw" ? "Cancel withdrawal" : "Cancel move"}</button>
           </div>
         ) : null}
         {choosingDestination && estimates.size > 0 ? <DestinationChoices estimates={estimates} scenario={scenario} /> : null}
@@ -56,13 +57,13 @@ export function OrderBuilder({ estimates, scenario, session }: BuilderProps & { 
             <TerritoryTabs key={territoryId} scenario={scenario} session={session} territoryId={territoryId}>
               <TerritoryDetails scenario={scenario} session={session} territoryId={territoryId} />
             </TerritoryTabs>
-          ) : <SubTerritoryFocus scenario={scenario} subTerritoryId={draft.focusedSubTerritoryId} />
+          ) : <SubTerritoryFocus factionId={session.factionId} scenario={scenario} state={session.game.state} subTerritoryId={draft.focusedSubTerritoryId} />
         )}
         {draft.feedback === undefined ? null : <p className="inline-feedback" role="status">{draft.feedback}</p>}
       </section>
       <section aria-labelledby="planned-orders-title" className="pane-section">
         <h3 id="planned-orders-title">Your orders</h3>
-        <OrderSummary session={session} />
+        <OrderSummary scenario={scenario} session={session} />
         {draft.orders.length === 0 ? (
           <p className="pane-hint">No moves yet. Armies without a move entrench, or rest while demoralized.</p>
         ) : (
@@ -71,8 +72,8 @@ export function OrderBuilder({ estimates, scenario, session }: BuilderProps & { 
               <li key={order.unitId}>
                 <span>
                   <span className="order-unit">{unitName(scenario, order.unitId)}</span>
-                  <span className="order-route">{route(scenario, order)}</span>
-                  <PlannedOrderOdds scenario={scenario} session={session} territoryId={order.to} />
+                  <span className="order-route">{order.kind === "withdraw" ? `Withdraw: ${route(scenario, { ...order, kind: "move" })}` : route(scenario, order)}</span>
+                  {order.kind === "move" ? <PlannedOrderOdds scenario={scenario} session={session} territoryId={order.to} /> : null}
                 </span>
                 <button aria-label={`Remove order for ${unitName(scenario, order.unitId)}`} className="text-button" onClick={() => dispatch(removePlannedOrder(order.unitId))} type="button">Remove</button>
               </li>
@@ -86,11 +87,16 @@ export function OrderBuilder({ estimates, scenario, session }: BuilderProps & { 
 }
 
 /** O1: every army has one order, so the counts add up to all of the player's armies. */
-function OrderSummary({ session }: { readonly session: PlanningSession }): JSX.Element {
-  const counts = orderCounts(session);
+function OrderSummary({ scenario, session }: { readonly scenario: Scenario; readonly session: PlanningSession }): JSX.Element {
+  const counts = orderCounts(session, scenario);
+  // C1: contested-ground kinds join the line once any army has one.
+  const extra = (["withdraw", "attack", "replenish", "hold"] as const).flatMap((kind) => {
+    const count = counts[kind] ?? 0;
+    return count === 0 ? [] : [`${String(count)} ${orderStatus[kind].toLowerCase()}`];
+  });
   return (
     <p className="pane-meta order-summary">
-      {`${String(counts.move)} moving, ${counts.replenish > 0 ? `${String(counts.replenish)} replenishing, ` : ""}${String(counts.entrench)} entrenching, ${String(counts.rest)} resting`}
+      {[`${String(counts.move)} moving`, ...extra, `${String(counts.entrench)} entrenching`, `${String(counts.rest)} resting`].join(", ")}
     </p>
   );
 }
@@ -120,6 +126,7 @@ function TerritoryDetails({ scenario, session, territoryId }: BuilderProps & { r
           </ul>
         </div>
       )}
+      <SubTerritoryList scenario={scenario} state={game.state} territoryId={territoryId} />
     </>
   );
 }

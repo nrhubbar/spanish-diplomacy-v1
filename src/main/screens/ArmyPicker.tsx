@@ -5,9 +5,11 @@ import { useAppDispatch } from "../hooks";
 import { armyFigures, demoralizedRule, orderStatus } from "../presentation/army";
 import { glyphs } from "../presentation/glyphs";
 import { clearUnitSelection, selectAllAvailableUnits, toggleUnitSelection } from "../state/gameSlice";
-import { orderKindsFor, orderOf, type PlanningSession } from "../state/planning";
+import { blockedOrders, enemyPresent, orderKindsFor, orderOf, type PlanningSession, selectedWithdrawRoutes } from "../state/planning";
+import type { OrderKind } from "../state/session";
 import { replenishDetail } from "../presentation/recruitment";
 import { territoryName } from "../presentation/text";
+import { routeNames } from "../engine/partition/paths";
 import { ArmyLine } from "./ArmyLine";
 import { OrderCommand } from "./OrderCommand";
 
@@ -27,6 +29,7 @@ export function ArmyPicker({ own, scenario, session }: ArmyPickerProps): JSX.Ele
   const selectedCount = draft.selectedUnitIds.length;
   const choosingDestination = draft.stage?.step === "choose-destination";
   const shakenSelected = own.some((unit) => unit.morale.demoralized && draft.selectedUnitIds.includes(unit.id));
+  const kinds = orderKindsFor(session, scenario);
 
   return (
     <div className="army-picker">
@@ -38,9 +41,9 @@ export function ArmyPicker({ own, scenario, session }: ArmyPickerProps): JSX.Ele
         {own.map((unit) => {
           const definition = requireUnitDefinition(scenario, unit.id);
           const move = moves.get(unit.id);
-          const kind = orderOf(session, unit);
+          const kind = orderOf(session, unit, scenario);
           const order = move !== undefined
-            ? `Moving to ${territoryName(scenario, move.to)}`
+            ? `${move.kind === "withdraw" ? "Withdrawing" : "Moving"} to ${territoryName(scenario, move.to)}`
             : kind === "replenish" ? `${orderStatus[kind]} (${replenishDetail(scenario, game.state, [unit]).split(",")[0] ?? ""})` : orderStatus[kind];
           return (
             <li key={unit.id}>
@@ -79,8 +82,9 @@ export function ArmyPicker({ own, scenario, session }: ArmyPickerProps): JSX.Ele
           )}
           <OrderCommand
             availableCount={available.length}
+            {...contestedMenu(scenario, session, kinds)}
             details={{ replenish: replenishDetail(scenario, game.state, own.filter((unit) => draft.selectedUnitIds.includes(unit.id))) }}
-            kinds={orderKindsFor(session, scenario)}
+            kinds={kinds}
             menuOpen={draft.stage?.step === "choose-order"}
             selectedCount={selectedCount}
           />
@@ -88,4 +92,33 @@ export function ArmyPicker({ own, scenario, session }: ArmyPickerProps): JSX.Ele
       )}
     </div>
   );
+}
+
+/**
+ * C1 (Q-UX-14): in contested ground the menu offers Attack (the default) and Withdraw, naming
+ * where Withdraw leads and through which of the player's own sub-territories; the other orders
+ * are shown greyed out with the reason.
+ */
+function contestedMenu(scenario: Scenario, session: PlanningSession, kinds: readonly OrderKind[]): { readonly blocked?: ReturnType<typeof blockedOrders>; readonly descriptions?: Partial<Record<OrderKind, string>> } {
+  const territoryId = session.draft.selectedTerritoryId;
+  if (!kinds.includes("withdraw") || territoryId === undefined) return {};
+  const routes = selectedWithdrawRoutes(scenario, session);
+  const territory = territoryName(scenario, territoryId);
+  const through = [...new Set(routes.flatMap((route) => routeNames(scenario, route)))];
+  const fatigue = scenario.rules.dice === "d20-graded" ? "; +1 fatigue" : "";
+  return {
+    blocked: blockedOrders(scenario),
+    descriptions: {
+      attack: enemyPresent(session, territoryId)
+        ? `Default here. Joins the standing battle for ${territory}${fatigue}.`
+        : `Default here. Takes one enemy sub-territory of ${territory} a turn, the capital last.`,
+      withdraw: routes.length === 0
+        ? "No way out: every neighbouring territory you hold is cut off from your sub-territories here."
+        : `To ${orList(routes.map((route) => territoryName(scenario, route.to)))}, through your own sub-territories (${through.join(", ")}).`
+    }
+  };
+}
+
+function orList(names: readonly string[]): string {
+  return names.length < 2 ? names.join("") : `${names.slice(0, -1).join(", ")} or ${String(names.at(-1))}`;
 }

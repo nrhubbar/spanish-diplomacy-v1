@@ -1,4 +1,5 @@
 import { type Armies, compareIds, placeAt, removeArmies, replaceArmies, requireArmy } from "./board";
+import { hookedRetreatAllowed } from "./hooks";
 import { neighborsOf, requireUnitState } from "./lookup";
 import type { FactionId, GameState, MoveOrder, Scenario, TerritoryId, UnitId, UnitState } from "./types";
 
@@ -82,7 +83,7 @@ function takerOf(start: GameState, armies: Armies, entry: Leaving, retreating: R
   return entered.map((other) => other.factionId).sort(compareIds)[0];
 }
 
-function retreatDestination(
+export function retreatDestination(
   scenario: Scenario,
   start: GameState,
   staying: readonly UnitState[],
@@ -94,7 +95,9 @@ function retreatDestination(
     .filter((id) => {
       const control = start.control[id];
       return control?.kind === "controlled" && control.factionId === factionId
-        && !staying.some((unit) => unit.territoryId === id && unit.factionId !== factionId);
+        && !staying.some((unit) => unit.territoryId === id && unit.factionId !== factionId)
+        // P6: a module may require a path (through the army's own sub-territories).
+        && hookedRetreatAllowed({ factionId, from, scenario, state: start, to: id });
     })
     .map((id) => ({ friends: staying.filter((unit) => unit.territoryId === id).length, id, rank: scenario.territories.findIndex((territory) => territory.id === id) }))
     .sort((left, right) => right.friends - left.friends || left.rank - right.rank);
