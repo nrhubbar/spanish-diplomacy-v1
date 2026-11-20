@@ -197,6 +197,8 @@ Each battle and each roll draws from its own seeded stream: `deriveSeed(game see
 
 ### 3.1 Roles and process
 
+> **Changed 19 November 2026 (declog D13):** every feature stream now starts at once from the interim base, and workers no longer stop at checkpoints. Reviews and the production bar (section 5) move to a final make-it-right phase. The checkpoint text below describes the original plan.
+
 - **Coordinator and integrator (`m3r1-integrator`)**: the main session. It owns this document, the declog, merges, `e2e/baselines/**`, the final verify, and the reports to the owner.
 - **Supervisor (`m3r1-supervisor`)**: a review agent. It reads each checkpoint report and the stream's diff since the last checkpoint, and answers **continue**, **redirect** (with what to change), or **stop** (stuck or out of scope). It writes nothing.
 - **Workers (`m3r1-<slug>`)**: one agent per stream, on branch `m3r1-<slug>`, in the worktree `../spanish-diplomacy-v1-m3r1-<slug>` with its own `E2E_PORT`. Workers run the agentic loop on their own: build, test, fix, repeat.

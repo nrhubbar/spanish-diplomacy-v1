@@ -70,3 +70,21 @@ H7's 15 percent target is measured as **freeze**, because the owner's goal is ga
 - **Baleares** splits by island. Formentera goes with `ibiza`; Cabrera and Dragonera go with `mallorca`.
 
 The outer edges of all sub-territories are the region rings, vertex for vertex. The paths are in a lazily loaded `assets/maps/iberia-sub-territories.svg`, so the initial chunk does not grow.
+
+**D13. Process change: make it work, then make it right (owner, 19 November 2026).** The owner asked to start every feature stream at once and to make it green later in the merge cycle, rather than early, because the checkpoint cycle was turning over too soon. From here on the work runs in three passes:
+- **Make it work:** every feature stream runs at once from the interim integration base, each in its own worktree. Workers build each feature end to end without stopping at checkpoints. They commit often and keep their progress note current. They stop only when blocked, or when they would need another stream's files. Per-checkpoint supervisor reviews are paused.
+- **Make it right:** the last phase of this revision. Stream reviewers, the supervisor, full green checks (lint, typecheck, coverage of at least 90 percent, e2e, axe), visual baselines and the declog. All the section 5 production-bar items still apply; they move to this phase.
+- **Make it fast:** the chunk budget and frame costs, after that.
+
+**D14. Interim integration base.** Before the feature streams were cut, the integrator merged into `milestone-3-rev-1`:
+- `m3r1-contract` through `0b7f1d5`: CP1 to CP3, plus the first CP4 commit (lazy packages and the budgets file);
+- `m3r1-map-provinces`;
+- `m3r1-sim-harness`.
+
+Merge fixes:
+- The topology file moved into the new scenario folder.
+- `scripts/map/iberia-1936.ts` points at it.
+- The generated borders, connection entries and city placement were copied into `scenario.json`, and a test keeps them equal.
+- The harness was updated for the order and battle unions, and its blunder pointer set to `/ai/blunderChance`.
+
+Lint and typecheck pass. Six harness tests that assumed blunders were "pending" are known red, and are left for the make-it-right pass. The contract's remaining CP4 work (cross-area hooks, open turn draft, per-viewer outcomes, UI slots, splits, blunder logic) merges into `milestone-3-rev-1` when it finishes. The feature streams then merge that branch in.
