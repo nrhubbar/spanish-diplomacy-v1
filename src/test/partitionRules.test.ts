@@ -204,3 +204,29 @@ describe("Withdraw refusals (M-7, C1, P6)", () => {
     expect(hasPath(small, state, faction("red"), first.id, first.id)).toBe(true);
   });
 });
+
+describe("partition helpers at their edges", () => {
+  const scenario = spainD20();
+  const start = initialGameState(scenario);
+
+  it("does not let a lone general occupy, called directly (D27.1)", async () => {
+    const { occupy, sweep } = await import("../main/engine/partition/steps");
+    const general = start.units[unit("north-general-mola")];
+    if (general === undefined) throw new Error("mola");
+    const armies = { [general.id]: { ...general, territoryId: territory("castilla-la-mancha") } };
+    expect(occupy(scenario, start, armies, start.subTerritories).changes).toEqual([]);
+    expect(sweep(scenario, start, { [general.id]: { ...general, territoryId: territory("extremadura") } }, start.subTerritories).changes).toEqual([]);
+    const column = start.units[unit("north-sierra-column")];
+    if (column === undefined) throw new Error("column");
+    const both = { ...armies, [column.id]: { ...column, territoryId: territory("castilla-la-mancha") } };
+    expect(occupy(scenario, start, both, start.subTerritories).changes.length).toBeGreaterThan(0);
+  });
+
+  it("offers no Withdraw from ground that is not contested, and names the sub-territories of a route", async () => {
+    const { routeNames } = await import("../main/engine/partition/paths");
+    expect(withdrawRoutes(scenario, start, faction("republic"), territory("madrid"))).toEqual([]);
+    const [route] = withdrawRoutes(scenario, start, faction("republic"), territory("andalucia"));
+    expect(route === undefined ? [] : routeNames(scenario, route)).not.toHaveLength(0);
+    expect(routeNames(scenario, { through: [sub("nowhere")], to: territory("murcia") })).toEqual(["nowhere"]);
+  });
+});

@@ -158,3 +158,22 @@ describe("capacity and route failures (M-8, M3, M5)", () => {
     expect(validateMoveOrder(scenario, state, astray)).toEqual({ ok: false, reason: "The route does not end at the destination." });
   });
 });
+
+describe("sea lanes that name no ports, and the held-back line (M5, D27.1)", () => {
+  it("sails from and lands in the faction's best port when a lane has no entry pair", async () => {
+    const { departurePort, landingAt } = await import("../main/engine/movement/network");
+    const base = spainD20();
+    const scenario = { ...base, connections: base.connections.map((connection) => (connection.kind === "sea" ? { between: connection.between, kind: connection.kind } : connection)) };
+    const state = initialGameState(scenario);
+    expect(departurePort(scenario, state, faction("republic"), territory("catalunya"), territory("islas-baleares"))).toEqual({ level: 2, subTerritoryId: "barcelona" });
+    expect(landingAt(scenario, state, faction("republic"), territory("catalunya"), territory("islas-baleares"))).toEqual({ kind: "port", level: 1, subTerritoryId: "menorca" });
+    expect(landingAt(scenario, state, faction("north"), territory("galicia"), territory("islas-baleares")).kind).toBe("amphibious");
+  });
+
+  it("says why an army with no unit that can fight stayed", async () => {
+    const { movementLines } = await import("../main/presentation/systemText/movement");
+    const scenario = spainD20();
+    const line = movementLines["move-held-back"]({ factionId: faction("north"), from: territory("castilla-y-leon"), kind: "move-held-back", reason: "cannot-fight", to: territory("castilla-la-mancha"), unitIds: [unit("north-general-mola")] }, { scenario });
+    expect(line).toContain("with no unit that can fight, it cannot enter Castilla-La Mancha on its own");
+  });
+});
