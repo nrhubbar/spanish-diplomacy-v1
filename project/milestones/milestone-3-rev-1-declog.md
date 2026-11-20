@@ -331,3 +331,57 @@ Skipped:
 - `npm run verify` and the production smoke: more changes are coming.
 
 The balance and rule questions in the sitrep remain open for the owner.
+
+**D34. The coverage gate is met (`m3r1-coverage`).** `npm run test:unit` exits 0: 1247 tests pass. Coverage:
+
+| Measure | Coverage | Gate |
+|---|---|---|
+| Statements | 98.21% | met |
+| Branches | 93.39% | meets the 93 percent gate in `vitest.config.ts` |
+| Functions | 98.50% | met |
+| Lines | 99.28% | met |
+
+Neither the gate nor the exclusions changed. Logic was pulled out of components into pure, unit-tested functions:
+- `OrderBuilder` and `OrderCommand` into `presentation/text.ts`;
+- `OrdersScreen` into `state/planning/mapView.ts`;
+- `AirPane` and `AirLayer` into `presentation/airPane.ts`;
+- `RecruitTab` into `presentation/recruitment.ts`;
+- `RouteCard` into `presentation/weatherText.ts`.
+
+Two unused rule helpers were removed. Six more unused helpers stay, because they have no uncovered branches: `unitsOfKind`, `resourceIds`, `seaNeighbors`, `holdsAny`, `addWarningNotification`, `selectTimer`. Two odd strings were kept unchanged and are listed for Revision 2: "A aircraft cannot fly this mission", and the "from ." callout.
+
+Release checks at close:
+- lint, typecheck and build pass;
+- the initial chunk is 149.06 kB gzip against the 155 kB budget;
+- e2e, visual baselines, timing tests, `verify` and the production smoke were not run, per D33.
+
+## Rubric re-score (coding principles)
+
+| # | Score | Evidence |
+|---|---|---|
+| R1 | 5 | Rules stay in the engine behind modules and hooks. Presentation and state do the deriving, and the components render it (D34). |
+| R2 | 5 | Orders, outcomes, battles and privacy are discriminated unions, and a missing privacy rule or report line fails to compile. |
+| R3 | 5 | Every roll uses its own seeded stream, and real time never reaches the engine. Same seed, same game: the harness checks this across thread counts. |
+| R4 | 4.5 | A few `as never` casts remain in tests and fixtures. Production code adds none we know of. |
+| R5 | 5 | Hidden information goes through one per-viewer path for every screen and every computer player. The timeout and End Turn share `submitDraft`. |
+| R6 | 5 | The store, registry and scenario packages are injected; packages load lazily. |
+| R7 | 5 | Every rule number is scenario data with a source or note, including AI profiles, blunders, garrisons, the grade table and weather. |
+| R8 | 4 | Hotspots were split (H9), but many new modules exceed 200 lines. The largest are in `engine/movement`, `engine/d20`, `ai/` and the report screens. Splitting them is for Revision 2. |
+| R9 | 4.5 | Duplicate rules were removed at reconciliation. Six unused helpers remain (D34). |
+| R10 | 5 | The feedback boundary is unchanged. Report groups and private Treasury lines answer only the viewer. |
+| R11 | 5 | 1247 unit tests; coverage meets the gate on every measure. There are regression tests for every review blocker and harness smoke checks for S1 and S3. |
+| R12 | 4 | axe was clean on the fixed screens when last run, and phone target sizes were fixed. Manual screen-reader and zoom checks are still open, and e2e was not re-run at close (D33). |
+| R13 | 4 | Merges were made by the integrator, with one decision-log entry per merge. The visual baselines have not been regenerated (deferred to Revision 2). |
+
+The average is 61.5 / 13 = **4.73**. No row is below 4.
+
+## Open for the owner
+
+These are listed in `milestone-3-rev-1-sitrep-01.md`:
+- balance: the Republic wins about 10 percent of decided games, against H7's 20;
+- game length: the median is 12 turns;
+- Manpower is left unspent;
+- S3 shows 1 or 2 abandonments in 1000 games;
+- confirm the defaults D5, D6, D17, D27 and D28;
+- five smaller rule questions;
+- the play-through, then the squash onto `main` and the worktree cleanup.
