@@ -7,6 +7,7 @@ import type { OrderKind } from "../state/session";
 const orderLabels: Readonly<Record<OrderKind, { readonly description: string; readonly label: string }>> = {
   entrench: { description: "Stay and dig in. Only healthy armies entrench.", label: "Entrench" },
   move: { description: "March to a neighboring territory.", label: "Move" },
+  replenish: { description: "Restore men and morale. Cancelled and refunded if the unit fights.", label: "Replenish" },
   rest: { description: "Stay and recover. Demoralized armies rest instead of entrenching.", label: "Rest" }
 };
 
@@ -22,6 +23,8 @@ function revealWhenShown(element: HTMLElement | null): void {
 interface OrderCommandProps {
   /** Armies in the territory that have no move order. */
   readonly availableCount: number;
+  /** A description for this selection in place of the general one (R5: Replenish's men, cost and arrival). */
+  readonly details?: Partial<Readonly<Record<OrderKind, string>>>;
   /** The order types offered for the selected armies, in menu order. */
   readonly kinds: readonly OrderKind[];
   readonly menuOpen: boolean;
@@ -29,7 +32,7 @@ interface OrderCommandProps {
 }
 
 /** "Give Selected Armies Order" and, once open, the order types it offers. */
-export function OrderCommand({ availableCount, kinds, menuOpen, selectedCount }: OrderCommandProps): JSX.Element {
+export function OrderCommand({ availableCount, details, kinds, menuOpen, selectedCount }: OrderCommandProps): JSX.Element {
   const dispatch = useAppDispatch();
   const ids = useId();
   const hintId = `${ids}-hint`;
@@ -69,7 +72,7 @@ export function OrderCommand({ availableCount, kinds, menuOpen, selectedCount }:
               >
                 {orderLabels[kind].label}
               </button>
-              <span className="order-choice-description" id={`${ids}-${kind}`}>{orderLabels[kind].description}</span>
+              <span className="order-choice-description" id={`${ids}-${kind}`}>{details?.[kind] ?? orderLabels[kind].description}</span>
             </div>
           ))}
         </div>

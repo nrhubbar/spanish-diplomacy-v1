@@ -2,8 +2,6 @@ import { describe, expect, it } from "vitest";
 import { planAirMissions } from "../main/ai/orders/air-mission";
 import { planBuilds } from "../main/ai/orders/build";
 import type { PlanningContext } from "../main/ai/orders/planner";
-import { planRecruits } from "../main/ai/orders/recruit";
-import { planReplenishment } from "../main/ai/orders/replenish";
 import { planSackings } from "../main/ai/orders/sack";
 import { planWithdrawals } from "../main/ai/orders/withdraw";
 import { seededRandom } from "../main/engine/random";
@@ -72,7 +70,8 @@ describe("per-viewer state ($6, U4)", () => {
 describe("order planner stubs (H5)", () => {
   it("plan no orders until their slices land", () => {
     const context: PlanningContext = { factionId: faction("red"), memory: {}, planned: [], random: seededRandom(1), scenario, state: initialGameState(scenario) };
-    for (const planner of [planWithdrawals, planReplenishment, planRecruits, planBuilds, planAirMissions, planSackings]) {
+    // Recruit and Replenish planners are tested in recruitmentAi.test.ts.
+    for (const planner of [planWithdrawals, planBuilds, planAirMissions, planSackings]) {
       expect(planner(context)).toEqual([]);
     }
   });

@@ -56,7 +56,7 @@ describe("the flat order union (E8)", () => {
 
 describe("outcomes of the Milestone 3 systems", () => {
   it("gives every system outcome a placeholder report line", () => {
-    for (const kind of ["weather-rolled", "training-started", "build-queued", "raid", "general-died", "withdrew", "income"]) {
+    for (const kind of ["weather-rolled", "build-queued", "raid", "general-died", "withdrew", "income"]) {
       const outcome = { kind } as unknown as TurnOutcome;
       expect(isSystemOutcome(outcome)).toBe(true);
       expect(describeOutcome(tiny(), outcome)).toMatch(/\.$/);

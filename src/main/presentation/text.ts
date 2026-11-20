@@ -147,7 +147,7 @@ export function describeOutcome(scenario: Scenario, outcome: TurnOutcome, outcom
 export function describeOutcomeGroup(scenario: Scenario, group: OutcomeGroup, outcomes: readonly TurnOutcome[] = []): string {
   const { outcome } = group;
   if (outcome.kind === "fatigue") return fatigueSentence(outcome, unitName(scenario, outcome.unitId));
-  if (isSystemOutcome(outcome)) return describeSystemOutcome(outcome);
+  if (isSystemOutcome(outcome)) return describeSystemOutcome(outcome, scenario);
   if (outcome.kind === "no-move") {
     return outcome.unitId === undefined
       ? `${factionName(scenario, outcome.factionId)} had no armies to order.`

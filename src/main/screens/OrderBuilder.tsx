@@ -13,6 +13,7 @@ import { DestinationChoices } from "./DestinationChoices";
 import { armies } from "./OrderCommand";
 import { SubTerritoryFocus } from "./pane/SubTerritoryFocus";
 import { TerritoryTabs } from "./pane/TerritoryTabs";
+import { TrainingList } from "./pane/TrainingList";
 import { PlannedOddsInfo, PlannedOrderOdds } from "./PlannedOrderOdds";
 
 /**
@@ -89,7 +90,7 @@ function OrderSummary({ session }: { readonly session: PlanningSession }): JSX.E
   const counts = orderCounts(session);
   return (
     <p className="pane-meta order-summary">
-      {`${String(counts.move)} moving, ${String(counts.entrench)} entrenching, ${String(counts.rest)} resting`}
+      {`${String(counts.move)} moving, ${counts.replenish > 0 ? `${String(counts.replenish)} replenishing, ` : ""}${String(counts.entrench)} entrenching, ${String(counts.rest)} resting`}
     </p>
   );
 }
@@ -107,6 +108,7 @@ function TerritoryDetails({ scenario, session, territoryId }: BuilderProps & { r
       <p className="pane-meta">{controlDescription(scenario, game.state.control[territoryId])}</p>
       {cities.length === 0 ? null : <p className="pane-meta">{`Cities: ${cities.map((city) => city.name).join(", ")}`}</p>}
       {own.length === 0 ? null : <ArmyPicker own={own} scenario={scenario} session={session} />}
+      <TrainingList scenario={scenario} session={session} territoryId={territoryId} />
       {others.length === 0 ? null : (
         <div className="other-formations">
           <h4>Other armies here</h4>

@@ -1,6 +1,6 @@
 import { createAction, createReducer } from "@reduxjs/toolkit";
 import { initialGameState } from "../engine/resolution";
-import type { ActorKind, FactionId, Scenario, ScenarioId, SubTerritoryId, TerritoryId, UnitId } from "../engine/types";
+import type { ActorKind, FactionId, Scenario, ScenarioId, SubTerritoryId, TerritoryId, UnitId, UnitTypeId } from "../engine/types";
 import type { ScenarioRegistry } from "../scenarios/registry";
 import { advance, lockSubmission, nextTurn } from "./coordinator";
 import {
@@ -9,9 +9,11 @@ import {
   clearSelection,
   clickTerritory,
   clickUnit,
+  draftOrders,
   focusOn,
   removeOrder,
   selectAllAvailable,
+  setRecruitQuantity,
   toggleOrderChoice,
   toggleUnit,
   type PlanningSession,
@@ -51,6 +53,8 @@ export const removePlannedOrder = createAction<UnitId>("game/removePlannedOrder"
 export const endTurn = createAction("game/endTurn");
 /** X3: focus the pane on a sub-territory, or (undefined) back to its territory. */
 export const focusSubTerritory = createAction<SubTerritoryId | undefined>("game/focusSubTerritory");
+/** X4: how many units of a type the draft recruits at a territory (m3r1-recruit-replenish). */
+export const changeRecruitQuantity = createAction<{ readonly quantity: number; readonly territoryId: TerritoryId; readonly unitTypeId: UnitTypeId }>("game/changeRecruitQuantity");
 export const startNextTurn = createAction("game/startNextTurn");
 
 function setupFor(scenario: Scenario): Session {
@@ -133,10 +137,12 @@ export function createGameReducer(dependencies: GameReducerDependencies) {
         set(inPlanning(state.session, (_scenario, planning) => cancelOrder(planning))))
       .addCase(removePlannedOrder, (state, { payload }) =>
         set(inPlanning(state.session, (_scenario, planning) => removeOrder(planning, payload))))
+      .addCase(changeRecruitQuantity, (state, { payload }) =>
+        set(inPlanning(state.session, (scenario, planning) => setRecruitQuantity(scenario, planning, payload.territoryId, payload.unitTypeId, payload.quantity))))
       .addCase(endTurn, (state) =>
         set(inPlanning(state.session, (scenario, planning) => advance(
           scenario,
-          lockSubmission(scenario, planning.game, { factionId: planning.factionId, orders: planning.draft.orders }),
+          lockSubmission(scenario, planning.game, { factionId: planning.factionId, orders: draftOrders(planning.draft) }),
           planning.factionId
         ))))
       .addCase(startNextTurn, (state) => {

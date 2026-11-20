@@ -6,6 +6,7 @@ import { armyFigures, demoralizedRule, orderStatus } from "../presentation/army"
 import { glyphs } from "../presentation/glyphs";
 import { clearUnitSelection, selectAllAvailableUnits, toggleUnitSelection } from "../state/gameSlice";
 import { orderKindsFor, orderOf, type PlanningSession } from "../state/planning";
+import { replenishDetail } from "../presentation/recruitment";
 import { territoryName } from "../presentation/text";
 import { ArmyLine } from "./ArmyLine";
 import { OrderCommand } from "./OrderCommand";
@@ -37,7 +38,10 @@ export function ArmyPicker({ own, scenario, session }: ArmyPickerProps): JSX.Ele
         {own.map((unit) => {
           const definition = requireUnitDefinition(scenario, unit.id);
           const move = moves.get(unit.id);
-          const order = move === undefined ? orderStatus[orderOf(session, unit)] : `Moving to ${territoryName(scenario, move.to)}`;
+          const kind = orderOf(session, unit);
+          const order = move !== undefined
+            ? `Moving to ${territoryName(scenario, move.to)}`
+            : kind === "replenish" ? `${orderStatus[kind]} (${replenishDetail(scenario, game.state, [unit]).split(",")[0] ?? ""})` : orderStatus[kind];
           return (
             <li key={unit.id}>
               <button
@@ -53,6 +57,10 @@ export function ArmyPicker({ own, scenario, session }: ArmyPickerProps): JSX.Ele
                 <span className="formation-meta">
                   {`${requireUnitType(scenario, definition.type).name} ${glyphs.dot} ${order}`}
                 </span>
+                {/* X7, R5 (m3r1-recruit-replenish): how far below strength, where Replenish exists. */}
+                {scenario.rules.recruitment !== "none" && unit.strength < definition.fullStrength
+                  ? <span className="below-strength-chip">{`Below strength: ${String(definition.fullStrength - unit.strength)} men short`}</span>
+                  : null}
                 <ArmyLine factionColor={requireFaction(scenario, unit.factionId).color} figures={armyFigures(scenario, game.state, unit)} />
               </button>
             </li>
@@ -71,7 +79,8 @@ export function ArmyPicker({ own, scenario, session }: ArmyPickerProps): JSX.Ele
           )}
           <OrderCommand
             availableCount={available.length}
-            kinds={orderKindsFor(session)}
+            details={{ replenish: replenishDetail(scenario, game.state, own.filter((unit) => draft.selectedUnitIds.includes(unit.id))) }}
+            kinds={orderKindsFor(session, scenario)}
             menuOpen={draft.stage?.step === "choose-order"}
             selectedCount={selectedCount}
           />
