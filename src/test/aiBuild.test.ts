@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { generateComputerSubmission } from "../main/ai/computerPlayer";
-import { buildSpendShare, maxBuildsPerTurn, planBuilds } from "../main/ai/orders/build";
+import { planBuilds } from "../main/ai/orders/build";
 import type { PlanningContext } from "../main/ai/orders/planner";
 import { plannedSpend, validateBuildOrder } from "../main/engine/economy/catalogue";
 import { amountOf } from "../main/engine/economy/resources";
@@ -16,6 +16,7 @@ import { faction, spain, territory, tiny } from "./support";
 const assetPaths = new Set(["src/test/fixtures/scenarios/tiny-front/geometry.svg", "src/test/fixtures/scenarios/tiny-front/foot.svg"]);
 const scenario = loadPackage({ assetPaths, mapDocument: modularMap(), mapPath: "m", scenarioDocument: modularScenario(), scenarioPath: "s" }).scenario;
 const funds = "funds" as ResourceId;
+const budget = (target: Scenario, id: string) => target.ai.profiles[faction(id)]!.builds!;
 
 /** A tie-break source that fails the test if a planner draws from it. */
 const noDraws = { next: (): number => { throw new Error("The build planner must not draw from the tie-break source."); } } as unknown as PlanningContext["random"];
@@ -29,11 +30,28 @@ describe("computer Build orders (H5)", () => {
     const state = { ...initialGameState(scenario), treasuries: { [faction("red")]: { [funds]: 20 }, [faction("blue")]: { [funds]: 20 } } };
     const orders = planBuilds(contextFor(scenario, state, "red"));
     expect(orders.length).toBeGreaterThan(0);
-    expect(orders.length).toBeLessThanOrEqual(maxBuildsPerTurn);
+    expect(orders.length).toBeLessThanOrEqual(budget(scenario, "red").maxOrdersPerTurn);
     for (const order of orders) expect(validateBuildOrder(scenario, state, order)).toEqual({ ok: true });
-    expect(amountOf(plannedSpend(scenario, orders), funds)).toBeLessThanOrEqual(20 * buildSpendShare);
+    expect(amountOf(plannedSpend(scenario, orders), funds)).toBeLessThanOrEqual(20 * budget(scenario, "red").spendShare);
     expect(new Set(orders.map((order) => order.subTerritoryId)).size).toBe(orders.length);
     expect(planBuilds(contextFor(scenario, state, "red"))).toEqual(orders);
+  });
+
+  it("reads its budget from the faction's AI profile (EB-15)", () => {
+    expect(budget(spain(), "south")).toEqual({ itemsPerEmptyQueue: 1, maxOrdersPerTurn: 3, spendShare: 0.6 });
+    const state = { ...initialGameState(scenario), treasuries: { [faction("red")]: { [funds]: 40 } } };
+    const withBudget = (builds: NonNullable<Scenario["ai"]["profiles"][never]["builds"]>): Scenario => ({
+      ...scenario,
+      ai: { ...scenario.ai, profiles: { ...scenario.ai.profiles, [faction("red")]: { ...scenario.ai.profiles[faction("red")]!, builds } } }
+    });
+    expect(planBuilds(contextFor(withBudget({ itemsPerEmptyQueue: 1, maxOrdersPerTurn: 0, spendShare: 0.6 }), state, "red"))).toEqual([]);
+    expect(planBuilds(contextFor(withBudget({ itemsPerEmptyQueue: 1, maxOrdersPerTurn: 3, spendShare: 0 }), state, "red"))).toEqual([]);
+    const one = planBuilds(contextFor(withBudget({ itemsPerEmptyQueue: 1, maxOrdersPerTurn: 1, spendShare: 1 }), state, "red"));
+    expect(one).toHaveLength(1);
+    const two = planBuilds(contextFor(withBudget({ itemsPerEmptyQueue: 2, maxOrdersPerTurn: 9, spendShare: 1 }), state, "red"));
+    const perSite = new Map<string, number>();
+    for (const order of two) perSite.set(order.subTerritoryId, (perSite.get(order.subTerritoryId) ?? 0) + 1);
+    expect(Math.max(...perSite.values())).toBe(2);
   });
 
   it("repairs damaged rail first", () => {

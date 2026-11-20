@@ -346,6 +346,36 @@
                       "lastStandTakeChance"
                     ],
                     "additionalProperties": false
+                  },
+                  "builds": {
+                    "description": "EB-15: the computer player's Build budget. Required with an economy module (L27).",
+                    "type": "object",
+                    "properties": {
+                      "spendShare": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1,
+                        "description": "Share of each resource left after Recruit orders that builds may spend."
+                      },
+                      "maxOrdersPerTurn": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991,
+                        "description": "Build orders a turn."
+                      },
+                      "itemsPerEmptyQueue": {
+                        "type": "integer",
+                        "exclusiveMinimum": 0,
+                        "maximum": 9007199254740991,
+                        "description": "New items a sub-territory with an empty queue may take in a turn."
+                      }
+                    },
+                    "required": [
+                      "spendShare",
+                      "maxOrdersPerTurn",
+                      "itemsPerEmptyQueue"
+                    ],
+                    "additionalProperties": false
                   }
                 },
                 "required": [
@@ -1176,6 +1206,36 @@
                     "required": [
                       "hopelessTakeChance",
                       "lastStandTakeChance"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "builds": {
+                    "description": "EB-15: the computer player's Build budget. Required with an economy module (L27).",
+                    "type": "object",
+                    "properties": {
+                      "spendShare": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1,
+                        "description": "Share of each resource left after Recruit orders that builds may spend."
+                      },
+                      "maxOrdersPerTurn": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991,
+                        "description": "Build orders a turn."
+                      },
+                      "itemsPerEmptyQueue": {
+                        "type": "integer",
+                        "exclusiveMinimum": 0,
+                        "maximum": 9007199254740991,
+                        "description": "New items a sub-territory with an empty queue may take in a turn."
+                      }
+                    },
+                    "required": [
+                      "spendShare",
+                      "maxOrdersPerTurn",
+                      "itemsPerEmptyQueue"
                     ],
                     "additionalProperties": false
                   }
@@ -2267,6 +2327,28 @@
               "name": {
                 "type": "string",
                 "minLength": 1
+              },
+              "display": {
+                "description": "EB-12: how amounts read. Absent means plain numbers.",
+                "type": "object",
+                "properties": {
+                  "unit": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 9007199254740991,
+                    "description": "How many of the real thing one point stands for (one Manpower is about 1,000 men)."
+                  },
+                  "suffix": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Written after the points: \"k\" makes 18 points read \"18k\"."
+                  }
+                },
+                "required": [
+                  "unit",
+                  "suffix"
+                ],
+                "additionalProperties": false
               }
             },
             "required": [

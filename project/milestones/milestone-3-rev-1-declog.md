@@ -194,3 +194,43 @@ e2e on all five projects:
    Fixed in make-it-right as computer-player behaviour.
 
 **D24. S3 keeps counting withdrawals (integrator decision).** The test-health stream exempted Withdraw from S3. That hides a real planner fault: in seed 100, the South withdrew all 7 units from Andalucía, its seat. S3 exists to catch the computer player walking off objectives, so the exemption is reverted. The withdraw planner is fixed so it never abandons a faction's seat or last objective while it can still hold.
+
+**D25. Contract follow-ups merged (`3db2a38`).** The shared changes landed before the review:
+- report lines take the whole typed outcome;
+- a per-module `validateOrder` hook, after which `orderVerdict` only vetoes;
+- `resources[].display`, so Manpower reads "10k";
+- the AI build budget lives in `ai.profiles`;
+- RR-12 is fixed: Replenish needs a unit below strength.
+
+A 30-seed probe was byte-identical before and after every change. One gap is left for the UI review: the turn report shows only the moves, air and generals lines. The economy, recruitment, contested-ground, transit and fatigue lines exist but are shown nowhere (contract follow-ups decision 7).
+
+**D26. Review shape.** The review runs on the integrated `milestone-3-rev-1`, not the old stream diffs. There are five read-only reviewers:
+- `m3r1-review-map-movement`: sub-territories, movement, rail and ports;
+- `m3r1-review-combat-air`: d20, fatigue and morale, air and generals;
+- `m3r1-review-economy-recruit-time`: economy, recruitment, weather and timer;
+- `m3r1-review-hidden-info`: hidden information in hot-seat play, across rules and UI;
+- `m3r1-review-ui`: the UI against the approved `ux-*.webp` captures, icons (X8), axe, phone layouts and the report sections.
+
+Fresh fixers then take their gap lists, at most four at once.
+
+**D27. Integrator defaults for gaps the review found.** None of these is covered by the owner's answers. Each is reported to the owner and can be overridden.
+1. **Only units that can fight take ground or attack.** A force with no attack value (generals, trucks, anti-air) cannot occupy or sweep a territory, and cannot attack on its own. This sits beside D17 for aircraft. It is the same rule as the artillery-alone rule (D5), applied to every unit with no attack.
+2. **Aircraft rebase whenever they lose their base.** This covers the airfield being destroyed by a raid, its sub-territory flipping, and the territory being taken whole. If no friendly airfield is in range, they are destroyed.
+3. **Enemy fighters can intercept any mission in range,** including support and recon flights, not only raids (U2: "losses from enemy fighters").
+4. **A general's rally never cancels a demoralization from the same turn.** It recovers units that started the turn demoralized. A unit at the top of the fatigue track that attacks is demoralized again. This closes the fatigue-3 loop.
+5. **Head-on meeting battles take the weather modifier** of the zone they are fought in, using the destination territory's zone.
+6. **"Weakest first" demoralization counts combat units only.** Trucks and anti-air come last.
+7. **A replacement general appears in the faction's seat** if the faction holds the seat's capital sub-territory, even while the seat is contested. Otherwise it appears in the faction's nearest held territory.
+
+**D28. More integrator defaults from the review.** Each is reported to the owner and can be overridden.
+1. **Hospital and Depot differ ($4, R5, RR-11).** The Hospital makes replenishment faster: the per-turn cap rises from half the unit's establishment to three quarters. The Depot makes it cheaper: Replenish costs 25 percent less Funds, because materiel is on hand. The Depot still gates trucks and tanks.
+2. **Training when the capital falls (RR-8)** follows the build-queue rule ($5). A Recruit paid this turn whose training has not started is refunded. Training already under way is lost with its payment.
+3. **Replenish pricing (R5)** carries the fractions of Manpower and Funds per faction, so a small top-up costs its true share rather than a whole point rounded up.
+4. **Barracks and Factory** can only be built in a capital sub-territory, the only place they unlock anything.
+
+**D29. Fix streams.** Fresh agents work from `milestone-3-rev-1` against the review files, which are kept in the integrator's scratchpad and summarised here:
+- `m3r1-fix-map-movement`: the map and movement blockers and majors, D27.1 and its tests. The garrisons and withdraw planner stay with `m3r1-ai-fixes`.
+- `m3r1-fix-combat-air`: the combat and air blockers and majors, D27.2 to D27.7, and the air rules tests.
+- `m3r1-fix-economy-recruit`: D28, replenishing units that dig in, the computer player's development builds, and their tests.
+- `m3r1-fix-hidden-info`: every leak. It also owns the timeout fix, which must submit the whole draft and count holds only from public orders.
+- `m3r1-fix-ui`: the UI blockers and majors, the report groups (D25), army and unit wording, and tests for the air UI. It starts when a slot frees.

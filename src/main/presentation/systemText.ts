@@ -1,17 +1,21 @@
-import type { Scenario, SystemOutcome, TurnOutcome } from "../engine/types";
-import { airLines, describeAirOutcome, isAirOutcome } from "./systemText/air";
+import type { SystemOutcome, TurnOutcome } from "../engine/types";
+import { airLines } from "./systemText/air";
 import { contestedLines } from "./systemText/contested";
 import { economyLines } from "./systemText/economy";
-import { describeGeneralsOutcome, describeRally, generalsLines, isGeneralsOutcome } from "./systemText/generals";
+import { generalsLines } from "./systemText/generals";
+import type { ReportLineContext, ReportLines } from "./systemText/lines";
 import { moraleLines } from "./systemText/morale";
 import { movementLines } from "./systemText/movement";
-import { describeRecruitmentOutcome, isRecruitmentOutcome, recruitmentLines } from "./systemText/recruitment";
+import { recruitmentLines } from "./systemText/recruitment";
 import { weatherLines } from "./systemText/weather";
+
+export type { ReportLineContext } from "./systemText/lines";
 
 /**
  * Report lines for the Milestone 3 outcomes, one file per area under `systemText/` to mirror
- * `engine/types/outcomes/`, so each slice edits only its own file. The join fails to compile
- * when a kind has no line.
+ * `engine/types/outcomes/`, so each slice edits only its own file. Each area gives one function
+ * per kind, which receives the whole typed outcome and the report's context (`systemText/lines.ts`).
+ * The join fails to compile when a kind has no line.
  */
 const systemLines = {
   ...airLines,
@@ -22,18 +26,15 @@ const systemLines = {
   ...movementLines,
   ...recruitmentLines,
   ...weatherLines
-} satisfies Readonly<Record<SystemOutcome["kind"], string>>;
+} satisfies ReportLines<SystemOutcome>;
 
 export function isSystemOutcome(outcome: TurnOutcome): outcome is SystemOutcome {
   return outcome.kind in systemLines;
 }
 
-export function describeSystemOutcome(outcome: SystemOutcome, scenario?: Scenario): string {
-  // Areas with full sentences take the scenario (m3r1-air-generals: air and generals).
-  if (scenario !== undefined && isAirOutcome(outcome)) return describeAirOutcome(scenario, outcome);
-  if (scenario !== undefined && isGeneralsOutcome(outcome)) return describeGeneralsOutcome(scenario, outcome);
-  if (scenario !== undefined && outcome.kind === "rallied") return describeRally(scenario, outcome);
-  // Areas with full sentences take the scenario (m3r1-recruit-replenish: recruitment).
-  if (scenario !== undefined && isRecruitmentOutcome(outcome)) return describeRecruitmentOutcome(scenario, outcome);
-  return systemLines[outcome.kind];
+/** One report sentence for a Milestone 3 outcome, with names and amounts. */
+export function describeSystemOutcome(outcome: SystemOutcome, context: ReportLineContext): string {
+  // Each line is typed for its own kind; the lookup by `outcome.kind` keeps them matched.
+  const line = systemLines[outcome.kind] as (owned: SystemOutcome, at: ReportLineContext) => string;
+  return line(outcome, context);
 }

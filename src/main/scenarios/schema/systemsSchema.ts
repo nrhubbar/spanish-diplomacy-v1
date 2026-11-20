@@ -135,7 +135,15 @@ export const aiSchema = z
           }),
           stakes: z.strictObject({ city: weight, objective: weight, territory: weight }),
           victoryAlarm: z.strictObject({ critical: weight, perStep: weight, steps: wholeSchema }),
-          withdraw: z.strictObject({ hopelessTakeChance: shareSchema, lastStandTakeChance: shareSchema })
+          withdraw: z.strictObject({ hopelessTakeChance: shareSchema, lastStandTakeChance: shareSchema }),
+          builds: z
+            .strictObject({
+              spendShare: shareSchema.meta({ description: "Share of each resource left after Recruit orders that builds may spend." }),
+              maxOrdersPerTurn: wholeSchema.meta({ description: "Build orders a turn." }),
+              itemsPerEmptyQueue: positiveWholeSchema.meta({ description: "New items a sub-territory with an empty queue may take in a turn." })
+            })
+            .optional()
+            .meta({ description: "EB-15: the computer player's Build budget. Required with an economy module (L27)." })
         })
       )
       .meta({ description: "E7: one profile per faction, keyed by faction id (L23)." }),

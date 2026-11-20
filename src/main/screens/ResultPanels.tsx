@@ -1,6 +1,6 @@
 import { type JSX, useEffect, useRef } from "react";
 import { requireFaction } from "../engine/lookup";
-import type { Scenario, TerritoryId, TurnOutcome, TurnResolutionResult } from "../engine/types";
+import type { FactionId, Scenario, TerritoryId, TurnOutcome, TurnResolutionResult } from "../engine/types";
 import { glyphs } from "../presentation/glyphs";
 import { medallionMarkup } from "../presentation/outcomeArt";
 import type { OutcomeKey } from "../presentation/outcomes";
@@ -100,7 +100,9 @@ const reportRing = "#5b4d40";
  * U2: a compact summary grouped by result, with routine detail collapsed. Formations of one
  * faction that took the same route with the same result share one line.
  */
-export function OutcomeSummary({ result, scenario }: { readonly result: TurnResolutionResult; readonly scenario: Scenario }): JSX.Element {
+export function OutcomeSummary({ result, scenario, viewer }: { readonly result: TurnResolutionResult; readonly scenario: Scenario; readonly viewer?: FactionId | undefined }): JSX.Element {
+  // The Milestone 3 lines read the viewer's board (development) and keep other factions' numbers private.
+  const view = { state: result.finalState, ...(viewer === undefined ? {} : { viewer }) };
   const holds = result.outcomes.filter((outcome) => outcome.kind === "no-move").length;
   const bounced = result.outcomes.some((outcome) => outcome.kind === "bounced-move" || outcome.kind === "disbanded-move");
   return (
@@ -120,7 +122,7 @@ export function OutcomeSummary({ result, scenario }: { readonly result: TurnReso
             </summary>
             <ul>
               {groupOutcomes(outcomes).map((entry, index) => (
-                <li key={`${group.label}-${String(index)}`}>{describeOutcomeGroup(scenario, entry, result.outcomes)}</li>
+                <li key={`${group.label}-${String(index)}`}>{describeOutcomeGroup(scenario, entry, result.outcomes, view)}</li>
               ))}
             </ul>
           </details>

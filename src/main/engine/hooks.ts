@@ -82,6 +82,23 @@ export interface OrderHookContext extends HookContext {
   readonly order: Order;
 }
 
+/** M1, M9: an order of one kind, for the module that owns that kind. */
+export interface OrderValidationContext<K extends Order["kind"] = Order["kind"]> extends HookContext {
+  readonly order: Extract<Order, { readonly kind: K }>;
+}
+
+/**
+ * M1, M9: a module's validators, one per order kind it owns (Move for the movement modules,
+ * Recruit and Replenish for recruitment, Build for economy, Withdraw for partition, air missions
+ * and Sack for air). An order kind no selected module owns is "not available in this scenario".
+ */
+export type OrderValidators = {
+  readonly [K in Order["kind"]]?: (context: OrderValidationContext<K>) => ValidationResult;
+};
+
+/** M9: an order kind no module of the scenario's ruleset handles. */
+export const unavailableOrderReason = "This order is not available in this scenario.";
+
 /** M21, P6: an army that must leave `from` for `to`, a territory its faction held at the start of the turn. */
 export interface RetreatContext extends HookContext {
   readonly factionId: FactionId;
@@ -111,9 +128,13 @@ export interface RuleHooks {
   /** R2, R3: reasons the type is locked here; empty when nothing blocks it. */
   readonly recruitRequirements?: (context: RecruitContext) => readonly string[];
   /**
-   * M9, C1: a module's verdict on an order. A move the engine finds valid may be refused (moving
-   * out of contested ground); any other kind is valid only when a module accepts it. Undefined
-   * means the module has no view on this order.
+   * M1, M9: the module's own order kinds, validated against the start-of-turn state. The engine
+   * runs the validators of every selected module that owns the order's kind, in area order.
+   */
+  readonly validateOrder?: OrderValidators;
+  /**
+   * C1: a module's veto on an order another module (or it) has already found valid, such as a
+   * move out of contested ground. Undefined means the module has no view on this order.
    */
   readonly orderVerdict?: (context: OrderHookContext) => ValidationResult | undefined;
   /** P6: false when the army has no path from `from` to `to` (through its own sub-territories). */
@@ -156,6 +177,24 @@ export function hookedReplenishBonus(context: ReplenishContext): ReplenishBonus 
 
 export function hookedRecruitRequirements(context: RecruitContext): readonly string[] {
   return hooksOf(context.scenario).flatMap((hooks) => hooks.recruitRequirements?.(context) ?? []);
+}
+
+/**
+ * M1, M9: the owning modules' validation of an order: the first refusal in area order, else
+ * acceptance; undefined when no selected module owns the order's kind.
+ */
+export function hookedValidateOrder(context: OrderHookContext): ValidationResult | undefined {
+  // Each validator is typed for its own kind; the lookup by `order.kind` keeps them matched.
+  const owners = hooksOf(context.scenario).flatMap((hooks) => {
+    const validate = hooks.validateOrder?.[context.order.kind] as ((owned: OrderHookContext) => ValidationResult) | undefined;
+    return validate === undefined ? [] : [validate];
+  });
+  if (owners.length === 0) return undefined;
+  for (const validate of owners) {
+    const result = validate(context);
+    if (!result.ok) return result;
+  }
+  return { ok: true };
 }
 
 /**

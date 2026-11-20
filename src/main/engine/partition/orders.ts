@@ -1,4 +1,4 @@
-import type { OrderHookContext, RetreatContext } from "../hooks";
+import { type OrderHookContext, type OrderValidationContext, type RetreatContext, unavailableOrderReason } from "../hooks";
 import { isNeighbor } from "../lookup";
 import type { GameState, Scenario, TerritoryId, UnitId, ValidationResult, WithdrawOrder } from "../types";
 import { holdsWhole, isContested, isPartitioned } from "./holders";
@@ -50,10 +50,14 @@ export function validateWithdrawOrder(scenario: Scenario, state: GameState, orde
   return { ok: true };
 }
 
-/** The partition module's `orderVerdict` hook: Withdraw is its order, and moves out of contested ground are refused. */
+/** The partition module's `validateOrder.withdraw` hook: Withdraw is its order, in a scenario with sub-territories. */
+export function partitionValidateWithdraw({ order, scenario, state }: OrderValidationContext<"withdraw">): ValidationResult {
+  return isPartitioned(scenario) ? validateWithdrawOrder(scenario, state, order) : { ok: false, reason: unavailableOrderReason };
+}
+
+/** The partition module's `orderVerdict` hook: moves out of contested ground are refused (C1). */
 export function partitionOrderVerdict({ order, scenario, state }: OrderHookContext): ValidationResult | undefined {
   if (!isPartitioned(scenario)) return undefined;
-  if (order.kind === "withdraw") return validateWithdrawOrder(scenario, state, order);
   if (order.kind === "move" && isContested(scenario, state, order.from)) return { ok: false, reason: contestedReasons.move };
   return undefined;
 }
