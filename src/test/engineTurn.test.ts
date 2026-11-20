@@ -379,6 +379,10 @@ describe("turn invariants over seeded computer games", () => {
         // U2-U5 (m3r1-air-generals): aircraft shot down or lost on the ground, generals killed or sacked.
         ...result.outcomes.flatMap((outcome) => {
           if (outcome.kind === "raid") return outcome.aircraftLost;
+          // D27.3: support and recon flights shot down by interceptors.
+          if (outcome.kind === "interception") return outcome.lostUnitIds;
+          // D6 (M8): a unit frostbite leaves below the break-up share.
+          if (outcome.kind === "frostbite" && outcome.destroyed === true) return [outcome.unitId];
           if (outcome.kind === "aircraft-lost" || outcome.kind === "general-died") return [outcome.unitId];
           return outcome.kind === "general-sacked" ? [outcome.order.unitId] : [];
         })

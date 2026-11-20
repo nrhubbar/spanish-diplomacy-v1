@@ -93,8 +93,8 @@ function severity(outcome: TurnOutcome): number {
 /**
  * The note for a place with no battle: a change of hands, then one line per outcome there, most
  * serious first (surrender, interception, withdrawal, fatigue, training, builds), in the
- * report's own words. Empty when nothing happened. `view` gives the Milestone 3 lines the
- * viewer's board and keeps other factions' numbers private, as in the report's groups.
+ * report's own words, as the report's viewer may read them. Empty when nothing happened.
+ * `view` gives the Milestone 3 lines the viewer's board and keeps other factions' numbers private.
  */
 export function eventsAt(scenario: Scenario, result: TurnResolutionResult, territoryId: TerritoryId, view: ReportView = { state: result.finalState }): readonly string[] {
   const change = result.controlChanges.find((entry) => entry.territoryId === territoryId);

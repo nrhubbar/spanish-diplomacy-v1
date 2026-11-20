@@ -73,7 +73,7 @@ describe("the resource chips (X1, EB-12)", () => {
     const madrid = "madrid" as SubTerritoryId;
     const onlyMadrid: GameState = {
       ...start,
-      raidCuts: [{ subTerritoryId: madrid, turnNumber: start.turnNumber }],
+      raidCuts: [{ factionId: faction("republic"), subTerritoryId: madrid, turnNumber: start.turnNumber }],
       subTerritories: Object.fromEntries(Object.entries(start.subTerritories).map(([id, site]) => {
         const entry = scenario.index.subTerritories.get(id as SubTerritoryId);
         if (entry?.territoryId === "madrid" || entry?.territoryId === "andalucia") return [id, site];

@@ -3,6 +3,7 @@ import type { JSX } from "react";
 import { currentLevel, isCapital, projectCost, sameProject } from "../../../engine/economy/catalogue";
 import { subTerritoryYield } from "../../../engine/economy/income";
 import type { BuildOrder, FactionId, GameState, Scenario, SubTerritoryId, SubTerritoryState } from "../../../engine/types";
+import { isRevealed } from "../../../engine/visibility";
 import { useAppDispatch } from "../../../hooks";
 import { amountText, projectName, signedAmountText, turnsLeftText } from "../../../presentation/economy";
 import { factionName } from "../../../presentation/text";
@@ -109,7 +110,10 @@ export function SiteCard({ planned, scenario, state, subTerritoryId, viewer, wit
           })}
         </ol>
       )}
-      {!own && queue.length === 0 ? <p className="site-hidden"><EconomyIcon name="flag" />Queue hidden</p> : null}
+      {!own && queue.length === 0 ? (
+        // U4: the viewer's recon shows this territory's queues, so an empty one reads empty.
+        <p className="site-hidden"><EconomyIcon name="flag" />{isRevealed(state, viewer, sub.territoryId) ? "Queue empty (recon)" : "Queue hidden"}</p>
+      ) : null}
       {own && withBuildButton ? (
         <div className="site-actions">
           <button className="secondary-button compact-button" onClick={() => dispatch(focusSubTerritory(subTerritoryId))} type="button">{`Build in ${sub.name}`}</button>

@@ -1,4 +1,5 @@
 import { type JSX, useEffect, useRef } from "react";
+import { unitKindIn } from "../engine/air/pieces";
 import { requireFaction } from "../engine/lookup";
 import type { FactionId, Scenario, TerritoryId, TurnOutcome, TurnResolutionResult } from "../engine/types";
 import { glyphs } from "../presentation/glyphs";
@@ -40,7 +41,7 @@ interface FocusNoteProps {
   readonly focusedTerritoryId: TerritoryId | undefined;
   readonly result: TurnResolutionResult;
   readonly scenario: Scenario;
-  /** The faction the report is for, so the note's Milestone 3 lines read as in the report's groups. */
+  /** The report's viewer, so a line never names another faction's numbers (`ReportView`). */
   readonly viewer?: FactionId | undefined;
 }
 
@@ -86,7 +87,9 @@ const reportRing = "#5b4d40";
 export function OutcomeSummary({ result, scenario, viewer }: { readonly result: TurnResolutionResult; readonly scenario: Scenario; readonly viewer?: FactionId | undefined }): JSX.Element {
   // The Milestone 3 lines read the viewer's board (development) and keep other factions' numbers private.
   const view = { state: result.finalState, ...(viewer === undefined ? {} : { viewer }) };
-  const holds = result.outcomes.filter((outcome) => outcome.kind === "no-move").length;
+  // Armies only: aircraft and generals have no order to hold on ($6: holds come from public orders, T6).
+  const holds = result.outcomes.filter((outcome) => outcome.kind === "no-move" && outcome.unitId !== undefined
+    && unitKindIn(scenario, result.finalState.raised, outcome.unitId) === "ground").length;
   const bounced = result.outcomes.some((outcome) => outcome.kind === "bounced-move" || outcome.kind === "disbanded-move");
   return (
     <section aria-labelledby="outcomes-title" className="pane-section">

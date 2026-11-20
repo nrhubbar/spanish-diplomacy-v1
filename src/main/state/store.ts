@@ -27,6 +27,8 @@ export interface AppStoreOptions {
 /** Store factory; the scenario registry is injected so tests and fixtures can swap packages. */
 export function createAppStore({ preloadedState, registry }: AppStoreOptions) {
   return configureStore({
+    // m4: the extension would show every faction's locked orders and treasuries in hot-seat play.
+    devTools: import.meta.env.DEV,
     reducer: createRootReducer(registry),
     middleware: (getDefaultMiddleware) =>
       getDefaultMiddleware({ thunk: { extraArgument: { registry } } }).prepend(notificationMiddleware.middleware),

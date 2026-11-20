@@ -195,7 +195,7 @@ describe("route detail and breakdown rows (X5)", () => {
     expect(routeRows(scenario, state, route({ sea: { departure: sub("valencia"), kind: "amphibious" }, shape: "sea" }), 1)).toContainEqual({ label: "Amphibious assault", value: `${minus}4` });
     const noD20 = { ...scenario };
     delete (noD20 as { d20?: unknown }).d20;
-    expect(routeRows(noD20, state, route({ sea: { departure: sub("valencia"), kind: "amphibious" }, shape: "sea" }), 1)).toContainEqual({ label: "Amphibious assault", value: "0" });
+    expect(routeRows(noD20, state, route({ sea: { departure: sub("valencia"), kind: "amphibious" }, shape: "sea" }), 1)).toContainEqual({ label: "Amphibious assault", value: "No roll modifier" });
     const rolled = beforePlanning(scenario, state, 3);
     const weather = weatherIn(scenario, rolled, territory("castilla-la-mancha"));
     expect(weather).toBeDefined();

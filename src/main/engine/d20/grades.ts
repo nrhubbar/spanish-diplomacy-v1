@@ -1,6 +1,7 @@
 import { type Casualties, freshlyDemoralized } from "../battleResults";
 import type { Armies } from "../board";
 import type { ArmyLoss, BattleArmy, BattleSide, GameState, GradeSideEffect, Scenario, UnitId, UnitState } from "../types";
+import { canFight } from "../units/fighting";
 import { definitionOf, isGeneralUnit, unitRank } from "./rules";
 
 /**
@@ -9,7 +10,8 @@ import { definitionOf, isGeneralUnit, unitRank } from "./rules";
  * 2. Every other unit loses `lossPercent` of its men now, rounded to the nearest man.
  * 3. A unit left below `breakUpShare` of its full strength breaks up (D6, Q-MR-08).
  * 4. Survivors are demoralized: none, all, or the weakest first until they carry at least half
- *    of the side's value (Q-D20-5, as M16 today).
+ *    of the side's value (Q-D20-5, as M16 today), counting combat units first: units that
+ *    cannot fight (trucks, anti-air) come last (D27.6).
  * General units (U5) lose no men and are never demoralized; whether a general dies with his
  * army is the generals module's roll. Units already gone (an earlier attack on the same
  * defenders) are skipped, so losses add up across several attacks (M17).
@@ -49,7 +51,10 @@ export function applyGradeSide(
       after.set(unit.id, { ...unit, strength: left });
     }
   }
-  const demoralized = demoralizedIds(effect, side.value, weakestFirst.filter((member) => after.has(member.unit.id)));
+  // D27.6: demoralization takes combat units weakest first; units that cannot fight (trucks, anti-air) come last.
+  const fights = (member: Member): boolean => canFight(scenario, state.raised, member.unit.id);
+  const standing = weakestFirst.filter((member) => after.has(member.unit.id));
+  const demoralized = demoralizedIds(effect, side.value, [...standing.filter(fights), ...standing.filter((member) => !fights(member))]);
   for (const id of demoralized) {
     const unit = after.get(id);
     if (unit !== undefined) after.set(id, { ...unit, morale: freshlyDemoralized });

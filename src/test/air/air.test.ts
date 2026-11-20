@@ -138,7 +138,7 @@ describe("raids (U3)", () => {
   });
 
   it("cuts the target's income for one turn through the incomeDelta hook", () => {
-    const cut: GameState = { ...state, raidCuts: [{ subTerritoryId: "valladolid" as SubTerritoryId, turnNumber: 1 }] };
+    const cut: GameState = { ...state, raidCuts: [{ factionId: faction("north"), subTerritoryId: "valladolid" as SubTerritoryId, turnNumber: 1 }] };
     // Valladolid: farms 3 (Manpower) and industry 1 (Funds), and the North holds Castilla y Leon whole.
     expect(raidIncomeDelta({ factionId: faction("north"), income: {}, scenario, state: cut })).toEqual({ funds: -1, manpower: -3 });
     expect(raidIncomeDelta({ factionId: faction("republic"), income: {}, scenario, state: cut })).toEqual({});
@@ -149,7 +149,7 @@ describe("raids (U3)", () => {
     for (let trial = 1; trial < 200; trial += 1) {
       if (raidResult(scenario, pick(rollStream(trial, "raid", 1, 0), 20)) !== "income-cut") continue;
       const first = resolveTurn(scenario, state, submit(raid("republic", "rep-breguet-bombers", "burgos")), trial);
-      expect(first.finalState.raidCuts).toEqual([{ subTerritoryId: "burgos", turnNumber: 2 }]);
+      expect(first.finalState.raidCuts).toEqual([{ factionId: "north", subTerritoryId: "burgos", turnNumber: 2 }]);
       const second = resolveTurn(scenario, { ...first.finalState, turnNumber: 2 }, [], trial);
       expect(second.finalState.raidCuts).toEqual([]);
       return;

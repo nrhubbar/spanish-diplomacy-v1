@@ -46,7 +46,7 @@ const labels: Readonly<Record<string, string>> = {
   sea: "Sea crossing",
   demoralized: "Demoralized: half values, cannot attack",
   "dug-in": "Dug in: one pip per level of works",
-  rail: "Rail line and station; lit where the selected units can ride",
+  rail: "Stations and the rail network; lit where the selected units can ride",
   aircraft: "Aircraft at their airfield (BOMB, FTR, RCN)",
   general: "General with his units"
 };

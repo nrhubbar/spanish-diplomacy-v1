@@ -12,7 +12,7 @@ import { validateRoute } from "./routes";
  */
 
 /** M23 (C6): why a demoralized army may not enter where another faction stands. */
-export const demoralizedAttackReason = "A demoralized army cannot attack. It can move only into empty or friendly territory.";
+export const demoralizedAttackReason = "A demoralized unit cannot attack. It can move only into empty or friendly territory.";
 
 type MoveContext = OrderValidationContext<"move">;
 
