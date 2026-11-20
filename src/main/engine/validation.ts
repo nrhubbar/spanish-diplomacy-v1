@@ -1,4 +1,5 @@
 import { isNeighbor } from "./lookup";
+import { validateRoute } from "./movement/routes";
 import type {
   FactionId,
   GameState,
@@ -45,12 +46,18 @@ export function validateMoveOrder(
   if (order.from === order.to) {
     return { ok: false, reason: "Choose a different territory as the destination." };
   }
-  if (!isNeighbor(scenario, order.from, order.to)) {
-    return { ok: false, reason: "Destination is not connected to the unit's territory." };
-  }
-  // M2: one step along a connection. Paths of several legs wait for TODO(m3r1-movement-rail-ports).
-  if (order.legs !== undefined && !(order.legs.length === 1 && order.legs[0]?.kind !== "rail" && order.legs[0]?.to === order.to)) {
-    return { ok: false, reason: unavailableOrderReason };
+  if (scenario.rules.movement === "allowance") {
+    // M1-M5: multi-leg routes (rail, sea, marches), checked by the movement module.
+    const route = validateRoute(scenario, state, order);
+    if (!route.ok) return route;
+  } else {
+    if (!isNeighbor(scenario, order.from, order.to)) {
+      return { ok: false, reason: "Destination is not connected to the unit's territory." };
+    }
+    // M2: one step along a connection under `single-step`.
+    if (order.legs !== undefined && !(order.legs.length === 1 && order.legs[0]?.kind !== "rail" && order.legs[0]?.to === order.to)) {
+      return { ok: false, reason: unavailableOrderReason };
+    }
   }
   // M23 (C6): a demoralized army cannot attack, so it may not enter where another faction stands.
   if (unit.morale.demoralized && Object.values(state.units).some((other) => other.territoryId === order.to && other.factionId !== unit.factionId)) {

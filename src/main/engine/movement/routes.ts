@@ -1,0 +1,330 @@
+import { isNeighbor, neighborsOf } from "../lookup";
+import type { FactionId, GameState, MoveLeg, MoveOrder, Scenario, SubTerritoryId, TerritoryId, UnitId } from "../types";
+import { armyAllowance, fitsAllowance, stepCost, transportOf } from "./allowance";
+import {
+  connectionBetween,
+  connectionKey,
+  friendlyPort,
+  isFriendlyGround,
+  landingAt,
+  landNeighbors,
+  portLandings,
+  type RailRide,
+  railDepartures,
+  railReach,
+  roughEntry,
+  seaClosed
+} from "./network";
+
+/**
+ * M2-M5: the shapes a move may take, and the one route the game offers for each destination.
+ * The reveal check, the planning screen and the computer player all read moves through this
+ * file, so they agree on every leg.
+ *
+ * - `step`: one land step, anywhere (it may attack).
+ * - `march`: two or more land steps within the allowance (M1); every step but the last ends in
+ *   friendly ground (M2).
+ * - `rail`: a ride from the territory's capital to another capital in friendly ground (M3).
+ * - `step-rail`: one step into friendly ground, then a ride from its capital (M4).
+ * - `rail-step`: a ride, then one step that may attack (M4).
+ * - `sea`: one sea leg from a friendly port, landing in a friendly port or assaulting the coast (M5).
+ */
+export const routeShapes = ["step", "sea", "rail", "march", "step-rail", "rail-step"] as const;
+export type RouteShape = (typeof routeShapes)[number];
+
+/** M5: how a sea leg lands. */
+export interface SeaLanding {
+  /** The friendly port the army sails from. */
+  readonly departure: SubTerritoryId;
+  readonly kind: "port" | "amphibious";
+  /** The landing port and its level, for a port landing. */
+  readonly level?: number;
+  readonly port?: SubTerritoryId;
+}
+
+/** One way to move, with everything the rules and the screens need to know about it. */
+export interface MoveRoute {
+  /** Allowance the steps use (M1): 1 a step, plus 1 for each mountain or swamp entry. */
+  readonly cost: number;
+  readonly from: TerritoryId;
+  readonly legs: readonly MoveLeg[];
+  /** The ride, when the route uses rail. */
+  readonly rail?: RailRide;
+  /** Mountain or swamp sub-territories the steps enter (P8), in order. */
+  readonly rough: readonly SubTerritoryId[];
+  /** The landing, when the route crosses the sea. */
+  readonly sea?: SeaLanding;
+  readonly shape: RouteShape;
+  /** Where the last leg starts. */
+  readonly staging: TerritoryId;
+  /** Land and sea steps; rail legs are not steps (M1). */
+  readonly steps: number;
+  readonly to: TerritoryId;
+  /** M2: territories the route stops in before its last leg, where an enemy arrival stops it. */
+  readonly transit: readonly TerritoryId[];
+}
+
+export type RouteCheck = { readonly ok: true; readonly route: MoveRoute } | { readonly ok: false; readonly reason: string };
+
+/** CT-6: the legs of an order; absent means one step along the connection (land first). */
+export function legsOf(scenario: Scenario, order: Pick<MoveOrder, "from" | "legs" | "to">): readonly MoveLeg[] {
+  if (order.legs !== undefined && order.legs.length > 0) return order.legs;
+  const kind = connectionBetween(scenario, order.from, order.to, "land") === undefined && connectionBetween(scenario, order.from, order.to, "sea") !== undefined ? "sea" : "land";
+  return [{ kind, to: order.to }];
+}
+
+/** W4: an army is every unit of one faction leaving one territory along the same legs. */
+export function armyKey(scenario: Scenario, order: Pick<MoveOrder, "factionId" | "from" | "legs" | "to">): string {
+  return `${order.factionId}|${order.from}|${legsOf(scenario, order).map((leg) => `${leg.kind}:${leg.to}`).join(">")}`;
+}
+
+function shapeOf(legs: readonly MoveLeg[]): RouteShape | undefined {
+  const kinds = legs.map((leg) => leg.kind).join(",");
+  if (kinds === "land") return "step";
+  if (kinds === "sea") return "sea";
+  if (kinds === "rail") return "rail";
+  if (kinds === "land,rail") return "step-rail";
+  if (kinds === "rail,land") return "rail-step";
+  if (legs.length > 1 && legs.every((leg) => leg.kind === "land")) return "march";
+  return undefined;
+}
+
+type Rides = (from: TerritoryId) => ReadonlyMap<TerritoryId, RailRide>;
+
+function ridesFor(scenario: Scenario, state: GameState, factionId: FactionId): Rides {
+  const cache = new Map<TerritoryId, ReadonlyMap<TerritoryId, RailRide>>();
+  return (from) => {
+    let rides = cache.get(from);
+    if (rides === undefined) {
+      rides = railReach(scenario, state, factionId, from);
+      cache.set(from, rides);
+    }
+    return rides;
+  };
+}
+
+/**
+ * M2-M5: whether the legs make a legal route from `from` for the faction, and what it is. The
+ * allowance (M1) and the per-turn capacities are the army's and are checked by the caller; the
+ * cost here assumes the army is `allMobile` or not.
+ */
+export function describeRoute(
+  scenario: Scenario,
+  state: GameState,
+  factionId: FactionId,
+  from: TerritoryId,
+  legs: readonly MoveLeg[],
+  allMobile = false,
+  rides: Rides = ridesFor(scenario, state, factionId)
+): RouteCheck {
+  const shape = shapeOf(legs);
+  const last = legs[legs.length - 1];
+  if (shape === undefined || last === undefined) return { ok: false, reason: "That route is not one of the allowed shapes of move." };
+  let at = from;
+  let cost = 0;
+  let steps = 0;
+  let rail: RailRide | undefined;
+  let sea: SeaLanding | undefined;
+  const rough: SubTerritoryId[] = [];
+  const transit: TerritoryId[] = [];
+  const visited = new Set<TerritoryId>([from]);
+  for (const [index, leg] of legs.entries()) {
+    const final = index === legs.length - 1;
+    if (visited.has(leg.to)) return { ok: false, reason: "A route may not enter the same territory twice." };
+    if (leg.kind === "rail") {
+      const ride = rides(at).get(leg.to);
+      if (ride === undefined) return { ok: false, reason: "No rail line your side holds reaches that capital this turn." };
+      rail = ride;
+    } else if (leg.kind === "land") {
+      if (connectionBetween(scenario, at, leg.to, "land") === undefined) return { ok: false, reason: "Destination is not connected to the unit's territory." };
+      cost += stepCost(scenario, at, leg.to, allMobile);
+      steps += 1;
+      const entry = roughEntry(scenario, at, leg.to, "land");
+      if (entry !== undefined) rough.push(entry);
+    } else {
+      if (connectionBetween(scenario, at, leg.to, "sea") === undefined) return { ok: false, reason: "No sea lane joins those territories." };
+      const departure = friendlyPort(scenario, state, factionId, at);
+      if (departure === undefined) return { ok: false, reason: "An army can sail only from a port its side holds." };
+      if (seaClosed(scenario, state, at, leg.to)) return { ok: false, reason: "The sea is closed by winter storms this turn." };
+      const landing = landingAt(scenario, state, factionId, leg.to);
+      sea = landing.kind === "port"
+        ? { departure: departure.subTerritoryId, kind: "port", level: landing.level, port: landing.subTerritoryId }
+        : { departure: departure.subTerritoryId, kind: "amphibious" };
+      cost += 1;
+      steps += 1;
+    }
+    if (!final) {
+      // M2: only the last leg may enter enemy or contested ground.
+      if (!isFriendlyGround(scenario, state, factionId, leg.to)) return { ok: false, reason: "Only the last step of a move may enter enemy or contested ground." };
+      transit.push(leg.to);
+    }
+    visited.add(leg.to);
+    at = leg.to;
+  }
+  const staging = legs.length > 1 ? (legs[legs.length - 2]?.to ?? from) : from;
+  return {
+    ok: true,
+    route: {
+      cost,
+      from,
+      legs,
+      ...(rail === undefined ? {} : { rail }),
+      rough,
+      ...(sea === undefined ? {} : { sea }),
+      shape,
+      staging,
+      steps,
+      to: last.to,
+      transit
+    }
+  };
+}
+
+/** What the faction's planned moves already use this turn (M3, M5), by army. */
+export interface RouteUsage {
+  readonly amphibious: ReadonlyMap<string, ReadonlySet<string>>;
+  readonly departures: ReadonlyMap<SubTerritoryId, ReadonlySet<string>>;
+  readonly landings: ReadonlyMap<TerritoryId, ReadonlySet<string>>;
+}
+
+export const noUsage: RouteUsage = { amphibious: new Map(), departures: new Map(), landings: new Map() };
+
+function addTo<Key>(map: Map<Key, Set<string>>, key: Key, army: string): void {
+  const set = map.get(key) ?? new Set<string>();
+  set.add(army);
+  map.set(key, set);
+}
+
+/** The capacity each route takes: a rail departure at its boarding capital, a port landing, or an amphibious lane. */
+export function routeClaims(route: MoveRoute): { readonly amphibious?: string; readonly departure?: SubTerritoryId; readonly landing?: TerritoryId } {
+  return {
+    ...(route.rail === undefined ? {} : { departure: route.rail.boarding }),
+    ...(route.sea?.kind === "port" ? { landing: route.to } : {}),
+    ...(route.sea?.kind === "amphibious" ? { amphibious: connectionKey(route.staging, route.to) } : {})
+  };
+}
+
+/** M3, M5: the capacity a set of planned routes uses, one claim per army. */
+export function usageOf(routes: readonly { readonly army: string; readonly route: MoveRoute }[]): RouteUsage {
+  const amphibious = new Map<string, Set<string>>();
+  const departures = new Map<SubTerritoryId, Set<string>>();
+  const landings = new Map<TerritoryId, Set<string>>();
+  for (const { army, route } of routes) {
+    const claims = routeClaims(route);
+    if (claims.departure !== undefined) addTo(departures, claims.departure, army);
+    if (claims.landing !== undefined) addTo(landings, claims.landing, army);
+    if (claims.amphibious !== undefined) addTo(amphibious, claims.amphibious, army);
+  }
+  return { amphibious, departures, landings };
+}
+
+/** M3, M5: room left for one more army on the route, given what is used (an army already counted is free). */
+export function hasRoom(scenario: Scenario, state: GameState, route: MoveRoute, army: string, usage: RouteUsage): boolean {
+  const claims = routeClaims(route);
+  if (claims.departure !== undefined) {
+    const used = usage.departures.get(claims.departure);
+    if (!(used?.has(army) ?? false) && (used?.size ?? 0) >= railDepartures(scenario, state, claims.departure)) return false;
+  }
+  if (claims.landing !== undefined) {
+    const used = usage.landings.get(claims.landing);
+    if (!(used?.has(army) ?? false) && (used?.size ?? 0) >= portLandings(scenario, route.sea?.level ?? 0)) return false;
+  }
+  if (claims.amphibious !== undefined) {
+    const used = usage.amphibious.get(claims.amphibious);
+    if (!(used?.has(army) ?? false) && (used?.size ?? 0) >= 1) return false;
+  }
+  return true;
+}
+
+/** The planned moves of a faction as routes, for `usageOf`. Orders whose legs no longer describe a route are left out. */
+export function plannedRoutes(scenario: Scenario, state: GameState, orders: readonly MoveOrder[]): readonly { readonly army: string; readonly route: MoveRoute }[] {
+  return orders.flatMap((order) => {
+    const check = describeRoute(scenario, state, order.factionId, order.from, legsOf(scenario, order), true);
+    return check.ok ? [{ army: armyKey(scenario, order), route: check.route }] : [];
+  });
+}
+
+/** The selected army's allowance and transport, as the planning screen summarizes them (X5). */
+export interface ArmyMovement {
+  readonly allMobile: boolean;
+  readonly allowance: number;
+  readonly needing: number;
+  readonly transports: number;
+}
+
+export function armyMovement(scenario: Scenario, state: GameState, factionId: FactionId, from: TerritoryId, unitIds: readonly UnitId[]): ArmyMovement {
+  const transport = transportOf(scenario, state, unitIds);
+  return { allMobile: transport.allMobile, allowance: armyAllowance(scenario, state, factionId, from, unitIds), needing: transport.needing, transports: transport.transports };
+}
+
+/**
+ * M1-M5: every destination the given units can reach together this turn, each with the one
+ * route the game offers: a single step or a sea leg first, then a pure ride, a march, a step and
+ * a ride, and a ride and a step. Within a shape the first found wins, in scenario order. Routes
+ * with no capacity left, given the faction's other planned moves, are skipped, so the next
+ * shape is offered instead.
+ */
+export function moveRoutes(
+  scenario: Scenario,
+  state: GameState,
+  factionId: FactionId,
+  from: TerritoryId,
+  unitIds: readonly UnitId[],
+  planned: readonly MoveOrder[] = []
+): ReadonlyMap<TerritoryId, MoveRoute> {
+  const movement = armyMovement(scenario, state, factionId, from, unitIds);
+  const rides = ridesFor(scenario, state, factionId);
+  const ordered = new Set(unitIds);
+  const usage = usageOf(plannedRoutes(scenario, state, planned.filter((order) => order.factionId === factionId && !ordered.has(order.unitId))));
+  const found = new Map<TerritoryId, MoveRoute>();
+  const offer = (legs: readonly MoveLeg[]): void => {
+    const to = legs[legs.length - 1]?.to;
+    if (to === undefined || to === from || found.has(to)) return;
+    const check = describeRoute(scenario, state, factionId, from, legs, movement.allMobile, rides);
+    if (!check.ok || !fitsAllowance(check.route.cost, check.route.steps, movement.allowance)) return;
+    if (!hasRoom(scenario, state, check.route, armyKey(scenario, { factionId, from, legs, to }), usage)) return;
+    found.set(to, check.route);
+  };
+
+  for (const neighbor of neighborsOf(scenario, from)) offer([{ kind: neighbor.kind, to: neighbor.territoryId }]);
+  for (const end of rides(from).keys()) offer([{ kind: "rail", to: end }]);
+  if (movement.allowance >= 2) for (const legs of marches(scenario, state, factionId, from, movement.allowance)) offer(legs);
+  for (const via of landNeighbors(scenario, from)) {
+    if (!isFriendlyGround(scenario, state, factionId, via)) continue;
+    for (const end of rides(via).keys()) offer([{ kind: "land", to: via }, { kind: "rail", to: end }]);
+  }
+  for (const end of rides(from).keys()) {
+    for (const next of landNeighbors(scenario, end)) offer([{ kind: "rail", to: end }, { kind: "land", to: next }]);
+  }
+  return found;
+}
+
+/** M1, M2: land paths of 2 up to `allowance` steps through friendly ground, shortest first, in scenario order. */
+function marches(scenario: Scenario, state: GameState, factionId: FactionId, from: TerritoryId, allowance: number): readonly (readonly MoveLeg[])[] {
+  const paths: MoveLeg[][] = [];
+  let frontier: { readonly at: TerritoryId; readonly legs: readonly MoveLeg[] }[] = [{ at: from, legs: [] }];
+  for (let depth = 1; depth <= allowance; depth += 1) {
+    const next: { readonly at: TerritoryId; readonly legs: readonly MoveLeg[] }[] = [];
+    for (const { at, legs } of frontier) {
+      if (legs.length > 0 && !isFriendlyGround(scenario, state, factionId, at)) continue;
+      for (const neighbor of landNeighbors(scenario, at)) {
+        if (neighbor === from || legs.some((leg) => leg.to === neighbor)) continue;
+        const extended = [...legs, { kind: "land" as const, to: neighbor }];
+        if (depth >= 2) paths.push(extended);
+        next.push({ at: neighbor, legs: extended });
+      }
+    }
+    frontier = next;
+  }
+  return paths;
+}
+
+/** M1-M5: the per-order check of a move's legs against the start-of-turn state, under the `allowance` module. */
+export function validateRoute(scenario: Scenario, state: GameState, order: MoveOrder): RouteCheck {
+  const legs = legsOf(scenario, order);
+  if (legs[legs.length - 1]?.to !== order.to) return { ok: false, reason: "The route does not end at the destination." };
+  if (legs.length === 1 && legs[0]?.kind !== "rail" && !isNeighbor(scenario, order.from, order.to)) {
+    return { ok: false, reason: "Destination is not connected to the unit's territory." };
+  }
+  return describeRoute(scenario, state, order.factionId, order.from, legs, true);
+}

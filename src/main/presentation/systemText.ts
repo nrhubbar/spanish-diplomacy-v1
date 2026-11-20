@@ -4,6 +4,7 @@ import { contestedLines } from "./systemText/contested";
 import { economyLines } from "./systemText/economy";
 import { generalsLines } from "./systemText/generals";
 import { moraleLines } from "./systemText/morale";
+import { movementLines } from "./systemText/movement";
 import { recruitmentLines } from "./systemText/recruitment";
 import { weatherLines } from "./systemText/weather";
 
@@ -18,6 +19,7 @@ const systemLines = {
   ...economyLines,
   ...generalsLines,
   ...moraleLines,
+  ...movementLines,
   ...recruitmentLines,
   ...weatherLines
 } satisfies Readonly<Record<SystemOutcome["kind"], string>>;

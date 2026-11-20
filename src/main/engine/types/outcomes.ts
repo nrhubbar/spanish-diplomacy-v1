@@ -12,6 +12,7 @@ import type {
   BouncedMoveOutcome,
   DisbandedMoveOutcome,
   InvalidOrderOutcome,
+  MovementTurnOutcome,
   NoMoveOutcome,
   ReinforcementArrivedOutcome,
   RejectedOrderOutcome,
@@ -55,7 +56,8 @@ export type SystemOutcome =
   | ContestedTurnOutcome
   | AirTurnOutcome
   | GeneralsTurnOutcome
-  | MoraleTurnOutcome;
+  | MoraleTurnOutcome
+  | MovementTurnOutcome;
 
 export type TurnOutcome = MilestoneTwoOutcome | SystemOutcome;
 

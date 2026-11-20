@@ -46,6 +46,12 @@ export interface AllowanceContext extends HookContext {
   readonly unitIds: readonly UnitId[];
 }
 
+/** M5, T4: a sea leg between two territories. */
+export interface SeaContext extends HookContext {
+  readonly from: TerritoryId;
+  readonly to: TerritoryId;
+}
+
 /** U2: an aircraft about to fly. */
 export interface GroundedContext extends HookContext {
   readonly territoryId: TerritoryId;
@@ -93,6 +99,8 @@ export interface RuleHooks {
   readonly replenishBonus?: (context: ReplenishContext) => ReplenishBonus;
   /** R2, R3: reasons the type is locked here; empty when nothing blocks it. */
   readonly recruitRequirements?: (context: RecruitContext) => readonly string[];
+  /** M5, T4: true closes the sea between the two territories this turn (winter Rain on a coastal zone). */
+  readonly seaClosed?: (context: SeaContext) => boolean;
 }
 
 const hooksOf = (scenario: Scenario): readonly RuleHooks[] => scenario.modules.flatMap((module) => (module.hooks === undefined ? [] : [module.hooks]));
@@ -131,4 +139,9 @@ export function hookedReplenishBonus(context: ReplenishContext): ReplenishBonus 
 
 export function hookedRecruitRequirements(context: RecruitContext): readonly string[] {
   return hooksOf(context.scenario).flatMap((hooks) => hooks.recruitRequirements?.(context) ?? []);
+}
+
+/** M5, T4: any one hook closes the sea. */
+export function hookedSeaClosed(context: SeaContext): boolean {
+  return hooksOf(context.scenario).some((hooks) => hooks.seaClosed?.(context) ?? false);
 }
