@@ -64,6 +64,20 @@ export const mapSchema = z
           .meta({ description: "Drawn and hit-tested when the territory has no SVG region." })
       })
     ),
+    subTerritories: z
+      .strictObject({
+        svg: assetPath.meta({ description: "SVG with one path per sub-territory, its element id the sub-territory id, read even-odd." }),
+        entries: z.record(
+          slug,
+          z.strictObject({
+            territoryId: slug.meta({ description: "The territory this sub-territory is part of." }),
+            label: z.strictObject(point).meta({ description: "Where the sub-territory name is drawn: inside it, far from its edges." }),
+            capital: z.strictObject(point).meta({ description: "The sub-territory's chief town, inside it." })
+          })
+        )
+      })
+      .optional()
+      .meta({ description: "Optional sub-territories (provinces and scenario splits). Their outer edges follow the territory regions." }),
     cities: z.record(slug, z.strictObject({ ...point, tier: z.enum(["overview", "detail"]) })),
     contextLabels: z.array(z.strictObject({ text: z.string().min(1), ...point })),
     rivers: z

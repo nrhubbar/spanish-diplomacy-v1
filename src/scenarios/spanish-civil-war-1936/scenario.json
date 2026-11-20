@@ -982,7 +982,7 @@
       ],
       "kind": "land",
       "entry": [
-        "bizkaia",
+        "alava",
         "burgos"
       ]
     },
@@ -1049,7 +1049,7 @@
       "kind": "land",
       "entry": [
         "teruel",
-        "cuenca"
+        "guadalajara"
       ]
     },
     {
@@ -1060,7 +1060,7 @@
       "kind": "land",
       "entry": [
         "teruel",
-        "valencia"
+        "castellon"
       ]
     },
     {
@@ -1070,7 +1070,7 @@
       ],
       "kind": "land",
       "entry": [
-        "zaragoza",
+        "huesca",
         "lleida"
       ]
     },
@@ -1081,8 +1081,8 @@
       ],
       "kind": "land",
       "entry": [
-        "madrid",
-        "avila"
+        "guadarrama",
+        "segovia"
       ]
     },
     {
@@ -1103,8 +1103,8 @@
       ],
       "kind": "land",
       "entry": [
-        "avila",
-        "toledo"
+        "soria",
+        "guadalajara"
       ]
     },
     {
@@ -1148,7 +1148,7 @@
       "kind": "land",
       "entry": [
         "ciudad-real",
-        "cordoba"
+        "jaen"
       ]
     },
     {
@@ -1159,7 +1159,7 @@
       "kind": "land",
       "entry": [
         "toledo",
-        "badajoz"
+        "caceres"
       ]
     },
     {
@@ -1251,7 +1251,7 @@
       "label": "Balearic Sea",
       "entry": [
         "valencia",
-        "ibiza"
+        "mallorca"
       ]
     }
   ],
@@ -3457,20 +3457,28 @@
       "pontevedra"
     ],
     [
+      "lugo",
+      "asturias"
+    ],
+    [
+      "lugo",
+      "leon"
+    ],
+    [
       "ourense",
       "pontevedra"
+    ],
+    [
+      "ourense",
+      "leon"
     ],
     [
       "ourense",
       "zamora"
     ],
     [
-      "asturias",
-      "lugo"
-    ],
-    [
-      "asturias",
-      "oviedo"
+      "oviedo",
+      "asturias"
     ],
     [
       "asturias",
@@ -3479,6 +3487,14 @@
     [
       "asturias",
       "leon"
+    ],
+    [
+      "cantabria",
+      "bizkaia"
+    ],
+    [
+      "cantabria",
+      "burgos"
     ],
     [
       "cantabria",
@@ -3490,11 +3506,11 @@
     ],
     [
       "bizkaia",
-      "cantabria"
+      "gipuzkoa"
     ],
     [
       "bizkaia",
-      "gipuzkoa"
+      "alava"
     ],
     [
       "bizkaia",
@@ -3502,15 +3518,11 @@
     ],
     [
       "gipuzkoa",
+      "alava"
+    ],
+    [
+      "gipuzkoa",
       "navarra"
-    ],
-    [
-      "alava",
-      "bizkaia"
-    ],
-    [
-      "alava",
-      "gipuzkoa"
     ],
     [
       "alava",
@@ -3526,23 +3538,51 @@
     ],
     [
       "navarra",
+      "la-rioja"
+    ],
+    [
+      "navarra",
+      "zaragoza"
+    ],
+    [
+      "navarra",
+      "huesca"
+    ],
+    [
+      "la-rioja",
       "zaragoza"
     ],
     [
       "la-rioja",
-      "navarra"
-    ],
-    [
-      "la-rioja",
-      "zaragoza"
+      "burgos"
     ],
     [
       "la-rioja",
       "soria"
     ],
     [
-      "huesca",
-      "zaragoza"
+      "zaragoza",
+      "huesca"
+    ],
+    [
+      "zaragoza",
+      "teruel"
+    ],
+    [
+      "zaragoza",
+      "soria"
+    ],
+    [
+      "zaragoza",
+      "guadalajara"
+    ],
+    [
+      "zaragoza",
+      "lleida"
+    ],
+    [
+      "zaragoza",
+      "tarragona"
     ],
     [
       "huesca",
@@ -3550,19 +3590,47 @@
     ],
     [
       "teruel",
-      "zaragoza"
+      "cuenca"
+    ],
+    [
+      "teruel",
+      "guadalajara"
+    ],
+    [
+      "teruel",
+      "tarragona"
     ],
     [
       "teruel",
       "valencia"
     ],
     [
+      "teruel",
+      "castellon"
+    ],
+    [
+      "madrid",
+      "guadarrama"
+    ],
+    [
+      "madrid",
+      "henares"
+    ],
+    [
+      "madrid",
+      "avila"
+    ],
+    [
       "madrid",
       "toledo"
     ],
     [
-      "guadarrama",
-      "madrid"
+      "madrid",
+      "cuenca"
+    ],
+    [
+      "madrid",
+      "guadalajara"
     ],
     [
       "guadarrama",
@@ -3570,19 +3638,19 @@
     ],
     [
       "guadarrama",
+      "avila"
+    ],
+    [
+      "guadarrama",
       "segovia"
     ],
     [
+      "guadarrama",
+      "guadalajara"
+    ],
+    [
       "henares",
-      "madrid"
-    ],
-    [
-      "burgos",
-      "cantabria"
-    ],
-    [
-      "burgos",
-      "la-rioja"
+      "guadalajara"
     ],
     [
       "burgos",
@@ -3602,19 +3670,27 @@
     ],
     [
       "valladolid",
+      "leon"
+    ],
+    [
+      "valladolid",
+      "palencia"
+    ],
+    [
+      "valladolid",
       "zamora"
     ],
     [
-      "leon",
-      "lugo"
+      "valladolid",
+      "salamanca"
     ],
     [
-      "leon",
-      "ourense"
+      "valladolid",
+      "avila"
     ],
     [
-      "leon",
-      "valladolid"
+      "valladolid",
+      "segovia"
     ],
     [
       "leon",
@@ -3625,28 +3701,16 @@
       "zamora"
     ],
     [
-      "palencia",
-      "valladolid"
-    ],
-    [
-      "salamanca",
-      "valladolid"
-    ],
-    [
-      "salamanca",
-      "zamora"
-    ],
-    [
-      "avila",
-      "madrid"
-    ],
-    [
-      "avila",
-      "guadarrama"
-    ],
-    [
-      "avila",
+      "zamora",
       "salamanca"
+    ],
+    [
+      "salamanca",
+      "avila"
+    ],
+    [
+      "salamanca",
+      "caceres"
     ],
     [
       "avila",
@@ -3662,23 +3726,43 @@
     ],
     [
       "segovia",
-      "valladolid"
-    ],
-    [
-      "segovia",
       "soria"
     ],
     [
-      "soria",
-      "zaragoza"
+      "segovia",
+      "guadalajara"
     ],
     [
-      "ciudad-real",
-      "toledo"
+      "soria",
+      "guadalajara"
+    ],
+    [
+      "toledo",
+      "ciudad-real"
+    ],
+    [
+      "toledo",
+      "cuenca"
+    ],
+    [
+      "toledo",
+      "badajoz"
+    ],
+    [
+      "toledo",
+      "caceres"
     ],
     [
       "ciudad-real",
       "cuenca"
+    ],
+    [
+      "ciudad-real",
+      "albacete"
+    ],
+    [
+      "ciudad-real",
+      "badajoz"
     ],
     [
       "ciudad-real",
@@ -3690,47 +3774,15 @@
     ],
     [
       "cuenca",
-      "teruel"
-    ],
-    [
-      "cuenca",
-      "madrid"
-    ],
-    [
-      "cuenca",
       "guadalajara"
     ],
     [
       "cuenca",
+      "albacete"
+    ],
+    [
+      "cuenca",
       "valencia"
-    ],
-    [
-      "guadalajara",
-      "teruel"
-    ],
-    [
-      "guadalajara",
-      "guadarrama"
-    ],
-    [
-      "guadalajara",
-      "henares"
-    ],
-    [
-      "guadalajara",
-      "segovia"
-    ],
-    [
-      "guadalajara",
-      "soria"
-    ],
-    [
-      "albacete",
-      "ciudad-real"
-    ],
-    [
-      "albacete",
-      "cuenca"
     ],
     [
       "albacete",
@@ -3742,19 +3794,15 @@
     ],
     [
       "albacete",
+      "granada"
+    ],
+    [
+      "albacete",
       "jaen"
     ],
     [
       "albacete",
       "murcia"
-    ],
-    [
-      "badajoz",
-      "toledo"
-    ],
-    [
-      "badajoz",
-      "ciudad-real"
     ],
     [
       "badajoz",
@@ -3771,14 +3819,6 @@
     [
       "badajoz",
       "cordoba"
-    ],
-    [
-      "caceres",
-      "salamanca"
-    ],
-    [
-      "caceres",
-      "toledo"
     ],
     [
       "barcelona",
@@ -3798,83 +3838,87 @@
     ],
     [
       "lleida",
-      "zaragoza"
-    ],
-    [
-      "lleida",
       "tarragona"
     ],
     [
       "tarragona",
-      "zaragoza"
+      "castellon"
     ],
     [
-      "tarragona",
-      "teruel"
+      "valencia",
+      "castellon"
     ],
     [
-      "castellon",
-      "teruel"
-    ],
-    [
-      "castellon",
-      "tarragona"
-    ],
-    [
-      "castellon",
-      "valencia"
-    ],
-    [
-      "alicante",
-      "valencia"
+      "valencia",
+      "alicante"
     ],
     [
       "alicante",
       "murcia"
     ],
     [
+      "sevilla",
+      "cadiz"
+    ],
+    [
+      "sevilla",
+      "huelva"
+    ],
+    [
+      "sevilla",
+      "cordoba"
+    ],
+    [
+      "sevilla",
+      "malaga"
+    ],
+    [
       "cadiz",
-      "sevilla"
+      "huelva"
     ],
     [
       "cadiz",
       "malaga"
     ],
     [
-      "huelva",
-      "sevilla"
-    ],
-    [
       "cordoba",
-      "sevilla"
-    ],
-    [
-      "cordoba",
-      "malaga"
-    ],
-    [
-      "cordoba",
-      "jaen"
-    ],
-    [
-      "granada",
-      "malaga"
-    ],
-    [
-      "granada",
-      "jaen"
-    ],
-    [
-      "malaga",
-      "sevilla"
-    ],
-    [
-      "almeria",
       "granada"
     ],
     [
+      "cordoba",
+      "malaga"
+    ],
+    [
+      "cordoba",
+      "jaen"
+    ],
+    [
+      "granada",
+      "malaga"
+    ],
+    [
+      "granada",
+      "jaen"
+    ],
+    [
+      "granada",
+      "almeria"
+    ],
+    [
+      "granada",
+      "murcia"
+    ],
+    [
       "almeria",
       "murcia"
+    ],
+    [
+      "mallorca",
+      "menorca"
+    ],
+    [
+      "mallorca",
+      "ibiza"
     ]
   ],
   "resources": [

@@ -1,8 +1,10 @@
 // Builds the iberia-1936 map package from vendored geographic sources, offline:
 //   - assets/maps/iberia-regions.svg (territory geometry),
+//   - assets/maps/iberia-sub-territories.svg (sub-territory geometry, cut from the same region rings),
 //   - the relief layers (overview, margin, and detail images),
-//   - every coordinate in src/main/scenarios/spain-1936-07-31/map.json, including its rivers and
-//     water labels.
+//   - every coordinate in the scenario package's map.json (`scenarioPackage` in
+//     scripts/map/iberia-1936.ts), including its rivers and water labels,
+//   - the package's sub-territory-topology.json: sub-territory borders and connection entries.
 // Geometry and rasters are produced in one projection from the same projected paths, so region
 // borders and coastlines agree with the relief by construction. Run with `npm run maps:build`.
 import { createHash } from "node:crypto";
@@ -10,13 +12,16 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import sharp from "sharp";
 import * as config from "./map/iberia-1936.ts";
 import * as water from "./map/iberia-1936-water.ts";
+import * as subTerritoryConfig from "./map/iberia-1936-sub-territories.ts";
 import { edgeIndex } from "./map/edgeIndex.ts";
 import { lineParts, type LineFeature } from "./map/lines.ts";
 import type { Rect } from "./map/iberia-1936.ts";
-import { containsPoint, type GeoJsonPolygonal, pathData, type Point, polygonRings, ringArea, simplifyRing } from "./map/geometry.ts";
+import { containsPoint, distanceToEdges, type GeoJsonPolygonal, pathData, type Point, polygonRings, ringArea, simplifyRing } from "./map/geometry.ts";
 import { asciiJson, hexColor, insideTerritory, placeTerritory, roundPoint } from "./map/package.ts";
 import { lambertConformalConic, webMercatorPixel } from "./map/projection.ts";
 import { blur, colorRamp, type Color, createGrid, distanceField, type Grid, hillshade, sampleBicubic, smoothstep } from "./map/raster.ts";
+import { buildSubTerritories } from "./map/subTerritories.ts";
+import { type Connection, connectionEntries, measureTopology, seaLinkBorders } from "./map/topology.ts";
 import { assertConfluence, assertOnLand, type BuiltRiver, buildRiver, buildWaterLabels } from "./map/water.ts";
 
 const root = new URL("../", import.meta.url);
@@ -43,6 +48,7 @@ interface Manifest {
   readonly elevation: { readonly mosaics: readonly ElevationMosaic[] };
   readonly neutralLand: { readonly file: string; readonly sha256: string };
   readonly rivers: { readonly file: string; readonly sha256: string };
+  readonly provinces: { readonly file: string; readonly sha256: string };
 }
 
 async function readVerified(file: string, expected: string): Promise<Buffer> {
@@ -61,6 +67,7 @@ const manifest = JSON.parse(await readFile(new URL("scripts/sources/manifest.jso
 const administrative = JSON.parse((await readVerified(geoBoundaries.file, geoBoundaries.sha256)).toString("utf8")) as { features: Feature[] };
 const neutralSource = JSON.parse((await readVerified(manifest.neutralLand.file, manifest.neutralLand.sha256)).toString("utf8")) as { features: Feature[] };
 const riverSource = JSON.parse((await readVerified(manifest.rivers.file, manifest.rivers.sha256)).toString("utf8")) as { features: LineFeature[] };
+const provinceSource = JSON.parse((await readVerified(manifest.provinces.file, manifest.provinces.sha256)).toString("utf8")) as { features: Feature[] };
 
 interface Elevation {
   readonly grid: Grid;
@@ -100,7 +107,7 @@ const regionPaths = Object.entries(config.regionSources).map(([id, name]) => {
   const rings = projectFeature(featureNamed(name), geometryTolerance);
   return { d: pathData(rings, 1), id, rings };
 });
-const extraRings = config.playableExtras.map((name) => projectFeature(featureNamed(name), geometryTolerance));
+const extraRings = Object.values(config.playableExtras).map((name) => projectFeature(featureNamed(name), geometryTolerance));
 const playableRings = [...regionPaths.flatMap((region) => region.rings), ...extraRings.flat()];
 const playablePaths = [...regionPaths.map(({ d }) => d), ...extraRings.map((rings) => pathData(rings, 1))];
 const neutralRings = neutralSource.features.map((feature) => projectFeature(feature, 0.4));
@@ -117,6 +124,7 @@ const { detail, margin, master, overview } = config.terrain;
 const outputs = {
   detail: "assets/maps/iberia-relief-detail.webp",
   geometry: "assets/maps/iberia-regions.svg",
+  subTerritories: "assets/maps/iberia-sub-territories.svg",
   margin: "assets/maps/iberia-relief-margin.webp",
   overview: "assets/maps/iberia-relief-overview.webp"
 };
@@ -154,6 +162,71 @@ const territories = Object.fromEntries(Object.keys(previous.territories).map((te
   const tier = (previous.territories[territoryId] as { label: { tier: string } }).label.tier;
   return [territoryId, { unitAnchor: placement.unitAnchor, label: { ...placement.label, tier } }];
 }));
+
+// ---------------------------------------------------------------------------------------------
+// Sub-territories
+
+/** Every ring of an ADM2 province, projected but not simplified: it only labels points. */
+function provinceRings(name: string): Point[][] {
+  const feature = provinceSource.features.find((candidate) => candidate.properties["shapeName"] === name);
+  if (feature === undefined) throw new Error(`geoBoundaries ADM2 has no province named ${name}`);
+  return polygonRings(feature.geometry).map((ring) => ring.map(([longitude, latitude]) => project(longitude, latitude)));
+}
+
+const subTerritoryRings = new Map<string, readonly Point[][]>(territoryRings);
+for (const [territoryId, name] of Object.entries(config.playableExtras)) subTerritoryRings.set(territoryId, projectFeature(featureNamed(name), geometryTolerance));
+const builtSubTerritories = buildSubTerritories({
+  capitalInset: 0.3,
+  handSplits: Object.fromEntries(Object.entries(subTerritoryConfig.handSplits).map(([territoryId, split]) => [
+    territoryId,
+    { lines: split.lines.map((line) => line.map(([longitude, latitude]) => project(longitude, latitude))) }
+  ])),
+  options: subTerritoryConfig.partition,
+  provinceAreaTolerance: subTerritoryConfig.provinceAreaTolerance,
+  subTerritories: Object.fromEntries(Object.entries(subTerritoryConfig.subTerritories).map(([id, entry]) => [id, {
+    capital: project(entry.capital.longitude, entry.capital.latitude),
+    ...(entry.province === undefined ? {} : { province: provinceRings(entry.province) }),
+    territoryId: entry.territoryId
+  }])),
+  territoryRings: subTerritoryRings
+});
+console.log(`sub-territories: ${String(builtSubTerritories.length)} parts of ${String(new Set(builtSubTerritories.map((part) => part.territoryId)).size)} territories`);
+
+// Topology: which sub-territories border each other, and what each scenario connection enters.
+const scenarioDocument = JSON.parse(await readFile(new URL(config.scenarioDocument, root), "utf8")) as { connections: (Connection & Record<string, unknown>)[] };
+const subTerritoryTopology = measureTopology(builtSubTerritories, neutralRings.flat(), subTerritoryConfig.topology);
+const { minimumCoast } = subTerritoryConfig.topology;
+const entries = connectionEntries(builtSubTerritories, subTerritoryTopology, scenarioDocument.connections, minimumCoast, subTerritoryConfig.entryOverrides);
+const borders = [...subTerritoryTopology.borders, ...seaLinkBorders(builtSubTerritories, subTerritoryTopology, subTerritoryConfig.seaLinks, minimumCoast)];
+const kilometres = (value: number): number => Math.round(value * 10) / 10;
+/** The sub-territory each city stands in: the part containing it, else (a town on a spit the simplified coast leaves out) the nearest. */
+const cityParts = Object.fromEntries(Object.entries(config.cities).map(([cityId, city]) => {
+  const point = geoPoint(city);
+  const nearest = [...builtSubTerritories].sort((left, right) =>
+    (containsPoint(left.rings, point) ? -1 : distanceToEdges(left.rings, point)) - (containsPoint(right.rings, point) ? -1 : distanceToEdges(right.rings, point)))[0];
+  return [cityId, nearest?.id];
+}));
+// `subTerritoryBorders` and `connections` are the scenario's own fields, value for value: each
+// connection is the scenario's, unchanged but for `entry`.
+const topologyDocument = {
+  $comment: "Generated by scripts/build-map.ts from the sub-territory geometry; do not edit. See project/specs/map-package.md.",
+  subTerritories: builtSubTerritories.map((part) => ({ id: part.id, territoryId: part.territoryId, name: subTerritoryConfig.subTerritories[part.id]?.name })),
+  subTerritoryBorders: borders.map((border) => border.between),
+  connections: scenarioDocument.connections.map((connection, index) => ({ ...connection, entry: entries[index]?.entry })),
+  cities: cityParts,
+  measurements: {
+    borderKm: borders.map((border) => ({ between: border.between, km: kilometres(border.length), ...(border.sea === true ? { sea: true } : {}) })),
+    coastKm: Object.fromEntries(builtSubTerritories.map((part) => [part.id, kilometres(subTerritoryTopology.coast.get(part.id) ?? 0)])),
+    connectionKm: entries.map((entry) => ({ entry: entry.entry, km: kilometres(entry.length), rule: entry.rule, ...(entry.reason === undefined ? {} : { reason: entry.reason }) }))
+  }
+};
+console.log(`sub-territory topology: ${String(borders.length)} borders, ${String(entries.length)} connection entries`);
+const subTerritorySvg = [
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${[config.viewBox.x, config.viewBox.y, config.viewBox.width, config.viewBox.height].join(" ")}">`,
+  `<g id="sub-territories">${builtSubTerritories.map(({ id, rings }) => `<path id="${id}" d="${pathData(rings, 1)}" fill-rule="evenodd"/>`).join("")}</g>`,
+  "</svg>",
+  ""
+].join("\n");
 
 // ---------------------------------------------------------------------------------------------
 // Rivers and water labels
@@ -211,6 +284,14 @@ const document = {
   },
   regions: previous.regions,
   territories,
+  subTerritories: {
+    svg: outputs.subTerritories,
+    entries: Object.fromEntries(builtSubTerritories.map((part) => [part.id, {
+      territoryId: part.territoryId,
+      label: roundPoint(part.label),
+      capital: roundPoint(part.capital)
+    }]))
+  },
   cities: Object.fromEntries(Object.entries(config.cities).map(([id, city]) => [id, { ...geoPoint(city), tier: city.tier }])),
   contextLabels: config.contextLabels.map((label) => ({ text: label.text, ...geoPoint(label) })),
   rivers: builtRivers.map((river) => river.document),
@@ -219,9 +300,11 @@ const document = {
   attribution: config.attribution
 };
 await writeFile(mapUrl, asciiJson(document));
-console.log(`wrote ${config.mapDocument}`);
-// `--package-only` rewrites map.json without re-baking the relief, for iterating on labels. Only
-// the full build checks the relief registration and the asset checksums.
+await writeFile(new URL(outputs.subTerritories, root), subTerritorySvg);
+await writeFile(new URL(config.topologyDocument, root), asciiJson(topologyDocument));
+console.log(`wrote ${config.mapDocument}, ${config.topologyDocument}, and ${outputs.subTerritories}`);
+// `--package-only` rewrites map.json and the sub-territory SVG without re-baking the relief, for
+// iterating on labels. Only the full build checks the relief registration and the asset checksums.
 if (process.argv.includes("--package-only")) process.exit(0);
 
 

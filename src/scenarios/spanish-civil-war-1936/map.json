@@ -312,6 +312,616 @@
       }
     }
   },
+  "subTerritories": {
+    "svg": "assets/maps/iberia-sub-territories.svg",
+    "entries": {
+      "a-coruna": {
+        "territoryId": "galicia",
+        "label": {
+          "x": -456.2,
+          "y": -350.8
+        },
+        "capital": {
+          "x": -436.1,
+          "y": -387.9
+        }
+      },
+      "lugo": {
+        "territoryId": "galicia",
+        "label": {
+          "x": -361.6,
+          "y": -329.7
+        },
+        "capital": {
+          "x": -369.8,
+          "y": -344.6
+        }
+      },
+      "ourense": {
+        "territoryId": "galicia",
+        "label": {
+          "x": -367.6,
+          "y": -245.8
+        },
+        "capital": {
+          "x": -399.3,
+          "y": -270.4
+        }
+      },
+      "pontevedra": {
+        "territoryId": "galicia",
+        "label": {
+          "x": -453.8,
+          "y": -299
+        },
+        "capital": {
+          "x": -461.8,
+          "y": -284.8
+        }
+      },
+      "oviedo": {
+        "territoryId": "asturias",
+        "label": {
+          "x": -231.9,
+          "y": -378
+        },
+        "capital": {
+          "x": -230,
+          "y": -377
+        }
+      },
+      "asturias": {
+        "territoryId": "asturias",
+        "label": {
+          "x": -285.4,
+          "y": -370.9
+        },
+        "capital": {
+          "x": -217.7,
+          "y": -395.9
+        }
+      },
+      "cantabria": {
+        "territoryId": "cantabria",
+        "label": {
+          "x": -93.2,
+          "y": -353.5
+        },
+        "capital": {
+          "x": -65,
+          "y": -385.1
+        }
+      },
+      "bizkaia": {
+        "territoryId": "pais-vasco",
+        "label": {
+          "x": 21.5,
+          "y": -360
+        },
+        "capital": {
+          "x": 6.2,
+          "y": -361.9
+        }
+      },
+      "gipuzkoa": {
+        "territoryId": "pais-vasco",
+        "label": {
+          "x": 60.6,
+          "y": -347
+        },
+        "capital": {
+          "x": 82.4,
+          "y": -369.4
+        }
+      },
+      "alava": {
+        "territoryId": "pais-vasco",
+        "label": {
+          "x": 46.6,
+          "y": -314.9
+        },
+        "capital": {
+          "x": 25.8,
+          "y": -316.6
+        }
+      },
+      "navarra": {
+        "territoryId": "navarra",
+        "label": {
+          "x": 102.9,
+          "y": -298.6
+        },
+        "capital": {
+          "x": 110.1,
+          "y": -313.8
+        }
+      },
+      "la-rioja": {
+        "territoryId": "la-rioja",
+        "label": {
+          "x": 16.6,
+          "y": -257.7
+        },
+        "capital": {
+          "x": 45.4,
+          "y": -273.9
+        }
+      },
+      "zaragoza": {
+        "territoryId": "aragon",
+        "label": {
+          "x": 161.4,
+          "y": -178.1
+        },
+        "capital": {
+          "x": 175.7,
+          "y": -185.3
+        }
+      },
+      "huesca": {
+        "territoryId": "aragon",
+        "label": {
+          "x": 244.8,
+          "y": -246.8
+        },
+        "capital": {
+          "x": 212.8,
+          "y": -240
+        }
+      },
+      "teruel": {
+        "territoryId": "aragon",
+        "label": {
+          "x": 172,
+          "y": -65.9
+        },
+        "capital": {
+          "x": 160.2,
+          "y": -39.9
+        }
+      },
+      "madrid": {
+        "territoryId": "madrid",
+        "label": {
+          "x": -69.3,
+          "y": -45.2
+        },
+        "capital": {
+          "x": -59.4,
+          "y": -46.5
+        }
+      },
+      "guadarrama": {
+        "territoryId": "madrid",
+        "label": {
+          "x": -53.8,
+          "y": -101.7
+        },
+        "capital": {
+          "x": -84.9,
+          "y": -70.8
+        }
+      },
+      "henares": {
+        "territoryId": "madrid",
+        "label": {
+          "x": -35.6,
+          "y": -58.8
+        },
+        "capital": {
+          "x": -31,
+          "y": -51.9
+        }
+      },
+      "burgos": {
+        "territoryId": "castilla-y-leon",
+        "label": {
+          "x": -53.3,
+          "y": -268.7
+        },
+        "capital": {
+          "x": -58.1,
+          "y": -261.3
+        }
+      },
+      "valladolid": {
+        "territoryId": "castilla-y-leon",
+        "label": {
+          "x": -154,
+          "y": -172.3
+        },
+        "capital": {
+          "x": -143.1,
+          "y": -185
+        }
+      },
+      "leon": {
+        "territoryId": "castilla-y-leon",
+        "label": {
+          "x": -250,
+          "y": -290.6
+        },
+        "capital": {
+          "x": -210.2,
+          "y": -292.5
+        }
+      },
+      "palencia": {
+        "territoryId": "castilla-y-leon",
+        "label": {
+          "x": -130.4,
+          "y": -244.7
+        },
+        "capital": {
+          "x": -126.5,
+          "y": -225.1
+        }
+      },
+      "zamora": {
+        "territoryId": "castilla-y-leon",
+        "label": {
+          "x": -234.7,
+          "y": -201.1
+        },
+        "capital": {
+          "x": -229.2,
+          "y": -170
+        }
+      },
+      "salamanca": {
+        "territoryId": "castilla-y-leon",
+        "label": {
+          "x": -278.3,
+          "y": -99.5
+        },
+        "capital": {
+          "x": -223.4,
+          "y": -110.5
+        }
+      },
+      "avila": {
+        "territoryId": "castilla-y-leon",
+        "label": {
+          "x": -155.5,
+          "y": -67.7
+        },
+        "capital": {
+          "x": -141.8,
+          "y": -73.5
+        }
+      },
+      "segovia": {
+        "territoryId": "castilla-y-leon",
+        "label": {
+          "x": -93.8,
+          "y": -132.5
+        },
+        "capital": {
+          "x": -93.8,
+          "y": -105.9
+        }
+      },
+      "soria": {
+        "territoryId": "castilla-y-leon",
+        "label": {
+          "x": 38.4,
+          "y": -180.7
+        },
+        "capital": {
+          "x": 44.2,
+          "y": -196.4
+        }
+      },
+      "toledo": {
+        "territoryId": "castilla-la-mancha",
+        "label": {
+          "x": -116.4,
+          "y": 12.3
+        },
+        "capital": {
+          "x": -87.3,
+          "y": 15.4
+        }
+      },
+      "ciudad-real": {
+        "territoryId": "castilla-la-mancha",
+        "label": {
+          "x": -103.2,
+          "y": 125.5
+        },
+        "capital": {
+          "x": -79.2,
+          "y": 112.5
+        }
+      },
+      "cuenca": {
+        "territoryId": "castilla-la-mancha",
+        "label": {
+          "x": 65.4,
+          "y": 11.2
+        },
+        "capital": {
+          "x": 73.6,
+          "y": -8.4
+        }
+      },
+      "guadalajara": {
+        "territoryId": "castilla-la-mancha",
+        "label": {
+          "x": 11.2,
+          "y": -92
+        },
+        "capital": {
+          "x": -14.1,
+          "y": -70.4
+        }
+      },
+      "albacete": {
+        "territoryId": "castilla-la-mancha",
+        "label": {
+          "x": 82.9,
+          "y": 133.2
+        },
+        "capital": {
+          "x": 98.7,
+          "y": 110.9
+        }
+      },
+      "badajoz": {
+        "territoryId": "extremadura",
+        "label": {
+          "x": -293.4,
+          "y": 154
+        },
+        "capital": {
+          "x": -343.6,
+          "y": 116.7
+        }
+      },
+      "caceres": {
+        "territoryId": "extremadura",
+        "label": {
+          "x": -271.4,
+          "y": 23.6
+        },
+        "capital": {
+          "x": -288.5,
+          "y": 52
+        }
+      },
+      "barcelona": {
+        "territoryId": "catalunya",
+        "label": {
+          "x": 410.1,
+          "y": -192.6
+        },
+        "capital": {
+          "x": 431.2,
+          "y": -166.1
+        }
+      },
+      "girona": {
+        "territoryId": "catalunya",
+        "label": {
+          "x": 481.7,
+          "y": -237.6
+        },
+        "capital": {
+          "x": 480.4,
+          "y": -236.1
+        }
+      },
+      "lleida": {
+        "territoryId": "catalunya",
+        "label": {
+          "x": 344.2,
+          "y": -241.5
+        },
+        "capital": {
+          "x": 301.6,
+          "y": -185.7
+        }
+      },
+      "tarragona": {
+        "territoryId": "catalunya",
+        "label": {
+          "x": 300.2,
+          "y": -123.5
+        },
+        "capital": {
+          "x": 355.7,
+          "y": -132.5
+        }
+      },
+      "valencia": {
+        "territoryId": "valencia",
+        "label": {
+          "x": 195.3,
+          "y": 82.4
+        },
+        "capital": {
+          "x": 224.9,
+          "y": 55.5
+        }
+      },
+      "castellon": {
+        "territoryId": "valencia",
+        "label": {
+          "x": 258.4,
+          "y": -52.8
+        },
+        "capital": {
+          "x": 252.4,
+          "y": -2.3
+        }
+      },
+      "alicante": {
+        "territoryId": "valencia",
+        "label": {
+          "x": 197.5,
+          "y": 166.8
+        },
+        "capital": {
+          "x": 219.2,
+          "y": 180.7
+        }
+      },
+      "mallorca": {
+        "territoryId": "islas-baleares",
+        "label": {
+          "x": 514.8,
+          "y": 29.8
+        },
+        "capital": {
+          "x": 483.4,
+          "y": 32.8
+        }
+      },
+      "menorca": {
+        "territoryId": "islas-baleares",
+        "label": {
+          "x": 606,
+          "y": -19.4
+        },
+        "capital": {
+          "x": 618,
+          "y": -12.8
+        }
+      },
+      "ibiza": {
+        "territoryId": "islas-baleares",
+        "label": {
+          "x": 381.9,
+          "y": 102.2
+        },
+        "capital": {
+          "x": 383,
+          "y": 111.6
+        }
+      },
+      "sevilla": {
+        "territoryId": "andalucia",
+        "label": {
+          "x": -247,
+          "y": 288
+        },
+        "capital": {
+          "x": -264.5,
+          "y": 285.6
+        }
+      },
+      "cadiz": {
+        "territoryId": "andalucia",
+        "label": {
+          "x": -258.6,
+          "y": 373.1
+        },
+        "capital": {
+          "x": -294.7,
+          "y": 379.6
+        }
+      },
+      "huelva": {
+        "territoryId": "andalucia",
+        "label": {
+          "x": -351.3,
+          "y": 262.1
+        },
+        "capital": {
+          "x": -349.4,
+          "y": 297.7
+        }
+      },
+      "cordoba": {
+        "territoryId": "andalucia",
+        "label": {
+          "x": -168,
+          "y": 204.7
+        },
+        "capital": {
+          "x": -156.1,
+          "y": 232.8
+        }
+      },
+      "granada": {
+        "territoryId": "andalucia",
+        "label": {
+          "x": -44.3,
+          "y": 319.1
+        },
+        "capital": {
+          "x": -53.2,
+          "y": 313.6
+        }
+      },
+      "malaga": {
+        "territoryId": "andalucia",
+        "label": {
+          "x": -154.2,
+          "y": 347.5
+        },
+        "capital": {
+          "x": -126.6,
+          "y": 363.5
+        }
+      },
+      "jaen": {
+        "territoryId": "andalucia",
+        "label": {
+          "x": -60.2,
+          "y": 222.6
+        },
+        "capital": {
+          "x": -67.7,
+          "y": 247.7
+        }
+      },
+      "almeria": {
+        "territoryId": "andalucia",
+        "label": {
+          "x": 67,
+          "y": 310.7
+        },
+        "capital": {
+          "x": 47.7,
+          "y": 350.7
+        }
+      },
+      "murcia": {
+        "territoryId": "murcia",
+        "label": {
+          "x": 132.6,
+          "y": 228.8
+        },
+        "capital": {
+          "x": 163.8,
+          "y": 222.3
+        }
+      },
+      "ceuta": {
+        "territoryId": "ceuta",
+        "label": {
+          "x": -212.6,
+          "y": 453.6
+        },
+        "capital": {
+          "x": -209.5,
+          "y": 454.3
+        }
+      },
+      "melilla": {
+        "territoryId": "melilla",
+        "label": {
+          "x": 4.4,
+          "y": 523.1
+        },
+        "capital": {
+          "x": 5.4,
+          "y": 523.4
+        }
+      }
+    }
+  },
   "cities": {
     "a-coruna": {
       "x": -436.1,
@@ -829,7 +1439,7 @@
   },
   "attribution": [
     {
-      "text": "Administrative boundaries adapted from geoBoundaries gbOpen (CC BY 4.0); source boundary data from the Instituto Geografico Nacional, Spain.",
+      "text": "Administrative boundaries adapted from geoBoundaries gbOpen (CC BY 4.0); source boundary data for regions and municipalities from the Instituto Geografico Nacional, Spain. Provinces: Elaboraci\u00f3n propia con datos extra\u00eddos del sitio web del INE: www.ine.es (2018 boundaries).",
       "url": "https://www.geoboundaries.org/"
     },
     {

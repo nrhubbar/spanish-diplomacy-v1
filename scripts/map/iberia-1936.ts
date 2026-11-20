@@ -75,10 +75,14 @@ export const regionSources: Readonly<Record<string, string>> = {
 };
 
 /**
- * Playable land that is not a bound region: drawn in the relief like the regions, so the
- * enclaves read as Spanish territory under their circle shapes.
+ * Playable land that is not a bound region, by territory id and geoBoundaries ADM1 `shapeName`:
+ * drawn in the relief like the regions, so the enclaves read as Spanish territory under their
+ * circle shapes, and the land of their sub-territories.
  */
-export const playableExtras: readonly string[] = ["Ciudad Aut\u00f3noma de Ceuta", "Ciudad Aut\u00f3noma de Melilla"];
+export const playableExtras: Readonly<Record<string, string>> = {
+  ceuta: "Ciudad Aut\u00f3noma de Ceuta",
+  melilla: "Ciudad Aut\u00f3noma de Melilla"
+};
 
 /** Rivers are vendored for this longitude/latitude extent: the Peninsula and the Balearics. */
 export const riverExtent = { east: 4.6, north: 44, south: 35.8, west: -9.8 } as const;
@@ -149,8 +153,21 @@ export const contextLabels: readonly (GeoPoint & { readonly text: string })[] = 
 
 type Rgb = readonly [number, number, number];
 
+/**
+ * The scenario package folder this map belongs to: the one path to change when the package moves.
+ * The pipeline regenerates its `map.json`, reads its `scenario.json` connections, and writes the
+ * sub-territory topology beside them.
+ */
+export const scenarioPackage = "src/scenarios/spanish-civil-war-1936/";
+
 /** The package document whose coordinates the pipeline regenerates. */
-export const mapDocument = "src/main/scenarios/spain-1936-07-31/map.json";
+export const mapDocument = `${scenarioPackage}map.json`;
+
+/** The scenario document whose connections the sub-territory topology covers (read only). */
+export const scenarioDocument = `${scenarioPackage}scenario.json`;
+
+/** Generated sub-territory topology for the scenario package (see project/specs/map-package.md). */
+export const topologyDocument = `${scenarioPackage}sub-territory-topology.json`;
 
 /**
  * Relief art direction (Milestone 2 Revision 4): neutral sandstone, olive, muted green, and
@@ -202,7 +219,7 @@ export const art = {
 /** Map credits shown on the Settings screen (`attribution` in map.json). */
 export const attribution: readonly { readonly text: string; readonly url?: string }[] = [
   {
-    text: "Administrative boundaries adapted from geoBoundaries gbOpen (CC BY 4.0); source boundary data from the Instituto Geografico Nacional, Spain.",
+    text: "Administrative boundaries adapted from geoBoundaries gbOpen (CC BY 4.0); source boundary data for regions and municipalities from the Instituto Geografico Nacional, Spain. Provinces: Elaboraci\u00f3n propia con datos extra\u00eddos del sitio web del INE: www.ine.es (2018 boundaries).",
     url: "https://www.geoboundaries.org/"
   },
   {

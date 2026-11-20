@@ -256,6 +256,79 @@
         "additionalProperties": false
       }
     },
+    "subTerritories": {
+      "description": "Optional sub-territories (provinces and scenario splits). Their outer edges follow the territory regions.",
+      "type": "object",
+      "properties": {
+        "svg": {
+          "type": "string",
+          "pattern": "^[\\w./-]+\\.(svg|png|jpg|webp)$",
+          "description": "SVG with one path per sub-territory, its element id the sub-territory id, read even-odd."
+        },
+        "entries": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+          },
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "territoryId": {
+                "type": "string",
+                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                "description": "The territory this sub-territory is part of."
+              },
+              "label": {
+                "type": "object",
+                "properties": {
+                  "x": {
+                    "type": "number"
+                  },
+                  "y": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ],
+                "additionalProperties": false,
+                "description": "Where the sub-territory name is drawn: inside it, far from its edges."
+              },
+              "capital": {
+                "type": "object",
+                "properties": {
+                  "x": {
+                    "type": "number"
+                  },
+                  "y": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ],
+                "additionalProperties": false,
+                "description": "The sub-territory's chief town, inside it."
+              }
+            },
+            "required": [
+              "territoryId",
+              "label",
+              "capital"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "svg",
+        "entries"
+      ],
+      "additionalProperties": false
+    },
     "cities": {
       "type": "object",
       "propertyNames": {
