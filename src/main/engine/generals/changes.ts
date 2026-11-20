@@ -74,14 +74,15 @@ function fallbackTerritory(scenario: Scenario, state: Pick<GameState, "control" 
 }
 
 /**
- * Step 9, after the dice module's morale part (AG-3, AG-8 to AG-10):
- * 1. Aircraft come back to their bases. One whose base is lost rebases to the nearest airbase of
- *    its faction within range, or is lost.
+ * Step 9, after the dice module's morale part (AG-3, AG-8 to AG-10, D27):
+ * 1. Aircraft come back to their bases. One whose territory is no longer an airbase of its
+ *    faction rebases to the nearest airbase of its faction within range, or is lost (D27.2).
  * 2. Generals come back: a moving general arrives where his army arrived, else stays. When his
  *    army was destroyed or routed, or he stood alone in ground the enemy took, he rolls on the
- *    `general-death` stream; a survivor follows the retreat, or goes to the seat territory.
- * 3. The best general with each army rallies its demoralized units (C5, D5, D7).
- * 4. Replacement generals due this turn appear in the seat territory (D7).
+ *    `general-death` stream; a survivor follows the retreat, or goes to the fallback territory.
+ * 3. The best general with each army rallies the units that started the turn demoralized and
+ *    were not demoralized again this turn (C5, D5, D27.4).
+ * 4. Replacement generals due this turn appear in the fallback territory (D7, D27.7).
  * Support missions are reported with the battle they joined.
  */
 export const commandChanges: Phase = (draft) => {

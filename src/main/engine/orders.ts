@@ -66,11 +66,12 @@ export function classifyMoves(
   valid: readonly MoveOrder[]
 ): { readonly advances: readonly MoveOrder[]; readonly reinforcements: readonly MoveOrder[] } {
   const moving = new Set(valid.map((order) => order.unitId));
+  const staying = new Set(Object.values(armies)
+    .filter((unit) => !moving.has(unit.id) && onGroundBoard(scenario, state.raised, unit.id))
+    .map((unit) => `${unit.factionId}|${unit.territoryId}`));
   const isReinforcement = (order: MoveOrder): boolean => {
     const destination = state.control[order.to];
-    return (destination?.kind === "controlled" && destination.factionId === order.factionId)
-      || Object.values(armies).some((unit) =>
-        unit.territoryId === order.to && unit.factionId === order.factionId && !moving.has(unit.id) && onGroundBoard(scenario, state.raised, unit.id));
+    return (destination?.kind === "controlled" && destination.factionId === order.factionId) || staying.has(`${order.factionId}|${order.to}`);
   };
   return { advances: valid.filter((order) => !isReinforcement(order)), reinforcements: valid.filter(isReinforcement) };
 }
