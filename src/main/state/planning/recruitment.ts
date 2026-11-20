@@ -83,7 +83,7 @@ export function chooseReplenish(scenario: Scenario, session: PlanningSession): P
     ...units.map((unit) => ({ factionId: session.factionId, kind: "replenish" as const, unitId: unit.id }))
   ];
   const territoryId = session.draft.selectedTerritoryId;
-  const base: Draft = territoryId === undefined ? { orders, selectedUnitIds: [] } : selecting(territoryId, availableUnitIds(session, territoryId, orders), orders);
+  const base: Draft = territoryId === undefined ? { orders, selectedUnitIds: [] } : selecting(territoryId, availableUnitIds(session, territoryId, orders, replenishments), orders);
   const who = units.length === 1 ? "1 unit" : `${String(units.length)} units`;
   return withDraft(session, { ...keepBasket(session.draft), ...base, replenishments, feedback: `${who} will replenish.` });
 }

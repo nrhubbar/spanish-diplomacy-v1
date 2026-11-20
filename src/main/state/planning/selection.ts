@@ -1,5 +1,5 @@
 import { standingOrder } from "../../engine/orders";
-import type { MoveOrder, Scenario, TerritoryId, UnitId, UnitState } from "../../engine/types";
+import type { MoveOrder, ReplenishOrder, Scenario, TerritoryId, UnitId, UnitState } from "../../engine/types";
 import { legalDestinations } from "../../engine/validation";
 import type { Draft, OrderKind, Session } from "../session";
 import { chooseDestination } from "./orders";
@@ -77,9 +77,14 @@ function ownUnitIdsIn(session: PlanningSession, territoryId: TerritoryId): reado
     .map((unit) => unit.id);
 }
 
-/** The player's armies in a territory that have no move order in `orders`. */
-export function availableUnitIds(session: PlanningSession, territoryId: TerritoryId, orders: readonly MoveOrder[]): readonly UnitId[] {
-  const ordered = new Set(orders.map((order) => order.unitId));
+/** The player's armies in a territory that have no move order in `orders`, nor a Replenish order (R5). */
+export function availableUnitIds(
+  session: PlanningSession,
+  territoryId: TerritoryId,
+  orders: readonly MoveOrder[],
+  replenishments: readonly ReplenishOrder[] = session.draft.replenishments ?? []
+): readonly UnitId[] {
+  const ordered = new Set([...orders, ...replenishments].map((order) => order.unitId));
   return ownUnitIdsIn(session, territoryId).filter((id) => !ordered.has(id));
 }
 

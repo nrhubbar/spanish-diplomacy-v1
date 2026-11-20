@@ -35,9 +35,10 @@ function chooseStanding(session: PlanningSession, kind: StandingOrder): Planning
   }
   const orders = session.draft.orders.filter((order) => !fitting.has(order.unitId));
   const territoryId = session.draft.selectedTerritoryId;
+  const kept = replenishWithout(session.draft, fitting);
   const draft = {
-    ...(territoryId === undefined ? { orders, selectedUnitIds: [] } : selecting(territoryId, availableUnitIds(session, territoryId, orders), orders)),
-    ...replenishWithout(session.draft, fitting)
+    ...(territoryId === undefined ? { orders, selectedUnitIds: [] } : selecting(territoryId, availableUnitIds(session, territoryId, orders, kept.replenishments), orders)),
+    ...kept
   };
   const who = fitting.size === 1 ? "1 army" : `${String(fitting.size)} armies`;
   return withDraft(session, { ...draft, feedback: `${who} will ${kind === "entrench" ? "entrench" : "rest"}.` });

@@ -42,6 +42,8 @@ Mode: make it work (declog D13). Branch `m3r1-recruit-replenish`, merged with `m
   - Aircraft are left to air-generals.
 - RR-20. The Replenish computer player picks units with no other order that are demoralized or missing at least 20% of their men. Demoralized units come first, then the most worn, while the balance lasts.
 - RR-21. Report sentences: `describeSystemOutcome(outcome, scenario?)` uses `describeRecruitmentOutcome` when it has a scenario. The placeholder strings stay for callers that have none.
+- RR-23. A unit given Replenish leaves the territory's default selection, as a moving unit does (`availableUnitIds` skips Replenish orders). So an order for the rest of the stack keeps its Replenish.
+- RR-24. The unit card shows the capture's "Below strength: N men short" chip (in `ArmyPicker`, not `ArmyLine`) whenever recruitment is on.
 - RR-22. Tiny-front stays on the `m2-strength` preset, so recruitment is explicitly off there. Under recruitment `none`, Recruit and Replenish stay "not available" (M9).
 
 ## Stubbed
@@ -50,6 +52,9 @@ Mode: make it work (declog D13). Branch `m3r1-recruit-replenish`, merged with `m
 - Replenish bonuses: none until economy-builds answers `replenishBonus`.
 - The basket's "Left" ignores this turn's Build orders (TODO in `balanceAfterBasket`). `ai/orders/spending.ts` does not yet price Build orders.
 - No income lands yet (economy pass-through), so spending comes only from starting stocks.
+
+- There is no `@capture` of the Replenish menu: no unit starts below strength, and a later turn's board depends on the seed. The menu is covered by the RTL test `recruitmentScreens.test.tsx` instead. It is not yet compared with `ux-orders-replenish.webp` by eye.
+- A serial can be reused after an RR-8 loss, because the lost item leaves no record. Two units would then share a report name.
 
 ## Needs from
 
@@ -64,12 +69,14 @@ Mode: make it work (declog D13). Branch `m3r1-recruit-replenish`, merged with `m
 - **m3r1-d20-combat:**
   - a unit with a Replenish order should hold without digging in (Q-RECR-5, "the army holds, no entrenching"). Hooks cannot see orders, so the dice module's digging-in part should skip units with a valid Replenish order (`draft.input.submissions`).
   - Use `requireUnitDefinition` (with its raised fallback) or `state.raised` for unit values in the new combat code.
-- **m3r1-air-generals:** the AI should recruit aircraft where airfields stand. The Recruit list already shows air types.
+- **m3r1-air-generals:**
+  - The AI should recruit aircraft where airfields stand. The Recruit list already shows air types.
+  - **Merge trap:** `requireUnitDefinition` resolves only scenario units and `r_` ids. It does not read `GameState.raised`. A replacement general written into `raised` under any other id will throw in combat and display code. Either use `raisedUnitId` ids, or make-it-right threads state into the lookup (`raised[id] ?? index ?? derived`). Note that an `r_` id cannot carry a roster name or a `generalId`.
 
 ## Files outside my ownership that I touched
 
 - `engine/validation.ts`: switch cases for recruit and replenish;
-- `engine/lookup.ts`: the raised fallback and the `UnitIdentity` type;
+- `engine/lookup.ts`: the raised fallback and the `UnitIdentity` type. **Merge hazard:** another branch that reads `cityId`, `formationKind`, `sources` or `territoryId` off `requireUnitDefinition` will fail typecheck;
 - `engine/board.ts`: `raisedOrder` in `unitOrder`.
 - `state/session.ts`: the Draft fields and `OrderKind`;
 - `state/planning/{selection,orders,focus}.ts` and `state/planning.ts`: the menu, counts, `withDraft` keeping the basket, and Replenish replacing a move;

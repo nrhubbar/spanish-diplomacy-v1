@@ -57,6 +57,10 @@ export function ArmyPicker({ own, scenario, session }: ArmyPickerProps): JSX.Ele
                 <span className="formation-meta">
                   {`${requireUnitType(scenario, definition.type).name} ${glyphs.dot} ${order}`}
                 </span>
+                {/* X7, R5 (m3r1-recruit-replenish): how far below strength, where Replenish exists. */}
+                {scenario.rules.recruitment !== "none" && unit.strength < definition.fullStrength
+                  ? <span className="below-strength-chip">{`Below strength: ${String(definition.fullStrength - unit.strength)} men short`}</span>
+                  : null}
                 <ArmyLine factionColor={requireFaction(scenario, unit.factionId).color} figures={armyFigures(scenario, game.state, unit)} />
               </button>
             </li>

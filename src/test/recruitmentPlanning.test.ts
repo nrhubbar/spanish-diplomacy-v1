@@ -71,6 +71,13 @@ describe("the Replenish order (X7, R5)", () => {
     expect(orderCounts(session).replenish).toBe(1);
     expect(validateSubmission(scenario, worn, republic, { factionId: republic, orders: draftOrders(session.draft) }).ok).toBe(true);
 
+    // The replenishing unit leaves the default selection, so an order for the rest keeps its Replenish.
+    expect(session.draft.selectedUnitIds).not.toContain(unitHere.id);
+    const others = selectTerritory(session, catalunya);
+    expect(others.draft.selectedUnitIds).not.toContain(unitHere.id);
+    const rest = chooseOrder(scenario, others, "entrench");
+    expect(rest.draft.replenishments?.map((order) => order.unitId)).toEqual([unitHere.id]);
+
     const moving = chooseDestination(scenario, chooseOrder(scenario, { ...session, draft: { ...session.draft, selectedUnitIds: [unitHere.id] } }, "move"), territory("aragon"));
     expect(moving.draft.replenishments).toEqual([]);
     expect(orderOf(moving, worn.units[unitHere.id]!)).toBe("move");
