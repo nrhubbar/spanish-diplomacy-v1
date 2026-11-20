@@ -7,6 +7,7 @@ import type { DestinationEstimate } from "../presentation/odds";
 import { controlDescription, factionName, route, territoryName, unitName } from "../presentation/text";
 import { cancelOrderStage, removePlannedOrder } from "../state/gameSlice";
 import { orderCounts, type PlanningSession } from "../state/planning";
+import { TerritoryWeather } from "../components/weather/TerritoryWeather";
 import { ArmyLine } from "./ArmyLine";
 import { ArmyPicker } from "./ArmyPicker";
 import { DestinationChoices } from "./DestinationChoices";
@@ -105,6 +106,7 @@ function TerritoryDetails({ scenario, session, territoryId }: BuilderProps & { r
     <>
       <h3>{territoryName(scenario, territoryId)}</h3>
       <p className="pane-meta">{controlDescription(scenario, game.state.control[territoryId])}</p>
+      <TerritoryWeather scenario={scenario} state={game.state} territoryId={territoryId} />
       {cities.length === 0 ? null : <p className="pane-meta">{`Cities: ${cities.map((city) => city.name).join(", ")}`}</p>}
       {own.length === 0 ? null : <ArmyPicker own={own} scenario={scenario} session={session} />}
       {others.length === 0 ? null : (

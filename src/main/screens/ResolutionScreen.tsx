@@ -15,6 +15,7 @@ import { MapScreenFrame } from "./MapScreenFrame";
 import { BattleReport } from "./report/BattleReport";
 import { FocusNote, OutcomeSummary, RevealedOrdersPanel, TerritoryChanges, VictoryProgressPanel } from "./ResultPanels";
 import { battleKeysAt } from "./report/focus";
+import { TurnConditions } from "./report/TurnConditions";
 import { groupBattles } from "../presentation/battle";
 
 type ResultSession = Extract<Session, { readonly phase: "resolution" | "game-over" }>;
@@ -82,6 +83,7 @@ function Results({ session }: { readonly session: ResultSession }): JSX.Element 
             ) : null}
             <TerritoryChanges result={result} scenario={scenario} />
             <BattleReport focusedTerritoryId={focused} result={result} scenario={scenario} seed={game.seed} />
+            <TurnConditions result={result} scenario={scenario} />
             <OutcomeSummary result={result} scenario={scenario} />
             <VictoryProgressPanel result={result} scenario={scenario} />
             <RevealedOrdersPanel revealed={selectRevealedOrders(session)} scenario={scenario} />

@@ -1,8 +1,11 @@
 import type { WeatherTurnOutcome } from "../../engine/types";
 
-/** Placeholder report lines for the weather outcomes. TODO(m3r1-weather-timer): full sentences; owner: m3r1-weather-timer and m3r1-movement-rail-ports (frostbite). */
+/**
+ * Generic report lines for the weather outcomes. The turn report's Conditions section
+ * (`screens/report/TurnConditions.tsx`) gives the full sentences with names.
+ */
 export const weatherLines: Readonly<Record<WeatherTurnOutcome["kind"], string>> = {
-  frostbite: "A unit lost men to frostbite.",
-  "time-ran-out": "A player's time ran out.",
-  "weather-rolled": "The weather changed."
+  frostbite: "A unit that moved in severe cold lost men to frostbite.",
+  "time-ran-out": "A player's planning time ran out; their planned orders went in and the other units held.",
+  "weather-rolled": "The turn's weather was rolled before planning."
 };

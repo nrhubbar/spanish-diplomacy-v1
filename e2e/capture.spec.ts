@@ -226,3 +226,42 @@ test("@capture reduced counter in the fixture", async ({ page }) => {
   if (await orders.isVisible()) await orders.click();
   await capture(page, "17c-fixture-army-list");
 });
+
+test("@capture weather and turn timer", async ({ page }) => {
+  // The clock is Playwright's, so the countdown is the same on every run.
+  await page.clock.install();
+  await page.goto("./");
+  await page.getByRole("button", { name: "Create Game" }).click();
+  await page.getByRole("radio", { name: "5 min" }).check();
+  await capture(page, "20a-setup-timer");
+  await page.getByRole("button", { name: "Start Campaign" }).click();
+  await waitForMap(page);
+  const hide = page.getByRole("button", { name: /Hide (orders|briefing)/ });
+  const toggle = page.getByRole("button", { exact: true, name: "Briefing" });
+  if (await toggle.isVisible() && await toggle.getAttribute("aria-pressed") === "true") await toggle.click();
+  await page.locator('.map-region[data-territory-id="catalunya"]').focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("timer")).toBeVisible();
+  await capture(page, "20b-planning-timer-weather");
+  await page.locator('.map-region[data-territory-id="madrid"]').focus();
+  await page.keyboard.press("Enter");
+  await page.getByRole("button", { name: "Give Selected Armies Order" }).click();
+  await page.getByRole("button", { exact: true, name: "Move" }).click();
+  await capture(page, "20c-destination-weather");
+  await page.getByRole("button", { name: "Pause the turn timer" }).click();
+  await expect(page.getByRole("dialog", { name: "Paused" })).toBeVisible();
+  await capture(page, "20d-paused");
+  await page.getByRole("button", { name: "Resume" }).click();
+  await page.clock.fastForward("09:52");
+  await expect(page.getByRole("timer")).toHaveAttribute("aria-label", /0:0\d/);
+  await capture(page, "20e-ten-seconds");
+  await page.clock.fastForward("00:15");
+  await waitForMap(page);
+  const dismiss = page.getByRole("button", { name: "Dismiss" });
+  while (await dismiss.count() > 0) await dismiss.first().click();
+  const report = page.getByRole("button", { name: "Turn report", exact: true });
+  if (await report.isVisible()) await report.click();
+  await page.getByRole("heading", { name: "Conditions" }).scrollIntoViewIfNeeded();
+  await capture(page, "20f-time-ran-out");
+  if (await hide.isVisible()) await hide.click();
+});
