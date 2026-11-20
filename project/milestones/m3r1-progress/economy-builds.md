@@ -47,7 +47,9 @@ Mode: make it work (declog D13). Base: `milestone-3-rev-1` at `eb9515f` (contrac
 7. **EB-7. An item progresses in the turn it is queued.** A 2-turn building ordered on turn t stands at the end of turn t + 1.
 8. **EB-8. Fortifications (`defence-roll`) count once per battle,** the strongest one. They need a defender to hold a sub-territory in the battle territory. They apply in every battle kind the d6 rules pass to the hook. The roll is negative, as with `dug-in`.
 9. **EB-9. The economy module answers `replenishBonus`** from Hospital and Depot effects. The recruit stream should read the hook, not the buildings (see "Needs from").
-10. **EB-10. Planned Build orders live on the planning session (`builds`),** not in `Draft`, because selection rebuilds the draft.
+10. **EB-10. Planned Build orders live in `Draft.builds`,** beside the Recruit basket.
+    - `keepBasket` carries them through selection changes, and `draftOrders` submits them.
+    - `balanceAfterBasket` and the build preview both subtract the whole basket. A build cannot be planned with money the Recruit basket needs, because builds pay first at reveal.
 11. **EB-11. The resource chips show the balance after this turn's planned orders,** with next turn's income. The detail shows the full balance, what the planned orders spend, how many territories are held whole, contested territories, raid cuts, and other factions as "hidden", or with a value marked "(recon)".
 12. **EB-12. Resources show as raw numbers with their scenario names** ("Manpower 10 +27"), not "18k". Code knows no resource ids.
 13. **EB-13. Icons come from data shapes, not ids (X8):**
@@ -61,32 +63,34 @@ Mode: make it work (declog D13). Base: `milestone-3-rev-1` at `eb9515f` (contrac
     - It builds only in territories held whole.
 16. **EB-16. The resource chips are direct children of the header,** one `.header-meter` element per resource, with no wrapper. `m3r1-weather-timer`'s `.game-header > .header-meter` rules lay out the row: timer, Funds and Manpower beside Exit on desktop; title and Exit, then the meters, then readiness on a phone. `_economy.scss` sets no header order of its own. Until that branch merges, the chips sit in DOM order.
 17. **EB-17. Parts return the draft unchanged when they have nothing to do** (no Build orders, no queue changes, no treasuries). `tiny-front` and the pipeline's pass-through pin still hold.
-18. **EB-18. The territory income chip** (`build/TerritoryIncomeChip.tsx`) shows one of three things:
+18. **EB-18. The territory income chip** (`build/TerritoryIncomeChip.tsx`, mounted in weather-timer's meta-row slot `screens/pane/IncomeChip.tsx`) shows one of three things:
     - "Pays +N ... a turn", when the viewer holds the territory whole;
     - "... to <holder>", when another faction holds it whole;
     - "Contested: pays nobody".
-    Development is public, so the chip is too. Its interim home is the top of the Build tab, until `m3r1-weather-timer`'s meta-row slot lands.
+    Development is public, so the chip is too.
 19. **EB-19. The chips deviate from the approved captures.** `ux-header-a.webp` shows "Manpower 18k +9k", and the pane shows "+1k men". I show raw amounts with the scenario's resource names ("Manpower 10 +27"), because code knows no resource ids and data has no display scale. See "Needs from" (contract).
 20. **EB-20. Render cost.**
     - The Build panel renders only while open: one condition in `TerritoryTabs`.
     - The chips read the game record's state and planned builds through narrow store selections, behind a `memo`, so selecting territories does not re-render them.
     - Desktop P2 selection was 50.5 ms, against a 50 ms budget, before this work. Run alone it is now 33 to 43 ms.
 
+21. **EB-21. The economy's resource helpers (`engine/economy/resources.ts`) build on the shared `engine/resources.ts`.** It re-exports `canAfford`, `subtractResources` and `treasuryOf`, and adds `sumResources`, `shortfall`, `pay` and `credit`.
+22. **EB-22. The AI prices Build orders in `ai/orders/spending.ts` (`orderPrice`),** and the build planner spends from `balanceLeft`.
+
 ## Stubbed or interim
 
 - Sub-territory holders never change until `m3r1-sub-territories` lands, so hand-over and rail damage do not yet happen in play. Both are unit-tested.
-- No Recruit orders exist yet. The AI budget and `plannedSpend` already subtract their cost.
 - Report lines are one sentence per kind. `describeSystemOutcome` passes only the kind, so lines cannot name places or amounts.
 - The `building` modifier's name in `presentation/odds.ts` stays "Fortifications". `modifierName` gets no scenario, so it cannot read the building's name.
 
 ## Needs from
 
-- **`m3r1-recruit-replenish`**:
-  - Pay through `engine/economy/resources.ts` (`pay`, `canAfford`, `shortfallReason` in `catalogue.ts`).
-  - Your reveal part runs after mine and reads `draft.systems.treasuries` with builds already paid.
-  - Read the Hospital and Depot bonus from `hookedReplenishBonus`, not from building ids, or it counts twice.
-  - Add a Recruit case next to the Build case in `validateOrder`.
-  - `plannedSpend` already counts Recruit costs. Add Replenish when its price function exists.
+- **`m3r1-recruit-replenish`**: everything they asked for is done on my side:
+  - `replenishBonus` from Hospital and Depot effects;
+  - the shared `engine/resources.ts`;
+  - `balanceAfterBasket`;
+  - `orderPrice`;
+  - `Draft.builds` through `keepBasket`.
 - **`m3r1-sub-territories`**:
   - Flip `systems.subTerritories[*].holder` as your phases decide. My step-10 part does hand-over and rail damage from the diff.
   - Don't also apply rail damage at step 8 (your partition TODO lists it). If you'd rather own it, call `damageRail` from `engine/economy/queues.ts` and tell me to drop mine.
@@ -108,9 +112,13 @@ Mode: make it work (declog D13). Base: `milestone-3-rev-1` at `eb9515f` (contrac
 
 ## Files touched outside my ownership
 
-- `src/main/engine/validation.ts`: the Build case, 2 lines.
-- `src/main/state/session.ts`: the `builds` field on the planning session.
-- `src/main/state/gameSlice.ts`: two actions, and the builds added to the End Turn submission.
+- `src/main/engine/validation.ts`: the `build` case in the `validateOrder` switch.
+- `src/main/state/session.ts`: `Draft.builds`.
+- `src/main/state/gameSlice.ts`: two actions (`queueBuildOrder`, `cancelBuildOrder`).
+- `src/main/state/planning/recruitment.ts` (recruit-replenish): `draftOrders`, `keepBasket` and `balanceAfterBasket` include builds.
+- `src/main/ai/orders/spending.ts` (recruit-replenish): the Build price in `orderPrice`.
+- `src/main/screens/pane/IncomeChip.tsx` (weather-timer's slot): renders the income chip.
+- `src/test/recruitment.test.ts` (recruit-replenish): three expectations now include step-11 income and the Depot's `replenishBonus`.
 - `src/main/state/planning.ts`: one re-export line.
 - `src/main/screens/pane/SubTerritoryFocus.tsx`: mounts `BuildList` (2 lines).
 - `src/main/screens/pane/TerritoryTabs.tsx`: the Build panel renders only while open (one condition).
@@ -122,7 +130,32 @@ Mode: make it work (declog D13). Base: `milestone-3-rev-1` at `eb9515f` (contrac
 - `e2e/capture.spec.ts`: one new `@capture` test.
 - `project/specs/scenario-package.md`: rules EC-1 to EC-10.
 
-## Checks (at `7a7aeea`)
+## Checks (after merging `milestone-3-rev-1` at `38b68ba`)
+
+- `npm run lint`: passed. `npm run typecheck`: passed.
+- `npx vitest run`: 765 passed, 7 failed.
+  - Six are the known-red sim-harness tests (D14).
+  - The seventh is `smoke.test.ts` S1 ("wins at most 5 percent of games before turn 4"). It fails with the economy module switched off too, so it comes from the merged branch, not from this stream.
+- `npm run build`: passed. `npm run budgets:check`: initial chunk 117.95 kB gzip against 155 kB, met.
+- `npm run test:e2e` on chromium and mobile-chromium (`E2E_PORT=5313`): 43 passed, 5 skipped, 8 failed.
+  - All 8 failures are visual baseline diffs (setup, planning, resolution and fallback, on both projects): the header chips, plus weather-timer's screens.
+  - Acceptance, axe and perf passed.
+- `npm run sim -- --games 50`, with the merged recruit, d20 and weather modules, both blunder settings:
+  - With blunders: decided 100%, freezes 0%. Wins of decided games: Republic 96%, North 4%, South 0%. Median length 11 turns, early wins 4.
+  - Without blunders: decided 100%. Wins: Republic 98%, North 2%, South 0%. Early wins 3.
+- Variant `rules/economy = none` (recruits spend starting stocks only), 50 games without blunders: decided 72%, freezes 28%. Wins: Republic 67%, North 19%, South 14%.
+- So the economy ends the freezes, but income makes the Republic dominant. Turn-1 income is:
+  - Republic: 14 Funds and 27 Manpower.
+  - North: 5 Funds and 27 Manpower.
+  - South: 1 Fund. Andalucía, its main territory, is contested from the start and pays nobody.
+  - Reported, not tuned (H7). The levers in data:
+    - Ceuta's and Melilla's Funds yields ($7, Q-MR-10);
+    - the starting stocks;
+    - the insurgents' development levels;
+    - whether sub-territory flips resolve the starting contested territories (`m3r1-sub-territories`).
+
+### Earlier checks (at `7a7aeea`, before the merge)
+
 
 - `npm run lint`: passed.
 - `npm run typecheck`: passed.
