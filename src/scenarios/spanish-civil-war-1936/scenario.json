@@ -10,7 +10,7 @@
     "economy": "development",
     "recruitment": "buildings",
     "weather": "seasonal-zones",
-    "movement": "single-step",
+    "movement": "allowance",
     "partition": "provinces",
     "air": "missions"
   },

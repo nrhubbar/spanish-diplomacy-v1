@@ -8,7 +8,7 @@ import type { GameState, MoveLeg, MoveOrder, Scenario, SubTerritoryId, SubTerrit
 import { validateMoveOrder } from "../main/engine/validation";
 import { loadPackage } from "../main/scenarios/loader";
 import { type Json, modularMap, modularScenario } from "./modularFixture";
-import { faction, submissionsOf, territory, unit } from "./support";
+import { faction, move, submissionsOf, territory, unit } from "./support";
 
 const assetPaths = new Set(["src/test/fixtures/scenarios/tiny-front/geometry.svg", "src/test/fixtures/scenarios/tiny-front/foot.svg"]);
 
@@ -234,7 +234,7 @@ describe("movement: resolution (step 1 armies, step 3 transit)", () => {
   it("lands units sailing one lane together as one amphibious army (W4)", () => {
     const scenario = load();
     const state = withSubs(initialGameState(scenario), { isle: { holder: faction("red") } });
-    const two: MoveOrder[] = [order("blue", "blue-marines", "harbor", [sea("isle")]), { ...order("blue", "blue-second", "harbor", [sea("isle")]), legs: undefined }];
+    const two: MoveOrder[] = [order("blue", "blue-marines", "harbor", [sea("isle")]), move("blue", "blue-second", "harbor", "isle")];
     const result = play(scenario, state, two);
     expect(kinds(result)).not.toContain("move-held-back");
     expect(at(result, "blue-marines")).toBe("isle");
