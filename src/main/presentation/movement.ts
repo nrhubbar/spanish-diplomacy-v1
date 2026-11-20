@@ -72,6 +72,19 @@ export interface RouteChip {
   readonly warn: boolean;
 }
 
+/** M5, MV-20: the amphibious roll modifier, which only the d20 rules apply. */
+function amphibiousRoll(scenario: Scenario): number {
+  return scenario.rules.dice === "d20-graded" ? (scenario.d20?.modifiers.amphibious ?? 0) : 0;
+}
+
+/** M1: the units one truck carries (the scenario's first transport type), for the truck rule's sums. */
+function truckCarries(scenario: Scenario): number {
+  for (const type of scenario.unitTypes) {
+    for (const effect of type.effects) if (effect.kind === "transport" && effect.carries > 0) return effect.carries;
+  }
+  return 2;
+}
+
 function fatiguedUnits(scenario: Scenario, units: readonly UnitState[]): number {
   const level = scenario.d20?.fatigue.fatiguedLevel;
   return level === undefined ? 0 : units.filter((unit) => unit.fatigue >= level).length;
@@ -98,7 +111,9 @@ export function routeChips(
   if (route.sea !== undefined) {
     chips.push(route.sea.kind === "port"
       ? { kind: "sea", text: `Port of ${subTerritoryName(scenario, route.sea.port ?? route.sea.departure)}`, warn: false }
-      : { kind: "sea", text: `Amphibious ${signedRoll(scenario.d20?.modifiers.amphibious ?? 0)}`, warn: true });
+      : amphibiousRoll(scenario) === 0
+        ? { kind: "sea", text: "Amphibious assault", warn: true }
+        : { kind: "sea", text: `Amphibious ${signedRoll(amphibiousRoll(scenario))}`, warn: true });
   }
   if (route.transit.length > 0) chips.push({ kind: "transit", text: `Via ${route.transit.map((id) => territoryName(scenario, id)).join(", ")}`, warn: false });
   const left = allowance - route.cost;
@@ -128,7 +143,7 @@ export function routeDetail(scenario: Scenario, state: GameState, route: MoveRou
       ? `Sails from ${subTerritoryName(scenario, route.sea.departure)}, lands at ${subTerritoryName(scenario, route.sea.port ?? route.sea.departure)} (${String(portLandings(scenario, route.sea.level ?? 0))} a turn)`
       : `Sails from ${subTerritoryName(scenario, route.sea.departure)} and storms the coast: one army per lane a turn`);
   }
-  if (route.shape === "march" || route.shape === "step-rail" || route.shape === "rail-step") {
+  if (route.transit.length > 0) {
     parts.push(`Stops in ${route.transit.map((id) => territoryName(scenario, id)).join(", ")} if an enemy army enters it`);
   }
   return parts.length === 0 ? undefined : parts.join(` ${glyphs.dot} `);
@@ -142,7 +157,7 @@ export function routeRows(scenario: Scenario, state: GameState, route: MoveRoute
   rows.push({ label: "Moves this turn", value: `${String(used)} of ${String(allowance)}` });
   for (const entry of route.shape === "step" || route.shape === "march" ? route.rough : []) rows.push({ label: `Enters ${subTerritoryName(scenario, entry)} (${scenario.index.subTerritories.get(entry)?.terrain ?? "mountain"})`, value: "+1 move" });
   if (route.rail !== undefined) rows.push({ label: `Rail, level ${String(route.rail.level)}`, value: `${String(route.rail.crossings)} of ${String(route.rail.range)} borders` });
-  if (route.sea?.kind === "amphibious") rows.push({ label: "Amphibious assault", value: signedRoll(scenario.d20?.modifiers.amphibious ?? 0) });
+  if (route.sea?.kind === "amphibious") rows.push({ label: "Amphibious assault", value: amphibiousRoll(scenario) === 0 ? "No roll modifier" : signedRoll(amphibiousRoll(scenario)) });
   const weather = weatherIn(scenario, state, route.to);
   if (weather !== undefined) rows.push({ label: `Weather ${glyphs.dot} ${territoryName(scenario, route.to)}`, value: weather.name });
   return rows;
@@ -155,7 +170,7 @@ export function armyLeaving(scenario: Scenario, state: GameState, factionId: Fac
   const movement = armyMovement(scenario, state, factionId, from, unitIds);
   const attack = units.length === 0 ? 0 : battleSide(scenario, units, "attack").value;
   const count = `${String(units.length)} ${units.length === 1 ? "unit" : "units"}`;
-  const needed = Math.ceil(movement.needing / 2);
+  const needed = Math.ceil(movement.needing / truckCarries(scenario));
   const trucks = movement.transports === 0
     ? (movement.allMobile ? "all mounted" : `no trucks (${String(needed)} ${needed === 1 ? "truck" : "trucks"} for these ${String(movement.needing)} ${movement.needing === 1 ? "unit" : "units"} would give +1)`)
     : `${String(movement.transports)} ${movement.transports === 1 ? "truck" : "trucks"} for ${String(movement.needing)} ${movement.needing === 1 ? "unit" : "units"}`;
