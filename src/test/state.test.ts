@@ -109,7 +109,8 @@ describe("turn coordination", () => {
     expect(selectSubmissionStatus(spain(), session(store))).toEqual([
       { abbreviation: "REP", factionId: "republic", name: "Republican Government", ready: true },
       { abbreviation: "NIC", factionId: "north", name: "Northern Insurgent Command", ready: false },
-      { abbreviation: "SIC", factionId: "south", name: "Southern Insurgent Command", ready: false }
+      // T6: a local computer player is always ready.
+      { abbreviation: "SIC", factionId: "south", name: "Southern Insurgent Command", ready: true }
     ]);
     expect(selectRevealedOrders(session(store))).toEqual([]);
     const waiting = session(store);
