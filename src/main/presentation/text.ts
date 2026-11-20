@@ -1,16 +1,20 @@
+import { describeSystemOutcome, isSystemOutcome } from "./systemText";
+import { listNames } from "./systemText/lines";
 import { requireFaction, requireTerritory, requireUnitDefinition } from "../engine/lookup";
 import type {
   BounceCause,
   FactionId,
+  GameState,
   MoveOrder,
   Scenario,
   TerritoryControl,
   TerritoryId,
   TurnOutcome,
-  UnitId
+  UnitId,
+  WithdrawOrder
 } from "../engine/types";
+import { battleTitle } from "./grades";
 import { glyphs } from "./glyphs";
-import { outcomeText } from "./outcomeText";
 
 /** Player-facing wording for engine data. The engine itself produces no prose. */
 
@@ -26,12 +30,36 @@ export function unitName(scenario: Scenario, id: UnitId): string {
   return requireUnitDefinition(scenario, id).name;
 }
 
-export function listNames(names: readonly string[]): string {
-  const last = names.length - 1;
-  return last < 1 ? names.join("") : `${names.slice(0, last).join(", ")} and ${String(names[last])}`;
+export { listNames };
+
+/** "1 unit", "3 units". */
+export function armies(count: number): string {
+  return `${String(count)} ${count === 1 ? "unit" : "units"}`;
+}
+
+/**
+ * O1, C1: the pane's callout while a destination is chosen: what is moving or withdrawing from
+ * where, and the label of the button that cancels it.
+ */
+export function destinationCallout(scenario: Scenario, orderKind: "move" | "withdraw", count: number, from: TerritoryId | undefined): { readonly cancel: string; readonly text: string } {
+  const verb = orderKind === "withdraw" ? "Withdrawing" : "Moving";
+  return {
+    cancel: orderKind === "withdraw" ? "Cancel withdrawal" : "Cancel move",
+    text: `${verb} ${armies(count)} from ${from === undefined ? "" : territoryName(scenario, from)}. Choose a highlighted territory on the map.`
+  };
+}
+
+/** A planned order's route in the order list; a Withdraw (C1) reads as the move it makes. */
+export function plannedOrderRoute(scenario: Scenario, order: MoveOrder | WithdrawOrder): string {
+  return order.kind === "withdraw" ? `Withdraw: ${route(scenario, { ...order, kind: "move" })}` : route(scenario, order);
 }
 
 export function route(scenario: Scenario, order: MoveOrder): string {
+  const legs = order.legs ?? [];
+  // M4, M5: a route of several legs, or by rail or sea, names each leg: "Madrid \u2192 Valencia (rail) \u2192 Arag\u00f3n".
+  if (legs.length > 1 || legs.some((leg) => leg.kind !== "land")) {
+    return [territoryName(scenario, order.from), ...legs.map((leg) => (leg.kind === "land" ? territoryName(scenario, leg.to) : `${territoryName(scenario, leg.to)} (${leg.kind})`))].join(` ${glyphs.arrow} `);
+  }
   return `${territoryName(scenario, order.from)} ${glyphs.arrow} ${territoryName(scenario, order.to)}`;
 }
 
@@ -39,6 +67,18 @@ export function controlDescription(scenario: Scenario, control: TerritoryControl
   if (control === undefined) return "Uncontrolled";
   if (control.kind === "controlled") return `Held by ${factionName(scenario, control.factionId)}`;
   return `Contested by ${listNames(control.factionIds.map((id) => factionName(scenario, id)))}`;
+}
+
+/**
+ * M6 (`ux-world`): the pane heading's holding line. With sub-territories it says whether the
+ * territory is held whole and how many sub-territories it has: "Held whole by Republican
+ * Government \u00b7 4 sub-territories".
+ */
+export function holdingDescription(scenario: Scenario, control: TerritoryControl | undefined, subTerritories: number): string {
+  if (subTerritories === 0 || control === undefined) return controlDescription(scenario, control);
+  const count = `${String(subTerritories)} ${subTerritories === 1 ? "sub-territory" : "sub-territories"}`;
+  if (control.kind === "controlled") return `Held whole by ${factionName(scenario, control.factionId)} ${glyphs.dot} ${count}`;
+  return `${controlDescription(scenario, control)} ${glyphs.dot} ${count}`;
 }
 
 /** Short controller name for change lists: a faction or "Contested". */
@@ -75,6 +115,7 @@ export function groupOutcomes(outcomes: readonly TurnOutcome[]): readonly Outcom
 }
 
 function unitIdsOf(outcome: TurnOutcome): UnitId[] {
+  if (isSystemOutcome(outcome)) return [];
   switch (outcome.kind) {
     case "no-move":
       return outcome.unitId === undefined ? [] : [outcome.unitId];
@@ -82,6 +123,8 @@ function unitIdsOf(outcome: TurnOutcome): UnitId[] {
       return [outcome.unitId];
     case "battle":
       return [...outcome.attacker.armies, ...outcome.defender.armies].map((army) => army.unitId);
+    case "rejected-order":
+      return "unitId" in outcome.order ? [outcome.order.unitId] : [];
     default:
       return [outcome.order.unitId];
   }
@@ -133,18 +176,32 @@ function standoffParty(
   return origins.length === 0 ? name : `${name} (from ${listNames(origins.map((id) => territoryName(scenario, id)))})`;
 }
 
+/**
+ * Who reads a report line, for the Milestone 3 lines (`systemText/lines.ts`): the viewer, and the
+ * turn's final state as that viewer sees it. Both are optional; without them a line names only
+ * what its outcome and the scenario say.
+ */
+export interface ReportView {
+  readonly state?: GameState;
+  readonly viewer?: FactionId;
+}
+
 /** One report line for a single outcome; pass the turn's outcomes to name standoff origins. */
-export function describeOutcome(scenario: Scenario, outcome: TurnOutcome, outcomes: readonly TurnOutcome[] = []): string {
-  return describeOutcomeGroup(scenario, { outcome, unitIds: unitIdsOf(outcome) }, outcomes);
+export function describeOutcome(scenario: Scenario, outcome: TurnOutcome, outcomes: readonly TurnOutcome[] = [], view: ReportView = {}): string {
+  return describeOutcomeGroup(scenario, { outcome, unitIds: unitIdsOf(outcome) }, outcomes, view);
 }
 
 /** One report line for a group: the faction first, then what its formations did together. */
-export function describeOutcomeGroup(scenario: Scenario, group: OutcomeGroup, outcomes: readonly TurnOutcome[] = []): string {
+export function describeOutcomeGroup(scenario: Scenario, group: OutcomeGroup, outcomes: readonly TurnOutcome[] = [], view: ReportView = {}): string {
   const { outcome } = group;
+  if (isSystemOutcome(outcome)) return describeSystemOutcome(outcome, { scenario, ...view });
   if (outcome.kind === "no-move") {
     return outcome.unitId === undefined
-      ? `${factionName(scenario, outcome.factionId)} had no armies to order.`
+      ? `${factionName(scenario, outcome.factionId)} had no units to order.`
       : `${unitName(scenario, outcome.unitId)} held.`;
+  }
+  if (outcome.kind === "rejected-order") {
+    return `${factionName(scenario, outcome.order.factionId)}: an order was not carried out: ${outcome.reason}`;
   }
   if (outcome.kind === "recovered") {
     return `${unitName(scenario, outcome.unitId)} recovered its morale in ${territoryName(scenario, outcome.territoryId)}.`;
@@ -154,7 +211,7 @@ export function describeOutcomeGroup(scenario: Scenario, group: OutcomeGroup, ou
     const place = outcome.site.kind === "meeting"
       ? `on the road between ${listNames(outcome.site.between.map((id) => territoryName(scenario, id)))}`
       : `for ${territoryName(scenario, outcome.site.territoryId)}`;
-    return `Battle ${place}: ${outcomeText[outcome.result].title}.`;
+    return `Battle ${place}: ${battleTitle(scenario, outcome)}.`;
   }
   const { order } = outcome;
   const actor = factionName(scenario, order.factionId);

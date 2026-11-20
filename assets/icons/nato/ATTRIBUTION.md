@@ -29,3 +29,17 @@ so it reads at counter size without depending on fonts.
 | `militia.svg` | The infantry cross drawn heavier and dashed, for irregular militia columns. |
 | `colonial.svg` | The infantry cross with a filled crescent in the upper field, for the Army of Africa's colonial veterans. |
 | `security.svg` | The infantry cross with a filled lozenge badge at the centre, for gendarmerie and police (security forces). |
+
+### Milestone 3 derived symbols
+
+Also modified from `infantry.svg`, keeping its frame and fill, under the same licence. Each
+replaces the infantry cross with one APP-6A mark drawn as plain paths.
+
+| Local file | Change |
+| --- | --- |
+| `transport.svg` | A wheel, for truck columns (transportation). |
+| `air-defence.svg` | The air defence dome along the lower edge. |
+| `fighter.svg` | The fixed-wing aviation mark, for fighter squadrons. |
+| `recon-aircraft.svg` | The fixed-wing mark with the reconnaissance diagonal. |
+| `bomber.svg` | The fixed-wing mark with a heavy bar beneath, for bombers. |
+| `headquarters.svg` | A filled star, for a general and his staff. |

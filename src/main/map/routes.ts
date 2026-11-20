@@ -1,5 +1,7 @@
-import type { BattleOutcome, BattleResult, FactionId, MoveOrder, TerritoryId, TurnOutcome, UnitId } from "../engine/types";
+import type { BattleOutcome, BattleResult, FactionId, MoveOrder, Scenario, TerritoryId, TurnOutcome, UnitId } from "../engine/types";
 import { affectedFaction } from "../presentation/battle";
+import { battleTitle, isBattle, resultKeyOf } from "../presentation/grades";
+import { outcomeText } from "../presentation/outcomeText";
 import type { MapPoint } from "../scenarios/loader";
 
 export type RouteKind = "planned" | "moved" | "bounced" | "disbanded" | "battle";
@@ -7,7 +9,10 @@ export type RouteKind = "planned" | "moved" | "bounced" | "disbanded" | "battle"
 /** A battle fought at the end of a route: its result and the faction the result fell on. */
 export interface RouteBattle {
   readonly affectedFactionId: FactionId;
+  /** The result key its medallion draws: the d6 result, or the d20 grade's family. */
   readonly result: BattleResult;
+  /** D8: the result as players read it, named on hover: the d6 result's title or the d20 grade's name. */
+  readonly title: string;
 }
 
 export interface RouteGroup {
@@ -37,14 +42,23 @@ interface RouteEntry {
  * the other side too) from where they set out to where they fought. Standing battles (M27)
  * moved nobody, so they draw no route.
  */
-export function battleRoutes(battle: BattleOutcome): readonly RouteEntry[] {
-  const mark: RouteBattle = { affectedFactionId: affectedFaction(battle), result: battle.result };
+export function battleRoutes(battle: BattleOutcome, scenario?: Scenario): readonly RouteEntry[] {
+  const mark = routeBattle(battle, scenario);
   const { site } = battle;
   const armies = site.kind === "assault" ? battle.attacker.armies : [...battle.attacker.armies, ...battle.defender.armies];
   return armies.flatMap((army) => {
     const to = site.kind === "meeting" ? site.between.find((id) => id !== army.from) : site.territoryId;
     return to === undefined || to === army.from ? [] : [{ battle: mark, factionId: army.factionId, from: army.from, kind: "battle", to, unitId: army.unitId }];
   });
+}
+
+/** A battle's mark: its result key and title. Without the scenario, a d20 battle is named by its grade id. */
+export function routeBattle(battle: BattleOutcome, scenario?: Scenario): RouteBattle {
+  const affectedFactionId = affectedFaction(battle);
+  if (battle.dice === "d6") return { affectedFactionId, result: battle.result, title: outcomeText[battle.result].title };
+  return scenario === undefined
+    ? { affectedFactionId, result: "both-demoralized", title: battle.grade }
+    : { affectedFactionId, result: resultKeyOf(scenario, battle), title: battleTitle(scenario, battle) };
 }
 
 /** Extra bend per lane, so routes that share an origin and destination never share a curve. */
@@ -54,9 +68,9 @@ export const laneBend = 0.16;
  * V10: one route per (origin, destination, faction, result), with a count instead of duplicates.
  * Routes of different factions or results along the same origin and destination get their own lane.
  */
-export function groupRoutes(planned: readonly MoveOrder[], outcomes: readonly TurnOutcome[]): readonly RouteGroup[] {
+export function groupRoutes(planned: readonly MoveOrder[], outcomes: readonly TurnOutcome[], scenario?: Scenario): readonly RouteGroup[] {
   const fromOrder = (kind: RouteKind, order: MoveOrder): RouteEntry => ({ factionId: order.factionId, from: order.from, kind, to: order.to, unitId: order.unitId });
-  const fought = outcomes.flatMap((outcome) => (outcome.kind === "battle" ? battleRoutes(outcome) : []));
+  const fought = outcomes.flatMap((outcome) => (isBattle(outcome) ? battleRoutes(outcome, scenario) : []));
   // A move that ended in a battle shows the battle, not a bounce or loss icon.
   const inBattle = new Set(fought.map((entry) => `${entry.unitId}:${entry.from}:${entry.to}`));
   const fromOutcome = (outcome: TurnOutcome): readonly RouteEntry[] => {
@@ -80,7 +94,7 @@ export function groupRoutes(planned: readonly MoveOrder[], outcomes: readonly Tu
   const groups = new Map<string, RouteGroup>();
   const lanes = new Map<string, number>();
   for (const { battle, factionId, from, kind, to } of entries) {
-    const key = `${kind}:${battle?.result ?? ""}:${factionId}:${from}:${to}`;
+    const key = `${kind}:${battle?.title ?? ""}:${factionId}:${from}:${to}`;
     const existing = groups.get(key);
     if (existing === undefined) {
       const pair = `${from}:${to}`;

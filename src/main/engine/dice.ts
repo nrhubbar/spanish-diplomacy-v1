@@ -14,9 +14,39 @@ export type BattleDice = (battleIndex: number) => RandomSource;
  */
 export const battleStreamTag = 0x62617474;
 
+/**
+ * Section 2: every roll kind draws from its own seeded streams,
+ * `deriveSeed(game seed, tag, turn, index)`. The battle tag is the Milestone 2 one, so battle
+ * rolls are exactly those of Milestone 2. Each tag spells its kind in ASCII.
+ */
+export const rollStreamTags = {
+  battle: battleStreamTag,
+  /** "blun": computer-player blunders (H6); the index is the faction's scenario index. */
+  blunder: 0x626c756e,
+  /** "gend": a general's death roll (U5); the index is the death's order in the turn. */
+  "general-death": 0x67656e64,
+  /** "raid": an air raid's roll (U3); the index is the raid's order in the turn. */
+  raid: 0x72616964,
+  /** "weat": the turn's weather roll (T2); index 0 is the turn, 1 the forecast. */
+  weather: 0x77656174
+} as const;
+export type RollKind = keyof typeof rollStreamTags;
+
+/** One seeded stream of a roll kind for a turn. */
+export function rollStream(seed: number, kind: RollKind, turnNumber: number, index: number): RandomSource {
+  return seededRandom(deriveSeed(seed, rollStreamTags[kind], turnNumber, index));
+}
+
+/** A turn's streams for every roll kind, by kind and index. */
+export type RollStreams = (kind: RollKind, index: number) => RandomSource;
+
+export function seededRollStreams(seed: number, turnNumber: number): RollStreams {
+  return (kind, index) => rollStream(seed, kind, turnNumber, index);
+}
+
 /** The turn's battle streams: `deriveSeed(game seed, battleStreamTag, turn, battle index)`. */
 export function seededBattleDice(seed: number, turnNumber: number): BattleDice {
-  return (battleIndex) => seededRandom(deriveSeed(seed, battleStreamTag, turnNumber, battleIndex));
+  return (battleIndex) => rollStream(seed, "battle", turnNumber, battleIndex);
 }
 
 /** A face of the six-sided battle die. */

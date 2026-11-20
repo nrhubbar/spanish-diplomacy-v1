@@ -1,14 +1,14 @@
 import { type JSX, useMemo } from "react";
 import { requireFaction } from "../engine/lookup";
-import type { Scenario, UnitState } from "../engine/types";
+import { isMoveOrder, type Scenario, type UnitState } from "../engine/types";
 import { GameHeader } from "../components/GameHeader";
 import { useAppDispatch, useRegistry, useSessionIn } from "../hooks";
 import type { MapView } from "../map/view";
 import { glyphs } from "../presentation/glyphs";
 import { destinationEstimates } from "../presentation/odds";
 import { turnLabel } from "../presentation/turn";
-import { cancelOrderStage, clickMapTerritory, clickMapUnit, endTurn } from "../state/gameSlice";
-import { orderOf, type PlanningSession, selectedDestinations } from "../state/planning";
+import { cancelOrderStage, clickMapTerritory, clickMapUnit, endTurn, focusSubTerritory } from "../state/gameSlice";
+import { focusesOnClick, oddsDestinations, type PlanningSession, planningMapView, selectedDestinations } from "../state/planning";
 import { selectSubmissionStatus } from "../state/selectors";
 import { MapScreenFrame } from "./MapScreenFrame";
 import { OddsInfo } from "./OddsInfo";
@@ -26,24 +26,17 @@ function Orders({ scenario, session }: { readonly scenario: Scenario; readonly s
   const faction = requireFaction(scenario, factionId);
   const destinations = useMemo(() => selectedDestinations(scenario, session), [scenario, session]);
   const estimates = useMemo(
-    () => destinationEstimates(scenario, game.state, factionId, draft.selectedUnitIds, destinations, draft.orders),
-    [destinations, draft.orders, draft.selectedUnitIds, factionId, game.state, scenario]
+    () => destinationEstimates(scenario, game.state, factionId, draft.selectedUnitIds, oddsDestinations(draft, destinations), draft.orders.filter(isMoveOrder)),
+    [destinations, draft, factionId, game.state, scenario]
   );
   const view = useMemo<MapView>(() => ({
-    changedTerritoryIds: [],
-    ...(estimates.size === 0 ? {} : { destinationEstimates: estimates }),
-    destinationIds: destinations,
+    ...planningMapView(scenario, session, destinations, estimates),
     onSelectTerritory: (territoryId) => dispatch(clickMapTerritory(territoryId)),
-    onSelectUnit: (unit: UnitState) => dispatch(clickMapUnit(unit.id)),
-    orderedUnitIds: new Set(draft.orders.map((order) => order.unitId)),
-    outcomes: [],
-    plannedOrders: draft.orders,
-    selectedUnitIds: new Set(draft.selectedUnitIds),
-    ...(draft.selectedTerritoryId === undefined ? {} : { selectedTerritoryId: draft.selectedTerritoryId }),
-    unitOrders: new Map(Object.values(game.state.units)
-      .filter((unit) => unit.factionId === factionId)
-      .map((unit) => [unit.id, orderOf(session, unit)]))
-  }), [destinations, dispatch, draft, estimates, factionId, game.state.units, session]);
+    onSelectSubTerritory: (subTerritoryId) => {
+      if (focusesOnClick(scenario, draft, subTerritoryId)) dispatch(focusSubTerritory(subTerritoryId));
+    },
+    onSelectUnit: (unit: UnitState) => dispatch(clickMapUnit(unit.id))
+  }), [destinations, dispatch, draft, estimates, scenario, session]);
 
   return (
     <MapScreenFrame
@@ -52,6 +45,7 @@ function Orders({ scenario, session }: { readonly scenario: Scenario; readonly s
       header={(
         <GameHeader
           kicker={`${turnLabel(scenario, game.state.turnNumber)} ${glyphs.dot} Planning`}
+          slots={{ scenario, state: game.state, viewer: factionId }}
           status={selectSubmissionStatus(scenario, session)}
           title={faction.name}
         />

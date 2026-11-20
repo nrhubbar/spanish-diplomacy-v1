@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { estimateAttack, tableResult, tableRow } from "../main/engine/combat";
-import type { BattleOutcome, GameState, Scenario, TurnOutcome, TurnResolutionResult } from "../main/engine/types";
+import type { D6BattleOutcome, GameState, Scenario, TurnOutcome, TurnResolutionResult } from "../main/engine/types";
 import {
   type ArmySpec,
   battlefield,
@@ -9,7 +9,7 @@ import {
   loadedDice,
   move,
   play,
-  spain,
+  spainM2,
   territory,
   tiny,
   unit,
@@ -23,13 +23,13 @@ import {
 const a = (id: string, factionId: string, where: string, extra: Partial<ArmySpec> = {}): ArmySpec => ({ faction: factionId, id, territory: where, ...extra });
 const at = (result: TurnResolutionResult, id: string) => result.finalState.units[unit(id)]?.territoryId;
 const armyOf = (result: TurnResolutionResult, id: string) => result.finalState.units[unit(id)];
-const only = (result: TurnResolutionResult): BattleOutcome => {
+const only = (result: TurnResolutionResult): D6BattleOutcome => {
   const [battle, ...rest] = battlesOf(result);
   if (battle === undefined || rest.length > 0) throw new Error(`Expected one battle, got ${String(battlesOf(result).length)}.`);
   return battle;
 };
 const outcomeOf = (result: TurnResolutionResult, id: string): TurnOutcome | undefined =>
-  result.outcomes.find((outcome) => "order" in outcome && outcome.order.unitId === unit(id));
+  result.outcomes.find((outcome) => "order" in outcome && "unitId" in outcome.order && outcome.order.unitId === unit(id));
 const lowlandsContested = (state: Partial<GameState> = {}): Partial<GameState> => ({
   control: { ...initialControl(tiny()), [territory("lowlands")]: { factionIds: [faction("red"), faction("blue")], kind: "contested" } },
   ...state
@@ -133,7 +133,7 @@ describe("M13-M15 odds, modifiers, and the table (C2, C3)", () => {
         const modifier = column === 0 ? -1 : 0;
         expect([battle.column, battle.oddsLabel, battle.row, battle.result]).toEqual([column, label, tableRow(die, modifier), tableResult(scenario.combat, column, tableRow(die, modifier))]);
         const estimate = estimateAttack(scenario, state, faction("red"), [unit("r1")], territory("lowlands"));
-        expect(estimate.kind === "battle" && estimate.faces[die - 1]?.result).toBe(battle.result);
+        expect(estimate.kind === "battle" && "faces" in estimate && estimate.faces[die - 1]?.result).toBe(battle.result);
       }
     }
   });
@@ -149,7 +149,7 @@ describe("M13-M15 odds, modifiers, and the table (C2, C3)", () => {
     const base = battlefield(tiny(), [a("r1", "red", "highlands"), a("r2", "red", "highlands"), a("b1", "blue", "harbor")]);
     const state: GameState = { ...base.state, fortification: { [territory("harbor")]: { factionId: faction("blue"), level: 2 } } };
     const estimate = estimateAttack(base.scenario, state, faction("red"), [unit("r1"), unit("r2")], territory("harbor"));
-    if (estimate.kind !== "battle") throw new Error("Expected a battle estimate.");
+    if (estimate.kind !== "battle" || !("faces" in estimate)) throw new Error("Expected a d6 battle estimate.");
     for (const face of estimate.faces) {
       const battle = only(play(base.scenario, state, [move("red", "r1", "highlands", "harbor"), move("red", "r2", "highlands", "harbor")], loadedDice([face.die])));
       expect(battle.attacker).toEqual(estimate.attacker);
@@ -292,7 +292,7 @@ describe("M17 and M18: several attackers against one snapshot (section 1.6)", ()
   // North holds La Rioja with one regiment (defence 6, no cities, so no faction modifiers).
   // The Republic attacks from the Pais Vasco and the South from Castilla y Leon; battles are
   // indexed by attacking faction id: the Republic's is 0, the South's 1.
-  const three = (republic: number, south: number) => battlefield(spain(), [
+  const three = (republic: number, south: number) => battlefield(spainM2(), [
     a("n1", "north", "la-rioja", { type: "infantry-regiment" }),
     ...Array.from({ length: republic }, (_, index) => a(`r${String(index + 1)}`, "republic", "pais-vasco", { type: "infantry-regiment" })),
     ...Array.from({ length: south }, (_, index) => a(`s${String(index + 1)}`, "south", "castilla-y-leon", { type: "infantry-regiment" }))
@@ -383,8 +383,8 @@ describe("M19 entry battles in empty territory (section 1.6 step 3)", () => {
   });
 
   it("fights each lesser entrant separately against the standing entrant, three factions at once", () => {
-    const control = { ...initialControl(spain()), [territory("la-rioja")]: { factionIds: [faction("north"), faction("republic")], kind: "contested" as const } };
-    const { scenario, state } = battlefield(spain(), [
+    const control = { ...initialControl(spainM2()), [territory("la-rioja")]: { factionIds: [faction("north"), faction("republic")], kind: "contested" as const } };
+    const { scenario, state } = battlefield(spainM2(), [
       a("n1", "north", "navarra", { type: "infantry-regiment" }),
       a("r1", "republic", "pais-vasco", { type: "infantry-regiment" }),
       a("s1", "south", "castilla-y-leon", { type: "infantry-regiment" }),
@@ -482,7 +482,7 @@ describe("M20 head-on meeting battles (C9)", () => {
   });
 
   it("bounces every move without a battle when more than two factions meet on one road", () => {
-    const { scenario, state } = battlefield(spain(), [
+    const { scenario, state } = battlefield(spainM2(), [
       a("r1", "republic", "madrid", { type: "infantry-regiment" }),
       a("s1", "south", "madrid", { type: "infantry-regiment" }),
       a("n1", "north", "castilla-y-leon", { type: "infantry-regiment" })
@@ -505,7 +505,7 @@ describe("M21 returns, retreats, and surrender (C11)", () => {
   // North attacks the Republic in Castilla-La Mancha from Aragon: 12 against 6 is 2:1, and
   // popular resistance (Toledo, Albacete) takes 1, so a 5 drives the defender out.
   const ousted = (extra: readonly ArmySpec[]) => {
-    const { scenario, state } = battlefield(spain(), [
+    const { scenario, state } = battlefield(spainM2(), [
       a("r1", "republic", "castilla-la-mancha", { type: "infantry-regiment" }),
       ...extra,
       ...["n1", "n2", "n3"].map((id) => a(id, "north", "aragon", { type: "infantry-regiment" }))

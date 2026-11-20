@@ -1,0 +1,5454 @@
+{
+  "$schema": "../scenario.schema.json",
+  "specVersion": 2,
+  "id": "spanish-civil-war-1936",
+  "name": "Spain, July 1936",
+  "snapshotLabel": "31 July 1936",
+  "ruleset": "m3-modular",
+  "rules": {
+    "dice": "d20-graded",
+    "economy": "development",
+    "recruitment": "buildings",
+    "weather": "seasonal-zones",
+    "movement": "allowance",
+    "partition": "provinces",
+    "air": "missions"
+  },
+  "map": "./map.json",
+  "victory": {
+    "territoryShare": 0.51,
+    "cityShare": 0.75,
+    "tieBreak": [
+      "cities",
+      "territories"
+    ]
+  },
+  "combat": {
+    "table": [
+      [
+        "attacker-eliminated",
+        "attacker-eliminated",
+        "attacker-attrition",
+        "attacker-demoralized",
+        "both-demoralized",
+        "both-demoralized",
+        "defender-demoralized"
+      ],
+      [
+        "attacker-eliminated",
+        "attacker-attrition",
+        "attacker-demoralized",
+        "both-demoralized",
+        "both-demoralized",
+        "defender-demoralized",
+        "defender-exchange"
+      ],
+      [
+        "attacker-attrition",
+        "attacker-demoralized",
+        "both-demoralized",
+        "both-demoralized",
+        "defender-demoralized",
+        "defender-exchange",
+        "defender-eliminated"
+      ],
+      [
+        "attacker-demoralized",
+        "both-demoralized",
+        "both-demoralized",
+        "defender-demoralized",
+        "defender-exchange",
+        "defender-eliminated",
+        "defender-eliminated"
+      ],
+      [
+        "both-demoralized",
+        "both-demoralized",
+        "defender-demoralized",
+        "defender-exchange",
+        "defender-eliminated",
+        "defender-eliminated",
+        "defender-eliminated"
+      ],
+      [
+        "both-demoralized",
+        "defender-demoralized",
+        "defender-exchange",
+        "defender-eliminated",
+        "defender-eliminated",
+        "defender-eliminated",
+        "defender-eliminated"
+      ],
+      [
+        "defender-demoralized",
+        "defender-exchange",
+        "defender-eliminated",
+        "defender-eliminated",
+        "defender-eliminated",
+        "defender-eliminated",
+        "defender-eliminated"
+      ]
+    ],
+    "belowOneToOne": {
+      "kind": "halving",
+      "rollPenalty": 1
+    },
+    "diggingIn": {
+      "perTurn": 1,
+      "max": 3
+    },
+    "demoralizationFactor": 0.5,
+    "factionModifiers": [
+      {
+        "id": "popular-resistance",
+        "name": "Popular resistance",
+        "factionId": "republic",
+        "when": "holds-controlled-city",
+        "defence": 1
+      }
+    ]
+  },
+  "ai": {
+    "blunderChance": 0.01,
+    "profiles": {
+      "republic": {
+        "computer": {
+          "approachObjective": 1.5,
+          "bouncedLastTurn": -4,
+          "caution": 0.5,
+          "demoralizedShare": 0.25,
+          "enemyLoss": 0.5,
+          "ownLoss": 0.75
+        },
+        "offensive": {
+          "reach": 3,
+          "oddsTieBreak": 0.02,
+          "staging": 2,
+          "focus": 1,
+          "stallStep": 1,
+          "stallCap": 4
+        },
+        "stakes": {
+          "city": 2,
+          "objective": 5,
+          "territory": 4
+        },
+        "victoryAlarm": {
+          "critical": 3,
+          "perStep": 0.5,
+          "steps": 4
+        },
+        "withdraw": {
+          "hopelessTakeChance": 0.5,
+          "lastStandTakeChance": 0.75
+        },
+        "builds": {
+          "spendShare": 0.6,
+          "reserveShare": 0.3,
+          "developmentProjects": 1,
+          "developmentShare": 0.5,
+          "maxOrdersPerTurn": 3,
+          "itemsPerEmptyQueue": 1
+        }
+      },
+      "north": {
+        "computer": {
+          "approachObjective": 1.5,
+          "bouncedLastTurn": -4,
+          "caution": 0.5,
+          "demoralizedShare": 0.25,
+          "enemyLoss": 0.5,
+          "ownLoss": 0.75
+        },
+        "offensive": {
+          "reach": 3,
+          "oddsTieBreak": 0.02,
+          "staging": 2,
+          "focus": 1,
+          "stallStep": 1,
+          "stallCap": 4
+        },
+        "stakes": {
+          "city": 2,
+          "objective": 5,
+          "territory": 4
+        },
+        "victoryAlarm": {
+          "critical": 3,
+          "perStep": 0.5,
+          "steps": 4
+        },
+        "withdraw": {
+          "hopelessTakeChance": 0.5,
+          "lastStandTakeChance": 0.75
+        },
+        "builds": {
+          "spendShare": 0.6,
+          "reserveShare": 0.3,
+          "developmentProjects": 1,
+          "developmentShare": 0.5,
+          "maxOrdersPerTurn": 3,
+          "itemsPerEmptyQueue": 1
+        }
+      },
+      "south": {
+        "computer": {
+          "approachObjective": 1.5,
+          "bouncedLastTurn": -4,
+          "caution": 0.5,
+          "demoralizedShare": 0.25,
+          "enemyLoss": 0.5,
+          "ownLoss": 0.75
+        },
+        "offensive": {
+          "reach": 3,
+          "oddsTieBreak": 0.02,
+          "staging": 2,
+          "focus": 1,
+          "stallStep": 1,
+          "stallCap": 4
+        },
+        "stakes": {
+          "city": 2,
+          "objective": 5,
+          "territory": 4
+        },
+        "victoryAlarm": {
+          "critical": 3,
+          "perStep": 0.5,
+          "steps": 4
+        },
+        "withdraw": {
+          "hopelessTakeChance": 0.5,
+          "lastStandTakeChance": 0.75
+        },
+        "builds": {
+          "spendShare": 0.6,
+          "reserveShare": 0.3,
+          "developmentProjects": 1,
+          "developmentShare": 0.5,
+          "maxOrdersPerTurn": 3,
+          "itemsPerEmptyQueue": 1
+        }
+      }
+    },
+    "note": "Design note. The weights are the Revision 7 computer player's constants (computerWeights, offensiveWeights, stakeWeights and victoryAlarm), moved into data unchanged, one profile per faction so a harness variant can change one side (E7, H4). The blunder chance is 1 in 100 orders (H6, Q-MR-33). The Build budget (EB-15) is economy-builds' starting value: builds spend at most 60 percent of what Recruit orders leave, at most 3 orders a turn, one new item per sub-territory with an empty queue; a design note for the harness to tune (H7). Design note (D23, D24, m3r1-ai-fixes): victoryAlarm.critical raises, by 1 + 3, the stake of a territory whose change of hands alone would decide the game: own ground a rival in reach would win by taking, and ground the faction itself would win by taking. It sits above the x2.5 the alarm gives a leader's territory one step short, so holding the deciding ground outranks attacking the leader, and taking it is weighed as much as holding it. withdraw.hopelessTakeChance 0.5: the computer player gives up contested ground when the standing battle is at least even odds to take it whole this turn, by the engine's own odds. withdraw.lastStandTakeChance 0.75: its seat, last objective or a victory-critical territory is given up only when it would be lost whole at least three times in four. Starting values, not tuned."
+  },
+  "unitTypes": [
+    {
+      "id": "infantry-regiment",
+      "name": "Infantry regiment",
+      "attack": 4,
+      "defence": 6,
+      "kind": "ground",
+      "symbol": "infantry",
+      "orders": [
+        "move",
+        "withdraw",
+        "replenish"
+      ],
+      "effects": [],
+      "recruit": {
+        "cost": {
+          "funds": 6,
+          "manpower": 1
+        },
+        "establishment": 700,
+        "trainingTurns": 2,
+        "requires": [
+          "barracks"
+        ]
+      },
+      "note": "Values unchanged from Milestone 2 (sources on its units); recruit numbers are a design note for the harness to tune (R2-R4)."
+    },
+    {
+      "id": "militia-column",
+      "name": "Militia column",
+      "attack": 3,
+      "defence": 4,
+      "kind": "ground",
+      "symbol": "militia",
+      "orders": [
+        "move",
+        "withdraw",
+        "replenish"
+      ],
+      "effects": [
+        {
+          "kind": "trains-in-contested"
+        }
+      ],
+      "recruit": {
+        "cost": {
+          "funds": 2,
+          "manpower": 3
+        },
+        "establishment": 2500,
+        "trainingTurns": 1,
+        "requires": []
+      },
+      "note": "Values unchanged from Milestone 2. Militia need no building, train in one turn and finish even in contested ground (R3, R4, C8)."
+    },
+    {
+      "id": "colonial-veterans",
+      "name": "Colonial veterans",
+      "attack": 6,
+      "defence": 5,
+      "kind": "ground",
+      "symbol": "infantry",
+      "orders": [
+        "move",
+        "withdraw",
+        "replenish"
+      ],
+      "effects": [],
+      "recruit": {
+        "cost": {
+          "funds": 8,
+          "manpower": 2
+        },
+        "establishment": 1800,
+        "trainingTurns": 2,
+        "requires": [
+          "barracks"
+        ],
+        "factionIds": [
+          "north",
+          "south"
+        ]
+      },
+      "note": "Values unchanged from Milestone 2. Not raised by the Republic (R3)."
+    },
+    {
+      "id": "security-forces",
+      "name": "Security forces",
+      "attack": 3,
+      "defence": 5,
+      "kind": "ground",
+      "symbol": "security",
+      "orders": [
+        "move",
+        "withdraw",
+        "replenish"
+      ],
+      "effects": [],
+      "recruit": {
+        "cost": {
+          "funds": 6,
+          "manpower": 2
+        },
+        "establishment": 2000,
+        "trainingTurns": 2,
+        "requires": [
+          "barracks"
+        ]
+      },
+      "note": "Values unchanged from Milestone 2 (sources on its units); recruit numbers are a design note for the harness to tune (R2-R4)."
+    },
+    {
+      "id": "artillery-group",
+      "name": "Artillery group",
+      "attack": 3,
+      "defence": 3,
+      "kind": "ground",
+      "symbol": "artillery",
+      "orders": [
+        "move",
+        "withdraw",
+        "replenish"
+      ],
+      "effects": [
+        {
+          "kind": "roll-bonus-per-points",
+          "role": "attack",
+          "per": 3,
+          "bonus": 1,
+          "max": 3
+        },
+        {
+          "kind": "cannot-attack-alone"
+        }
+      ],
+      "recruit": {
+        "cost": {
+          "funds": 8,
+          "manpower": 1
+        },
+        "establishment": 600,
+        "trainingTurns": 3,
+        "requires": [
+          "barracks",
+          "factory"
+        ]
+      },
+      "note": "D5, R3, R4. Design note: a starting value for the harness to tune (Q-MR-26, H7)."
+    },
+    {
+      "id": "cavalry-regiment",
+      "name": "Cavalry regiment",
+      "attack": 3,
+      "defence": 3,
+      "kind": "ground",
+      "symbol": "cavalry",
+      "orders": [
+        "move",
+        "withdraw",
+        "replenish"
+      ],
+      "effects": [
+        {
+          "kind": "mobile"
+        }
+      ],
+      "recruit": {
+        "cost": {
+          "funds": 6,
+          "manpower": 1
+        },
+        "establishment": 600,
+        "trainingTurns": 2,
+        "requires": [
+          "barracks"
+        ]
+      },
+      "note": "M1: moves +1 without trucks, also in mountains (unit sheet). Design note: a starting value for the harness to tune (Q-MR-26, H7)."
+    },
+    {
+      "id": "tank-company",
+      "name": "Tank company",
+      "attack": 3,
+      "defence": 2,
+      "kind": "ground",
+      "symbol": "armour",
+      "orders": [
+        "move",
+        "withdraw",
+        "replenish"
+      ],
+      "effects": [
+        {
+          "kind": "roll-bonus-per-points",
+          "role": "attack",
+          "per": 3,
+          "bonus": 1,
+          "max": 2,
+          "exceptWeather": [
+            "mud",
+            "snow"
+          ]
+        }
+      ],
+      "recruit": {
+        "cost": {
+          "funds": 12,
+          "manpower": 1
+        },
+        "establishment": 300,
+        "trainingTurns": 4,
+        "requires": [
+          "factory",
+          "depot"
+        ]
+      },
+      "note": "D5: no bonus in Mud or Snow; R3, R4. Design note: a starting value for the harness to tune (Q-MR-26, H7)."
+    },
+    {
+      "id": "truck-column",
+      "name": "Truck column",
+      "attack": 0,
+      "defence": 0,
+      "kind": "ground",
+      "symbol": "transport",
+      "orders": [
+        "move",
+        "withdraw",
+        "replenish"
+      ],
+      "effects": [
+        {
+          "kind": "transport",
+          "carries": 2
+        }
+      ],
+      "recruit": {
+        "cost": {
+          "funds": 5,
+          "manpower": 1
+        },
+        "establishment": 200,
+        "trainingTurns": 2,
+        "requires": [
+          "factory",
+          "depot"
+        ]
+      },
+      "note": "M1: one truck per two other units; no combat value (Q-MR-20). Design note: a starting value for the harness to tune (Q-MR-26, H7)."
+    },
+    {
+      "id": "anti-air-battery",
+      "name": "Anti-air battery",
+      "attack": 0,
+      "defence": 1,
+      "kind": "ground",
+      "symbol": "air-defence",
+      "orders": [
+        "move",
+        "withdraw",
+        "replenish"
+      ],
+      "effects": [
+        {
+          "kind": "raid-defence",
+          "roll": -3
+        }
+      ],
+      "recruit": {
+        "cost": {
+          "funds": 7,
+          "manpower": 1
+        },
+        "establishment": 300,
+        "trainingTurns": 2,
+        "requires": [
+          "factory"
+        ]
+      },
+      "note": "U3: worsens raids on its territory by 3. Design note: a starting value for the harness to tune (Q-MR-26, H7)."
+    },
+    {
+      "id": "recon-flight",
+      "name": "Reconnaissance flight",
+      "attack": 0,
+      "defence": 1,
+      "kind": "air",
+      "symbol": "fixed-wing",
+      "orders": [
+        "air-mission"
+      ],
+      "air": {
+        "range": 4,
+        "missions": [
+          "recon"
+        ]
+      },
+      "recruit": {
+        "cost": {
+          "funds": 8,
+          "manpower": 1
+        },
+        "establishment": 100,
+        "trainingTurns": 3,
+        "requires": [
+          "airfield",
+          "factory"
+        ]
+      },
+      "note": "U2, U4. Design note: a starting value for the harness to tune (Q-MR-26, H7)."
+    },
+    {
+      "id": "fighter-squadron",
+      "name": "Fighter squadron",
+      "attack": 0,
+      "defence": 1,
+      "kind": "air",
+      "symbol": "fixed-wing",
+      "orders": [
+        "air-mission"
+      ],
+      "air": {
+        "range": 3,
+        "missions": [
+          "intercept"
+        ]
+      },
+      "recruit": {
+        "cost": {
+          "funds": 10,
+          "manpower": 1
+        },
+        "establishment": 100,
+        "trainingTurns": 3,
+        "requires": [
+          "airfield",
+          "factory"
+        ]
+      },
+      "note": "U2, U3. Design note: a starting value for the harness to tune (Q-MR-26, H7)."
+    },
+    {
+      "id": "bomber-squadron",
+      "name": "Bomber squadron",
+      "attack": 0,
+      "defence": 1,
+      "kind": "air",
+      "symbol": "fixed-wing",
+      "orders": [
+        "air-mission"
+      ],
+      "effects": [
+        {
+          "kind": "battle-support",
+          "roll": 2
+        }
+      ],
+      "air": {
+        "range": 4,
+        "missions": [
+          "raid",
+          "support"
+        ]
+      },
+      "recruit": {
+        "cost": {
+          "funds": 12,
+          "manpower": 1
+        },
+        "establishment": 100,
+        "trainingTurns": 3,
+        "requires": [
+          "airfield",
+          "factory"
+        ]
+      },
+      "note": "U2, U3, D7: +2 in battle support. Design note: a starting value for the harness to tune (Q-MR-26, H7)."
+    },
+    {
+      "id": "general",
+      "name": "General",
+      "attack": 0,
+      "defence": 0,
+      "kind": "general",
+      "symbol": "headquarters",
+      "orders": [
+        "move",
+        "withdraw",
+        "sack"
+      ],
+      "effects": [
+        {
+          "kind": "command-bonus",
+          "roll": 1
+        },
+        {
+          "kind": "rally"
+        }
+      ],
+      "note": "U5, D4: +1 on the d20 and the rally for his army. Never recruited; generals come from the roster."
+    }
+  ],
+  "factions": [
+    {
+      "id": "republic",
+      "name": "Republican Government",
+      "abbreviation": "REP",
+      "color": "#b1493f",
+      "motivation": "Defend Madrid, Barcelona, Valencia, and the loyal northern cities.",
+      "defaultActor": "local-human",
+      "objectiveTerritoryIds": [
+        "madrid",
+        "catalunya",
+        "valencia",
+        "pais-vasco"
+      ],
+      "briefing": {
+        "objective": "Hold the Republic together. You keep Madrid, Barcelona, Valencia, and the northern coast, but the rising has split the country in two. Win by holding 10 of 18 territories or 19 of 25 cities.",
+        "firstTurnHint": "Reports from Toledo say columns are moving north out of Andaluc\u00eda, and the northern command is gathering beyond the Sierra de Guadarrama. Madrid has two regiments, its guards, and the militia columns holding the passes. Do we keep them all in the capital, or send some forward to meet the southern columns before they arrive?"
+      },
+      "startingStock": {
+        "funds": 40,
+        "manpower": 10
+      },
+      "seatTerritoryId": "madrid",
+      "note": "Design note: starting treasuries before any income ($7). The Republic holds the Bank of Spain's reserves; the harness tunes the numbers. The seat is where replacement generals appear (declog D7)."
+    },
+    {
+      "id": "north",
+      "name": "Northern Insurgent Command",
+      "abbreviation": "NIC",
+      "color": "#b39232",
+      "motivation": "Drive toward Madrid and connect the northern insurgent zone.",
+      "defaultActor": "computer",
+      "objectiveTerritoryIds": [
+        "madrid",
+        "asturias",
+        "pais-vasco",
+        "aragon"
+      ],
+      "briefing": {
+        "objective": "Link the insurgent zone and take Madrid. You hold Castilla y Le\u00f3n, Navarra, Galicia, and Zaragoza, and your garrison in Oviedo is besieged; the Basque coast and Santander sit behind your lines.",
+        "firstTurnHint": "Zaragoza's garrison reports militia columns leaving Barcelona for Arag\u00f3n, and in Asturias the miners have Oviedo surrounded. Do we hold Arag\u00f3n and relieve Oviedo, or send the requet\u00e9s and the Sierra columns south toward Madrid while the Republic is still organizing?"
+      },
+      "startingStock": {
+        "funds": 15,
+        "manpower": 10
+      },
+      "seatTerritoryId": "castilla-y-leon",
+      "note": "Design note: starting treasuries before any income ($7). The Republic holds the Bank of Spain's reserves; the harness tunes the numbers. The seat is where replacement generals appear (declog D7)."
+    },
+    {
+      "id": "south",
+      "name": "Southern Insurgent Command",
+      "abbreviation": "SIC",
+      "color": "#665089",
+      "motivation": "Expand from Sevilla and the African bridgeheads toward Madrid.",
+      "defaultActor": "computer",
+      "objectiveTerritoryIds": [
+        "extremadura",
+        "madrid",
+        "castilla-la-mancha",
+        "andalucia"
+      ],
+      "briefing": {
+        "objective": "Bring the Army of Africa across the Strait and march on Madrid. You hold Sevilla, C\u00f3rdoba, C\u00e1diz, and Granada, and the first of the Army of Africa has landed at Sevilla; most of the Legion and the Regulares still wait in Ceuta and Melilla.",
+        "firstTurnHint": "The vanguard flown into Sevilla is ready to march, but most of the Legion and the Regulares are still in Africa, and every day they stay there gives the Republic time to organize. Do we bring them across now, or push north with the vanguard and the regiments in Andaluc\u00eda and let Africa follow?"
+      },
+      "startingStock": {
+        "funds": 15,
+        "manpower": 5
+      },
+      "seatTerritoryId": "andalucia",
+      "note": "Design note: starting treasuries before any income ($7). The Republic holds the Bank of Spain's reserves; the harness tunes the numbers. The seat is where replacement generals appear (declog D7)."
+    }
+  ],
+  "territories": [
+    {
+      "id": "galicia",
+      "name": "Galicia",
+      "countsForVictory": true,
+      "initialControl": {
+        "kind": "controlled",
+        "factionId": "north"
+      },
+      "capitalSubTerritoryId": "a-coruna",
+      "weatherZone": "cantabrian"
+    },
+    {
+      "id": "asturias",
+      "name": "Asturias",
+      "countsForVictory": true,
+      "initialControl": {
+        "kind": "contested",
+        "factionIds": [
+          "republic",
+          "north"
+        ]
+      },
+      "capitalSubTerritoryId": "oviedo",
+      "weatherZone": "cantabrian"
+    },
+    {
+      "id": "cantabria",
+      "name": "Cantabria",
+      "countsForVictory": true,
+      "initialControl": {
+        "kind": "controlled",
+        "factionId": "republic"
+      },
+      "capitalSubTerritoryId": "cantabria",
+      "weatherZone": "cantabrian"
+    },
+    {
+      "id": "pais-vasco",
+      "name": "Pa\u00eds Vasco",
+      "countsForVictory": true,
+      "initialControl": {
+        "kind": "contested",
+        "factionIds": [
+          "republic",
+          "north"
+        ]
+      },
+      "capitalSubTerritoryId": "bizkaia",
+      "weatherZone": "cantabrian"
+    },
+    {
+      "id": "navarra",
+      "name": "Navarra",
+      "countsForVictory": true,
+      "initialControl": {
+        "kind": "controlled",
+        "factionId": "north"
+      },
+      "capitalSubTerritoryId": "navarra",
+      "weatherZone": "cantabrian"
+    },
+    {
+      "id": "la-rioja",
+      "name": "La Rioja",
+      "countsForVictory": true,
+      "initialControl": {
+        "kind": "controlled",
+        "factionId": "north"
+      },
+      "capitalSubTerritoryId": "la-rioja",
+      "weatherZone": "meseta"
+    },
+    {
+      "id": "aragon",
+      "name": "Arag\u00f3n",
+      "countsForVictory": true,
+      "initialControl": {
+        "kind": "contested",
+        "factionIds": [
+          "north",
+          "republic"
+        ]
+      },
+      "capitalSubTerritoryId": "zaragoza",
+      "weatherZone": "meseta"
+    },
+    {
+      "id": "madrid",
+      "name": "Madrid",
+      "countsForVictory": true,
+      "initialControl": {
+        "kind": "controlled",
+        "factionId": "republic"
+      },
+      "capitalSubTerritoryId": "madrid",
+      "weatherZone": "meseta"
+    },
+    {
+      "id": "castilla-y-leon",
+      "name": "Castilla y Le\u00f3n",
+      "countsForVictory": true,
+      "initialControl": {
+        "kind": "controlled",
+        "factionId": "north"
+      },
+      "capitalSubTerritoryId": "burgos",
+      "weatherZone": "meseta"
+    },
+    {
+      "id": "castilla-la-mancha",
+      "name": "Castilla-La Mancha",
+      "countsForVictory": true,
+      "initialControl": {
+        "kind": "controlled",
+        "factionId": "republic"
+      },
+      "capitalSubTerritoryId": "toledo",
+      "weatherZone": "meseta"
+    },
+    {
+      "id": "extremadura",
+      "name": "Extremadura",
+      "countsForVictory": true,
+      "initialControl": {
+        "kind": "contested",
+        "factionIds": [
+          "republic",
+          "north"
+        ]
+      },
+      "capitalSubTerritoryId": "badajoz",
+      "weatherZone": "south"
+    },
+    {
+      "id": "catalunya",
+      "name": "Catalu\u00f1a",
+      "countsForVictory": true,
+      "initialControl": {
+        "kind": "controlled",
+        "factionId": "republic"
+      },
+      "capitalSubTerritoryId": "barcelona",
+      "weatherZone": "mediterranean"
+    },
+    {
+      "id": "valencia",
+      "name": "Valencia",
+      "countsForVictory": true,
+      "initialControl": {
+        "kind": "controlled",
+        "factionId": "republic"
+      },
+      "capitalSubTerritoryId": "valencia",
+      "weatherZone": "mediterranean"
+    },
+    {
+      "id": "islas-baleares",
+      "name": "Islas Baleares",
+      "countsForVictory": true,
+      "initialControl": {
+        "kind": "contested",
+        "factionIds": [
+          "republic",
+          "south"
+        ]
+      },
+      "capitalSubTerritoryId": "mallorca",
+      "weatherZone": "mediterranean"
+    },
+    {
+      "id": "andalucia",
+      "name": "Andaluc\u00eda",
+      "countsForVictory": true,
+      "initialControl": {
+        "kind": "contested",
+        "factionIds": [
+          "republic",
+          "south"
+        ]
+      },
+      "capitalSubTerritoryId": "sevilla",
+      "weatherZone": "south"
+    },
+    {
+      "id": "murcia",
+      "name": "Murcia",
+      "countsForVictory": true,
+      "initialControl": {
+        "kind": "controlled",
+        "factionId": "republic"
+      },
+      "capitalSubTerritoryId": "murcia",
+      "weatherZone": "mediterranean"
+    },
+    {
+      "id": "ceuta",
+      "name": "Ceuta",
+      "countsForVictory": true,
+      "initialControl": {
+        "kind": "controlled",
+        "factionId": "south"
+      },
+      "capitalSubTerritoryId": "ceuta",
+      "weatherZone": "south"
+    },
+    {
+      "id": "melilla",
+      "name": "Melilla",
+      "countsForVictory": true,
+      "initialControl": {
+        "kind": "controlled",
+        "factionId": "south"
+      },
+      "capitalSubTerritoryId": "melilla",
+      "weatherZone": "south"
+    }
+  ],
+  "connections": [
+    {
+      "between": [
+        "galicia",
+        "asturias"
+      ],
+      "kind": "land",
+      "entry": [
+        "lugo",
+        "asturias"
+      ]
+    },
+    {
+      "between": [
+        "galicia",
+        "castilla-y-leon"
+      ],
+      "kind": "land",
+      "entry": [
+        "lugo",
+        "leon"
+      ]
+    },
+    {
+      "between": [
+        "asturias",
+        "cantabria"
+      ],
+      "kind": "land",
+      "entry": [
+        "asturias",
+        "cantabria"
+      ]
+    },
+    {
+      "between": [
+        "asturias",
+        "castilla-y-leon"
+      ],
+      "kind": "land",
+      "entry": [
+        "asturias",
+        "leon"
+      ]
+    },
+    {
+      "between": [
+        "cantabria",
+        "pais-vasco"
+      ],
+      "kind": "land",
+      "entry": [
+        "cantabria",
+        "bizkaia"
+      ]
+    },
+    {
+      "between": [
+        "cantabria",
+        "castilla-y-leon"
+      ],
+      "kind": "land",
+      "entry": [
+        "cantabria",
+        "burgos"
+      ]
+    },
+    {
+      "between": [
+        "pais-vasco",
+        "navarra"
+      ],
+      "kind": "land",
+      "entry": [
+        "gipuzkoa",
+        "navarra"
+      ]
+    },
+    {
+      "between": [
+        "pais-vasco",
+        "la-rioja"
+      ],
+      "kind": "land",
+      "entry": [
+        "alava",
+        "la-rioja"
+      ]
+    },
+    {
+      "between": [
+        "pais-vasco",
+        "castilla-y-leon"
+      ],
+      "kind": "land",
+      "entry": [
+        "alava",
+        "burgos"
+      ]
+    },
+    {
+      "between": [
+        "navarra",
+        "la-rioja"
+      ],
+      "kind": "land",
+      "entry": [
+        "navarra",
+        "la-rioja"
+      ]
+    },
+    {
+      "between": [
+        "navarra",
+        "aragon"
+      ],
+      "kind": "land",
+      "entry": [
+        "navarra",
+        "zaragoza"
+      ]
+    },
+    {
+      "between": [
+        "la-rioja",
+        "aragon"
+      ],
+      "kind": "land",
+      "entry": [
+        "la-rioja",
+        "zaragoza"
+      ]
+    },
+    {
+      "between": [
+        "la-rioja",
+        "castilla-y-leon"
+      ],
+      "kind": "land",
+      "entry": [
+        "la-rioja",
+        "burgos"
+      ]
+    },
+    {
+      "between": [
+        "aragon",
+        "castilla-y-leon"
+      ],
+      "kind": "land",
+      "entry": [
+        "zaragoza",
+        "soria"
+      ]
+    },
+    {
+      "between": [
+        "aragon",
+        "castilla-la-mancha"
+      ],
+      "kind": "land",
+      "entry": [
+        "teruel",
+        "guadalajara"
+      ]
+    },
+    {
+      "between": [
+        "aragon",
+        "valencia"
+      ],
+      "kind": "land",
+      "entry": [
+        "teruel",
+        "castellon"
+      ]
+    },
+    {
+      "between": [
+        "aragon",
+        "catalunya"
+      ],
+      "kind": "land",
+      "entry": [
+        "huesca",
+        "lleida"
+      ]
+    },
+    {
+      "between": [
+        "madrid",
+        "castilla-y-leon"
+      ],
+      "kind": "land",
+      "entry": [
+        "guadarrama",
+        "segovia"
+      ]
+    },
+    {
+      "between": [
+        "madrid",
+        "castilla-la-mancha"
+      ],
+      "kind": "land",
+      "entry": [
+        "madrid",
+        "toledo"
+      ]
+    },
+    {
+      "between": [
+        "castilla-y-leon",
+        "castilla-la-mancha"
+      ],
+      "kind": "land",
+      "entry": [
+        "soria",
+        "guadalajara"
+      ]
+    },
+    {
+      "between": [
+        "castilla-y-leon",
+        "extremadura"
+      ],
+      "kind": "land",
+      "entry": [
+        "salamanca",
+        "caceres"
+      ]
+    },
+    {
+      "between": [
+        "castilla-la-mancha",
+        "valencia"
+      ],
+      "kind": "land",
+      "entry": [
+        "cuenca",
+        "valencia"
+      ]
+    },
+    {
+      "between": [
+        "castilla-la-mancha",
+        "murcia"
+      ],
+      "kind": "land",
+      "entry": [
+        "albacete",
+        "murcia"
+      ]
+    },
+    {
+      "between": [
+        "castilla-la-mancha",
+        "andalucia"
+      ],
+      "kind": "land",
+      "entry": [
+        "ciudad-real",
+        "jaen"
+      ]
+    },
+    {
+      "between": [
+        "castilla-la-mancha",
+        "extremadura"
+      ],
+      "kind": "land",
+      "entry": [
+        "toledo",
+        "caceres"
+      ]
+    },
+    {
+      "between": [
+        "extremadura",
+        "andalucia"
+      ],
+      "kind": "land",
+      "entry": [
+        "badajoz",
+        "sevilla"
+      ]
+    },
+    {
+      "between": [
+        "catalunya",
+        "valencia"
+      ],
+      "kind": "land",
+      "entry": [
+        "tarragona",
+        "castellon"
+      ]
+    },
+    {
+      "between": [
+        "valencia",
+        "murcia"
+      ],
+      "kind": "land",
+      "entry": [
+        "alicante",
+        "murcia"
+      ]
+    },
+    {
+      "between": [
+        "andalucia",
+        "murcia"
+      ],
+      "kind": "land",
+      "entry": [
+        "almeria",
+        "murcia"
+      ]
+    },
+    {
+      "between": [
+        "andalucia",
+        "ceuta"
+      ],
+      "kind": "sea",
+      "label": "Strait of Gibraltar",
+      "entry": [
+        "cadiz",
+        "ceuta"
+      ]
+    },
+    {
+      "between": [
+        "andalucia",
+        "melilla"
+      ],
+      "kind": "sea",
+      "label": "Alboran Sea",
+      "entry": [
+        "malaga",
+        "melilla"
+      ]
+    },
+    {
+      "between": [
+        "catalunya",
+        "islas-baleares"
+      ],
+      "kind": "sea",
+      "label": "Balearic Sea",
+      "entry": [
+        "barcelona",
+        "mallorca"
+      ]
+    },
+    {
+      "between": [
+        "valencia",
+        "islas-baleares"
+      ],
+      "kind": "sea",
+      "label": "Balearic Sea",
+      "entry": [
+        "valencia",
+        "mallorca"
+      ]
+    }
+  ],
+  "cities": [
+    {
+      "id": "a-coruna",
+      "name": "La Coru\u00f1a",
+      "territoryId": "galicia",
+      "countsForVictory": true,
+      "initialController": "north",
+      "subTerritoryId": "a-coruna"
+    },
+    {
+      "id": "oviedo",
+      "name": "Oviedo",
+      "territoryId": "asturias",
+      "countsForVictory": true,
+      "initialController": "north",
+      "subTerritoryId": "oviedo"
+    },
+    {
+      "id": "gijon",
+      "name": "Gij\u00f3n",
+      "territoryId": "asturias",
+      "countsForVictory": true,
+      "initialController": "republic",
+      "subTerritoryId": "asturias"
+    },
+    {
+      "id": "santander",
+      "name": "Santander",
+      "territoryId": "cantabria",
+      "countsForVictory": true,
+      "initialController": "republic",
+      "subTerritoryId": "cantabria"
+    },
+    {
+      "id": "bilbao",
+      "name": "Bilbao",
+      "territoryId": "pais-vasco",
+      "countsForVictory": true,
+      "initialController": "republic",
+      "subTerritoryId": "bizkaia"
+    },
+    {
+      "id": "san-sebastian",
+      "name": "San Sebasti\u00e1n",
+      "territoryId": "pais-vasco",
+      "countsForVictory": true,
+      "initialController": "republic",
+      "subTerritoryId": "gipuzkoa"
+    },
+    {
+      "id": "pamplona",
+      "name": "Pamplona",
+      "territoryId": "navarra",
+      "countsForVictory": true,
+      "initialController": "north",
+      "subTerritoryId": "navarra"
+    },
+    {
+      "id": "burgos",
+      "name": "Burgos",
+      "territoryId": "castilla-y-leon",
+      "countsForVictory": true,
+      "initialController": "north",
+      "subTerritoryId": "burgos"
+    },
+    {
+      "id": "valladolid",
+      "name": "Valladolid",
+      "territoryId": "castilla-y-leon",
+      "countsForVictory": true,
+      "initialController": "north",
+      "subTerritoryId": "valladolid"
+    },
+    {
+      "id": "salamanca",
+      "name": "Salamanca",
+      "territoryId": "castilla-y-leon",
+      "countsForVictory": true,
+      "initialController": "north",
+      "subTerritoryId": "salamanca"
+    },
+    {
+      "id": "zaragoza",
+      "name": "Zaragoza",
+      "territoryId": "aragon",
+      "countsForVictory": true,
+      "initialController": "north",
+      "subTerritoryId": "zaragoza"
+    },
+    {
+      "id": "teruel",
+      "name": "Teruel",
+      "territoryId": "aragon",
+      "countsForVictory": true,
+      "initialController": "north",
+      "subTerritoryId": "teruel"
+    },
+    {
+      "id": "barcelona",
+      "name": "Barcelona",
+      "territoryId": "catalunya",
+      "countsForVictory": true,
+      "initialController": "republic",
+      "subTerritoryId": "barcelona"
+    },
+    {
+      "id": "madrid",
+      "name": "Madrid",
+      "territoryId": "madrid",
+      "countsForVictory": true,
+      "initialController": "republic",
+      "subTerritoryId": "madrid"
+    },
+    {
+      "id": "toledo",
+      "name": "Toledo",
+      "territoryId": "castilla-la-mancha",
+      "countsForVictory": true,
+      "initialController": "republic",
+      "subTerritoryId": "toledo"
+    },
+    {
+      "id": "badajoz",
+      "name": "Badajoz",
+      "territoryId": "extremadura",
+      "countsForVictory": true,
+      "initialController": "republic",
+      "subTerritoryId": "badajoz"
+    },
+    {
+      "id": "valencia",
+      "name": "Valencia",
+      "territoryId": "valencia",
+      "countsForVictory": true,
+      "initialController": "republic",
+      "subTerritoryId": "valencia"
+    },
+    {
+      "id": "albacete",
+      "name": "Albacete",
+      "territoryId": "castilla-la-mancha",
+      "countsForVictory": true,
+      "initialController": "republic",
+      "subTerritoryId": "albacete"
+    },
+    {
+      "id": "alicante",
+      "name": "Alicante",
+      "territoryId": "valencia",
+      "countsForVictory": true,
+      "initialController": "republic",
+      "subTerritoryId": "alicante"
+    },
+    {
+      "id": "cartagena",
+      "name": "Cartagena",
+      "territoryId": "murcia",
+      "countsForVictory": true,
+      "initialController": "republic",
+      "subTerritoryId": "murcia"
+    },
+    {
+      "id": "seville",
+      "name": "Sevilla",
+      "territoryId": "andalucia",
+      "countsForVictory": true,
+      "initialController": "south",
+      "subTerritoryId": "sevilla"
+    },
+    {
+      "id": "cordoba",
+      "name": "C\u00f3rdoba",
+      "territoryId": "andalucia",
+      "countsForVictory": true,
+      "initialController": "south",
+      "subTerritoryId": "cordoba"
+    },
+    {
+      "id": "granada",
+      "name": "Granada",
+      "territoryId": "andalucia",
+      "countsForVictory": true,
+      "initialController": "south",
+      "subTerritoryId": "granada"
+    },
+    {
+      "id": "malaga",
+      "name": "M\u00e1laga",
+      "territoryId": "andalucia",
+      "countsForVictory": true,
+      "initialController": "republic",
+      "subTerritoryId": "malaga"
+    },
+    {
+      "id": "cadiz",
+      "name": "C\u00e1diz",
+      "territoryId": "andalucia",
+      "countsForVictory": true,
+      "initialController": "south",
+      "subTerritoryId": "cadiz"
+    }
+  ],
+  "units": [
+    {
+      "id": "rep-wad-ras-1",
+      "name": "Wad-Ras Infantry Regiment No. 1",
+      "factionId": "republic",
+      "type": "infantry-regiment",
+      "formationKind": "regiment",
+      "strength": 550,
+      "fullStrength": 550,
+      "territoryId": "madrid",
+      "cityId": "madrid",
+      "sources": [
+        {
+          "sourceId": "arzanegui-1993",
+          "reference": "I Division barracks-strength row"
+        },
+        {
+          "sourceId": "eswiki-madrid-1936",
+          "reference": "citing Martinez Bande (2007), p. 391"
+        },
+        {
+          "sourceId": "puell-2012",
+          "reference": "preprint p. 15"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "Stayed loyal at Carabanchel after its general was killed by his own soldiers. Present strength estimated from I Division's barracks figures, less losses to the dissolution of 18-19 July."
+    },
+    {
+      "id": "rep-covadonga-4",
+      "name": "Covadonga Infantry Regiment No. 4",
+      "factionId": "republic",
+      "type": "infantry-regiment",
+      "formationKind": "regiment",
+      "strength": 550,
+      "fullStrength": 550,
+      "territoryId": "madrid",
+      "cityId": "madrid",
+      "sources": [
+        {
+          "sourceId": "arzanegui-1993",
+          "reference": "infantry regiment list; I Division barracks-strength row"
+        },
+        {
+          "sourceId": "enwiki-montana-1936",
+          "reference": "citing Fraser (1979), pp. 75-78"
+        },
+        {
+          "sourceId": "puell-2012",
+          "reference": "preprint p. 15"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "Garrisoned in Madrid. Whether it was among the regiments in the Montana barracks is unverified. Strength estimated as for Wad-Ras No. 1."
+    },
+    {
+      "id": "rep-madrid-security",
+      "name": "Madrid Assault and Civil Guards",
+      "factionId": "republic",
+      "type": "security-forces",
+      "formationKind": "security",
+      "strength": 3000,
+      "fullStrength": 3000,
+      "territoryId": "madrid",
+      "cityId": "madrid",
+      "sources": [
+        {
+          "sourceId": "enwiki-montana-1936",
+          "reference": "citing Thomas (2001), p. 208"
+        },
+        {
+          "sourceId": "eswiki-madrid-1936",
+          "reference": "citing Mendez Luengo (1977), p. 121"
+        },
+        {
+          "sourceId": "puell-2012",
+          "reference": "preprint p. 5"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "Part of the Assault and Civil Guards who held Madrid with the loyal army units; the rest went out in mixed columns. Estimated at half the guards in the capital."
+    },
+    {
+      "id": "rep-madrid-sierra-column",
+      "designation": "SIER",
+      "name": "Madrid Sierra Columns",
+      "factionId": "republic",
+      "type": "militia-column",
+      "formationKind": "column",
+      "strength": 5000,
+      "fullStrength": 5000,
+      "territoryId": "madrid",
+      "cityId": "madrid",
+      "sources": [
+        {
+          "sourceId": "eswiki-sierra-1936",
+          "reference": "Batalla de Guadarrama"
+        },
+        {
+          "sourceId": "puell-2012",
+          "reference": "preprint p. 5"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "The mixed columns of soldiers, guards, and militia holding the Guadarrama and Somosierra passes. Estimated as a fraction of the militia raised in Madrid."
+    },
+    {
+      "id": "rep-barcelona-security",
+      "name": "Barcelona Assault and Civil Guards",
+      "factionId": "republic",
+      "type": "security-forces",
+      "formationKind": "security",
+      "strength": 5000,
+      "fullStrength": 5000,
+      "territoryId": "catalunya",
+      "cityId": "barcelona",
+      "sources": [
+        {
+          "sourceId": "eswiki-barcelona-1936",
+          "reference": "citing Thomas (1976), p. 275; Martinez Bande (2007), pp. 305-306"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "The Assault and Civil Guards who, with the CNT, defeated the rising in Barcelona, where the Badajoz and Alcantara regiments rose and lost."
+    },
+    {
+      "id": "rep-durruti-column",
+      "designation": "DURR",
+      "name": "Durruti Column",
+      "factionId": "republic",
+      "type": "militia-column",
+      "formationKind": "column",
+      "strength": 2500,
+      "fullStrength": 2500,
+      "territoryId": "catalunya",
+      "cityId": "barcelona",
+      "sources": [
+        {
+          "sourceId": "eswiki-sierra-1936",
+          "reference": "Columna Durruti"
+        },
+        {
+          "sourceId": "eswiki-barcelona-1936",
+          "reference": "citing Martinez Bande (2007), pp. 315 and 318"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "Left Barcelona for the Aragon front on 24 July with about 2,500 men. The figure is unfootnoted."
+    },
+    {
+      "id": "rep-catalan-columns",
+      "name": "Catalan Militia Columns",
+      "factionId": "republic",
+      "type": "militia-column",
+      "formationKind": "column",
+      "strength": 5000,
+      "fullStrength": 5000,
+      "territoryId": "catalunya",
+      "cityId": "barcelona",
+      "sources": [
+        {
+          "sourceId": "eswiki-barcelona-1936",
+          "reference": "citing Thomas (2001), pp. 237-238"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "The other CNT and party columns leaving Barcelona for Aragon. Estimated as a fraction of the armed CNT men in the city after the rising."
+    },
+    {
+      "id": "rep-otumba-9",
+      "name": "Otumba Infantry Regiment No. 9",
+      "factionId": "republic",
+      "type": "infantry-regiment",
+      "formationKind": "regiment",
+      "strength": 580,
+      "fullStrength": 580,
+      "territoryId": "valencia",
+      "cityId": "valencia",
+      "sources": [
+        {
+          "sourceId": "arzanegui-1993",
+          "reference": "III Division barracks-strength row"
+        },
+        {
+          "sourceId": "asensio-milicias-valencianas",
+          "reference": "p. 62"
+        },
+        {
+          "sourceId": "puell-2012",
+          "reference": "preprint p. 15"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "The Valencia garrison stayed in barracks until workers stormed them about eight days after the rising. Strength estimated from III Division's barracks figures, less losses to the dissolution."
+    },
+    {
+      "id": "rep-guadalajara-10",
+      "name": "Guadalajara Infantry Regiment No. 10",
+      "factionId": "republic",
+      "type": "infantry-regiment",
+      "formationKind": "regiment",
+      "strength": 580,
+      "fullStrength": 580,
+      "territoryId": "valencia",
+      "cityId": "valencia",
+      "sources": [
+        {
+          "sourceId": "arzanegui-1993",
+          "reference": "III Division barracks-strength row"
+        },
+        {
+          "sourceId": "asensio-milicias-valencianas",
+          "reference": "p. 62"
+        },
+        {
+          "sourceId": "puell-2012",
+          "reference": "preprint p. 15"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "The Valencia garrison stayed in barracks until workers stormed them about eight days after the rising. Strength estimated as for Otumba No. 9."
+    },
+    {
+      "id": "rep-sevilla-34",
+      "name": "Sevilla Infantry Regiment No. 34",
+      "factionId": "republic",
+      "type": "infantry-regiment",
+      "formationKind": "regiment",
+      "strength": 775,
+      "fullStrength": 775,
+      "territoryId": "murcia",
+      "cityId": "cartagena",
+      "sources": [
+        {
+          "sourceId": "arzanegui-1993",
+          "reference": "infantry regiment list; III Division barracks-strength row"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "Garrisoned at Cartagena. Strength from III Division's barracks figures."
+    },
+    {
+      "id": "rep-vitoria-8",
+      "name": "Vitoria Infantry Regiment No. 8",
+      "factionId": "republic",
+      "type": "infantry-regiment",
+      "formationKind": "regiment",
+      "strength": 785,
+      "fullStrength": 785,
+      "territoryId": "andalucia",
+      "cityId": "malaga",
+      "sources": [
+        {
+          "sourceId": "arzanegui-1993",
+          "reference": "II Division Republican-zone barracks-strength row"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "Garrisoned at Malaga, where the rising failed. Strength from II Division's Republican-zone barracks figures; the regiment's later fate is unverified."
+    },
+    {
+      "id": "rep-castilla-3",
+      "name": "Castilla Infantry Regiment No. 3",
+      "factionId": "republic",
+      "type": "infantry-regiment",
+      "formationKind": "regiment",
+      "strength": 740,
+      "fullStrength": 740,
+      "territoryId": "extremadura",
+      "cityId": "badajoz",
+      "sources": [
+        {
+          "sourceId": "arzanegui-1993",
+          "reference": "infantry regiment list; I Division barracks-strength row"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "The only regiment in Extremadura, garrisoned at Badajoz. Strength from I Division's barracks figures."
+    },
+    {
+      "id": "rep-asturian-militia",
+      "name": "Asturian Miners' Militia",
+      "factionId": "republic",
+      "type": "militia-column",
+      "formationKind": "column",
+      "strength": 10000,
+      "fullStrength": 10000,
+      "territoryId": "asturias",
+      "cityId": "gijon",
+      "sources": [
+        {
+          "sourceId": "eswiki-oviedo-1936",
+          "reference": "infobox"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "The miners' militia besieging Oviedo and the Simancas barracks at Gijon. The 10,000 figure is unfootnoted."
+    },
+    {
+      "id": "rep-basque-column",
+      "name": "Basque Loyalist Column",
+      "factionId": "republic",
+      "type": "militia-column",
+      "formationKind": "column",
+      "strength": 3000,
+      "fullStrength": 3000,
+      "territoryId": "pais-vasco",
+      "cityId": "bilbao",
+      "sources": [
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "Basque militia, the loyal garrison, guards, and miqueletes that kept Bizkaia and Gipuzkoa loyal. Size estimated; no figure was found."
+    },
+    {
+      "id": "rep-santander-column",
+      "name": "Valencia Infantry Regiment No. 21",
+      "factionId": "republic",
+      "type": "infantry-regiment",
+      "formationKind": "regiment",
+      "strength": 1070,
+      "fullStrength": 1070,
+      "territoryId": "cantabria",
+      "cityId": "santander",
+      "sources": [
+        {
+          "sourceId": "arzanegui-1993",
+          "reference": "infantry regiment list; VI Division Republican-zone row"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "The Santander garrison. Strength assumes VI Division's Republican-zone barracks rate."
+    },
+    {
+      "id": "rep-baleares-37",
+      "name": "Baleares Infantry Regiment No. 37",
+      "factionId": "republic",
+      "type": "infantry-regiment",
+      "formationKind": "regiment",
+      "strength": 655,
+      "fullStrength": 655,
+      "territoryId": "islas-baleares",
+      "sources": [
+        {
+          "sourceId": "arzanegui-1993",
+          "reference": "infantry regiment list; Balearics barracks-strength row (655, 52%)"
+        },
+        {
+          "sourceId": "ubc-july-map"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "The Mah\u00f3n garrison. It stayed loyal and held Menorca for the Republic all war. Strength is the Mah\u00f3n barracks figure. It stands in the Islas Baleares, where units are territory-level, facing Palma No. 36 across the islands."
+    },
+    {
+      "id": "north-zamora-29",
+      "name": "Zamora Infantry Regiment No. 29",
+      "factionId": "north",
+      "type": "infantry-regiment",
+      "formationKind": "regiment",
+      "strength": 700,
+      "fullStrength": 700,
+      "territoryId": "galicia",
+      "cityId": "a-coruna",
+      "sources": [
+        {
+          "sourceId": "arzanegui-1993",
+          "reference": "infantry regiment list"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "Garrisoned at A Coruna. VIII Division's barracks figures are missing, so the strength uses the mean Nationalist-zone rate."
+    },
+    {
+      "id": "north-san-marcial-22",
+      "name": "San Marcial Infantry Regiment No. 22",
+      "factionId": "north",
+      "type": "infantry-regiment",
+      "formationKind": "regiment",
+      "strength": 700,
+      "fullStrength": 700,
+      "territoryId": "castilla-y-leon",
+      "cityId": "burgos",
+      "sources": [
+        {
+          "sourceId": "arzanegui-1993",
+          "reference": "VI Division Nationalist-zone barracks-strength row"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "Garrisoned at Burgos. Strength from VI Division's Nationalist-zone barracks figures."
+    },
+    {
+      "id": "north-san-quintin-25",
+      "name": "San Quint\u00edn Infantry Regiment No. 25",
+      "factionId": "north",
+      "type": "infantry-regiment",
+      "formationKind": "regiment",
+      "strength": 700,
+      "fullStrength": 700,
+      "territoryId": "castilla-y-leon",
+      "cityId": "valladolid",
+      "sources": [
+        {
+          "sourceId": "arzanegui-1993",
+          "reference": "VII Division barracks-strength row"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "Garrisoned at Valladolid. Strength from VII Division's barracks figures."
+    },
+    {
+      "id": "north-america-23",
+      "name": "Am\u00e9rica Infantry Regiment No. 23",
+      "factionId": "north",
+      "type": "infantry-regiment",
+      "formationKind": "regiment",
+      "strength": 700,
+      "fullStrength": 700,
+      "territoryId": "navarra",
+      "cityId": "pamplona",
+      "sources": [
+        {
+          "sourceId": "arzanegui-1993",
+          "reference": "VI Division Nationalist-zone barracks-strength row"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "Garrisoned at Pamplona. Strength from VI Division's Nationalist-zone barracks figures."
+    },
+    {
+      "id": "north-aragon-17",
+      "name": "Arag\u00f3n Infantry Regiment No. 17",
+      "factionId": "north",
+      "type": "infantry-regiment",
+      "formationKind": "regiment",
+      "strength": 660,
+      "fullStrength": 660,
+      "territoryId": "aragon",
+      "cityId": "zaragoza",
+      "sources": [
+        {
+          "sourceId": "arzanegui-1993",
+          "reference": "V Division Nationalist-zone barracks-strength row"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "Garrisoned at Zaragoza. Strength from V Division's Nationalist-zone barracks figures."
+    },
+    {
+      "id": "north-gerona-18",
+      "name": "Gerona Infantry Regiment No. 18",
+      "factionId": "north",
+      "type": "infantry-regiment",
+      "formationKind": "regiment",
+      "strength": 660,
+      "fullStrength": 660,
+      "territoryId": "aragon",
+      "cityId": "zaragoza",
+      "sources": [
+        {
+          "sourceId": "arzanegui-1993",
+          "reference": "V Division Nationalist-zone barracks-strength row"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "Garrisoned at Zaragoza. Strength from V Division's Nationalist-zone barracks figures."
+    },
+    {
+      "id": "north-la-victoria-28",
+      "name": "La Victoria Infantry Regiment No. 28",
+      "factionId": "north",
+      "type": "infantry-regiment",
+      "formationKind": "regiment",
+      "strength": 700,
+      "fullStrength": 700,
+      "territoryId": "castilla-y-leon",
+      "cityId": "salamanca",
+      "sources": [
+        {
+          "sourceId": "arzanegui-1993",
+          "reference": "VII Division barracks-strength row"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "Garrisoned at Salamanca. Strength from VII Division's barracks figures."
+    },
+    {
+      "id": "north-milan-32",
+      "name": "Mil\u00e1n Infantry Regiment No. 32",
+      "factionId": "north",
+      "type": "infantry-regiment",
+      "formationKind": "regiment",
+      "strength": 660,
+      "fullStrength": 660,
+      "territoryId": "asturias",
+      "cityId": "oviedo",
+      "sources": [
+        {
+          "sourceId": "eswiki-oviedo-1936",
+          "reference": "citing Martinez Bande (2007), pp. 350-351"
+        },
+        {
+          "sourceId": "arzanegui-1993",
+          "reference": "infantry regiment list"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "The soldiers of Aranda's Oviedo garrison, besieged by the miners' militia."
+    },
+    {
+      "id": "north-simancas-40",
+      "designation": "SIMA",
+      "name": "Simancas Barracks Detachment",
+      "factionId": "north",
+      "type": "infantry-regiment",
+      "formationKind": "battalion",
+      "strength": 200,
+      "fullStrength": 200,
+      "territoryId": "asturias",
+      "cityId": "gijon",
+      "sources": [
+        {
+          "sourceId": "eswiki-oviedo-1936",
+          "reference": "citing Fraser (1979), p. 241"
+        },
+        {
+          "sourceId": "arzanegui-1993",
+          "reference": "infantry regiment list"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "About 200 defenders of the Simancas barracks at Gijon, besieged by the miners' militia."
+    },
+    {
+      "id": "north-oviedo-guards",
+      "name": "Oviedo Civil and Assault Guards",
+      "factionId": "north",
+      "type": "security-forces",
+      "formationKind": "security",
+      "strength": 1870,
+      "fullStrength": 1870,
+      "territoryId": "asturias",
+      "cityId": "oviedo",
+      "sources": [
+        {
+          "sourceId": "eswiki-oviedo-1936",
+          "reference": "citing Martinez Bande (2007), pp. 350-351"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "The Civil Guards, Assault Guards, and Carabineros who formed most of Aranda's defenders in Oviedo."
+    },
+    {
+      "id": "north-navarre-requetes",
+      "name": "Navarrese Requet\u00e9 Tercios",
+      "factionId": "north",
+      "type": "militia-column",
+      "formationKind": "column",
+      "strength": 5000,
+      "fullStrength": 5000,
+      "territoryId": "navarra",
+      "cityId": "pamplona",
+      "sources": [
+        {
+          "sourceId": "aportes-2025",
+          "reference": "pp. 119 and 128"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "Carlist volunteers mobilised in Navarre; 8,000 were enrolled at the start of 1936. The field strength is estimated after the detachments sent to the Sierra and Gipuzkoa."
+    },
+    {
+      "id": "north-sierra-column",
+      "designation": "MOLA",
+      "name": "Mola's Sierra Columns",
+      "factionId": "north",
+      "type": "militia-column",
+      "formationKind": "column",
+      "strength": 2500,
+      "fullStrength": 2500,
+      "territoryId": "castilla-y-leon",
+      "sources": [
+        {
+          "sourceId": "eswiki-sierra-1936",
+          "reference": "Batalla de Guadarrama"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "Mola's columns at Somosierra and the Alto del Leon under Garcia Escamez, Serrador, and Gistau: regulars with requete and Falange companies. Total estimated."
+    },
+    {
+      "id": "north-argel-27",
+      "name": "Argel Infantry Regiment No. 27",
+      "factionId": "north",
+      "type": "infantry-regiment",
+      "formationKind": "regiment",
+      "strength": 700,
+      "fullStrength": 700,
+      "territoryId": "extremadura",
+      "sources": [
+        {
+          "sourceId": "arzanegui-1993",
+          "reference": "infantry regiment list (citing the Nafziger Collection); VII Division barracks-strength row"
+        },
+        {
+          "sourceId": "ubc-july-map"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "The C\u00e1ceres garrison, in VII Organic Division (Valladolid). It rose with the division on 19 July and held C\u00e1ceres for the rising. Strength from VII Division's barracks figures, as San Quint\u00edn No. 25. It stands in Extremadura, where units are territory-level; the province it held is C\u00e1ceres."
+    },
+    {
+      "id": "north-flandes-5",
+      "name": "Flandes Mountain Battalion No. 5",
+      "factionId": "north",
+      "type": "infantry-regiment",
+      "formationKind": "battalion",
+      "strength": 450,
+      "fullStrength": 450,
+      "territoryId": "pais-vasco",
+      "sources": [
+        {
+          "sourceId": "arzanegui-1993",
+          "reference": "mountain battalion list"
+        },
+        {
+          "sourceId": "ubc-july-map"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "The Vitoria garrison, which rose with Mola and held \u00c1lava. Vitoria also quartered the Numancia No. 6 cavalry and the No. 2 mountain artillery, which are folded in. No barracks figure was found for the battalion: the strength is an estimate (tier 3), a mountain battalion at VI Division's Nationalist-zone rate of about 55 percent. It stands in Pa\u00eds Vasco, where units are territory-level."
+    },
+    {
+      "id": "south-granada-6",
+      "name": "Granada Infantry Regiment No. 6",
+      "factionId": "south",
+      "type": "infantry-regiment",
+      "formationKind": "regiment",
+      "strength": 600,
+      "fullStrength": 600,
+      "territoryId": "andalucia",
+      "cityId": "seville",
+      "sources": [
+        {
+          "sourceId": "eswiki-sevilla-1936",
+          "reference": "citing Salas (1992), pp. 168-170"
+        },
+        {
+          "sourceId": "arzanegui-1993",
+          "reference": "infantry regiment list"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "Garrisoned at Seville, with both battalions under half strength from summer leave."
+    },
+    {
+      "id": "south-lepanto-5",
+      "name": "Lepanto Infantry Regiment No. 5",
+      "factionId": "south",
+      "type": "infantry-regiment",
+      "formationKind": "regiment",
+      "strength": 710,
+      "fullStrength": 710,
+      "territoryId": "andalucia",
+      "cityId": "granada",
+      "sources": [
+        {
+          "sourceId": "arzanegui-1993",
+          "reference": "II Division Nationalist-zone barracks-strength row"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "Garrisoned at Granada. Strength from II Division's Nationalist-zone barracks figures."
+    },
+    {
+      "id": "south-cadiz-33",
+      "name": "C\u00e1diz Infantry Regiment No. 33",
+      "factionId": "south",
+      "type": "infantry-regiment",
+      "formationKind": "regiment",
+      "strength": 710,
+      "fullStrength": 710,
+      "territoryId": "andalucia",
+      "cityId": "cadiz",
+      "sources": [
+        {
+          "sourceId": "arzanegui-1993",
+          "reference": "II Division Nationalist-zone barracks-strength row"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "Garrisoned at Cadiz. Strength from II Division's Nationalist-zone barracks figures."
+    },
+    {
+      "id": "south-africa-vanguard",
+      "name": "Army of Africa Vanguard",
+      "factionId": "south",
+      "type": "colonial-veterans",
+      "formationKind": "other",
+      "strength": 2073,
+      "fullStrength": 2073,
+      "territoryId": "andalucia",
+      "cityId": "seville",
+      "sources": [
+        {
+          "sourceId": "eswiki-sevilla-1936",
+          "reference": "citing Ortiz (2006), p. 144"
+        },
+        {
+          "sourceId": "enwiki-airlift-1936",
+          "reference": "citing Garriga (1980), p. 68"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "The Legion and Regulares troops who reached Seville during July, most of them by air."
+    },
+    {
+      "id": "south-legion",
+      "name": "Tercio Legion No. 2 (Banderas IV-VI)",
+      "factionId": "south",
+      "type": "colonial-veterans",
+      "formationKind": "regiment",
+      "strength": 1800,
+      "fullStrength": 1800,
+      "territoryId": "ceuta",
+      "sources": [
+        {
+          "sourceId": "eswiki-ejercito-africa",
+          "reference": "strength table, citing Thomas, p. 440"
+        },
+        {
+          "sourceId": "arzanegui-1993",
+          "reference": "Army of Africa garrisons"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "Banderas IV to VI of the Legion, garrisoned at Dar Riffien near Ceuta. Estimated at half the Legion, less the share already in Seville."
+    },
+    {
+      "id": "south-legion-1",
+      "name": "Tercio Legion No. 1 (Banderas I-III)",
+      "factionId": "south",
+      "type": "colonial-veterans",
+      "formationKind": "regiment",
+      "strength": 1800,
+      "fullStrength": 1800,
+      "territoryId": "melilla",
+      "sources": [
+        {
+          "sourceId": "eswiki-ejercito-africa",
+          "reference": "strength table, citing Thomas, p. 440"
+        },
+        {
+          "sourceId": "arzanegui-1993",
+          "reference": "Army of Africa garrisons"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "Banderas I to III of the Legion, garrisoned at Tauima near Melilla. Estimated at half the Legion, less the share already in Seville."
+    },
+    {
+      "id": "south-regulares",
+      "name": "Regulares Groups Melilla No. 2 and Alhucemas No. 5",
+      "factionId": "south",
+      "type": "colonial-veterans",
+      "formationKind": "other",
+      "strength": 3570,
+      "fullStrength": 3570,
+      "territoryId": "melilla",
+      "sources": [
+        {
+          "sourceId": "eswiki-ejercito-africa",
+          "reference": "strength table, citing Thomas, p. 440"
+        },
+        {
+          "sourceId": "arzanegui-1993",
+          "reference": "Army of Africa garrisons"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "The Melilla No. 2 and Alhucemas No. 5 groups of Regulares, less a proportional share already in Seville. Estimated."
+    },
+    {
+      "id": "south-regulares-west",
+      "name": "Regulares Groups Tetu\u00e1n No. 1, Ceuta No. 3, and Larache No. 4",
+      "factionId": "south",
+      "type": "colonial-veterans",
+      "formationKind": "other",
+      "strength": 5350,
+      "fullStrength": 5350,
+      "territoryId": "ceuta",
+      "sources": [
+        {
+          "sourceId": "eswiki-ejercito-africa",
+          "reference": "strength table, citing Thomas, p. 440"
+        },
+        {
+          "sourceId": "arzanegui-1993",
+          "reference": "Army of Africa garrisons"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "The Tetuan No. 1, Ceuta No. 3, and Larache No. 4 groups of Regulares, less a proportional share already in Seville. Estimated."
+    },
+    {
+      "id": "south-palma-36",
+      "name": "Palma Infantry Regiment No. 36",
+      "factionId": "south",
+      "type": "infantry-regiment",
+      "formationKind": "regiment",
+      "strength": 729,
+      "fullStrength": 729,
+      "territoryId": "islas-baleares",
+      "sources": [
+        {
+          "sourceId": "arzanegui-1993",
+          "reference": "infantry regiment list; Balearics barracks-strength row (729, 57%)"
+        },
+        {
+          "sourceId": "ubc-july-map"
+        },
+        {
+          "sourceId": "warwick-timeline"
+        }
+      ],
+      "historicalNote": "The Palma garrison of Goded's Baleares command. It held Mallorca, and with it Ibiza, for the rising after Goded left for Barcelona on 19 July. Strength is the Palma barracks figure. It stands in the Islas Baleares, where units are territory-level, so it garrisons Ibiza too."
+    },
+    {
+      "id": "rep-ni52-fighters",
+      "name": "Hispano-Nieuport Ni-52 Fighters",
+      "factionId": "republic",
+      "type": "fighter-squadron",
+      "formationKind": "other",
+      "strength": 100,
+      "fullStrength": 100,
+      "territoryId": "madrid",
+      "sources": [
+        {
+          "sourceId": "enwiki-republican-air-force",
+          "reference": "July 1936 inventory: 60 Breguet XIX, 27 Vickers Vildebeest, 56 Hispano-Nieuport Ni-52; most stayed in the loyalist zone"
+        }
+      ],
+      "historicalNote": "Fighters of the air force that stayed loyal, around Madrid (Getafe). One counter; 100 men is the type's establishment, a design note."
+    },
+    {
+      "id": "rep-breguet-bombers",
+      "name": "Breguet XIX Light Bombers",
+      "factionId": "republic",
+      "type": "bomber-squadron",
+      "formationKind": "other",
+      "strength": 100,
+      "fullStrength": 100,
+      "territoryId": "madrid",
+      "sources": [
+        {
+          "sourceId": "enwiki-republican-air-force",
+          "reference": "July 1936 inventory: 60 Breguet XIX, 27 Vickers Vildebeest, 56 Hispano-Nieuport Ni-52; most stayed in the loyalist zone"
+        }
+      ],
+      "historicalNote": "Breguet XIX and Vildebeest attack aircraft that stayed loyal. One counter; 100 men is the type's establishment, a design note."
+    },
+    {
+      "id": "rep-catalan-recon",
+      "name": "Catalan Reconnaissance Flight",
+      "factionId": "republic",
+      "type": "recon-flight",
+      "formationKind": "other",
+      "strength": 100,
+      "fullStrength": 100,
+      "territoryId": "catalunya",
+      "sources": [
+        {
+          "sourceId": "enwiki-republican-air-force",
+          "reference": "July 1936 inventory: 60 Breguet XIX, 27 Vickers Vildebeest, 56 Hispano-Nieuport Ni-52; most stayed in the loyalist zone"
+        }
+      ],
+      "historicalNote": "Breguet XIX flown for reconnaissance from Barcelona. One counter; 100 men is the type's establishment, a design note."
+    },
+    {
+      "id": "north-leon-recon",
+      "name": "Leon Reconnaissance Flight",
+      "factionId": "north",
+      "type": "recon-flight",
+      "formationKind": "other",
+      "strength": 100,
+      "fullStrength": 100,
+      "territoryId": "castilla-y-leon",
+      "sources": [
+        {
+          "sourceId": "enwiki-republican-air-force",
+          "reference": "the government lost the military planes in aerodromes under rebel control"
+        }
+      ],
+      "historicalNote": "Breguet XIX at the Leon aerodrome, which the rising held. One counter; 100 men is the type's establishment, a design note."
+    },
+    {
+      "id": "south-ju52-bombers",
+      "name": "Junkers Ju 52 Bombers",
+      "factionId": "south",
+      "type": "bomber-squadron",
+      "formationKind": "other",
+      "strength": 100,
+      "fullStrength": 100,
+      "territoryId": "andalucia",
+      "sources": [
+        {
+          "sourceId": "enwiki-airlift-1936",
+          "reference": "German Ju 52s ferrying the Army of Africa, armed as bombers"
+        }
+      ],
+      "historicalNote": "The Ju 52s of the airlift to Seville, which also flew as bombers. One counter; 100 men is the type's establishment, a design note."
+    },
+    {
+      "id": "rep-general-miaja",
+      "name": "General Miaja's Headquarters",
+      "factionId": "republic",
+      "type": "general",
+      "formationKind": "other",
+      "strength": 100,
+      "fullStrength": 100,
+      "territoryId": "madrid",
+      "generalId": "jose-miaja",
+      "sources": [
+        {
+          "sourceId": "enwiki-jose-miaja"
+        },
+        {
+          "sourceId": "eswiki-madrid-1936"
+        }
+      ],
+      "historicalNote": "Miaja commanded the 1st Organic Division in Madrid in July 1936. General's headquarters. Its 100 men stand for the staff, a design note: a general adds no combat value of his own (U5)."
+    },
+    {
+      "id": "north-general-mola",
+      "name": "General Mola's Headquarters",
+      "factionId": "north",
+      "type": "general",
+      "formationKind": "other",
+      "strength": 100,
+      "fullStrength": 100,
+      "territoryId": "navarra",
+      "generalId": "emilio-mola",
+      "sources": [
+        {
+          "sourceId": "enwiki-emilio-mola"
+        }
+      ],
+      "historicalNote": "Mola directed the rising from Pamplona. General's headquarters. Its 100 men stand for the staff, a design note: a general adds no combat value of his own (U5)."
+    },
+    {
+      "id": "south-general-yague",
+      "name": "Lieutenant Colonel Yag\u00fce's Headquarters",
+      "factionId": "south",
+      "type": "general",
+      "formationKind": "other",
+      "strength": 100,
+      "fullStrength": 100,
+      "territoryId": "ceuta",
+      "generalId": "juan-yague",
+      "sources": [
+        {
+          "sourceId": "enwiki-juan-yague"
+        },
+        {
+          "sourceId": "eswiki-ejercito-africa"
+        }
+      ],
+      "historicalNote": "Yag\u00fce led the Army of Africa's columns, which crossed from Morocco in early August. General's headquarters. Its 100 men stand for the staff, a design note: a general adds no combat value of his own (U5)."
+    }
+  ],
+  "subTerritories": [
+    {
+      "id": "a-coruna",
+      "name": "A Coru\u00f1a",
+      "territoryId": "galicia",
+      "terrain": "open",
+      "startHolder": "north",
+      "development": {
+        "farms": 2,
+        "industry": 1
+      },
+      "buildings": [
+        "barracks",
+        "depot",
+        "airfield"
+      ],
+      "rail": 2,
+      "port": 2,
+      "sources": [
+        {
+          "sourceId": "ubc-july-map"
+        }
+      ],
+      "note": "VIII Division seat; naval and air station. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+    },
+    {
+      "id": "lugo",
+      "name": "Lugo",
+      "territoryId": "galicia",
+      "terrain": "mountain",
+      "startHolder": "north",
+      "development": {
+        "farms": 2
+      },
+      "buildings": [],
+      "rail": 1,
+      "port": 0,
+      "sources": [
+        {
+          "sourceId": "ubc-july-map"
+        }
+      ],
+      "note": "Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+    },
+    {
+      "id": "ourense",
+      "name": "Ourense",
+      "territoryId": "galicia",
+      "terrain": "mountain",
+      "startHolder": "north",
+      "development": {
+        "farms": 1
+      },
+      "buildings": [],
+      "rail": 1,
+      "port": 0,
+      "sources": [
+        {
+          "sourceId": "ubc-july-map"
+        }
+      ],
+      "note": "Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+    },
+    {
+      "id": "pontevedra",
+      "name": "Pontevedra",
+      "territoryId": "galicia",
+      "terrain": "open",
+      "startHolder": "north",
+      "development": {
+        "farms": 2
+      },
+      "buildings": [],
+      "rail": 1,
+      "port": 2,
+      "sources": [
+        {
+          "sourceId": "ubc-july-map"
+        }
+      ],
+      "note": "Port level for Vigo. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+    },
+    {
+      "id": "oviedo",
+      "name": "Oviedo",
+      "territoryId": "asturias",
+      "terrain": "open",
+      "startHolder": "north",
+      "development": {
+        "mines": 1,
+        "industry": 1
+      },
+      "buildings": [
+        "barracks",
+        "factory"
+      ],
+      "rail": 2,
+      "port": 0,
+      "sources": [
+        {
+          "sourceId": "ubc-july-map"
+        },
+        {
+          "sourceId": "eswiki-oviedo-1936"
+        }
+      ],
+      "note": "Aranda's garrison held the city (eswiki-oviedo-1936); the arms works stand for Trubia and La Vega. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+    },
+    {
+      "id": "asturias",
+      "name": "Asturias",
+      "territoryId": "asturias",
+      "terrain": "mountain",
+      "startHolder": "republic",
+      "development": {
+        "farms": 1,
+        "mines": 3,
+        "industry": 2
+      },
+      "buildings": [],
+      "rail": 2,
+      "port": 2,
+      "sources": [
+        {
+          "sourceId": "ubc-july-map"
+        }
+      ],
+      "note": "The Asturian coalfield and Gij\u00f3n's works and port (El Musel). Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune. D28.4: the 1936 garrison's Barracks and Factory are not listed, since only the territory's capital may hold one."
+    },
+    {
+      "id": "cantabria",
+      "name": "Cantabria",
+      "territoryId": "cantabria",
+      "terrain": "mountain",
+      "startHolder": "republic",
+      "development": {
+        "farms": 1,
+        "mines": 1,
+        "industry": 1
+      },
+      "buildings": [
+        "barracks"
+      ],
+      "rail": 2,
+      "port": 2,
+      "sources": [
+        {
+          "sourceId": "ubc-july-map"
+        }
+      ],
+      "note": "Port level for Santander. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+    },
+    {
+      "id": "bizkaia",
+      "name": "Bizkaia",
+      "territoryId": "pais-vasco",
+      "terrain": "mountain",
+      "startHolder": "republic",
+      "development": {
+        "mines": 2,
+        "industry": 3
+      },
+      "buildings": [
+        "barracks",
+        "factory",
+        "depot"
+      ],
+      "rail": 3,
+      "port": 2,
+      "sources": [
+        {
+          "sourceId": "ubc-july-map"
+        }
+      ],
+      "note": "Basque iron, steel and shipyards around Bilbao. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+    },
+    {
+      "id": "gipuzkoa",
+      "name": "Gipuzkoa",
+      "territoryId": "pais-vasco",
+      "terrain": "mountain",
+      "startHolder": "republic",
+      "development": {
+        "industry": 1
+      },
+      "buildings": [],
+      "rail": 2,
+      "port": 1,
+      "sources": [
+        {
+          "sourceId": "ubc-july-map"
+        }
+      ],
+      "note": "Eibar's small-arms works. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune. D28.4: the 1936 garrison's Barracks and Factory are not listed, since only the territory's capital may hold one."
+    },
+    {
+      "id": "alava",
+      "name": "\u00c1lava",
+      "territoryId": "pais-vasco",
+      "terrain": "open",
+      "startHolder": "north",
+      "development": {
+        "farms": 1
+      },
+      "buildings": [],
+      "rail": 2,
+      "port": 0,
+      "sources": [
+        {
+          "sourceId": "ubc-july-map"
+        }
+      ],
+      "note": "Vitoria rose with Mola (Q-PART-9). Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune. D28.4: the 1936 garrison's Barracks is not listed, since only the territory's capital may hold one."
+    },
+    {
+      "id": "navarra",
+      "name": "Navarra",
+      "territoryId": "navarra",
+      "terrain": "open",
+      "startHolder": "north",
+      "development": {
+        "farms": 2
+      },
+      "buildings": [
+        "barracks",
+        "depot"
+      ],
+      "rail": 1,
+      "port": 0,
+      "sources": [
+        {
+          "sourceId": "ubc-july-map"
+        }
+      ],
+      "note": "Pamplona, Mola's seat. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+    },
+    {
+      "id": "la-rioja",
+      "name": "La Rioja",
+      "territoryId": "la-rioja",
+      "terrain": "open",
+      "startHolder": "north",
+      "development": {
+        "farms": 2
+      },
+      "buildings": [],
+      "rail": 1,
+      "port": 0,
+      "sources": [
+        {
+          "sourceId": "ubc-july-map"
+        }
+      ],
+      "note": "Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+    },
+    {
+      "id": "zaragoza",
+      "name": "Zaragoza",
+      "territoryId": "aragon",
+      "terrain": "open",
+      "startHolder": "north",
+      "development": {
+        "farms": 2,
+        "industry": 1
+      },
+      "buildings": [
+        "barracks",
+        "depot",
+        "airfield",
+        "rail-yard"
+      ],
+      "rail": 3,
+      "port": 0,
+      "sources": [
+        {
+          "sourceId": "ubc-july-map"
+        }
+      ],
+      "note": "V Division seat and rail junction. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+    },
+    {
+      "id": "huesca",
+      "name": "Huesca",
+      "territoryId": "aragon",
+      "terrain": "mountain",
+      "startHolder": "republic",
+      "development": {
+        "farms": 1
+      },
+      "buildings": [],
+      "rail": 1,
+      "port": 0,
+      "sources": [
+        {
+          "sourceId": "ubc-july-map"
+        }
+      ],
+      "note": "Hand override (P1): the city held for the rising, but the province's east was Republican. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+    },
+    {
+      "id": "teruel",
+      "name": "Teruel",
+      "territoryId": "aragon",
+      "terrain": "mountain",
+      "startHolder": "north",
+      "development": {
+        "farms": 1,
+        "mines": 1
+      },
+      "buildings": [],
+      "rail": 1,
+      "port": 0,
+      "sources": [
+        {
+          "sourceId": "ubc-july-map"
+        }
+      ],
+      "note": "Utrillas coal. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+    },
+    {
+      "id": "madrid",
+      "name": "Madrid",
+      "territoryId": "madrid",
+      "terrain": "open",
+      "startHolder": "republic",
+      "development": {
+        "farms": 1,
+        "industry": 2
+      },
+      "buildings": [
+        "barracks",
+        "depot",
+        "factory",
+        "hospital",
+        "airfield",
+        "rail-yard"
+      ],
+      "rail": 3,
+      "port": 0,
+      "sources": [
+        {
+          "sourceId": "ubc-july-map"
+        }
+      ],
+      "note": "Capital: I Division, the arsenal, Getafe and Cuatro Vientos airfields. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+    },
+    {
+      "id": "guadarrama",
+      "name": "Sierra de Guadarrama",
+      "territoryId": "madrid",
+      "terrain": "mountain",
+      "startHolder": "republic",
+      "development": {},
+      "buildings": [],
+      "rail": 1,
+      "port": 0,
+      "sources": [
+        {
+          "sourceId": "ubc-july-map"
+        },
+        {
+          "sourceId": "eswiki-sierra-1936"
+        }
+      ],
+      "note": "Mola's columns held the Somosierra and Alto del Le\u00f3n passes, not the Madrid side (eswiki-sierra-1936). Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+    },
+    {
+      "id": "henares",
+      "name": "Henares",
+      "territoryId": "madrid",
+      "terrain": "open",
+      "startHolder": "republic",
+      "development": {
+        "farms": 1
+      },
+      "buildings": [
+        "airfield"
+      ],
+      "rail": 3,
+      "port": 0,
+      "sources": [
+        {
+          "sourceId": "ubc-july-map"
+        }
+      ],
+      "note": "Alcal\u00e1 and the Zaragoza main line; Barajas. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+    },
+    {
+      "id": "burgos",
+      "name": "Burgos",
+      "territoryId": "castilla-y-leon",
+      "terrain": "open",
+      "startHolder": "north",
+      "development": {
+        "farms": 2
+      },
+      "buildings": [
+        "barracks",
+        "depot",
+        "rail-yard"
+      ],
+      "rail": 2,
+      "port": 0,
+      "sources": [
+        {
+          "sourceId": "ubc-july-map"
+        }
+      ],
+      "note": "VI Division seat; the junta's seat from 24 July. The rail yard stands for the region's main junction (Medina del Campo): rail yards count only at the boarding capital (M3). Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+    },
+    {
+      "id": "valladolid",
+      "name": "Valladolid",
+      "territoryId": "castilla-y-leon",
+      "terrain": "open",
+      "startHolder": "north",
+      "development": {
+        "farms": 3,
+        "industry": 1
+      },
+      "buildings": [
+        "depot"
+      ],
+      "rail": 3,
+      "port": 0,
+      "sources": [
+        {
+          "sourceId": "ubc-july-map"
+        }
+      ],
+      "note": "VII Division seat; Medina del Campo junction. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune. D28.4: the 1936 garrison's Barracks is not listed, since only the territory's capital may hold one."
+    },
+    {
+      "id": "leon",
+      "name": "Le\u00f3n",
+      "territoryId": "castilla-y-leon",
+      "terrain": "open",
+      "startHolder": "north",
+      "development": {
+        "farms": 2,
+        "mines": 2
+      },
+      "buildings": [
+        "airfield"
+      ],
+      "rail": 2,
+      "port": 0,
+      "sources": [
+        {
+          "sourceId": "ubc-july-map"
+        }
+      ],
+      "note": "Le\u00f3n coalfield; air base. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune. D28.4: the 1936 garrison's Barracks is not listed, since only the territory's capital may hold one."
+    },
+    {
+      "id": "palencia",
+      "name": "Palencia",
+      "territoryId": "castilla-y-leon",
+      "terrain": "open",
+      "startHolder": "north",
+      "development": {
+        "farms": 2,
+        "mines": 1
+      },
+      "buildings": [],
+      "rail": 2,
+      "port": 0,
+      "sources": [
+        {
+          "sourceId": "ubc-july-map"
+        }
+      ],
+      "note": "Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+    },
+    {
+      "id": "zamora",
+      "name": "Zamora",
+      "territoryId": "castilla-y-leon",
+      "terrain": "open",
+      "startHolder": "north",
+      "development": {
+        "farms": 2
+      },
+      "buildings": [],
+      "rail": 1,
+      "port": 0,
+      "sources": [
+        {
+          "sourceId": "ubc-july-map"
+        }
+      ],
+      "note": "Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+    },
+    {
+      "id": "salamanca",
+      "name": "Salamanca",
+      "territoryId": "castilla-y-leon",
+      "terrain": "open",
+      "startHolder": "north",
+      "development": {
+        "farms": 2
+      },
+      "buildings": [],
+      "rail": 1,
+      "port": 0,
+      "sources": [
+        {
+          "sourceId": "ubc-july-map"
+        }
+      ],
+      "note": "Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune. D28.4: the 1936 garrison's Barracks is not listed, since only the territory's capital may hold one."
+    },
+    {
+      "id": "avila",
+      "name": "\u00c1vila",
+      "territoryId": "castilla-y-leon",
+      "terrain": "mountain",
+      "startHolder": "north",
+      "development": {
+        "farms": 1
+      },
+      "buildings": [],
+      "rail": 2,
+      "port": 0,
+      "sources": [
+        {
+          "sourceId": "ubc-july-map"
+        }
+      ],
+      "note": "The Gredos range. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+    },
+    {
+      "id": "segovia",
+      "name": "Segovia",
+      "territoryId": "castilla-y-leon",
+      "terrain": "open",
+      "startHolder": "north",
+      "development": {
+        "farms": 1
+      },
+      "buildings": [],
+      "rail": 1,
+      "port": 0,
+      "sources": [
+        {
+          "sourceId": "ubc-july-map"
+        }
+      ],
+      "note": "Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+    },
+    {
+      "id": "soria",
+      "name": "Soria",
+      "territoryId": "castilla-y-leon",
+      "terrain": "open",
+      "startHolder": "north",
+      "development": {
+        "farms": 1
+      },
+      "buildings": [],
+      "rail": 1,
+      "port": 0,
+      "sources": [
+        {
+          "sourceId": "ubc-july-map"
+        }
+      ],
+      "note": "Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+    },
+    {
+      "id": "toledo",
+      "name": "Toledo",
+      "territoryId": "castilla-la-mancha",
+      "terrain": "open",
+      "startHolder": "republic",
+      "development": {
+        "farms": 2
+      },
+      "buildings": [
+        "barracks",
+        "factory",
+        "rail-yard"
+      ],
+      "rail": 2,
+      "port": 0,
+      "sources": [
+        {
+          "sourceId": "ubc-july-map"
+        }
+      ],
+      "note": "The Toledo arms factory. The rail yard stands for the region's main junction (Alc\u00e1zar de San Juan): rail yards count only at the boarding capital (M3). Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+    },
+    {
+      "id": "ciudad-real",
+      "name": "Ciudad Real",
+      "territoryId": "castilla-la-mancha",
+      "terrain": "open",
+      "startHolder": "republic",
+      "development": {
+        "farms": 3,
+        "mines": 2
+      },
+      "buildings": [],
+      "rail": 2,
+      "port": 0,
+      "sources": [
+        {
+          "sourceId": "ubc-july-map"
+        }
+      ],
+      "note": "Almad\u00e9n mercury and Puertollano coal. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+    },
+    {
+      "id": "cuenca",
+      "name": "Cuenca",
+      "territoryId": "castilla-la-mancha",
+      "terrain": "mountain",
+      "startHolder": "republic",
+      "development": {
+        "farms": 1
+      },
+      "buildings": [],
+      "rail": 1,
+      "port": 0,
+      "sources": [
+        {
+          "sourceId": "ubc-july-map"
+        }
+      ],
+      "note": "Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+    },
+    {
+      "id": "guadalajara",
+      "name": "Guadalajara",
+      "territoryId": "castilla-la-mancha",
+      "terrain": "open",
+      "startHolder": "republic",
+      "development": {
+        "farms": 1
+      },
+      "buildings": [],
+      "rail": 2,
+      "port": 0,
+      "sources": [
+        {
+          "sourceId": "ubc-july-map"
+        }
+      ],
+      "note": "Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+    },
+    {
+      "id": "albacete",
+      "name": "Albacete",
+      "territoryId": "castilla-la-mancha",
+      "terrain": "open",
+      "startHolder": "republic",
+      "development": {
+        "farms": 2
+      },
+      "buildings": [],
+      "rail": 2,
+      "port": 0,
+      "sources": [
+        {
+          "sourceId": "ubc-july-map"
+        }
+      ],
+      "note": "Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune. D28.4: the 1936 garrison's Barracks is not listed, since only the territory's capital may hold one."
+    },
+    {
+      "id": "badajoz",
+      "name": "Badajoz",
+      "territoryId": "extremadura",
+      "terrain": "open",
+      "startHolder": "republic",
+      "development": {
+        "farms": 3
+      },
+      "buildings": [
+        "barracks"
+      ],
+      "rail": 1,
+      "port": 0,
+      "sources": [
+        {
+          "sourceId": "ubc-july-map"
+        }
+      ],
+      "note": "Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+    },
+    {
+      "id": "caceres",
+      "name": "C\u00e1ceres",
+      "territoryId": "extremadura",
+      "terrain": "open",
+      "startHolder": "north",
+      "development": {
+        "farms": 2
+      },
+      "buildings": [],
+      "rail": 1,
+      "port": 0,
+      "sources": [
+        {
+          "sourceId": "ubc-july-map"
+        },
+        {
+          "sourceId": "nafziger-1936"
+        }
+      ],
+      "note": "Nationalist on 31 July (Q-PART-9). It lay in the VII Organic Division (Valladolid) and rose under Mola, so it starts with the Northern command (nafziger-1936). Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+    },
+    {
+      "id": "barcelona",
+      "name": "Barcelona",
+      "territoryId": "catalunya",
+      "terrain": "open",
+      "startHolder": "republic",
+      "development": {
+        "farms": 1,
+        "industry": 3
+      },
+      "buildings": [
+        "barracks",
+        "depot",
+        "factory",
+        "hospital",
+        "airfield",
+        "rail-yard"
+      ],
+      "rail": 3,
+      "port": 2,
+      "sources": [
+        {
+          "sourceId": "ubc-july-map"
+        }
+      ],
+      "note": "IV Division seat; Catalan industry; El Prat. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+    },
+    {
+      "id": "girona",
+      "name": "Girona",
+      "territoryId": "catalunya",
+      "terrain": "mountain",
+      "startHolder": "republic",
+      "development": {
+        "farms": 1
+      },
+      "buildings": [],
+      "rail": 2,
+      "port": 0,
+      "sources": [
+        {
+          "sourceId": "ubc-july-map"
+        }
+      ],
+      "note": "Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+    },
+    {
+      "id": "lleida",
+      "name": "Lleida",
+      "territoryId": "catalunya",
+      "terrain": "mountain",
+      "startHolder": "republic",
+      "development": {
+        "farms": 2
+      },
+      "buildings": [],
+      "rail": 2,
+      "port": 0,
+      "sources": [
+        {
+          "sourceId": "ubc-july-map"
+        }
+      ],
+      "note": "Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+    },
+    {
+      "id": "tarragona",
+      "name": "Tarragona",
+      "territoryId": "catalunya",
+      "terrain": "open",
+      "startHolder": "republic",
+      "development": {
+        "farms": 2
+      },
+      "buildings": [],
+      "rail": 2,
+      "port": 1,
+      "sources": [
+        {
+          "sourceId": "ubc-july-map"
+        }
+      ],
+      "note": "Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+    },
+    {
+      "id": "valencia",
+      "name": "Valencia",
+      "territoryId": "valencia",
+      "terrain": "open",
+      "startHolder": "republic",
+      "development": {
+        "farms": 3,
+        "industry": 2
+      },
+      "buildings": [
+        "barracks",
+        "depot",
+        "factory",
+        "airfield",
+        "rail-yard"
+      ],
+      "rail": 3,
+      "port": 2,
+      "sources": [
+        {
+          "sourceId": "ubc-july-map"
+        }
+      ],
+      "note": "III Division seat; Manises. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+    },
+    {
+      "id": "castellon",
+      "name": "Castell\u00f3n",
+      "territoryId": "valencia",
+      "terrain": "open",
+      "startHolder": "republic",
+      "development": {
+        "farms": 2
+      },
+      "buildings": [],
+      "rail": 2,
+      "port": 1,
+      "sources": [
+        {
+          "sourceId": "ubc-july-map"
+        }
+      ],
+      "note": "Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+    },
+    {
+      "id": "alicante",
+      "name": "Alicante",
+      "territoryId": "valencia",
+      "terrain": "open",
+      "startHolder": "republic",
+      "development": {
+        "farms": 2,
+        "industry": 1
+      },
+      "buildings": [],
+      "rail": 2,
+      "port": 1,
+      "sources": [
+        {
+          "sourceId": "ubc-july-map"
+        }
+      ],
+      "note": "Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+    },
+    {
+      "id": "sevilla",
+      "name": "Sevilla",
+      "territoryId": "andalucia",
+      "terrain": "open",
+      "startHolder": "south",
+      "development": {
+        "farms": 3,
+        "industry": 1
+      },
+      "buildings": [
+        "barracks",
+        "depot",
+        "airfield",
+        "rail-yard"
+      ],
+      "rail": 3,
+      "port": 1,
+      "sources": [
+        {
+          "sourceId": "ubc-july-map"
+        },
+        {
+          "sourceId": "eswiki-sevilla-1936"
+        }
+      ],
+      "note": "II Division seat; Tablada; Queipo de Llano's rising (eswiki-sevilla-1936). Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+    },
+    {
+      "id": "cadiz",
+      "name": "C\u00e1diz",
+      "territoryId": "andalucia",
+      "terrain": "open",
+      "startHolder": "south",
+      "development": {
+        "farms": 2,
+        "industry": 1
+      },
+      "buildings": [],
+      "rail": 2,
+      "port": 2,
+      "sources": [
+        {
+          "sourceId": "ubc-july-map"
+        }
+      ],
+      "note": "Port and naval base; the Strait crossing. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune. D28.4: the 1936 garrison's Barracks is not listed, since only the territory's capital may hold one."
+    },
+    {
+      "id": "huelva",
+      "name": "Huelva",
+      "territoryId": "andalucia",
+      "terrain": "open",
+      "startHolder": "south",
+      "development": {
+        "farms": 1,
+        "mines": 3
+      },
+      "buildings": [],
+      "rail": 1,
+      "port": 1,
+      "sources": [
+        {
+          "sourceId": "ubc-july-map"
+        }
+      ],
+      "note": "R\u00edo Tinto copper. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+    },
+    {
+      "id": "cordoba",
+      "name": "C\u00f3rdoba",
+      "territoryId": "andalucia",
+      "terrain": "open",
+      "startHolder": "south",
+      "development": {
+        "farms": 3,
+        "mines": 1
+      },
+      "buildings": [],
+      "rail": 2,
+      "port": 0,
+      "sources": [
+        {
+          "sourceId": "ubc-july-map"
+        }
+      ],
+      "note": "Pe\u00f1arroya mines. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune. D28.4: the 1936 garrison's Barracks is not listed, since only the territory's capital may hold one."
+    },
+    {
+      "id": "granada",
+      "name": "Granada",
+      "territoryId": "andalucia",
+      "terrain": "mountain",
+      "startHolder": "south",
+      "development": {
+        "farms": 2
+      },
+      "buildings": [],
+      "rail": 1,
+      "port": 0,
+      "sources": [
+        {
+          "sourceId": "ubc-july-map"
+        }
+      ],
+      "note": "Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune. D28.4: the 1936 garrison's Barracks is not listed, since only the territory's capital may hold one."
+    },
+    {
+      "id": "malaga",
+      "name": "M\u00e1laga",
+      "territoryId": "andalucia",
+      "terrain": "open",
+      "startHolder": "republic",
+      "development": {
+        "farms": 1,
+        "industry": 1
+      },
+      "buildings": [],
+      "rail": 1,
+      "port": 2,
+      "sources": [
+        {
+          "sourceId": "ubc-july-map"
+        }
+      ],
+      "note": "Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+    },
+    {
+      "id": "jaen",
+      "name": "Ja\u00e9n",
+      "territoryId": "andalucia",
+      "terrain": "open",
+      "startHolder": "republic",
+      "development": {
+        "farms": 2,
+        "mines": 2
+      },
+      "buildings": [],
+      "rail": 2,
+      "port": 0,
+      "sources": [
+        {
+          "sourceId": "ubc-july-map"
+        }
+      ],
+      "note": "Linares lead; olives. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+    },
+    {
+      "id": "almeria",
+      "name": "Almer\u00eda",
+      "territoryId": "andalucia",
+      "terrain": "open",
+      "startHolder": "republic",
+      "development": {
+        "farms": 1,
+        "mines": 1
+      },
+      "buildings": [],
+      "rail": 1,
+      "port": 1,
+      "sources": [
+        {
+          "sourceId": "ubc-july-map"
+        }
+      ],
+      "note": "Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+    },
+    {
+      "id": "murcia",
+      "name": "Murcia",
+      "territoryId": "murcia",
+      "terrain": "open",
+      "startHolder": "republic",
+      "development": {
+        "farms": 2,
+        "mines": 1,
+        "industry": 1
+      },
+      "buildings": [
+        "barracks",
+        "factory"
+      ],
+      "rail": 2,
+      "port": 2,
+      "sources": [
+        {
+          "sourceId": "ubc-july-map"
+        }
+      ],
+      "note": "Cartagena naval base, arsenal and port; La Uni\u00f3n mines. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+    },
+    {
+      "id": "ceuta",
+      "name": "Ceuta",
+      "territoryId": "ceuta",
+      "terrain": "open",
+      "startHolder": "south",
+      "development": {},
+      "buildings": [
+        "barracks"
+      ],
+      "rail": 0,
+      "port": 2,
+      "sources": [
+        {
+          "sourceId": "ubc-july-map"
+        }
+      ],
+      "note": "One-sub-territory enclave with a port (Q-CITY-7). No yield: the Southern command stays poor (Q-MR-10). Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+    },
+    {
+      "id": "melilla",
+      "name": "Melilla",
+      "territoryId": "melilla",
+      "terrain": "open",
+      "startHolder": "south",
+      "development": {
+        "mines": 1
+      },
+      "buildings": [
+        "barracks",
+        "airfield"
+      ],
+      "rail": 0,
+      "port": 2,
+      "sources": [
+        {
+          "sourceId": "ubc-july-map"
+        }
+      ],
+      "note": "The Rif iron mines; where the rising began. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+    },
+    {
+      "id": "mallorca",
+      "name": "Mallorca",
+      "territoryId": "islas-baleares",
+      "terrain": "open",
+      "startHolder": "south",
+      "development": {
+        "farms": 1
+      },
+      "buildings": [
+        "barracks",
+        "airfield"
+      ],
+      "rail": 1,
+      "port": 2,
+      "sources": [
+        {
+          "sourceId": "ubc-july-map"
+        }
+      ],
+      "note": "Goded's rising held Palma. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+    },
+    {
+      "id": "menorca",
+      "name": "Menorca",
+      "territoryId": "islas-baleares",
+      "terrain": "open",
+      "startHolder": "republic",
+      "development": {},
+      "buildings": [],
+      "rail": 0,
+      "port": 1,
+      "sources": [
+        {
+          "sourceId": "ubc-july-map"
+        }
+      ],
+      "note": "Mah\u00f3n's garrison stayed loyal. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+    },
+    {
+      "id": "ibiza",
+      "name": "Ibiza and Formentera",
+      "territoryId": "islas-baleares",
+      "terrain": "open",
+      "startHolder": "south",
+      "development": {},
+      "buildings": [],
+      "rail": 0,
+      "port": 1,
+      "sources": [
+        {
+          "sourceId": "ubc-july-map"
+        }
+      ],
+      "note": "Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+    }
+  ],
+  "subTerritoryBorders": [
+    [
+      "a-coruna",
+      "lugo"
+    ],
+    [
+      "a-coruna",
+      "pontevedra"
+    ],
+    [
+      "lugo",
+      "ourense"
+    ],
+    [
+      "lugo",
+      "pontevedra"
+    ],
+    [
+      "lugo",
+      "asturias"
+    ],
+    [
+      "lugo",
+      "leon"
+    ],
+    [
+      "ourense",
+      "pontevedra"
+    ],
+    [
+      "ourense",
+      "leon"
+    ],
+    [
+      "ourense",
+      "zamora"
+    ],
+    [
+      "oviedo",
+      "asturias"
+    ],
+    [
+      "asturias",
+      "cantabria"
+    ],
+    [
+      "asturias",
+      "leon"
+    ],
+    [
+      "cantabria",
+      "bizkaia"
+    ],
+    [
+      "cantabria",
+      "burgos"
+    ],
+    [
+      "cantabria",
+      "leon"
+    ],
+    [
+      "cantabria",
+      "palencia"
+    ],
+    [
+      "bizkaia",
+      "gipuzkoa"
+    ],
+    [
+      "bizkaia",
+      "alava"
+    ],
+    [
+      "bizkaia",
+      "burgos"
+    ],
+    [
+      "gipuzkoa",
+      "alava"
+    ],
+    [
+      "gipuzkoa",
+      "navarra"
+    ],
+    [
+      "alava",
+      "navarra"
+    ],
+    [
+      "alava",
+      "la-rioja"
+    ],
+    [
+      "alava",
+      "burgos"
+    ],
+    [
+      "navarra",
+      "la-rioja"
+    ],
+    [
+      "navarra",
+      "zaragoza"
+    ],
+    [
+      "navarra",
+      "huesca"
+    ],
+    [
+      "la-rioja",
+      "zaragoza"
+    ],
+    [
+      "la-rioja",
+      "burgos"
+    ],
+    [
+      "la-rioja",
+      "soria"
+    ],
+    [
+      "zaragoza",
+      "huesca"
+    ],
+    [
+      "zaragoza",
+      "teruel"
+    ],
+    [
+      "zaragoza",
+      "soria"
+    ],
+    [
+      "zaragoza",
+      "guadalajara"
+    ],
+    [
+      "zaragoza",
+      "lleida"
+    ],
+    [
+      "zaragoza",
+      "tarragona"
+    ],
+    [
+      "huesca",
+      "lleida"
+    ],
+    [
+      "teruel",
+      "cuenca"
+    ],
+    [
+      "teruel",
+      "guadalajara"
+    ],
+    [
+      "teruel",
+      "tarragona"
+    ],
+    [
+      "teruel",
+      "valencia"
+    ],
+    [
+      "teruel",
+      "castellon"
+    ],
+    [
+      "madrid",
+      "guadarrama"
+    ],
+    [
+      "madrid",
+      "henares"
+    ],
+    [
+      "madrid",
+      "avila"
+    ],
+    [
+      "madrid",
+      "toledo"
+    ],
+    [
+      "madrid",
+      "cuenca"
+    ],
+    [
+      "madrid",
+      "guadalajara"
+    ],
+    [
+      "guadarrama",
+      "henares"
+    ],
+    [
+      "guadarrama",
+      "avila"
+    ],
+    [
+      "guadarrama",
+      "segovia"
+    ],
+    [
+      "guadarrama",
+      "guadalajara"
+    ],
+    [
+      "henares",
+      "guadalajara"
+    ],
+    [
+      "burgos",
+      "valladolid"
+    ],
+    [
+      "burgos",
+      "palencia"
+    ],
+    [
+      "burgos",
+      "segovia"
+    ],
+    [
+      "burgos",
+      "soria"
+    ],
+    [
+      "valladolid",
+      "leon"
+    ],
+    [
+      "valladolid",
+      "palencia"
+    ],
+    [
+      "valladolid",
+      "zamora"
+    ],
+    [
+      "valladolid",
+      "salamanca"
+    ],
+    [
+      "valladolid",
+      "avila"
+    ],
+    [
+      "valladolid",
+      "segovia"
+    ],
+    [
+      "leon",
+      "palencia"
+    ],
+    [
+      "leon",
+      "zamora"
+    ],
+    [
+      "zamora",
+      "salamanca"
+    ],
+    [
+      "salamanca",
+      "avila"
+    ],
+    [
+      "salamanca",
+      "caceres"
+    ],
+    [
+      "avila",
+      "segovia"
+    ],
+    [
+      "avila",
+      "toledo"
+    ],
+    [
+      "avila",
+      "caceres"
+    ],
+    [
+      "segovia",
+      "soria"
+    ],
+    [
+      "segovia",
+      "guadalajara"
+    ],
+    [
+      "soria",
+      "guadalajara"
+    ],
+    [
+      "toledo",
+      "ciudad-real"
+    ],
+    [
+      "toledo",
+      "cuenca"
+    ],
+    [
+      "toledo",
+      "badajoz"
+    ],
+    [
+      "toledo",
+      "caceres"
+    ],
+    [
+      "ciudad-real",
+      "cuenca"
+    ],
+    [
+      "ciudad-real",
+      "albacete"
+    ],
+    [
+      "ciudad-real",
+      "badajoz"
+    ],
+    [
+      "ciudad-real",
+      "cordoba"
+    ],
+    [
+      "ciudad-real",
+      "jaen"
+    ],
+    [
+      "cuenca",
+      "guadalajara"
+    ],
+    [
+      "cuenca",
+      "albacete"
+    ],
+    [
+      "cuenca",
+      "valencia"
+    ],
+    [
+      "albacete",
+      "valencia"
+    ],
+    [
+      "albacete",
+      "alicante"
+    ],
+    [
+      "albacete",
+      "granada"
+    ],
+    [
+      "albacete",
+      "jaen"
+    ],
+    [
+      "albacete",
+      "murcia"
+    ],
+    [
+      "badajoz",
+      "caceres"
+    ],
+    [
+      "badajoz",
+      "sevilla"
+    ],
+    [
+      "badajoz",
+      "huelva"
+    ],
+    [
+      "badajoz",
+      "cordoba"
+    ],
+    [
+      "barcelona",
+      "girona"
+    ],
+    [
+      "barcelona",
+      "lleida"
+    ],
+    [
+      "barcelona",
+      "tarragona"
+    ],
+    [
+      "girona",
+      "lleida"
+    ],
+    [
+      "lleida",
+      "tarragona"
+    ],
+    [
+      "tarragona",
+      "castellon"
+    ],
+    [
+      "valencia",
+      "castellon"
+    ],
+    [
+      "valencia",
+      "alicante"
+    ],
+    [
+      "alicante",
+      "murcia"
+    ],
+    [
+      "sevilla",
+      "cadiz"
+    ],
+    [
+      "sevilla",
+      "huelva"
+    ],
+    [
+      "sevilla",
+      "cordoba"
+    ],
+    [
+      "sevilla",
+      "malaga"
+    ],
+    [
+      "cadiz",
+      "huelva"
+    ],
+    [
+      "cadiz",
+      "malaga"
+    ],
+    [
+      "cordoba",
+      "granada"
+    ],
+    [
+      "cordoba",
+      "malaga"
+    ],
+    [
+      "cordoba",
+      "jaen"
+    ],
+    [
+      "granada",
+      "malaga"
+    ],
+    [
+      "granada",
+      "jaen"
+    ],
+    [
+      "granada",
+      "almeria"
+    ],
+    [
+      "granada",
+      "murcia"
+    ],
+    [
+      "almeria",
+      "murcia"
+    ],
+    [
+      "mallorca",
+      "menorca"
+    ],
+    [
+      "mallorca",
+      "ibiza"
+    ]
+  ],
+  "resources": [
+    {
+      "id": "funds",
+      "name": "Funds"
+    },
+    {
+      "id": "manpower",
+      "name": "Manpower",
+      "display": {
+        "unit": 1000,
+        "suffix": "k"
+      }
+    }
+  ],
+  "development": [
+    {
+      "id": "farms",
+      "name": "Farms",
+      "resource": "manpower",
+      "yieldPerLevel": 1,
+      "maxLevel": 3,
+      "upgrade": {
+        "cost": {
+          "funds": 6
+        },
+        "turns": 3
+      },
+      "note": "$3, Q-ECON-1: food folds into Manpower; one Manpower is about 1,000 men. Design note: a starting value for the harness to tune (Q-MR-26, H7)."
+    },
+    {
+      "id": "mines",
+      "name": "Mines",
+      "resource": "funds",
+      "yieldPerLevel": 1,
+      "maxLevel": 3,
+      "upgrade": {
+        "cost": {
+          "funds": 8
+        },
+        "turns": 3
+      },
+      "note": "$3. Design note: a starting value for the harness to tune (Q-MR-26, H7)."
+    },
+    {
+      "id": "industry",
+      "name": "Industry",
+      "resource": "funds",
+      "yieldPerLevel": 1,
+      "maxLevel": 3,
+      "cityOnly": true,
+      "upgrade": {
+        "cost": {
+          "funds": 10
+        },
+        "turns": 4
+      },
+      "note": "$3: city sub-territories only. Design note: a starting value for the harness to tune (Q-MR-26, H7)."
+    }
+  ],
+  "buildings": [
+    {
+      "id": "barracks",
+      "name": "Barracks",
+      "cost": {
+        "funds": 6
+      },
+      "turns": 2,
+      "capitalOnly": true,
+      "note": "R3: gates infantry, security forces and cavalry. D28.4: built only in a capital sub-territory, the only place it unlocks anything. Design note: a starting value for the harness to tune (Q-MR-26, H7)."
+    },
+    {
+      "id": "factory",
+      "name": "Factory",
+      "cost": {
+        "funds": 12
+      },
+      "turns": 4,
+      "capitalOnly": true,
+      "cityOnly": true,
+      "effects": [
+        {
+          "kind": "recruit-slots",
+          "extra": 1
+        }
+      ],
+      "note": "R3, D7: one more Recruit order a turn. D28.4: built only in a capital sub-territory, the only place it unlocks anything. Design note: a starting value for the harness to tune (Q-MR-26, H7)."
+    },
+    {
+      "id": "depot",
+      "name": "Depot",
+      "cost": {
+        "funds": 8
+      },
+      "turns": 2,
+      "effects": [
+        {
+          "kind": "replenish-discount",
+          "resource": "funds",
+          "share": 0.25
+        }
+      ],
+      "note": "$4, D28.1: materiel on hand makes Replenish cost 25 percent less Funds; it also gates trucks and tanks (R3). Design note: a starting value for the harness to tune (Q-MR-26, H7)."
+    },
+    {
+      "id": "fortifications",
+      "name": "Fortifications",
+      "cost": {
+        "funds": 6
+      },
+      "turns": 2,
+      "effects": [
+        {
+          "kind": "defence-roll",
+          "roll": 1
+        }
+      ],
+      "note": "$4. Design note: a starting value for the harness to tune (Q-MR-26, H7)."
+    },
+    {
+      "id": "hospital",
+      "name": "Hospital",
+      "cost": {
+        "funds": 6
+      },
+      "turns": 2,
+      "effects": [
+        {
+          "kind": "replenish-cap",
+          "share": 0.25
+        }
+      ],
+      "note": "R5, D28.1: the per-turn Replenish cap rises from half the establishment to three quarters. Design note: a starting value for the harness to tune (Q-MR-26, H7)."
+    },
+    {
+      "id": "airfield",
+      "name": "Airfield",
+      "cost": {
+        "funds": 8
+      },
+      "turns": 3,
+      "effects": [
+        {
+          "kind": "airbase"
+        }
+      ],
+      "note": "U2. Design note: a starting value for the harness to tune (Q-MR-26, H7)."
+    },
+    {
+      "id": "paved-airfield",
+      "name": "Paved airfield",
+      "cost": {
+        "funds": 6
+      },
+      "turns": 2,
+      "upgradeOf": "airfield",
+      "effects": [
+        {
+          "kind": "all-weather-airbase"
+        }
+      ],
+      "note": "U2: flies in Mud and Snow. Design note: a starting value for the harness to tune (Q-MR-26, H7)."
+    },
+    {
+      "id": "rail-yard",
+      "name": "Rail yard",
+      "cost": {
+        "funds": 8
+      },
+      "turns": 3,
+      "effects": [
+        {
+          "kind": "rail-departures",
+          "extra": 1
+        }
+      ],
+      "note": "M3: one more army by rail a turn from its capital. Design note: a starting value for the harness to tune (Q-MR-26, H7)."
+    }
+  ],
+  "improvements": {
+    "rail": {
+      "cost": {
+        "funds": 6
+      },
+      "turns": 3,
+      "maxLevel": 3
+    },
+    "port": {
+      "cost": {
+        "funds": 8
+      },
+      "turns": 3,
+      "maxLevel": 2
+    },
+    "railDamageOnContest": 1,
+    "note": "$4, $8. Design note: a starting value for the harness to tune (Q-MR-26, H7)."
+  },
+  "recruitment": {
+    "maxPerTerritory": 2,
+    "replenishCostShare": 0.5,
+    "replenishShare": 0.5,
+    "note": "R5 and declog D7."
+  },
+  "movement": {
+    "landingsPerPortLevel": 1,
+    "railRangePerLevel": 2,
+    "note": "Declog D7."
+  },
+  "d20": {
+    "grades": [
+      {
+        "id": "attacker-destroyed",
+        "name": "Attacker destroyed",
+        "attacker": {
+          "lossPercent": 100,
+          "demoralized": "none"
+        },
+        "defender": {
+          "lossPercent": 0,
+          "demoralized": "none"
+        },
+        "ground": 0
+      },
+      {
+        "id": "attacker-routed",
+        "name": "Attacker routed",
+        "attacker": {
+          "lossPercent": 35,
+          "demoralized": "all"
+        },
+        "defender": {
+          "lossPercent": 0,
+          "demoralized": "none"
+        },
+        "ground": 0
+      },
+      {
+        "id": "attacker-repulsed",
+        "name": "Attacker repulsed",
+        "attacker": {
+          "lossPercent": 20,
+          "demoralized": "half"
+        },
+        "defender": {
+          "lossPercent": 0,
+          "demoralized": "none"
+        },
+        "ground": 0
+      },
+      {
+        "id": "attack-checked",
+        "name": "Attack checked",
+        "attacker": {
+          "lossPercent": 10,
+          "demoralized": "none"
+        },
+        "defender": {
+          "lossPercent": 0,
+          "demoralized": "none"
+        },
+        "ground": 0
+      },
+      {
+        "id": "bloody-stalemate",
+        "name": "Bloody stalemate",
+        "attacker": {
+          "lossPercent": 20,
+          "demoralized": "half"
+        },
+        "defender": {
+          "lossPercent": 20,
+          "demoralized": "half"
+        },
+        "ground": 0
+      },
+      {
+        "id": "stalemate",
+        "name": "Stalemate",
+        "attacker": {
+          "lossPercent": 10,
+          "demoralized": "none"
+        },
+        "defender": {
+          "lossPercent": 10,
+          "demoralized": "none"
+        },
+        "ground": 0
+      },
+      {
+        "id": "defender-gives-ground",
+        "name": "Defender gives ground",
+        "attacker": {
+          "lossPercent": 10,
+          "demoralized": "none"
+        },
+        "defender": {
+          "lossPercent": 10,
+          "demoralized": "none"
+        },
+        "ground": 1
+      },
+      {
+        "id": "defender-pushed-back",
+        "name": "Defender pushed back",
+        "attacker": {
+          "lossPercent": 10,
+          "demoralized": "none"
+        },
+        "defender": {
+          "lossPercent": 20,
+          "demoralized": "half"
+        },
+        "ground": 2
+      },
+      {
+        "id": "costly-victory",
+        "name": "Costly victory",
+        "attacker": {
+          "lossPercent": 35,
+          "demoralized": "none"
+        },
+        "defender": {
+          "lossPercent": 35,
+          "demoralized": "none"
+        },
+        "ground": "all"
+      },
+      {
+        "id": "defender-driven-out",
+        "name": "Defender driven out",
+        "attacker": {
+          "lossPercent": 10,
+          "demoralized": "none"
+        },
+        "defender": {
+          "lossPercent": 20,
+          "demoralized": "half"
+        },
+        "ground": "all"
+      },
+      {
+        "id": "defender-routed",
+        "name": "Defender routed",
+        "attacker": {
+          "lossPercent": 10,
+          "demoralized": "none"
+        },
+        "defender": {
+          "lossPercent": 35,
+          "demoralized": "all"
+        },
+        "ground": "all"
+      },
+      {
+        "id": "defender-broken",
+        "name": "Defender broken",
+        "attacker": {
+          "lossPercent": 0,
+          "demoralized": "none"
+        },
+        "defender": {
+          "lossPercent": 35,
+          "demoralized": "all",
+          "weakestDestroyed": true
+        },
+        "ground": "all"
+      },
+      {
+        "id": "defender-destroyed",
+        "name": "Defender destroyed",
+        "attacker": {
+          "lossPercent": 10,
+          "demoralized": "none"
+        },
+        "defender": {
+          "lossPercent": 100,
+          "demoralized": "none"
+        },
+        "ground": "all"
+      }
+    ],
+    "table": [
+      [
+        "attacker-destroyed",
+        "attacker-destroyed",
+        "attacker-repulsed",
+        "attacker-repulsed",
+        "attacker-repulsed",
+        "attack-checked",
+        "attack-checked",
+        "attack-checked",
+        "bloody-stalemate",
+        "bloody-stalemate",
+        "bloody-stalemate",
+        "stalemate",
+        "stalemate",
+        "stalemate",
+        "defender-gives-ground",
+        "defender-gives-ground",
+        "defender-gives-ground",
+        "defender-pushed-back",
+        "defender-pushed-back",
+        "defender-pushed-back",
+        "costly-victory"
+      ],
+      [
+        "attacker-destroyed",
+        "attacker-destroyed",
+        "attack-checked",
+        "attack-checked",
+        "attack-checked",
+        "bloody-stalemate",
+        "bloody-stalemate",
+        "bloody-stalemate",
+        "stalemate",
+        "stalemate",
+        "stalemate",
+        "defender-gives-ground",
+        "defender-gives-ground",
+        "defender-gives-ground",
+        "defender-pushed-back",
+        "defender-pushed-back",
+        "defender-pushed-back",
+        "costly-victory",
+        "costly-victory",
+        "costly-victory",
+        "defender-driven-out"
+      ],
+      [
+        "attack-checked",
+        "attack-checked",
+        "bloody-stalemate",
+        "bloody-stalemate",
+        "bloody-stalemate",
+        "stalemate",
+        "stalemate",
+        "stalemate",
+        "defender-gives-ground",
+        "defender-gives-ground",
+        "defender-gives-ground",
+        "defender-pushed-back",
+        "defender-pushed-back",
+        "defender-pushed-back",
+        "costly-victory",
+        "costly-victory",
+        "costly-victory",
+        "defender-driven-out",
+        "defender-driven-out",
+        "defender-driven-out",
+        "defender-routed"
+      ],
+      [
+        "bloody-stalemate",
+        "bloody-stalemate",
+        "stalemate",
+        "stalemate",
+        "stalemate",
+        "defender-gives-ground",
+        "defender-gives-ground",
+        "defender-gives-ground",
+        "defender-pushed-back",
+        "defender-pushed-back",
+        "defender-pushed-back",
+        "costly-victory",
+        "costly-victory",
+        "costly-victory",
+        "defender-driven-out",
+        "defender-driven-out",
+        "defender-driven-out",
+        "defender-routed",
+        "defender-routed",
+        "defender-routed",
+        "defender-broken"
+      ],
+      [
+        "stalemate",
+        "stalemate",
+        "defender-gives-ground",
+        "defender-gives-ground",
+        "defender-gives-ground",
+        "defender-pushed-back",
+        "defender-pushed-back",
+        "defender-pushed-back",
+        "costly-victory",
+        "costly-victory",
+        "costly-victory",
+        "defender-driven-out",
+        "defender-driven-out",
+        "defender-driven-out",
+        "defender-routed",
+        "defender-routed",
+        "defender-routed",
+        "defender-broken",
+        "defender-broken",
+        "defender-broken",
+        "defender-destroyed"
+      ],
+      [
+        "defender-gives-ground",
+        "defender-gives-ground",
+        "defender-pushed-back",
+        "defender-pushed-back",
+        "defender-pushed-back",
+        "costly-victory",
+        "costly-victory",
+        "costly-victory",
+        "defender-driven-out",
+        "defender-driven-out",
+        "defender-driven-out",
+        "defender-routed",
+        "defender-routed",
+        "defender-routed",
+        "defender-broken",
+        "defender-broken",
+        "defender-broken",
+        "defender-destroyed",
+        "defender-destroyed",
+        "defender-destroyed",
+        "defender-destroyed"
+      ],
+      [
+        "defender-pushed-back",
+        "defender-pushed-back",
+        "costly-victory",
+        "costly-victory",
+        "costly-victory",
+        "defender-driven-out",
+        "defender-driven-out",
+        "defender-driven-out",
+        "defender-routed",
+        "defender-routed",
+        "defender-routed",
+        "defender-broken",
+        "defender-broken",
+        "defender-broken",
+        "defender-destroyed",
+        "defender-destroyed",
+        "defender-destroyed",
+        "defender-destroyed",
+        "defender-destroyed",
+        "defender-destroyed",
+        "defender-destroyed"
+      ]
+    ],
+    "modifiers": {
+      "worksPerTurn": 3,
+      "worksMax": 9,
+      "belowOneToOnePenalty": 3,
+      "barricades": 1,
+      "fatigued": -2,
+      "amphibious": -4
+    },
+    "fatigue": {
+      "fatiguedLevel": 2,
+      "demoralizedLevel": 3
+    },
+    "breakUpShare": 0.1,
+    "factionModifiers": [
+      {
+        "id": "popular-resistance",
+        "name": "Popular resistance",
+        "factionId": "republic",
+        "when": "holds-controlled-city",
+        "defence": 3
+      }
+    ],
+    "note": "D1-D7: the 13-grade catalogue (Q-MR-06), today's modifiers x3 (Q-D20-6), fatigue (Q-MR-04), break-up at 10 percent (Q-MR-08). Column k reads grade floor((score + 3k + 4) / 3), with scores 0-1 destroying the attacker at 1:1 and below (Q-D20-1 note); a starting table for the harness to tune."
+  },
+  "weather": {
+    "outcomes": [
+      {
+        "id": "clear",
+        "name": "Clear",
+        "attackRoll": 0
+      },
+      {
+        "id": "hot",
+        "name": "Hot",
+        "attackRoll": 0
+      },
+      {
+        "id": "rain",
+        "name": "Rain",
+        "attackRoll": 0,
+        "effects": [
+          {
+            "kind": "closes-sea",
+            "months": [
+              12,
+              1,
+              2
+            ]
+          }
+        ]
+      },
+      {
+        "id": "mud",
+        "name": "Mud",
+        "attackRoll": -3,
+        "effects": [
+          {
+            "kind": "movement-penalty",
+            "amount": 1
+          },
+          {
+            "kind": "grounds-aircraft"
+          }
+        ]
+      },
+      {
+        "id": "snow",
+        "name": "Snow",
+        "attackRoll": -3,
+        "effects": [
+          {
+            "kind": "blocks-digging-in"
+          },
+          {
+            "kind": "movement-penalty",
+            "amount": 1
+          },
+          {
+            "kind": "grounds-aircraft"
+          }
+        ]
+      },
+      {
+        "id": "severe-cold",
+        "name": "Severe cold",
+        "attackRoll": -6,
+        "effects": [
+          {
+            "kind": "blocks-digging-in"
+          },
+          {
+            "kind": "frostbite",
+            "share": 0.05
+          }
+        ]
+      }
+    ],
+    "seasons": [
+      {
+        "id": "summer",
+        "name": "Summer",
+        "months": [
+          6,
+          7,
+          8
+        ]
+      },
+      {
+        "id": "autumn",
+        "name": "Autumn",
+        "months": [
+          9,
+          10,
+          11
+        ]
+      },
+      {
+        "id": "winter",
+        "name": "Winter",
+        "months": [
+          12,
+          1,
+          2
+        ]
+      },
+      {
+        "id": "spring",
+        "name": "Spring",
+        "months": [
+          3,
+          4,
+          5
+        ]
+      }
+    ],
+    "zones": [
+      {
+        "id": "cantabrian",
+        "name": "Cantabrian",
+        "coastal": true,
+        "tables": {
+          "summer": [
+            {
+              "outcome": "clear",
+              "upTo": 12
+            },
+            {
+              "outcome": "hot",
+              "upTo": 14
+            },
+            {
+              "outcome": "rain",
+              "upTo": 20
+            }
+          ],
+          "autumn": [
+            {
+              "outcome": "clear",
+              "upTo": 7
+            },
+            {
+              "outcome": "rain",
+              "upTo": 15
+            },
+            {
+              "outcome": "mud",
+              "upTo": 20
+            }
+          ],
+          "winter": [
+            {
+              "outcome": "clear",
+              "upTo": 4
+            },
+            {
+              "outcome": "rain",
+              "upTo": 12
+            },
+            {
+              "outcome": "mud",
+              "upTo": 16
+            },
+            {
+              "outcome": "snow",
+              "upTo": 19
+            },
+            {
+              "outcome": "severe-cold",
+              "upTo": 20
+            }
+          ],
+          "spring": [
+            {
+              "outcome": "clear",
+              "upTo": 8
+            },
+            {
+              "outcome": "rain",
+              "upTo": 16
+            },
+            {
+              "outcome": "mud",
+              "upTo": 20
+            }
+          ]
+        }
+      },
+      {
+        "id": "meseta",
+        "name": "Meseta",
+        "coastal": false,
+        "tables": {
+          "summer": [
+            {
+              "outcome": "clear",
+              "upTo": 10
+            },
+            {
+              "outcome": "hot",
+              "upTo": 20
+            }
+          ],
+          "autumn": [
+            {
+              "outcome": "clear",
+              "upTo": 11
+            },
+            {
+              "outcome": "rain",
+              "upTo": 16
+            },
+            {
+              "outcome": "mud",
+              "upTo": 20
+            }
+          ],
+          "winter": [
+            {
+              "outcome": "clear",
+              "upTo": 6
+            },
+            {
+              "outcome": "rain",
+              "upTo": 9
+            },
+            {
+              "outcome": "mud",
+              "upTo": 13
+            },
+            {
+              "outcome": "snow",
+              "upTo": 17
+            },
+            {
+              "outcome": "severe-cold",
+              "upTo": 20
+            }
+          ],
+          "spring": [
+            {
+              "outcome": "clear",
+              "upTo": 12
+            },
+            {
+              "outcome": "rain",
+              "upTo": 17
+            },
+            {
+              "outcome": "mud",
+              "upTo": 20
+            }
+          ]
+        }
+      },
+      {
+        "id": "mediterranean",
+        "name": "Mediterranean",
+        "coastal": true,
+        "tables": {
+          "summer": [
+            {
+              "outcome": "clear",
+              "upTo": 12
+            },
+            {
+              "outcome": "hot",
+              "upTo": 20
+            }
+          ],
+          "autumn": [
+            {
+              "outcome": "clear",
+              "upTo": 12
+            },
+            {
+              "outcome": "rain",
+              "upTo": 18
+            },
+            {
+              "outcome": "mud",
+              "upTo": 20
+            }
+          ],
+          "winter": [
+            {
+              "outcome": "clear",
+              "upTo": 10
+            },
+            {
+              "outcome": "rain",
+              "upTo": 17
+            },
+            {
+              "outcome": "mud",
+              "upTo": 19
+            },
+            {
+              "outcome": "snow",
+              "upTo": 20
+            }
+          ],
+          "spring": [
+            {
+              "outcome": "clear",
+              "upTo": 14
+            },
+            {
+              "outcome": "rain",
+              "upTo": 19
+            },
+            {
+              "outcome": "mud",
+              "upTo": 20
+            }
+          ]
+        }
+      },
+      {
+        "id": "south",
+        "name": "South",
+        "coastal": true,
+        "tables": {
+          "summer": [
+            {
+              "outcome": "clear",
+              "upTo": 6
+            },
+            {
+              "outcome": "hot",
+              "upTo": 20
+            }
+          ],
+          "autumn": [
+            {
+              "outcome": "clear",
+              "upTo": 13
+            },
+            {
+              "outcome": "rain",
+              "upTo": 18
+            },
+            {
+              "outcome": "mud",
+              "upTo": 20
+            }
+          ],
+          "winter": [
+            {
+              "outcome": "clear",
+              "upTo": 10
+            },
+            {
+              "outcome": "rain",
+              "upTo": 17
+            },
+            {
+              "outcome": "mud",
+              "upTo": 20
+            }
+          ],
+          "spring": [
+            {
+              "outcome": "clear",
+              "upTo": 14
+            },
+            {
+              "outcome": "rain",
+              "upTo": 19
+            },
+            {
+              "outcome": "mud",
+              "upTo": 20
+            }
+          ]
+        }
+      }
+    ],
+    "note": "Design note: four zones (Q-WX-2), six outcomes (Q-WX-4), soft attack modifiers (Q-WX-6, D7), rain closing the sea in winter (Q-MR-30) and 5 percent frostbite (D7). Each table runs best to worst (T2); the band widths follow each zone's seasonal climate and are for the harness to tune."
+  },
+  "calendar": {
+    "start": {
+      "year": 1936,
+      "month": 7,
+      "half": "late"
+    },
+    "turnsPerYear": 24,
+    "note": "T1: half-month turns from Late July 1936 (Q-MR-31)."
+  },
+  "air": {
+    "raidTable": [
+      {
+        "outcome": "air-eliminated",
+        "upTo": 3
+      },
+      {
+        "outcome": "nothing-hit",
+        "upTo": 10
+      },
+      {
+        "outcome": "income-cut",
+        "upTo": 16
+      },
+      {
+        "outcome": "building-hit",
+        "upTo": 20
+      }
+    ],
+    "interceptRoll": -2,
+    "reconTurns": 1,
+    "generalDeathRoll": 4,
+    "note": "U3, U4 and declog D7. Design note: a starting value for the harness to tune (Q-MR-26, H7). generalDeathRoll 4 (a 1 in 5 chance that a general dies when his army is destroyed or routed) is a design note for the harness to tune (U5, Q-MR-28)."
+  },
+  "generals": {
+    "traits": [
+      {
+        "id": "aggressive",
+        "name": "Aggressive",
+        "effects": [
+          {
+            "kind": "roll-modifier",
+            "role": "attack",
+            "roll": 1
+          }
+        ]
+      },
+      {
+        "id": "tenacious",
+        "name": "Tenacious",
+        "effects": [
+          {
+            "kind": "roll-modifier",
+            "role": "defence",
+            "roll": 1
+          }
+        ]
+      },
+      {
+        "id": "cautious",
+        "name": "Cautious",
+        "effects": [
+          {
+            "kind": "roll-modifier",
+            "role": "attack",
+            "roll": -1
+          }
+        ]
+      },
+      {
+        "id": "uninspiring",
+        "name": "Uninspiring",
+        "effects": [
+          {
+            "kind": "no-rally"
+          }
+        ]
+      }
+    ],
+    "roster": [
+      {
+        "id": "jose-miaja",
+        "name": "Jos\u00e9 Miaja",
+        "factionId": "republic",
+        "trait": "tenacious",
+        "sources": [
+          {
+            "sourceId": "enwiki-jose-miaja"
+          }
+        ]
+      },
+      {
+        "id": "vicente-rojo",
+        "name": "Vicente Rojo",
+        "factionId": "republic",
+        "trait": "aggressive",
+        "sources": [
+          {
+            "sourceId": "enwiki-vicente-rojo"
+          }
+        ]
+      },
+      {
+        "id": "sebastian-pozas",
+        "name": "Sebasti\u00e1n Pozas",
+        "factionId": "republic",
+        "trait": "cautious",
+        "sources": [
+          {
+            "sourceId": "enwiki-sebastian-pozas"
+          }
+        ]
+      },
+      {
+        "id": "jose-asensio",
+        "name": "Jos\u00e9 Asensio Torrado",
+        "factionId": "republic",
+        "trait": "uninspiring",
+        "sources": [
+          {
+            "sourceId": "enwiki-jose-asensio"
+          }
+        ]
+      },
+      {
+        "id": "emilio-mola",
+        "name": "Emilio Mola",
+        "factionId": "north",
+        "trait": "aggressive",
+        "sources": [
+          {
+            "sourceId": "enwiki-emilio-mola"
+          }
+        ]
+      },
+      {
+        "id": "fidel-davila",
+        "name": "Fidel D\u00e1vila",
+        "factionId": "north",
+        "trait": "cautious",
+        "sources": [
+          {
+            "sourceId": "rah-fidel-davila"
+          }
+        ]
+      },
+      {
+        "id": "jose-solchaga",
+        "name": "Jos\u00e9 Solchaga",
+        "factionId": "north",
+        "trait": "tenacious",
+        "sources": [
+          {
+            "sourceId": "enwiki-jose-solchaga"
+          }
+        ]
+      },
+      {
+        "id": "juan-yague",
+        "name": "Juan Yag\u00fce",
+        "factionId": "south",
+        "trait": "aggressive",
+        "sources": [
+          {
+            "sourceId": "enwiki-juan-yague"
+          },
+          {
+            "sourceId": "eswiki-ejercito-africa"
+          }
+        ]
+      },
+      {
+        "id": "jose-varela",
+        "name": "Jos\u00e9 Enrique Varela",
+        "factionId": "south",
+        "trait": "cautious",
+        "sources": [
+          {
+            "sourceId": "enwiki-jose-varela"
+          }
+        ]
+      },
+      {
+        "id": "gonzalo-queipo",
+        "name": "Gonzalo Queipo de Llano",
+        "factionId": "south",
+        "trait": "tenacious",
+        "sources": [
+          {
+            "sourceId": "eswiki-sevilla-1936"
+          }
+        ]
+      }
+    ],
+    "note": "Rosters of real 1936-1939 commanders in the order they could take command (U5, Q-MR-28). Each trait is a design note, a nudge to keep or sack him, not a historical verdict."
+  },
+  "sources": [
+    {
+      "id": "warwick-timeline",
+      "title": "University of Warwick Modern Records Centre, Illustrated timeline of the Spanish Civil War",
+      "url": "https://warwick.ac.uk/services/library/mrc/collections/digital/scw/simpletimeline2/"
+    },
+    {
+      "id": "spanish-memory",
+      "title": "Spain Ministry of Territorial Policy and Democratic Memory, Por vuestra libertad y la nuestra",
+      "url": "https://mptmd.gob.es/content/dam/mpt/memoria-democratica/publicaciones-memoria/catalogos_y_monografias/Por%20vuestra%20libertad%20y%20nuestra%20%28catalogo%29_WEB.pdf"
+    },
+    {
+      "id": "country-study-map",
+      "title": "U.S. Marine Corps, Spain: A Country Study, Figure 4",
+      "url": "https://www.marines.mil/portals/1/Publications/Spain%20Study_1.pdf?ver=2012-10-11-163301-923"
+    },
+    {
+      "id": "ubc-july-map",
+      "title": "University of British Columbia Press, Spain, July 1936",
+      "url": "https://www.ubcpress.ca/asset/9430/1/9780774814171.pdf"
+    },
+    {
+      "id": "nafziger-1936",
+      "title": "Nafziger Collection, Spanish Army in Quarters: Strengths and Assignments, July 1936",
+      "url": "https://cgsc.contentdm.oclc.org/digital/api/collection/p15040coll6/id/9540/download"
+    },
+    {
+      "id": "spanish-defence-human-factor",
+      "title": "Spanish Ministry of Defence, El factor humano",
+      "url": "https://publicaciones.defensa.gob.es/media/downloadable/files/links/e/l/el_factor_humano_adalid_75_.pdf"
+    },
+    {
+      "id": "alpert-2013",
+      "title": "Michael Alpert, The Republican Army in the Spanish Civil War, 1936-1939, Cambridge University Press, 2013"
+    },
+    {
+      "id": "puell-2012",
+      "title": "Fernando Puell de la Villa, Julio de 1936: un ejercito dividido? (author's preprint), in Los militares espanoles en la Segunda Republica, Madrid, 2012",
+      "url": "https://asehismi.es/catalogo/docs/20200412120103_2012_06_14_Ejercito_dividido_Julio_36.pdf"
+    },
+    {
+      "id": "arzanegui-1993",
+      "title": "Alberto Arzanegui, The Spanish Army in 1936, El Miliciano no. 1 (1993), translated by Wolf Broszies",
+      "url": "https://generalstab.org/military_history/spanish-civil-war/the-spanish-army-in-1936/"
+    },
+    {
+      "id": "aportes-2025",
+      "title": "Ricardo Rodriguez Cobos, De la tradicion a la trinchera: los Tercios de Requetes en Navarra, Aportes no. 119 (2025)"
+    },
+    {
+      "id": "asensio-milicias-valencianas",
+      "title": "Miguel Asensio Gomez, Las milicias valencianas en la Guerra Civil, Diputacio de Valencia",
+      "url": "https://memoriahistorica.dival.es/wp-content/uploads/Las-Milicias-Valencianas-en-la-Guerra-Civil-WEB.pdf"
+    },
+    {
+      "id": "eswiki-oviedo-1936",
+      "title": "Spanish Wikipedia, Sitio de Oviedo (1936)"
+    },
+    {
+      "id": "eswiki-barcelona-1936",
+      "title": "Spanish Wikipedia, Golpe de Estado de julio de 1936 en Barcelona"
+    },
+    {
+      "id": "eswiki-madrid-1936",
+      "title": "Spanish Wikipedia, Golpe de Estado de julio de 1936 en Madrid"
+    },
+    {
+      "id": "enwiki-montana-1936",
+      "title": "English Wikipedia, Siege of the Montana barracks"
+    },
+    {
+      "id": "eswiki-sevilla-1936",
+      "title": "Spanish Wikipedia, Golpe de Estado de julio de 1936 en Sevilla"
+    },
+    {
+      "id": "eswiki-ejercito-africa",
+      "title": "Spanish Wikipedia, Ejercito de Africa (Espana)"
+    },
+    {
+      "id": "enwiki-airlift-1936",
+      "title": "English Wikipedia, Spanish airlift of 1936"
+    },
+    {
+      "id": "eswiki-sierra-1936",
+      "title": "Spanish Wikipedia, Batalla de Guadarrama and Columna Durruti"
+    },
+    {
+      "id": "enwiki-emilio-mola",
+      "title": "English Wikipedia, Emilio Mola",
+      "url": "https://en.wikipedia.org/wiki/Emilio_Mola"
+    },
+    {
+      "id": "rah-fidel-davila",
+      "title": "Real Academia de la Historia, Fidel D\u00e1vila Arrondo",
+      "url": "https://dbe.rah.es/biografias/5785/fidel-davila-arrondo"
+    },
+    {
+      "id": "enwiki-vicente-rojo",
+      "title": "English Wikipedia, Vicente Rojo Lluch",
+      "url": "https://en.wikipedia.org/wiki/Vicente_Rojo_Lluch"
+    },
+    {
+      "id": "enwiki-jose-miaja",
+      "title": "English Wikipedia, Jos\u00e9 Miaja",
+      "url": "https://en.wikipedia.org/wiki/Jos%C3%A9_Miaja"
+    },
+    {
+      "id": "enwiki-sebastian-pozas",
+      "title": "English Wikipedia, Sebasti\u00e1n Pozas Perea",
+      "url": "https://en.wikipedia.org/wiki/Sebasti%C3%A1n_Pozas"
+    },
+    {
+      "id": "enwiki-jose-asensio",
+      "title": "English Wikipedia, Jos\u00e9 Asensio Torrado",
+      "url": "https://en.wikipedia.org/wiki/Jos%C3%A9_Asensio_Torrado"
+    },
+    {
+      "id": "enwiki-jose-solchaga",
+      "title": "English Wikipedia, Jos\u00e9 Solchaga",
+      "url": "https://en.wikipedia.org/wiki/Jos%C3%A9_Solchaga"
+    },
+    {
+      "id": "enwiki-juan-yague",
+      "title": "English Wikipedia, Juan Yag\u00fce",
+      "url": "https://en.wikipedia.org/wiki/Juan_Yag%C3%BCe"
+    },
+    {
+      "id": "enwiki-jose-varela",
+      "title": "English Wikipedia, Jos\u00e9 Enrique Varela",
+      "url": "https://en.wikipedia.org/wiki/Jos%C3%A9_Enrique_Varela"
+    },
+    {
+      "id": "enwiki-republican-air-force",
+      "title": "English Wikipedia, Spanish Republican Air Force",
+      "url": "https://en.wikipedia.org/wiki/Spanish_Republican_Air_Force"
+    }
+  ]
+}

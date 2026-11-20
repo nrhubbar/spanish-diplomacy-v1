@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="mock-size" content="1440x1094">
+<meta name="mock-out" content="1200">
+<title>setup-timer</title>
+<link rel="stylesheet" href="app.css">
+<link rel="stylesheet" href="common.css">
+<script src="common.js"></script>
+<style>
+  .card-ext { position: absolute; left: 145px; top: 618px; width: 1150px; height: 262px; z-index: 2; border: 1px solid var(--rule); border-top: 0; border-radius: 0 0 10px 10px; background: var(--paper); box-shadow: 0 1.25rem 3rem rgb(36 29 24 / 12%); clip-path: inset(0 0 -80px 0); }
+  .settings { position: absolute; left: 44px; top: 14px; right: 44px; }
+  .settings h2 { font-size: 1.2rem; }
+  .settings-grid { display: grid; grid-template-columns: 430px 360px 1fr; gap: 1.6rem; margin-top: 0.8rem; }
+  .field-label { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+  .seg { display: flex; margin-top: 0.4rem; border: 1px solid var(--ink-soft); border-radius: 6px; overflow: hidden; background: #fffdf7; }
+  .seg span { flex: 1; padding: 0.55rem 0; text-align: center; font-size: 0.92rem; font-weight: 650; border-left: 1px solid var(--rule); }
+  .seg span:first-child { border-left: 0; }
+  .seg span[data-on="true"] { color: var(--paper); background: var(--accent); font-weight: 800; }
+  .seg-note { margin-top: 0.45rem; color: var(--ink-soft); font-size: 0.82rem; }
+  .fake-select { display: flex; align-items: center; justify-content: space-between; margin-top: 0.4rem; min-height: 2.5rem; padding: 0 0.6rem; border: 1px solid var(--ink-soft); border-radius: 6px; background: #fffdf7; font-size: 1rem; outline: 3px solid var(--focus); outline-offset: 1px; }
+  .fake-select::after { content: ""; width: 0.45rem; height: 0.45rem; border-right: 2px solid var(--ink); border-bottom: 2px solid var(--ink); transform: rotate(-135deg) translate(-2px, -2px); }
+  .listbox { position: absolute; z-index: 5; width: 300px; margin-top: 4px; padding: 4px; border: 1px solid var(--ink-soft); border-radius: 6px; background: #fffdf7; box-shadow: 0 8px 22px rgb(36 29 24 / 22%); }
+  .listbox div { display: flex; justify-content: space-between; padding: 0.32rem 0.6rem; border-radius: 4px; font-size: 0.95rem; }
+  .listbox div[data-on="true"] { color: var(--paper); background: var(--accent); font-weight: 700; }
+  .listbox small { color: inherit; opacity: 0.7; font-size: 0.75rem; }
+  .radio { display: grid; grid-template-columns: auto 1fr; gap: 0.1rem 0.55rem; margin-top: 0.5rem; padding: 0.55rem 0.7rem; border: 1px solid var(--rule); border-radius: 8px; background: #fffdf7; }
+  .radio[data-on="true"] { border-color: var(--ink); box-shadow: inset 4px 0 0 var(--accent); }
+  .dot { grid-row: span 2; width: 1rem; height: 1rem; margin-top: 0.15rem; border: 2px solid var(--ink-soft); border-radius: 50%; }
+  .radio[data-on="true"] .dot { border-color: var(--accent); background: radial-gradient(var(--accent) 45%, transparent 50%); }
+  .radio b { font-size: 0.95rem; }
+  .radio span { color: var(--ink-soft); font-size: 0.82rem; }
+  .hint { margin-top: 1.55rem; padding: 0.6rem 0.75rem; border-left: 4px solid var(--gold); border-radius: 4px; background: var(--gold-wash); font-size: 0.86rem; line-height: 1.45; }
+  .buttons { position: absolute; left: 44px; top: 196px; display: flex; gap: 0.75rem; }
+  .buttons .secondary-button { color: var(--ink); background: #fffdf7; }
+  .excerpt-label { position: absolute; left: 22px; top: 902px; }
+  .crop { position: absolute; overflow: hidden; background: url(base/planning.webp) no-repeat; }
+  .timer-chip { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.25rem 0.7rem; border: 1.5px solid #7a5a06; border-radius: 999px; color: var(--ink); background: var(--gold-wash); font-size: 0.86rem; font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .timer-chip svg { width: 15px; height: 15px; }
+  .timer-chip small { color: var(--ink-soft); font-weight: 650; font-size: 0.74rem; }
+  .gap-mark { position: absolute; top: 1004px; left: 940px; width: 30px; height: 64px; border-left: 2px dashed rgb(36 29 24 / 35%); }
+</style>
+</head>
+<body>
+<div class="stage" style="width:1440px;height:1094px">
+  <img class="base" src="base/setup.webp" alt="">
+  <div class="card-ext">
+    <section class="settings">
+      <h2>Game settings <span class="new-tag">new</span></h2>
+      <div class="settings-grid">
+        <div>
+          <div class="field-label">Turn timer</div>
+          <div class="seg"><span>Off</span><span>1 min</span><span data-on="true">5 min</span><span>10 min</span><span>30 min</span><span>1 hour</span></div>
+          <p class="seg-note">Off is today's behaviour. The countdown shows beside End Turn.</p>
+        </div>
+        <div>
+          <div class="field-label">When time runs out</div>
+          <div class="radio" data-on="true"><i class="dot"></i><b>Submit drafted orders</b><span>Orders drafted so far are sent; armies without one hold.</span></div>
+          <div class="radio"><i class="dot"></i><b>Hold all armies</b><span>Drafts are discarded; every army stays where it is.</span></div>
+        </div>
+        <div>
+          <p class="hint">Each local player gets the full time. The clock pauses on the pass-the-device screen; computer players are never timed.</p>
+        </div>
+      </div>
+    </section>
+    <div class="buttons"><button class="secondary-button" type="button">Back</button><button type="button">Start Campaign</button></div>
+  </div>
+  <!-- cover the old button row -->
+  <div class="abs" style="left:146px;top:618px;width:1148px;height:20px;background:var(--paper);z-index:1"></div>
+
+  <div class="excerpt-label screen-kicker">In play &middot; excerpt of the planning screen with a 5-minute timer</div>
+  <div class="crop" style="left:0;top:926px;width:1440px;height:72px;background-position:0 0"></div>
+  <div class="abs" style="left:1080px;top:944px;z-index:3"><span class="timer-chip"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="9" r="6"/><path d="M8 5.5V9l2.2 1.6M6 1.5h4"/></svg>04:32 <small>left to plan</small></span></div>
+  <div class="crop" style="left:980px;top:1004px;width:460px;height:90px;background-position:-980px -698px"></div>
+  <div class="abs" style="left:1012px;top:1018px;width:382px;height:46px;display:flex;gap:0.5rem;z-index:3">
+    <span class="timer-chip" style="font-size:1rem;padding:0 0.8rem"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="9" r="6"/><path d="M8 5.5V9l2.2 1.6M6 1.5h4"/></svg>04:32</span>
+    <button class="primary-action" type="button" style="flex:1;min-height:46px;color:#fff;background:var(--success);font-size:1.05rem">End Turn</button>
+  </div>
+  <div class="abs" style="left:997px;top:1004px;width:413px;height:12px;background:#ece7dc;border-top:1px solid rgb(36 29 24 / 18%);z-index:2"></div>
+  <div class="gap-mark"></div>
+  <p class="abs hatch-note" style="left:22px;top:1014px;width:880px">At 00:00 the drafted orders are submitted automatically, exactly as if End Turn had been pressed. Under one minute the chip turns crimson.</p>
+  <div id="mark"></div>
+</div>
+<script>document.getElementById("mark").innerHTML = mark("top:14px;right:16px");</script>
+</body>
+</html>

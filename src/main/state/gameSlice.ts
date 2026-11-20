@@ -1,21 +1,31 @@
 import { createAction, createReducer } from "@reduxjs/toolkit";
 import { initialGameState } from "../engine/resolution";
-import type { ActorKind, FactionId, Scenario, ScenarioId, TerritoryId, UnitId } from "../engine/types";
+import type { ActorKind, AirMission, BuildOrder, FactionId, Scenario, ScenarioId, SubTerritoryId, TerritoryId, UnitId, UnitTypeId } from "../engine/types";
 import type { ScenarioRegistry } from "../scenarios/registry";
-import { advance, lockSubmission, nextTurn } from "./coordinator";
+import { advance, nextTurn } from "./coordinator";
 import {
+  cancelBuild,
   cancelOrder,
   chooseOrder,
   clearSelection,
   clickTerritory,
   clickUnit,
-  type PlanningSession,
+  closeAircraft,
+  focusOn,
+  planBuild,
   removeOrder,
   selectAllAvailable,
+  setAirMission,
+  setRecruitQuantity,
   toggleOrderChoice,
-  toggleUnit
+  toggleSack,
+  toggleUnit,
+  type PlanningSession,
+  unfocus
 } from "./planning";
 import { type Assignments, emptyDraft, type OrderKind, type Session } from "./session";
+import { submitDraft } from "./submit";
+import { submitOnTimeout, timeRanOut } from "./timeout";
 
 export interface GameState {
   readonly session: Session;
@@ -47,7 +57,20 @@ export const chooseOrderKind = createAction<OrderKind>("game/chooseOrderKind");
 export const cancelOrderStage = createAction("game/cancelOrderStage");
 export const removePlannedOrder = createAction<UnitId>("game/removePlannedOrder");
 export const endTurn = createAction("game/endTurn");
+/** X3: focus the pane on a sub-territory, or (undefined) back to its territory. */
+export const focusSubTerritory = createAction<SubTerritoryId | undefined>("game/focusSubTerritory");
+/** X4: how many units of a type the draft recruits at a territory (m3r1-recruit-replenish). */
+export const changeRecruitQuantity = createAction<{ readonly quantity: number; readonly territoryId: TerritoryId; readonly unitTypeId: UnitTypeId }>("game/changeRecruitQuantity");
 export const startNextTurn = createAction("game/startNextTurn");
+/** U2: plan an aircraft's mission, or with none stand it down (m3r1-air-generals). */
+export const planAirMission = createAction<{ readonly mission?: AirMission; readonly unitId: UnitId }>("game/planAirMission");
+/** U2: close the selected aircraft's missions. */
+export const closeAircraftPane = createAction("game/closeAircraftPane");
+/** U5: plan, or withdraw, a Sack order for a general. */
+export const toggleSackOrder = createAction<UnitId>("game/toggleSackOrder");
+/** $5: plan a Build order for this turn, or cancel the one at an index. */
+export const queueBuildOrder = createAction<BuildOrder>("game/queueBuildOrder");
+export const cancelBuildOrder = createAction<number>("game/cancelBuildOrder");
 
 function setupFor(scenario: Scenario): Session {
   const assignments: Record<FactionId, ActorKind> = {};
@@ -116,23 +139,35 @@ export function createGameReducer(dependencies: GameReducerDependencies) {
       .addCase(toggleUnitSelection, (state, { payload }) =>
         set(inPlanning(state.session, (_scenario, planning) => toggleUnit(planning, payload))))
       .addCase(selectAllAvailableUnits, (state) =>
-        set(inPlanning(state.session, (_scenario, planning) => selectAllAvailable(planning))))
+        set(inPlanning(state.session, (scenario, planning) => selectAllAvailable(planning, scenario))))
       .addCase(clearUnitSelection, (state) =>
         set(inPlanning(state.session, (_scenario, planning) => clearSelection(planning))))
       .addCase(toggleOrderMenu, (state) =>
         set(inPlanning(state.session, (_scenario, planning) => toggleOrderChoice(planning))))
+      .addCase(focusSubTerritory, (state, { payload }) =>
+        set(inPlanning(state.session, (scenario, planning) => (payload === undefined ? unfocus(planning) : focusOn(scenario, planning, payload)))))
+      .addCase(queueBuildOrder, (state, { payload }) =>
+        set(inPlanning(state.session, (scenario, planning) => planBuild(scenario, planning, payload))))
+      .addCase(cancelBuildOrder, (state, { payload }) =>
+        set(inPlanning(state.session, (scenario, planning) => cancelBuild(scenario, planning, payload))))
       .addCase(chooseOrderKind, (state, { payload }) =>
         set(inPlanning(state.session, (scenario, planning) => chooseOrder(scenario, planning, payload))))
       .addCase(cancelOrderStage, (state) =>
         set(inPlanning(state.session, (_scenario, planning) => cancelOrder(planning))))
       .addCase(removePlannedOrder, (state, { payload }) =>
         set(inPlanning(state.session, (_scenario, planning) => removeOrder(planning, payload))))
+      .addCase(planAirMission, (state, { payload }) =>
+        set(inPlanning(state.session, (scenario, planning) => setAirMission(scenario, planning, payload.unitId, payload.mission))))
+      .addCase(closeAircraftPane, (state) =>
+        set(inPlanning(state.session, (_scenario, planning) => closeAircraft(planning))))
+      .addCase(toggleSackOrder, (state, { payload }) =>
+        set(inPlanning(state.session, (scenario, planning) => toggleSack(scenario, planning, payload))))
+      .addCase(changeRecruitQuantity, (state, { payload }) =>
+        set(inPlanning(state.session, (scenario, planning) => setRecruitQuantity(scenario, planning, payload.territoryId, payload.unitTypeId, payload.quantity))))
       .addCase(endTurn, (state) =>
-        set(inPlanning(state.session, (scenario, planning) => advance(
-          scenario,
-          lockSubmission(scenario, planning.game, { factionId: planning.factionId, orders: planning.draft.orders }),
-          planning.factionId
-        ))))
+        set(inPlanning(state.session, (scenario, planning) => submitDraft(scenario, planning))))
+      .addCase(timeRanOut, (state) =>
+        set(inPlanning(state.session, (scenario, planning) => submitOnTimeout(scenario, planning))))
       .addCase(startNextTurn, (state) => {
         const session = state.session;
         return session.phase === "resolution"

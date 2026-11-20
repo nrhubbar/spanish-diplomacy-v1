@@ -1,6 +1,7 @@
 import { type JSX, useCallback, useMemo, useState } from "react";
-import type { TerritoryId, UnitState } from "../engine/types";
+import type { Scenario, TerritoryId, UnitState } from "../engine/types";
 import { GameHeader } from "../components/GameHeader";
+import type { HeaderSlotProps } from "../components/header/slots";
 import { useAppDispatch, useRegistry, useSessionIn } from "../hooks";
 import type { MapView } from "../map/view";
 import { glyphs } from "../presentation/glyphs";
@@ -9,10 +10,13 @@ import { turnLabel } from "../presentation/turn";
 import { openSetup, startNextTurn } from "../state/gameSlice";
 import { selectRevealedOrders } from "../state/selectors";
 import type { Session } from "../state/session";
+import { sessionViewer } from "../state/visible";
 import { MapScreenFrame } from "./MapScreenFrame";
 import { BattleReport } from "./report/BattleReport";
 import { FocusNote, OutcomeSummary, RevealedOrdersPanel, TerritoryChanges, VictoryProgressPanel } from "./ResultPanels";
 import { battleKeysAt } from "./report/focus";
+import { TurnConditions } from "./report/TurnConditions";
+import { Treasury } from "./report/Treasury";
 import { groupBattles } from "../presentation/battle";
 
 type ResultSession = Extract<Session, { readonly phase: "resolution" | "game-over" }>;
@@ -65,14 +69,14 @@ function Results({ session }: { readonly session: ResultSession }): JSX.Element 
   return (
     <MapScreenFrame
       game={game.state}
-      header={<GameHeader kicker={`${turnLabel(scenario, game.state.turnNumber)} ${glyphs.dot} ${over ? "Campaign concluded" : "Orders revealed"}`} title={title} />}
+      header={<GameHeader kicker={`${turnLabel(scenario, game.state.turnNumber)} ${glyphs.dot} ${over ? "Campaign concluded" : "Orders revealed"}`} slots={headerSlots(scenario, session)} title={title} />}
       label={title}
       pane={{
         // A focused place opens a collapsed pane, so the player sees its card or note.
         ...(focused === undefined ? {} : { attentionKey: focused }),
         body: (
           <>
-            <FocusNote battle={focusedBattle} focusedTerritoryId={focused} result={result} scenario={scenario} />
+            <FocusNote battle={focusedBattle} focusedTerritoryId={focused} result={result} scenario={scenario} viewer={sessionViewer(session)} />
             {over && victory !== undefined ? (
               <section className="pane-section victory-callout">
                 <p>{`${winners} ${victory.factionIds.length > 1 ? "share the victory" : "won"} ${conditionText[victory.condition]}.`}</p>
@@ -80,7 +84,9 @@ function Results({ session }: { readonly session: ResultSession }): JSX.Element 
             ) : null}
             <TerritoryChanges result={result} scenario={scenario} />
             <BattleReport focusedTerritoryId={focused} result={result} scenario={scenario} seed={game.seed} />
-            <OutcomeSummary result={result} scenario={scenario} />
+            <TurnConditions result={result} scenario={scenario} />
+            <OutcomeSummary result={result} scenario={scenario} viewer={sessionViewer(session)} />
+            <Treasury result={result} scenario={scenario} viewer={sessionViewer(session)} />
             <VictoryProgressPanel result={result} scenario={scenario} />
             <RevealedOrdersPanel revealed={selectRevealedOrders(session)} scenario={scenario} />
           </>
@@ -94,4 +100,10 @@ function Results({ session }: { readonly session: ResultSession }): JSX.Element 
       view={view}
     />
   );
+}
+
+/** The header slots of a report: the visible final state, seen by the report's viewer. */
+function headerSlots(scenario: Scenario, session: ResultSession): HeaderSlotProps {
+  const viewer = sessionViewer(session);
+  return { scenario, state: session.result.finalState, ...(viewer === undefined ? {} : { viewer }) };
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { initialGameState } from "../main/engine/resolution";
-import { battleResults, type BattleOutcome, type GameState, type MoveOrder, type Scenario } from "../main/engine/types";
+import { battleResults, type D6BattleOutcome, type GameState, type MoveOrder, type Scenario } from "../main/engine/types";
 import { legendEntries } from "../main/map/MapLegend";
 import { placeOddsPlaques } from "../main/map/DestinationOddsLayer";
 import { battleRoutes, groupRoutes } from "../main/map/routes";
@@ -52,7 +52,7 @@ function shaken(state: GameState, id: string, change: Partial<GameState["units"]
   return { ...state, units: { ...state.units, [current.id]: { ...current, morale: { demoralized: true, quietTurns: 0 }, ...change } } };
 }
 
-function group(outcomes: readonly BattleOutcome[]) {
+function group(outcomes: readonly D6BattleOutcome[]) {
   const [first] = groupBattles(outcomes);
   if (first === undefined) throw new Error("no group");
   return first;
@@ -223,14 +223,14 @@ describe("battle reports (C14)", () => {
     ]);
     expect(groups.map((entry) => changedHands(entry))).toEqual([true, true, true, false, false, false]);
     expect(groups.map(groupTerritory)).toEqual(["castilla-la-mancha", "extremadura", "murcia", "madrid", undefined, "asturias"]);
-    expect(battleSummary(groups)).toBe("6 battles \u00b7 3 territories changed hands \u00b7 2,835 men lost \u00b7 4 armies destroyed \u00b7 5 armies demoralized");
-    expect(battleSummary(groupBattles([roadMeeting]))).toBe("1 battle \u00b7 1 army demoralized");
+    expect(battleSummary(groups)).toBe("6 battles \u00b7 3 territories changed hands \u00b7 2,835 men lost \u00b7 4 units destroyed \u00b7 5 units demoralized");
+    expect(battleSummary(groupBattles([roadMeeting]))).toBe("1 battle \u00b7 1 unit demoralized");
   });
 
   it("leads a card with the battle that decided the place", () => {
     expect(decisiveBattle(group(threeSidedAssault)).battle.attackerFactionId).toBe("south");
     const held = threeSidedAssault.map((entry) => ({ ...entry, site: madridRepulsed.site }));
-    expect(decisiveBattle(group(held)).battle.result).toBe("defender-exchange");
+    expect(decisiveBattle(group(held)).battle).toMatchObject({ result: "defender-exchange" });
   });
 
   it("measures sides, losses, and who a result fell on", () => {

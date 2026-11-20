@@ -1,0 +1,94 @@
+// Notifications.
+
+.notification-shelf {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 20;
+  display: grid;
+  width: min(calc(100vw - 2rem), 24rem);
+  gap: 0.75rem;
+}
+
+.notification {
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--rule);
+  border-left-width: 0.45rem;
+  border-radius: 8px;
+  background: var(--paper);
+  box-shadow: 0 0.75rem 2rem rgb(36 29 24 / 18%);
+
+  p {
+    margin-top: 0.35rem;
+    font-size: 0.92rem;
+  }
+
+  button {
+    margin-top: 0.6rem;
+  }
+}
+
+.notification-error {
+  border-left-color: var(--disband);
+}
+
+.notification-info {
+  border-left-color: var(--focus);
+}
+
+.notification-warning {
+  border-left-color: var(--bounce);
+}
+
+@media (max-width: 720px) {
+  .game-header {
+    padding: 0.45rem 0.6rem;
+  }
+
+  .game-header-title {
+    flex: 1;
+  }
+
+  .status-chips {
+    order: 3;
+    width: 100%;
+  }
+
+  .status-chips .chip-name {
+    display: none;
+  }
+
+  .status-chips .chip-abbreviation {
+    display: inline;
+  }
+
+  // m16: one line, ellipsized, so the title keeps its place.
+  .game-header .screen-kicker {
+    overflow: hidden;
+    font-size: 0.68rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .game-header-title {
+    min-width: 0;
+  }
+
+  .status-chips li {
+    font-size: 0.7rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+  }
+
+  // The destination glint holds still; the bright segments still mark the border as selectable.
+  .map-highlight-glint-halo,
+  .map-highlight-glint {
+    animation: none;
+  }
+}

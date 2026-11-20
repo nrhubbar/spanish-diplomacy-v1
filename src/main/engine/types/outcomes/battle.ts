@@ -1,0 +1,154 @@
+import type { BuildingId, FactionId, GeneralId, GradeId, SubTerritoryId, TerritoryId, TraitId, UnitId, UnitTypeId, WeatherId } from "../../ids";
+import type { BattleResult, CombatRole } from "../scenario";
+
+/** Battle outcomes (M12-M21, M27; D1-D8 for the d20), owned by the combat phases. */
+
+/** A named change to the attacker's die roll. `roll` is signed: negative favours the defender. */
+export type CombatModifier =
+  /** C7: the defender's works. `roll` is `-level`. */
+  | { readonly kind: "dug-in"; readonly level: number; readonly roll: number }
+  /** A scenario faction modifier, such as popular resistance (C17). */
+  | {
+      readonly factionId: FactionId;
+      readonly kind: "faction";
+      readonly modifierId: string;
+      readonly name: string;
+      readonly role: CombatRole;
+      readonly roll: number;
+    }
+  /** Odds above 6:1: each step beyond the last column adds one to the roll. */
+  | { readonly kind: "odds-overflow"; readonly roll: number }
+  /** C3: below 1:1, the penalty for each halving of the odds. */
+  | { readonly halvings: number; readonly kind: "odds-halving"; readonly roll: number }
+  /** D4, U5, D5 (declog): the best general on a side, +1 for his side. */
+  | { readonly factionId: FactionId; readonly generalId: GeneralId; readonly kind: "general"; readonly role: CombatRole; readonly roll: number }
+  /** U5: the trait of the general whose bonus counts. */
+  | { readonly generalId: GeneralId; readonly kind: "trait"; readonly role: CombatRole; readonly roll: number; readonly traitId: TraitId }
+  /** D4: city barricades for the defender (negative). */
+  | { readonly kind: "barricades"; readonly roll: number }
+  /** D5: a unit type's per-points bonus, such as artillery or tanks, for one side. */
+  | { readonly kind: "unit-bonus"; readonly points: number; readonly role: CombatRole; readonly roll: number; readonly unitTypeId: UnitTypeId }
+  /** C6, D6 (declog): a fatigued side (negative for the attacker, positive when the defender is fatigued). */
+  | { readonly factionId: FactionId; readonly kind: "fatigue"; readonly role: CombatRole; readonly roll: number }
+  /** D7: the battle zone's weather. */
+  | { readonly kind: "weather"; readonly roll: number; readonly weatherId: WeatherId }
+  /** M5, D7: an amphibious assault. */
+  | { readonly kind: "amphibious"; readonly roll: number }
+  /** D7: bombers supporting one side. */
+  | { readonly factionId: FactionId; readonly kind: "air-support"; readonly role: CombatRole; readonly roll: number; readonly unitIds: readonly UnitId[] }
+  /** $4: a defending building, such as Fortifications, in a sub-territory the defender holds. */
+  | { readonly buildingId: BuildingId; readonly kind: "building"; readonly roll: number; readonly subTerritoryId: SubTerritoryId };
+
+/** One army's contribution to a battle side. */
+export interface BattleArmy {
+  readonly factionId: FactionId;
+  /** Where the army fought from: its origin when it moved this turn, else the battle territory. */
+  readonly from: TerritoryId;
+  readonly unitId: UnitId;
+  /** Its combat value in this battle (C5): attack or defence, after strength and morale. */
+  readonly value: number;
+}
+
+export interface BattleSide {
+  readonly armies: readonly BattleArmy[];
+  /** Sum of the armies' values. */
+  readonly value: number;
+}
+
+/** Who holds a fought-over territory once every battle there is resolved (section 1.6). */
+export type Occupation =
+  | { readonly kind: "held" }
+  | { readonly factionId: FactionId; readonly kind: "taken" }
+  | { readonly kind: "left-empty" };
+
+/**
+ * M27: a seeded roll that settled a tie for the attacker or the defender of a standing battle.
+ * `factionIds` are the tied factions in id order; the roll, from 1 to their number, picks
+ * `factionIds[roll - 1]`.
+ */
+export interface StandingTieBreak {
+  readonly factionIds: readonly FactionId[];
+  readonly role: CombatRole;
+  readonly roll: number;
+}
+
+/** Where a battle was fought. */
+export type BattleSite =
+  /** A defended territory (section 1.6 step 1). */
+  | { readonly kind: "assault"; readonly occupation: Occupation; readonly territoryId: TerritoryId }
+  /** An empty territory entered by several factions (section 1.6 step 3). */
+  | { readonly kind: "entry"; readonly occupation: Occupation; readonly territoryId: TerritoryId }
+  /** A head-on swap on the road between two territories (C9). `winner` continues its move. */
+  | { readonly between: readonly [TerritoryId, TerritoryId]; readonly kind: "meeting"; readonly winner?: FactionId }
+  /** M27: factions still sharing a territory after every other battle fight where they stand. */
+  | {
+      readonly kind: "standing";
+      readonly occupation: Occupation;
+      /** Ties broken by a seeded roll; empty when no tie decided who fights. */
+      readonly tieBreaks: readonly StandingTieBreak[];
+      readonly territoryId: TerritoryId;
+    };
+
+export interface ArmyLoss {
+  readonly destroyed: boolean;
+  readonly men: number;
+  readonly unitId: UnitId;
+}
+
+export interface Retreat {
+  readonly from: TerritoryId;
+  readonly to: TerritoryId;
+  readonly unitId: UnitId;
+}
+
+/**
+ * What every battle reports, whichever dice module rolled it. `losses` (men lost and units
+ * destroyed, per unit) and `demoralizedUnitIds` are the one record of what a battle did to
+ * units, for d6 and d20 alike; the harness reads them.
+ */
+interface BattleCommon {
+  readonly attacker: BattleSide;
+  readonly attackerFactionId: FactionId;
+  /** The odds column, 0 (below 1:1) to 6 (6:1). */
+  readonly column: number;
+  readonly defender: BattleSide;
+  readonly demoralizedUnitIds: readonly UnitId[];
+  readonly kind: "battle";
+  readonly losses: readonly ArmyLoss[];
+  readonly modifiers: readonly CombatModifier[];
+  /** The odds as players read them, for example "2:1" or "1:3". */
+  readonly oddsLabel: string;
+  readonly retreats: readonly Retreat[];
+  readonly site: BattleSite;
+  readonly surrenderedUnitIds: readonly UnitId[];
+}
+
+/** One battle on the d6 table (M15, M16): the sides, the roll, the result, and what it did. */
+export interface D6BattleOutcome extends BattleCommon {
+  /** The die as rolled, 1 to 6. */
+  readonly die: number;
+  readonly dice: "d6";
+  readonly result: BattleResult;
+  /** The table row used: the die plus every modifier, clamped to 0..6. */
+  readonly row: number;
+}
+
+/** One battle on the d20 table (D1, D2, P4). TODO(m3r1-d20-combat): produced by the d20-graded module. */
+export interface D20BattleOutcome extends BattleCommon {
+  /** The die as rolled, 1 to 20. */
+  readonly die: number;
+  readonly dice: "d20";
+  readonly grade: GradeId;
+  /** P4: sub-territories that changed hands: 0, 1, 2 or the whole territory. */
+  readonly ground: 0 | 1 | 2 | "all";
+  /** The table score used: the die plus every modifier, clamped to 0..20. */
+  readonly score: number;
+}
+
+/** A battle, by the dice module that rolled it. */
+export type BattleOutcome = D6BattleOutcome | D20BattleOutcome;
+
+/** The d6 battles of a turn. TODO(m3r1-d20-combat): the report and map show d20 battles too. */
+export function isD6Battle(outcome: { readonly kind: string }): outcome is D6BattleOutcome {
+  return outcome.kind === "battle" && "dice" in outcome && outcome.dice === "d6";
+}

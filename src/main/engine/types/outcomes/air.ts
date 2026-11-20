@@ -1,0 +1,89 @@
+import type { BuildingId, DevelopmentId, FactionId, SubTerritoryId, TerritoryId, UnitId } from "../../ids";
+import type { AirMissionOrder } from "../orders";
+import type { RaidOutcome } from "../systems";
+
+/** Air mission outcomes (U2-U4, D7), owned by `m3r1-air-generals` (phases 2, 5, 11). */
+
+/** U3: a raid's roll and what it did. */
+export interface RaidFlownOutcome {
+  /** U3: "air eliminated" and fighter losses: the aircraft lost. */
+  readonly aircraftLost: readonly UnitId[];
+  /** "Building downgraded or destroyed": the building hit. */
+  readonly buildingId?: BuildingId;
+  /** AG-11: with no building there, the development track that lost a level. */
+  readonly developmentId?: DevelopmentId;
+  readonly kind: "raid";
+  readonly order: AirMissionOrder;
+  readonly result: RaidOutcome;
+  /** The raid's d20 after anti-air and interception. */
+  readonly roll: number;
+  readonly subTerritoryId: SubTerritoryId;
+}
+
+/** U4: recon showed a territory's balances, queues and training until `untilTurn`. */
+export interface ReconFlownOutcome {
+  readonly kind: "recon";
+  readonly order: AirMissionOrder;
+  readonly territoryId: TerritoryId;
+  readonly untilTurn: number;
+}
+
+/** U2, U3, D27.3: fighters intercepted enemy aircraft (raids, support, and recon they shot down) over a territory. */
+export interface InterceptionOutcome {
+  readonly factionId: FactionId;
+  readonly interceptorIds: readonly UnitId[];
+  readonly kind: "interception";
+  readonly lostUnitIds: readonly UnitId[];
+  /** The enemy aircraft intercepted, whatever their mission. */
+  readonly raiderIds: readonly UnitId[];
+  /**
+   * CT-46: set when the intercepted flights were recon, to the fliers' factions. Recon
+   * interceptions are kept apart from raids and support, and only the fighters' faction and the
+   * fliers see them, since they name the territory a recon flew over.
+   */
+  readonly reconFactionIds?: readonly FactionId[];
+  readonly territoryId: TerritoryId;
+}
+
+/** D7: bombers supported a battle; the battle names the bonus as an `air-support` modifier. */
+export interface SupportFlownOutcome {
+  /** Index of the battle supported, or absent when no battle was fought there. */
+  readonly battleIndex?: number;
+  readonly kind: "air-support";
+  readonly order: AirMissionOrder;
+  readonly territoryId: TerritoryId;
+}
+
+/** U2: an aircraft could not fly: grounded by weather, out of range, or without an airbase. */
+export interface GroundedOutcome {
+  readonly kind: "grounded";
+  readonly order: AirMissionOrder;
+  readonly reason: string;
+}
+
+/** AG-9: an aircraft whose base was lost flew to the nearest airbase of its faction in range. */
+export interface AircraftRebasedOutcome {
+  readonly factionId: FactionId;
+  readonly from: TerritoryId;
+  readonly kind: "aircraft-rebased";
+  readonly to: TerritoryId;
+  readonly unitId: UnitId;
+}
+
+/** AG-9: an aircraft whose base was lost had no airbase in range, and was lost on the ground. */
+export interface AircraftLostOutcome {
+  readonly factionId: FactionId;
+  readonly from: TerritoryId;
+  readonly kind: "aircraft-lost";
+  readonly unitId: UnitId;
+}
+
+/** Every outcome of this area. Adding a kind here is all the union needs. */
+export type AirTurnOutcome =
+  | RaidFlownOutcome
+  | ReconFlownOutcome
+  | InterceptionOutcome
+  | SupportFlownOutcome
+  | GroundedOutcome
+  | AircraftRebasedOutcome
+  | AircraftLostOutcome;

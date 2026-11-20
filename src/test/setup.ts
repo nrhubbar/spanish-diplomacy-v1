@@ -2,7 +2,7 @@ import "@testing-library/jest-dom/vitest";
 import { configure } from "@testing-library/react";
 
 // findBy* waits up to 3 s rather than 1 s, for the same reason as the test timeout: the
-// suite runs flows next to the soak, and the wait only lengthens a test that would fail.
+// suite runs flows in parallel, and the wait only lengthens a test that would fail.
 configure({ asyncUtilTimeout: 3000 });
 
 // jsdom has no layout engine: give elements a desktop-sized box and a ResizeObserver that

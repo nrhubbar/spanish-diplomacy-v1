@@ -2,15 +2,26 @@ import { type JSX, useState } from "react";
 import { useAppDispatch } from "../hooks";
 import type { SubmissionStatus } from "../state/selectors";
 import { exitGame } from "../state/gameSlice";
+import { DateChip } from "./header/DateChip";
+import { ReadinessChips } from "./header/ReadinessChips";
+import { ResourceChips } from "./header/ResourceChips";
+import type { HeaderSlotProps } from "./header/slots";
+import { TimerChip } from "./header/TimerChip";
 
 interface GameHeaderProps {
   readonly kicker: string;
+  /** The slots' data; without it the Milestone 3 slots stay empty. */
+  readonly slots?: HeaderSlotProps;
   readonly status?: readonly SubmissionStatus[];
   readonly title: string;
 }
 
-/** Compact header for game screens, leaving the height to the map. */
-export function GameHeader({ kicker, status = [], title }: GameHeaderProps): JSX.Element {
+/**
+ * Compact header for game screens, leaving the height to the map. Its slots, left to right:
+ * the date, the timer, the resources, then the readiness chips (X1, T1, T6). Each slot is its
+ * own component under `header/`, owned by its slice.
+ */
+export function GameHeader({ kicker, slots, status = [], title }: GameHeaderProps): JSX.Element {
   const dispatch = useAppDispatch();
   const [confirming, setConfirming] = useState(false);
 
@@ -20,17 +31,14 @@ export function GameHeader({ kicker, status = [], title }: GameHeaderProps): JSX
         <p className="screen-kicker">{kicker}</p>
         <h1>{title}</h1>
       </div>
-      {status.length === 0 ? null : (
-        <ul aria-label="Order status" className="status-chips">
-          {status.map((entry) => (
-            <li data-ready={entry.ready} key={entry.factionId}>
-              <span className="visually-hidden">{entry.ready ? "Ready: " : "Planning: "}</span>
-              <span className="chip-name">{entry.name}</span>
-              <abbr className="chip-abbreviation" title={entry.name}>{entry.abbreviation}</abbr>
-            </li>
-          ))}
-        </ul>
+      {slots === undefined ? null : (
+        <>
+          <DateChip {...slots} />
+          <TimerChip {...slots} />
+          <ResourceChips {...slots} />
+        </>
       )}
+      <ReadinessChips status={status} />
       <div className="game-header-actions">
         {confirming ? (
           <div className="exit-confirm" role="group" aria-label="Leave this game?">

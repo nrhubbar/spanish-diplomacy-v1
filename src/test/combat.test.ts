@@ -288,7 +288,7 @@ describe("attack estimates (C15)", () => {
       oddsLabel: "1:1",
       rollModifier: -2
     });
-    if (estimate.kind !== "battle") throw new Error("expected a battle");
+    if (estimate.kind !== "battle" || !("faces" in estimate)) throw new Error("expected a d6 battle");
     expect(estimate.modifiers.map((modifier) => modifier.kind)).toEqual(["dug-in", "faction"]);
     expect(estimate.faces.map((face) => face.row)).toEqual([0, 0, 1, 2, 3, 4]);
     expect(estimate.takeChance).toBe(0);
@@ -297,7 +297,7 @@ describe("attack estimates (C15)", () => {
   it("applies popular resistance and the halving penalty on the Spain map", () => {
     // Madrid held by its two regiments only, so three regiments attack at 1:1.
     const opening = initialGameState(spain());
-    const regimentsOnly = Object.entries(opening.units).filter(([id]) => !["rep-madrid-security", "rep-madrid-sierra-column"].includes(id));
+    const regimentsOnly = Object.entries(opening.units).filter(([id]) => !["rep-madrid-security", "rep-madrid-sierra-column", "rep-general-miaja"].includes(id));
     const state = { ...opening, units: Object.fromEntries(regimentsOnly) };
     const attackers = [unit("north-san-marcial-22"), unit("north-san-quintin-25"), unit("north-la-victoria-28")];
     const estimate = estimateAttack(spain(), state, faction("north"), attackers, territory("madrid"));

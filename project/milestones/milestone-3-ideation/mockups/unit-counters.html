@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="mock-size" content="1440x740">
+<meta name="mock-out" content="1200">
+<title>unit-counters</title>
+<link rel="stylesheet" href="app.css">
+<link rel="stylesheet" href="common.css">
+<script src="common.js"></script>
+<style>
+  body { background: var(--canvas); }
+  .sheet { position: absolute; left: 24px; top: 92px; width: 1392px; padding: 18px 20px 20px; border: 5px solid var(--wood); border-radius: 12px; background: var(--paper); box-shadow: 0 0.75rem 2rem rgb(36 29 24 / 22%); }
+  .grid { display: grid; grid-template-columns: 110px repeat(11, 1fr); column-gap: 6px; row-gap: 0; align-items: center; }
+  .col-head { align-self: end; padding: 0 2px 8px; text-align: center; border-bottom: 1px solid rgb(36 29 24 / 18%); }
+  .col-head b { display: block; font-family: var(--serif); font-size: 0.95rem; line-height: 1.1; }
+  .col-head span { display: block; margin-top: 2px; color: var(--ink-soft); font-size: 0.7rem; line-height: 1.2; min-height: 2.4em; }
+  .col-head .new-tag { display: inline-block; color: var(--paper); font-style: normal; }
+  .col-head[data-new="true"] { background: linear-gradient(to bottom, transparent 0, rgb(217 165 32 / 12%) 100%); border-radius: 6px 6px 0 0; }
+  .row-head { padding: 8px 0; }
+  .row-head .faction-abbreviation { display: block; }
+  .row-head b { font-family: var(--serif); font-size: 0.92rem; line-height: 1.15; }
+  .cell { position: relative; height: 104px; border-bottom: 1px dotted rgb(36 29 24 / 18%); }
+  .cell .counter-layer { position: absolute; inset: 0; zoom: 1.5; pointer-events: none; }
+  .na { position: absolute; left: 50%; top: 50%; width: 82px; height: 82px; transform: translate(-50%, -50%); display: grid; place-items: center; border: 1.5px dashed rgb(36 29 24 / 30%); border-radius: 4px; color: var(--ink-soft); font-size: 0.7rem; text-align: center; }
+  .split { position: absolute; left: 140px; top: 34px; width: 1px; height: 404px; }
+  .demo { display: grid; grid-template-columns: auto auto auto 1fr; gap: 1.6rem; align-items: center; margin-top: 16px; padding-top: 14px; border-top: 1px solid rgb(36 29 24 / 18%); }
+  .demo h3 { font-size: 1.1rem; }
+  .fan { position: relative; width: 300px; height: 110px; }
+  .fan .counter-layer { position: absolute; inset: 0; zoom: 1.5; }
+  .eq { font: 800 2rem var(--serif); color: var(--ink-soft); }
+  .roll-chip { position: absolute; z-index: 4; display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px 3px 4px; border: 1.5px solid var(--ink); border-radius: 999px; background: var(--gold-wash); font: 800 13px var(--sans); white-space: nowrap; box-shadow: 0 1px 3px rgb(0 0 0 / 35%); }
+  .roll-chip .dot { display: grid; width: 18px; height: 18px; place-items: center; border-radius: 50%; background: #241d18; }
+  .roll-chip .dot::after { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #fffaf0; }
+  .rules { display: grid; grid-template-columns: 1fr 1fr; gap: 0.25rem 1.2rem; font-size: 0.8rem; color: var(--ink-soft); }
+  .rules b { color: var(--ink); }
+</style>
+</head>
+<body>
+<div class="stage" style="width:1440px;height:740px">
+  <div class="abs" style="left:24px;top:16px">
+    <div class="screen-kicker">Unit types &middot; counter sheet, detail zoom at 150 percent</div>
+    <h1 style="font-size:2.1rem;margin-top:0.2rem">Today's four types and seven new ones, in each command's colour</h1>
+  </div>
+  <div class="sheet">
+    <div class="grid" id="grid"></div>
+    <div class="demo">
+      <div><h3>A stack with artillery</h3><p class="pane-meta" style="max-width:15rem">Artillery adds its attack points, and every full 3 of them adds +1 to the roll.</p></div>
+      <div class="fan" id="fan"></div>
+      <div class="eq">=</div>
+      <div style="display:flex;gap:2rem;align-items:center">
+        <div class="fan" id="stack" style="width:150px"></div>
+        <div class="rules">
+          <span><b>Infantry 4 + militia 3 + artillery 4</b> = 11 attack</span>
+          <span><b>Artillery points 4</b> &divide; 3 = <b>+1 roll</b> (rounded down)</span>
+          <span><b>Cavalry</b>: 2 moves in clear weather</span>
+          <span><b>Tank</b>: +1 roll attacking in the open</span>
+          <span><b>Bomber</b>: lowers a city's yield; never attacks armies</span>
+          <span><b>AA</b>: &minus;2 to bombing rolls on its territory</span>
+          <span><b>Fighter</b>: cancels one enemy aircraft</span>
+          <span><b>Recon</b>: shows the armies in a neighbouring territory</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="mark"></div>
+</div>
+<script>
+const cols = [
+  ["infantry", "INF", "Infantry regiment", "today", false, "550/550"],
+  ["militia", "MIL", "Militia column", "today", false, "1000/1000"],
+  ["colonial", "COL", "Colonial veterans", "today", false, "600/600"],
+  ["security", "SEC", "Security forces", "today", false, "800/800"],
+  ["cavalry", "CAV", "Cavalry", "diagonal slash", true, "400/400"],
+  ["tank", "TK", "Tank", "armour oval", true, "300/300"],
+  ["artillery", "ART", "Artillery", "+1 roll per 3 attack", true, "600/600"],
+  ["aa", "AA", "Anti-air", "arc", true, "200/200"],
+  ["fighter", "FTR", "Fighter", "propeller, F", true, "12/12"],
+  ["bomber", "BMR", "Bomber", "propeller, B", true, "9/9"],
+  ["recon", "RCN", "Recon aircraft", "propeller, slash", true, "6/6"]
+];
+let html = '<div></div>' + cols.map(([type, , name, note, isNew]) => `<div class="col-head" data-new="${isNew}"><b>${name}${isNew ? '<em class="new-tag">new</em>' : ""}</b><span>${TYPES[type].values} &middot; ${note}</span></div>`).join("");
+for (const f of ["rep", "nic", "sic"]) {
+  html += `<div class="row-head"><span class="faction-abbreviation">${FACTIONS[f].abbr}</span><b>${FACTIONS[f].name}</b></div>`;
+  for (const [type, des, , , , men] of cols) {
+    if (f === "rep" && type === "colonial") { html += '<div class="cell"><div class="na">not raised by<br>the Republic</div></div>'; continue; }
+    const reduced = f === "nic" && type === "infantry";
+    html += `<div class="cell"><div class="counter-layer" data-level="detail">${counter({ f, type, des, x: 7, y: 7, w: 60, h: 56, men: reduced ? "420/550" : men, values: reduced ? "3-5" : undefined, full: reduced ? "4-6" : undefined, share: reduced ? 0.76 : 1, works: f === "sic" && type === "infantry" ? 2 : 0, demor: f === "rep" && type === "militia" })}</div></div>`;
+  }
+}
+document.getElementById("grid").innerHTML = html;
+document.getElementById("fan").innerHTML = '<div class="counter-layer" data-level="detail">'
+  + counter({ f: "rep", type: "infantry", des: "WR1", men: "550/550", x: 0, y: 10, w: 60, h: 56 })
+  + counter({ f: "rep", type: "militia", des: "SIER", men: "1000/1000", x: 68, y: 10, w: 60, h: 56 })
+  + counter({ f: "rep", type: "artillery", des: "ART1", men: "600/600", x: 136, y: 10, w: 60, h: 56 })
+  + "</div>";
+document.getElementById("stack").innerHTML = '<div class="counter-layer" data-level="operational">'
+  + counter({ f: "rep", type: "infantry", values: "11-12", count: 3, x: 6, y: 16, w: 60, h: 42 })
+  + '</div><div class="roll-chip" style="left:60px;top:84px"><span class="dot"></span>+1 roll</div>';
+document.getElementById("mark").innerHTML = mark("top:16px;right:24px");
+</script>
+</body>
+</html>

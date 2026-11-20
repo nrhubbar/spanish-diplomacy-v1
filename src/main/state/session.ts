@@ -1,21 +1,37 @@
 import type { StandingOrder } from "../engine/orders";
 import type {
   ActorKind,
+  BuildOrder,
   FactionId,
   GameState,
+  AirMissionOrder,
   MoveOrder,
   PlayerSubmission,
+  SackOrder,
+  RecruitOrder,
+  ReplenishOrder,
   ScenarioId,
+  SubTerritoryId,
   TerritoryId,
   TurnOutcome,
   TurnResolutionResult,
-  UnitId
+  UnitId,
+  WithdrawOrder
 } from "../engine/types";
 
 export type Assignments = Readonly<Record<FactionId, ActorKind>>;
 
 export interface TurnHistoryEntry {
+  /** Every outcome of the turn. A visible session's entries hold only their viewer's. */
   readonly outcomes: readonly TurnOutcome[];
+  /**
+   * $6, U4: what each faction, and a shared screen, saw of the turn, filtered when it was
+   * written (`state/history.ts`). Read history through `seenBy`, never by filtering again.
+   */
+  readonly seen: {
+    readonly byFaction: Readonly<Partial<Record<FactionId, readonly TurnOutcome[]>>>;
+    readonly shared: readonly TurnOutcome[];
+  };
   readonly turnNumber: number;
 }
 
@@ -32,9 +48,13 @@ export interface GameRecord {
 
 /**
  * Every order an army can have (O1): a move, or the standing order it follows without one,
- * Entrench when healthy and Rest when demoralized. Only moves are submitted (O5).
+ * Entrench when healthy and Rest when demoralized (O5). In contested ground (C1) the choice is
+ * Attack, the derived default (Hold for a demoralized army, C4), or a submitted Withdraw.
  */
-export type OrderKind = MoveOrder["kind"] | StandingOrder;
+export type OrderKind = MoveOrder["kind"] | WithdrawOrder["kind"] | ReplenishOrder["kind"] | StandingOrder | "attack" | "hold";
+
+/** The orders a player plans with a destination for armies: moves and withdrawals (C1). */
+export type PlannedOrder = MoveOrder | WithdrawOrder;
 
 /**
  * Where the player is in giving an order to the selected armies: choosing the order type,
@@ -42,12 +62,24 @@ export type OrderKind = MoveOrder["kind"] | StandingOrder;
  */
 export type OrderStage =
   | { readonly step: "choose-order" }
-  | { readonly orderKind: MoveOrder["kind"]; readonly step: "choose-destination" };
+  | { readonly orderKind: PlannedOrder["kind"]; readonly step: "choose-destination" };
 
 /** The current local player's private working set. */
 export interface Draft {
+  /** U2, U5: air missions and Sack orders (m3r1-air-generals). Carried through selection changes by `withDraft`. */
+  readonly airOrders?: readonly (AirMissionOrder | SackOrder)[];
+  /** $5: Build orders planned this turn (m3r1-economy-builds, `planning/builds.ts`). Carried through selection changes by `keepBasket`. */
+  readonly builds?: readonly BuildOrder[];
   readonly feedback?: string;
-  readonly orders: readonly MoveOrder[];
+  /** X3: the sub-territory the pane is focused on, inside the selected territory. */
+  readonly focusedSubTerritoryId?: SubTerritoryId;
+  readonly orders: readonly PlannedOrder[];
+  /** U2: the aircraft whose missions the pane shows (m3r1-air-generals). */
+  readonly selectedAircraftId?: UnitId;
+  /** X4, R2: the Recruit basket (m3r1-recruit-replenish). Carried through selection changes by `withDraft`. */
+  readonly recruits?: readonly RecruitOrder[];
+  /** R5: Replenish orders, one per unit, never alongside a move (m3r1-recruit-replenish). */
+  readonly replenishments?: readonly ReplenishOrder[];
   readonly selectedTerritoryId?: TerritoryId;
   readonly selectedUnitIds: readonly UnitId[];
   readonly stage?: OrderStage;

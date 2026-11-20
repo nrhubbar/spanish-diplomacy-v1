@@ -1,40 +1,106 @@
 import type { BattleDice } from "../main/engine/dice";
 import { initialGameState, resolveTurn } from "../main/engine/resolution";
-import type {
-  BattleOutcome,
-  CityId,
-  FactionId,
-  GameState,
-  MoveOrder,
-  PlayerSubmission,
-  Scenario,
-  ScenarioId,
-  TerritoryId,
-  TurnResolutionResult,
-  UnitDefinition,
-  UnitId,
-  UnitState,
-  UnitTypeDefinition,
-  UnitTypeId
+import {
+  type D6BattleOutcome,
+  isD6Battle,
+  type CityId,
+  type FactionId,
+  type GameState,
+  type MoveOrder,
+  type PlayerSubmission,
+  type Scenario,
+  type ScenarioId,
+  type TerritoryId,
+  type TurnResolutionResult,
+  type UnitDefinition,
+  type UnitId,
+  type UnitState,
+  type UnitTypeDefinition,
+  type UnitTypeId
 } from "../main/engine/types";
+import { builtInModuleRegistry } from "../main/engine/modules";
 import { builtInSources } from "../main/scenarios/builtInSources";
 import { createScenarioRegistry, type ScenarioRegistry } from "../main/scenarios/registry";
 import { createAppStore } from "../main/state/store";
 import { fixtureSources } from "./fixtures/scenarios/fixtureSources";
 
-export const spainId = "spain-1936-07-31" as ScenarioId;
+export const spainId = "spanish-civil-war-1936" as ScenarioId;
 export const tinyId = "tiny-front" as ScenarioId;
 
 let sharedRegistry: ScenarioRegistry | undefined;
+let shipped: ScenarioRegistry | undefined;
 
-/** Registry with every shipped package plus test fixtures. */
+/** Registry with every shipped package, as shipped, plus test fixtures. */
+export function shippedRegistry(): ScenarioRegistry {
+  shipped ??= createScenarioRegistry(builtInSources, fixtureSources);
+  return shipped;
+}
+
+/**
+ * Spain on the d6 preset's dice. The Milestone 2 rule and report tests were written against
+ * Spain's map with the d6 table; they keep testing it (declog D3's intent), while Spain ships
+ * with `d20-graded` (`spainD20`).
+ */
+export function onD6Dice(scenario: Scenario): Scenario {
+  return {
+    ...scenario,
+    modules: scenario.modules.map((module) => (module.area === "dice" ? builtInModuleRegistry.require("dice", "d6-table") : module)),
+    rules: { ...scenario.rules, dice: "d6-table" }
+  };
+}
+
+/**
+ * Spain without its starting aircraft and generals (m3r1-air-generals): the Milestone 2 rule,
+ * report and UI tests count Spain's ground armies, so they keep the Milestone 2 board.
+ */
+export function groundForcesOnly(scenario: Scenario): Scenario {
+  const ground = (unit: UnitDefinition): boolean => scenario.index.unitTypes.get(unit.type)?.kind === "ground";
+  const units = scenario.units.filter(ground);
+  return { ...scenario, index: { ...scenario.index, units: new Map(units.map((unit) => [unit.id, unit])) }, units };
+}
+
+/** Registry with every shipped package plus test fixtures; Spain is pinned to the d6 table (`onD6Dice`) and its ground forces (`groundForcesOnly`). */
 export function testRegistry(): ScenarioRegistry {
-  sharedRegistry ??= createScenarioRegistry(builtInSources, fixtureSources);
+  if (sharedRegistry === undefined) {
+    const registry = shippedRegistry();
+    const pinned = { ...registry.require(spainId), scenario: groundForcesOnly(onD6Dice(registry.require(spainId).scenario)) };
+    sharedRegistry = { ...registry, list: () => registry.list(), loadAssets: (id) => registry.loadAssets(id), peekAssets: (id) => registry.peekAssets(id), require: (id) => (id === spainId ? pinned : registry.require(id)) };
+  }
   return sharedRegistry;
 }
 
+/** Spain on the d6 table, for the Milestone 2 rule tests. */
 export function spain(): Scenario {
   return testRegistry().require(spainId).scenario;
+}
+
+/** Spain on the d6 table with its starting aircraft and generals (m3r1-air-generals tests). */
+export function spainWithAir(): Scenario {
+  return onD6Dice(shippedRegistry().require(spainId).scenario);
+}
+
+let unpartitioned: Scenario | undefined;
+
+/**
+ * Spain with the `none` partition module: control follows armies (M6, M7) and nothing is
+ * contested-ground only. For tests of the Milestone 2 rules (M6-M27) on the Spanish board,
+ * which the `provinces` module replaces (P2-P7, C1).
+ */
+export function spainM2(): Scenario {
+  if (unpartitioned !== undefined) return unpartitioned;
+  const scenario = spain();
+  const none = builtInModuleRegistry.require("partition", "none");
+  unpartitioned = {
+    ...scenario,
+    modules: scenario.modules.map((module) => (module.area === "partition" ? none : module)),
+    rules: { ...scenario.rules, partition: "none" }
+  };
+  return unpartitioned;
+}
+
+/** Spain as shipped, on the d20 (D1-D8). */
+export function spainD20(): Scenario {
+  return shippedRegistry().require(spainId).scenario;
 }
 
 export function tiny(): Scenario {
@@ -59,6 +125,7 @@ export function withUnits(scenario: Scenario, units: readonly (readonly [string,
   for (const [id, factionId, territoryId] of units) {
     record[unit(id)] = {
       factionId: faction(factionId),
+      fatigue: 0,
       id: unit(id),
       morale: { demoralized: false, quietTurns: 0 },
       strength: scenario.index.units.get(unit(id))?.strength ?? syntheticStrength,
@@ -132,6 +199,7 @@ export function battlefield(
     const fullStrength = spec.fullStrength ?? known.get(unit(spec.id))?.fullStrength ?? syntheticStrength;
     units[unit(spec.id)] = {
       factionId: faction(spec.faction),
+      fatigue: 0,
       id: unit(spec.id),
       morale: { demoralized: spec.demoralized ?? false, quietTurns: 0 },
       strength: spec.strength ?? fullStrength,
@@ -141,7 +209,8 @@ export function battlefield(
   return { scenario, state: { ...start, units, ...options.state } };
 }
 
-export const unitType = (id: string, attack: number, defence: number): UnitTypeDefinition => ({ attack, defence, id: id as UnitTypeId, name: id });
+export const unitType = (id: string, attack: number, defence: number): UnitTypeDefinition =>
+  ({ attack, defence, effects: [], id: id as UnitTypeId, kind: "ground", name: id, orders: ["move"] });
 
 /**
  * Loaded dice: battle `i` rolls `faces[i]`. Draws after the die (standing-battle tie-breaks)
@@ -171,6 +240,6 @@ export function play(scenario: Scenario, state: GameState, orders: readonly Move
   return resolveTurn(scenario, state, submissionsOf(orders), 1, dice);
 }
 
-export function battlesOf(result: TurnResolutionResult): readonly BattleOutcome[] {
-  return result.outcomes.filter((outcome): outcome is BattleOutcome => outcome.kind === "battle");
+export function battlesOf(result: TurnResolutionResult): readonly D6BattleOutcome[] {
+  return result.outcomes.filter(isD6Battle);
 }

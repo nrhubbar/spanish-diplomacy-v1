@@ -1,0 +1,330 @@
+// m3r1-weather-timer: weather icons, chips and forecast (T3), the turn timer and its pause
+// cover (T5, T6), readiness chips (T6), the setup timer choice, and the header's meter row (X1).
+
+// Weather tones: each outcome also has its own icon shape and written name, never colour alone.
+.weather-icon {
+  flex: none;
+  vertical-align: -0.15em;
+
+  &[data-weather="clear"] { color: #b7860b; }
+  &[data-weather="hot"] { color: #b4471e; }
+  &[data-weather="rain"] { color: #2e5f87; }
+  &[data-weather="mud"] { color: #6d4c2c; }
+  &[data-weather="snow"] { color: #4f7fa3; }
+  &[data-weather="severe-cold"] { color: #23466b; }
+}
+
+.weather-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 0.78rem;
+  font-weight: 650;
+  white-space: nowrap;
+
+  &[data-icon-only="true"] {
+    padding: 0.1rem 0.3rem;
+  }
+}
+
+// The territory heading's meta row (above the pane tabs): weather, income, recruiting chips.
+.territory-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0.25rem 0 0.5rem;
+}
+
+.territory-meta:empty {
+  display: none;
+}
+
+.territory-weather {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.weather-forecast {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: var(--paper-deep);
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.forecast-entry {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.odds-chip .weather-icon {
+  margin-left: 0.35rem;
+}
+
+// The turn timer: a dark chip with the clock, amber in the last minute, red in the last ten seconds.
+.timer-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.15rem 0.2rem 0.15rem 0.6rem;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 0.9rem;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+
+  &[data-level="warning"] {
+    background: var(--bounce);
+    color: var(--ink);
+  }
+
+  &[data-level="urgent"] {
+    background: var(--disband);
+    color: var(--paper);
+  }
+}
+
+.timer-face {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding-right: 0.25rem;
+}
+
+.timer-pause {
+  display: inline-grid;
+  place-items: center;
+  width: 1.7rem;
+  height: 1.7rem;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 14%);
+  color: inherit;
+  cursor: pointer;
+
+  &:hover {
+    background: rgb(255 255 255 / 26%);
+  }
+}
+
+// Q-TIMER-4: the pause covers everything, like the handoff screen.
+.pause-cover {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: var(--canvas);
+}
+
+.pause-card {
+  width: min(100%, 28rem);
+  padding: clamp(1.25rem, 4vw, 2.25rem);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  background: var(--paper);
+  box-shadow: 0 1.25rem 3rem rgb(36 29 24 / 12%);
+
+  h2 {
+    margin: 0.2rem 0 0.5rem;
+    font-family: var(--serif);
+    font-size: 2rem;
+  }
+}
+
+// Setup: the timer choices as chips.
+.timer-choice {
+  margin: 0.75rem 0 1rem;
+  padding: 0;
+  border: 0;
+
+  legend {
+    margin-bottom: 0.35rem;
+    font-weight: 700;
+  }
+}
+
+.timer-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.timer-option {
+  position: relative;
+  display: inline-flex;
+
+  input {
+    position: absolute;
+    opacity: 0;
+    inset: 0;
+    margin: 0;
+    cursor: pointer;
+  }
+
+  span {
+    padding: 0.2rem 0.75rem;
+    border: 1px solid var(--ink-soft);
+    border-radius: 999px;
+    background: var(--paper);
+    font-size: 0.85rem;
+    font-weight: 650;
+  }
+
+  input:checked + span {
+    border-color: var(--ink);
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  input:focus-visible + span {
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  &[data-online="true"] span {
+    border-style: dashed;
+    color: var(--ink-soft);
+  }
+
+  input:disabled {
+    cursor: not-allowed;
+  }
+}
+
+.timer-hint {
+  margin: 0.35rem 0 0;
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+}
+
+// T6: readiness chips read "REP planning" and "NIC ready".
+.status-chips {
+  .chip-abbreviation {
+    display: inline;
+    text-decoration: underline dotted;
+  }
+
+  .chip-state {
+    font-weight: 500;
+  }
+}
+
+// X1: the header's meter row (timer, Funds, Manpower). Each meter chip carries `header-meter`.
+// Desktop: the readiness chips sit by the title and the meters on the right, before Exit.
+.game-header {
+  > .status-chips {
+    order: 1;
+    margin-right: auto;
+  }
+
+  > .status-chips ~ .game-header-actions {
+    margin-left: 0;
+  }
+
+  > .header-meter {
+    order: 2;
+  }
+
+  // m17: without readiness chips (resolution), the meters still sit at the right.
+  @media (width > 720px) {
+    > .game-header-title + .header-meter {
+      margin-left: auto;
+    }
+  }
+
+  > .game-header-actions {
+    order: 3;
+  }
+}
+
+// Phone (X1, Q-UX-12, M1): title and Exit, then one compact row of meters, then the readiness
+// chips. The meters keep a small gap and drop their visible names (the icon carries the name;
+// screen readers still hear it).
+@media (max-width: 720px) {
+  .game-header {
+    column-gap: 0.35rem;
+
+    .resource-name {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+
+    &::after {
+      flex-basis: 100%;
+      order: 2;
+      height: 0;
+      content: "";
+    }
+
+    > .game-header-actions {
+      order: 1;
+    }
+
+    > .header-meter {
+      order: 3;
+    }
+
+    > .status-chips {
+      order: 4;
+      margin-right: 0;
+    }
+
+    .timer-chip {
+      font-size: 0.82rem;
+    }
+
+    // The phone rule in _notifications hides the name outright; keep it for screen readers.
+    .status-chips .chip-name.visually-hidden {
+      display: inline;
+    }
+  }
+}
+
+// The turn report's conditions.
+.turn-conditions ul {
+  margin: 0.25rem 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.weather-report {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.75rem;
+
+  li {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.85rem;
+  }
+}
+
+.time-ran-out-list li {
+  font-weight: 650;
+}
+.pause-card button { margin-top: 0.75rem; }

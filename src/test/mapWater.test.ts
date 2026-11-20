@@ -175,7 +175,7 @@ describe("river assembly (pipeline)", () => {
 describe("shipped rivers (acceptance: rivers lie on Spain's land)", () => {
   const svg = readFileSync("assets/maps/iberia-regions.svg", "utf8");
   const regions = [...svg.matchAll(/<path id="(ES\d+)" d="([^"]+)"/g)].map(([, , d]) => polylinePoints(d ?? ""));
-  const map = JSON.parse(readFileSync("src/main/scenarios/spain-1936-07-31/map.json", "utf8")) as { rivers: { id: string; path: string; mouth?: string; rank: string }[] };
+  const map = JSON.parse(readFileSync("src/scenarios/spanish-civil-war-1936/map.json", "utf8")) as { rivers: { id: string; path: string; mouth?: string; rank: string }[] };
   const onLand = (point: Point): boolean => regions.some((rings) => containsPoint(rings, point));
 
   it("reads the region path data back exactly as the pipeline wrote it", () => {

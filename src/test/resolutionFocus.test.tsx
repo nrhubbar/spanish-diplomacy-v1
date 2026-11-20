@@ -18,6 +18,7 @@ function session(outcomes: readonly TurnOutcome[], phase: "game-over" | "resolut
   const scenario = spain();
   const state: GameState = initialGameState(scenario);
   const result: TurnResolutionResult = {
+    subTerritoryChanges: [],
     cityChanges: [],
     controlChanges: [{ after: { factionId: faction("south"), kind: "controlled" }, before: { factionId: faction("republic"), kind: "controlled" }, territoryId: territory("aragon") }],
     finalState: state,
@@ -119,7 +120,7 @@ describe("turn report focus (F1)", () => {
     expect(scroll.mock.contexts).toContain(note);
     expect(focusedCards()).toEqual([]);
     await user.click(region("aragon"));
-    expect(screen.getByRole("region", { name: "What happened in Aragón" })).toHaveTextContent(/changed hands: Republican Government . Southern/);
+    expect(screen.getByRole("region", { name: "What happened in Arag\u00f3n" })).toHaveTextContent(/changed hands: Republican Government . Southern/);
     await user.click(region("galicia"));
     expect(screen.getByText("Nothing happened in Galicia this turn.")).toBeVisible();
     expect(highlighted()).toBe("galicia");
@@ -172,7 +173,7 @@ describe("turn report focus (F1)", () => {
 
   it("splits only the focused place into single armies below 125% zoom (Z2)", async () => {
     const { user } = await renderReport(session(spainShowcaseOutcomes()));
-    const madridGroup = /^Republican Government, 4 armies in Madrid/;
+    const madridGroup = /^Republican Government, 4 units in Madrid/;
     expect(screen.getByRole("button", { name: madridGroup })).toBeInTheDocument();
     expect(document.querySelector('.unit-counter[data-unit-id="rep-wad-ras-1"]')).toBeNull();
     await user.click(region("madrid"));

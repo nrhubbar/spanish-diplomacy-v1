@@ -1,11 +1,11 @@
 import type { JSX } from "react";
-import type { BattleOutcome } from "../../engine/types";
+import type { D6BattleOutcome } from "../../engine/types";
 import { columnLabel, rawRow } from "../../presentation/battleText";
 import { modifierName, signed } from "../../presentation/odds";
 import { DieFace } from "./DieFace";
 
 /** The odds, the die, every modifier by name, and the table row they produce (C14). */
-export function BattleRoll({ battle }: { readonly battle: BattleOutcome }): JSX.Element {
+export function BattleRoll({ battle }: { readonly battle: D6BattleOutcome }): JSX.Element {
   const raw = rawRow(battle);
   return (
     <div className="battle-roll">

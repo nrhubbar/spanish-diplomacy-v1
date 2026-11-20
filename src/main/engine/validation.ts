@@ -1,8 +1,9 @@
-import { isNeighbor } from "./lookup";
+import { hookedOrderVerdict, hookedValidateOrder, unavailableOrderReason } from "./hooks";
 import type {
   FactionId,
   GameState,
   MoveOrder,
+  Order,
   PlayerSubmission,
   Scenario,
   TerritoryId,
@@ -10,36 +11,26 @@ import type {
   ValidationResult
 } from "./types";
 
-/** M23 (C6): why a demoralized army may not enter where another faction stands. */
-export const demoralizedAttackReason = "A demoralized army cannot attack. It can move only into empty or friendly territory.";
+export { unavailableOrderReason } from "./hooks";
+export { demoralizedAttackReason } from "./movement/validation";
 
-export function validateMoveOrder(
-  scenario: Scenario,
-  state: GameState,
-  order: MoveOrder
-): ValidationResult {
-  const unit = state.units[order.unitId];
+/**
+ * M1, M9: validates any order against the start-of-turn state. Each order kind belongs to the
+ * selected module that validates it (`RuleHooks.validateOrder`): Move to the movement module,
+ * Recruit and Replenish to recruitment, Build to economy, Withdraw to partition, air missions and
+ * Sack to air. A kind no selected module owns is not available. An order its owner accepts may
+ * still be refused by another module's `orderVerdict` (C1: no move leaves contested ground).
+ */
+export function validateOrder(scenario: Scenario, state: GameState, order: Order): ValidationResult {
+  const owned = hookedValidateOrder({ order, scenario, state }) ?? { ok: false, reason: unavailableOrderReason };
+  if (!owned.ok) return owned;
+  const verdict = hookedOrderVerdict({ order, scenario, state });
+  return verdict === undefined || verdict.ok ? { ok: true } : verdict;
+}
 
-  if (unit === undefined) {
-    return { ok: false, reason: "Unknown unit." };
-  }
-  if (unit.factionId !== order.factionId) {
-    return { ok: false, reason: "Selected unit belongs to another player." };
-  }
-  if (unit.territoryId !== order.from) {
-    return { ok: false, reason: "Selected unit is no longer in that territory." };
-  }
-  if (order.from === order.to) {
-    return { ok: false, reason: "Choose a different territory as the destination." };
-  }
-  if (!isNeighbor(scenario, order.from, order.to)) {
-    return { ok: false, reason: "Destination is not connected to the unit's territory." };
-  }
-  // M23 (C6): a demoralized army cannot attack, so it may not enter where another faction stands.
-  if (unit.morale.demoralized && Object.values(state.units).some((other) => other.territoryId === order.to && other.factionId !== unit.factionId)) {
-    return { ok: false, reason: demoralizedAttackReason };
-  }
-  return { ok: true };
+/** M1, M9: a Move order, as `validateOrder` judges it; planning calls this for every destination. */
+export function validateMoveOrder(scenario: Scenario, state: GameState, order: MoveOrder): ValidationResult {
+  return validateOrder(scenario, state, order);
 }
 
 export function validateSubmission(
@@ -54,11 +45,13 @@ export function validateSubmission(
 
   const seen = new Set<UnitId>();
   for (const order of submission.orders) {
-    if (seen.has(order.unitId)) {
-      return { ok: false, reason: "A unit can receive only one order per turn." };
+    if ("unitId" in order) {
+      if (seen.has(order.unitId)) {
+        return { ok: false, reason: "A unit can receive only one order per turn." };
+      }
+      seen.add(order.unitId);
     }
-    seen.add(order.unitId);
-    const validation = validateMoveOrder(scenario, state, order);
+    const validation = validateOrder(scenario, state, order);
     if (!validation.ok) {
       return validation;
     }

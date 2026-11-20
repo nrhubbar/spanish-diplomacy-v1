@@ -1,0 +1,230 @@
+// Air layer and air pane (U2, U5; m3r1-air-generals): aircraft counters at their airfields, the
+// selected aircraft's range ring, planned missions, the mission buttons and the general's pill.
+.air-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.air-layer-lines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.air-range-ring {
+  fill: none;
+  stroke: var(--ink-soft);
+  stroke-dasharray: 6 5;
+  stroke-width: 1.5;
+}
+
+.air-mission-line {
+  stroke: var(--accent);
+  stroke-dasharray: 5 4;
+  stroke-width: 2;
+
+  &[data-mission="intercept"],
+  &[data-mission="recon"] {
+    stroke: var(--ink-soft);
+  }
+}
+
+// B1, M3 (`ux-air-a`): the counter is the NATO frame itself, in the faction's colour, with the
+// mission tag under it. The plain button's min-height and hover are reset.
+.air-counter {
+  position: absolute;
+  display: block;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 1px;
+  color: var(--ink);
+  background: none;
+  box-shadow: 0 1px 2px rgb(36 29 24 / 45%);
+  cursor: pointer;
+  pointer-events: auto;
+
+  &:hover:not(:disabled) {
+    color: var(--ink);
+    background: none;
+  }
+
+  @media (hover: hover) {
+    &:hover:not(:disabled) {
+      z-index: 2;
+      transform: translateY(-1px);
+      filter: brightness(1.12);
+    }
+  }
+
+  &[data-selected="true"] {
+    z-index: 2;
+    outline: 3px solid #e0b100;
+    outline-offset: 1px;
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 2px;
+  }
+}
+
+.air-counter-symbol {
+  display: block;
+  width: 100%;
+  height: 100%;
+
+  svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+}
+
+.air-counter-tag {
+  position: absolute;
+  top: calc(100% + 1px);
+  left: 50%;
+  padding: 0 3px;
+  transform: translateX(-50%);
+  border-radius: 2px;
+  color: var(--paper);
+  background: var(--ink);
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 11px;
+  white-space: nowrap;
+}
+
+.air-counter-badge {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  display: grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  color: var(--paper);
+  background: var(--ink);
+  font-size: 9px;
+}
+
+.air-missions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 6px 0 8px;
+}
+
+.air-mission-button {
+  min-height: 32px;
+  padding: 4px 10px;
+  border: 1px solid var(--ink-soft);
+  border-radius: 4px;
+  color: var(--ink);
+  background: var(--paper);
+  font: inherit;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    color: var(--ink);
+    background: var(--paper-deep);
+  }
+
+  .air-missions &[aria-pressed="true"],
+  .air-missions &[aria-pressed="true"]:hover:not(:disabled) {
+    color: var(--paper);
+    background: var(--ink);
+  }
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+}
+
+.air-target-card {
+  margin: 8px 0;
+  padding: 8px 10px;
+  border: 1px solid var(--ink);
+  border-radius: 6px;
+  background: var(--paper);
+
+  dl {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 2px 12px;
+    margin: 6px 0 0;
+  }
+
+  dd {
+    margin: 0;
+    font-weight: 600;
+    text-align: right;
+  }
+}
+
+.air-chances {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 6px 0 0;
+  padding: 0;
+  font-size: 12px;
+  list-style: none;
+}
+
+.general-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 8px;
+  border: 1px solid #b08a1e;
+  border-radius: 999px;
+  background: #f6e7b0;
+  font-size: 12px;
+}
+
+.general-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 2px 0 6px 28px;
+}
+
+// M11 (`ux-air-a`): colour keys for the raid's chances.
+.air-chances li {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.air-chance-key {
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 2px;
+  background: #c8bfa8;
+
+  &[data-result="air-eliminated"] {
+    background: #8b2a22;
+  }
+
+  &[data-result="income-cut"] {
+    background: #8aa0b0;
+  }
+
+  &[data-result="building-hit"] {
+    background: #1f2f45;
+  }
+}
+
+.air-target-card dd[data-grounded="true"] {
+  color: var(--accent-dark);
+}

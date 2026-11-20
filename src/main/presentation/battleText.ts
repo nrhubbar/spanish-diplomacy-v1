@@ -1,6 +1,7 @@
 import { citiesIn } from "../engine/lookup";
 import { deriveSeed } from "../engine/random";
-import type { BattleOutcome, Scenario, TerritoryId, UnitId } from "../engine/types";
+import type { BattleOutcome, D6BattleOutcome, Scenario, TerritoryId, UnitId } from "../engine/types";
+import { resultKeyOf } from "./grades";
 import { type BattleGroup, changedHands, menLost, sideFactions, sideLosses } from "./battle";
 import { glyphs } from "./glyphs";
 import { fillLine, linePlaceholders, outcomeLine, outcomeText, type OutcomeValues } from "./outcomeText";
@@ -60,7 +61,7 @@ export function columnLabel(column: number): string {
 }
 
 /** The unclamped table row, so the breakdown can say when the 0..6 limit applied. */
-export function rawRow(battle: BattleOutcome): number {
+export function rawRow(battle: D6BattleOutcome): number {
   return battle.modifiers.reduce((sum, modifier) => sum + modifier.roll, battle.die);
 }
 
@@ -100,8 +101,8 @@ export function battleSummary(groups: readonly BattleGroup[]): string {
     count(groups.length, "battle", "battles"),
     ...(taken > 0 ? [`${count(taken, "territory", "territories")} changed hands`] : []),
     ...(men > 0 ? [`${formatMen(men)} men lost`] : []),
-    ...(destroyed > 0 ? [`${count(destroyed, "army", "armies")} destroyed`] : []),
-    ...(shaken > 0 ? [`${count(shaken, "army", "armies")} demoralized`] : [])
+    ...(destroyed > 0 ? [`${count(destroyed, "unit", "units")} destroyed`] : []),
+    ...(shaken > 0 ? [`${count(shaken, "unit", "units")} demoralized`] : [])
   ].join(` ${glyphs.dot} `);
 }
 
@@ -116,8 +117,9 @@ const occupationClaim = /\b(took|taken|occupied|occupy|now hold|held every road|
 export function cardFlavor(scenario: Scenario, battle: BattleOutcome, seed: number): string {
   const values = flavorValues(scenario, battle);
   const { site } = battle;
-  if (site.kind === "meeting" || site.occupation.kind !== "left-empty") return sentenceCase(outcomeLine(battle.result, values, seed));
-  const fitting = outcomeText[battle.result].lines.filter((line) =>
+  const result = resultKeyOf(scenario, battle);
+  if (site.kind === "meeting" || site.occupation.kind !== "left-empty") return sentenceCase(outcomeLine(result, values, seed));
+  const fitting = outcomeText[result].lines.filter((line) =>
     !occupationClaim.test(line) && linePlaceholders(line).every((name) => Object.hasOwn(values, name)));
   const line = fitting[seed % Math.max(1, fitting.length)];
   return line === undefined

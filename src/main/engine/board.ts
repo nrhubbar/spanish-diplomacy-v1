@@ -1,3 +1,5 @@
+import { raisedOrder } from "./recruitment/rules";
+import { generalUnitOrder } from "./generals/identity";
 import type { FactionId, GameState, MoveOrder, Scenario, TerritoryId, UnitId, UnitState } from "./types";
 
 /**
@@ -52,12 +54,12 @@ export function removeArmies(armies: Armies, ids: Iterable<UnitId>): Armies {
   return next;
 }
 
-/** An army standing in a new territory. It leaves its city behind; men and morale go with it. */
+/** An army standing in a new territory. It leaves its city behind; men, morale and fatigue go with it. */
 export function placeAt(unit: UnitState, territoryId: TerritoryId): UnitState {
   if (unit.territoryId === territoryId) {
     return unit;
   }
-  return { factionId: unit.factionId, id: unit.id, morale: unit.morale, strength: unit.strength, territoryId };
+  return { factionId: unit.factionId, fatigue: unit.fatigue, id: unit.id, morale: unit.morale, strength: unit.strength, territoryId };
 }
 
 export function armiesIn(armies: Armies, territoryId: TerritoryId): readonly UnitState[] {
@@ -87,7 +89,8 @@ export function compareIds(left: string, right: string): number {
 export function unitOrder(scenario: Scenario): (id: UnitId) => number {
   const order = new Map(scenario.units.map((unit, index) => [unit.id, index]));
   return (id) => {
-    const index = order.get(id);
+    // D7 (m3r1-air-generals): replacement generals come after every other unit.
+    const index = order.get(id) ?? raisedOrder(scenario, id) ?? generalUnitOrder(scenario, id);
     if (index === undefined) {
       throw new Error(`Invariant violated: unknown unit "${id}".`);
     }

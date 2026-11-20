@@ -1,4 +1,5 @@
 import { fight, type PendingBattle, sideOf } from "./battle";
+import type { TurnScratch } from "./phases/draft";
 import { type Armies, armiesIn, compareIds, factionsOf, removeArmies, replaceArmies } from "./board";
 import { situationalModifiers } from "./combat";
 import { type BattleDice, pick, rollDie } from "./dice";
@@ -28,7 +29,8 @@ export function resolveStanding(
   start: GameState,
   armies: Armies,
   dice: BattleDice,
-  firstIndex: number
+  firstIndex: number,
+  scratch?: TurnScratch
 ): StandingResolution {
   const battles: PendingBattle[] = [];
   const leaving: Leaving[] = [];
@@ -62,6 +64,7 @@ export function resolveStanding(
         attackerFactionId: attacker.factionId,
         defenderFactionIds: [defender.factionId],
         diggingIn: false,
+        ...(scratch === undefined ? {} : { scratch }),
         territoryId
       })
     }, index, die);

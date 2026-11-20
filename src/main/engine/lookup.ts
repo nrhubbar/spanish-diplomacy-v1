@@ -1,4 +1,7 @@
+import { generalUnitDefinition } from "./generals/identity";
+import { raisedDefinition } from "./recruitment/rules";
 import type {
+  AiProfile,
   CityDefinition,
   FactionDefinition,
   FactionId,
@@ -26,12 +29,21 @@ export function requireTerritory(scenario: Scenario, id: TerritoryId): Territory
   return required(scenario.index.territories.get(id), "territory", id);
 }
 
-export function requireUnitDefinition(scenario: Scenario, id: UnitId): UnitDefinition {
-  return required(scenario.index.units.get(id), "unit", id);
+/** What every unit in play has a definition for: scenario units and units raised in play (R6, D7). */
+export type UnitIdentity = Pick<UnitDefinition, "designation" | "factionId" | "fullStrength" | "generalId" | "id" | "name" | "type">;
+
+/** A scenario unit's definition, a recruited unit's (R6), or a replacement general's (D7), derived from its id. */
+export function requireUnitDefinition(scenario: Scenario, id: UnitId): UnitIdentity {
+  return required(scenario.index.units.get(id) ?? raisedDefinition(scenario, id) ?? generalUnitDefinition(scenario, id), "unit", id);
 }
 
 export function requireUnitType(scenario: Scenario, id: UnitTypeId): UnitTypeDefinition {
   return required(scenario.index.unitTypes.get(id), "unit type", id);
+}
+
+/** E7: the computer player's weights for a faction; the loader gives every faction one (L23). */
+export function requireAiProfile(scenario: Scenario, id: FactionId): AiProfile {
+  return required(scenario.ai.profiles[id], "AI profile for faction", id);
 }
 
 export function requireUnitState(state: GameState, id: UnitId): UnitState {

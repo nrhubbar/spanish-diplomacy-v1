@@ -1,17 +1,18 @@
-# Scenario Package Specification (spec version 1)
+# Scenario Package Specification (spec version 2)
 
 A scenario package is the rules data for one playable scenario: factions, territories and how they connect, cities, units and their combat values, the combat rules' numbers, and victory parameters. The game engine interprets it; it contains no presentation. Its companion map package (`map-package.md`) holds everything visual.
 
-- Machine-readable schema: `src/main/scenarios/schema/scenario.schema.json` (JSON Schema draft 2020-12), generated from `scenarioSchema.ts` by `npm run spec:build`. A unit test fails if the two drift.
-- Reference packages: `src/main/scenarios/spain-1936-07-31/` (shipped) and `src/test/fixtures/scenarios/tiny-front/` (minimal test fixture).
+- Machine-readable schema: `src/scenarios/scenario.schema.json` (JSON Schema draft 2020-12), generated from `scenarioSchema.ts` and its parts (`coreSchema.ts`, `modularSchema.ts`, `systemsSchema.ts`) by `npm run spec:build`. A unit test fails if the two drift. The schema has one variant per ruleset, so it states which blocks each ruleset takes.
+- Version 1 is dropped: both packages were migrated in one commit (E1). A package with `specVersion: 1` fails to load.
+- Reference packages: `src/scenarios/spanish-civil-war-1936/` (shipped, `m3-modular`) and `src/test/fixtures/scenarios/tiny-front/` (minimal test fixture, `m2-strength`). `src/scenarios/MANIFEST.md` describes the folder layout.
 
 ## Adding a scenario
 
-1. Create `src/main/scenarios/<scenario-id>/` with `scenario.json` and `map.json`. Start each file with the `$schema` line, so editors validate as you type.
+1. Create `src/scenarios/<scenario-id>/` with `scenario.json` and `map.json`. Start each file with the `$schema` line, so editors validate as you type.
 2. Put map assets anywhere under `assets/` and reference them by repository-relative path from `map.json`.
 3. Run `npm run test:unit`. The contract tests load every package and report each problem with its JSON path and rule id. A package that fails validation is left out of the game and reported in a notification; it never crashes the app.
 
-No code changes are needed, provided the scenario fits the `m2-strength` ruleset below. A scenario that needs different rules needs a new ruleset in the engine, and its `ruleset` value makes that explicit.
+No code changes are needed, provided the scenario fits the `m2-strength` ruleset or the modules of `m3-modular` below. A scenario that needs different rules registers a named module (Milestone 3: through the scenario's own `plugin.ts`), and its `rules` value makes that explicit.
 
 ## Fields
 
@@ -19,16 +20,17 @@ All ids are lowercase kebab-case (`[a-z0-9]+(-[a-z0-9]+)*`) and are never shown 
 
 | Field | Type | Meaning |
 |---|---|---|
-| `specVersion` | `1` | Spec version. |
+| `specVersion` | `2` | Spec version. |
 | `id` | id | Scenario id; unique across packages. |
 | `name` | text | Shown in the scenario picker. |
 | `snapshotLabel` | text | Starting date or moment; shown on setup and turn 1 only. |
-| `ruleset` | `"m2-strength"` | Rules the engine applies. Unknown values fail to load. |
+| `ruleset` | `"m2-strength"` or `"m3-modular"` | Rules the engine applies. Unknown values fail to load. `m3-modular` adds the fields in "Milestone 3 blocks" below; `m2-strength` takes none of them. |
 | `map` | path | The map package, relative to this file. |
 | `victory.territoryShare` | 0-1 | Share of victory-eligible territories that wins (rounded up). |
 | `victory.cityShare` | 0-1 | Share of victory-eligible cities that wins (rounded up). |
 | `victory.tieBreak` | list of `cities` / `territories` | Order in which qualifying factions are compared. |
-| `combat` | see below | The numbers of the battle rules: results table, below-1:1 rule, digging in, demoralization, faction modifiers. |
+| `combat` | see below | The numbers of the d6 battle rules: results table, below-1:1 rule, digging in, demoralization, faction modifiers. Required under both rulesets while `d6-table` is the only implemented dice module (decision CT-3 in `project/milestones/m3r1-progress/contract.md`). |
+| `ai` | `{ blunderChance, profiles: { [factionId]: profile }, sources?, note? }` | E7, H6: one computer-player profile per faction (see "AI profiles"), and the chance, 0 to 1, that one computer order is a blunder. |
 | `unitTypes[]` | `{ id, name, attack, defence }` | Unit types. `attack` and `defence` are positive whole numbers: the values of a full-strength army of the type (C4). Symbols come from the map package. |
 | `factions[]` | see below | At least two. |
 | `territories[]` | see below | At least two. |
@@ -57,6 +59,77 @@ Combat (`combat`), every field required:
 
 The shipped table is the prototype's, corrected so each odds step is exactly one result better for the attacker (C2): column `k` is `SEQ[k..k+6]` over `SEQ = AE AE AA AD BD BD DD DX DE DE DE DE DE` (attacker-eliminated, attacker-attrition, attacker-demoralized, both-demoralized, defender-demoralized, defender-exchange, defender-eliminated).
 
+### AI profiles
+
+`ai.profiles` is keyed by faction id, one profile per faction (E7), so a harness variant patches `/ai/profiles/<factionId>`; the blunder chance is `/ai/blunderChance`. A profile is `{ computer, offensive, stakes, victoryAlarm, withdraw, builds }`, the weights of today's computer player. `computer`: `approachObjective`, `bouncedLastTurn`, `caution`, `demoralizedShare`, `enemyLoss`, `ownLoss`. `offensive`: `reach`, `oddsTieBreak`, `staging`, `focus`, `stallStep`, `stallCap`. `stakes`: `city`, `objective`, `territory`. `victoryAlarm`: `critical`, `perStep`, `steps` (`critical` raises a territory whose change of hands alone would decide the game: own ground a rival in reach would win by taking, and ground the faction itself would win by taking; `perStep` and `steps` raise a rival's other territories as it nears victory). `withdraw`: `hopelessTakeChance`, `lastStandTakeChance`, shares from 0 to 1 (C1: the enemy's chance to take contested ground whole in the standing battle at which the faction withdraws; the second applies to its seat, last objective and victory-critical ground). `builds` (EB-15, required with an economy module, L27): `spendShare`, the share of each resource left after Recruit orders that Build orders may spend; `reserveShare`, the share of each resource builds cost that Recruit orders leave unspent; `developmentProjects`, the development items the faction keeps queued (while it has fewer, Recruit orders leave the best one's price and Build orders buy it first, M5); `developmentShare`, the most of a balance that saved-for item may take, so a poor faction recruits first; `maxOrdersPerTurn`; and `itemsPerEmptyQueue`, the new items one sub-territory with an empty queue may take in a turn. The strategy logic stays in code.
+
+## Milestone 3 blocks (`m3-modular` only)
+
+Every block below is optional in the schema; the loader requires each one that a selected module reads (L15). Ids of sub-territories, resources, development tracks, buildings, grades, weather outcomes, seasons, zones, traits and generals are each their own namespace.
+
+Every block and catalogue entry that carries numbers (`ai`, unit types, sub-territories, development tracks, buildings, `improvements`, `recruitment`, `movement`, `d20`, `weather`, `calendar`, `air`, `generals`) takes the same two optional fields: `sources` (citations, as on units) and `note` (a design note for numbers no source gives). Every number in data has one or the other; sub-territories must (L18).
+
+| Field | Type | Meaning |
+|---|---|---|
+| `rules` | `{ dice, economy, recruitment, weather, movement, partition, air }` | E2: one module name per area. See "Rule modules". |
+| `unitTypes[]` | see "Unit types" | W5: replaces the `m2-strength` unit type. |
+| `factions[].startingStock` | resource amounts | $7: the treasury on turn 1. Required when `resources` is not empty (L24). |
+| `factions[].seatTerritoryId` | territory id | D7: where a replacement general appears. Required with `generals` (L21). Factions also take `sources` and `note`. |
+| `units[].generalId` | general id | U5: the roster general a unit of a `general` type stands for (L21). |
+| `territories[].capitalSubTerritoryId` | sub-territory id | W3: the capital. Required with sub-territories (L16). |
+| `territories[].weatherZone` | zone id | T2. Required with `weather` (L20). |
+| `connections[].entry` | `[sub-territory id, sub-territory id]` | P8: the sub-territory entered on each side, in `between` order. Required with sub-territories (L19). |
+| `cities[].subTerritoryId` | sub-territory id | The sub-territory the city stands in. Required with sub-territories (L16). |
+| `subTerritories[]` | see below | W2, P1. |
+| `subTerritoryBorders[]` | `[id, id]` | Undirected sub-territory adjacency, inside and across territories, generated from the map geometry. |
+| `resources[]` | `{ id, name, display? }` | $1: Funds and Manpower for Spain. Amounts elsewhere are `{ [resourceId]: whole number }`; a missing resource is 0. `display` (EB-12) is `{ unit, suffix }`: one point stands for `unit` of the real thing, and amounts read as the points followed by `suffix`, with the full figure (points times `unit`) where there is room. Spain's Manpower is `{ unit: 1000, suffix: "k" }`, so 18 reads "18k" ("18,000" in the chip's detail). Without it, amounts are plain numbers. |
+| `development[]` | `{ id, name, resource, yieldPerLevel, maxLevel, cityOnly, upgrade: { cost, turns } }` | $3: Farms, Mines, Industry. |
+| `buildings[]` | `{ id, name, cost, turns, capitalOnly, cityOnly, upgradeOf?, effects[] }` | $4. Building effects: `recruit-slots { extra }`, `replenish-cap { share }` (Hospital, D28.1), `replenish-discount { resource, share }` (Depot, D28.1), `rail-departures { extra }`, `airbase`, `all-weather-airbase`, `defence-roll { roll }`. |
+| `improvements` | `{ rail: { cost, turns, maxLevel }, port: { ... }, railDamageOnContest }` | $4, $8: the levelled rail (0-3) and port (0-2). |
+| `recruitment` | `{ maxPerTerritory, replenishCostShare, replenishShare }` | R2, R5, D7. |
+| `movement` | `{ landingsPerPortLevel, railRangePerLevel }` | M3, M5, D7. |
+| `d20` | see below | D1-D7, C6. |
+| `weather` | `{ outcomes[], seasons[], zones[] }` | T2, T4. |
+| `calendar` | `{ start: { year, month, half }, turnsPerYear: 24 }` | T1: half-month turns; turn 1 is the start. |
+| `air` | `{ raidTable[], interceptRoll, reconTurns, generalDeathRoll? }` | U2-U4; `generalDeathRoll` (0-20, absent means 0) is the d20 at or under which a general dies when his army is destroyed or routed (U5). |
+| `generals` | `{ traits[], roster[] }` | U5. |
+
+Sub-territory: `id`, `name`, `territoryId`, `terrain` (`open`, `mountain`, `swamp`), `startHolder` (P1: the holder on the start date, whatever the territory's controller), `development` (`{ [trackId]: level }`), `buildings` (ids), `rail` (0-3), `port` (0-2), and `sources` and/or `note` (every number has a source or a design note, L18).
+
+Unit type: `id`, `name`, `kind` (`ground`, `air`, `general`), `attack` and `defence` (whole numbers, 0 or more), `symbol` (the NATO APP-6A function: `infantry`, `militia`, `security`, `artillery`, `cavalry`, `armour`, `transport`, `air-defence`, `fixed-wing`, `headquarters`; the map package still names the drawn asset), `orders` (the unit order kinds it may take: `move`, `withdraw`, `replenish`, `air-mission`, `sack`), `effects[]`, optional `recruit: { cost, establishment, trainingTurns, requires[], factionIds? }`, `air: { range, missions[] }` for air types only (L17), and `sources` and `note`. Unit effects (E6): `roll-bonus-per-points { role, per, bonus, max, exceptWeather[] }`, `cannot-attack-alone`, `transport { carries }`, `mobile`, `raid-defence { roll }`, `trains-in-contested`, `command-bonus { roll }`, `rally`, `battle-support { roll }`.
+
+d20: `grades[]` (`{ id, name, attacker: { lossPercent, demoralized }, defender: { lossPercent, demoralized, weakestDestroyed }, ground }`, with `lossPercent` 0, 10, 20, 35 or 100, `demoralized` `none`, `half` or `all`, and `ground` 0, 1, 2 or `all`), `table` (7 odds columns by 21 modified scores, 0 to 20, of grade ids), `modifiers` (`worksPerTurn`, `worksMax`, `belowOneToOnePenalty`, `barricades`, `fatigued`, `amphibious`), `fatigue` (`fatiguedLevel`, `demoralizedLevel`), `breakUpShare`, and `factionModifiers[]` (as in `combat`).
+
+Weather: `outcomes[]` (`{ id, name, attackRoll, effects[] }`, effects `blocks-digging-in`, `grounds-aircraft`, `movement-penalty { amount }`, `frostbite { share }`, `closes-sea { months }`), `seasons[]` (`{ id, name, months[] }`, covering each month once), and `zones[]` (`{ id, name, coastal, tables: { [seasonId]: [{ outcome, upTo }] } }`, each table running from the best weather to the worst and ending at 20).
+
+Generals: `traits[]` (`{ id, name, effects[] }`, effects `roll-modifier { role, roll }` and `no-rally`) and `roster[]` (`{ id, name, factionId, trait, sources[] }`, in roster order).
+
+### Rule modules
+
+| Area | Built-in modules (the first is the `m2-strength` preset) | Blocks the module needs (L15) |
+|---|---|---|
+| `dice` | `d6-table`, `d20-graded` | `d20-graded`: `d20` |
+| `economy` | `none`, `development` | `subTerritories`, `resources`, `development`, `buildings`, `improvements` |
+| `recruitment` | `none`, `buildings` | `subTerritories`, `resources`, `buildings`, `recruitment` |
+| `weather` | `none`, `seasonal-zones` | `weather`, `calendar` |
+| `movement` | `single-step`, `allowance` | `subTerritories`, `movement` |
+| `partition` | `none`, `provinces` | `subTerritories` |
+| `air` | `none`, `missions` | `air` |
+
+The catalogue is `src/main/engine/modules.ts`. Until its owning stream lands, a module runs its area's preset parts and pass-through skeletons: selecting it changes nothing in resolution.
+
+### Cross-area hooks, turn scratch and what each player sees
+
+- **Hooks.** A module may answer cross-area questions through `RuleModule.hooks` (`src/main/engine/hooks.ts`): `combatModifiers`, `allowanceDelta`, `canDigIn`, `grounded`, `incomeDelta`, `replenishBonus`, `recruitRequirements`, `validateOrder`, `orderVerdict` and `retreatAllowed`. The engine collects every selected module's answer in area order. The d6 rules already call `combatModifiers` (battles and planning estimates) and `canDigIn` (digging in), so a hook such as Snow stopping the works applies under the d6 preset too. With no hooks every collector is neutral.
+- **Order validation, verdicts and retreats.** Each order kind belongs to the module that validates it, through `validateOrder`, a map from order kind to a validator typed for that kind: Move to the movement modules (one step under `single-step`, a route under `allowance`, then the demoralized rule), Recruit and Replenish to `recruitment: buildings`, Build to `economy: development`, Withdraw to `partition: provinces`, air missions to `air: missions`, and Sack to either air module. At reveal (M1, M9) the engine runs the owners' validators in area order, the first refusal winning; a kind no selected module owns is "not available in this scenario". An order its owner accepts may still be refused by any module's `orderVerdict` (C1: no move leaves contested ground); a verdict cannot make an unowned kind valid. `engine/validation.ts` only dispatches; `validateMoveOrder`, `legalDestinations` and the computer player all go through it. `retreatAllowed` must hold for every module before an army may retreat to a territory (M21); `settleDepartures` asks it for every candidate.
+- **Turn scratch.** `TurnDraft.scratch` holds each area's turn-only data. An area declares its key in its own module file by declaration merging on `TurnScratch`, for example bombers assigned at step 2 and read at step 5.
+- **Hidden information.** `viewFor` (state) and `outcomesFor` (outcomes) give what one faction may see. Every screen reads the session through `visibleSession`: the viewer is the faction whose turn it is, and a report goes to the one local player, or shows public information only. Computer players remember only the outcomes their faction could see. Private outcomes are income, queued, progressing, refunded and forfeited builds, training, replenishment and recon results; each is shown to its own faction, and to a viewer whose recon reveals that territory this turn.
+- **Blunders (H6).** Each order a computer player plans draws once from its blunder stream. A draw below `ai.blunderChance` replaces the order with a uniformly chosen legal alternative for the same unit, or with its default order.
+
+### Outcomes
+
+A turn reports one flat list of outcomes (`TurnResolutionResult.outcomes`), plus `subTerritoryChanges` for every sub-territory that changed hands (by occupation, a battle's ground, or the contested sweep). The types are split by area under `src/main/engine/types/outcomes/` (moves, battle, morale, recruitment, economy, contested, air, generals, weather) and joined into one union in `types/outcomes.ts`. Each area file exports its own union, and `SystemOutcome` joins them. A battle is a `d6` or a `d20` variant: the d6 one has the die (1-6), the row (0-6) and a result; the d20 one has the die (1-20), the score (0-20), a grade id and the ground taken (0, 1, 2 or all). For both, `losses` (men lost and units destroyed) and `demoralizedUnitIds` are the one record of what the battle did to units. Battle modifiers add `general`, `trait`, `barricades`, `unit-bonus` (artillery, tanks), `fatigue`, `weather`, `amphibious`, `air-support` and `building` to the Milestone 2 kinds.
+
 ## Validation rules
 
 The loader applies these when the app starts. Each failure names the JSON path and the rule.
@@ -72,10 +145,131 @@ The loader applies these when the app starts. Each failure names the JSON path a
 | L7 | Every territory has a connection, unless it is declared `isolated`; an isolated territory has none. |
 | L8 | Every faction starts with at least one unit or controlled territory. |
 | L9 | No faction starts at or above a victory threshold. |
-| L10 | The map package covers every territory, city, and unit type (see `map-package.md`). |
+| L10 | The map package covers every territory, city, and unit type (see `map-package.md`). When the map lists sub-territory entries, they match the scenario's sub-territories one to one, each in the same territory. |
 | L11 | Every asset the map package names exists. |
 | L12 | A unit's `strength` is no greater than its `fullStrength`. |
 | L13 | Every faction modifier changes something: its `attack` or `defence` is above 0. |
+| L14 | `m3-modular`: every `rules` module is a known module for its area. |
+| L15 | `m3-modular`: every block a selected module needs is present (and not empty, for lists). |
+| L16 | With sub-territories: every territory names a capital sub-territory of its own, and every city names a sub-territory of its own territory. |
+| L17 | Air unit types, and only they, carry `air`; buildings, factions and weather outcomes that a unit type names exist. |
+| L18 | Every sub-territory has sources or a note; development levels are within their track's `maxLevel`, city-only tracks are above 0 only where a city stands; buildings exist, are listed once, respect `capitalOnly`, `cityOnly` and `upgradeOf`; rail and port are within the improvement caps. |
+| L19 | Sub-territory borders join two known, different sub-territories once; with sub-territories, every connection names an entry on each side, inside that side's territory. |
+| L20 | With `weather`: every territory names a known zone; seasons cover each month once; every zone has a table for each known season, rising to 20, naming known outcomes. |
+| L21 | With `generals`: traits and sources resolve; every faction has 3 to 5 generals and a known seat territory. Units of a `general` type, and only they, name a roster general of their own faction, each fielded once. |
+| L22 | `d20`: the table names known grades; `fatiguedLevel` is below `demoralizedLevel`; `worksPerTurn` is at most `worksMax`; d20 faction modifiers name known factions. |
+| L23 | `ai.profiles` has one profile for each faction and none for unknown factions. |
+| L24 | Every resource amount names a known resource; with resources, every faction has a `startingStock`. |
+| L25 | `air.raidTable` rises to 20. |
+| L26 | With the `provinces` partition module: a territory's `initialControl` matches its sub-territories' start holders (one holder: controlled by it; two or more: contested by exactly them), and a city's `initialController` is its sub-territory's start holder. |
+| L27 | With an economy module other than `none`, every AI profile has a `builds` budget. |
+
+## The `m3-modular` ruleset
+
+`m3-modular` resolves a turn as the ordered steps of tasks section 2, one file per step in `src/main/engine/phases/` (`00-weather` to `12-victory`). Each step runs the engine's own part (step 1, reveal; step 12, victory), then each selected module's part in area order (`dice`, `economy`, `recruitment`, `weather`, `movement`, `partition`, `air`). A module names the data blocks it needs and its parts of each step; the engine's own modules are one file per area under `src/main/engine/modules/`, joined in `src/main/engine/modules.ts`. Parts run in area order, each on the draft the previous part returned, so a later area cannot undo an earlier one: a rule that must shape an earlier part (Snow blocking digging in, read by the dice module's morale part from `systems.weather`) is read inside that part. a scenario's optional `plugin.ts` exports `plugin: { modules }` and registers modules through the same interface, and a name registered twice is a package problem. The presets carry today's rules: `d6-table` takes steps 4, 5, 7 and 9, `single-step` step 3, partition `none` steps 6 and 8. Until each slice lands, its Milestone 3 module runs its area's preset parts plus pass-through skeletons, so a package moved to `m3-modular` plays as it did. Orders are one flat list per faction (E8): Move (with an optional path of `land`, `rail` and `sea` legs; absent means one step), Withdraw, Replenish, Recruit, Build, AirMission and Sack. A Build order is handled by the `development` economy module (below). A Move with a path of more than one leg needs the `allowance` movement module (below); under `single-step` it is an impossible order (M9). Any other kind whose module is not selected is reported as `rejected-order` without disbanding anything.
+
+Every roll kind draws from its own seeded streams, `deriveSeed(game seed, tag, turn, index)`, with one tag per kind: battle (the M26 tag, so battle rolls are unchanged), weather, raid, general death and blunder (`src/main/engine/dice.ts`). A faction sees the state through `viewFor` (`src/main/engine/visibility.ts`): other factions' treasuries, queue items and units in training are hidden unless its recon reveals their territory this turn ($6, U4); the computer player plans on that view.
+
+### Air and generals (module `air: missions`, `m3r1-air-generals`)
+
+- **Pieces (W5, AG-3, AG-17, D17).** Aircraft (`kind: air`) and generals (`kind: general`) are units. The air module's step-1 part sets aircraft aside after the reveal, always, and generals only under the `d6-table` dice; its step-9 part puts them back. Under `d20-graded` generals stay on the board, move with ordinary moves and fight at value 0 (D20-1). A unit takes only the order kinds its type lists, so aircraft never move. What stands on the board through steps 3 to 8 (ground units, and generals under the d20) is what counts for a reinforcement (M11), for defended ground and in `estimateAttack`; an aircraft at its airfield never does.
+- **Who can fight (D27.1, D5).** A unit type can fight when it is a ground type with an attack value (`canFight`, `src/main/engine/units/fighting.ts`). A side attacks only if one of its units can fight and lacks `cannot-attack-alone`: a side made only of generals, units with no attack (trucks, anti-air) and artillery never attacks, in meetings, territory battles and standing battles alike.
+- **Airbases (U2).** A territory is an airbase for a faction when the faction holds a sub-territory there with an `airbase` or `all-weather-airbase` building, and no other faction controls the territory whole. An aircraft flies one mission a turn to a territory within `air.range` connections (land and sea), from an airbase. Before it flies, the `grounded` hook may ground it (weather).
+- **Missions (U2-U4, D7).** Missions resolve at step 2, in unit id order.
+  - **Recon** targets a territory another faction holds some of. It adds a reveal until `turn + reconTurns`.
+  - **Intercept** names a territory. Each enemy fighter intercepting over the raid's territory adds `interceptRoll` to the raid's roll. Fighters intercept support and recon flights over their territory too (D27.3): after the raids, each such flight rolls a d20 from the `raid` stream (indices after the raids'), plus `interceptRoll` per enemy fighter, clamped to 1-20, and is shot down on `raidTable`'s `air-eliminated` band; otherwise it flies. A shot-down flight gives no support and reveals nothing. The interception names every aircraft it engaged, except a recon flight that got through, which stays its flier's own (CT-46). Fighters do not intercept fighters.
+  - **Raid** targets a sub-territory another faction holds.
+    - It rolls a d20 from the `raid` stream (index: the raid's order in the turn), plus the best `raid-defence` among other factions' units in the territory and the interceptions, clamped to 1-20, and reads `raidTable`.
+    - Air eliminated: the raider is lost; with fighters there, the interception names it.
+    - Income cut: a `RaidCut` for the next turn, naming the faction raided (the sub-territory's holder when the raid flew). The `incomeDelta` hook removes that sub-territory's development yield from that faction only while it still holds the sub-territory and the whole territory, never from a faction that took the ground since. The air module's step-11 part drops spent cuts and reveals.
+    - Building hit: a building chosen by the stream's next draw is destroyed, or a paved airfield falls back to the building it upgrades. Without buildings, the highest development level drops by one.
+  - **Support** names a territory. The bombers' best `battle-support` roll counts once per side, through `combatModifiers` (`air-support`). The battle parts pass the turn's scratch to the hook.
+- **Generals (U5, U6, D5, D7).**
+  - **Command.** Each side's best general gives his `command-bonus` and the `roll-modifier` of his trait for the side's role. One selector picks the best general for the roll and the rally alike (`bestGeneral`, U6, declog D5): the greatest command bonus plus his trait's roll for the role, then the earliest roster place, then unit id.
+  - **Where he fights.** Under the d20 he is a unit of his side wherever he is. Under the d6 table (set aside), he counts where he goes this turn: where he moves, or where he stands; in a planning estimate, where he stands or among the attacking units.
+  - **His army.** The ground units of his faction moving with him (same origin and destination) or holding with him.
+  - **After the battles (step 9):**
+    - He arrives where his army arrived, or stays put.
+    - He rolls a d20 from the `general-death` stream and dies at or under `generalDeathRoll` when his army was destroyed or routed, or he stood alone in ground the enemy took or stands in. Under the d20 that is read from what the battles did (AG-20, M6): a grade destroyed his side (`lossPercent` 100) or demoralized all of it, or every fighting unit of his side was destroyed by the turn's battles together (break-up, or losses adding up over several attacks); the ground steps removing him counts too. Under the d6 table, his whole army destroyed, retreated or surrendered. A survivor stays with his side or follows the retreat; one who must leave goes to the fallback territory below.
+    - The best general with each army in a territory rallies its demoralized units, unless his trait is `no-rally`. He is ranked for attack when a unit of his faction there attacked this turn, else for defence (M5). A rally recovers only units that started the turn demoralized; it never cancels a demoralization from this turn, by a grade or by the fatigue track (D27.4).
+    - **Aircraft (D17, D27.2).** An aircraft whose territory is no longer an airbase for its faction at the end of the turn (its airfield destroyed by a raid, its airfield's sub-territory lost, or the territory taken whole) rebases to the nearest airbase of its faction within its range, ties in scenario order (`aircraft-rebased`), or is destroyed (`aircraft-lost`).
+  - **Sack** is a free order for one's own general. He leaves at once.
+  - **Replacements.** After a sacking or a death, the next roster entry not in play or on his way is due. He appears at the end of the next turn in the fallback territory as unit `general-<generalId>`, whose definition derives from the id; with no fallback territory he stays due.
+  - **Fallback territory (D27.7).** The faction's seat when it holds the seat's capital sub-territory, even while the seat is contested; else the territory nearest the seat (in connections, ties in scenario order) whose capital sub-territory it holds. A territory without sub-territories counts when the faction holds it whole.
+### Partition (`provinces`): sub-territories and contested ground
+
+The `provinces` module (`src/main/engine/modules/partition.ts`, rules in `src/main/engine/partition/`) flips `systems.subTerritories[*].holder` (rail damage, $8, is the economy's EC-8, read from those holders) and replaces M6, M7 and the control part of M18 for `m3-modular`. Armies still move between territories and battles are territory-wide (P2); sub-territories decide control.
+
+| Rule | Behaviour |
+|---|---|
+| P1 | Each sub-territory starts with its `startHolder`. Territory and city control are derived from the holders, never from armies: one holder controls the territory whole, two or more contest it (W6); a city follows its own sub-territory's holder. L26 keeps `initialControl` equal to that derivation. |
+| P3 | Occupation (step 6): one faction alone in a territory it entered this turn, where it held nothing and exactly one other faction held every sub-territory, takes all of them (M6). With two or more other holders the territory is contested and falls by the sweep instead. The sweep (step 8): where one faction alone has armies and other factions still hold ground, it takes one of their sub-territories a turn, including on the turn it enters, nearest where its armies' last step came from (the staging territory of a multi-leg move). Both need a unit that can fight (D27.1, below); another faction's general or truck there still keeps the faction from being alone. |
+| P4 | A battle's ground flips from the outside in: the defending factions' sub-territories nearest the attack's origin first (breadth-first over `subTerritoryBorders` and each connection's `entry` pair, from every sub-territory of the origin territories, or from the attacker's own ground for a standing battle or the sweep), the capital last, ties in scenario order. A d20 battle states its ground (0, 1, 2 or all) and its attacker gains it; with the d6 preset a taking result (the territory `taken`) is "all", gained by the occupier. Only the defending factions lose ground; a third holder with no army there keeps it until the sweep. |
+| P5 | A partial grade takes nothing where the territory has one sub-territory (a stalemate). Defenders who keep ground there fall back inside it and stay. A losing faction that the grade leaves with no sub-territory in the territory retreats under M21 (with P6), in step 6 for an assault and in step 7 for a standing battle, reported in that battle. Whole-territory grades are the dice module's retreats. |
+| P6 | A forced retreat (M21) or a Withdraw needs a path: a sub-territory its faction holds in the territory it leaves that borders (or is the connection entry of) one it holds in the destination. A crossing that only a sea connection's `entry` pair makes is a voyage (T4, M5): it needs the sea open this turn (`isSeaConnectionClosed`) and a port above 0 in the sub-territory the army sails from. Holders and weather are judged at the start of the turn, as M21 judges control. Without a path to any candidate the army surrenders; a surrender that only the path rule caused is reported as `path-surrender`. |
+| P7 | Victory counts a territory only when one faction holds all of it: control is derived that way, so `victory.ts` needs nothing more. |
+| C1 | In a contested territory (judged at the start of the turn) units attack by default, the M27 standing battle (hold, when demoralized), or withdraw. A Move out of contested ground is refused (`orderVerdict`), so planning and computer players never offer it; works do not grow there (`canDigIn`). Withdraw goes to an adjacent territory the faction holds whole, along P6; units withdraw at step 6, after defending in step 5, and are reported as `withdrew`. If another faction's army now stands in the destination, they fall back as in M21, or surrender. |
+
+**Only units that can fight take ground (D27.1).** A unit can fight when it is a ground unit whose type's attack is above 0 (`engine/units/fighting.ts`, `canFight`). Generals, aircraft, trucks and anti-air cannot. Such a force does not occupy or sweep, and under `allowance` an army made only of them that would advance (M11: not into ground its faction controls, nor to join its units that stay) is held back at step 1 (`move-held-back`, reason `cannot-fight`); the planning screen and the computer player do not offer it. Artillery can fight, though D5 still forbids it to attack alone.
+
+`isContested(scenario, state, territoryId)` (`partition/holders.ts`) is the one test of contested ground for every slice: training pauses (C8), Replenish, Recruit and build queues. Every sub-territory that changes hands is listed in `subTerritoryChanges` with its cause (`occupation`, `battle` or `sweep`).
+
+### Movement: the `allowance` module (M1-M6)
+
+Code: `src/main/engine/movement/` (rules), `engine/modules/movement.ts` (wiring), `ai/orders/move.ts` (computer player). Numbers come from the `movement` block (`railRangePerLevel`, `landingsPerPortLevel`), sub-territory `rail` and `port` levels, building `rail-departures` effects and unit type `transport` and `mobile` effects. `routes.ts` is the one route enumerator and checker: the reveal check, the planning screen and the computer player read moves through it.
+
+| Rule | Behaviour |
+|---|---|
+| Allowance (M1) | An army (W4: one faction's units with the same origin and legs) moves 1 territory, plus 1 when its transport carries every unit that needs carrying (`transport.carries` per truck; `mobile` units need none, so an all-cavalry army gets +1), plus each `allowanceDelta` hook (the weather module's -1 in Mud or Snow), never below 1. Each land or sea step costs 1, plus 1 entering a mountain or swamp sub-territory (the connection's `entry`, P8) unless every unit is mobile. A single step always fits; rail legs cost nothing. Generals and aircraft neither need nor add transport. |
+| Shapes (M4) | `step` (one land step, may attack); `march` (two or more land steps within the allowance); `rail`; `step-rail` (one step into friendly ground, then a ride from its capital); `rail-step` (a ride, then one step that may attack); `sea` (one sea leg, always the move's only leg). At most one rail leg, and a route may not enter a territory twice, counting the territories a train passes. An order without legs is one step along the connection (land first). |
+| Friendly ground (M2) | Every leg but the last ends in ground the faction holds whole with no other faction's army at the start of the turn. Only the last leg may enter enemy or contested ground. A Move out of contested ground is refused (C1). |
+| Rail (M3) | An army boards at its territory's capital and rides through rail sub-territories its faction holds to another territory's capital in friendly ground. The train runs only through territories where no other faction's ground army stands at the start of the turn; contested ground with no enemy army may be passed. The lowest rail level on the route sets the range, `railRangePerLevel` x level territory borders; the best level that reaches a capital gives its ride. Armies boarding at a capital per turn: its rail level plus its buildings' `rail-departures`. |
+| Sea (M5, Q-CITY-7) | Each sea connection's `entry` pair names its port at each end. A sea leg sails from the origin end's port, which the faction must hold with a port level above 0, and not while the sea is closed (T4, `isSeaRouteClosed`). Into the far end's port, when the faction holds it, the army lands normally: `landingsPerPortLevel` x level armies a turn per port. Otherwise it is an amphibious assault: the d20 `amphibious` modifier (-4 in Spain; none under the d6 rules), at most one army per faction per connection a turn. A connection without `entry` sails from and lands in the faction's best port at each end. |
+| Step 1 (armies) | After each order validates on its own (an impossible route is M9, and disbands), the moves are grouped into armies in the order their first unit was ordered. An army is held back, not disbanded, with `move-held-back` naming the reason, when its route exceeds its allowance (`allowance`), its capital has no departure left (`rail-departures`), its landing port is full (`port-landings`), its lane already carried an assault (`amphibious-lane`), or it has no unit that can fight and would advance (`cannot-fight`). |
+| Step 3 (transit) | A multi-leg move, or a ride that passes other territories, stops at the first territory on its way (leg ends before the last, and every territory the train passes) that another faction's valid move enters, and defends it as a reinforcement (`move-intercepted`, Q-MR-16). Every other multi-leg advance moves to its staging territory (where its last leg starts) and is an ordinary one-step move from there for steps 4-6, so a bounce returns it there; a `move-transit` outcome records the whole route. Reinforcements arrive (M11). A general set aside under the d6 table follows his intercepted army. |
+| Hooks | `allowanceDelta` (trucks); `combatModifiers` (the amphibious modifier, read from the turn's routes while it resolves, and inferred from the attackers' sea-only origin and the lane's port for planning estimates). |
+
+### Economy: the `development` module (`m3r1-economy-builds`)
+
+Code: `src/main/engine/economy/` (rules), `engine/modules/economy.ts` (wiring), `ai/orders/build.ts` (computer player).
+
+| Rule | Behaviour |
+|---|---|
+| EC-1 ($1) | Each faction has a treasury of the scenario's `resources`, starting at its `startingStock` ($7). Balances carry over without limit ($6). |
+| EC-2 (W6, $2) | A territory is held whole when one faction holds every one of its sub-territories, and contested when two or more do. This is read from sub-territory holders, not from the Milestone 2 territory control. |
+| EC-3 ($2, $3) | Step 11: a faction's income is the sum, over the sub-territories of the territories it holds whole, of each development level times its track's `yieldPerLevel`, in the track's resource. A contested territory pays nobody. The `incomeDelta` hooks (raid cuts, U3) then change it, never below 0. The header's preview is the same function. |
+| EC-4 ($4, $5) | A Build order queues one project in one sub-territory: a building, one development level, or one level of rail or port. It is valid when the faction holds the sub-territory, the territory is not contested, the project respects `capitalOnly`, `cityOnly`, `upgradeOf` (the base built or queued) and the maximum level counting items already queued, a building is neither built nor queued, and the treasury covers the price. |
+| EC-5 ($5) | Step 1: valid Build orders are paid in full and appended to the queue, in submission order, against a running ledger. An order the remaining balance cannot cover, or a second order for the same thing, fails as a private `build-refunded` with an empty refund (nothing was paid), so other factions do not see it ($6). The economy part runs before recruitment's, so builds are paid before Recruit orders. |
+| EC-6 ($5) | Step 10: only the head of each queue progresses, by one turn, and an item queued this turn progresses at once (a 2-turn building ordered on turn t stands at the end of turn t + 1). A finished item applies (the building stands, or the level rises by 1) and leaves the queue. A queue in a contested territory pauses. |
+| EC-7 ($5) | Step 10, before progress: in a sub-territory that changed hands this turn, the head item, if it has made progress, passes to the new holder with its progress, and its payment is lost (`build-forfeited`). Every other item is refunded to the faction that queued it (`build-refunded`). Buildings are captured intact. |
+| EC-8 ($8) | Step 10: a territory held whole at the start of the turn and contested at its end loses `railDamageOnContest` rail levels, never below 0, in every sub-territory not held by its former whole holder (`rail-damaged`). Repairing is an ordinary rail Build order. |
+| EC-9 ($4) | Building effects reach other areas through the hooks: `defence-roll` (Fortifications) in a sub-territory a defender holds in the battle territory takes its roll off the attacker's die, the strongest one once per battle (modifier kind `building`); `replenish-cap` and `replenish-discount` in sub-territories of the unit's territory its faction holds add to `replenishBonus` (`capShare`, and a `discount` share per resource), each building once. `recruit-slots`, `rail-departures`, `airbase` and `all-weather-airbase` are read by their own areas. |
+| EC-10 ($6) | Other factions' treasuries and queue items are hidden (`viewFor`, `outcomesFor`); income and build outcomes are private to their factions. |
+
+### Recruitment module `buildings` (R1-R7, C8)
+
+- **RR1. Where.** A Recruit order names a territory and a unit type. It is valid when the faction controls the territory, holds its capital sub-territory, and the territory is not contested (W6: territory control is contested, or two factions hold its sub-territories). Contested ground takes no new Recruit orders (C8).
+- **RR2. What.** Every type with a `recruit` block is listed. A type is locked when `recruit.factionIds` leaves the faction out, when the capital sub-territory lacks a building in `recruit.requires`, or when a `recruitRequirements` hook names a reason. A type with no `requires` (militia) needs no building.
+- **RR3. How many (D7).** A territory takes at most `recruitment.maxPerTerritory` Recruit orders a turn, plus the `extra` of every `recruit-slots` building in its capital. Orders past the limit are refunded at reveal.
+- **RR4. Paying (step 1).** After the economy's builds, Recruit and Replenish orders are paid in submission order. An order the balance cannot cover fails (`training-refunded`, `replenish-cancelled`) with an empty `refund`: nothing is taken, so nothing comes back.
+- **RR5. Training (step 10, R4, R7).** A paid Recruit starts training with `recruit.trainingTurns` turns left. Each step 10 takes one turn off, including the turn of the order, so a one-turn militia appears at the end of the turn it was ordered and moves the next turn. A unit appears in its territory at full establishment, healthy, with fatigue 0.
+- **RR6. Contested training (C8).** If the territory is contested at step 10, types with the `trains-in-contested` effect advance; the rest pause (`training-paused`, once) and resume when it is uncontested. If the faction loses the capital sub-territory, training not yet started (no turn taken off yet, such as a Recruit paid this turn) is refunded, and training under way is lost with its payment, like a build queue ($5, D28.2).
+- **RR7. Recruited units (R6).** A recruited unit's id is `r_<faction>_<type>_<serial>`, the serial counting that faction's units of that type raised or in training. Its definition (`GameState.raised`) is derived from the id: the type's name with "No. <serial>", and the type's establishment as full strength. Recruited units follow every scenario unit in scenario-order tie-breaks. Destroyed and surrendered units never return.
+- **RR8. Replenish (R5).** A unit whose type allows `replenish` may replenish in uncontested territory its faction controls, when it is below full strength (RR-12: a demoralized unit at full strength recovers by resting or a general's rally instead, C5). It restores at most `replenishShare` of its full strength a turn, plus the `capShare` of the `replenishBonus` hook (a Hospital: three quarters, D28.1). It owes `replenishCostShare` of the type's Recruit cost times the share of full strength restored, less the hook's `discount` per resource (a Depot: a quarter off Funds), in thousandths of a point. Each faction carries what it owes (`GameState.replenishCarry`, hidden like the treasuries, D28.3): an order adds its debt to the carry and pays the whole points the carry then holds, so small top-ups pay their true share over time. It is paid at step 1, orders priced in turn; a cancelled order takes its debt back out of the carry, which may become a credit. A paid Replenish order means the unit holds without entrenching (Q-RECR-5), under both dice modules. At step 9, after the dice module's morale part, the men arrive and demoralization clears; if the unit fought any battle this turn (meeting, territory or standing), fell back, or was lost, the order is cancelled and refunded.
+
+### Calendar, weather and the turn timer (`seasonal-zones`, T1-T6)
+
+- **Date (T1).** Turn 1 is `calendar.start`. Each later turn is the next half-month, 24 a year. The date derives from the turn number and is never stored; it reads "Turn 7 · Late October 1936" wherever the turn is shown.
+- **Roll (T2).** Before anyone plans a turn (step 0), the coordinator sets `GameState.weather`: one d20 from the weather stream, `deriveSeed(seed, weather, turn, 0)`, read against every zone's table for the season holding the turn's month. Each table runs best to worst, so one roll moves the whole map the same way. The roll is a pure function of the seed and turn, so replays match. Inside `resolveTurn`, step 0 only reports `weather-rolled` from the start state.
+- **Forecast (T3).** Next turn's chances in a zone come from next turn's season table. They are never taken from the seeded roll.
+- **Effects (T4).** These use the start-of-turn weather of a territory's zone, through the hooks:
+  - `combatModifiers`: the battle territory's `attackRoll`, under `d20-graded`. Under `d6-table` it is a third of that, truncated (Q-WX-6). A zero adds nothing.
+  - `canDigIn`: false with `blocks-digging-in`.
+  - `allowanceDelta`: minus `movement-penalty.amount` at the origin. The movement module keeps the allowance at 1 or more.
+  - `grounded`: true with `grounds-aircraft`, unless the aircraft's faction holds a sub-territory of that territory with an `all-weather-airbase` building.
+- **Sea closure.** A sea connection is closed when a coastal zone at either end has an outcome whose `closes-sea` lists the turn's month (`isSeaConnectionClosed` in `engine/weather.ts`).
+- **Frostbite.** At step 9, a unit with a valid move or Withdraw whose origin, or the territory where it actually ended up (an intercepted move stops short, a blocked withdrawal falls back), has `frostbite` loses that share of its men, rounded to the nearest man. This produces a `frostbite` outcome. Under the d20, a unit left below `d20.breakUpShare` of its full strength breaks up (D6): it is destroyed, and the outcome says `destroyed`.
+- **Turn timer (T5, T6).** This rule applies to every ruleset. A submission may carry `timedOut: true`, set when the player's planning clock ran out. The engine then reports `time-ran-out` at step 0, with the faction's units that had no unit order (`heldUnitCount`). The clock itself lives only in the UI; the engine never reads time.
 
 ## The `m2-strength` ruleset
 
@@ -118,7 +312,7 @@ Every valid move is reported once: as a reinforcement (`reinforcement-arrived`),
 
 ### Battles
 
-**M11. Reinforcement (C10).** A move is a reinforcement when its faction controls the destination at the start of the turn, or when an army of its faction is in the destination and does not move out (OD-7). A reinforcement always arrives: it is never bounced and never fights on the way in. It joins the defence of its destination in that turn's battles.
+**M11. Reinforcement (C10).** A move is a reinforcement when its faction controls the destination at the start of the turn, or when an army of its faction is in the destination and does not move out (OD-7). Under `m3-modular` only units on the board through the ground steps count as that army: never aircraft, and generals only under the d20 (D17). A reinforcement always arrives: it is never bounced and never fights on the way in. It joins the defence of its destination in that turn's battles.
 
 **M12. Values (C4, C5, C6).** Every army is its own instance with its own men and morale. Its attack (or defence) value is its type's attack (or defence) x `strength / fullStrength`, x `demoralizationFactor` when demoralized, rounded once to the nearest whole number (halves round up), and never below 1. A side's value is the sum of its armies' rounded values; all armies of one faction in one battle form one side, whatever their origins. Attackers use attack values and defenders defence values, except where M19 says otherwise. What a counter shows is exactly what fights.
 
@@ -203,6 +397,36 @@ Each battle rolls one die from its own seeded stream, `deriveSeed(game seed, bat
 - Neither side has works (M22). Faction modifiers apply (M24), judged at the start of the turn.
 - Results apply as in any battle (M16), with one difference: the attacker is already in the territory, so it stays whatever happens. A defender that must retreat leaves the territory (M21). The site records `taken` when the defender is gone and the attacker remains, `left-empty` when no army is left, and `held` otherwise.
 - A standing battle is a battle fought in the territory for digging in (M22).
+
+## The `d20-graded` dice module (D1-D8, C2-C7, U6)
+
+`m3-modular` scenarios that select `dice: d20-graded` fight every battle on the d20 (`src/main/engine/d20/`, joined in `engine/modules/dice.ts`). The M rules above hold except where these say otherwise. The `combat` block still supplies the demoralization factor (M12); every other number comes from the `d20` block.
+
+**D20-1. Values.** As M12, except that a type with value 0 (trucks, generals) counts 0 rather than 1, and general units never count. A side of value 0 fights as 1 for the odds.
+
+**D20-2. Odds and score.** The odds column is M13's. Below 1:1 the roll takes `belowOneToOnePenalty` per halving; above 6:1 it gains the same per step beyond the table. The score is the d20 (1-20, the battle stream's first draw) plus every modifier, clamped to 0-20, and `table[column][score]` names the grade.
+
+**D20-3. Modifiers**, signed from the attacker's view:
+- in a territory: the works (M22, at the d20's rates), each `d20.factionModifiers` entry (M24), and `barricades` against the attacker when the territory has a city a defending faction controlled at the start of the turn (D4, stacking with Popular resistance);
+- always: the best general on each side (the greatest command bonus plus his trait's roll for the side's role; ties in roster order, then unit id; the same selector as the rally, M5) and that general's trait (U6, declog D5); for each unit type with `roll-bonus-per-points` matching the side's role, `bonus` per `per` points of that type's value on the side, at most `max`, none in its `exceptWeather` (D5); and `fatigued` when units at `fatiguedLevel` or above carry at least half of a side's value (declog D6), negative for a fatigued attacker and positive for a fatigued defender;
+- in a territory, the selected modules' `combatModifiers` hooks (weather, amphibious, air support, buildings; D7).
+- Meeting battles (M20) take only the armies' own modifiers (generals, unit bonuses and fatigue) and, from the hooks, only the weather modifier of the attackers' destination (D27.5).
+
+**D20-4. Grades (D2, D6).** Each side's effect is applied in this order: on a grade with `weakestDestroyed`, the weakest unit (lowest value, then fewer men, then scenario order) is destroyed; every other unit loses `lossPercent` of its men now, rounded; a unit left below `breakUpShare` of its full strength is destroyed; then `none`, `all`, or the weakest units until they carry half of the side's value as fought are demoralized, taking units that can fight first, weakest first, and units that cannot (trucks, anti-air) last (D27.6). Generals lose no men and are never demoralized.
+
+**D20-5. Territory battles (M17-M19, P4, P5).** Each attacking faction fights the defenders separately from one snapshot of values; the defenders' losses add up battle by battle. A grade with ground `all`, or an attack that leaves no fighting defender, makes a claim, and M18 picks the occupant; the defenders retreat (M21), or, for an entry battle's standing entrant, return home. Otherwise a grade with ground 1 or 2, in a territory with more than one sub-territory under a partition module other than `none`, brings its attackers into the territory beside the defenders, who stay; anywhere else it acts as a stalemate (Q-D20-7). Every other attacker returns (M21). The battle records the ground it actually took: `all` for the occupant, 1 or 2 for attackers that came in, else 0. A side that cannot attack (Who can fight: only generals, units with no attack, and units with `cannot-attack-alone`) does not attack: its move bounces as a standoff (D5, D27.1). With three or more entrants into an empty territory, the one holding its capital sub-territory, else its last controller, stands as the defender (C3).
+
+**D20-6. Meetings (M20).** A side that cannot attack (D20-5, D27.1) never attacks: when it has the greater attack, the other side attacks if it can; when neither can, both bounce without a battle. A grade with ground `all` lets the attacker continue; a grade with ground 0 that cost the defender nothing lets the defender continue; every other grade bounces both.
+
+**D20-7. Standing battles (M27, C2, C3).** As M27, except: no standing battle is fought where a territory battle was fought this turn; demoralized units and generals do not make a standing attack, and a faction whose remaining units cannot attack (D20-5) makes none; with three or more factions present, the capital holder (else the last controller) always defends and the greatest standing attack among the others attacks. A grade with ground `all` makes the defender retreat; partial ground leaves both in place, with the ground recorded for the partition module.
+
+**D20-8. Fatigue and morale (C4-C7, M22, M23).** At step 9:
+- every unit other than a general that fought on the attacking side of a battle this turn gains 1 fatigue, up to `demoralizedLevel`; reaching it demoralizes the unit, and a unit already at `demoralizedLevel` that attacks is demoralized again (C6, D27.4);
+- a unit with no move order that did not retreat, did not attack, and stands in uncontested ground at the end of the turn has a quiet turn: its fatigue returns to 0 and, if it was demoralized before this turn, it recovers (M23). In contested ground it does not (C4); the recruitment module's Replenish and the air module's general rally run after this part and may restore morale themselves (C5), though a rally never cancels a demoralization from this turn (D27.4);
+- works grow by `worksPerTurn` up to `worksMax`, never in contested ground or where a battle was fought, and as the `canDigIn` hooks allow (T4).
+Each fatigue change is reported as a `fatigue` outcome.
+
+**D20-9. Estimates (C15).** `estimateAttack` returns the d20 odds, the grade chances, the column's bands, `takeChance` (a grade with ground `all`) and `gainChance` (any ground), with every modifier the battle would take.
 
 ## Worked example
 

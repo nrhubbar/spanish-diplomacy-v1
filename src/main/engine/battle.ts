@@ -1,9 +1,10 @@
 import { type Casualties, applySideEffect, resultEffects } from "./battleResults";
 import type { Armies, Combatant } from "./board";
 import { type BattleOdds, battleOdds, battleSide, type DieFace, faceFor } from "./combat";
+import type { GradedBattle } from "./d20/battle";
 import type {
   ArmyLoss,
-  BattleOutcome,
+  D6BattleOutcome,
   BattleSide,
   BattleSite,
   CombatModifier,
@@ -78,13 +79,14 @@ export type TerritorySite = Exclude<BattleSite, { readonly kind: "meeting" }>;
 
 /** A battle whose retreats and surrenders are settled after every battle of its step (M21). */
 export interface PendingBattle {
-  readonly battle: FoughtBattle;
+  /** A d6 battle, or a d20 one (`d20/battle.ts`). */
+  readonly battle: FoughtBattle | GradedBattle;
   readonly report: BattleReport;
   readonly site: TerritorySite;
 }
 
 /** C14: the full record of one battle. */
-export function battleOutcome(battle: FoughtBattle, site: BattleSite, report: BattleReport): BattleOutcome {
+export function battleOutcome(battle: FoughtBattle, site: BattleSite, report: BattleReport): D6BattleOutcome {
   return {
     attacker: battle.attacker,
     attackerFactionId: battle.engagement.attackerFactionId,
@@ -92,6 +94,7 @@ export function battleOutcome(battle: FoughtBattle, site: BattleSite, report: Ba
     defender: battle.defender,
     demoralizedUnitIds: report.demoralizedUnitIds,
     die: battle.face.die,
+    dice: "d6",
     kind: "battle",
     losses: report.losses,
     modifiers: battle.odds.modifiers,

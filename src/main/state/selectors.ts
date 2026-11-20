@@ -1,4 +1,4 @@
-import type { FactionId, GameState, MoveOrder, Scenario } from "../engine/types";
+import { type FactionId, type GameState, isMoveOrder, type MoveOrder, type Scenario } from "../engine/types";
 import { victoryProgress } from "../engine/victory";
 import type { Session } from "./session";
 
@@ -18,7 +18,8 @@ export function selectSubmissionStatus(scenario: Scenario, session: Session): re
     name: faction.name,
     ready: session.phase !== "planning" && session.phase !== "handoff"
       ? true
-      : session.game.locked[faction.id] !== undefined
+      // T6: a local computer player is always ready.
+      : session.game.locked[faction.id] !== undefined || session.game.assignments[faction.id] === "computer"
   }));
 }
 
@@ -32,7 +33,7 @@ export function selectRevealedOrders(session: Session): readonly RevealedOrders[
   if (session.phase !== "resolution" && session.phase !== "game-over") return [];
   const byFaction = new Map<FactionId, MoveOrder[]>();
   for (const submission of Object.values(session.game.locked)) byFaction.set(submission.factionId, []);
-  for (const order of session.result.submittedOrders) {
+  for (const order of session.result.submittedOrders.filter(isMoveOrder)) {
     byFaction.set(order.factionId, [...(byFaction.get(order.factionId) ?? []), order]);
   }
   return [...byFaction].map(([factionId, orders]) => ({ factionId, orders }));

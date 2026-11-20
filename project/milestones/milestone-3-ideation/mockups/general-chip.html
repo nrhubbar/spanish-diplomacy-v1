@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="mock-size" content="1440x800">
+<meta name="mock-out" content="1200">
+<title>general-chip</title>
+<link rel="stylesheet" href="app.css">
+<link rel="stylesheet" href="common.css">
+<script src="common.js"></script>
+<style>
+  .gchip { position: absolute; z-index: 6; display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px 2px 2px; border: 1.5px solid var(--ink); border-radius: 999px; background: var(--paper); font: 750 11.5px var(--sans); white-space: nowrap; box-shadow: 0 1px 3px rgb(0 0 0 / 35%); }
+  .gchip .general { width: 22px; height: 22px; font-size: 9.5px; border-width: 1.5px; }
+  .gchip small { color: var(--ink-soft); font-weight: 650; }
+  .gchip[data-focus="true"] { border-color: #7a5a06; box-shadow: 0 0 0 2px var(--gold), 0 1px 3px rgb(0 0 0 / 35%); }
+  .tip { position: absolute; z-index: 7; width: 300px; padding: 0.6rem 0.75rem 0.65rem; border: 1px solid rgb(36 29 24 / 35%); border-radius: 8px; background: #fffdf7; box-shadow: 0 8px 24px rgb(20 14 10 / 30%); font-size: 0.8rem; }
+  .tip::after { content: ""; position: absolute; left: 34px; bottom: -8px; width: 14px; height: 14px; background: #fffdf7; border-right: 1px solid rgb(36 29 24 / 35%); border-bottom: 1px solid rgb(36 29 24 / 35%); transform: rotate(45deg); }
+  .tip-head { display: grid; grid-template-columns: auto 1fr; gap: 0 0.55rem; align-items: center; }
+  .tip-head .general { grid-row: span 2; width: 38px; height: 38px; font-size: 14px; }
+  .tip-head b { font-family: var(--serif); font-size: 1.05rem; line-height: 1.1; }
+  .tip-head span { color: var(--ink-soft); font-size: 0.74rem; }
+  .tip-rule { margin-top: 0.45rem; padding: 0.35rem 0.5rem; border-left: 4px solid var(--gold); border-radius: 4px; background: var(--gold-wash); font-weight: 650; }
+  .tip ul { margin: 0.4rem 0 0; padding-left: 1rem; color: var(--ink-soft); }
+  .cmd { display: grid; grid-template-columns: auto 1fr; gap: 0.1rem 0.6rem; align-items: center; padding: 0.5rem 0; border-top: 1px dotted rgb(36 29 24 / 25%); }
+  .cmd:first-of-type { border-top: 0; }
+  .cmd .general { grid-row: span 2; width: 34px; height: 34px; font-size: 12.5px; }
+  .cmd b { font-family: var(--serif); font-size: 0.98rem; }
+  .cmd span { color: var(--ink-soft); font-size: 0.78rem; line-height: 1.3; }
+</style>
+</head>
+<body>
+<div class="stage" style="width:1440px;height:800px">
+  <img class="base" src="base/operational.webp" alt="">
+  <div class="counter-layer" data-level="operational" id="counters" style="z-index:5"></div>
+  <div class="gchip" data-focus="true" style="left:270px;top:676px"><span class="general" style="--faction-color:#665089">FF</span>Franco <small>Army of Africa</small></div>
+  <div class="gchip" style="left:104px;top:140px"><span class="general" style="--faction-color:#b39232">EM</span>Mola <small>Army of the North</small></div>
+  <div class="gchip" style="left:256px;top:352px"><span class="general" style="--faction-color:#b1493f">JM</span>Miaja <small>Defence of Madrid</small></div>
+  <div class="tip" style="left:236px;top:446px">
+    <div class="tip-head"><span class="general" style="--faction-color:#665089">FF</span><b>Francisco Franco</b><span>Southern Insurgent Command &middot; Army of Africa</span></div>
+    <div class="tip-rule">Commander: +1 attack roll for one battle per turn</div>
+    <ul><li>Leads the stack at Sevilla: 3 armies, 18-15.</li><li>Shown as initials; no portrait.</li></ul>
+  </div>
+  <div id="pane"></div>
+  <div id="mark"></div>
+</div>
+<script>
+document.getElementById("counters").innerHTML = [
+  counter({ f: "sic", type: "colonial", des: "AOA", values: "18-15", count: 3, x: 212, y: 637, w: 54, h: 41 }),
+  counter({ f: "sic", type: "infantry", des: "G6", x: 153, y: 637, w: 52, h: 41 })
+].join("");
+const body = `
+<section class="pane-section" style="padding-top:0">
+  <h3>Commanders <span class="new-tag">new</span></h3>
+  <p class="pane-meta">One general per command, named on the map so players know who leads which front. Illustrative bonus; no portraits.</p>
+  <div style="margin-top:0.5rem">
+    <div class="cmd"><span class="general" style="--faction-color:#b1493f">JM</span><b>Jos&eacute; Miaja</b><span>Republic &middot; Defence of Madrid. +1 defence roll in Madrid once per turn.</span></div>
+    <div class="cmd"><span class="general" style="--faction-color:#b39232">EM</span><b>Emilio Mola</b><span>Northern Insurgent Command &middot; Army of the North. +1 attack roll, one battle per turn.</span></div>
+    <div class="cmd"><span class="general" style="--faction-color:#665089">FF</span><b>Francisco Franco</b><span>Southern Insurgent Command &middot; Army of Africa. +1 attack roll, one battle per turn.</span></div>
+  </div>
+</section>
+<section class="pane-section">
+  <h4 style="margin-top:0">How a commander works</h4>
+  <ul class="plain-list" style="margin-top:0.3rem;font-size:0.8rem;color:var(--ink-soft);display:grid;gap:0.25rem">
+    <li>Rides with one stack; moves when it moves.</li>
+    <li>Bonus applies to the first battle that stack fights each turn.</li>
+    <li>If the stack is destroyed, the commander returns to the capital next turn.</li>
+  </ul>
+</section>`;
+document.getElementById("pane").innerHTML = pane({ body });
+document.getElementById("mark").innerHTML = mark("top:28px;right:120px");
+</script>
+</body>
+</html>

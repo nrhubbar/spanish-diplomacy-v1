@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="mock-size" content="1440x800">
+<meta name="mock-out" content="1200">
+<title>harness-report</title>
+<link rel="stylesheet" href="app.css">
+<link rel="stylesheet" href="common.css">
+<script src="common.js"></script>
+<style>
+  .term { position: absolute; left: 24px; top: 78px; width: 640px; height: 698px; border-radius: 10px; overflow: hidden; background: #1d1915; box-shadow: 0 0.75rem 2rem rgb(36 29 24 / 30%); }
+  .term-bar { display: flex; gap: 6px; align-items: center; height: 28px; padding: 0 12px; background: #2c2620; color: #b9ad9c; font: 600 12px var(--sans); }
+  .term-bar i { width: 10px; height: 10px; border-radius: 50%; background: #5b4d40; }
+  .term-bar span { margin-left: 8px; }
+  pre { margin: 0; padding: 14px 16px; color: #e9e1d2; font: 12.4px/1.55 ui-monospace, "SF Mono", Menlo, Consolas, monospace; white-space: pre; }
+  .p { color: #8fbf8f; } .d { color: #9b8f7f; } .y { color: #f2c84b; } .r { color: #ef8a80; } .g { color: #8fd19e; } .b { color: #c9bba0; font-weight: 700; }
+  .card { position: absolute; left: 688px; top: 78px; width: 728px; height: 698px; padding: 18px 22px; border: 1px solid var(--rule); border-radius: 10px; background: var(--paper); box-shadow: 0 0.75rem 2rem rgb(36 29 24 / 18%); }
+  .card h2 { font-size: 1.45rem; }
+  .meta { color: var(--ink-soft); font-size: 0.82rem; margin-top: 0.2rem; }
+  .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.6rem; margin-top: 0.8rem; }
+  .tile { padding: 0.45rem 0.6rem; border: 1px solid rgb(36 29 24 / 18%); border-radius: 8px; background: #fffdf7; }
+  .tile small { display: block; color: var(--ink-soft); font-size: 0.68rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; }
+  .tile b { font-size: 1.45rem; font-variant-numeric: tabular-nums; }
+  .tile span { color: var(--ink-soft); font-size: 0.74rem; }
+  .tile[data-fail="true"] { border-color: #9e2b2b; background: #fbecea; }
+  .tile[data-fail="true"] em { display: inline-flex; align-items: center; gap: 3px; margin-left: 4px; padding: 0 5px; border-radius: 3px; color: #fff; background: #9e2b2b; font: 800 0.62rem var(--sans); letter-spacing: 0.05em; font-style: normal; vertical-align: 3px; }
+  h3 { margin-top: 1rem; font-size: 1rem; }
+  h3 span { color: var(--ink-soft); font-family: var(--sans); font-size: 0.74rem; font-weight: 600; }
+  svg text { font-family: var(--sans); fill: var(--ink); }
+  .axis text { fill: var(--ink-soft); font-size: 11px; }
+  .grid line { stroke: rgb(36 29 24 / 12%); }
+  .label { position: absolute; right: 18px; bottom: 12px; color: var(--ink-soft); font-size: 0.72rem; font-style: italic; font-family: var(--serif); }
+</style>
+</head>
+<body>
+<div class="stage" style="width:1440px;height:800px">
+  <div class="abs" style="left:24px;top:14px">
+    <div class="screen-kicker">Headless test harness &middot; example output, numbers illustrative</div>
+    <h1 style="font-size:1.85rem;margin-top:0.15rem">One command, a thousand games, one balance report</h1>
+  </div>
+  <div class="term">
+    <div class="term-bar"><i></i><i></i><i></i><span>zsh &middot; spanish-diplomacy-v1</span></div>
+<pre><span class="p">$</span> npm run sim -- --games 1000 --workers 8
+<span class="d">&gt; spanish-diplomacy-v1@0.1.0 sim
+&gt; node scripts/sim.ts --games 1000 --workers 8</span>
+
+<span class="b">scenario</span>  spain-1936-07-31     <span class="b">ruleset</span>  m2-strength
+<span class="b">seeds</span>     1..1000              <span class="b">players</span>  computer x3
+<span class="b">limit</span>     30 turns             <span class="b">workers</span>  8
+
+worker 1  <span class="g">################</span>  125/125   27.6 s
+worker 2  <span class="g">################</span>  125/125   28.1 s
+  ...
+worker 8  <span class="g">################</span>  125/125   26.9 s
+<span class="g">done</span>  1000 games in 3m 41s  (1.8 s a game a worker)
+
+<span class="b">outcome              games   share   95% CI</span>
+decided                420   42.0%   38.9-45.1
+  Republic             171   40.7%   36.0-45.4  <span class="d">of decided</span>
+  Northern command     197   46.9%   42.1-51.7  <span class="d">of decided</span>
+  Southern command      52   12.4%    9.2-15.6  <span class="d">of decided</span>
+frozen (5 quiet turns) 580   58.0%   54.9-61.1
+<span class="r">FAIL</span>  freeze rate 58.0% &gt; budget 20%
+
+median length  17 turns (decided games)
+<span class="y">wrote</span> build/sim/run-0001/report.html
+<span class="y">wrote</span> build/sim/run-0001/games.jsonl  <span class="d">(1000 rows)</span>
+<span class="p">$</span> <span style="background:#e9e1d2">&nbsp;</span></pre>
+  </div>
+  <div class="card">
+    <div class="screen-kicker" style="font-size:0.7rem">build/sim/run-0001/report.html</div>
+    <h2>Balance report: Spain, July 1936</h2>
+    <p class="meta">1,000 seeded games &middot; computer players for all three commands &middot; m2-strength &middot; 30-turn limit</p>
+    <div class="tiles">
+      <div class="tile"><small>Games</small><b>1,000</b> <span>8 workers</span></div>
+      <div class="tile"><small>Decided</small><b>42.0%</b> <span>&plusmn;3.1</span></div>
+      <div class="tile" data-fail="true"><small>Freeze rate</small><b>58.0%</b><em>FAIL</em> <span>&plusmn;3.1 &middot; budget 20%</span></div>
+      <div class="tile"><small>Median length</small><b>17</b> <span>turns, decided</span></div>
+    </div>
+    <h3>Win share of decided games <span>&middot; 420 games &middot; bars with 95 percent intervals</span></h3>
+    <svg width="684" height="150" viewBox="0 0 684 150" id="wins"></svg>
+    <h3>Game length, decided games <span>&middot; turns until a command won &middot; 2-turn bins &middot; 580 frozen games not shown</span></h3>
+    <svg width="684" height="200" viewBox="0 0 684 200" id="hist"></svg>
+    <div class="label">Example output for a proposed command; not a real run.</div>
+  </div>
+  <div id="mark"></div>
+</div>
+<script>
+// Win shares with 95 percent intervals (normal approximation, n = 420 decided games).
+const wins = [["Republic", "#b1493f", 40.7, 36.0, 45.4], ["Northern command", "#b39232", 46.9, 42.1, 51.7], ["Southern command", "#665089", 12.4, 9.2, 15.6]];
+const x0 = 150, xw = 480, max = 60, sx = (v) => x0 + (v / max) * xw;
+let s = '<g class="grid axis">';
+for (const t of [0, 10, 20, 30, 40, 50, 60]) s += `<line x1="${sx(t)}" x2="${sx(t)}" y1="6" y2="124"/><text x="${sx(t)}" y="142" text-anchor="middle">${t}%</text>`;
+s += "</g>";
+wins.forEach(([name, color, v, lo, hi], i) => {
+  const y = 14 + i * 38;
+  s += `<text x="${x0 - 10}" y="${y + 15}" text-anchor="end" font-size="13" font-weight="650">${name}</text>`;
+  s += `<path d="M${x0},${y + 4} H${sx(v) - 4} a4,4 0 0 1 4,4 v8 a4,4 0 0 1 -4,4 H${x0} Z" fill="${color}"/>`;
+  s += `<path d="M${sx(lo)},${y + 12} H${sx(hi)} M${sx(lo)},${y + 6} v12 M${sx(hi)},${y + 6} v12" stroke="#241d18" stroke-width="1.6" fill="none"/>`;
+  s += `<text x="${sx(hi) + 8}" y="${y + 16}" font-size="12.5" font-weight="800">${v.toFixed(1)}%</text><text x="${sx(hi) + 58}" y="${y + 16}" font-size="11.5" fill="#5b4d40">${lo.toFixed(1)}-${hi.toFixed(1)}</text>`;
+});
+document.getElementById("wins").innerHTML = s;
+// Game length histogram (decided games only), counts per 2-turn bin; total 420.
+const bins = [2, 4, 10, 14, 22, 30, 38, 46, 50, 48, 44, 40, 34, 28, 10];
+const hx0 = 40, bw = 40, hmax = 60, sy = (v) => 168 - (v / hmax) * 150;
+let h = '<g class="grid axis">';
+for (const t of [0, 20, 40, 60]) h += `<line x1="${hx0}" x2="${hx0 + bins.length * bw}" y1="${sy(t)}" y2="${sy(t)}"/><text x="${hx0 - 8}" y="${sy(t) + 4}" text-anchor="end">${t}</text>`;
+bins.forEach((v, i) => { if (i % 2 === 0) h += `<text x="${hx0 + i * bw + bw / 2}" y="190" text-anchor="middle">${i * 2 + 1}</text>`; });
+h += "</g>";
+bins.forEach((v, i) => {
+  if (v === 0) return;
+  const x = hx0 + i * bw + 1, w = bw - 2, top = sy(v);
+  h += `<path d="M${x},168 V${top + 4} a4,4 0 0 1 4,-4 H${x + w - 4} a4,4 0 0 1 4,4 V168 Z" fill="#7d6a58"/>`;
+});
+h += `<line x1="${hx0 + 8 * bw}" x2="${hx0 + 8 * bw}" y1="10" y2="168" stroke="#241d18" stroke-width="1.2" stroke-dasharray="3 3"/><text x="${hx0 + 8 * bw + 6}" y="20" font-size="11.5" font-weight="700">median 17</text>`;
+h += `<text x="684" y="190" text-anchor="end" font-size="11" fill="#5b4d40">turn</text>`;
+document.getElementById("hist").innerHTML = h;
+document.getElementById("mark").innerHTML = mark("top:16px;right:24px");
+</script>
+</body>
+</html>

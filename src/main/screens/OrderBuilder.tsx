@@ -1,16 +1,22 @@
 import type { JSX } from "react";
-import { citiesIn, requireFaction } from "../engine/lookup";
+import { requireFaction } from "../engine/lookup";
 import type { Scenario, TerritoryId } from "../engine/types";
 import { useAppDispatch } from "../hooks";
-import { armyFigures } from "../presentation/army";
+import { armyFigures, orderStatus } from "../presentation/army";
 import type { DestinationEstimate } from "../presentation/odds";
-import { controlDescription, factionName, route, territoryName, unitName } from "../presentation/text";
+import { destinationCallout, factionName, plannedOrderRoute, unitName } from "../presentation/text";
 import { cancelOrderStage, removePlannedOrder } from "../state/gameSlice";
-import { orderCounts, type PlanningSession } from "../state/planning";
+import { isAircraft, orderCounts, type PlanningSession } from "../state/planning";
 import { ArmyLine } from "./ArmyLine";
 import { ArmyPicker } from "./ArmyPicker";
 import { DestinationChoices } from "./DestinationChoices";
-import { armies } from "./OrderCommand";
+import { ArmyLeaving } from "./movement/ArmyLeaving";
+import { destinationRoutes } from "./movement/destinationRoutes";
+import { AircraftHere, AirPane } from "./pane/AirPane";
+import { SubTerritoryFocus } from "./pane/SubTerritoryFocus";
+import { SubTerritoryList } from "./pane/SubTerritoryList";
+import { TerritoryTabs } from "./pane/TerritoryTabs";
+import { TrainingList } from "./pane/TrainingList";
 import { PlannedOddsInfo, PlannedOrderOdds } from "./PlannedOrderOdds";
 
 /**
@@ -35,27 +41,35 @@ export function OrderBuilder({ estimates, scenario, session }: BuilderProps & { 
   const { draft } = session;
   const territoryId = draft.selectedTerritoryId;
   const choosingDestination = draft.stage?.step === "choose-destination";
+  const callout = draft.stage?.step === "choose-destination" ? destinationCallout(scenario, draft.stage.orderKind, draft.selectedUnitIds.length, territoryId) : undefined;
 
   return (
     <>
       <section aria-label="Selected territory" className="pane-section">
-        {choosingDestination ? (
+        {callout === undefined ? null : (
           <div className="pane-callout" role="status">
-            <p>{`Moving ${armies(draft.selectedUnitIds.length)} from ${territoryId === undefined ? "" : territoryName(scenario, territoryId)}. Choose a highlighted territory on the map.`}</p>
-            <button className="text-button" onClick={() => dispatch(cancelOrderStage())} ref={focusWhenShown} type="button">Cancel move</button>
+            <p>{callout.text}</p>
+            <button className="text-button" onClick={() => dispatch(cancelOrderStage())} ref={focusWhenShown} type="button">{callout.cancel}</button>
           </div>
-        ) : null}
-        {choosingDestination && estimates.size > 0 ? <DestinationChoices estimates={estimates} scenario={scenario} /> : null}
-        {territoryId === undefined ? (
-          <p className="pane-hint">Select a territory or one of your armies on the map.</p>
+        )}
+        {choosingDestination && territoryId !== undefined && draft.stage.orderKind !== "withdraw" ? <ArmyLeaving scenario={scenario} session={session} territoryId={territoryId} /> : null}
+        {choosingDestination && estimates.size > 0 ? <DestinationChoices estimates={estimates} moves={draft.stage.orderKind === "withdraw" ? undefined : destinationRoutes(scenario, session)} scenario={scenario} /> : null}
+        {draft.selectedAircraftId !== undefined ? (
+          <AirPane key={draft.selectedAircraftId} scenario={scenario} session={session} unitId={draft.selectedAircraftId} />
+        ) : territoryId === undefined ? (
+          <p className="pane-hint">Select a territory or one of your units on the map.</p>
         ) : (
-          <TerritoryDetails scenario={scenario} session={session} territoryId={territoryId} />
+          draft.focusedSubTerritoryId === undefined ? (
+            <TerritoryTabs key={territoryId} scenario={scenario} session={session} territoryId={territoryId}>
+              <TerritoryDetails scenario={scenario} session={session} territoryId={territoryId} />
+            </TerritoryTabs>
+          ) : <SubTerritoryFocus factionId={session.factionId} scenario={scenario} state={session.game.state} subTerritoryId={draft.focusedSubTerritoryId} />
         )}
         {draft.feedback === undefined ? null : <p className="inline-feedback" role="status">{draft.feedback}</p>}
       </section>
       <section aria-labelledby="planned-orders-title" className="pane-section">
         <h3 id="planned-orders-title">Your orders</h3>
-        <OrderSummary session={session} />
+        <OrderSummary scenario={scenario} session={session} />
         {draft.orders.length === 0 ? (
           <p className="pane-hint">No moves yet. Armies without a move entrench, or rest while demoralized.</p>
         ) : (
@@ -64,8 +78,8 @@ export function OrderBuilder({ estimates, scenario, session }: BuilderProps & { 
               <li key={order.unitId}>
                 <span>
                   <span className="order-unit">{unitName(scenario, order.unitId)}</span>
-                  <span className="order-route">{route(scenario, order)}</span>
-                  <PlannedOrderOdds scenario={scenario} session={session} territoryId={order.to} />
+                  <span className="order-route">{plannedOrderRoute(scenario, order)}</span>
+                  {order.kind === "move" ? <PlannedOrderOdds scenario={scenario} session={session} territoryId={order.to} /> : null}
                 </span>
                 <button aria-label={`Remove order for ${unitName(scenario, order.unitId)}`} className="text-button" onClick={() => dispatch(removePlannedOrder(order.unitId))} type="button">Remove</button>
               </li>
@@ -79,31 +93,37 @@ export function OrderBuilder({ estimates, scenario, session }: BuilderProps & { 
 }
 
 /** O1: every army has one order, so the counts add up to all of the player's armies. */
-function OrderSummary({ session }: { readonly session: PlanningSession }): JSX.Element {
-  const counts = orderCounts(session);
+function OrderSummary({ scenario, session }: { readonly scenario: Scenario; readonly session: PlanningSession }): JSX.Element {
+  const counts = orderCounts(session, scenario);
+  // C1: contested-ground kinds join the line once any army has one.
+  const extra = (["withdraw", "attack", "replenish", "hold"] as const).flatMap((kind) => {
+    const count = counts[kind] ?? 0;
+    return count === 0 ? [] : [`${String(count)} ${orderStatus[kind].toLowerCase()}`];
+  });
   return (
     <p className="pane-meta order-summary">
-      {`${String(counts.move)} moving, ${String(counts.entrench)} entrenching, ${String(counts.rest)} resting`}
+      {[`${String(counts.move)} moving`, ...extra, `${String(counts.entrench)} entrenching`, `${String(counts.rest)} resting`].join(", ")}
     </p>
   );
 }
 
+/** The Units tab: the player's armies here, then everyone else's. The heading sits above the tabs (`TerritoryHeading`). */
 function TerritoryDetails({ scenario, session, territoryId }: BuilderProps & { readonly territoryId: TerritoryId }): JSX.Element {
   const { factionId, game } = session;
   const unitsHere = Object.values(game.state.units).filter((unit) => unit.territoryId === territoryId);
-  const own = unitsHere.filter((unit) => unit.factionId === factionId);
+  // U2: the player's aircraft are listed apart and open their own missions (m3r1-air-generals).
+  const aircraft = unitsHere.filter((unit) => unit.factionId === factionId && isAircraft(scenario, game.state, unit.id));
+  const own = unitsHere.filter((unit) => unit.factionId === factionId && !aircraft.includes(unit));
   const others = unitsHere.filter((unit) => unit.factionId !== factionId);
-  const cities = citiesIn(scenario, territoryId);
 
   return (
     <>
-      <h3>{territoryName(scenario, territoryId)}</h3>
-      <p className="pane-meta">{controlDescription(scenario, game.state.control[territoryId])}</p>
-      {cities.length === 0 ? null : <p className="pane-meta">{`Cities: ${cities.map((city) => city.name).join(", ")}`}</p>}
       {own.length === 0 ? null : <ArmyPicker own={own} scenario={scenario} session={session} />}
+      <TrainingList scenario={scenario} session={session} territoryId={territoryId} />
+      <AircraftHere aircraft={aircraft} scenario={scenario} session={session} />
       {others.length === 0 ? null : (
         <div className="other-formations">
-          <h4>Other armies here</h4>
+          <h4>Other units here</h4>
           <ul className="plain-list other-army-list">
             {others.map((unit) => (
               <li key={unit.id}>
@@ -115,6 +135,7 @@ function TerritoryDetails({ scenario, session, territoryId }: BuilderProps & { r
           </ul>
         </div>
       )}
+      <SubTerritoryList scenario={scenario} state={game.state} territoryId={territoryId} />
     </>
   );
 }

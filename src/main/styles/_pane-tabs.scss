@@ -1,0 +1,74 @@
+// The territory pane's tabs (X3) and the sub-territory focus view. Slices style their own tab
+// bodies in their own partials.
+.pane-tabs {
+  display: flex;
+  flex-direction: column;
+}
+
+// M6 (`ux-pane-a-units`): boxed tabs on a rule, each with its count.
+.pane-tab-list {
+  display: flex;
+  gap: 2px;
+  margin: 6px 0 8px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.pane-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  margin-bottom: -1px;
+  padding: 4px 12px;
+  border: 1px solid transparent;
+  border-bottom: 0;
+  border-radius: 6px 6px 0 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+
+  &[aria-selected="true"] {
+    border-color: var(--rule);
+    background: var(--paper);
+  }
+
+  // B2: its own hover, so the plain button hover never paints the tab maroon.
+  &:hover:not(:disabled) {
+    color: inherit;
+    background: none;
+  }
+
+  &[aria-selected="true"]:hover:not(:disabled) {
+    background: var(--paper);
+  }
+
+  @media (hover: hover) {
+    &:not([aria-selected="true"]):hover:not(:disabled) {
+      background: var(--paper-deep);
+    }
+  }
+}
+
+.pane-tab-count {
+  min-width: 1.3em;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: rgb(36 29 24 / 10%);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+// M2 (`ux-phone-pane-a`): on the phone sheet the tabs come first, at the top of the scroll
+// area; the heading and meta row follow them. Not sticky: a sticky bar would sit over rows
+// scrolled beneath it (WCAG 2.4.11, 2.5.8).
+.campaign-map[data-pane-layout="sheet"] .pane-tab-list {
+  order: -1;
+  margin-top: 0;
+}
+
+.sub-territory-focus h3 {
+  margin-top: 4px;
+}

@@ -1,0 +1,321 @@
+// The order command: one button, then the order types it opens.
+
+// Sticky, so on a short bottom sheet the order button stays in reach while the list scrolls.
+.order-command {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  display: grid;
+  gap: 0.45rem;
+  margin-top: 0.5rem;
+  padding-block: 0.45rem;
+  background: rgb(246 241 230 / 97%);
+  box-shadow: 0 -0.75rem 0.75rem -0.25rem rgb(246 241 230 / 92%);
+}
+
+// Once open, the order choice scrolls with the pane instead of covering the army list.
+.order-command[data-menu-open="true"] {
+  position: static;
+  background: none;
+  box-shadow: none;
+}
+
+.order-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  width: 100%;
+  min-height: 2.6rem;
+  border-color: var(--ink);
+  color: var(--paper);
+  background: var(--ink);
+}
+
+.order-button:hover:not(:disabled) {
+  background: #3a2f26;
+}
+
+.order-button-caret {
+  flex: none;
+  width: 0.75rem;
+  height: 0.5rem;
+  fill: none;
+  stroke: currentcolor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+  transition: transform 120ms ease;
+}
+
+.order-button[aria-expanded="true"] .order-button-caret {
+  transform: rotate(180deg);
+}
+
+.order-menu {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.4rem;
+  border: 1px solid rgb(36 29 24 / 25%);
+  border-radius: 8px;
+  background: rgb(255 255 255 / 55%);
+}
+
+.order-choice {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 0.65rem;
+  align-items: center;
+  min-height: 3rem;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid rgb(36 29 24 / 35%);
+  border-radius: 6px;
+  background: var(--paper);
+}
+
+.order-choice:hover {
+  border-color: #7a5a06;
+  background: var(--gold-wash);
+}
+
+.order-choice:has(.order-choice-button:focus-visible) {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.order-choice-button {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  color: var(--ink);
+  background: none;
+  font-family: var(--serif);
+  font-size: 1.02rem;
+  font-weight: 700;
+  text-align: left;
+}
+
+.order-choice-button:hover:not(:disabled) {
+  background: none;
+}
+
+// The focus ring belongs to the card, which is also the button's hit area.
+.order-choice-button:focus-visible {
+  outline: none;
+}
+
+.order-choice-button::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+}
+
+// A small route glyph: the same ink arrow the map draws for a planned move.
+.order-choice-icon {
+  position: relative;
+  grid-row: span 2;
+  width: 1.6rem;
+  height: 0;
+  border-top: 2.5px dashed var(--route);
+}
+
+.order-choice-icon::after {
+  position: absolute;
+  top: -0.4rem;
+  right: -0.15rem;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-top: 2.5px solid var(--route);
+  border-right: 2.5px solid var(--route);
+  content: "";
+  transform: rotate(45deg);
+}
+
+// Entrench: the low bank of an earthwork. Rest: a hollow ring.
+.order-choice[data-order-kind="entrench"] .order-choice-icon {
+  height: 0.45rem;
+  border: 2.5px solid var(--ink-soft);
+  border-bottom: 0;
+  border-radius: 0.45rem 0.45rem 0 0;
+}
+
+.order-choice[data-order-kind="rest"] .order-choice-icon {
+  width: 0.9rem;
+  height: 0.9rem;
+  margin-inline: 0.35rem;
+  border: 2.5px solid var(--ink-soft);
+  border-radius: 50%;
+}
+
+.order-choice[data-order-kind="entrench"] .order-choice-icon::after,
+.order-choice[data-order-kind="rest"] .order-choice-icon::after {
+  display: none;
+}
+
+.order-choice-description {
+  grid-column: 2;
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.formation-name {
+  font-size: 0.9rem;
+}
+
+.formation-meta {
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+.other-formations {
+  font-size: 0.85rem;
+}
+
+.order-list li,
+.change-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.4rem 0.55rem;
+  border: 1px solid rgb(36 29 24 / 14%);
+  border-radius: 6px;
+  background: rgb(255 255 255 / 55%);
+  font-size: 0.86rem;
+}
+
+.order-list li > span,
+.change-list li {
+  display: grid;
+}
+
+.order-unit {
+  font-weight: 650;
+}
+
+.order-route {
+  color: var(--ink-soft);
+  font-size: 0.82rem;
+}
+
+.outcome-group {
+  margin-top: 0.5rem;
+  font-size: 0.86rem;
+
+  summary {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  ul {
+    display: grid;
+    gap: 0.3rem;
+    margin: 0.4rem 0 0;
+    padding-left: 1.6rem;
+  }
+}
+
+.outcome-icon {
+  width: 0.9rem;
+  height: 0.9rem;
+  border-radius: 50%;
+  background: var(--route);
+}
+
+.outcome-icon-bounced {
+  background: var(--bounce);
+}
+
+.outcome-icon-disbanded {
+  background: var(--disband);
+}
+
+.progress-list li {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.5rem 0.6rem;
+  border-left: 4px solid var(--faction-color);
+  border-radius: 4px;
+  background: rgb(255 255 255 / 50%);
+  font-size: 0.86rem;
+}
+
+.meter {
+  display: grid;
+  gap: 0.15rem;
+
+  meter {
+    width: 100%;
+    height: 0.55rem;
+  }
+}
+
+.meter-label {
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+}
+
+// The Briefing pane.
+
+.briefing-text {
+  margin-top: 0.4rem;
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.briefing-progress {
+  display: grid;
+  gap: 0.4rem;
+  margin-top: 0.6rem;
+  padding: 0.5rem 0.6rem;
+  border-left: 4px solid var(--faction-color);
+  border-radius: 4px;
+  background: rgb(255 255 255 / 50%);
+
+  .meter-label strong {
+    color: var(--ink);
+  }
+}
+
+.briefing-report {
+  margin: 0.5rem 0 0;
+  padding: 0.6rem 0.75rem;
+  border-left: 4px solid var(--gold);
+  border-radius: 4px;
+  background: var(--gold-wash);
+  font-family: var(--serif);
+  font-size: 0.95rem;
+  font-style: italic;
+  line-height: 1.45;
+}
+
+.briefing-list {
+  margin-top: 0.4rem;
+  font-size: 0.88rem;
+  line-height: 1.4;
+}
+
+.revealed-group {
+  margin-top: 0.5rem;
+  font-size: 0.88rem;
+
+  summary {
+    font-weight: 650;
+    cursor: pointer;
+  }
+}
+
+.victory-callout p {
+  padding: 0.7rem 0.8rem;
+  border-left: 4px solid var(--gold);
+  border-radius: 4px;
+  background: #fbefc8;
+  font-family: var(--serif);
+  font-size: 1.05rem;
+}

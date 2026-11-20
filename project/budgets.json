@@ -1,0 +1,13 @@
+{
+  "$comment": "Owner-owned budgets (tasks H7, H8; Q-PROC-6). Read by `npm run budgets:check`. Report a miss to the owner; never raise a budget to pass.",
+  "initialChunk": {
+    "maxGzipKb": 155,
+    "basis": "Revision 7's initial-chunk budget: the entry script and its modulepreloads in build/dist, gzip."
+  },
+  "harness": {
+    "games": 1000,
+    "maxFreezeRate": 0.15,
+    "minWinShareOfDecided": 0.2,
+    "basis": "H7, Q-MR-32: an end-of-milestone goal over 1000 games, not a per-merge gate."
+  }
+}

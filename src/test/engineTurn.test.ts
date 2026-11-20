@@ -3,11 +3,11 @@ import { battleStreamTag, rollDie, seededBattleDice } from "../main/engine/dice"
 import { deriveSeed, seededRandom } from "../main/engine/random";
 import { standingOrder } from "../main/engine/orders";
 import { initialGameState, resolveTurn } from "../main/engine/resolution";
-import type { GameState, Scenario, TurnResolutionResult } from "../main/engine/types";
+import { type GameState, isMoveOrder, type Scenario, type TurnResolutionResult } from "../main/engine/types";
 import { demoralizedAttackReason, legalDestinations, validateMoveOrder } from "../main/engine/validation";
 import { advance, nextTurn } from "../main/state/coordinator";
 import type { GameRecord, Session } from "../main/state/session";
-import { type ArmySpec, armyIn, battlefield, battlesOf, city, faction, loadedDice, move, play, spain, territory, tiny, unit } from "./support";
+import { type ArmySpec, armyIn, battlefield, battlesOf, city, faction, loadedDice, move, play, spainM2, territory, tiny, unit } from "./support";
 
 const a = (id: string, factionId: string, where: string, extra: Partial<ArmySpec> = {}): ArmySpec => ({ faction: factionId, id, territory: where, ...extra });
 const regiment = (id: string, factionId: string, where: string, extra: Partial<ArmySpec> = {}) => a(id, factionId, where, { type: "infantry-regiment", ...extra });
@@ -158,7 +158,7 @@ describe("M23 morale (C6)", () => {
 
 describe("M24 faction modifiers: popular resistance (C17)", () => {
   const madrid = (cityController: "republic" | "north") => {
-    const base = battlefield(spain(), [regiment("r1", "republic", "madrid"), ...["n1", "n2", "n3"].map((id) => regiment(id, "north", "castilla-y-leon"))]);
+    const base = battlefield(spainM2(), [regiment("r1", "republic", "madrid"), ...["n1", "n2", "n3"].map((id) => regiment(id, "north", "castilla-y-leon"))]);
     const state: GameState = { ...base.state, cityControl: { ...base.state.cityControl, [city("madrid")]: faction(cityController) } };
     return play(base.scenario, state, ["n1", "n2", "n3"].map((id) => move("north", id, "castilla-y-leon", "madrid")), loadedDice([4]));
   };
@@ -174,7 +174,7 @@ describe("M24 faction modifiers: popular resistance (C17)", () => {
   });
 
   it("does not help the Republic attack", () => {
-    const { scenario, state } = battlefield(spain(), [regiment("r1", "republic", "castilla-la-mancha"), regiment("r2", "republic", "castilla-la-mancha"), regiment("n1", "north", "madrid")]);
+    const { scenario, state } = battlefield(spainM2(), [regiment("r1", "republic", "castilla-la-mancha"), regiment("r2", "republic", "castilla-la-mancha"), regiment("n1", "north", "madrid")]);
     const battle = battlesOf(play(scenario, state, [move("republic", "r1", "castilla-la-mancha", "madrid"), move("republic", "r2", "castilla-la-mancha", "madrid")], loadedDice([4])))[0];
     expect(battle?.modifiers).toEqual([]);
   });
@@ -200,7 +200,7 @@ describe("M25 no recovery of men (C13)", () => {
 
 describe("M26 resolution order and dice", () => {
   it("indexes meeting battles first, then territory battles by territory id, then standing battles", () => {
-    const { scenario, state } = battlefield(spain(), [
+    const { scenario, state } = battlefield(spainM2(), [
       regiment("n1", "north", "aragon"), regiment("n2", "north", "aragon"), regiment("r1", "republic", "catalunya"),
       regiment("n4", "north", "galicia"), regiment("r3", "republic", "asturias"),
       regiment("r2", "republic", "valencia"), regiment("s1", "south", "murcia"),
@@ -237,16 +237,16 @@ describe("M26 resolution order and dice", () => {
   });
 
   it("rolls each battle's die from deriveSeed(seed, battle stream, turn, index), apart from the computer players' streams", () => {
-    const scenario = spain();
+    const scenario = spainM2();
     const state = { ...initialGameState(scenario), turnNumber: 3 };
     const result = resolveTurn(scenario, state, [], 9);
-    expect(battlesOf(result).map((battle) => battle.die)).toEqual([0, 1].map((index) => rollDie(seededRandom(deriveSeed(9, battleStreamTag, 3, index)))));
+    expect(battlesOf(result).map((battle) => battle.die)).toEqual([0, 1, 2, 3, 4].map((index) => rollDie(seededRandom(deriveSeed(9, battleStreamTag, 3, index)))));
     expect(resolveTurn(scenario, state, [], 9, seededBattleDice(9, 3))).toEqual(result);
     expect(deriveSeed(9, battleStreamTag, 3, 0)).not.toBe(deriveSeed(9, 3, 0));
   });
 
   it("replays a whole game identically from the same seed and orders", () => {
-    const run = (seed: number) => playGame(spain(), seed, 12).map((entry) => entry.result);
+    const run = (seed: number) => playGame(spainM2(), seed, 12).map((entry) => entry.result);
     expect(run(5)).toEqual(run(5));
     expect(run(5)).not.toEqual(run(6));
   });
@@ -254,11 +254,11 @@ describe("M26 resolution order and dice", () => {
 
 describe("M27 standing battles in shared territories (D29)", () => {
   it("makes the faction with the greatest attack attack the other where they stand, without works", () => {
-    const scenario = spain();
+    const scenario = spainM2();
     const start = initialGameState(scenario);
     const state: GameState = { ...start, fortification: { [territory("andalucia")]: { factionId: faction("republic"), level: 2 } } };
     // South 18 against the Republic's 6 is 3:1, less popular resistance (Malaga); a 4 drives it out.
-    const result = resolveTurn(scenario, state, [], 1, loadedDice([4, 4]));
+    const result = resolveTurn(scenario, state, [], 1, loadedDice([4, 4, 4, 4, 4]));
     const [andalucia] = battlesOf(result);
     expect(andalucia).toMatchObject({
       attackerFactionId: "south",
@@ -276,7 +276,7 @@ describe("M27 standing battles in shared territories (D29)", () => {
   });
 
   it("keeps a losing attacker where it stands", () => {
-    const result = resolveTurn(spain(), initialGameState(spain()), [], 1, loadedDice([1, 4]));
+    const result = resolveTurn(spainM2(), initialGameState(spainM2()), [], 1, loadedDice([1, 4, 4, 4, 4]));
     const [andalucia] = battlesOf(result);
     // Demoralized from the weakest up until they carry half of 18: Granada (fewest men), Lepanto, Cadiz.
     expect(andalucia).toMatchObject({ demoralizedUnitIds: ["south-granada-6", "south-lepanto-5", "south-cadiz-33"], result: "attacker-demoralized", retreats: [] });
@@ -284,12 +284,12 @@ describe("M27 standing battles in shared territories (D29)", () => {
   });
 
   it("lets only armies that are not demoralized attack", () => {
-    const start = initialGameState(spain());
+    const start = initialGameState(spainM2());
     const state: GameState = {
       ...start,
       units: Object.fromEntries(Object.values(start.units).map((army) => [army.id, army.factionId === "north" && army.territoryId === "asturias" ? { ...army, morale: { demoralized: true, quietTurns: 0 } } : army]))
     };
-    const asturias = battlesOf(resolveTurn(spain(), state, [], 1, loadedDice([4, 6])))[1];
+    const asturias = battlesOf(resolveTurn(spainM2(), state, [], 1, loadedDice([4, 6, 4, 4, 4])))[1];
     expect(asturias).toMatchObject({
       attacker: { armies: [{ unitId: "rep-asturian-militia", value: 3 }] },
       attackerFactionId: "republic",
@@ -313,7 +313,7 @@ describe("M27 standing battles in shared territories (D29)", () => {
   });
 
   it("breaks a tie for the defender the same way when three factions share a territory", () => {
-    const { scenario, state } = battlefield(spain(), [regiment("r1", "republic", "la-rioja"), regiment("r2", "republic", "la-rioja"), regiment("n1", "north", "la-rioja"), regiment("s1", "south", "la-rioja")]);
+    const { scenario, state } = battlefield(spainM2(), [regiment("r1", "republic", "la-rioja"), regiment("r2", "republic", "la-rioja"), regiment("n1", "north", "la-rioja"), regiment("s1", "south", "la-rioja")]);
     const battle = battlesOf(play(scenario, state, [], loadedDice([3])))[0];
     expect(battle).toMatchObject({ attackerFactionId: "republic", defender: { armies: [{ unitId: "n1" }] }, site: { tieBreaks: [{ factionIds: ["north", "south"], role: "defence", roll: 1 }] } });
   });
@@ -355,16 +355,18 @@ function playGame(scenario: Scenario, seed: number, turns: number): readonly { r
 }
 
 describe("turn invariants over seeded computer games", () => {
-  const games = [1, 2, 3, 4, 5, 6].flatMap((seed) => playGame(spain(), seed, 15));
+  const games = [1, 2, 3, 4, 5, 6].flatMap((seed) => playGame(spainM2(), seed, 15));
 
   it("reports every valid move once: as a move, or through the battles its army fought", () => {
     for (const { result } of games) {
       const invalid = new Set(result.outcomes.flatMap((outcome) => (outcome.kind === "invalid-order" ? [outcome.order.unitId] : [])));
-      const moveOutcomes = result.outcomes.flatMap((outcome) => (outcome.kind !== "battle" && "order" in outcome && outcome.kind !== "invalid-order" ? [outcome.order.unitId] : []));
+      const moveOutcomes = result.outcomes.flatMap((outcome) => (outcome.kind !== "battle" && "order" in outcome && outcome.kind !== "invalid-order" && "unitId" in outcome.order ? [outcome.order.unitId] : []));
       expect(new Set(moveOutcomes).size).toBe(moveOutcomes.length);
       const inBattle = new Set(battlesOf(result).flatMap((battle) => [...battle.attacker.armies, ...battle.defender.armies].map((army) => army.unitId)));
-      for (const order of result.submittedOrders.filter((candidate) => !invalid.has(candidate.unitId))) {
-        expect(moveOutcomes.includes(order.unitId) || inBattle.has(order.unitId)).toBe(true);
+      // M1, M3, M5: an army over its allowance or a capacity is reported as held back, once per army.
+      const heldBack = new Set(result.outcomes.flatMap((outcome) => (outcome.kind === "move-held-back" ? outcome.unitIds : [])));
+      for (const order of result.submittedOrders.filter(isMoveOrder).filter((candidate) => !invalid.has(candidate.unitId))) {
+        expect(moveOutcomes.includes(order.unitId) || inBattle.has(order.unitId) || heldBack.has(order.unitId)).toBe(true);
       }
     }
   });
@@ -373,17 +375,32 @@ describe("turn invariants over seeded computer games", () => {
     for (const { result, start } of games) {
       const gone = new Set([
         ...battlesOf(result).flatMap((battle) => [...battle.losses.filter((loss) => loss.destroyed).map((loss) => loss.unitId), ...battle.surrenderedUnitIds]),
-        ...result.outcomes.flatMap((outcome) => (outcome.kind === "invalid-order" || outcome.kind === "disbanded-move" ? [outcome.order.unitId] : []))
+        ...result.outcomes.flatMap((outcome) => (outcome.kind === "invalid-order" || outcome.kind === "disbanded-move" ? [outcome.order.unitId] : [])),
+        // U2-U5 (m3r1-air-generals): aircraft shot down or lost on the ground, generals killed or sacked.
+        ...result.outcomes.flatMap((outcome) => {
+          if (outcome.kind === "raid") return outcome.aircraftLost;
+          // D27.3: support and recon flights shot down by interceptors.
+          if (outcome.kind === "interception") return outcome.lostUnitIds;
+          // D6 (M8): a unit frostbite leaves below the break-up share.
+          if (outcome.kind === "frostbite" && outcome.destroyed === true) return [outcome.unitId];
+          if (outcome.kind === "aircraft-lost" || outcome.kind === "general-died") return [outcome.unitId];
+          return outcome.kind === "general-sacked" ? [outcome.order.unitId] : [];
+        })
       ]);
       for (const id of Object.keys(start.units)) {
         expect(result.finalState.units[unit(id)] !== undefined || gone.has(unit(id))).toBe(true);
       }
+      // R5, R7 (m3-modular): Replenish raises men, and recruits appear; M25 holds for every other army.
+      const raisedOrReplenished = new Set(result.outcomes.flatMap((outcome) =>
+        outcome.kind === "training-completed" ? [outcome.unitId] : outcome.kind === "replenish-applied" ? [outcome.order.unitId] : []));
       for (const army of Object.values(result.finalState.units)) {
-        expect(army.strength).toBeLessThanOrEqual(armyIn(start, army.id).strength);
+        // D7: a replacement general appears during the turn (m3r1-air-generals).
+        if (start.units[army.id] === undefined && result.outcomes.some((outcome) => outcome.kind === "replacement-arrived" && outcome.unitId === army.id)) continue;
+        if (!raisedOrReplenished.has(army.id)) expect(army.strength).toBeLessThanOrEqual(armyIn(start, army.id).strength);
         expect(army.strength).toBeGreaterThan(0);
       }
       for (const works of Object.values(result.finalState.fortification)) {
-        expect(works.level).toBeLessThanOrEqual(spain().combat.diggingIn.max);
+        expect(works.level).toBeLessThanOrEqual(spainM2().combat.diggingIn.max);
       }
     }
   });

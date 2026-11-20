@@ -1,7 +1,8 @@
-import { type JSX, memo } from "react";
+import { type JSX, memo, type ReactNode } from "react";
 import type { FactionId, GameState, Scenario, TerritoryId } from "../engine/types";
 import type { MapPackage, MapRect } from "../scenarios/loader";
 import { requireFaction } from "../engine/lookup";
+import { isPartitioned } from "../engine/partition/holders";
 import { territoryName } from "../presentation/text";
 import { territoryAnchor } from "./anchors";
 import type { SemanticLevel } from "./camera";
@@ -23,6 +24,8 @@ interface VectorLayerProps {
   /** Map units per screen pixel; every stroke, label, and icon is sized with it (V1). */
   readonly unit: number;
   readonly scenario: Scenario;
+  /** Drawn in screen pixels over the shapes and under every name and city (B4: the rail). */
+  readonly underlay?: ReactNode;
   readonly view: MapView;
   readonly visible: MapRect;
   /** The water names to draw, already checked against the screen edges and counters. */
@@ -42,7 +45,7 @@ const Borders = memo(function Borders({ outlines }: { readonly outlines: Prepare
   return <g aria-hidden="true" className="map-borders" dangerouslySetInnerHTML={{ __html: [...outlines.values()].join("") }} />;
 });
 
-export function VectorLayer({ contextLabels, game, geometry, level, map, scenario, unit, view, visible, water }: VectorLayerProps): JSX.Element {
+export function VectorLayer({ contextLabels, game, geometry, level, map, scenario, underlay, unit, view, visible, water }: VectorLayerProps): JSX.Element {
   const factionColor = (id: FactionId): string => requireFaction(scenario, id).color;
   const anchor = (id: TerritoryId) => territoryAnchor(map, id);
   const showDetail = level !== "overview";
@@ -70,7 +73,7 @@ export function VectorLayer({ contextLabels, game, geometry, level, map, scenari
           );
         })}
       </defs>
-      <style>{territoryStyles(scenario, game, view, factionColor)}</style>
+      <style>{territoryStyles(scenario, map, game, view, factionColor)}</style>
       <Geometry markup={geometry.markup} />
       <g className="map-shapes">
         {[...map.territories].map(([territoryId, entry]) => entry.shape === undefined ? null : (
@@ -108,6 +111,10 @@ export function VectorLayer({ contextLabels, game, geometry, level, map, scenari
           );
         })}
       </g>
+      {/* B4: Milestone 3's screen-space underlay (rail), above the shapes and under every name. */}
+      {underlay === undefined ? null : (
+        <g className="map-underlay" transform={`translate(${String(visible.x)} ${String(visible.y)}) scale(${String(unit)})`}>{underlay}</g>
+      )}
       <WaterLabelLayer unit={unit} water={water} />
       <g className="map-context-labels" aria-hidden="true">
         {contextLabels.map((label) => (
@@ -139,7 +146,7 @@ export function VectorLayer({ contextLabels, game, geometry, level, map, scenari
           );
         })}
       </g>
-      <RouteLayer anchor={anchor} factionColor={factionColor} unit={unit} view={view} />
+      <RouteLayer anchor={anchor} factionColor={factionColor} scenario={scenario} unit={unit} view={view} />
     </svg>
   );
 }
@@ -174,13 +181,17 @@ function Highlight({ geometry, kind, map, territoryId }: { readonly geometry: Pr
 }
 
 /** Generated per-territory CSS: control wash and contested hatch. */
-function territoryStyles(scenario: Scenario, game: GameState, view: MapView, factionColor: (id: FactionId) => string): string {
+function territoryStyles(scenario: Scenario, map: MapPackage, game: GameState, view: MapView, factionColor: (id: FactionId) => string): string {
   const rules: string[] = [];
+  const partitioned = isPartitioned(scenario) && map.subTerritories !== undefined;
   for (const territory of scenario.territories) {
     const control = game.control[territory.id];
     const selector = `[data-territory-id="${territory.id}"]`;
     if (control?.kind === "controlled") {
       rules.push(`${selector}{fill:${factionColor(control.factionId)};}`);
+    } else if (control?.kind === "contested" && partitioned) {
+      // X2: the sub-territory wash below shows each holder; the region keeps only a hover tint.
+      rules.push(`${selector}{fill:rgb(255 255 255 / 30%);fill-opacity:0;}`);
     } else if (control?.kind === "contested") {
       rules.push(`${selector}{fill:url(#contested-${territory.id});fill-opacity:var(--contested-opacity);}`);
     }

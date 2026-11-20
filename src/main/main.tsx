@@ -4,8 +4,7 @@ import { Provider } from "react-redux";
 import { HashRouter } from "react-router";
 import { App } from "./app";
 import { RegistryContext } from "./hooks";
-import { builtInSources } from "./scenarios/builtInSources";
-import { createScenarioRegistry, type PackageSources } from "./scenarios/registry";
+import type { PackageSources } from "./scenarios/registry";
 import { addErrorNotification } from "./state/notificationSlice";
 import { createAppStore } from "./state/store";
 import "./style.scss";
@@ -18,7 +17,9 @@ async function bootstrap(): Promise<void> {
   const extraSources: PackageSources[] = import.meta.env.MODE === "e2e"
     ? [(await import("../test/fixtures/scenarios/fixtureSources")).fixtureSources]
     : [];
-  const registry = createScenarioRegistry(builtInSources, ...extraSources);
+  // The packages, the loader and Zod load here, outside the initial chunk.
+  const { loadBuiltInRegistry } = await import("./scenarios/lazySources");
+  const registry = await loadBuiltInRegistry(...extraSources);
   const store = createAppStore({ registry });
   for (const problem of registry.problems) {
     console.error(problem);

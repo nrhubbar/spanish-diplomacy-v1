@@ -4,14 +4,14 @@ import { generateComputerSubmission, legalMoves } from "../main/ai/computerPlaye
 import type { BattleDice } from "../main/engine/dice";
 import { deriveSeed, seededRandom } from "../main/engine/random";
 import { initialGameState } from "../main/engine/resolution";
-import type { GameState, MoveOrder, Scenario, TurnOutcome, TurnResolutionResult } from "../main/engine/types";
+import { type GameState, isMoveOrder, type MoveOrder, type Scenario, type TurnOutcome, type TurnResolutionResult } from "../main/engine/types";
 import { legalDestinations } from "../main/engine/validation";
 import { groupRoutes } from "../main/map/routes";
 import { describeOutcome, describeOutcomeGroup, groupOutcomes } from "../main/presentation/text";
 import { OutcomeSummary } from "../main/screens/ResultPanels";
 import { chooseOrderKind, clickMapTerritory, openSetup, startGame, toggleOrderMenu } from "../main/state/gameSlice";
 import { emptyDraft } from "../main/state/session";
-import { type ArmySpec, battlefield, battlesOf, faction, loadedDice, move, play as resolve, spain, spainId, territory, testStore, tiny, unit, withUnits } from "./support";
+import { type ArmySpec, battlefield, battlesOf, faction, loadedDice, move, play as resolve, spainM2, spainId, territory, testStore, tiny, unit, withUnits } from "./support";
 
 // Friendly consolidation: armies of one faction never block, bounce, fight, or disband each
 // other. Only other factions stop a move or fight it (M11, M17-M21).
@@ -27,9 +27,9 @@ function play(scenario: Scenario, state: GameState, orders: readonly MoveOrder[]
 /** Outcome kind (and bounce cause) per ordered unit, in a compact readable form. */
 function resultOf(result: TurnResolutionResult, unitId: string): string {
   const outcome = result.outcomes.find((candidate): candidate is Extract<TurnOutcome, { order: MoveOrder }> =>
-    "order" in candidate && candidate.order.unitId === unitId);
+    "order" in candidate && "from" in candidate.order && candidate.order.kind === "move" && candidate.order.unitId === unitId);
   if (outcome === undefined) {
-    const ordered = result.submittedOrders.some((order) => order.unitId === unitId);
+    const ordered = result.submittedOrders.some((order) => "unitId" in order && order.unitId === unitId);
     const fought = battlesOf(result).some((battle) => battle.attacker.armies.some((army) => army.unitId === unitId));
     return ordered && fought ? "fought" : "no order";
   }
@@ -44,6 +44,8 @@ function resultOf(result: TurnResolutionResult, unitId: string): string {
       return "invalid";
     case "reinforcement-arrived":
       return "reinforced";
+    case "general-moved":
+      return outcome.arrived ? "moved" : "stayed";
   }
 }
 
@@ -124,7 +126,7 @@ describe("friendly consolidation (engine)", () => {
   });
 
   it("lets several friendly units reinforce a territory shared with a stationary hostile (OD-7)", () => {
-    const scenario = spain();
+    const scenario = spainM2();
     const units = [
       ["rep-vitoria-8", "republic", "andalucia"],
       ["south-granada-6", "south", "andalucia"],
@@ -152,12 +154,13 @@ describe("friendly consolidation (engine)", () => {
   it("keys the reinforcement exception on friendly units that stay, as M11 states", () => {
     // When the only friendly occupant is ordered out, the entering unit faces the hostile alone
     // and attacks it, even if the occupant itself comes back.
-    const scenario = spain();
+    const scenario = spainM2();
     const units = [
       ["rep-vitoria-8", "republic", "andalucia"],
       ["south-granada-6", "south", "andalucia"],
       ["rep-sevilla-34", "republic", "murcia"],
-      ["south-legion", "south", "ceuta"]
+      // Melilla: the Alboran lane sails from Republican Malaga (the Strait's port, Cadiz, is the South's; M5, Q-CITY-7).
+      ["south-legion", "south", "melilla"]
     ] as const;
     const leaves = play(scenario, withUnits(scenario, units), [
       move("republic", "rep-vitoria-8", "andalucia", "extremadura"),
@@ -167,7 +170,7 @@ describe("friendly consolidation (engine)", () => {
     expect(battlesOf(leaves)[0]).toMatchObject({ defender: { armies: [{ unitId: "south-granada-6" }] }, site: { territoryId: "andalucia" } });
 
     const staysBehind = play(scenario, withUnits(scenario, units), [
-      move("republic", "rep-vitoria-8", "andalucia", "ceuta"),
+      move("republic", "rep-vitoria-8", "andalucia", "melilla"),
       move("republic", "rep-sevilla-34", "murcia", "andalucia")
     ], loadedDice([4, 4, 4]));
     expect([resultOf(staysBehind, "rep-vitoria-8"), resultOf(staysBehind, "rep-sevilla-34")]).toEqual(["fought", "fought"]);
@@ -175,14 +178,14 @@ describe("friendly consolidation (engine)", () => {
   });
 
   it("brings friendly units moving together into their own territory, even when other factions attack it (C10)", () => {
-    const scenario = spain();
+    const scenario = spainM2();
     const result = play(scenario, initialGameState(scenario), [
       move("republic", "rep-wad-ras-1", "madrid", "castilla-la-mancha"),
       move("republic", "rep-covadonga-4", "madrid", "castilla-la-mancha"),
       move("north", "north-aragon-17", "aragon", "castilla-la-mancha"),
       move("south", "south-granada-6", "andalucia", "castilla-la-mancha"),
       move("south", "south-lepanto-5", "andalucia", "castilla-la-mancha")
-    ], loadedDice([1, 1, 4, 4]));
+    ], loadedDice([1, 1, 4, 4, 4, 4, 4]));
     expect([resultOf(result, "rep-wad-ras-1"), resultOf(result, "rep-covadonga-4")]).toEqual(["reinforced", "reinforced"]);
     const attacks = battlesOf(result).filter((battle) => battle.site.kind === "assault");
     expect(attacks.map((battle) => battle.attackerFactionId)).toEqual(["north", "south"]);
@@ -229,7 +232,7 @@ describe("friendly consolidation (engine)", () => {
 
 describe("friendly consolidation (planning and computer players)", () => {
   it("offers friendly-held territories as destinations for several selected units", () => {
-    const scenario = spain();
+    const scenario = spainM2();
     const state = withUnits(scenario, [["rep-wad-ras-1", "republic", "madrid"], ["rep-covadonga-4", "republic", "madrid"], ["rep-otumba-9", "republic", "castilla-la-mancha"]]);
     expect(legalDestinations(scenario, state, faction("republic"), [unit("rep-wad-ras-1"), unit("rep-covadonga-4")]))
       .toEqual(["castilla-y-leon", "castilla-la-mancha"]);
@@ -266,7 +269,7 @@ describe("friendly consolidation (planning and computer players)", () => {
   });
 
   it("never offers a demoralized army a hostile destination, so its attack cannot be planned (M23)", () => {
-    const scenario = spain();
+    const scenario = spainM2();
     const start = initialGameState(scenario);
     const units = Object.fromEntries(Object.values(start.units).map((army) =>
       [army.id, army.territoryId === "madrid" ? { ...army, morale: { demoralized: true, quietTurns: 0 } } : army]));
@@ -279,7 +282,7 @@ describe("friendly consolidation (planning and computer players)", () => {
     store.dispatch(clickMapTerritory(territory("castilla-y-leon")));
     const session = store.getState().game.session;
     expect(session.phase === "planning" && session.draft.orders).toEqual([]);
-    expect(session.phase === "planning" && session.draft.feedback).toBe("A demoralized army cannot attack. It can move only into empty or friendly territory.");
+    expect(session.phase === "planning" && session.draft.feedback).toBe("A demoralized unit cannot attack. It can move only into empty or friendly territory.");
     // A territory that is not connected keeps its own explanation.
     store.dispatch(clickMapTerritory(territory("galicia")));
     const far = store.getState().game.session;
@@ -290,14 +293,14 @@ describe("friendly consolidation (planning and computer players)", () => {
   });
 
   it("lets computer players stack units: crowding is a preference, not a rule", () => {
-    const scenario = spain();
+    const scenario = spainM2();
     const state = withUnits(scenario, [["rep-wad-ras-1", "republic", "madrid"], ["rep-otumba-9", "republic", "castilla-la-mancha"]]);
     expect(legalMoves(scenario, state, state.units[unit("rep-wad-ras-1")]!).map((order) => order.to)).toContain("castilla-la-mancha");
 
     const initial = initialGameState(scenario);
     const stacked = Array.from({ length: 20 }, (_, seed) =>
       generateComputerSubmission(scenario, initial, faction("south"), seededRandom(deriveSeed(seed, 1, 2))))
-      .some((submission) => new Set(submission.orders.map((order) => order.to)).size < submission.orders.length);
+      .some((submission) => new Set(submission.orders.filter(isMoveOrder).map((order) => order.to)).size < submission.orders.length);
     expect(stacked).toBe(true);
   });
 });
@@ -309,7 +312,7 @@ describe("friendly consolidation (planning and computer players)", () => {
  * other neighbours are held by other factions, so they have nowhere to fall back (M21).
  */
 function reportedCase(capture: boolean): TurnResolutionResult {
-  const scenario = spain();
+  const scenario = spainM2();
   const units = [
     ["rep-wad-ras-1", "republic", "castilla-la-mancha"],
     ["rep-covadonga-4", "republic", "castilla-la-mancha"],
@@ -334,7 +337,7 @@ function reportedCase(capture: boolean): TurnResolutionResult {
 }
 
 const lines = (result: TurnResolutionResult) =>
-  groupOutcomes(result.outcomes).map((group) => describeOutcomeGroup(spain(), group, result.outcomes));
+  groupOutcomes(result.outcomes).map((group) => describeOutcomeGroup(spainM2(), group, result.outcomes));
 
 describe("friendly consolidation (turn report)", () => {
   afterEach(cleanup);
@@ -357,7 +360,7 @@ describe("friendly consolidation (turn report)", () => {
 
   it("groups only same-faction, same-route, same-result outcomes and lists several origins of one faction", () => {
     // Granada and the Legion, at reduced strength, attack at 2 each: 4, the same as Wad-Ras alone.
-    const field = battlefield(spain(), [
+    const field = battlefield(spainM2(), [
       { faction: "republic", id: "rep-wad-ras-1", territory: "castilla-la-mancha" },
       { faction: "republic", id: "rep-covadonga-4", territory: "madrid" },
       { faction: "south", id: "south-granada-6", strength: 300, territory: "andalucia" },
@@ -370,7 +373,8 @@ describe("friendly consolidation (turn report)", () => {
       move("south", "south-legion", "castilla-y-leon", "extremadura")
     ]);
     expect(groupOutcomes(result.outcomes).map((group) => group.unitIds)).toEqual([
-      ["rep-wad-ras-1"], ["rep-covadonga-4"], ["south-granada-6"], ["south-legion"], []
+      // The last four are the north's hold and each faction's income ($2).
+      ["rep-wad-ras-1"], ["rep-covadonga-4"], ["south-granada-6"], ["south-legion"], [], [], [], []
     ]);
     const report = groupOutcomes(result.outcomes).map((group) => describeOutcomeGroup(field.scenario, group, result.outcomes));
     expect(report[0]).toBe("Republican Government: Wad-Ras Infantry Regiment No. 1 tried to move from Castilla-La Mancha to Extremadura and bounced: standoff with Southern Insurgent Command (from Andaluc\u00eda and Castilla y Le\u00f3n).");
@@ -390,19 +394,19 @@ describe("friendly consolidation (turn report)", () => {
     expect(groupOutcomes(outcomes).map((group) => describeOutcomeGroup(scenario, group))).toEqual([
       "Red Guard held.",
       "Red Rangers held.",
-      "Blue Union had no armies to order.",
+      "Blue Union had no units to order.",
       "Red League: Red Guard was disbanded after an impossible order: Destination is not connected to the unit's territory."
     ]);
   });
 
   it("shows one line per group in the summary and says that own armies never block each other", () => {
-    render(<OutcomeSummary result={reportedCase(false)} scenario={spain()} />);
+    render(<OutcomeSummary result={reportedCase(false)} scenario={spainM2()} />);
     const bounced = screen.getByText("Bounced (6)").closest("details");
     expect(within(bounced!).getAllByRole("listitem")).toHaveLength(3);
-    expect(screen.getByText(/A faction's own armies never block each other/)).toBeVisible();
+    expect(screen.getByText(/A faction's own units never block each other/)).toBeVisible();
     cleanup();
 
-    const scenario = spain();
+    const scenario = spainM2();
     const state = withUnits(scenario, [["rep-wad-ras-1", "republic", "castilla-la-mancha"], ["rep-covadonga-4", "republic", "castilla-la-mancha"]]);
     render(<OutcomeSummary result={play(scenario, state, [move("republic", "rep-wad-ras-1", "castilla-la-mancha", "extremadura"), move("republic", "rep-covadonga-4", "castilla-la-mancha", "extremadura")])} scenario={scenario} />);
     expect(screen.getByText("Completed moves (2)")).toBeDefined();

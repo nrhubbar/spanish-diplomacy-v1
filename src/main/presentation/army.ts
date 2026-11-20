@@ -1,20 +1,27 @@
 import { armyValue } from "../engine/combat";
 import { requireFaction, requireUnitDefinition, requireUnitType } from "../engine/lookup";
 import type { StandingOrder } from "../engine/orders";
-import type { GameState, MoveOrder, Scenario, UnitState } from "../engine/types";
+import type { GameState, MoveOrder, ReplenishOrder, Scenario, UnitState, WithdrawOrder } from "../engine/types";
 
-/** An army's one order this turn (O1): a move, or the standing order it follows without one (O5). */
-export type ArmyOrder = MoveOrder["kind"] | StandingOrder;
+/**
+ * An army's one order this turn (O1): a move or Replenish, or the standing order it follows
+ * without one (O5); in contested ground, Attack (Hold when demoralized) or Withdraw (C1, C4).
+ */
+export type ArmyOrder = MoveOrder["kind"] | WithdrawOrder["kind"] | ReplenishOrder["kind"] | StandingOrder | "attack" | "hold";
 
 /** What an army with each order is doing, in the player's words. */
 export const orderStatus: Readonly<Record<ArmyOrder, string>> = {
+  attack: "Attacking",
   entrench: "Entrenching",
+  hold: "Holding",
   move: "Moving",
-  rest: "Resting"
+  replenish: "Replenishing",
+  rest: "Resting",
+  withdraw: "Withdrawing"
 };
 
 /** Order types in the order the menu, the summary, and accessible names list them. */
-export const armyOrders: readonly ArmyOrder[] = ["move", "entrench", "rest"];
+export const armyOrders: readonly ArmyOrder[] = ["move", "withdraw", "attack", "replenish", "entrench", "rest", "hold"];
 
 /**
  * What a counter or an army row shows: the values that fight now (C5), the type's full values,
@@ -25,6 +32,8 @@ export interface ArmyFigures {
   readonly attack: number;
   readonly defence: number;
   readonly demoralized: boolean;
+  /** C6: the fatigue track, 0 to 3; shown from 1 (X7). */
+  readonly fatigue: number;
   /** Dug-in level of the territory's works when they belong to this army's faction. */
   readonly dugIn?: number;
   readonly fullAttack: number;
@@ -46,6 +55,7 @@ export function armyFigures(scenario: Scenario, state: GameState, unit: UnitStat
     attack,
     defence,
     demoralized: unit.morale.demoralized,
+    fatigue: unit.fatigue,
     ...(dugIn === undefined ? {} : { dugIn }),
     fullAttack: type.attack,
     fullDefence: type.defence,
@@ -70,6 +80,11 @@ export function strengthShare(figures: Pick<ArmyFigures, "fullStrength" | "stren
   return Math.min(1, Math.max(0, figures.strength / figures.fullStrength));
 }
 
+/** C6, X7: "Fatigue 2". */
+export function fatigueLabel(fatigue: number): string {
+  return `Fatigue ${String(fatigue)}`;
+}
+
 export function dugInLabel(level: number): string {
   return `Dug in +${String(level)}`;
 }
@@ -81,6 +96,7 @@ export function figuresDescription(figures: ArmyFigures): string {
     `attack ${String(figures.attack)}, defence ${String(figures.defence)}${full}`,
     `${String(figures.strength)} of ${String(figures.fullStrength)} men`,
     ...(figures.demoralized ? ["demoralized, cannot attack"] : []),
+    ...(figures.fatigue > 0 ? [fatigueLabel(figures.fatigue).toLowerCase()] : []),
     ...(figures.dugIn === undefined ? [] : [dugInLabel(figures.dugIn).toLowerCase()])
   ].join(", ");
 }
@@ -111,7 +127,7 @@ export function groupOrdersDescription(orders: readonly ArmyOrder[]): string {
 export function demoralizedRule(scenario: Scenario): string {
   const factor = scenario.combat.demoralizationFactor;
   const values = factor === 0.5 ? "half their values" : `${String(Math.round(factor * 100))} percent of their values`;
-  return `Demoralized armies fight at ${values} and cannot attack. They may move only into empty or friendly territory, and recover after a full turn without moving.`;
+  return `Demoralized units fight at ${values} and cannot attack. They may move only into empty or friendly territory, and recover after a full turn without moving.`;
 }
 
 /**
@@ -140,6 +156,8 @@ export function groupFigures(scenario: Scenario, state: GameState, units: readon
     demoralized: demoralizedCount > 0,
     demoralizedCount,
     ...(dugIn === undefined ? {} : { dugIn }),
+    // C6: a group shows its most tired army's fatigue.
+    fatigue: Math.max(0, ...each.map((figures) => figures.fatigue)),
     fullAttack,
     fullDefence,
     fullStrength: sum((figures) => figures.fullStrength),
@@ -151,7 +169,7 @@ export function groupFigures(scenario: Scenario, state: GameState, units: readon
 /** A compact counter's accessible name: whose armies, how many, where, and their totals. */
 export function groupLabel(factionName: string, territoryName: string, figures: GroupFigures): string {
   return [
-    `${factionName}, ${String(figures.count)} armies in ${territoryName}`,
+    `${factionName}, ${String(figures.count)} units in ${territoryName}`,
     `combined attack ${String(figures.attack)}, defence ${String(figures.defence)}`,
     `${String(figures.strength)} of ${String(figures.fullStrength)} men`,
     ...(figures.demoralizedCount > 0 ? [`${String(figures.demoralizedCount)} demoralized`] : []),

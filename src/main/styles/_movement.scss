@@ -1,0 +1,201 @@
+// X5, X6: move chips, the breakdown card, the "Army leaving" summary, and the rail map layer.
+
+.army-leaving {
+  margin: 0 0 0.6rem;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid rgb(36 29 24 / 22%);
+  border-radius: 6px;
+  background: rgb(255 255 255 / 55%);
+
+  p {
+    margin: 0;
+  }
+}
+
+.army-leaving-heading {
+  font-family: var(--serif);
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.army-leaving-line {
+  display: flex;
+  gap: 0.35rem;
+  align-items: baseline;
+  margin-top: 0.2rem !important;
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+}
+
+.move-icon {
+  flex: none;
+  vertical-align: -1px;
+}
+
+.route-chips {
+  display: flex;
+  flex-wrap: wrap;
+  grid-column: 1 / -1;
+  gap: 0.25rem;
+}
+
+.route-chip {
+  display: inline-flex;
+  gap: 0.25rem;
+  align-items: center;
+  padding: 0.05rem 0.45rem;
+  border: 1px solid rgb(36 29 24 / 28%);
+  border-radius: 999px;
+  color: var(--ink);
+  background: var(--paper);
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+.route-chip[data-warn="true"] {
+  border-color: var(--bounce);
+  color: #6b4100;
+  background: var(--gold-wash);
+}
+
+.route-card {
+  margin-top: 0.3rem;
+  padding: 0.55rem 0.7rem;
+  border: 1.5px solid var(--ink);
+  border-radius: 6px;
+  background: #fff;
+
+  h5 {
+    margin: 0 0 0.3rem;
+    font-family: var(--serif);
+    font-size: 0.95rem;
+  }
+}
+
+.route-card-rows {
+  display: grid;
+  gap: 0.15rem;
+  margin: 0;
+  font-size: 0.8rem;
+
+  > div {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: space-between;
+  }
+
+  dt {
+    color: var(--ink-soft);
+  }
+
+  dd {
+    margin: 0;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.route-card-total {
+  margin-top: 0.2rem;
+  padding-top: 0.2rem;
+  border-top: 1px solid var(--rule);
+}
+
+// B4: the rail is a group inside the vector layer, under the names and cities; it never takes a click.
+.rail-layer {
+  pointer-events: none;
+}
+
+// M4 (`ux-rail-b`): thin, dark, slightly translucent lines, a hairline of paper to lift them off the
+// relief, and fine ties within the line's own width.
+.rail-line {
+  fill: none;
+  stroke: #241d18;
+  stroke-linecap: round;
+  stroke-opacity: 0.62;
+}
+
+.rail-line-halo {
+  fill: none;
+  stroke: var(--paper);
+  stroke-linecap: round;
+  stroke-opacity: 0.45;
+}
+
+.rail-line[data-rideable="true"] {
+  stroke: var(--route);
+  stroke-opacity: 0.95;
+}
+
+.rail-ties {
+  fill: none;
+  stroke: #241d18;
+  stroke-dasharray: 0.9 4;
+  stroke-opacity: 0.6;
+}
+
+.rail-station {
+  fill: var(--paper);
+  stroke: #3b2f26;
+  stroke-width: 1.2;
+}
+
+.rail-station[data-rideable="true"] {
+  stroke: var(--route);
+  stroke-width: 1.6;
+}
+
+.move-route {
+  fill: none;
+  stroke: var(--route);
+  stroke-dasharray: 6 4;
+  stroke-linecap: round;
+  stroke-width: 2.2;
+}
+
+.move-route[data-kind="sea"] {
+  stroke-dasharray: 2 4;
+}
+
+// M7 (`ux-move-a`): one card per destination: the button, its route line and chips, and the
+// breakdown card all sit inside the row's border.
+.destination-row {
+  display: grid;
+  gap: 0.2rem;
+  overflow: hidden;
+  border: 1px solid rgb(36 29 24 / 30%);
+  border-radius: 6px;
+  background: rgb(255 255 255 / 60%);
+
+  .destination-button {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .destination-button:hover:not(:disabled) {
+    background: rgb(255 255 255 / 70%);
+  }
+
+  .route-card {
+    margin: 0 0.45rem 0.45rem;
+  }
+}
+
+.destination-route {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0 0.6rem 0.35rem;
+}
+
+.route-card-forecast {
+  margin-top: 0.3rem;
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+}
+
+.route-details-toggle {
+  justify-self: start;
+  min-height: 1.75rem;
+  font-size: 0.78rem;
+}

@@ -32,7 +32,7 @@ test("@capture walks every screen", async ({ page }) => {
   await page.locator('.map-region[data-territory-id="madrid"]').focus();
   await page.keyboard.press("Enter");
   await capture(page, "04a-territory-selected");
-  await page.getByRole("button", { name: "Give Selected Armies Order" }).click();
+  await page.getByRole("button", { name: "Give Selected Units Order" }).click();
   await capture(page, "04b-order-menu");
   await page.getByRole("button", { exact: true, name: "Move" }).click();
   await capture(page, "04-choosing-destination");
@@ -99,7 +99,7 @@ test("@capture handoff and game over", async ({ page }) => {
   await capture(page, "12-fixture-planning");
   await page.locator('.map-region[data-territory-id="westfold"]').focus();
   await page.keyboard.press("Enter");
-  await page.getByRole("button", { name: "Give Selected Armies Order" }).click();
+  await page.getByRole("button", { name: "Give Selected Units Order" }).click();
   await page.getByRole("button", { exact: true, name: "Move" }).click();
   await page.locator('.map-region[data-territory-id="lowlands"]').focus();
   await page.keyboard.press("Enter");
@@ -180,7 +180,7 @@ test("@capture combat presentation", async ({ page }) => {
   await page.keyboard.press("Enter");
   const orders = page.getByRole("button", { name: "Orders", exact: true });
   if (await orders.isVisible()) await orders.click();
-  await page.getByRole("button", { name: "Give Selected Armies Order" }).click();
+  await page.getByRole("button", { name: "Give Selected Units Order" }).click();
   await page.getByRole("button", { exact: true, name: "Move" }).click();
   await expect(page.locator(".odds-chip").first()).toBeVisible();
   await capture(page, "18-destination-odds");
@@ -196,6 +196,13 @@ test("@capture combat presentation", async ({ page }) => {
   await battles.scrollIntoViewIfNeeded();
   await page.locator(".battle-report h3").evaluate((element) => { element.scrollIntoView({ block: "start" }); });
   await capture(page, "19a-battle-cards");
+  // D8: a d20 card shows the die, the modifiers and the score, then its column as bands.
+  const graded = page.locator('.battle-card[data-dice="d20"]').first();
+  if (await graded.count() > 0) {
+    if (await graded.getAttribute("open") === null) await graded.locator("summary").first().click();
+    await graded.locator(".battle-bands").first().evaluate((element) => { element.scrollIntoView({ block: "center" }); });
+    await capture(page, "19f-d20-battle-card");
+  }
   const threeSided = page.locator('.battle-card[data-sides="3"]').first();
   if (await threeSided.count() > 0) {
     if (await threeSided.getAttribute("open") === null) await threeSided.locator("summary").first().click();
@@ -209,6 +216,13 @@ test("@capture combat presentation", async ({ page }) => {
   await capture(page, "19d-battle-cards-collapsed");
   await page.locator(".map-legend summary").click();
   await capture(page, "19e-battle-legend");
+  await page.locator(".map-legend summary").click();
+  // B5, D8 (ux-battle-icon): hovering a battle medallion names its result.
+  const icon = page.locator(".battle-icon-button").first();
+  if (await icon.count() > 0) {
+    await icon.hover();
+    await capture(page, "19g-battle-icon-tooltip");
+  }
 });
 
 test("@capture reduced counter in the fixture", async ({ page }) => {
@@ -225,4 +239,215 @@ test("@capture reduced counter in the fixture", async ({ page }) => {
   const orders = page.getByRole("button", { name: "Orders", exact: true });
   if (await orders.isVisible()) await orders.click();
   await capture(page, "17c-fixture-army-list");
+});
+
+test("@capture recruit and replenish", async ({ page }) => {
+  await page.goto("./");
+  await page.getByRole("button", { name: "Create Game" }).click();
+  await page.getByRole("button", { name: "Start Campaign" }).click();
+  await waitForMap(page);
+  const briefingToggle = page.getByRole("button", { exact: true, name: "Briefing" });
+  if (await page.getByRole("complementary", { name: "Briefing" }).isVisible()) await briefingToggle.click();
+
+  await page.locator('.map-region[data-territory-id="catalunya"]').focus();
+  await page.keyboard.press("Enter");
+  await page.getByRole("tab", { name: "Recruit" }).click();
+  await page.getByRole("button", { name: "One more Infantry regiment" }).click();
+  await page.getByRole("button", { name: "One more Militia column" }).click();
+  await capture(page, "25a-recruit-tab");
+  const locked = page.locator('.recruit-row[data-locked="true"]').first();
+  await locked.scrollIntoViewIfNeeded();
+  await locked.hover();
+  await capture(page, "25b-recruit-locked-details");
+  await page.getByRole("tab", { name: "Units" }).click();
+  await page.locator(".training-list").scrollIntoViewIfNeeded();
+  await capture(page, "25c-units-in-training");
+
+  await page.locator('.map-region[data-territory-id="cantabria"]').focus();
+  await page.keyboard.press("Enter");
+  await page.getByRole("tab", { name: "Recruit" }).click();
+  await capture(page, "25d-recruit-tab-provincial");
+});
+
+test("@capture replenish (X7, ux-orders-replenish)", async ({ page }) => {
+  // Turn 2: a Republican unit that lost men on turn 1, in ground the Republic holds whole.
+  await page.goto("./");
+  await page.getByRole("button", { name: "Create Game" }).click();
+  await page.getByRole("button", { name: "Start Campaign" }).click();
+  await waitForMap(page);
+  await page.getByRole("button", { name: "End Turn" }).filter({ visible: true }).click();
+  await waitForMap(page);
+  await page.getByRole("button", { name: "Start Next Turn" }).filter({ visible: true }).click();
+  await waitForMap(page);
+  const toggle = page.getByRole("button", { exact: true, name: "Briefing" });
+  if (await toggle.isVisible() && await toggle.getAttribute("aria-pressed") === "true") await toggle.click();
+  const orders = page.getByRole("button", { name: "Orders", exact: true });
+  const territories = await page.locator(".map-region[data-territory-id]").evaluateAll((elements) => elements.map((element) => element.getAttribute("data-territory-id") ?? ""));
+  for (const territoryId of territories) {
+    await page.locator(`.map-region[data-territory-id="${territoryId}"]`).focus();
+    await page.keyboard.press("Enter");
+    if (await orders.isVisible()) await orders.click();
+    const rows = page.locator(".formation-button");
+    const texts = await rows.locator(".army-line-strength").allTextContents();
+    const index = texts.findIndex((text) => {
+      const men = /^(\d+)\/(\d+) men$/u.exec(text.trim());
+      return men !== null && Number(men[1]) < Number(men[2]);
+    });
+    if (index === -1) continue;
+    const clear = page.getByRole("button", { name: "Clear" });
+    if (await clear.isVisible()) await clear.click();
+    await rows.nth(index).click();
+    await page.getByRole("button", { name: "Give Selected Units Order" }).click();
+    const replenish = page.locator(".order-choice-button", { hasText: "Replenish" });
+    if (await replenish.count() > 0 && await replenish.first().isEnabled()) {
+      await replenish.first().scrollIntoViewIfNeeded();
+      await capture(page, "26-replenish");
+      return;
+    }
+    await page.getByRole("button", { name: "Give Selected Units Order" }).click();
+  }
+  test.skip(true, "no uncontested Republican unit lost men on turn 1");
+});
+
+test("@capture weather and turn timer", async ({ page }) => {
+  // The clock is Playwright's, so the countdown is the same on every run.
+  await page.clock.install();
+  await page.goto("./");
+  await page.getByRole("button", { name: "Create Game" }).click();
+  await page.getByRole("radio", { name: "5 min" }).check();
+  await capture(page, "20a-setup-timer");
+  await page.getByRole("button", { name: "Start Campaign" }).click();
+  await waitForMap(page);
+  const hide = page.getByRole("button", { name: /Hide (orders|briefing)/ });
+  const toggle = page.getByRole("button", { exact: true, name: "Briefing" });
+  if (await toggle.isVisible() && await toggle.getAttribute("aria-pressed") === "true") await toggle.click();
+  await page.locator('.map-region[data-territory-id="catalunya"]').focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("timer")).toBeVisible();
+  await capture(page, "20b-planning-timer-weather");
+  await page.locator('.map-region[data-territory-id="madrid"]').focus();
+  await page.keyboard.press("Enter");
+  await page.getByRole("button", { name: "Give Selected Units Order" }).click();
+  await page.getByRole("button", { exact: true, name: "Move" }).click();
+  await capture(page, "20c-destination-weather");
+  await page.getByRole("button", { name: "Pause the turn timer" }).click();
+  await expect(page.getByRole("dialog", { name: "Paused" })).toBeVisible();
+  await capture(page, "20d-paused");
+  await page.getByRole("button", { name: "Resume" }).click();
+  await page.clock.fastForward("09:52");
+  await expect(page.getByRole("timer")).toHaveAttribute("aria-label", /0:0\d/);
+  await capture(page, "20e-ten-seconds");
+  await page.clock.fastForward("00:15");
+  await waitForMap(page);
+  const report = page.getByRole("button", { name: "Turn report", exact: true });
+  if (await report.isVisible()) await report.click();
+  await page.getByRole("heading", { name: "Conditions" }).scrollIntoViewIfNeeded();
+  await capture(page, "20f-time-ran-out");
+  if (await hide.isVisible()) await hide.click();
+});
+
+test("@capture economy: resource chips, Build tab and the focused build list", async ({ page }) => {
+  await page.goto("./");
+  await page.getByRole("button", { name: "Create Game" }).click();
+  await page.getByRole("button", { name: "Start Campaign" }).click();
+  await waitForMap(page);
+  const briefingToggle = page.getByRole("button", { exact: true, name: "Briefing" });
+  if (await page.getByRole("complementary", { name: "Briefing" }).isVisible()) await briefingToggle.click();
+  await page.locator('.map-region[data-territory-id="catalunya"]').focus();
+  await page.keyboard.press("Enter");
+  const orders = page.getByRole("button", { name: "Orders", exact: true });
+  if (await orders.isVisible()) await orders.click();
+  await page.getByRole("tab", { name: "Build" }).click();
+  await capture(page, "21a-build-tab");
+  await page.getByRole("button", { name: "Build in Barcelona" }).click();
+  await capture(page, "21b-build-focus");
+  await page.getByRole("button", { name: /^Queue / }).first().click();
+  await page.locator(".site-queue").first().evaluate((element) => { element.scrollIntoView({ block: "center" }); });
+  await capture(page, "21c-build-queued");
+  await page.locator(".resource-chip").first().click();
+  await capture(page, "21d-resource-detail");
+});
+
+test("@capture sub-territories and contested ground", async ({ isMobile, page }) => {
+  await page.goto("./");
+  await page.getByRole("button", { name: "Create Game" }).click();
+  await page.getByRole("button", { name: "Start Campaign" }).click();
+  await waitForMap(page);
+  await page.locator('.map-region[data-territory-id="andalucia"]').focus();
+  await page.keyboard.press("Enter");
+  await expect(page.locator(".sub-territory-wash")).toBeAttached();
+  await capture(page, "22a-contested-overview");
+  await page.getByRole("button", { name: "Give Selected Units Order" }).click();
+  await capture(page, "22b-contested-orders");
+  await page.getByRole("button", { exact: true, name: "Withdraw" }).click();
+  await capture(page, "22c-withdraw-destination");
+  await page.getByRole("button", { name: /Cancel withdrawal|Cancel/ }).first().click();
+  for (let step = 0; step < 3; step += 1) await page.getByRole("button", { name: "Zoom in" }).click();
+  await capture(page, "22d-contested-zoom");
+  await page.getByRole("button", { name: /^M\u00e1laga, held by/ }).click();
+  await expect(page.locator(".sub-territory-focus")).toBeVisible();
+  await capture(page, "22e-sub-territory-focus");
+  // X3: zoomed in, a click inside the selected territory focuses the pane on the sub-territory there.
+  // On a phone the sheet covers Jaen at this zoom; the pane's list (above) is the phone's way in.
+  if (isMobile) return;
+  await page.locator(".sub-territory-back").click();
+  const jaen = await page.locator('.sub-territory-wash [data-sub-territory-id="jaen"] path').first().boundingBox();
+  if (jaen !== null) await page.mouse.click(jaen.x + jaen.width / 2, jaen.y + jaen.height / 2);
+  await expect(page.locator(".sub-territory-focus h3")).toHaveText(/Ja\u00e9n/);
+});
+
+test("@capture air missions and generals", async ({ page }) => {
+  // U2 (ux-air-a): an aircraft counter at its airfield, its range ring and missions; U5: a general's pill and Sack.
+  await page.goto("./");
+  await page.getByRole("button", { name: "Create Game" }).click();
+  await page.getByRole("button", { name: "Start Campaign" }).click();
+  await waitForMap(page);
+  const orders = page.getByRole("button", { name: "Orders", exact: true });
+  await page.locator('.map-region[data-territory-id="madrid"]').focus();
+  await page.keyboard.press("Enter");
+  if (await orders.isVisible()) await orders.click();
+  await page.locator(".general-pill").first().evaluate((element) => { element.scrollIntoView({ block: "center" }); });
+  await capture(page, "24a-general-pill");
+  await page.locator('.air-counter[data-unit-id="rep-breguet-bombers"]').click();
+  if (await orders.isVisible()) await orders.click();
+  await page.getByRole("button", { exact: true, name: "Raid" }).click();
+  await page.getByRole("combobox").selectOption({ index: 1 });
+  await page.waitForTimeout(300); // the mission buttons fade between states
+  await capture(page, "24b-air-raid");
+  await page.locator('.air-counter[data-unit-id="rep-ni52-fighters"]').click();
+  if (await orders.isVisible()) await orders.click();
+  await page.getByRole("button", { exact: true, name: "Intercept" }).click();
+  await page.waitForTimeout(300); // the mission buttons fade between states
+  await capture(page, "24c-air-intercept");
+  await page.getByRole("button", { name: "End Turn" }).filter({ visible: true }).click();
+  await waitForMap(page);
+  const report = page.getByRole("button", { name: "Turn report", exact: true });
+  if (await report.isVisible()) await report.click();
+  const air = page.locator(".outcome-group summary", { hasText: "Air missions" });
+  if (await air.count() > 0) await air.first().evaluate((element) => { element.scrollIntoView({ block: "start" }); });
+  await capture(page, "24d-air-report");
+});
+
+test("@capture movement, rail and ports (X5, X6)", async ({ page }) => {
+  await page.goto("./");
+  await page.getByRole("button", { name: "Create Game" }).click();
+  await page.getByRole("button", { name: "Start Campaign" }).click();
+  await waitForMap(page);
+  const toggle = page.getByRole("button", { exact: true, name: "Briefing" });
+  if (await toggle.isVisible() && await toggle.getAttribute("aria-pressed") === "true") await toggle.click();
+  await page.locator('.map-region[data-territory-id="madrid"]').focus();
+  await page.keyboard.press("Enter");
+  await page.getByRole("button", { name: "Give Selected Units Order" }).click();
+  await page.getByRole("button", { exact: true, name: "Move" }).click();
+  await expect(page.locator(".army-leaving").first()).toBeAttached();
+  await capture(page, "23a-move-destinations");
+  const railRow = page.locator(".destination-row").filter({ hasText: /By rail|Rail, then/ }).first();
+  if (await railRow.isVisible()) {
+    await railRow.scrollIntoViewIfNeeded();
+    await railRow.hover();
+    await capture(page, "23b-move-route-card");
+  }
+  await page.getByRole("button", { name: /^Cancel( move)?$/ }).filter({ visible: true }).first().click();
+  for (let step = 0; step < 2; step += 1) await page.getByRole("button", { name: "Zoom in" }).click();
+  await capture(page, "23c-rail-operational");
 });

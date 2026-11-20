@@ -358,5 +358,16 @@
       "south": 35.8,
       "west": -9.8
     }
+  },
+  "provinces": {
+    "retrieved": "2026-11-19",
+    "file": "scripts/sources/geoboundaries/geoBoundaries-ESP-ADM2_simplified.geojson",
+    "sha256": "40a12d32651a352b59bc88447432421ab80e2d950deb6f552efbae907f7232c2",
+    "revision": "9469f09592ced973a3448cf66b6100b741b64c0d",
+    "url": "https://media.githubusercontent.com/media/wmgeolab/geoBoundaries/9469f09592ced973a3448cf66b6100b741b64c0d/releaseData/gbOpen/ESP/ADM2/geoBoundaries-ESP-ADM2_simplified.geojson",
+    "features": 52,
+    "boundarySource": "El Instituto Nacional de Estad\u00edstica",
+    "boundaryLicense": "National Institute of Statistics (INE) Data License",
+    "boundaryYear": "2018"
   }
 }

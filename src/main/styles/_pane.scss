@@ -1,0 +1,333 @@
+// The in-map details pane: translucent, collapsible, a bottom sheet on narrow screens.
+
+.map-pane {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  bottom: 0.75rem;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  width: var(--pane-width);
+  border: 1px solid rgb(36 29 24 / 28%);
+  border-radius: 10px;
+  background: rgb(251 246 234 / 84%);
+  box-shadow: 0 0.75rem 2rem rgb(20 14 10 / 30%);
+  backdrop-filter: blur(3px) saturate(1.05);
+}
+
+.map-pane[data-open="false"] {
+  bottom: auto;
+  width: auto;
+  background: rgb(251 246 234 / 92%);
+}
+
+.map-pane-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.5rem 0.5rem 1rem;
+}
+
+.map-pane-title {
+  flex: 1;
+  font-size: 1.35rem;
+}
+
+.map-pane[data-open="false"] .map-pane-header {
+  padding: 0.35rem;
+}
+
+.map-pane-bar-action {
+  flex: 1;
+
+  .primary-action {
+    width: 100%;
+    min-height: 2.6rem;
+    color: #fff;
+    background: var(--success);
+  }
+}
+
+.map-pane-toggle {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 2.2rem;
+  margin-left: auto;
+  padding: 0 0.7rem;
+  border: 1px solid rgb(36 29 24 / 30%);
+  border-radius: 999px;
+  color: var(--ink);
+  background: rgb(255 255 255 / 55%);
+  font-size: 0.8rem;
+}
+
+.map-pane-toggle:hover:not(:disabled) {
+  color: var(--paper);
+  background: var(--accent-dark);
+}
+
+.map-pane[data-open="false"] .map-pane-toggle {
+  margin-left: 0;
+  font-weight: 700;
+}
+
+.map-pane-toggle-icon {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-top: 2px solid currentcolor;
+  border-right: 2px solid currentcolor;
+  transform: rotate(45deg);
+}
+
+.map-pane[data-open="false"] .map-pane-toggle-icon {
+  transform: rotate(-135deg);
+}
+
+.map-pane-panel {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.map-pane-panel[hidden] {
+  display: none;
+}
+
+.map-pane-body {
+  flex: 1;
+  min-height: 0;
+  padding: 0 1rem 1rem;
+  overflow: auto;
+  // B3, WCAG 2.4.11: a row scrolled into view or focused stays above the sticky order bar.
+  scroll-padding-bottom: 4.75rem;
+}
+
+.map-pane-body:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: -3px;
+}
+
+.map-pane-footer {
+  padding: 0.75rem 1rem;
+  border-top: 1px solid rgb(36 29 24 / 18%);
+
+  .primary-action {
+    width: 100%;
+    min-height: 2.9rem;
+    color: #fff;
+    background: var(--success);
+    font-size: 1.05rem;
+  }
+
+  .primary-action:hover:not(:disabled) {
+    background: #255f3c;
+  }
+}
+
+.campaign-map[data-pane-layout="sheet"] .map-pane {
+  top: auto;
+  left: 0.5rem;
+  right: 0.5rem;
+  bottom: 0.5rem;
+  width: auto;
+  max-height: 58%;
+}
+
+.campaign-map[data-pane-layout="sheet"] .map-pane[data-open="false"] {
+  left: 0.5rem;
+}
+
+.campaign-map[data-pane-layout="sheet"] .map-pane[data-open="true"] {
+  max-height: 46%;
+}
+
+.map-pane-bar-focus {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.35rem 0.6rem;
+  border-left: 4px solid var(--gold);
+  border-radius: 4px;
+  background: var(--gold-wash);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+// With a bottom sheet, the controls run along the top edge so none sits on the land:
+// zoom group, Briefing button, then the legend (mapControlObstacles mirrors this).
+.campaign-map[data-pane-layout="sheet"] .map-controls {
+  flex-direction: row;
+}
+
+.campaign-map[data-pane-layout="sheet"] .map-legend {
+  bottom: auto;
+  top: 0.75rem;
+  left: 4rem;
+}
+
+.campaign-map[data-pane-layout="sheet"]:has(.map-briefing-toggle) .map-legend {
+  left: 7rem;
+}
+
+// Pane content.
+
+.pane-section {
+  padding: 0.85rem 0;
+
+  h3 {
+    font-size: 1.05rem;
+  }
+
+  h4 {
+    margin-top: 0.75rem;
+    font-size: 0.9rem;
+  }
+}
+
+.pane-section + .pane-section {
+  border-top: 1px solid rgb(36 29 24 / 15%);
+}
+
+.pane-hint,
+.pane-meta {
+  margin-top: 0.35rem;
+  color: var(--ink-soft);
+  font-size: 0.88rem;
+}
+
+.pane-callout {
+  display: grid;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+  padding: 0.6rem 0.7rem;
+  border-left: 4px solid var(--gold);
+  border-radius: 4px;
+  background: var(--gold-wash);
+  font-size: 0.9rem;
+
+  .text-button {
+    justify-self: start;
+  }
+}
+
+.pane-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.formation-list,
+.order-list,
+.change-list,
+.progress-list {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0.6rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.army-picker {
+  margin-top: 0.75rem;
+}
+
+.army-picker-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+
+  h4 {
+    margin: 0;
+  }
+}
+
+.selection-count {
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.army-picker .formation-list {
+  margin-top: 0.4rem;
+}
+
+.formation-button {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 0.55rem;
+  align-items: center;
+  width: 100%;
+  min-height: 0;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid rgb(36 29 24 / 30%);
+  color: var(--ink);
+  background: rgb(255 255 255 / 60%);
+  text-align: left;
+
+  .formation-name,
+  .formation-meta {
+    grid-column: 2;
+  }
+}
+
+.formation-button:hover:not(:disabled) {
+  color: var(--ink);
+  background: #fff;
+}
+
+// A checkbox-like mark: armies start selected and are unselected one by one.
+.formation-check {
+  display: grid;
+  grid-row: span 2;
+  place-items: center;
+  width: 1.05rem;
+  height: 1.05rem;
+  border: 1.5px solid rgb(36 29 24 / 55%);
+  border-radius: 3px;
+  background: #fff;
+}
+
+.formation-button[aria-pressed="true"] {
+  border-color: #7a5a06;
+  background: var(--gold-wash);
+  box-shadow: 0 0 0 2px var(--gold);
+
+  .formation-check {
+    border-color: #7a5a06;
+    background: var(--gold);
+  }
+
+  .formation-check::after {
+    width: 0.3rem;
+    height: 0.55rem;
+    margin-top: -0.1rem;
+    border-right: 2px solid var(--ink);
+    border-bottom: 2px solid var(--ink);
+    content: "";
+    transform: rotate(45deg);
+  }
+}
+
+.formation-button[data-ordered="true"] {
+  border-style: dashed;
+
+  .formation-check {
+    border-style: dashed;
+    background: transparent;
+  }
+}
+
+.selection-tools {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.3rem;
+}

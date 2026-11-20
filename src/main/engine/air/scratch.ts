@@ -1,0 +1,36 @@
+import type { TurnDraft } from "../phases/draft";
+import type { AirMissionOrder, Order, TerritoryId, UnitId, UnitState } from "../types";
+
+/**
+ * The air area's turn-only data (`TurnDraft.scratch.air`), passed between its own parts and to
+ * the `combatModifiers` hook. Generals ride here too: they have no area of their own (CT-4).
+ */
+export interface AirScratch {
+  /**
+   * AG-3: aircraft and generals held out of the ground steps (3 to 8), as they stood after
+   * reveal. Only ground units march, fight, retreat and hold ground; these come back at step 9.
+   */
+  readonly aside: Readonly<Record<UnitId, UnitState>>;
+  /** U5: the ground units each general is with this turn (his army, D7), by general unit. */
+  readonly armies: Readonly<Record<UnitId, readonly UnitId[]>>;
+  /** U5: where each general that moves this turn is going. */
+  readonly generalMoves: Readonly<Record<UnitId, TerritoryId>>;
+  /** D7: bombers flying battle support, set at step 2 and read by the battle hooks at step 5. */
+  readonly support: readonly AirMissionOrder[];
+}
+
+export const emptyAirScratch: AirScratch = { armies: {}, aside: {}, generalMoves: {}, support: [] };
+
+/** The turn's air scratch, empty before step 1's part. */
+export function airScratch(draft: TurnDraft): AirScratch {
+  return draft.scratch.air ?? emptyAirScratch;
+}
+
+/** Orders of one kind that passed step 1's validation (failed ones are in `orders.rejected`). */
+export function validOrdersOf<Kind extends Order["kind"]>(draft: TurnDraft, kind: Kind): readonly Extract<Order, { kind: Kind }>[] {
+  const rejected = new Set<Order>(draft.orders.rejected.map((outcome) => outcome.order));
+  return draft.input.submissions
+    .flatMap((submission) => submission.orders)
+    .filter((order): order is Extract<Order, { kind: Kind }> => order.kind === kind && !rejected.has(order));
+}
+
