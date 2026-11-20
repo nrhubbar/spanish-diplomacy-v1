@@ -1,4 +1,4 @@
-import type { CombatRole, D20Rules, GameState, GeneralDefinition, RaisedUnitDefinition, Scenario, TerritoryId, UnitDefinition, UnitId, UnitState, UnitTypeDefinition, WeatherId, WeatherState } from "../types";
+import type { CombatRole, D20Rules, GameState, RaisedUnitDefinition, Scenario, TerritoryId, UnitDefinition, UnitId, UnitState, UnitTypeDefinition, WeatherId, WeatherState } from "../types";
 
 /**
  * The `d20-graded` dice module's lookups (D1-D8). Rule logic for the d20 lives in this folder;
@@ -41,11 +41,6 @@ export function isGeneralUnit(scenario: Scenario, raised: GameState["raised"], i
   return typeOf(scenario, raised, id).kind === "general";
 }
 
-export function rosterGeneral(scenario: Scenario, raised: GameState["raised"], id: UnitId): GeneralDefinition | undefined {
-  const generalId = definitionOf(scenario, raised, id).generalId;
-  return generalId === undefined ? undefined : scenario.generals.find((general) => general.id === generalId);
-}
-
 /**
  * M12 on the d20: type value x strength / full strength, x the demoralization factor when
  * demoralized, rounded once. A type with value 0 (trucks, generals; CT-13) counts 0; any other
@@ -71,9 +66,4 @@ export function weatherIn(scenario: Scenario, weather: WeatherState | undefined,
 export function unitRank(scenario: Scenario): (id: UnitId) => number {
   const order = new Map(scenario.units.map((unit, index) => [unit.id, index]));
   return (id) => order.get(id) ?? scenario.units.length;
-}
-
-/** Plain code-unit comparison, so ordering never depends on the locale (M26). */
-export function compareText(left: string, right: string): number {
-  return left < right ? -1 : left > right ? 1 : 0;
 }
