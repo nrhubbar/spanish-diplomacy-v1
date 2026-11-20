@@ -5,7 +5,7 @@ import { Provider } from "react-redux";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { initialGameState } from "../../main/engine/resolution";
 import { zoneOf } from "../../main/engine/weather";
-import type { AirMissionOrder, GameState, SubTerritoryId, WeatherId } from "../../main/engine/types";
+import type { AirMissionOrder, GameState, RaisedUnitDefinition, SubTerritoryId, UnitTypeId, WeatherId } from "../../main/engine/types";
 import { aircraftTag, AirLayer, placeAircraft, withoutAircraft } from "../../main/map/layers/AirLayer";
 import { BattleIconLayer } from "../../main/map/BattleIconLayer";
 import { placeOddsPlaques, DestinationOddsLayer } from "../../main/map/DestinationOddsLayer";
@@ -17,7 +17,8 @@ import { RecruitsAtChip } from "../../main/screens/pane/RecruitsAtChip";
 import { tabCount } from "../../main/screens/pane/TerritoryTabs";
 import type { PlanningSession } from "../../main/state/planning";
 import { emptyDraft } from "../../main/state/session";
-import { faction, spain, spainId, spainWithAir, territory, testStore, unit } from "../support";
+import { createAppStore } from "../../main/state/store";
+import { faction, shippedRegistry, spain, spainId, spainWithAir, territory, testStore, unit } from "../support";
 
 afterEach(cleanup);
 
@@ -107,6 +108,75 @@ describe("the air pane (U2, M11, `ux-air-a`)", () => {
     await userEvent.click(screen.getByRole("button", { name: /Breguet/u }));
     const { container: empty } = withStore(<AircraftHere aircraft={[]} scenario={scenario} session={session(start)} />);
     expect(empty).toBeEmptyDOMElement();
+  });
+});
+
+/** A unit raised in play (R6), so a test can put a type the board does not start with where it needs one. */
+function withRaised(state: GameState, id: string, factionId: string, type: string, territoryId: string): GameState {
+  const definition: RaisedUnitDefinition = { factionId: faction(factionId), fullStrength: 300, id: unit(id), name: id, type: type as UnitTypeId };
+  return {
+    ...state,
+    raised: { ...state.raised, [id]: definition },
+    units: { ...state.units, [id]: { factionId: faction(factionId), fatigue: 0, id: unit(id), morale: { demoralized: false, quietTurns: 0 }, strength: 300, territoryId: territory(territoryId) } }
+  };
+}
+
+describe("the air pane's targets and cards (U2, U3)", () => {
+  const fighter = unit("rep-ni52-fighters");
+
+  it("warns of anti-air at the target and of enemy fighters that can reach it", () => {
+    const defended = withRaised(withRaised(start, "north-flak", "north", "anti-air-battery", "castilla-y-leon"), "north-fighters", "north", "fighter-squadron", "castilla-y-leon");
+    withStore(<AirPane scenario={scenario} session={session(defended, [raid])} unitId={bomber} />);
+    const card = screen.getByText(/^Raid Burgos/u).closest(".air-target-card") as HTMLElement;
+    const castilla = scenario.index.territories.get(territory("castilla-y-leon"))!.name;
+    expect(within(card).getByText(`Anti-air in ${castilla}`).nextElementSibling).toHaveTextContent("\u22123");
+    expect(within(card).getByText("Enemy fighters in range").nextElementSibling).toHaveTextContent("may intercept");
+  });
+
+  it("gives a support mission a card with its range but no raid figures", () => {
+    const support: AirMissionOrder = { ...raid, mission: { kind: "support", territoryId: territory("castilla-la-mancha") } };
+    withStore(<AirPane scenario={scenario} session={session(start, [support])} unitId={bomber} />);
+    expect(screen.getByRole("button", { name: "Support" })).toHaveAttribute("aria-pressed", "true");
+    const card = screen.getByText(/^Support /u).closest(".air-target-card") as HTMLElement;
+    expect(within(card).getByText("Range").nextElementSibling).toHaveTextContent(/^1 of 4$/u);
+    expect(within(card).queryByText(/^Anti-air/u)).toBeNull();
+    expect(screen.queryByRole("list", { name: "Raid chances before interception" })).toBeNull();
+  });
+
+  it("plans the target picked from the list, and shows the planner's feedback", async () => {
+    const planning = session(start);
+    const store = createAppStore({ preloadedState: { game: { session: planning } }, registry: shippedRegistry() });
+    render(<Provider store={store}><AirPane scenario={scenario} session={{ ...planning, draft: { ...planning.draft, feedback: "The target is out of range." } }} unitId={bomber} /></Provider>);
+    expect(screen.getByRole("status")).toHaveTextContent("The target is out of range.");
+    await userEvent.click(screen.getByRole("button", { name: "Raid" }));
+    const picker = screen.getByRole("combobox");
+    const burgos = within(picker).getAllByRole("option").find((option) => option.textContent.startsWith("Burgos"))!;
+    await userEvent.selectOptions(picker, burgos);
+    const after = store.getState().game.session;
+    expect(after.phase === "planning" ? after.draft.airOrders : undefined).toEqual([raid]);
+  });
+
+  it("says when nothing is in range: an aircraft without an airfield it holds cannot fly", async () => {
+    const madridSubs = new Set((scenario.index.subTerritoriesByTerritory.get(territory("madrid")) ?? []).map((entry) => entry.id));
+    const unpaved: GameState = {
+      ...start,
+      subTerritories: Object.fromEntries(Object.entries(start.subTerritories).map(([id, site]) => [id, madridSubs.has(id as SubTerritoryId) ? { ...site, buildings: [] } : site]))
+    };
+    withStore(<AirPane scenario={scenario} session={session(unpaved)} unitId={bomber} />);
+    await userEvent.click(screen.getByRole("button", { name: "Support" }));
+    expect(screen.getByText("Nothing in range for this mission.")).toBeVisible();
+    expect(screen.queryByRole("combobox")).toBeNull();
+  });
+
+  it("lists the other aircraft at the base with their planned missions, and none for a lone flight", () => {
+    withStore(<AirPane scenario={scenario} session={session(start, [raid])} unitId={fighter} />);
+    const madrid = scenario.index.territories.get(territory("madrid"))!.name;
+    const list = screen.getByRole("heading", { name: `Other aircraft at ${madrid}` }).nextElementSibling as HTMLElement;
+    expect(list).toHaveTextContent("Breguet XIX Light Bombers \u00b7 Raid");
+    cleanup();
+    // The Catalan recon flight is alone at its field.
+    withStore(<AirPane scenario={scenario} session={session(start)} unitId={unit("rep-catalan-recon")} />);
+    expect(screen.queryByRole("heading", { name: /^Other aircraft/u })).toBeNull();
   });
 });
 

@@ -3,13 +3,14 @@ import userEvent from "@testing-library/user-event";
 import { Provider } from "react-redux";
 import { afterEach, describe, expect, it } from "vitest";
 import { initialGameState } from "../../main/engine/resolution";
-import type { GameState, Scenario, UnitState } from "../../main/engine/types";
+import type { GameState, Scenario, UnitState, UnitTypeId } from "../../main/engine/types";
 import { RegistryContext } from "../../main/hooks";
+import { createAppStore } from "../../main/state/store";
 import { ArmyPicker } from "../../main/screens/ArmyPicker";
 import { BattleBasics } from "../../main/screens/BattleBasics";
 import type { PlanningSession } from "../../main/state/planning";
 import type { Draft } from "../../main/state/session";
-import { faction, move, spain, spainD20, spainId, spainM2, territory, testRegistry, testStore } from "../support";
+import { faction, move, shippedRegistry, spain, spainD20, spainId, spainM2, spainWithAir, territory, testRegistry, testStore, unit } from "../support";
 
 afterEach(cleanup);
 
@@ -191,3 +192,62 @@ describe("How battles work (B2)", () => {
   });
 });
 
+
+describe("a general's pill and Sack order in the army list (U5, `ux-pane-a-units`)", () => {
+  const scenario = spainWithAir();
+  const start = initialGameState(scenario);
+  const madrid = Object.values(start.units).filter((entry) => entry.factionId === faction("republic") && entry.territoryId === territory("madrid") && scenario.index.units.get(entry.id)?.type !== ("fighter-squadron" as UnitTypeId) && scenario.index.units.get(entry.id)?.type !== ("bomber-squadron" as UnitTypeId));
+  const miaja = unit("rep-general-miaja");
+  const sackMiaja = { factionId: faction("republic"), kind: "sack" as const, unitId: miaja };
+
+  /** The Sack order is validated against the shipped Spain, which has its generals. */
+  function renderWithGenerals(target: Scenario, session: PlanningSession) {
+    const store = createAppStore({ preloadedState: { game: { session } }, registry: shippedRegistry() });
+    render(
+      <Provider store={store}>
+        <RegistryContext value={shippedRegistry()}>
+          <ArmyPicker own={madrid} scenario={target} session={session} />
+        </RegistryContext>
+      </Provider>
+    );
+    return store;
+  }
+
+  it("names the general and his trait, and plans a free Sack that replaces his move", async () => {
+    const session = planning(start, "republic", selecting("madrid", [], { orders: [move("republic", "rep-general-miaja", "madrid", "castilla-la-mancha")] }));
+    const store = renderWithGenerals(scenario, session);
+    const pill = screen.getByTitle("Jos\u00e9 Miaja: Tenacious");
+    expect(pill).toHaveTextContent("Jos\u00e9 Miaja \u00b7 Tenacious");
+    // Only the general has the pill.
+    expect(document.querySelectorAll(".general-pill")).toHaveLength(1);
+    const sack = screen.getByRole("button", { name: "Sack" });
+    expect(sack).toHaveAttribute("aria-pressed", "false");
+    expect(screen.queryByText(/Relieved this turn/u)).toBeNull();
+    await userEvent.click(sack);
+    const after = store.getState().game.session;
+    expect(after.phase === "planning" ? after.draft.airOrders : undefined).toEqual([sackMiaja]);
+    // U5: Sack replaces the general's move.
+    expect(after.phase === "planning" ? after.draft.orders : undefined).toEqual([]);
+  });
+
+  it("shows a planned sacking: Keep him, and when the next general arrives; Keep him withdraws it", async () => {
+    const session = planning(start, "republic", selecting("madrid", [], { airOrders: [sackMiaja] }));
+    const store = renderWithGenerals(scenario, session);
+    const keep = screen.getByRole("button", { name: "Keep him" });
+    expect(keep).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByText("Relieved this turn; the next general arrives the turn after.")).toBeVisible();
+    await userEvent.click(keep);
+    const after = store.getState().game.session;
+    expect(after.phase === "planning" ? after.draft.airOrders : undefined).toEqual([]);
+  });
+
+  it("offers no Sack where the scenario's general type cannot take that order", () => {
+    const noSack: Scenario = {
+      ...scenario,
+      index: { ...scenario.index, unitTypes: new Map([...scenario.index.unitTypes].map(([id, type]) => [id, type.kind === "general" ? { ...type, orders: type.orders.filter((order) => order !== "sack") } : type])) }
+    };
+    renderWithGenerals(noSack, planning(start, "republic", selecting("madrid", [])));
+    expect(screen.getByTitle("Jos\u00e9 Miaja: Tenacious")).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Sack" })).toBeNull();
+  });
+});
