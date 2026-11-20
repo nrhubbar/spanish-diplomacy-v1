@@ -174,6 +174,19 @@ export function raisedDefinition(scenario: Scenario, id: UnitId): RaisedUnitDefi
   };
 }
 
+/**
+ * R6: a recruited unit's place in "scenario order" tie-breaks (M26): after every scenario unit,
+ * by serial, then type, then faction, in scenario order. Undefined for other ids.
+ */
+export function raisedOrder(scenario: Scenario, id: UnitId): number | undefined {
+  const parsed = parseRaisedId(id);
+  if (parsed === undefined) return undefined;
+  const typeIndex = scenario.unitTypes.findIndex((type) => type.id === parsed.typeId);
+  const factionIndex = scenario.factions.findIndex((entry) => entry.id === parsed.factionId);
+  if (typeIndex < 0 || factionIndex < 0) return undefined;
+  return scenario.units.length + ((parsed.serial * scenario.unitTypes.length + typeIndex) * scenario.factions.length + factionIndex);
+}
+
 // R5: Replenish. ----------------------------------------------------------------------------
 
 /** R5: what a Replenish order would do for a unit now. */
