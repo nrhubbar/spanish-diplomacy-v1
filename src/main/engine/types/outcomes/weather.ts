@@ -12,6 +12,8 @@ export interface WeatherRolledOutcome {
 
 /** T4, D7: a unit that moved in Severe cold lost men to frostbite. */
 export interface FrostbiteOutcome {
+  /** D6: the unit was left below the d20's `breakUpShare` of its full strength and broke up. */
+  readonly destroyed?: true;
   readonly factionId: FactionId;
   readonly kind: "frostbite";
   readonly men: number;

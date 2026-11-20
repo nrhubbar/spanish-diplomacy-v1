@@ -21,8 +21,8 @@ interface Meeting {
  * on the road; the greater attack attacks, and equal attacks bounce both. A side that cannot
  * attack (D5, D27.1: artillery alone, generals, units with no attack) never attacks: the other
  * side attacks if it can, else both bounce. Meetings take no works,
- * faction modifiers, barricades or hooks (CT-44), only the armies' own modifiers (generals, unit
- * bonuses, fatigue), with the attackers' destination's weather. A grade with ground "all" lets
+ * faction modifiers, barricades or other hooks (CT-44), only the armies' own modifiers (generals,
+ * unit bonuses, fatigue) and the weather modifier of the attackers' destination (D27.5). A grade with ground "all" lets
  * the attacker continue; a grade that cost the defender nothing lets the defender continue;
  * anything else (stalemates and partial ground, Q-D20-7) bounces both.
  */

@@ -1,3 +1,4 @@
+import { removeArmies } from "../board";
 import type { RuleHooks } from "../hooks";
 import type { RuleModule } from "../modules";
 import type { Phase } from "../phases/draft";
@@ -24,12 +25,14 @@ const recordWeather: Phase = (draft) => {
 /**
  * T4, D7: a unit that moved this turn from or into a territory whose weather carries
  * `frostbite` (Severe cold) loses that share of its men, rounded to the nearest man, at step 9.
- * Units already gone (destroyed, surrendered) lose nothing more.
+ * Units already gone (destroyed, surrendered) lose nothing more. Under the d20, a unit left below
+ * `breakUpShare` of its full strength breaks up (D6), as after a battle's losses.
  */
 const takeFrostbite: Phase = (draft) => {
   const { scenario, start } = draft.input;
   const share = (territoryId: TerritoryId): number => weatherEffectsIn(scenario, start, territoryId, "frostbite").reduce((most, effect) => Math.max(most, effect.share), 0);
   const armies: Record<UnitId, GameState["units"][UnitId]> = { ...draft.armies };
+  const brokenUp: UnitId[] = [];
   const events: FrostbiteOutcome[] = [];
   for (const order of draft.orders.valid) {
     const unit = armies[order.unitId];
@@ -38,10 +41,14 @@ const takeFrostbite: Phase = (draft) => {
     const worst = Math.max(share(from), share(order.to));
     const men = Math.round(unit.strength * worst);
     if (men <= 0) continue;
-    armies[order.unitId] = { ...unit, strength: Math.max(0, unit.strength - men) };
-    events.push({ factionId: unit.factionId, kind: "frostbite", men, territoryId: unit.territoryId, unitId: unit.id });
+    const left = Math.max(0, unit.strength - men);
+    const fullStrength = (scenario.index.units.get(unit.id) ?? start.raised[unit.id])?.fullStrength ?? unit.strength;
+    const breaksUp = left <= 0 || (scenario.d20 !== undefined && left < scenario.d20.breakUpShare * fullStrength);
+    if (breaksUp) brokenUp.push(unit.id);
+    else armies[order.unitId] = { ...unit, strength: left };
+    events.push({ factionId: unit.factionId, kind: "frostbite", men, territoryId: unit.territoryId, unitId: unit.id, ...(breaksUp ? { destroyed: true as const } : {}) });
   }
-  return events.length === 0 ? draft : { ...draft, armies, events: [...draft.events, ...events] };
+  return events.length === 0 ? draft : { ...draft, armies: removeArmies(armies, brokenUp), events: [...draft.events, ...events] };
 };
 
 /** D7: the battle territory's weather as a named modifier on the attacker's roll; none when it is 0. */

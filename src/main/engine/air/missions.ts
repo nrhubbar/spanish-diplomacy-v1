@@ -116,10 +116,12 @@ function hitBuilding(
 
 /**
  * Step 2 (U2-U4, D7): every valid air mission flies unless its aircraft is grounded (the
- * `grounded` hook). Recon reveals the target territory until `reconTurns` turns on. Fighters
- * intercept raids over their territory. Each raid rolls a d20 from the `raid` stream, worsened
- * by the best anti-air in the target territory and by `interceptRoll` per intercepting fighter,
- * and reads the raid table. Bombers on support wait in the scratch for the battle hooks.
+ * `grounded` hook). Fighters intercept enemy missions over their territory (D27.3). Each raid
+ * rolls a d20 from the `raid` stream, worsened by the best anti-air in the target territory and
+ * by `interceptRoll` per intercepting fighter, and reads the raid table. An intercepted support
+ * or recon flight then rolls on the same stream and is shot down on "air eliminated". Recon
+ * that gets through reveals the target territory until `reconTurns` turns on; bombers on
+ * support that get through wait in the scratch for the battle hooks.
  */
 export const flyAirMissions: Phase = (draft) => {
   const { scenario, start, streams } = draft.input;
@@ -137,14 +139,6 @@ export const flyAirMissions: Phase = (draft) => {
     } else {
       flying.push(order);
     }
-  }
-
-  const reveals: ReconReveal[] = [];
-  for (const order of flying) {
-    if (order.mission.kind !== "recon") continue;
-    const untilTurn = start.turnNumber + air.reconTurns;
-    reveals.push({ territoryId: order.mission.territoryId, untilTurn, viewerFactionId: order.factionId });
-    events.push({ kind: "recon", order, territoryId: order.mission.territoryId, untilTurn });
   }
 
   const interceptors = flying.filter((order) => order.mission.kind === "intercept");
@@ -185,10 +179,41 @@ export const flyAirMissions: Phase = (draft) => {
       interceptions.set(key, entry);
     }
   }
+  // D27.3: enemy fighters intercept support and recon flights over their territory too. Each
+  // intercepted flight rolls a d20 on the raid stream after the raids, worsened by `interceptRoll`
+  // per fighter, and is shot down on the raid table's "air eliminated"; otherwise it flies.
+  for (const order of flying) {
+    if (order.mission.kind !== "support" && order.mission.kind !== "recon") continue;
+    const territoryId = order.mission.territoryId;
+    const against = interceptors.filter((other) => other.factionId !== order.factionId && missionTerritory(scenario, other.mission) === territoryId);
+    if (against.length === 0) continue;
+    const roll = pick(streams("raid", raidIndex), 20) + against.length * air.interceptRoll;
+    raidIndex += 1;
+    const shotDown = raidResult(scenario, roll) === "air-eliminated";
+    if (shotDown) lost.add(order.unitId);
+    // CT-46: a recon flight stays its flier's own unless it is shot down, which every faction sees.
+    if (order.mission.kind === "recon" && !shotDown) continue;
+    for (const fighter of against) {
+      const key = `${territoryId}|${fighter.factionId}`;
+      const entry = interceptions.get(key) ?? { factionId: fighter.factionId, interceptorIds: [], lostUnitIds: [], raiderIds: [], territoryId };
+      if (!entry.interceptorIds.includes(fighter.unitId)) entry.interceptorIds.push(fighter.unitId);
+      if (!entry.raiderIds.includes(order.unitId)) entry.raiderIds.push(order.unitId);
+      if (shotDown && !entry.lostUnitIds.includes(order.unitId)) entry.lostUnitIds.push(order.unitId);
+      interceptions.set(key, entry);
+    }
+  }
   for (const entry of interceptions.values()) events.push({ kind: "interception", ...entry });
 
+  const reveals: ReconReveal[] = [];
+  for (const order of flying) {
+    if (order.mission.kind !== "recon" || lost.has(order.unitId)) continue;
+    const untilTurn = start.turnNumber + air.reconTurns;
+    reveals.push({ territoryId: order.mission.territoryId, untilTurn, viewerFactionId: order.factionId });
+    events.push({ kind: "recon", order, territoryId: order.mission.territoryId, untilTurn });
+  }
+
   const aside = Object.fromEntries(Object.entries(scratch.aside).filter(([id]) => !lost.has(id as UnitId)));
-  const support = flying.filter((order) => order.mission.kind === "support");
+  const support = flying.filter((order) => order.mission.kind === "support" && !lost.has(order.unitId));
   return {
     ...draft,
     events: [...draft.events, ...(events as SystemOutcome[])],

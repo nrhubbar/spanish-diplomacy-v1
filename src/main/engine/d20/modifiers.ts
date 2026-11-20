@@ -20,7 +20,7 @@ export interface GradedContext {
   readonly diggingIn: boolean;
   /**
    * The battle territory. Absent for a head-on meeting on the road (M20), which takes only the
-   * armies' own modifiers: generals, unit bonuses and fatigue.
+   * armies' own modifiers (generals, unit bonuses and fatigue) and the weather (D27.5).
    */
   readonly territoryId?: TerritoryId;
   /** The turn's scratch while a turn resolves, passed on to the hooks (bomber support, m3r1-air-generals). */
@@ -33,7 +33,8 @@ export interface GradedContext {
  * D3-D7, C6: every roll modifier of one d20 battle, signed from the attacker's view.
  * - Situational (not on the road): works x3 (M22, D3), faction modifiers such as Popular
  *   resistance from the d20 block (M24, D3), barricades (D4), and the selected modules'
- *   `combatModifiers` hooks: weather, amphibious, air support, buildings (D7).
+ *   `combatModifiers` hooks: weather, amphibious, air support, buildings (D7). A meeting on the
+ *   road takes the hooks' weather only, from its attackers' destination (D27.5).
  * - The armies' own, always: the best general per side and his trait (D4, U6, declog D5),
  *   unit-type bonuses such as artillery and tanks (D5), and fatigue (C6, declog D6).
  */
@@ -75,7 +76,9 @@ export function gradedModifiers(
     ...fatigueModifier(rules, attacker),
     ...fatigueModifier(rules, defender)
   ];
-  const hooked = territoryId === undefined ? [] : hookedCombatModifiers({
+  // D27.5: a meeting on the road takes only the weather of its attackers' destination from the hooks.
+  const hookTerritoryId = territoryId ?? context.weatherTerritoryId;
+  const hooks = hookTerritoryId === undefined ? [] : hookedCombatModifiers({
     attackerFactionId: context.attackerFactionId,
     attackerUnitIds: attacker.units.map((unit) => unit.id),
     defenderFactionIds: context.defenderFactionIds,
@@ -83,8 +86,9 @@ export function gradedModifiers(
     ...(context.scratch === undefined ? {} : { scratch: context.scratch }),
     scenario,
     state,
-    territoryId
+    territoryId: hookTerritoryId
   });
+  const hooked = territoryId === undefined ? hooks.filter((modifier) => modifier.kind === "weather") : hooks;
   return [...situational, ...own, ...hooked];
 }
 
