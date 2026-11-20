@@ -1,6 +1,7 @@
 import { compareIds } from "../../engine/board";
 import { armyValue } from "../../engine/combat";
 import { isContested, isPartitioned } from "../../engine/partition/holders";
+import { canWithdraw } from "../../engine/partition/orders";
 import { withdrawRoutes } from "../../engine/partition/paths";
 import type { FactionId, TerritoryId, UnitId, UnitState, WithdrawOrder } from "../../engine/types";
 import type { OrderPlanner, PlanningContext } from "./planner";
@@ -28,7 +29,7 @@ export const planWithdrawals: OrderPlanner<WithdrawOrder> = (context) => {
   const units = Object.values(state.units);
   return scenario.territories.flatMap((territory): WithdrawOrder[] => {
     if (!isContested(scenario, state, territory.id)) return [];
-    const own = units.filter((unit) => unit.territoryId === territory.id && unit.factionId === factionId && !ordered.has(unit.id));
+    const own = units.filter((unit) => unit.territoryId === territory.id && unit.factionId === factionId && !ordered.has(unit.id) && canWithdraw(scenario, state, unit.id));
     const enemies = units.filter((unit) => unit.territoryId === territory.id && unit.factionId !== factionId);
     if (own.length === 0 || enemies.length === 0) return [];
     const to = bestRoute(context, territory.id);

@@ -26,12 +26,20 @@ export function inContestedGround(scenario: Scenario, state: GameState, unitId: 
   return unit !== undefined && isPartitioned(scenario) && isContested(scenario, state, unit.territoryId);
 }
 
+/** W5: whether the unit's type takes Withdraw orders (aircraft do not); a type without a list allows it. */
+export function canWithdraw(scenario: Scenario, state: GameState, unitId: UnitId): boolean {
+  const definition = scenario.index.units.get(unitId) ?? state.raised[unitId];
+  const type = definition === undefined ? undefined : scenario.index.unitTypes.get(definition.type);
+  return type === undefined || type.orders.includes("withdraw");
+}
+
 /** C1, P6: a Withdraw order, against the start-of-turn state. */
 export function validateWithdrawOrder(scenario: Scenario, state: GameState, order: WithdrawOrder): ValidationResult {
   const unit = state.units[order.unitId];
   if (unit === undefined) return { ok: false, reason: "Unknown unit." };
   if (unit.factionId !== order.factionId) return { ok: false, reason: "Selected unit belongs to another player." };
   if (unit.territoryId !== order.from) return { ok: false, reason: "Selected unit is no longer in that territory." };
+  if (!canWithdraw(scenario, state, order.unitId)) return { ok: false, reason: "This unit cannot withdraw." };
   if (!isContested(scenario, state, order.from)) return { ok: false, reason: contestedReasons.withdrawNotContested };
   if (!isNeighbor(scenario, order.from, order.to) || !holdsWhole(scenario, state, order.to, order.factionId)) {
     return { ok: false, reason: contestedReasons.withdrawTarget };
