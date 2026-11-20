@@ -124,6 +124,8 @@ describe("Recruit orders through the turn (R4, R6, R7)", () => {
     ]);
     expect(ofKind(result.outcomes, "training-started")).toHaveLength(2);
     expect(ofKind(result.outcomes, "training-refunded").map((outcome) => outcome.reason)).toEqual([expect.stringContaining("Not enough") as string]);
+    // m1: nothing was taken, so the refusal refunds nothing.
+    expect(ofKind(result.outcomes, "training-refunded").map((outcome) => outcome.refund)).toEqual([{}]);
     const crowded = play(funded(initialGameState(scenario), { funds: 99, manpower: 99 } as Resources), [1, 2, 3].map(() => recruit("north", "castilla-y-leon", "militia-column")));
     expect(ofKind(crowded.outcomes, "training-refunded").map((outcome) => outcome.reason)).toEqual([expect.stringContaining("At most 2") as string]);
   });
@@ -149,6 +151,30 @@ describe("Recruit orders through the turn (R4, R6, R7)", () => {
     const barcelona = sub("barcelona");
     const fallen: GameState = { ...contested, subTerritories: { ...contested.subTerritories, [barcelona]: { ...base.subTerritories[barcelona]!, holder: north } } };
     expect(ofKind(play(fallen, []).outcomes, "training-refunded")).toHaveLength(2);
+  });
+
+  it("D28.2: a fallen capital refunds training not yet started and keeps the payment of training under way", () => {
+    const base = initialGameState(scenario);
+    const barcelona = sub("barcelona");
+    const paid = { funds: 6, manpower: 1 } as Resources;
+    const item = (serial: number, turnsLeft: number) => ({
+      factionId: republic, paid, paused: false, territoryId: territory("catalunya"), turnsLeft, typeId: type("infantry-regiment"), unitId: raisedUnitId(republic, type("infantry-regiment"), serial)
+    });
+    const fallen: GameState = {
+      ...base,
+      units: Object.fromEntries(Object.entries(base.units).filter(([, entry]) => entry.territoryId !== "catalunya")),
+      subTerritories: { ...base.subTerritories, [barcelona]: { ...base.subTerritories[barcelona]!, holder: north } },
+      // Serial 1 was paid this turn's reveal (2 turns left of 2); serial 2 has trained a turn.
+      training: [item(1, 2), item(2, 1)],
+      treasuries: { ...base.treasuries, [republic]: { funds: 0, manpower: 0 } as Resources }
+    };
+    const result = play(fallen, []);
+    const refunds = ofKind(result.outcomes, "training-refunded");
+    expect(refunds.map((outcome) => outcome.refund)).toEqual([paid, {}]);
+    expect(refunds[0]!.reason).toMatch(/before training began/u);
+    expect(result.finalState.training).toEqual([]);
+    const income = ofKind(result.outcomes, "income").find((outcome) => outcome.factionId === republic)!.paid;
+    expect(result.finalState.treasuries[republic]).toEqual(addResources(paid, income));
   });
 });
 

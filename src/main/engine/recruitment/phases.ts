@@ -43,7 +43,8 @@ function validOrders(draft: TurnDraft): readonly (RecruitOrder | ReplenishOrder)
 /**
  * Section 2 step 1 (R2, R5, D7): pay for Recruit and Replenish orders, in submission order, from
  * what the economy's builds left. A territory takes at most its D7 number of Recruit orders; an
- * order past the limit, or one the treasury cannot cover, is refunded (nothing is taken). A paid
+ * order past the limit, or one the treasury cannot cover, fails with an empty refund (nothing
+ * was taken). A paid
  * Recruit starts training with its unit's id; a paid Replenish waits for step 9.
  */
 export const payForRecruits: Phase = (draft) => {
@@ -65,7 +66,8 @@ export const payForRecruits: Phase = (draft) => {
       const slotKey = `${order.factionId}|${order.territoryId}`;
       const count = used.get(slotKey) ?? 0;
       const refund = (reason: string): void => {
-        events.push({ factionId: order.factionId, kind: "training-refunded", reason, refund: recruit.cost, territoryId: order.territoryId, typeId: order.unitTypeId });
+        // RR-5, m1: nothing was taken, so nothing comes back (like `build-refunded` at step 1).
+        events.push({ factionId: order.factionId, kind: "training-refunded", reason, refund: {}, territoryId: order.territoryId, typeId: order.unitTypeId });
       };
       if (count >= recruitSlots(scenario, start, order.territoryId)) {
         refund(`At most ${String(recruitSlots(scenario, start, order.territoryId))} new units a turn can be recruited there.`);
@@ -86,7 +88,7 @@ export const payForRecruits: Phase = (draft) => {
       const quote = unit === undefined ? undefined : replenishQuote(scenario, start, unit);
       if (unit === undefined || quote === undefined) continue;
       if (!canAfford(balance, quote.cost)) {
-        events.push({ kind: "replenish-cancelled", order, reason: notEnough, refund: quote.cost });
+        events.push({ kind: "replenish-cancelled", order, reason: notEnough, refund: {} });
         continue;
       }
       treasuries = adjustTreasury(treasuries, order.factionId, subtractResources({}, quote.cost));
@@ -158,8 +160,9 @@ function trainingLost(draft: TurnDraft, state: GameState, item: TrainingItem): b
 
 /**
  * Section 2 step 10 (R4, R7, C8): each unit in training advances one turn. In contested ground,
- * types that train on there (militia) advance and the rest pause. Training whose capital has
- * fallen is lost with its payment, like a build in progress ($5). A unit whose training runs
+ * types that train on there (militia) advance and the rest pause. When the capital has fallen,
+ * training not yet started (no turn taken off yet, such as a Recruit paid this turn) is
+ * refunded, and training under way is lost with its payment, like a build queue ($5, D28.2). A unit whose training runs
  * out appears in its territory at full establishment, healthy and rested, at the end of this
  * turn; it can first move next turn. Its definition joins `raised` (R6).
  */
@@ -171,9 +174,15 @@ export const advanceTraining: Phase = (draft) => {
   const raised: Record<UnitId, RaisedUnitDefinition> = { ...draft.systems.raised };
   const training: TrainingItem[] = [];
   const events: RecruitmentTurnOutcome[] = [];
+  let treasuries = draft.systems.treasuries;
   for (const item of draft.systems.training) {
     if (trainingLost(draft, state, item)) {
-      events.push({ factionId: item.factionId, kind: "training-refunded", reason: "The capital fell while the unit was training; its payment is lost.", refund: {}, territoryId: item.territoryId, typeId: item.typeId });
+      // D28.2 (RR-8): like a build queue ($5), training not yet started is refunded; training under way is lost with its payment.
+      const started = item.turnsLeft < (scenario.index.unitTypes.get(item.typeId)?.recruit?.trainingTurns ?? item.turnsLeft);
+      if (!started) treasuries = adjustTreasury(treasuries, item.factionId, item.paid);
+      events.push(started
+        ? { factionId: item.factionId, kind: "training-refunded", reason: "The capital fell while the unit was training; its payment is lost.", refund: {}, territoryId: item.territoryId, typeId: item.typeId }
+        : { factionId: item.factionId, kind: "training-refunded", reason: "The capital fell before training began.", refund: item.paid, territoryId: item.territoryId, typeId: item.typeId });
       continue;
     }
     if (isContested(scenario, state, item.territoryId) && !trainsInContested(draft, item)) {
@@ -199,5 +208,5 @@ export const advanceTraining: Phase = (draft) => {
     };
     events.push({ factionId: item.factionId, kind: "training-completed", territoryId: item.territoryId, typeId: item.typeId, unitId: item.unitId });
   }
-  return { ...draft, armies, events: [...draft.events, ...events], systems: { ...draft.systems, raised, training } };
+  return { ...draft, armies, events: [...draft.events, ...events], systems: { ...draft.systems, raised, training, treasuries } };
 };

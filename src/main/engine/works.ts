@@ -1,7 +1,18 @@
 import type { Armies } from "./board";
 import { hookedCanDigIn } from "./hooks";
 import { standingOrder } from "./orders";
+import type { TurnDraft } from "./phases/draft";
 import type { FactionId, Fortification, GameState, Scenario, TerritoryId, UnitId } from "./types";
+
+/**
+ * The units that do not entrench this turn: those with a valid move order, and those whose
+ * Replenish order was paid at reveal (R5, Q-RECR-5: a replenishing army holds without
+ * entrenching). Both dice modules pass this to `digIn`.
+ */
+export function notEntrenching(draft: TurnDraft): ReadonlySet<UnitId> {
+  const replenishing = draft.scratch.recruitment?.replenishing ?? [];
+  return new Set([...draft.orders.origins.keys(), ...replenishing.map((entry) => entry.order.unitId)]);
+}
 
 /**
  * M22 (C7), at the end of the turn. A faction holds a territory when it controls it and has an
@@ -11,7 +22,8 @@ import type { FactionId, Fortification, GameState, Scenario, TerritoryId, UnitId
  * level. Works are removed when their faction no longer holds the territory.
  *
  * An army entrenched when it was there and healthy at the start of the turn, had no valid move
- * order (`moved` lists the armies that had one), and is still there at the end (M23, O3). The
+ * or paid Replenish order (`moved` lists the armies that had one, `notEntrenching`), and is
+ * still there at the end (M23, O3, Q-RECR-5). The
  * selected modules' `canDigIn` hooks may stop the works growing (T4: Snow).
  */
 export function digIn(
