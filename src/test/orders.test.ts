@@ -63,9 +63,10 @@ describe("outcomes of the Milestone 3 systems", () => {
     }
   });
 
-  it("keeps d20 battles out of the d6 report until the d20 module lands", () => {
-    const d20 = { attacker: { armies: [], value: 0 }, defender: { armies: [], value: 0 }, dice: "d20", kind: "battle", site: { kind: "assault", occupation: { kind: "held" }, territoryId: territory("harbor") } } as unknown as TurnOutcome;
+  it("tells d20 battles apart from d6 ones, and heads them with their grade (D8)", () => {
+    const d20 = { attacker: { armies: [], value: 0 }, defender: { armies: [], value: 0 }, dice: "d20", grade: "stalemate", kind: "battle", site: { kind: "assault", occupation: { kind: "held" }, territoryId: territory("harbor") } } as unknown as TurnOutcome;
     expect(isD6Battle(d20)).toBe(false);
-    expect(describeOutcome(tiny(), d20)).toBe("Battle for Harbor.");
+    // tiny-front has no grade catalogue, so the grade id stands in for its name.
+    expect(describeOutcome(tiny(), d20)).toBe("Battle for Harbor: stalemate.");
   });
 });

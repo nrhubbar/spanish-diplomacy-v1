@@ -25,6 +25,8 @@ export interface ArmyFigures {
   readonly attack: number;
   readonly defence: number;
   readonly demoralized: boolean;
+  /** C6: the fatigue track, 0 to 3; shown from 1 (X7). */
+  readonly fatigue: number;
   /** Dug-in level of the territory's works when they belong to this army's faction. */
   readonly dugIn?: number;
   readonly fullAttack: number;
@@ -46,6 +48,7 @@ export function armyFigures(scenario: Scenario, state: GameState, unit: UnitStat
     attack,
     defence,
     demoralized: unit.morale.demoralized,
+    fatigue: unit.fatigue,
     ...(dugIn === undefined ? {} : { dugIn }),
     fullAttack: type.attack,
     fullDefence: type.defence,
@@ -70,6 +73,11 @@ export function strengthShare(figures: Pick<ArmyFigures, "fullStrength" | "stren
   return Math.min(1, Math.max(0, figures.strength / figures.fullStrength));
 }
 
+/** C6, X7: "Fatigue 2". */
+export function fatigueLabel(fatigue: number): string {
+  return `Fatigue ${String(fatigue)}`;
+}
+
 export function dugInLabel(level: number): string {
   return `Dug in +${String(level)}`;
 }
@@ -81,6 +89,7 @@ export function figuresDescription(figures: ArmyFigures): string {
     `attack ${String(figures.attack)}, defence ${String(figures.defence)}${full}`,
     `${String(figures.strength)} of ${String(figures.fullStrength)} men`,
     ...(figures.demoralized ? ["demoralized, cannot attack"] : []),
+    ...(figures.fatigue > 0 ? [fatigueLabel(figures.fatigue).toLowerCase()] : []),
     ...(figures.dugIn === undefined ? [] : [dugInLabel(figures.dugIn).toLowerCase()])
   ].join(", ");
 }
@@ -140,6 +149,8 @@ export function groupFigures(scenario: Scenario, state: GameState, units: readon
     demoralized: demoralizedCount > 0,
     demoralizedCount,
     ...(dugIn === undefined ? {} : { dugIn }),
+    // C6: a group shows its most tired army's fatigue.
+    fatigue: Math.max(0, ...each.map((figures) => figures.fatigue)),
     fullAttack,
     fullDefence,
     fullStrength: sum((figures) => figures.fullStrength),

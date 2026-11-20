@@ -1,5 +1,6 @@
 import { armyValue, isSuccessful } from "../engine/combat";
-import { type D6BattleOutcome, battleResults, type BattleSide, type FactionId, type GameState, isD6Battle, type Scenario, type TerritoryId, type TurnOutcome } from "../engine/types";
+import { type BattleOutcome, battleResults, type BattleSide, type FactionId, type GameState, type Scenario, type TerritoryId, type TurnOutcome } from "../engine/types";
+import { isBattle } from "./grades";
 
 /**
  * Turn-report grouping and measures for battles (C14). Pure: every number comes from the
@@ -12,7 +13,7 @@ import { type D6BattleOutcome, battleResults, type BattleSide, type FactionId, t
  */
 export type BattleKind = "assault" | "entry" | "meeting" | "standing";
 
-export function battleKind(battle: D6BattleOutcome): BattleKind {
+export function battleKind(battle: BattleOutcome): BattleKind {
   const { site } = battle;
   if (site.kind !== "assault") return site.kind;
   return battle.attacker.armies.every((army) => army.from === site.territoryId) ? "standing" : "assault";
@@ -27,11 +28,11 @@ export interface BattleGroup {
 
 /** A battle and its position among the turn's outcomes, which seeds its flavor line. */
 export interface IndexedBattle {
-  readonly battle: D6BattleOutcome;
+  readonly battle: BattleOutcome;
   readonly index: number;
 }
 
-export function siteKey(battle: D6BattleOutcome): string {
+export function siteKey(battle: BattleOutcome): string {
   const { site } = battle;
   return site.kind === "meeting" ? `meeting:${[...site.between].sort().join(":")}` : `${site.kind}:${site.territoryId}`;
 }
@@ -44,7 +45,7 @@ export function siteKey(battle: D6BattleOutcome): string {
 export function groupBattles(outcomes: readonly TurnOutcome[]): readonly BattleGroup[] {
   const groups = new Map<string, IndexedBattle[]>();
   outcomes.forEach((outcome, index) => {
-    if (!isD6Battle(outcome)) return;
+    if (!isBattle(outcome)) return;
     const key = siteKey(outcome);
     groups.set(key, [...(groups.get(key) ?? []), { battle: outcome, index }]);
   });
@@ -73,7 +74,7 @@ export function decisiveBattle(group: BattleGroup): IndexedBattle {
   if (first === undefined) throw new Error("Invariant violated: a battle group needs a battle.");
   const site = first.battle.site;
   const occupier = site.kind !== "meeting" && site.occupation.kind === "taken" ? site.occupation.factionId : undefined;
-  const rank = (entry: IndexedBattle) => battleResults.indexOf(entry.battle.result);
+  const rank = (entry: IndexedBattle) => attackRank(entry.battle);
   return group.battles.find((entry) => entry.battle.attackerFactionId === occupier)
     ?? group.battles.reduce((best, entry) => (rank(entry) > rank(best) ? entry : best), first);
 }
@@ -89,12 +90,12 @@ export function changedHands(group: BattleGroup): boolean {
   return site !== undefined && site.kind !== "meeting" && site.occupation.kind !== "held";
 }
 
-export function menLost(battles: readonly D6BattleOutcome[]): number {
+export function menLost(battles: readonly BattleOutcome[]): number {
   return battles.reduce((sum, battle) => sum + battle.losses.reduce((men, loss) => men + loss.men, 0), 0);
 }
 
 /** Men a side lost in one battle. */
-export function sideLosses(battle: D6BattleOutcome, side: BattleSide): number {
+export function sideLosses(battle: BattleOutcome, side: BattleSide): number {
   const ids = new Set(side.armies.map((army) => army.unitId));
   return battle.losses.filter((loss) => ids.has(loss.unitId)).reduce((men, loss) => men + loss.men, 0);
 }
@@ -107,13 +108,34 @@ export function sideFactions(side: BattleSide): readonly FactionId[] {
 }
 
 /** The faction a result happened to, whose colour rings its medallion. */
-export function affectedFaction(battle: D6BattleOutcome): FactionId {
-  if (battle.result.startsWith("defender-")) return sideFactions(battle.defender)[0] ?? battle.attackerFactionId;
+export function affectedFaction(battle: BattleOutcome): FactionId {
+  if (defenderSuffered(battle)) return sideFactions(battle.defender)[0] ?? battle.attackerFactionId;
   return battle.attackerFactionId;
 }
 
+/** Whether the result fell on the defenders: a defender result on the d6; ground taken, or the defenders hit harder, on the d20. */
+function defenderSuffered(battle: BattleOutcome): boolean {
+  if (battle.dice === "d6") return battle.result.startsWith("defender-");
+  if (battle.ground !== 0) return true;
+  const defenders = new Set(battle.defender.armies.map((army) => army.unitId));
+  const men = (defending: boolean) => battle.losses.filter((loss) => defenders.has(loss.unitId) === defending).reduce((sum, loss) => sum + loss.men, 0);
+  return men(true) > men(false);
+}
+
+/** How well an attack went, for picking a card's lead: the d6 result's rank, or the d20 ground then score. */
+function attackRank(battle: BattleOutcome): number {
+  if (battle.dice === "d6") return battleResults.indexOf(battle.result);
+  const ground = battle.ground === "all" ? 3 : battle.ground;
+  return ground * 100 + battle.score;
+}
+
+/** Whether an attack succeeded (M16, M18): a successful d6 result, or a d20 grade that took the whole territory. */
+export function attackSucceeded(battle: BattleOutcome): boolean {
+  return battle.dice === "d6" ? isSuccessful(battle.result) : battle.ground === "all";
+}
+
 /** Attack value left to a claimant after its own losses (M18), from the turn's final state. */
-export function attackLeft(scenario: Scenario, finalState: GameState, battle: D6BattleOutcome): number {
+export function attackLeft(scenario: Scenario, finalState: GameState, battle: BattleOutcome): number {
   return battle.attacker.armies.reduce((sum, army) => {
     const unit = finalState.units[army.unitId];
     return unit === undefined ? sum : sum + armyValue(scenario, unit, "attack");
@@ -121,6 +143,6 @@ export function attackLeft(scenario: Scenario, finalState: GameState, battle: D6
 }
 
 /** Successful attackers in a group: the claimants of section 1.6 step 2. */
-export function claimants(group: BattleGroup): readonly D6BattleOutcome[] {
-  return group.battles.map((entry) => entry.battle).filter((battle) => isSuccessful(battle.result));
+export function claimants(group: BattleGroup): readonly BattleOutcome[] {
+  return group.battles.map((entry) => entry.battle).filter(attackSucceeded);
 }

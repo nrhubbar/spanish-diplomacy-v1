@@ -1,5 +1,5 @@
 import type { JSX } from "react";
-import type { D6BattleOutcome, Scenario } from "../../engine/types";
+import type { BattleOutcome, Scenario } from "../../engine/types";
 import { formatMen } from "../../presentation/battleText";
 import { territoryName, unitName } from "../../presentation/text";
 
@@ -15,7 +15,7 @@ function effect(kind: EffectKind, text: string): Effect {
 }
 
 /** What the result did to each army: men lost, destroyed, demoralized, retreated, surrendered. */
-export function BattleEffects({ battle, scenario }: { readonly battle: D6BattleOutcome; readonly scenario: Scenario }): JSX.Element {
+export function BattleEffects({ battle, scenario }: { readonly battle: BattleOutcome; readonly scenario: Scenario }): JSX.Element {
   const effects: readonly Effect[] = [
     ...battle.losses.map((loss) => loss.destroyed
       ? effect("destroyed", `${unitName(scenario, loss.unitId)} was destroyed, losing ${formatMen(loss.men)} men.`)

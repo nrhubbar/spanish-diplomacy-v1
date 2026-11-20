@@ -230,7 +230,7 @@ describe("battle reports (C14)", () => {
   it("leads a card with the battle that decided the place", () => {
     expect(decisiveBattle(group(threeSidedAssault)).battle.attackerFactionId).toBe("south");
     const held = threeSidedAssault.map((entry) => ({ ...entry, site: madridRepulsed.site }));
-    expect(decisiveBattle(group(held)).battle.result).toBe("defender-exchange");
+    expect(decisiveBattle(group(held)).battle).toMatchObject({ result: "defender-exchange" });
   });
 
   it("measures sides, losses, and who a result fell on", () => {

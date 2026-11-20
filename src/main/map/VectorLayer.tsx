@@ -139,7 +139,7 @@ export function VectorLayer({ contextLabels, game, geometry, level, map, scenari
           );
         })}
       </g>
-      <RouteLayer anchor={anchor} factionColor={factionColor} unit={unit} view={view} />
+      <RouteLayer anchor={anchor} factionColor={factionColor} scenario={scenario} unit={unit} view={view} />
     </svg>
   );
 }
