@@ -157,7 +157,7 @@ export function armyLeaving(scenario: Scenario, state: GameState, factionId: Fac
   const count = `${String(units.length)} ${units.length === 1 ? "unit" : "units"}`;
   const needed = Math.ceil(movement.needing / 2);
   const trucks = movement.transports === 0
-    ? (movement.allMobile ? "all mounted" : `no trucks (${String(needed)} ${needed === 1 ? "truck" : "trucks"} for these ${count} would give +1)`)
+    ? (movement.allMobile ? "all mounted" : `no trucks (${String(needed)} ${needed === 1 ? "truck" : "trucks"} for these ${String(movement.needing)} ${movement.needing === 1 ? "unit" : "units"} would give +1)`)
     : `${String(movement.transports)} ${movement.transports === 1 ? "truck" : "trucks"} for ${String(movement.needing)} ${movement.needing === 1 ? "unit" : "units"}`;
   return {
     heading: `Army leaving ${territoryName(scenario, from)} ${glyphs.dot} ${count}, ${String(attack)} attack`,
