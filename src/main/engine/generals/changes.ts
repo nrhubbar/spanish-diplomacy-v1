@@ -7,7 +7,6 @@ import type {
   FactionId,
   GameState,
   GeneralId,
-  RaisedUnitDefinition,
   SackOrder,
   Scenario,
   SystemOutcome,
@@ -16,7 +15,8 @@ import type {
   UnitState
 } from "../types";
 import { bestGeneral, canRally } from "./command";
-import { callReplacement, fieldedGenerals, generalUnitId } from "./roster";
+import { generalUnitDefinition, generalUnitId } from "./identity";
+import { callReplacement, fieldedGenerals } from "./roster";
 
 /**
  * U5: Sack is a free order. The general leaves at once (he does not fight this turn) and the next
@@ -182,9 +182,9 @@ export const commandChanges: Phase = (draft) => {
     const territoryId = fallbackTerritory(scenario, control, factionId);
     if (territoryId === undefined) continue;
     for (const pending of due) {
-      const general = scenario.index.generals.get(pending.generalId);
-      const definition = generalDefinition(scenario, armies, raised, factionId, pending.generalId, general?.name ?? pending.generalId);
-      if (definition === undefined) continue;
+      const id = generalUnitId(pending.generalId);
+      const definition = generalUnitDefinition(scenario, id);
+      if (definition === undefined || armies[id] !== undefined || scenario.index.units.has(id)) continue;
       raised = { ...raised, [definition.id]: definition };
       const unit: UnitState = { factionId, fatigue: 0, id: definition.id, morale: { demoralized: false, quietTurns: 0 }, strength: definition.fullStrength, territoryId };
       arrivals.push(unit);
@@ -205,22 +205,6 @@ export const commandChanges: Phase = (draft) => {
 
 function territoryOrder(scenario: Scenario, id: TerritoryId): number {
   return scenario.territories.findIndex((territory) => territory.id === id);
-}
-
-/** D7: a replacement general's unit, of the scenario's general type, as strong as the scenario's own general units. */
-function generalDefinition(
-  scenario: Scenario,
-  armies: GameState["units"],
-  raised: GameState["raised"],
-  factionId: FactionId,
-  generalId: GeneralId,
-  name: string
-): RaisedUnitDefinition | undefined {
-  const type = scenario.unitTypes.find((candidate) => candidate.kind === "general");
-  if (type === undefined) return undefined;
-  const model = scenario.units.find((unit) => unit.type === type.id);
-  const id = generalUnitId(generalId, (candidate) => armies[candidate] !== undefined || raised[candidate] !== undefined || scenario.index.units.has(candidate));
-  return { factionId, fullStrength: model?.fullStrength ?? 1, generalId, id, name, type: type.id };
 }
 
 /** Step 11, after the economy's income (U3, U4): this turn's raid cuts and recon reveals have done their work. */

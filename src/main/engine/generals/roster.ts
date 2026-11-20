@@ -1,5 +1,5 @@
 import { unitDefinitionIn } from "../air/pieces";
-import type { FactionId, GameState, GeneralDefinition, GeneralId, ReplacementDueOutcome, Scenario, UnitId, UnitState } from "../types";
+import type { FactionId, GameState, GeneralDefinition, GeneralId, ReplacementDueOutcome, Scenario, UnitState } from "../types";
 
 /** U5: the generals a faction has in play (on the board or set aside this turn), by roster id. */
 export function fieldedGenerals(scenario: Scenario, raised: GameState["raised"], units: readonly UnitState[]): ReadonlySet<GeneralId> {
@@ -54,12 +54,4 @@ export function callReplacement(
     },
     outcome: { arrivesOnTurn, factionId, generalId: next.general.id, kind: "replacement-due" }
   };
-}
-
-/** The unit id a replacement general takes: his roster id, made unique against the units in play. */
-export function generalUnitId(generalId: GeneralId, taken: (id: UnitId) => boolean): UnitId {
-  const base = `general-${generalId}`;
-  let id = base as UnitId;
-  for (let suffix = 2; taken(id); suffix += 1) id = `${base}-${String(suffix)}` as UnitId;
-  return id;
 }

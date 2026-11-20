@@ -1,3 +1,4 @@
+import { generalUnitDefinition } from "../generals/identity";
 import { neighborsOf, requireUnitType } from "../lookup";
 import type {
   FactionId,
@@ -21,7 +22,7 @@ import type {
 
 /** A unit's definition, from the scenario or, for a unit raised in play, from the state. */
 export function unitDefinitionIn(scenario: Scenario, raised: GameState["raised"], id: UnitId): UnitDefinition | RaisedUnitDefinition | undefined {
-  return scenario.index.units.get(id) ?? raised[id];
+  return scenario.index.units.get(id) ?? raised[id] ?? generalUnitDefinition(scenario, id);
 }
 
 export function unitTypeIn(scenario: Scenario, raised: GameState["raised"], id: UnitId): UnitTypeDefinition | undefined {
