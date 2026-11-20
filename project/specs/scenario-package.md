@@ -91,7 +91,7 @@ Every block and catalogue entry that carries numbers (`ai`, unit types, sub-terr
 | `d20` | see below | D1-D7, C6. |
 | `weather` | `{ outcomes[], seasons[], zones[] }` | T2, T4. |
 | `calendar` | `{ start: { year, month, half }, turnsPerYear: 24 }` | T1: half-month turns; turn 1 is the start. |
-| `air` | `{ raidTable[], interceptRoll, reconTurns }` | U2-U4. |
+| `air` | `{ raidTable[], interceptRoll, reconTurns, generalDeathRoll? }` | U2-U4; `generalDeathRoll` (0-20, absent means 0) is the d20 at or under which a general dies when his army is destroyed or routed (U5). |
 | `generals` | `{ traits[], roster[] }` | U5. |
 
 Sub-territory: `id`, `name`, `territoryId`, `terrain` (`open`, `mountain`, `swamp`), `startHolder` (P1: the holder on the start date, whatever the territory's controller), `development` (`{ [trackId]: level }`), `buildings` (ids), `rail` (0-3), `port` (0-2), and `sources` and/or `note` (every number has a source or a design note, L18).
@@ -166,6 +166,30 @@ The loader applies these when the app starts. Each failure names the JSON path a
 `m3-modular` resolves a turn as the ordered steps of tasks section 2, one file per step in `src/main/engine/phases/` (`00-weather` to `12-victory`). Each step runs the engine's own part (step 1, reveal; step 12, victory), then each selected module's part in area order (`dice`, `economy`, `recruitment`, `weather`, `movement`, `partition`, `air`). A module names the data blocks it needs and its parts of each step; the engine's own modules are one file per area under `src/main/engine/modules/`, joined in `src/main/engine/modules.ts`. Parts run in area order, each on the draft the previous part returned, so a later area cannot undo an earlier one: a rule that must shape an earlier part (Snow blocking digging in, read by the dice module's morale part from `systems.weather`) is read inside that part. a scenario's optional `plugin.ts` exports `plugin: { modules }` and registers modules through the same interface, and a name registered twice is a package problem. The presets carry today's rules: `d6-table` takes steps 4, 5, 7 and 9, `single-step` step 3, partition `none` steps 6 and 8. Until each slice lands, its Milestone 3 module runs its area's preset parts plus pass-through skeletons, so a package moved to `m3-modular` plays as it did. Orders are one flat list per faction (E8): Move (with an optional path of `land`, `rail` and `sea` legs; absent means one step), Withdraw, Replenish, Recruit, Build, AirMission and Sack. A Move whose path is more than one step, and every other kind, is not yet available: a move is an impossible order (M9), and any other order is reported as `rejected-order` without disbanding anything.
 
 Every roll kind draws from its own seeded streams, `deriveSeed(game seed, tag, turn, index)`, with one tag per kind: battle (the M26 tag, so battle rolls are unchanged), weather, raid, general death and blunder (`src/main/engine/dice.ts`). A faction sees the state through `viewFor` (`src/main/engine/visibility.ts`): other factions' treasuries, queue items and units in training are hidden unless its recon reveals their territory this turn ($6, U4); the computer player plans on that view.
+
+### Air and generals (module `air: missions`, `m3r1-air-generals`)
+
+- **Pieces (W5, AG-3).** Aircraft (`kind: air`) and generals (`kind: general`) are units. Only ground units march, fight, retreat and hold ground: the air module's step-1 part sets aircraft and generals aside after the reveal, and its step-9 part puts them back. A unit takes only the order kinds its type lists, so aircraft never move.
+- **Airbases (U2).** A territory is an airbase for a faction when the faction holds a sub-territory there with an `airbase` or `all-weather-airbase` building, and no other faction controls the territory whole. An aircraft flies one mission a turn to a territory within `air.range` connections (land and sea), from an airbase. Before it flies, the `grounded` hook may ground it (weather).
+- **Missions (U2-U4, D7).** Missions resolve at step 2, in unit id order.
+  - **Recon** targets a territory another faction holds some of. It adds a reveal until `turn + reconTurns`.
+  - **Intercept** names a territory. Each enemy fighter intercepting over the raid's territory adds `interceptRoll` to the raid's roll.
+  - **Raid** targets a sub-territory another faction holds.
+    - It rolls a d20 from the `raid` stream (index: the raid's order in the turn), plus the best `raid-defence` among other factions' units in the territory and the interceptions, clamped to 1-20, and reads `raidTable`.
+    - Air eliminated: the raider is lost; with fighters there, the interception names it.
+    - Income cut: a `RaidCut` for the next turn. The `incomeDelta` hook removes that sub-territory's development yield from its holder when he holds the territory whole. The air module's step-11 part drops spent cuts and reveals.
+    - Building hit: a building chosen by the stream's next draw is destroyed, or a paved airfield falls back to the building it upgrades. Without buildings, the highest development level drops by one.
+  - **Support** names a territory. The bombers' best `battle-support` roll counts once per side, through `combatModifiers` (`air-support`). The battle parts pass the turn's scratch to the hook.
+- **Generals (U5, U6, D5, D7).**
+  - **Command.** Each side's best general gives his `command-bonus` and the `roll-modifier` of his trait for the side's role. The best general has the highest bonus, then the earliest roster place.
+  - **Where he fights.** In a battle, a general counts where he goes this turn: where he moves, or where he stands. In a planning estimate, he counts where he stands or among the attacking units.
+  - **His army.** The ground units of his faction moving with him (same origin and destination) or holding with him.
+  - **After the battles (step 9):**
+    - He arrives where his army arrived, or stays put.
+    - When his whole army was destroyed, retreated or surrendered, or he stood alone in ground the enemy took, he rolls a d20 from the `general-death` stream and dies at or under `generalDeathRoll`. A survivor follows the retreat, or goes to the seat (else the first territory his faction controls).
+    - The best general with each army rallies its demoralized units, unless his trait is `no-rally`.
+  - **Sack** is a free order for one's own general. He leaves at once.
+  - **Replacements.** After a sacking or a death, the next roster entry not in play or on his way is due. He appears at the end of the next turn in the seat territory (else the first controlled territory) as unit `general-<generalId>`, whose definition derives from the id.
 
 ## The `m2-strength` ruleset
 
