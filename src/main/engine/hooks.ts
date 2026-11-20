@@ -4,6 +4,7 @@ import type {
   FactionId,
   GameState,
   Order,
+  ResourceId,
   Resources,
   Scenario,
   SubTerritoryId,
@@ -106,10 +107,12 @@ export interface RetreatContext extends HookContext {
   readonly to: TerritoryId;
 }
 
-/** R5, $4, D7: extra replenishment, as shares of establishment. */
+/** R5, $4, D28.1: what buildings change about a Replenish order. */
 export interface ReplenishBonus {
+  /** Hospital: more of establishment restored per turn, on top of `replenishShare`. */
   readonly capShare: number;
-  readonly rateShare: number;
+  /** Depot: the share taken off the price, per resource (Funds). */
+  readonly discount: Readonly<Partial<Record<ResourceId, number>>>;
 }
 
 export interface RuleHooks {
@@ -123,7 +126,7 @@ export interface RuleHooks {
   readonly grounded?: (context: GroundedContext) => boolean;
   /** U3: change to the faction's income (raid cuts, negative). */
   readonly incomeDelta?: (context: IncomeContext) => Resources;
-  /** R5, D7: extra replenishment (Hospital, Depot). */
+  /** R5, D28.1: a higher per-turn cap (Hospital) and a lower price (Depot). */
   readonly replenishBonus?: (context: ReplenishContext) => ReplenishBonus;
   /** R2, R3: reasons the type is locked here; empty when nothing blocks it. */
   readonly recruitRequirements?: (context: RecruitContext) => readonly string[];
@@ -171,8 +174,11 @@ export function hookedIncome(context: IncomeContext): Resources {
 export function hookedReplenishBonus(context: ReplenishContext): ReplenishBonus {
   return hooksOf(context.scenario).reduce<ReplenishBonus>((sum, hooks) => {
     const bonus = hooks.replenishBonus?.(context);
-    return bonus === undefined ? sum : { capShare: sum.capShare + bonus.capShare, rateShare: sum.rateShare + bonus.rateShare };
-  }, { capShare: 0, rateShare: 0 });
+    if (bonus === undefined) return sum;
+    const discount: Partial<Record<ResourceId, number>> = { ...sum.discount };
+    for (const [resource, share] of Object.entries(bonus.discount) as [ResourceId, number][]) discount[resource] = (discount[resource] ?? 0) + share;
+    return { capShare: sum.capShare + bonus.capShare, discount };
+  }, { capShare: 0, discount: {} });
 }
 
 export function hookedRecruitRequirements(context: RecruitContext): readonly string[] {

@@ -4175,11 +4175,12 @@
       "turns": 2,
       "effects": [
         {
-          "kind": "replenish-cap",
+          "kind": "replenish-discount",
+          "resource": "funds",
           "share": 0.25
         }
       ],
-      "note": "$4, D7. Design note: a starting value for the harness to tune (Q-MR-26, H7)."
+      "note": "$4, D28.1: materiel on hand makes Replenish cost 25 percent less Funds; it also gates trucks and tanks (R3). Design note: a starting value for the harness to tune (Q-MR-26, H7)."
     },
     {
       "id": "fortifications",
@@ -4205,11 +4206,11 @@
       "turns": 2,
       "effects": [
         {
-          "kind": "replenish-rate",
+          "kind": "replenish-cap",
           "share": 0.25
         }
       ],
-      "note": "R5, D7. Design note: a starting value for the harness to tune (Q-MR-26, H7)."
+      "note": "R5, D28.1: the per-turn Replenish cap rises from half the establishment to three quarters. Design note: a starting value for the harness to tune (Q-MR-26, H7)."
     },
     {
       "id": "airfield",

@@ -73,14 +73,14 @@ export function projectName(scenario: Scenario, site: SubTerritoryState | undefi
 }
 
 /** What a building effect does, in a few words. */
-export function buildingEffectText(effect: BuildingEffect): string {
+export function buildingEffectText(scenario: Scenario, effect: BuildingEffect): string {
   switch (effect.kind) {
     case "recruit-slots":
       return `+${String(effect.extra)} recruit a turn`;
-    case "replenish-rate":
-      return `+${String(Math.round(effect.share * 100))}% replenishment`;
     case "replenish-cap":
-      return `+${String(Math.round(effect.share * 100))}% replenishment cap`;
+      return `replenishes ${String(Math.round(effect.share * 100))}% more men a turn`;
+    case "replenish-discount":
+      return `replenishing costs ${String(Math.round(effect.share * 100))}% less ${scenario.resources.find((resource) => resource.id === effect.resource)?.name ?? effect.resource}`;
     case "rail-departures":
       return `+${String(effect.extra)} rail departure`;
     case "airbase":
@@ -110,7 +110,7 @@ export function projectEffectText(scenario: Scenario, project: BuildProject): st
     case "building": {
       const building = scenario.index.buildings.get(project.buildingId);
       if (building === undefined) return undefined;
-      const parts = [...building.effects.map(buildingEffectText), ...(unlocksText(scenario, building.id) === undefined ? [] : [unlocksText(scenario, building.id) ?? ""])];
+      const parts = [...building.effects.map((effect) => buildingEffectText(scenario, effect)), ...(unlocksText(scenario, building.id) === undefined ? [] : [unlocksText(scenario, building.id) ?? ""])];
       return parts.length === 0 ? undefined : parts.join(", ");
     }
   }

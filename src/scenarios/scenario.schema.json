@@ -2489,7 +2489,7 @@
                       "properties": {
                         "kind": {
                           "type": "string",
-                          "const": "replenish-rate"
+                          "const": "replenish-cap"
                         },
                         "share": {
                           "type": "number",
@@ -2508,7 +2508,12 @@
                       "properties": {
                         "kind": {
                           "type": "string",
-                          "const": "replenish-cap"
+                          "const": "replenish-discount"
+                        },
+                        "resource": {
+                          "type": "string",
+                          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                          "description": "Stable kebab-case identifier. Never shown to players."
                         },
                         "share": {
                           "type": "number",
@@ -2518,6 +2523,7 @@
                       },
                       "required": [
                         "kind",
+                        "resource",
                         "share"
                       ],
                       "additionalProperties": false

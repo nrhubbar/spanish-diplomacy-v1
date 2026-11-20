@@ -1,4 +1,4 @@
-import type { WeatherId } from "../ids";
+import type { ResourceId, WeatherId } from "../ids";
 import type { CombatRole } from "./scenario";
 
 /**
@@ -48,8 +48,8 @@ export type UnitEffect =
 
 export const buildingEffectKinds = [
   "recruit-slots",
-  "replenish-rate",
   "replenish-cap",
+  "replenish-discount",
   "rail-departures",
   "airbase",
   "all-weather-airbase",
@@ -60,10 +60,10 @@ export const buildingEffectKinds = [
 export type BuildingEffect =
   /** D7 defaults: `extra` more Recruit orders a turn in the territory. */
   | { readonly extra: number; readonly kind: "recruit-slots" }
-  /** R5, D7: Replenish restores `share` more of establishment per turn. */
-  | { readonly kind: "replenish-rate"; readonly share: number }
-  /** R5, D7: the replenishment cap rises by `share` of establishment. */
+  /** R5, D28.1 (Hospital): the per-turn Replenish cap rises by `share` of establishment. */
   | { readonly kind: "replenish-cap"; readonly share: number }
+  /** R5, D28.1 (Depot): Replenish costs `share` less of `resource`. */
+  | { readonly kind: "replenish-discount"; readonly resource: ResourceId; readonly share: number }
   /** M3: `extra` more armies may leave the capital by rail per turn. */
   | { readonly extra: number; readonly kind: "rail-departures" }
   /** U2: aircraft may be based here. */

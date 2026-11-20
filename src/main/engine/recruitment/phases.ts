@@ -13,12 +13,14 @@ import type {
   UnitId,
   UnitState
 } from "../types";
-import { capitalOf, isContested, nextRaisedSerial, raisedDefinition, raisedUnitId, recruitSlots, replenishQuote } from "./rules";
+import { capitalOf, carryOf, chargeReplenish, isContested, nextRaisedSerial, raisedDefinition, raisedUnitId, recruitSlots, replenishQuote, uncharge } from "./rules";
 
 /** A Replenish order paid at step 1, settled at step 9. */
 export interface PaidReplenishment {
   readonly men: number;
   readonly order: ReplenishOrder;
+  /** B2: what it owed, in thousandths, taken back out of the carry if it is cancelled. */
+  readonly owed: Resources;
   readonly paid: Resources;
   readonly territoryId: TerritoryId;
 }
@@ -53,6 +55,7 @@ export const payForRecruits: Phase = (draft) => {
   const { scenario, start } = draft.input;
   let treasuries = draft.systems.treasuries;
   let training = draft.systems.training;
+  let carries = draft.systems.replenishCarry ?? {};
   const events: RecruitmentTurnOutcome[] = [];
   const replenishing: PaidReplenishment[] = [];
   const used = new Map<string, number>();
@@ -87,19 +90,22 @@ export const payForRecruits: Phase = (draft) => {
       const unit = start.units[order.unitId];
       const quote = unit === undefined ? undefined : replenishQuote(scenario, start, unit);
       if (unit === undefined || quote === undefined) continue;
-      if (!canAfford(balance, quote.cost)) {
+      // B2: priced against the carry so far this reveal, not the start of the turn's.
+      const charge = chargeReplenish(carryOf({ replenishCarry: carries }, order.factionId), quote.owed);
+      if (!canAfford(balance, charge.paid)) {
         events.push({ kind: "replenish-cancelled", order, reason: notEnough, refund: {} });
         continue;
       }
-      treasuries = adjustTreasury(treasuries, order.factionId, subtractResources({}, quote.cost));
-      replenishing.push({ men: quote.men, order, paid: quote.cost, territoryId: unit.territoryId });
+      treasuries = adjustTreasury(treasuries, order.factionId, subtractResources({}, charge.paid));
+      carries = { ...carries, [order.factionId]: charge.carry };
+      replenishing.push({ men: quote.men, order, owed: quote.owed, paid: charge.paid, territoryId: unit.territoryId });
     }
   }
   return {
     ...draft,
     events: [...draft.events, ...events],
     scratch: { ...draft.scratch, recruitment: { replenishing } },
-    systems: { ...draft.systems, training, treasuries }
+    systems: { ...draft.systems, training, treasuries, ...(Object.keys(carries).length === 0 ? {} : { replenishCarry: carries }) }
   };
 };
 
@@ -123,6 +129,7 @@ export const replenish: Phase = (draft) => {
   const { scenario } = draft.input;
   const fought = unitsInBattle(draft);
   let treasuries = draft.systems.treasuries;
+  let carries = draft.systems.replenishCarry ?? {};
   const armies: Record<UnitId, UnitState> = { ...draft.armies };
   const events: RecruitmentTurnOutcome[] = [];
   for (const entry of paid) {
@@ -132,6 +139,7 @@ export const replenish: Phase = (draft) => {
       : fought.has(unit.id) ? "The unit fought a battle." : unit.territoryId === entry.territoryId ? undefined : "The unit fell back.";
     if (unit === undefined || reason !== undefined) {
       treasuries = adjustTreasury(treasuries, entry.order.factionId, entry.paid);
+      carries = { ...carries, [entry.order.factionId]: uncharge(carryOf({ replenishCarry: carries }, entry.order.factionId), entry.owed, entry.paid) };
       events.push({ kind: "replenish-cancelled", order: entry.order, reason: reason ?? "", refund: entry.paid });
       continue;
     }
@@ -142,7 +150,7 @@ export const replenish: Phase = (draft) => {
     const recovered = draft.input.start.units[unit.id]?.morale.demoralized ?? unit.morale.demoralized;
     events.push({ kind: "replenish-applied", men, order: entry.order, paid: entry.paid, recovered });
   }
-  return { ...draft, armies, events: [...draft.events, ...events], systems: { ...draft.systems, treasuries } };
+  return { ...draft, armies, events: [...draft.events, ...events], systems: { ...draft.systems, treasuries, ...(Object.keys(carries).length === 0 ? {} : { replenishCarry: carries }) } };
 };
 
 /** C8: the unit type trains on in contested ground (militia). */

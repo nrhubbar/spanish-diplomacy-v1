@@ -1,6 +1,6 @@
 import { isContested } from "../partition/holders";
 import { hookedRecruitRequirements, hookedReplenishBonus } from "../hooks";
-import { scaleResources } from "../resources";
+import { addResources, canAfford, subtractResources } from "../resources";
 import type {
   BuildingId,
   FactionId,
@@ -8,6 +8,7 @@ import type {
   RaisedUnitDefinition,
   RecruitOrder,
   ReplenishOrder,
+  ResourceId,
   Resources,
   Scenario,
   SubTerritoryId,
@@ -182,11 +183,24 @@ export function raisedOrder(scenario: Scenario, id: UnitId): number | undefined 
 
 // R5: Replenish. ----------------------------------------------------------------------------
 
+/**
+ * B2, D28.3: Replenish prices are kept in thousandths of a point, and each faction carries the
+ * thousandths it owes from earlier orders (`GameState.replenishCarry`). One Manpower point is
+ * 1,000 men, coarser than most units, so rounding each order up would charge a whole point for
+ * a few men. Instead an order adds what it owes to the carry and pays the whole points the carry
+ * now holds; the rest waits for the next order. Over several orders a faction pays the true
+ * price to within one point, and every thousandth is accounted for: the whole points paid times
+ * `carryScale`, plus the change in the carry, equal what the orders owed.
+ */
+export const carryScale = 1000;
+
 /** R5: what a Replenish order would do for a unit now. */
 export interface ReplenishQuote {
   /** Men it restores this turn. */
   readonly men: number;
-  /** Price, paid at reveal and refunded if a battle cancels it. */
+  /** What the order owes, in thousandths of a point per resource (`carryScale`). */
+  readonly owed: Resources;
+  /** Whole points it would pay at reveal, given the faction's carry now; refunded if a battle cancels it. */
   readonly cost: Resources;
   /** R5, Q-MIS-b-2: it clears demoralization. */
   readonly recovers: boolean;
@@ -201,21 +215,87 @@ function unitBasics(scenario: Scenario, state: Pick<GameState, "raised">, unitId
   return definition === undefined || type === undefined ? undefined : { fullStrength: definition.fullStrength, type };
 }
 
+/** The faction's Replenish carry, in thousandths of a point (empty: nothing owed). */
+export function carryOf(state: Pick<GameState, "replenishCarry">, factionId: FactionId): Resources {
+  return state.replenishCarry?.[factionId] ?? {};
+}
+
 /**
- * R5, D7: men restored are capped per turn at `replenishShare` of the unit's full strength,
- * plus the `replenishBonus` hook's rate and cap shares (Hospital, Depot). The price is
- * `replenishCostShare` of the type's Recruit cost for the share of full strength restored, so
- * each value point costs half as much as recruiting it new. Rounded up per resource.
+ * B2: one Replenish order paid against a carry: the whole points the carry and the order's debt
+ * now hold, and what is left owed. The carry may go below zero (a credit) when an order paid
+ * this turn is cancelled; then nothing is charged until the debt passes it.
+ */
+export function chargeReplenish(carry: Resources, owed: Resources): { readonly carry: Resources; readonly paid: Resources } {
+  const paid: Record<ResourceId, number> = {};
+  const left: Record<ResourceId, number> = { ...carry };
+  for (const [id, amount] of Object.entries(owed) as [ResourceId, number][]) {
+    const total = (carry[id] ?? 0) + amount;
+    const whole = Math.max(0, Math.floor(total / carryScale));
+    paid[id] = whole;
+    left[id] = total - whole * carryScale;
+  }
+  return { carry: left, paid };
+}
+
+/** B2: the carry with a cancelled order taken back out: its debt removed, its whole points refunded. */
+export function uncharge(carry: Resources, owed: Resources, paid: Resources): Resources {
+  const left: Record<ResourceId, number> = { ...carry };
+  for (const [id, amount] of Object.entries(owed) as [ResourceId, number][]) left[id] = (left[id] ?? 0) - amount + (paid[id] ?? 0) * carryScale;
+  return left;
+}
+
+/**
+ * R5, D7, D28.1: men restored are capped per turn at `replenishShare` of the unit's full
+ * strength, plus the `replenishBonus` hook's cap share (Hospital: three quarters). What the
+ * order owes is `replenishCostShare` of the type's Recruit cost for the share of full strength
+ * restored, so each value point costs half as much as recruiting it new, less the hook's
+ * discount per resource (Depot: a quarter off Funds). `cost` is what it pays at reveal on its
+ * own, given the faction's carry (B2); several orders are priced in turn with `priceReplenishments`.
  */
 export function replenishQuote(scenario: Scenario, state: GameState, unit: UnitState): ReplenishQuote | undefined {
   const rules = scenario.recruitment;
   const basics = unitBasics(scenario, state, unit.id);
   if (rules === undefined || basics?.type.recruit === undefined) return undefined;
   const bonus = hookedReplenishBonus({ scenario, state, territoryId: unit.territoryId, unitId: unit.id });
-  const perTurn = Math.floor((rules.replenishShare + bonus.rateShare + bonus.capShare) * basics.fullStrength);
+  const perTurn = Math.floor((rules.replenishShare + bonus.capShare) * basics.fullStrength);
   const men = Math.max(0, Math.min(perTurn, basics.fullStrength - unit.strength));
-  const cost = scaleResources(basics.type.recruit.cost, (rules.replenishCostShare * men) / basics.fullStrength);
-  return { cost, men, perTurn, recovers: unit.morale.demoralized };
+  const owed: Record<ResourceId, number> = {};
+  for (const [id, amount] of Object.entries(basics.type.recruit.cost) as [ResourceId, number][]) {
+    const share = Math.max(0, 1 - (bonus.discount[id] ?? 0));
+    owed[id] = Math.round((carryScale * amount * rules.replenishCostShare * share * men) / basics.fullStrength);
+  }
+  return { cost: chargeReplenish(carryOf(state, unit.factionId), owed).paid, men, owed, perTurn, recovers: unit.morale.demoralized };
+}
+
+/**
+ * B2: several Replenish orders of one faction priced in turn against its carry, as reveal pays
+ * them when the balance covers each: each entry's whole points, and the total. An order the
+ * balance cannot cover is marked unaffordable and leaves the carry alone. Without a balance,
+ * every order is taken as paid.
+ */
+export function priceReplenishments(
+  scenario: Scenario,
+  state: GameState,
+  factionId: FactionId,
+  units: readonly UnitState[],
+  balance?: Resources
+): { readonly entries: readonly { readonly affordable: boolean; readonly paid: Resources; readonly unitId: UnitId }[]; readonly total: Resources } {
+  let carry = carryOf(state, factionId);
+  let left = balance;
+  let total: Resources = {};
+  const entries = units.flatMap((unit) => {
+    const quote = replenishQuote(scenario, state, unit);
+    if (quote === undefined) return [];
+    const charge = chargeReplenish(carry, quote.owed);
+    const affordable = left === undefined || canAfford(left, charge.paid);
+    if (affordable) {
+      carry = charge.carry;
+      total = addResources(total, charge.paid);
+      if (left !== undefined) left = subtractResources(left, charge.paid);
+    }
+    return [{ affordable, paid: charge.paid, unitId: unit.id }];
+  });
+  return { entries, total };
 }
 
 /** R5, C1, C5: static checks of one Replenish order against the start-of-turn state. */

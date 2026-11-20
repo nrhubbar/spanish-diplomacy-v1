@@ -132,6 +132,11 @@ export interface GameState {
   readonly training: readonly TrainingItem[];
   /** $6: each faction's balances. Hidden from other viewers (per-viewer filtering). Empty without an economy. */
   readonly treasuries: Readonly<Record<FactionId, Resources>>;
+  /**
+   * B2, D28.3: thousandths of a point each faction owes for Replenish orders it has paid in
+   * whole points (`engine/recruitment/rules.ts`). Hidden like the treasuries. Absent: nothing owed.
+   */
+  readonly replenishCarry?: Readonly<Record<FactionId, Resources>>;
   readonly turnNumber: number;
   readonly units: Readonly<Record<UnitId, UnitState>>;
   /** Absent without the weather module, and before the first roll. */

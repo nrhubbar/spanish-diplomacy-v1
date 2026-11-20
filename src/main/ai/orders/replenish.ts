@@ -1,7 +1,6 @@
 import { compareIds } from "../../engine/board";
 import { requireUnitDefinition } from "../../engine/lookup";
-import { replenishProblem, replenishQuote } from "../../engine/recruitment/rules";
-import { canAfford, subtractResources } from "../../engine/resources";
+import { priceReplenishments, replenishProblem, replenishQuote } from "../../engine/recruitment/rules";
 import type { ReplenishOrder, UnitId } from "../../engine/types";
 import { balanceLeft } from "./spending";
 import type { OrderPlanner } from "./planner";
@@ -28,12 +27,8 @@ export const planReplenishment: OrderPlanner<ReplenishOrder> = ({ factionId, mem
       return unit.morale.demoralized || missing >= minimumMissingShare ? [{ missing, quote, unit }] : [];
     })
     .sort((left, right) => Number(right.unit.morale.demoralized) - Number(left.unit.morale.demoralized) || right.missing - left.missing || compareIds(left.unit.id, right.unit.id));
-  let balance = balanceLeft({ factionId, memory, planned, random, scenario, state });
-  const orders: ReplenishOrder[] = [];
-  for (const { quote, unit } of candidates) {
-    if (!canAfford(balance, quote.cost)) continue;
-    balance = subtractResources(balance, quote.cost);
-    orders.push({ factionId, kind: "replenish", unitId: unit.id });
-  }
-  return orders;
+  // B2: priced in turn against the faction's carry, as reveal pays them; one it cannot afford is skipped.
+  const balance = balanceLeft({ factionId, memory, planned, random, scenario, state });
+  const priced = priceReplenishments(scenario, state, factionId, candidates.map((candidate) => candidate.unit), balance);
+  return priced.entries.filter((entry) => entry.affordable).map((entry): ReplenishOrder => ({ factionId, kind: "replenish", unitId: entry.unitId }));
 };

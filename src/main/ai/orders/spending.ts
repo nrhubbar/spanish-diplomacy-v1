@@ -1,7 +1,7 @@
 import { projectCost } from "../../engine/economy/catalogue";
-import { replenishQuote } from "../../engine/recruitment/rules";
+import { priceReplenishments, replenishQuote } from "../../engine/recruitment/rules";
 import { addResources, subtractResources, treasuryOf } from "../../engine/resources";
-import type { Order, Resources } from "../../engine/types";
+import type { Order, Resources, UnitState } from "../../engine/types";
 import type { PlanningContext } from "./planner";
 
 /**
@@ -18,8 +18,16 @@ export function orderPrice(context: Pick<PlanningContext, "scenario" | "state">,
   return {};
 }
 
-/** The faction's balance less every planned order's price. */
+/**
+ * The faction's balance less every planned order's price. Replenish orders are priced together,
+ * in turn against the faction's carry (B2), as reveal pays them.
+ */
 export function balanceLeft(context: PlanningContext): Resources {
-  const spent = context.planned.reduce<Resources>((sum, order) => addResources(sum, orderPrice(context, order)), {});
-  return subtractResources(treasuryOf(context.state, context.factionId), spent);
+  const spent = context.planned.reduce<Resources>((sum, order) => (order.kind === "replenish" ? sum : addResources(sum, orderPrice(context, order))), {});
+  const replenishing = context.planned.flatMap((order): UnitState[] => {
+    const unit = order.kind === "replenish" ? context.state.units[order.unitId] : undefined;
+    return unit === undefined ? [] : [unit];
+  });
+  const replenished = priceReplenishments(context.scenario, context.state, context.factionId, replenishing).total;
+  return subtractResources(treasuryOf(context.state, context.factionId), addResources(spent, replenished));
 }

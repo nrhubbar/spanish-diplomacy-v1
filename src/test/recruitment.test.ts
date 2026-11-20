@@ -190,7 +190,8 @@ describe("Replenish (R5)", () => {
     const bonus = hookedReplenishBonus({ scenario, state: worn, territoryId: durruti.territoryId, unitId: durruti.id });
     expect(quote.men).toBe(Math.min(Math.floor(full * (0.5 + bonus.capShare)), full - worn.units[durruti.id]!.strength));
     expect(quote.recovers).toBe(true);
-    expect(Object.values(quote.cost).every((amount) => amount > 0)).toBe(true);
+    // B2: it owes a share of every resource of the Recruit cost, in thousandths of a point.
+    expect(Object.values(quote.owed).every((amount) => amount > 0)).toBe(true);
   });
 
   it("restores men and morale after battles, paid at reveal", () => {
