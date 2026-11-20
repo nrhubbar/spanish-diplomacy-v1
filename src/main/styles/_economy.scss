@@ -1,0 +1,317 @@
+// The economy (X1, X3, X7, X8): header resource chips, the Build tab's sub-territory cards and
+// the focused sub-territory's build list. Owned by m3r1-economy-builds.
+
+.economy-icon {
+  flex: none;
+  width: 1em;
+  height: 1em;
+  vertical-align: -0.15em;
+}
+
+// X1: Funds and Manpower chips with next turn's income.
+.resource-chip-wrap {
+  position: relative;
+
+  // The first chip's detail opens rightwards, so it never leaves the screen on a phone.
+  &.resource-chip-first .resource-detail {
+    right: auto;
+    left: 0;
+  }
+}
+
+.resource-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 32px;
+  padding: 0.2rem 0.7rem;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 650;
+  white-space: nowrap;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: var(--paper-deep);
+  }
+
+  &[aria-expanded="true"] {
+    border-color: var(--ink);
+  }
+}
+
+.resource-balance {
+  font-variant-numeric: tabular-nums;
+}
+
+.resource-income {
+  color: var(--success);
+  font-variant-numeric: tabular-nums;
+}
+
+.resource-detail {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 6px);
+  right: 0;
+  width: min(18rem, calc(100vw - 2rem));
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: var(--paper);
+  box-shadow: 0 6px 18px rgb(36 29 24 / 18%);
+  font-size: 0.85rem;
+
+  p {
+    margin: 0 0 0.35rem;
+  }
+}
+
+.resource-others {
+  margin: 0.4rem 0 0;
+  padding: 0.4rem 0 0;
+  border-top: 1px solid var(--rule);
+  list-style: none;
+
+  li {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+}
+
+.resource-hidden {
+  color: var(--ink-soft);
+  font-style: italic;
+}
+
+// X1 on a phone: smaller chips. The row itself (timer, Funds, Manpower, then readiness) is
+// m3r1-weather-timer's `.header-meter` layout; each chip's root carries that class.
+@media (width <= 720px) {
+  .resource-chip {
+    gap: 0.25rem;
+    padding: 0.15rem 0.55rem;
+    font-size: 0.8rem;
+  }
+}
+
+// X7: the Build tab's sub-territory cards.
+.build-tab-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.25rem 0.75rem;
+  margin: 0 0 0.5rem;
+
+  h4 {
+    margin: 0;
+  }
+}
+
+.site-cards {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.site-card {
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: var(--paper);
+  font-size: 0.85rem;
+}
+
+.site-card-own {
+  border-color: var(--gold);
+}
+
+.site-card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+
+  h4 {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin: 0;
+    font-family: var(--serif);
+    font-size: 1rem;
+  }
+}
+
+.site-capital {
+  color: var(--gold);
+}
+
+.site-yield {
+  color: var(--ink-soft);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.site-holder,
+.site-hidden {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin: 0.2rem 0 0;
+  color: var(--ink-soft);
+}
+
+.site-levels,
+.site-buildings {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.8rem;
+  margin: 0.4rem 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--ink-soft);
+
+  li {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+}
+
+.pips {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.pip {
+  width: 7px;
+  height: 7px;
+  border: 1px solid var(--ink);
+}
+
+.pip-full {
+  background: var(--ink);
+}
+
+.site-queue {
+  margin: 0.5rem 0 0;
+  padding: 0;
+  list-style: none;
+
+  li + li {
+    margin-top: 0.35rem;
+  }
+}
+
+.queue-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem 0.5rem;
+
+  > span:first-child {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+}
+
+.queue-status {
+  margin-left: auto;
+  color: var(--ink-soft);
+}
+
+.queue-bar {
+  height: 4px;
+  margin-top: 3px;
+  border-radius: 2px;
+  background: var(--paper-deep);
+
+  span {
+    display: block;
+    height: 100%;
+    border-radius: 2px;
+    background: var(--success);
+  }
+}
+
+.site-actions {
+  margin-top: 0.5rem;
+}
+
+// X3: the focused sub-territory's build list.
+.build-options {
+  margin-top: 0.75rem;
+
+  ul {
+    display: grid;
+    gap: 0.4rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+}
+
+.build-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: var(--paper);
+  font-size: 0.85rem;
+
+  > div {
+    display: grid;
+    gap: 0.1rem;
+  }
+
+  strong {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+}
+
+.build-option-locked {
+  border-style: dashed;
+  color: var(--ink-soft);
+}
+
+.build-terms {
+  color: var(--ink-soft);
+}
+
+.build-locked {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+// $2: the territory's income chip, for the pane's meta row.
+.income-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.15rem 0.6rem;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.income-chip-own {
+  border-color: var(--success);
+  color: var(--success);
+}

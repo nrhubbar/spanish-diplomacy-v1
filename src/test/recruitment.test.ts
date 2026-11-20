@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { requireUnitDefinition } from "../main/engine/lookup";
-import { canAfford, scaleResources, subtractResources } from "../main/engine/resources";
+import { incomeFor } from "../main/engine/economy/income";
+import { hookedReplenishBonus } from "../main/engine/hooks";
+import { addResources, canAfford, scaleResources, subtractResources } from "../main/engine/resources";
 import {
   isContested,
   raisedDefinition,
@@ -101,7 +103,8 @@ describe("Recruit orders through the turn (R4, R6, R7)", () => {
     const militiaId = raisedUnitId(republic, type("militia-column"), 1);
     expect(turn1.finalState.units[militiaId]).toMatchObject({ strength: 2500, territoryId: "catalunya", fatigue: 0 });
     expect(turn1.finalState.raised[militiaId]?.name).toBe("Militia column No. 1");
-    expect(turn1.finalState.treasuries[republic]).toEqual({ funds: 22, manpower: 6 });
+    // Paid 8 Funds and 4 Manpower, then step 11's income ($2, m3r1-economy-builds).
+    expect(turn1.finalState.treasuries[republic]).toEqual(addResources({ funds: 22, manpower: 6 } as Resources, incomeFor(scenario, start, republic).paid));
     expect(turn1.finalState.training).toHaveLength(1);
 
     const turn2 = play({ ...turn1.finalState, turnNumber: 2 }, []);
@@ -154,7 +157,9 @@ describe("Replenish (R5)", () => {
   it("quotes half the recruit price per value point, capped at half the full strength a turn", () => {
     const quote = replenishQuote(scenario, worn, worn.units[durruti.id]!)!;
     const full = requireUnitDefinition(scenario, durruti.id).fullStrength;
-    expect(quote.men).toBe(Math.min(Math.floor(full / 2), full - worn.units[durruti.id]!.strength));
+    // Half the full strength, plus the Depot's cap share through the replenishBonus hook (m3r1-economy-builds).
+    const bonus = hookedReplenishBonus({ scenario, state: worn, territoryId: durruti.territoryId, unitId: durruti.id });
+    expect(quote.men).toBe(Math.min(Math.floor(full * (0.5 + bonus.capShare)), full - worn.units[durruti.id]!.strength));
     expect(quote.recovers).toBe(true);
     expect(Object.values(quote.cost).every((amount) => amount > 0)).toBe(true);
   });
@@ -182,7 +187,8 @@ describe("Replenish (R5)", () => {
     ], 3);
     const cancelled = ofKind(result.outcomes, "replenish-cancelled");
     expect(cancelled).toHaveLength(1);
-    expect(result.finalState.treasuries[republic]).toEqual(worn.treasuries[republic]);
+    // Refunded in full; only step 11's income ($2) is added.
+    expect(result.finalState.treasuries[republic]).toEqual(addResources(worn.treasuries[republic]!, incomeFor(scenario, worn, republic).paid));
   });
 });
 

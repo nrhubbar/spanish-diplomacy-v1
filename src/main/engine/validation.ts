@@ -1,3 +1,4 @@
+import { validateBuildOrder } from "./economy/catalogue";
 import { isNeighbor } from "./lookup";
 import { validateRecruitOrder, validateReplenishOrder } from "./recruitment/rules";
 import type {
@@ -29,6 +30,9 @@ export function validateOrder(scenario: Scenario, state: GameState, order: Order
       return scenario.rules.recruitment === "none" ? { ok: false, reason: unavailableOrderReason } : validateRecruitOrder(scenario, state, order);
     case "replenish":
       return scenario.rules.recruitment === "none" ? { ok: false, reason: unavailableOrderReason } : validateReplenishOrder(scenario, state, order);
+    // $5: the economy module's Build orders (m3r1-economy-builds).
+    case "build":
+      return validateBuildOrder(scenario, state, order);
     default:
       return { ok: false, reason: unavailableOrderReason };
   }
