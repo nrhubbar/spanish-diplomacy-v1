@@ -35,10 +35,6 @@ This log records the decisions and assumptions made while carrying out `mileston
 - Generals: a replacement general (after a death or a sacking) appears the next turn in the faction's seat territory, a new faction field in scenario data. A general rallies the demoralized units of the army he is in, or the units holding with him, at the end of the turn.
 - Harness: the default turn limit is 66 turns, which is about April 1939.
 
-## Streams
-
-(Filled in as checkpoints and hand-offs arrive.)
-
 **D8. Sub-territory ids, agreed before phase 0 starts.** These ids are shared by `m3r1-contract` (scenario data) and `m3r1-map-provinces` (geometry):
 - The ids in `milestone-3-ideation/ux-pass/provinces.json`, as lowercase kebab-case province names: a-coruna, lugo, ourense, pontevedra, asturias, cantabria, bizkaia, gipuzkoa, alava, navarra, la-rioja, zaragoza, huesca, teruel, madrid, burgos, valladolid, leon, palencia, zamora, salamanca, avila, segovia, soria, toledo, ciudad-real, cuenca, guadalajara, albacete, badajoz, caceres, barcelona, girona, lleida, tarragona, valencia, castellon, alicante, sevilla, cadiz, huelva, cordoba, granada, malaga, jaen, almeria, murcia, ceuta, melilla, mallorca, menorca and ibiza.
 - Asturias splits into `oviedo` (the capital pocket around the city) and `asturias` (the rest).
@@ -301,3 +297,37 @@ S1 and S3 are met. H7 is missed: the Republic is at 9 to 11 percent of decided g
 - **S1** is met.
 - **S3** has 1 to 2 abandonments in 1000 games, against a target of 0.
 - **Not yet done:** the baseline pass, `verify` with `CI=1`, the production smoke test, the timing tests on a quiet machine, the "Streams" summary and the rubric.
+
+## Streams
+
+Each stream's numbered decisions are recorded in full in its progress note in `project/milestones/m3r1-progress/`. This section summarises them and points there.
+
+| Stream | Decisions | Note | What it settled |
+|---|---|---|---|
+| `m3r1-contract` | CT-1 to CT-54, plus its follow-ups | `contract.md` | <ul><li>The spec v2 schema split by ruleset; the flat order union.</li><li>`BattleOutcome` as a d6 or d20 union; outcome files per area.</li><li>Built-in modules with the `m2-strength` preset (tiny-front).</li><li>Phases run in area order; cross-area hooks (`engine/hooks.ts`); per-area turn scratch.</li><li>Hidden information: `viewFor`, `outcomesFor`, `ordersFor`, `useSession`.</li><li>AI profiles and blunders in data; lazy scenario packages.</li><li>Follow-ups: report lines carry outcome data; per-module `validateOrder`; resource display scale; build budget in profiles.</li></ul> |
+| `m3r1-map-provinces` | CP1 1-10, CP2 11-15, CP3 overrides | `map-provinces.md` | <ul><li>55 sub-territories from ADM2 inside the region rings (D11, D12).</li><li>The generated topology file is the single source for borders, entries and city placement, with a test keeping `scenario.json` equal to it.</li><li>Historical entry overrides; Baleares sea links.</li></ul> |
+| `m3r1-sim-harness` | 1-14 | `sim-harness.md` | <ul><li>The Vite-bundled CLI with worker threads; JSON output.</li><li>Freeze and stalled measured separately (D9).</li><li>Wilson and Student-t intervals; RFC 6902 variants.</li><li>The blunder seam at `/ai/blunderChance` (D10).</li><li>Bookkeeping read from board diffs; a 10-game smoke run.</li></ul> |
+| `m3r1-sub-territories` | ST-1 to ST-21 | `sub-territories.md` | <ul><li>Control derived from holders, with loader rule L26.</li><li>Contested status judged at the start of the turn.</li><li>The P6 path rule through `retreatAllowed`; the `orderVerdict` veto.</li><li>Sweeps, plus outside-in flips nearest the origin.</li><li>One `isContested`, in `engine/partition/holders.ts`.</li></ul> |
+| `m3r1-d20-combat` | DC-1 to DC-19 | `d20-combat.md` | <ul><li>The 7 x 21 grade table and its catalogue.</li><li>`losses` as the single source of truth.</li><li>Best single general per side (D5); fatigue on a mixed side (D6).</li><li>The capital holder defends in three-way battles.</li><li>A d20 `estimateAttack`; the battle card bands.</li></ul> |
+| `m3r1-economy-builds` | EB-1 to EB-22 | `economy-builds.md` | <ul><li>Income from territories held whole.</li><li>Build queues paid with a running ledger: forfeit, inherit, refund and pause.</li><li>Rail damage applied once, at step 10.</li><li>Header chips; the Build tab; private failed builds.</li></ul> |
+| `m3r1-recruit-replenish` | RR-1 to RR-24 | `recruit-replenish.md` | <ul><li>`r_` ids for raised units, with definitions in `GameState.raised`.</li><li>Recruit limits per D7; the contested pause for training (C8).</li><li>Replenish cancel and refund; the Recruit tab and its basket.</li></ul> |
+| `m3r1-movement-rail-ports` | MV-1 to MV-28 | `movement-rail-ports.md` | <ul><li>One route checker for engine, planning and the AI.</li><li>The movement allowance; armies held back rather than disbanded.</li><li>Rail reach and capacity; transit and interception.</li><li>Sea and amphibious moves; the route card and rail layer.</li></ul> |
+| `m3r1-air-generals` | AG-1 to AG-26 | `air-generals.md` | <ul><li>Aircraft are off the ground board in steps 1 to 8 (D17).</li><li>Raids roll on their own stream; cuts go through `incomeDelta`.</li><li>Generals: emitted by d20, rally after morale, seeded death, replacements at the seat.</li></ul> |
+| `m3r1-weather-timer` | WT-1 to WT-22 | `weather-timer.md` | <ul><li>`beforePlanning` rolls the weather in the coordinator.</li><li>Weather effects go through the hooks.</li><li>`timedOut` on the submission; a separate timer slice.</li><li>The territory heading sits above the tabs (WT-17).</li></ul> |
+| `m3r1-test-health` | 1-6 | `test-health.md` | <ul><li>Tests shortened rather than limits raised.</li><li>Diagnosed the causes of S1 and S3 (D22 to D24).</li></ul> |
+| `m3r1-ai-fixes` | 1-8 | report in D30 | <ul><li>Sourced garrisons.</li><li>Targeted defence of critical ground; reach counted by rail, truck and sea.</li><li>Withdrawals judged on the engine's odds, with seat and last-stand thresholds in profiles.</li></ul> |
+| Review and fix streams | per report | D25 to D31 | <ul><li>Five reviewers found 16 blockers and 41 majors.</li><li>Five fixers closed every blocker and nearly every major.</li><li>The integrator defaults they used are D27 and D28.</li><li>Leftover minors go to Revision 2 planning.</li></ul> |
+
+**D33. Close-out scope (owner, 20 November 2026).** Revision 1 is functionally complete. The owner set the close-out scope, and set a budget of 1M tokens for the close-out.
+
+In scope:
+- Meet the coverage gate, pulling logic out of UI components into pure functions where that makes it testable.
+- Write this summary and the rubric.
+
+Skipped:
+- regenerating the visual baselines: the Revision 2 UX feedback replaces those screens;
+- the leftover minors: they go to Revision 2 planning;
+- the quiet-machine timing tests;
+- `npm run verify` and the production smoke: more changes are coming.
+
+The balance and rule questions in the sitrep remain open for the owner.
