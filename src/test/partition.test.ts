@@ -188,6 +188,7 @@ describe("the computer player in contested ground (H5)", () => {
     const { generateComputerSubmission } = await import("../main/ai/computerPlayer");
     const { rollStream, deriveSeed } = { ...(await import("../main/engine/dice")), ...(await import("../main/engine/random")) };
     const { seededRandom } = await import("../main/engine/random");
+    const d20Ground: unknown[] = [];
     for (const [scenario, seed] of [[spain(), 1], [spain(), 2], [spainD20(), 1], [spainD20(), 2]] as const) {
       let state = initialGameState(scenario);
       for (let turn = 1; turn <= 12; turn += 1) {
@@ -196,9 +197,18 @@ describe("the computer player in contested ground (H5)", () => {
         const result = resolveTurn(scenario, state, submissions, seed);
         const bad = result.outcomes.filter((outcome) => outcome.kind === "invalid-order" || (outcome.kind === "rejected-order" && outcome.order.kind === "withdraw"));
         expect(bad).toEqual([]);
+        // P4 under the shipped d20: battles flip sub-territories, each change naming a battle of the turn.
+        if (scenario.rules.dice === "d20-graded") {
+          const battles = result.outcomes.filter((outcome) => outcome.kind === "battle").length;
+          for (const change of result.subTerritoryChanges.filter((entry) => entry.cause === "battle")) {
+            expect(change.battleIndex).toBeLessThan(battles);
+            d20Ground.push(change);
+          }
+        }
         if (result.victory !== undefined) break;
         state = { ...result.finalState, turnNumber: result.finalState.turnNumber + 1 };
       }
     }
+    expect(d20Ground.length).toBeGreaterThan(0);
   });
 });
