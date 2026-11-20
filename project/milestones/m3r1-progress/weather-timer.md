@@ -61,11 +61,7 @@ Mode: make it work (declog D13). Decisions T1-T6, the timer and readiness parts 
 
 ## Stubbed or inert until another stream calls it
 
-- **Grounding:** `weatherHooks.grounded` is written and tested. Nothing calls `hookedGrounded` yet (`m3r1-air-generals`).
-- **Movement penalty:** `weatherHooks.allowanceDelta` is written and tested. Nothing calls `hookedAllowanceDelta` yet (`m3r1-movement-rail-ports`).
-- **Sea closure:** `isSeaConnectionClosed` and `isSeaRouteClosed` are written and tested. No validation calls them yet (`m3r1-movement-rail-ports`).
-- **Weather on destination rows:** `WeatherChip` is exported. `DestinationChoices` belongs to `m3r1-movement-rail-ports`, and I did not edit it.
-- So the sim's weather difference measures only the attack modifier, the dig-in block and frostbite.
+Nothing now: movement calls `hookedAllowanceDelta` and `isSeaRouteClosed`, air calls `hookedGrounded`, and the destination rows show `WeatherChip`. Since m3r1-fix-economy-recruit, frostbite also takes units that withdraw, judged where they end up.
 
 ## Needs from
 
