@@ -333,6 +333,18 @@
                         "maximum": 1,
                         "description": "Share of each resource left after Recruit orders that builds may spend."
                       },
+                      "reserveShare": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1,
+                        "description": "M5: share of each resource that builds cost which Recruit orders leave unspent; at least the price of the development item saved for."
+                      },
+                      "developmentProjects": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991,
+                        "description": "M5: development items the faction keeps queued. While it has fewer, Recruit orders leave the best one's price and Build orders buy it first."
+                      },
                       "maxOrdersPerTurn": {
                         "type": "integer",
                         "minimum": 0,
@@ -348,6 +360,8 @@
                     },
                     "required": [
                       "spendShare",
+                      "reserveShare",
+                      "developmentProjects",
                       "maxOrdersPerTurn",
                       "itemsPerEmptyQueue"
                     ],
@@ -1170,6 +1184,18 @@
                         "maximum": 1,
                         "description": "Share of each resource left after Recruit orders that builds may spend."
                       },
+                      "reserveShare": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1,
+                        "description": "M5: share of each resource that builds cost which Recruit orders leave unspent; at least the price of the development item saved for."
+                      },
+                      "developmentProjects": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991,
+                        "description": "M5: development items the faction keeps queued. While it has fewer, Recruit orders leave the best one's price and Build orders buy it first."
+                      },
                       "maxOrdersPerTurn": {
                         "type": "integer",
                         "minimum": 0,
@@ -1185,6 +1211,8 @@
                     },
                     "required": [
                       "spendShare",
+                      "reserveShare",
+                      "developmentProjects",
                       "maxOrdersPerTurn",
                       "itemsPerEmptyQueue"
                     ],

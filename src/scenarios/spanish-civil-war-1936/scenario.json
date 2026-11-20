@@ -139,6 +139,8 @@
         },
         "builds": {
           "spendShare": 0.6,
+          "reserveShare": 0.3,
+          "developmentProjects": 1,
           "maxOrdersPerTurn": 3,
           "itemsPerEmptyQueue": 1
         }
@@ -171,6 +173,8 @@
         },
         "builds": {
           "spendShare": 0.6,
+          "reserveShare": 0.3,
+          "developmentProjects": 1,
           "maxOrdersPerTurn": 3,
           "itemsPerEmptyQueue": 1
         }
@@ -203,6 +207,8 @@
         },
         "builds": {
           "spendShare": 0.6,
+          "reserveShare": 0.3,
+          "developmentProjects": 1,
           "maxOrdersPerTurn": 3,
           "itemsPerEmptyQueue": 1
         }

@@ -29,7 +29,7 @@ export function modularScenario(): Json {
   const base = structuredClone(tinyScenario) as unknown as Json;
   const factions = (base["factions"] as Json[]).map((faction) => ({ ...faction, startingStock: { funds: 10, manpower: 5 }, seatTerritoryId: faction["id"] === "red" ? "westfold" : "harbor" }));
   const ai = base["ai"] as Json;
-  const profiles = Object.fromEntries(Object.entries(ai["profiles"] as Record<string, Json>).map(([id, profile]) => [id, { ...profile, builds: { spendShare: 0.6, maxOrdersPerTurn: 3, itemsPerEmptyQueue: 1 } }]));
+  const profiles = Object.fromEntries(Object.entries(ai["profiles"] as Record<string, Json>).map(([id, profile]) => [id, { ...profile, builds: { spendShare: 0.6, reserveShare: 0.3, developmentProjects: 1, maxOrdersPerTurn: 3, itemsPerEmptyQueue: 1 } }]));
   const capitals: Record<string, string> = { westfold: "west-town-quarter", highlands: "highlands", harbor: "port-quarter", lowlands: "lowlands", isle: "isle" };
   return {
     ...base,

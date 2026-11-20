@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { generateComputerSubmission } from "../main/ai/computerPlayer";
-import { planBuilds } from "../main/ai/orders/build";
+import { buildReserve, developmentTarget, planBuilds } from "../main/ai/orders/build";
 import type { PlanningContext } from "../main/ai/orders/planner";
 import { plannedSpend, validateBuildOrder } from "../main/engine/economy/catalogue";
 import { amountOf } from "../main/engine/economy/resources";
@@ -38,17 +38,17 @@ describe("computer Build orders (H5)", () => {
   });
 
   it("reads its budget from the faction's AI profile (EB-15)", () => {
-    expect(budget(spain(), "south")).toEqual({ itemsPerEmptyQueue: 1, maxOrdersPerTurn: 3, spendShare: 0.6 });
+    expect(budget(spain(), "south")).toEqual({ developmentProjects: 1, itemsPerEmptyQueue: 1, maxOrdersPerTurn: 3, reserveShare: 0.3, spendShare: 0.6 });
     const state = { ...initialGameState(scenario), treasuries: { [faction("red")]: { [funds]: 40 } } };
     const withBudget = (builds: NonNullable<Scenario["ai"]["profiles"][never]["builds"]>): Scenario => ({
       ...scenario,
       ai: { ...scenario.ai, profiles: { ...scenario.ai.profiles, [faction("red")]: { ...scenario.ai.profiles[faction("red")]!, builds } } }
     });
-    expect(planBuilds(contextFor(withBudget({ itemsPerEmptyQueue: 1, maxOrdersPerTurn: 0, spendShare: 0.6 }), state, "red"))).toEqual([]);
-    expect(planBuilds(contextFor(withBudget({ itemsPerEmptyQueue: 1, maxOrdersPerTurn: 3, spendShare: 0 }), state, "red"))).toEqual([]);
-    const one = planBuilds(contextFor(withBudget({ itemsPerEmptyQueue: 1, maxOrdersPerTurn: 1, spendShare: 1 }), state, "red"));
+    expect(planBuilds(contextFor(withBudget({ developmentProjects: 0, itemsPerEmptyQueue: 1, maxOrdersPerTurn: 0, reserveShare: 0.3, spendShare: 0.6 }), state, "red"))).toEqual([]);
+    expect(planBuilds(contextFor(withBudget({ developmentProjects: 0, itemsPerEmptyQueue: 1, maxOrdersPerTurn: 3, reserveShare: 0.3, spendShare: 0 }), state, "red"))).toEqual([]);
+    const one = planBuilds(contextFor(withBudget({ developmentProjects: 0, itemsPerEmptyQueue: 1, maxOrdersPerTurn: 1, reserveShare: 0.3, spendShare: 1 }), state, "red"));
     expect(one).toHaveLength(1);
-    const two = planBuilds(contextFor(withBudget({ itemsPerEmptyQueue: 2, maxOrdersPerTurn: 9, spendShare: 1 }), state, "red"));
+    const two = planBuilds(contextFor(withBudget({ developmentProjects: 0, itemsPerEmptyQueue: 2, maxOrdersPerTurn: 9, reserveShare: 0.3, spendShare: 1 }), state, "red"));
     const perSite = new Map<string, number>();
     for (const order of two) perSite.set(order.subTerritoryId, (perSite.get(order.subTerritoryId) ?? 0) + 1);
     expect(Math.max(...perSite.values())).toBe(2);
@@ -84,5 +84,72 @@ describe("computer Build orders (H5)", () => {
       state = { ...result.finalState, turnNumber: state.turnNumber + 1 };
     }
     expect(built).toBeGreaterThan(0);
+  });
+});
+
+describe("computer development and support builds (M5, m4, m5)", () => {
+  const target = spain();
+  const republic = faction("republic");
+
+  it("queues development for every faction within a few turns, and fortifies a territory once, in its capital", () => {
+    let state = initialGameState(target);
+    const developed = new Set<string>();
+    for (let turn = 1; turn <= 6; turn += 1) {
+      const submissions = target.factions.map((entry, index) => generateComputerSubmission(target, state, entry.id, seededRandom(turn * 10 + index)));
+      const result = resolveTurn(target, state, submissions, 5);
+      for (const outcome of result.outcomes) {
+        if (outcome.kind === "build-queued" && outcome.order.project.kind === "development") developed.add(outcome.order.factionId);
+      }
+      state = { ...result.finalState, turnNumber: state.turnNumber + 1 };
+      // m4: never two defence-roll buildings, built or queued, in one territory; and only in capitals.
+      for (const territory of target.territories) {
+        const forts = (target.index.subTerritoriesByTerritory.get(territory.id) ?? []).filter((sub) => {
+          const site = state.subTerritories[sub.id];
+          return site !== undefined && (site.buildings.includes("fortifications" as never) || site.queue.some((item) => item.project.kind === "building" && item.project.buildingId === "fortifications"));
+        });
+        expect(forts.length).toBeLessThanOrEqual(1);
+        for (const sub of forts) expect(sub.id).toBe(territory.capitalSubTerritoryId);
+      }
+    }
+    expect([...developed].sort()).toEqual(target.factions.map((entry) => entry.id).sort());
+  });
+
+  it("the Recruit planner saves the development item's price, and never holds Manpower back", () => {
+    const start = initialGameState(target);
+    const view = viewFor(target, start, republic);
+    const context = { factionId: republic, scenario: target, state: view };
+    const saving = developmentTarget(context);
+    expect(saving?.order.project.kind).toBe("development");
+    const reserve = buildReserve(context, { funds: 4, manpower: 50 } as never);
+    expect(Object.keys(reserve)).toEqual(["funds"]);
+    expect(amountOf(reserve, funds)).toBe(amountOf(saving!.price, funds));
+    // With an item already queued, it keeps only the profile's share.
+    const queued = saving!.order;
+    const busy: GameState = { ...start, subTerritories: { ...start.subTerritories, [queued.subTerritoryId]: { ...start.subTerritories[queued.subTerritoryId]!, queue: [{ factionId: republic, paid: {}, progress: 0, project: queued.project }] } } };
+    expect(developmentTarget({ ...context, state: viewFor(target, busy, republic) })).toBeUndefined();
+    expect(buildReserve({ ...context, state: viewFor(target, busy, republic) }, { funds: 40 } as never)).toEqual({ funds: 12 });
+  });
+
+  it("builds a Hospital at a front capital and a Rail yard where there is rail, once a territory, when nothing better is left", () => {
+    const start = initialGameState(target);
+    // Plenty of money and nothing else to buy: every capital already has its unlocking buildings and Fortifications.
+    const capitals = new Set(target.territories.map((entry) => entry.capitalSubTerritoryId));
+    const everything = ["barracks", "factory", "depot", "airfield", "fortifications"];
+    const subTerritories = Object.fromEntries(Object.entries(start.subTerritories).map(([id, site]) => [id, capitals.has(id as SubTerritoryId)
+      ? { ...site, buildings: [...new Set([...site.buildings, ...everything.filter((building) => building !== "factory" || target.cities.some((entry) => entry.subTerritoryId === id))])] as never[], development: Object.fromEntries(Object.keys(site.development).map((track) => [track, 3])) }
+      : site]));
+    const state: GameState = { ...start, subTerritories, treasuries: { ...start.treasuries, [republic]: { funds: 200, manpower: 50 } as never } };
+    const sansDevelopment: Scenario = { ...target, ai: { ...target.ai, profiles: { ...target.ai.profiles, [republic]: { ...target.ai.profiles[republic]!, builds: { ...target.ai.profiles[republic]!.builds!, developmentProjects: 0, itemsPerEmptyQueue: 3, maxOrdersPerTurn: 40, spendShare: 1 } } } } };
+    const orders = planBuilds(contextFor(sansDevelopment, state, "republic"));
+    const kinds = orders.flatMap((order) => (order.project.kind === "building" ? [order.project.buildingId] : []));
+    expect(kinds).toContain("hospital");
+    expect(kinds).toContain("rail-yard");
+    expect(kinds).not.toContain("fortifications");
+    const perTerritory = new Map<string, number>();
+    for (const order of orders.filter((entry) => entry.project.kind === "building" && entry.project.buildingId === "hospital")) {
+      const territoryId = target.index.subTerritories.get(order.subTerritoryId)!.territoryId;
+      perTerritory.set(territoryId, (perTerritory.get(territoryId) ?? 0) + 1);
+    }
+    expect(Math.max(...perTerritory.values())).toBe(1);
   });
 });
