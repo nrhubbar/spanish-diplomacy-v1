@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { initialGameState, resolveTurn } from "../main/engine/resolution";
 import { carryOf, carryScale, chargeReplenish, priceReplenishments, replenishQuote, uncharge } from "../main/engine/recruitment/rules";
 import { viewFor } from "../main/engine/visibility";
+import { replenishDetail, replenishPriceLabel } from "../main/presentation/recruitment";
 import type { BuildingId, GameState, Resources, SubTerritoryId, TurnOutcome, UnitState } from "../main/engine/types";
 import { faction, spainD20, unit } from "./support";
 
@@ -40,6 +41,9 @@ describe("Replenish prices carry their fractions (B2, D28.3)", () => {
     expect(quote.owed).toEqual(amount(387, 65));
     expect(quote.cost).toEqual(amount(0, 0));
     expect(quote.men).toBe(100);
+    // The order menu and the report say so rather than "nothing".
+    expect(replenishDetail(scenario, state, [regiment])).toContain("under a point, added to later orders");
+    expect(replenishPriceLabel(scenario, amount(1, 0))).toBe("1 Funds");
   });
 
   it("over several orders pays the true price to within a point, never a whole point per order", () => {

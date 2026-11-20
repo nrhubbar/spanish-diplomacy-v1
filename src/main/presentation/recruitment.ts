@@ -41,7 +41,16 @@ export function replenishDetail(scenario: Scenario, state: GameState, units: rea
   // RR-12: only units below strength replenish, so there are always men to bring.
   const gain = `+${String(men)} men${recovers ? " and morale" : ""}`;
   const who = units.length === 1 ? "the unit fights" : "a unit fights";
-  return [`${gain}, arriving at the end of the turn`, resourcesLabel(scenario, cost), `cancelled and refunded if ${who}`].join(` ${glyphs.dot} `);
+  return [`${gain}, arriving at the end of the turn`, replenishPriceLabel(scenario, cost), `cancelled and refunded if ${who}`].join(` ${glyphs.dot} `);
+}
+
+/**
+ * B2: what a Replenish pays at reveal: "1 Funds", or, when it owes less than a whole point so
+ * far, "under a point, added to later orders" (the faction's carry, D28.3).
+ */
+export function replenishPriceLabel(scenario: Scenario, paid: Resources): string {
+  const label = resourcesLabel(scenario, paid);
+  return label === "nothing" ? "under a point, added to later orders" : label;
 }
 
 /** X7: a unit in training, for the Units tab: "ready at the end of this turn", "ready in 2 turns", or paused. */
