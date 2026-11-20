@@ -1,6 +1,7 @@
 import { columnBands, type GradeBand } from "../engine/d20/odds";
-import type { BattleOutcome, BattleResult, D20BattleOutcome, GradeDefinition, GradeSideEffect, Scenario } from "../engine/types";
+import type { BattleOutcome, BattleResult, CombatModifier, D20BattleOutcome, GradeDefinition, GradeSideEffect, Scenario } from "../engine/types";
 import { glyphs } from "./glyphs";
+import { modifierName } from "./odds";
 import { outcomeText } from "./outcomeText";
 
 /**
@@ -55,7 +56,7 @@ export function battleTitle(scenario: Scenario, battle: BattleOutcome): string {
 export function groundText(ground: GradeDefinition["ground"]): string {
   if (ground === "all") return "takes all";
   if (ground === 0) return "no ground";
-  return `${String(ground)} sub-${ground === 1 ? "territory" : "territories"} change hands`;
+  return ground === 1 ? "1 sub-territory changes hands" : `${String(ground)} sub-territories change hands`;
 }
 
 function sideText(who: string, effect: GradeSideEffect): string | undefined {
@@ -92,6 +93,13 @@ export function battleBands(scenario: Scenario, battle: D20BattleOutcome): reado
     hit: battle.score >= band.from && battle.score <= band.to,
     range: band.from === band.to ? String(band.from) : `${String(band.from)}\u2013${String(band.to)}`
   }));
+}
+
+/** A modifier's name in the score line, where its signed roll follows it: "Popular resistance", "Dug in". */
+export function termName(modifier: CombatModifier, scenario: Scenario): string {
+  if (modifier.kind === "faction") return modifier.name;
+  if (modifier.kind === "dug-in") return "Dug in";
+  return modifierName(modifier, scenario);
 }
 
 /** The score before the 0..20 clamp, so the card can say when the clamp applied. */

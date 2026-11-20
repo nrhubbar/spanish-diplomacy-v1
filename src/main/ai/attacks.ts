@@ -155,8 +155,9 @@ function battleScore(context: AttackContext, target: TerritoryId, odds: BattleOd
 
 /**
  * C6, H5: on the d20, each attacking unit gains fatigue. A unit that this attack would take to
- * the demoralizing level costs what demoralization costs (its value times `demoralizedShare`,
- * weighed as an own loss), so the computer player rests worn units unless the prize is worth it.
+ * the demoralizing level is out of action until it rests (it cannot attack while demoralized,
+ * and in contested ground only a general rallies it, C4), so it costs its whole attack value,
+ * weighed as an own loss. The computer player rests worn units unless the prize is worth it.
  */
 export function fatigueCost(context: AttackContext, armies: readonly UnitState[]): number {
   const { scenario, weights } = context;
@@ -164,5 +165,5 @@ export function fatigueCost(context: AttackContext, armies: readonly UnitState[]
   const { demoralizedLevel } = scenario.d20.fatigue;
   return armies
     .filter((unit) => unit.fatigue + 1 >= demoralizedLevel)
-    .reduce((sum, unit) => sum + weights.ownLoss * weights.demoralizedShare * context.assessment.attackOf(unit), 0);
+    .reduce((sum, unit) => sum + weights.ownLoss * context.assessment.attackOf(unit), 0);
 }

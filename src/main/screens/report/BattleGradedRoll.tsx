@@ -2,8 +2,8 @@ import type { JSX } from "react";
 import type { D20BattleOutcome, Scenario } from "../../engine/types";
 import { columnLabel } from "../../presentation/battleText";
 import { glyphs } from "../../presentation/glyphs";
-import { battleBands, gradeEffect, rawScore } from "../../presentation/grades";
-import { modifierName, signed } from "../../presentation/odds";
+import { battleBands, gradeEffect, rawScore, termName } from "../../presentation/grades";
+import { signed } from "../../presentation/odds";
 
 /**
  * D8: a d20 battle's roll. The odds and column, then the die, every modifier by name and the
@@ -24,7 +24,7 @@ export function BattleGradedRoll({ battle, scenario }: { readonly battle: D20Bat
         <span className="battle-score-sum">
           {`d20 ${String(battle.die)}`}
           {battle.modifiers.map((modifier, index) => (
-            <span className="battle-score-term" key={`${modifier.kind}-${String(index)}`}>{` ${glyphs.dot} ${modifierName(modifier, scenario)} ${signed(modifier.roll)}`}</span>
+            <span className="battle-score-term" key={`${modifier.kind}-${String(index)}`}>{` ${glyphs.dot} ${termName(modifier, scenario)} ${signed(modifier.roll)}`}</span>
           ))}
           {" = "}
           <strong>{String(battle.score)}</strong>
