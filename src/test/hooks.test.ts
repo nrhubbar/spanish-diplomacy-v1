@@ -7,12 +7,14 @@ import {
   hookedIncome,
   hookedRecruitRequirements,
   hookedReplenishBonus,
-  type RuleHooks
+  type RuleHooks,
+  unavailableOrderReason
 } from "../main/engine/hooks";
 import { createModuleRegistry, type RuleModule } from "../main/engine/modules";
 import type { Phase } from "../main/engine/phases/draft";
 import { initialGameState, resolveTurn } from "../main/engine/resolution";
-import type { GameState, Resources, SubTerritoryId, TurnOutcome, UnitId, UnitTypeId } from "../main/engine/types";
+import type { GameState, Order, Resources, SubTerritoryId, TurnOutcome, UnitId, UnitTypeId } from "../main/engine/types";
+import { validateOrder } from "../main/engine/validation";
 import { ordersFor, outcomesFor } from "../main/engine/visibility";
 import { loadPackage } from "../main/scenarios/loader";
 import { emptyDraft, type GameRecord, type Session } from "../main/state/session";
@@ -73,6 +75,35 @@ describe("cross-area rule hooks", () => {
     expect(hookedIncome({ ...plain, factionId: faction("red"), income: { [funds]: 3 } as Resources })).toEqual({ funds: 3 });
     expect(hookedReplenishBonus({ ...plain, territoryId: territory("westfold"), unitId: unit("red-guard") })).toEqual({ capShare: 0, rateShare: 0 });
     expect(hookedRecruitRequirements({ ...recruit, ...plain })).toEqual([]);
+  });
+});
+
+describe("order validation by the owning module (M1, M9)", () => {
+  const recon: Order = { factionId: faction("red"), kind: "air-mission", mission: { kind: "recon", territoryId: territory("lowlands") }, unitId: unit("red-guard") };
+  const sack: Order = { factionId: faction("red"), kind: "sack", unitId: unit("red-guard") };
+  const judge = (module: RuleModule, order: Order) => {
+    const scenario = withModule(module);
+    return validateOrder(scenario, initialGameState(scenario), order);
+  };
+
+  it("finds an order kind no selected module owns unavailable, whatever the verdicts", () => {
+    expect(judge({ area: "air", blocks: [], id: "no-orders", steps: {} }, recon)).toEqual({ ok: false, reason: unavailableOrderReason });
+    const accepting = { area: "air", blocks: [], hooks: { orderVerdict: () => ({ ok: true }) }, id: "verdict-only", steps: {} } satisfies RuleModule;
+    expect(judge(accepting, recon)).toEqual({ ok: false, reason: unavailableOrderReason });
+  });
+
+  it("lets the owner decide, typed by kind, and lets another module's verdict veto what it accepts", () => {
+    const owner: RuleModule = {
+      area: "air",
+      blocks: [],
+      hooks: { validateOrder: { "air-mission": ({ order }) => (order.mission.kind === "recon" ? { ok: false, reason: "No recon in the test." } : { ok: true }), sack: () => ({ ok: true }) } },
+      id: "owner",
+      steps: {}
+    };
+    expect(judge(owner, recon)).toEqual({ ok: false, reason: "No recon in the test." });
+    expect(judge(owner, sack)).toEqual({ ok: true });
+    const vetoed: RuleModule = { ...owner, hooks: { ...owner.hooks, orderVerdict: ({ order }) => (order.kind === "sack" ? { ok: false, reason: "Vetoed." } : undefined) } };
+    expect(judge(vetoed, sack)).toEqual({ ok: false, reason: "Vetoed." });
   });
 });
 
