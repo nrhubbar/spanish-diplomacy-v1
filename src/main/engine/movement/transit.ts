@@ -12,6 +12,7 @@ import type {
   TerritoryId,
   UnitId
 } from "../types";
+import { hasFighter } from "../units/fighting";
 import { armyAllowance, fitsAllowance, transportOf } from "./allowance";
 import { portLandings, railDepartures } from "./network";
 import { armyKey, describeRoute, legsOf, type MoveRoute, routeClaims } from "./routes";
@@ -45,9 +46,10 @@ export function armiesOf(scenarioKey: (order: MoveOrder) => string, orders: read
  * Step 1, the `allowance` module's part (M1, M3, M5). Each order's legs were checked on their
  * own; here the moves are grouped into armies (W4) and checked as armies: the route must fit the
  * army's allowance, and its boarding capital, landing port or sea lane must have room. Armies
- * are served in the order their first unit was ordered. An army that cannot go stays where it
- * is, with its standing order; nothing is disbanded. The rest are sorted again into
- * reinforcements and advances (M11).
+ * are served in the order their first unit was ordered. D27.1: an army with no unit that can
+ * fight (generals, trucks, anti-air) may not advance; it may only reinforce its own side. An army
+ * that cannot go stays where it is, with its standing order; nothing is disbanded. The rest are
+ * sorted again into reinforcements and advances (M11).
  */
 export const checkArmies: Phase = (draft) => {
   const { scenario, start } = draft.input;
@@ -57,6 +59,7 @@ export const checkArmies: Phase = (draft) => {
   const landings = new Map<string, number>();
   const lanes = new Map<string, number>();
   const heldUnits = new Set<UnitId>();
+  const advancing = new Set(classifyMoves(start.control, draft.armies, draft.orders.valid).advances.map((order) => order.unitId));
   for (const army of armiesOf((order) => armyKey(scenario, order), draft.orders.valid)) {
     const [first] = army.orders;
     if (first === undefined) continue;
@@ -66,6 +69,7 @@ export const checkArmies: Phase = (draft) => {
     const reason = ((): HeldBackReason | undefined => {
       if (!check.ok) return "allowance";
       const { route } = check;
+      if (unitIds.some((unitId) => advancing.has(unitId)) && !hasFighter(scenario, start.raised, unitIds)) return "cannot-fight";
       if (!fitsAllowance(route.cost, route.steps, armyAllowance(scenario, start, first.factionId, first.from, unitIds))) return "allowance";
       const claims = routeClaims(route);
       if (claims.departure !== undefined && (departures.get(claims.departure) ?? 0) >= railDepartures(scenario, start, claims.departure)) return "rail-departures";

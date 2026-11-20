@@ -1,6 +1,7 @@
 import { hookedOrderVerdict } from "../hooks";
 import { isNeighbor, neighborsOf } from "../lookup";
 import type { FactionId, GameState, MoveLeg, MoveOrder, Scenario, SubTerritoryId, TerritoryId, UnitId } from "../types";
+import { hasFighter } from "../units/fighting";
 import { armyAllowance, fitsAllowance, stepCost, transportOf } from "./allowance";
 import {
   connectionBetween,
@@ -281,10 +282,13 @@ export function moveRoutes(
   const found = new Map<TerritoryId, MoveRoute>();
   // M23: a demoralized unit cannot attack, so it may not enter where another faction stands.
   const demoralized = unitIds.some((unitId) => state.units[unitId]?.morale.demoralized === true);
+  // D27.1: units that cannot fight only reinforce their own side (M11), as step 1 holds them back otherwise.
+  const fighterless = unitIds.length > 0 && !hasFighter(scenario, state.raised, unitIds);
   const offer = (legs: readonly MoveLeg[]): void => {
     const to = legs[legs.length - 1]?.to;
     if (to === undefined || to === from || found.has(to)) return;
     if (demoralized && enemyArmyIn(state, factionId, to)) return;
+    if (fighterless && !reinforces(state, factionId, to, ordered)) return;
     // C1: a module may refuse the move outright (no move leaves contested ground, `orderVerdict`).
     const [probe] = unitIds;
     if (probe !== undefined && hookedOrderVerdict({ order: { factionId, from, kind: "move", legs, to, unitId: probe }, scenario, state })?.ok === false) return;
@@ -305,6 +309,13 @@ export function moveRoutes(
     for (const next of landNeighbors(scenario, end)) offer([{ kind: "rail", to: end }, { kind: "land", to: next }]);
   }
   return found;
+}
+
+/** M11: a move into ground the faction controls, or where its units that are not moving stand, is a reinforcement. */
+function reinforces(state: GameState, factionId: FactionId, to: TerritoryId, moving: ReadonlySet<UnitId>): boolean {
+  const control = state.control[to];
+  return (control?.kind === "controlled" && control.factionId === factionId)
+    || Object.values(state.units).some((unit) => unit.territoryId === to && unit.factionId === factionId && !moving.has(unit.id));
 }
 
 /** M1, M2: land paths of 2 up to `allowance` steps through friendly ground, shortest first, in scenario order. */
