@@ -194,3 +194,21 @@ e2e on all five projects:
    Fixed in make-it-right as computer-player behaviour.
 
 **D24. S3 keeps counting withdrawals (integrator decision).** The test-health stream exempted Withdraw from S3. That hides a real planner fault: in seed 100, the South withdrew all 7 units from Andalucía, its seat. S3 exists to catch the computer player walking off objectives, so the exemption is reverted. The withdraw planner is fixed so it never abandons a faction's seat or last objective while it can still hold.
+
+**D25. Contract follow-ups merged (`3db2a38`).** The shared changes landed before the review:
+- report lines take the whole typed outcome;
+- a per-module `validateOrder` hook, after which `orderVerdict` only vetoes;
+- `resources[].display`, so Manpower reads "10k";
+- the AI build budget lives in `ai.profiles`;
+- RR-12 is fixed: Replenish needs a unit below strength.
+
+A 30-seed probe was byte-identical before and after every change. One gap is left for the UI review: the turn report shows only the moves, air and generals lines. The economy, recruitment, contested-ground, transit and fatigue lines exist but are shown nowhere (contract follow-ups decision 7).
+
+**D26. Review shape.** The review runs on the integrated `milestone-3-rev-1`, not the old stream diffs. There are five read-only reviewers:
+- `m3r1-review-map-movement`: sub-territories, movement, rail and ports;
+- `m3r1-review-combat-air`: d20, fatigue and morale, air and generals;
+- `m3r1-review-economy-recruit-time`: economy, recruitment, weather and timer;
+- `m3r1-review-hidden-info`: hidden information in hot-seat play, across rules and UI;
+- `m3r1-review-ui`: the UI against the approved `ux-*.webp` captures, icons (X8), axe, phone layouts and the report sections.
+
+Fresh fixers then take their gap lists, at most four at once.
