@@ -154,6 +154,8 @@ export interface AiBuildBudget {
    * fewer, Recruit orders leave the best one's price and Build orders buy it first.
    */
   readonly developmentProjects: number;
+  /** M5: the most of a resource's balance the saved-for development item may take; above it, Recruit orders come first. */
+  readonly developmentShare: number;
 }
 
 /** E7: a computer player's weights for one faction. The strategy logic stays in code. */

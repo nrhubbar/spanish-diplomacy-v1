@@ -76,4 +76,28 @@ describe("the Recruit tab and the Replenish order (X4, X7)", () => {
     const session = store.getState().game.session;
     expect(session.phase === "planning" ? session.draft.recruits?.length : 0).toBe(1);
   });
+
+  it("says why a site or a type is closed: contested ground, full slots and a short balance", async () => {
+    const poor: GameState = { ...state, treasuries: { ...state.treasuries, [republic]: { funds: 7, manpower: 30 } as never } };
+    const { store, user } = renderPlanning(poor);
+    // Pais Vasco is contested from turn 1 (Alava is the North's): the site note locks every row.
+    store.dispatch(clickMapTerritory(territory("pais-vasco")));
+    await user.click(await screen.findByRole("tab", { name: "Recruit" }));
+    expect(screen.getByRole("note").textContent).toMatch(/contested/u);
+    expect(screen.queryByRole("button", { name: "One more Militia column" })).toBeNull();
+    cleanup();
+
+    const again = renderPlanning(poor);
+    again.store.dispatch(clickMapTerritory(territory("catalunya")));
+    await again.user.click(await screen.findByRole("tab", { name: "Recruit" }));
+    expect(screen.getByText("0 of 3 Recruit orders here this turn")).toBeTruthy();
+    // 7 Funds: one infantry regiment (6) leaves too little for a second.
+    await again.user.click(screen.getByRole("button", { name: "One more Infantry regiment" }));
+    expect(screen.getByRole("button", { name: "One more Infantry regiment" }).getAttribute("title")).toBe("Not enough Funds.");
+    await again.user.click(screen.getByRole("button", { name: "One fewer Infantry regiment" }));
+    for (let index = 0; index < 3; index += 1) await again.user.click(screen.getByRole("button", { name: "One more Militia column" }));
+    expect(screen.getByText("3 of 3 Recruit orders here this turn")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "One more Militia column" }).getAttribute("title")).toBe("No Recruit orders left here this turn.");
+    expect(screen.getByText(/Left: 1 Funds/u)).toBeTruthy();
+  });
 });

@@ -38,17 +38,17 @@ describe("computer Build orders (H5)", () => {
   });
 
   it("reads its budget from the faction's AI profile (EB-15)", () => {
-    expect(budget(spain(), "south")).toEqual({ developmentProjects: 1, itemsPerEmptyQueue: 1, maxOrdersPerTurn: 3, reserveShare: 0.3, spendShare: 0.6 });
+    expect(budget(spain(), "south")).toEqual({ developmentProjects: 1, developmentShare: 0.5, itemsPerEmptyQueue: 1, maxOrdersPerTurn: 3, reserveShare: 0.3, spendShare: 0.6 });
     const state = { ...initialGameState(scenario), treasuries: { [faction("red")]: { [funds]: 40 } } };
     const withBudget = (builds: NonNullable<Scenario["ai"]["profiles"][never]["builds"]>): Scenario => ({
       ...scenario,
       ai: { ...scenario.ai, profiles: { ...scenario.ai.profiles, [faction("red")]: { ...scenario.ai.profiles[faction("red")]!, builds } } }
     });
-    expect(planBuilds(contextFor(withBudget({ developmentProjects: 0, itemsPerEmptyQueue: 1, maxOrdersPerTurn: 0, reserveShare: 0.3, spendShare: 0.6 }), state, "red"))).toEqual([]);
-    expect(planBuilds(contextFor(withBudget({ developmentProjects: 0, itemsPerEmptyQueue: 1, maxOrdersPerTurn: 3, reserveShare: 0.3, spendShare: 0 }), state, "red"))).toEqual([]);
-    const one = planBuilds(contextFor(withBudget({ developmentProjects: 0, itemsPerEmptyQueue: 1, maxOrdersPerTurn: 1, reserveShare: 0.3, spendShare: 1 }), state, "red"));
+    expect(planBuilds(contextFor(withBudget({ developmentProjects: 0, developmentShare: 0.5, itemsPerEmptyQueue: 1, maxOrdersPerTurn: 0, reserveShare: 0.3, spendShare: 0.6 }), state, "red"))).toEqual([]);
+    expect(planBuilds(contextFor(withBudget({ developmentProjects: 0, developmentShare: 0.5, itemsPerEmptyQueue: 1, maxOrdersPerTurn: 3, reserveShare: 0.3, spendShare: 0 }), state, "red"))).toEqual([]);
+    const one = planBuilds(contextFor(withBudget({ developmentProjects: 0, developmentShare: 0.5, itemsPerEmptyQueue: 1, maxOrdersPerTurn: 1, reserveShare: 0.3, spendShare: 1 }), state, "red"));
     expect(one).toHaveLength(1);
-    const two = planBuilds(contextFor(withBudget({ developmentProjects: 0, itemsPerEmptyQueue: 2, maxOrdersPerTurn: 9, reserveShare: 0.3, spendShare: 1 }), state, "red"));
+    const two = planBuilds(contextFor(withBudget({ developmentProjects: 0, developmentShare: 0.5, itemsPerEmptyQueue: 2, maxOrdersPerTurn: 9, reserveShare: 0.3, spendShare: 1 }), state, "red"));
     const perSite = new Map<string, number>();
     for (const order of two) perSite.set(order.subTerritoryId, (perSite.get(order.subTerritoryId) ?? 0) + 1);
     expect(Math.max(...perSite.values())).toBe(2);
@@ -114,15 +114,17 @@ describe("computer development and support builds (M5, m4, m5)", () => {
     expect([...developed].sort()).toEqual(target.factions.map((entry) => entry.id).sort());
   });
 
-  it("the Recruit planner saves the development item's price, and never holds Manpower back", () => {
+  it("the Recruit planner saves the development item's price when it can spare it, and never holds Manpower back", () => {
     const start = initialGameState(target);
     const view = viewFor(target, start, republic);
     const context = { factionId: republic, scenario: target, state: view };
     const saving = developmentTarget(context);
     expect(saving?.order.project.kind).toBe("development");
-    const reserve = buildReserve(context, { funds: 4, manpower: 50 } as never);
+    const reserve = buildReserve(context, { funds: 20, manpower: 50 } as never);
     expect(Object.keys(reserve)).toEqual(["funds"]);
-    expect(amountOf(reserve, funds)).toBe(amountOf(saving!.price, funds));
+    expect(amountOf(reserve, funds)).toBe(Math.max(6, amountOf(saving!.price, funds)));
+    // A poor faction recruits first: the price is more than half its balance, so only the share is kept.
+    expect(buildReserve(context, { funds: 10 } as never)).toEqual({ funds: amountOf(saving!.price, funds) <= 5 ? amountOf(saving!.price, funds) : 3 });
     // With an item already queued, it keeps only the profile's share.
     const queued = saving!.order;
     const busy: GameState = { ...start, subTerritories: { ...start.subTerritories, [queued.subTerritoryId]: { ...start.subTerritories[queued.subTerritoryId]!, queue: [{ factionId: republic, paid: {}, progress: 0, project: queued.project }] } } };
@@ -139,7 +141,7 @@ describe("computer development and support builds (M5, m4, m5)", () => {
       ? { ...site, buildings: [...new Set([...site.buildings, ...everything.filter((building) => building !== "factory" || target.cities.some((entry) => entry.subTerritoryId === id))])] as never[], development: Object.fromEntries(Object.keys(site.development).map((track) => [track, 3])) }
       : site]));
     const state: GameState = { ...start, subTerritories, treasuries: { ...start.treasuries, [republic]: { funds: 200, manpower: 50 } as never } };
-    const sansDevelopment: Scenario = { ...target, ai: { ...target.ai, profiles: { ...target.ai.profiles, [republic]: { ...target.ai.profiles[republic]!, builds: { ...target.ai.profiles[republic]!.builds!, developmentProjects: 0, itemsPerEmptyQueue: 3, maxOrdersPerTurn: 40, spendShare: 1 } } } } };
+    const sansDevelopment: Scenario = { ...target, ai: { ...target.ai, profiles: { ...target.ai.profiles, [republic]: { ...target.ai.profiles[republic]!, builds: { ...target.ai.profiles[republic]!.builds!, developmentProjects: 0, developmentShare: 0.5, itemsPerEmptyQueue: 3, maxOrdersPerTurn: 40, spendShare: 1 } } } } };
     const orders = planBuilds(contextFor(sansDevelopment, state, "republic"));
     const kinds = orders.flatMap((order) => (order.project.kind === "building" ? [order.project.buildingId] : []));
     expect(kinds).toContain("hospital");

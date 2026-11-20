@@ -55,3 +55,60 @@ describe.each(dice)("a whole turn on %s", (_name, scenarioOf) => {
     expect(clear.finalState.fortification[murcia]!.level).toBeGreaterThan(1);
   });
 });
+
+describe("a capital that falls with purchases in it (M4, $5, U3)", () => {
+  const scenario = spainD20();
+  const north = faction("north");
+  const murciaSub = "murcia" as never;
+  const ofKindAll = <Kind extends TurnOutcome["kind"]>(outcomes: readonly TurnOutcome[], kind: Kind) =>
+    outcomes.filter((outcome): outcome is Extract<TurnOutcome, { kind: Kind }> => outcome.kind === kind);
+
+  it("refunds what had not started, forfeits what had, and pays the new holder less the raid cut", () => {
+    const base = initialGameState(scenario);
+    const attacker = unit("north-milan-32");
+    const clm = territory("castilla-la-mancha");
+    const clmSubs = (scenario.index.subTerritoriesByTerritory.get(clm) ?? []).map((sub) => sub.id);
+    const mines = { developmentId: "mines", kind: "development" } as never;
+    const farms = { developmentId: "farms", kind: "development" } as never;
+    const funds = (amount: number): Resources => ({ funds: amount } as Resources);
+    const state: GameState = {
+      ...base,
+      control: { ...base.control, [clm]: { factionId: north, kind: "controlled" } },
+      raidCuts: [{ subTerritoryId: murciaSub, turnNumber: base.turnNumber }],
+      subTerritories: {
+        ...base.subTerritories,
+        ...Object.fromEntries(clmSubs.map((id) => [id, { ...base.subTerritories[id]!, holder: north }])),
+        [murciaSub]: { ...base.subTerritories[murciaSub]!, queue: [
+          { factionId: republic, paid: funds(8), progress: 1, project: mines },
+          { factionId: republic, paid: funds(6), progress: 0, project: farms }
+        ] }
+      },
+      training: [{ factionId: republic, paid: { funds: 6, manpower: 1 } as Resources, paused: false, territoryId: murcia, turnsLeft: 1, typeId: "infantry-regiment" as never, unitId: "r_republic_infantry-regiment_1" as never }],
+      treasuries: { ...base.treasuries, [republic]: { funds: 20, manpower: 10 } as Resources },
+      units: { ...Object.fromEntries(Object.entries(base.units).filter(([, entry]) => entry.territoryId !== "murcia")), [attacker]: { ...base.units[attacker]!, territoryId: clm } }
+    };
+    const result = resolveTurn(scenario, state, [
+      { factionId: republic, orders: [
+        { factionId: republic, kind: "build", project: { buildingId: "hospital", kind: "building" } as never, subTerritoryId: murciaSub },
+        { factionId: republic, kind: "recruit", territoryId: murcia, unitTypeId: "militia-column" as never }
+      ] },
+      { factionId: north, orders: [{ factionId: north, from: clm, kind: "move", to: murcia, unitId: attacker }] }
+    ], 3);
+    expect(result.finalState.subTerritories[murciaSub]!.holder).toBe(north);
+    // $5: the head in progress passes to the North with its payment lost; the rest is refunded.
+    expect(ofKindAll(result.outcomes, "build-forfeited").map((outcome) => outcome.project)).toEqual([mines]);
+    expect(ofKindAll(result.outcomes, "build-refunded").map((outcome) => outcome.refund)).toEqual([funds(6), funds(6)]);
+    expect(result.finalState.subTerritories[murciaSub]!.queue).toEqual([{ factionId: north, paid: {}, progress: 2, project: mines }]);
+    // D28.2: the militia paid this turn is refunded; the regiment under way is lost.
+    const training = ofKindAll(result.outcomes, "training-refunded");
+    expect(training.map((outcome) => outcome.typeId)).toEqual(["infantry-regiment", "militia-column"]);
+    expect(training.map((outcome) => outcome.refund)).toEqual([{}, { funds: 2, manpower: 3 }]);
+    expect(result.finalState.training).toEqual([]);
+    // U3: Murcia pays its new holder, less this turn's raid cut.
+    const northIncome = ofKindAll(result.outcomes, "income").find((outcome) => outcome.factionId === north)!;
+    expect(northIncome.cutSubTerritoryIds).toContain(murciaSub);
+    // The books balance: what the Republic paid at reveal all came back but the forfeited head.
+    const republicIncome = ofKindAll(result.outcomes, "income").find((outcome) => outcome.factionId === republic)!.paid as Record<string, number>;
+    expect(result.finalState.treasuries[republic]).toEqual({ funds: 20 + 6 + (republicIncome["funds"] ?? 0), manpower: 10 + (republicIncome["manpower"] ?? 0) });
+  });
+});

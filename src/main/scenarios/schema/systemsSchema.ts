@@ -139,6 +139,7 @@ export const aiSchema = z
             .strictObject({
               spendShare: shareSchema.meta({ description: "Share of each resource left after Recruit orders that builds may spend." }),
               reserveShare: shareSchema.meta({ description: "M5: share of each resource that builds cost which Recruit orders leave unspent; at least the price of the development item saved for." }),
+              developmentShare: shareSchema.meta({ description: "M5: the most of a resource's balance the saved-for development item may take; above it, Recruit orders come first." }),
               developmentProjects: wholeSchema.meta({ description: "M5: development items the faction keeps queued. While it has fewer, Recruit orders leave the best one's price and Build orders buy it first." }),
               maxOrdersPerTurn: wholeSchema.meta({ description: "Build orders a turn." }),
               itemsPerEmptyQueue: positiveWholeSchema.meta({ description: "New items a sub-territory with an empty queue may take in a turn." })

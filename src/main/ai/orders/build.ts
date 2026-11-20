@@ -110,17 +110,20 @@ export function developmentTarget(context: Where): { readonly order: BuildOrder;
 /**
  * M5: what the Recruit planner leaves unspent for builds: the profile's `reserveShare` of each
  * resource some build costs (no Spanish build costs Manpower, so Manpower is never held back),
- * and at least the price of this turn's development target.
+ * and at least the price of this turn's development target while that price is at most the
+ * profile's `developmentShare` of the balance.
  */
 export function buildReserve(context: Where, balance: Resources): Resources {
   const { factionId, scenario, state } = context;
   const limits = requireAiProfile(scenario, factionId).builds;
   if (scenario.rules.economy === "none" || limits === undefined || state.treasuries[factionId] === undefined) return {};
   const used = new Set(allProjects(scenario).flatMap((project) => Object.keys(projectCost(scenario, project)?.cost ?? {})));
-  const target = developmentTarget(context)?.price ?? {};
+  const price = developmentTarget(context)?.price ?? {};
+  // Saved for only while it takes at most `developmentShare` of the balance: a poor faction recruits first.
+  const affordable = Object.entries(price).every(([id, amount]) => amount <= amountOf(balance, id as ResourceId) * limits.developmentShare);
   return Object.fromEntries(scenario.resources.filter((resource) => used.has(resource.id)).map((resource) => [
     resource.id,
-    Math.max(Math.floor(amountOf(balance, resource.id) * limits.reserveShare), amountOf(target, resource.id))
+    Math.max(Math.floor(amountOf(balance, resource.id) * limits.reserveShare), affordable ? amountOf(price, resource.id) : 0)
   ]));
 }
 
