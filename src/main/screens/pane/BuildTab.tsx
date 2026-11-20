@@ -2,6 +2,7 @@ import type { JSX } from "react";
 import { isContested, subTerritoriesOf } from "../../engine/economy/holdings";
 import { plannedBuilds, previewState } from "../../state/planning";
 import { SiteCard } from "./build/SiteCard";
+import { TerritoryIncomeChip } from "./build/TerritoryIncomeChip";
 import { plannedAt } from "./build/planned";
 import type { TerritoryTabProps } from "./TerritoryTabs";
 
@@ -16,6 +17,8 @@ export function BuildTab({ scenario, session, territoryId }: TerritoryTabProps):
   const subs = subTerritoriesOf(scenario, territoryId);
   return (
     <div className="build-tab">
+      {/* Interim home until m3r1-weather-timer's meta-row slot lands above the tabs. */}
+      <TerritoryIncomeChip scenario={scenario} state={state} territoryId={territoryId} viewer={session.factionId} />
       <div className="build-tab-head">
         <h4>Sub-territories</h4>
         <span className="pane-hint">Build on one of yours to queue work</span>

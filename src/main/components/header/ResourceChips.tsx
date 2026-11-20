@@ -1,4 +1,4 @@
-import { type JSX, useId, useState } from "react";
+import { type JSX, memo, useId, useMemo, useState } from "react";
 import { plannedSpend } from "../../engine/economy/catalogue";
 import { holdersIn, territoriesHeldWhole } from "../../engine/economy/holdings";
 import { incomeFor } from "../../engine/economy/income";
@@ -6,7 +6,6 @@ import { amountOf, treasuryOf } from "../../engine/economy/resources";
 import type { ResourceId } from "../../engine/types";
 import { useAppSelector } from "../../hooks";
 import { signed } from "../../presentation/economy";
-import { plannedBuilds } from "../../state/planning";
 import { EconomyIcon, resourceIcon } from "../economy/EconomyIcon";
 import type { HeaderSlotProps } from "./slots";
 
@@ -16,18 +15,22 @@ import type { HeaderSlotProps } from "./slots";
  * balances, which stay hidden unless recon reveals them ($6). Renders nothing without an
  * economy or a viewer.
  */
-export function ResourceChips({ scenario, state, viewer }: HeaderSlotProps): JSX.Element | null {
-  // The raw session: planned builds are the viewer's own, and the header needs no registry.
-  const session = useAppSelector((root) => root.game.session);
+function Chips({ scenario, state, viewer }: HeaderSlotProps): JSX.Element | null {
+  // Narrow selections from the raw store, stable while the player selects: the game record's
+  // state (income reads only public data and the viewer's own hooks) and this turn's planned
+  // builds (the viewer's own). The filtered `state` prop is rebuilt on every selection.
+  const record = useAppSelector((root) => ("game" in root.game.session ? root.game.session.game.state : undefined));
+  const builds = useAppSelector((root) => (root.game.session.phase === "planning" ? root.game.session.builds : undefined));
+  const source = record?.turnNumber === state.turnNumber ? record : state;
   const [open, setOpen] = useState<ResourceId | undefined>(undefined);
   const id = useId();
-  if (viewer === undefined || scenario.rules.economy === "none" || state.treasuries[viewer] === undefined) return null;
+  const income = useMemo(() => (viewer === undefined || scenario.rules.economy === "none" ? undefined : incomeFor(scenario, source, viewer)), [scenario, source, viewer]);
+  if (viewer === undefined || income === undefined || state.treasuries[viewer] === undefined) return null;
   const balance = treasuryOf(state, viewer);
-  const income = incomeFor(scenario, state, viewer);
-  const spend = session.phase === "planning" ? plannedSpend(scenario, plannedBuilds(session)) : {};
-  const whole = territoriesHeldWhole(scenario, state.subTerritories, viewer).length;
-  const contested = scenario.territories.filter((territory) => {
-    const holders = holdersIn(scenario, state.subTerritories, territory.id);
+  const spend = plannedSpend(scenario, builds ?? []);
+  const whole = open === undefined ? 0 : territoriesHeldWhole(scenario, source.subTerritories, viewer).length;
+  const contested = open === undefined ? 0 : scenario.territories.filter((territory) => {
+    const holders = holdersIn(scenario, source.subTerritories, territory.id);
     return holders.length > 1 && holders.includes(viewer);
   }).length;
   const others = scenario.factions.filter((faction) => faction.id !== viewer);
@@ -39,9 +42,8 @@ export function ResourceChips({ scenario, state, viewer }: HeaderSlotProps): JSX
         const gain = amountOf(income.paid, resource.id);
         const spent = amountOf(spend, resource.id);
         return (
-          <div className="resource-chip-wrap" key={resource.id}>
+          <div className="resource-chip-wrap header-meter" key={resource.id}>
             <button
-              aria-label={`${resource.name} ${String(amountOf(balance, resource.id) - spent)}, ${signed(gain)} next turn`}
               aria-controls={`${id}-${resource.id}`}
               aria-expanded={expanded}
               className="resource-chip"
@@ -49,9 +51,10 @@ export function ResourceChips({ scenario, state, viewer }: HeaderSlotProps): JSX
               type="button"
             >
               <EconomyIcon name={resourceIcon(scenario, resource.id)} />
-              <span className="resource-name">{resource.name}</span>
-              <span className="resource-balance">{String(amountOf(balance, resource.id) - spent)}</span>
+              <span className="resource-name">{resource.name}</span>{" "}
+              <span className="resource-balance">{String(amountOf(balance, resource.id) - spent)}</span>{" "}
               <span className="resource-income">{signed(gain)}</span>
+              <span className="visually-hidden"> next turn</span>
             </button>
             {expanded ? (
               <div className="resource-detail" id={`${id}-${resource.id}`} role="region" aria-label={`${resource.name} detail`}>
@@ -81,3 +84,15 @@ export function ResourceChips({ scenario, state, viewer }: HeaderSlotProps): JSX
     </div>
   );
 }
+
+/**
+ * Re-rendered only when what it shows can change: the viewer, the turn, the visible balances or
+ * raid cuts (planned builds come through the store selection). Selecting territories rebuilds
+ * the filtered state without changing any of these.
+ */
+export const ResourceChips = memo(Chips, (before, after) =>
+  before.scenario === after.scenario
+  && before.viewer === after.viewer
+  && before.state.turnNumber === after.state.turnNumber
+  && before.state.raidCuts === after.state.raidCuts
+  && JSON.stringify(before.state.treasuries) === JSON.stringify(after.state.treasuries));

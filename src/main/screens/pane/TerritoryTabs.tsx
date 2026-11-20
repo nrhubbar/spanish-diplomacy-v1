@@ -50,7 +50,7 @@ export function TerritoryTabs({ children, ...props }: TerritoryTabProps & { read
       {tabs.map((tab) => (
         <div aria-labelledby={`${id}-${tab}-tab`} className="pane-tab-panel" hidden={open !== tab} id={`${id}-${tab}`} key={tab} role="tabpanel">
           {tab === "units" ? children : null}
-          {tab === "build" ? <BuildTab {...props} /> : null}
+          {tab === "build" && open === "build" ? <BuildTab {...props} /> : null}
           {tab === "recruit" ? <RecruitTab {...props} /> : null}
         </div>
       ))}
