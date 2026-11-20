@@ -64,8 +64,8 @@ export function DestinationChoices({ estimates, moves, scenario }: DestinationCh
               >
                 <span className="destination-name">{territoryName(scenario, territoryId)}</span>
                 <span className="odds-chip" data-tone={summary.tone}>
-                  <span aria-hidden="true">{routeChipText(route, summary.label)}</span>
-                  <span className="visually-hidden">{routeChipText(route, summary.sentence)}</span>
+                  <span aria-hidden="true">{routeChipText(route, summary.label, estimate)}</span>
+                  <span className="visually-hidden">{routeChipText(route, summary.sentence, estimate)}</span>
                 </span>
                 {detail === undefined ? null : <span className="destination-detail">{detail}</span>}
               </button>

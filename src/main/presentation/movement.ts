@@ -34,8 +34,12 @@ export function subTerritoryName(scenario: Scenario, id: SubTerritoryId): string
   return scenario.index.subTerritories.get(id)?.name ?? id;
 }
 
-/** The route's shape as a short tag, or undefined for a plain step: "By rail", "Rail, then step", "Amphibious". */
-export function routeTag(route: MoveRoute): string | undefined {
+/**
+ * The route's shape as a tag, or undefined for a plain step: "By rail", "Rail, then attack",
+ * "Amphibious". `short` is the map plaque's form ("Rail + attack").
+ */
+export function routeTag(route: MoveRoute, attacks = false, short = false): string | undefined {
+  const then = (first: string, second: string): string => (short ? `${first} + ${second}` : `${first}, then ${second}`);
   switch (route.shape) {
     case "step":
       return undefined;
@@ -44,17 +48,17 @@ export function routeTag(route: MoveRoute): string | undefined {
     case "rail":
       return "By rail";
     case "step-rail":
-      return "Step, then rail";
+      return then("Step", "rail");
     case "rail-step":
-      return "Rail, then step";
+      return then("Rail", attacks ? "attack" : "step");
     case "sea":
       return route.sea?.kind === "amphibious" ? "Amphibious" : "By sea";
   }
 }
 
-/** What a destination row says beside its odds: the tag and the estimate, "By rail · Reinforce". */
-export function routeChipText(route: MoveRoute | undefined, chip: string): string {
-  const tag = route === undefined ? undefined : routeTag(route);
+/** What a destination row says beside its odds: the tag and the estimate, "By rail \u00b7 Reinforce". */
+export function routeChipText(route: MoveRoute | undefined, chip: string, estimate?: DestinationEstimate): string {
+  const tag = route === undefined ? undefined : routeTag(route, estimate?.kind === "battle");
   return tag === undefined ? chip : `${tag} ${glyphs.dot} ${chip}`;
 }
 
@@ -91,7 +95,8 @@ export function routeChips(
   const chips: RouteChip[] = [];
   const weather = weatherIn(scenario, state, route.to);
   if (weather !== undefined) chips.push({ kind: "weather", text: weather, warn: false });
-  for (const entry of route.rough) {
+  // A single step always fits (M1), so terrain is a cost only on a step or a march.
+  for (const entry of route.shape === "step" || route.shape === "march" ? route.rough : []) {
     const terrain = scenario.index.subTerritories.get(entry)?.terrain ?? "mountain";
     chips.push({ kind: "terrain", text: `${terrain === "swamp" ? "Swamp" : "Mountain"} entry (${subTerritoryName(scenario, entry)})`, warn: true });
   }
@@ -141,7 +146,7 @@ export function routeDetail(scenario: Scenario, state: GameState, route: MoveRou
 export function routeRows(scenario: Scenario, state: GameState, route: MoveRoute, allowance: number): readonly { readonly label: string; readonly value: string }[] {
   const rows: { label: string; value: string }[] = [];
   rows.push({ label: "Moves this turn", value: `${String(route.cost)} of ${String(allowance)}` });
-  for (const entry of route.rough) rows.push({ label: `Enters ${subTerritoryName(scenario, entry)} (${scenario.index.subTerritories.get(entry)?.terrain ?? "mountain"})`, value: "+1 move" });
+  for (const entry of route.shape === "step" || route.shape === "march" ? route.rough : []) rows.push({ label: `Enters ${subTerritoryName(scenario, entry)} (${scenario.index.subTerritories.get(entry)?.terrain ?? "mountain"})`, value: "+1 move" });
   if (route.rail !== undefined) rows.push({ label: `Rail, level ${String(route.rail.level)}`, value: `${String(route.rail.crossings)} of ${String(route.rail.range)} borders` });
   if (route.sea?.kind === "amphibious") rows.push({ label: "Amphibious assault", value: signedRoll(scenario.d20?.modifiers.amphibious ?? 0) });
   const weather = weatherIn(scenario, state, route.to);

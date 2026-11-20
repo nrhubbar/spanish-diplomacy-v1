@@ -226,3 +226,25 @@ test("@capture reduced counter in the fixture", async ({ page }) => {
   if (await orders.isVisible()) await orders.click();
   await capture(page, "17c-fixture-army-list");
 });
+
+test("@capture movement, rail and ports (X5, X6)", async ({ page }) => {
+  await page.goto("./");
+  await page.getByRole("button", { name: "Create Game" }).click();
+  await page.getByRole("button", { name: "Start Campaign" }).click();
+  await waitForMap(page);
+  await page.locator('.map-region[data-territory-id="madrid"]').focus();
+  await page.keyboard.press("Enter");
+  await page.getByRole("button", { name: "Give Selected Armies Order" }).click();
+  await page.getByRole("button", { exact: true, name: "Move" }).click();
+  await expect(page.locator(".army-leaving").first()).toBeAttached();
+  await capture(page, "20a-move-destinations");
+  const railRow = page.locator(".destination-row").filter({ hasText: /By rail|Rail, then/ }).first();
+  if (await railRow.isVisible()) {
+    await railRow.hover();
+    await railRow.scrollIntoViewIfNeeded();
+    await capture(page, "20b-move-route-card");
+  }
+  await page.getByRole("button", { name: /^Cancel( move)?$/ }).filter({ visible: true }).first().click();
+  for (let step = 0; step < 2; step += 1) await page.getByRole("button", { name: "Zoom in" }).click();
+  await capture(page, "20c-rail-operational");
+});

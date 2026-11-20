@@ -87,7 +87,7 @@ export function destinationTags(scenario: Scenario, game: GameState, view: MapVi
   const routes = selectionRoutes(scenario, game, selection.factionId, selection.from, [...view.selectedUnitIds], view.plannedOrders);
   if (routes === undefined) return undefined;
   return new Map([...routes].flatMap(([to, route]): [TerritoryId, string][] => {
-    const tag = routeTag(route);
+    const tag = routeTag(route, view.destinationEstimates?.get(to)?.kind === "battle", true);
     return tag === undefined ? [] : [[to, tag]];
   }));
 }

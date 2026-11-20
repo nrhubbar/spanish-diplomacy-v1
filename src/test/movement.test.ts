@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { legalMoves, withRoutes } from "../main/ai/orders/move";
 import { initialGameState, resolveTurn } from "../main/engine/resolution";
 import { armyAllowance, truckBonus } from "../main/engine/movement/allowance";
 import { amphibiousModifiers } from "../main/engine/movement/hooks";
@@ -6,6 +7,7 @@ import { holdsWhole, railDepartures, railReach } from "../main/engine/movement/n
 import { moveRoutes, validateRoute } from "../main/engine/movement/routes";
 import type { GameState, MoveLeg, MoveOrder, Scenario, SubTerritoryId, SubTerritoryState, TerritoryId, TurnResolutionResult } from "../main/engine/types";
 import { validateMoveOrder } from "../main/engine/validation";
+import { armyLeaving, routeChips, routeTag } from "../main/presentation/movement";
 import { loadPackage } from "../main/scenarios/loader";
 import { type Json, modularMap, modularScenario } from "./modularFixture";
 import { faction, move, submissionsOf, territory, unit } from "./support";
@@ -238,5 +240,58 @@ describe("movement: resolution (step 1 armies, step 3 transit)", () => {
     const result = play(scenario, state, two);
     expect(kinds(result)).not.toContain("move-held-back");
     expect(at(result, "blue-marines")).toBe("isle");
+  });
+});
+
+describe("movement: the computer player (H5)", () => {
+  it("offers routed moves, rail and rail-then-step included, and never plans a truck alone", () => {
+    const scenario = load();
+    const state = initialGameState(scenario);
+    const guard = state.units[unit("red-guard")];
+    const lorry = state.units[unit("red-lorry")];
+    if (guard === undefined || lorry === undefined) throw new Error("fixture");
+    expect(legalMoves(scenario, state, guard).find((move) => move.to === territory("harbor"))?.legs).toEqual([rail("highlands"), land("harbor")]);
+    expect(legalMoves(scenario, state, lorry)).toEqual([]);
+  });
+
+  it("sends a free truck with a march, and cuts a march no truck can carry", () => {
+    const open = load((data) => {
+      for (const entry of data["subTerritories"] as Json[]) if (entry["id"] === "highlands") entry["terrain"] = "open";
+    });
+    const state = withSubs(initialGameState(open), { "west-hills": { rail: 0 } });
+    const march = order("red", "red-guard", "westfold", [land("highlands"), land("harbor")]);
+    const routed = withRoutes(open, state, faction("red"), [march]);
+    expect(routed.map((planned) => planned.unitId)).toEqual(["red-guard", "red-lorry"]);
+    expect(routed.every((planned) => planned.to === territory("harbor"))).toBe(true);
+    const noTrucks = placed(state, { "red-lorry": "highlands" });
+    expect(withRoutes(open, noTrucks, faction("red"), [march]).find((planned) => planned.unitId === unit("red-guard"))?.to).toBe("highlands");
+  });
+
+  it("takes the offered route for each destination: a neighbour by a step, so the departure is left for a ride", () => {
+    const scenario = load();
+    const state = withSubs(initialGameState(scenario), { "west-town-quarter": { rail: 1 } });
+    const routed = withRoutes(scenario, state, faction("red"), [
+      order("red", "red-guard", "westfold", [rail("highlands")]),
+      order("red", "red-second", "westfold", [rail("highlands"), land("harbor")])
+    ]);
+    expect(routed.map((planned) => `${planned.unitId}>${planned.to}>${String(planned.legs?.length ?? 0)}`)).toEqual(["red-guard>highlands>0", "red-lorry>highlands>0", "red-second>harbor>2"]);
+  });
+});
+
+describe("movement: what the planning screen says (X5)", () => {
+  it("tags routes and sums up the army leaving", () => {
+    const scenario = load();
+    const state = initialGameState(scenario);
+    const routes = moveRoutes(scenario, state, faction("red"), territory("westfold"), [unit("red-guard"), unit("red-second")]);
+    const harbor = routes.get(territory("harbor"));
+    if (harbor === undefined) throw new Error("route");
+    expect(routeTag(harbor, true)).toBe("Rail, then attack");
+    expect(routeTag(harbor, true, true)).toBe("Rail + attack");
+    expect(routeChips(scenario, state, harbor, [], 1, undefined).map((chip) => chip.kind)).toEqual(["rail", "transit"]);
+    expect(armyLeaving(scenario, state, faction("red"), territory("westfold"), [unit("red-guard"), unit("red-second")])?.line)
+      .toBe("1 move this turn: no trucks (1 truck for these 2 units would give +1). Rail does not use moves.");
+    const step = routes.get(territory("highlands"));
+    if (step === undefined) throw new Error("route");
+    expect(routeChips(scenario, state, step, [], 1, undefined).map((chip) => chip.text)).toEqual(["Mountain entry (highlands)"]);
   });
 });
