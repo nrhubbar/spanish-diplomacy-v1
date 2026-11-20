@@ -72,8 +72,46 @@ function privacyOf(scenario: Scenario, state: GameState, outcome: TurnOutcome): 
     case "rejected-order":
       // The order's own rule (CT-53): a grounded or refused order is as private as the order.
       return orderPrivacy(scenario, state, outcome.order);
-    default:
+    case "interception":
+      // A shot-down recon names the territory it flew over: only the fighters and the fliers see it.
+      return outcome.reconFactionIds === undefined ? undefined : { factionIds: [outcome.factionId, ...outcome.reconFactionIds], scope: "owner" };
+    // Public: on the board, or every side's to see (CT-46). Listed one by one, so a new kind
+    // cannot be added without deciding who sees it.
+    case "air-support":
+    case "aircraft-lost":
+    case "aircraft-rebased":
+    case "battle":
+    case "bounced-move":
+    case "build-completed":
+    case "disbanded-move":
+    case "fatigue":
+    case "frostbite":
+    case "general-died":
+    case "general-moved":
+    case "general-sacked":
+    case "invalid-order":
+    case "move-held-back":
+    case "move-intercepted":
+    case "move-transit":
+    case "no-move":
+    case "path-surrender":
+    case "raid":
+    case "rail-damaged":
+    case "rallied":
+    case "recovered":
+    case "reinforcement-arrived":
+    case "replacement-arrived":
+    case "replacement-due":
+    case "successful-move":
+    case "time-ran-out":
+    case "training-completed":
+    case "weather-rolled":
+    case "withdrew":
       return undefined;
+    default: {
+      const unknown: never = outcome;
+      throw new Error(`No privacy rule for outcome ${JSON.stringify(unknown)}.`);
+    }
   }
 }
 

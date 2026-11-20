@@ -66,12 +66,12 @@ describe("harness core on the tiny-front fixture", () => {
   });
 
   it("judges S3 on units that hold ground, and still counts withdrawals (D24)", () => {
-    // Aircraft never hold ground (D17); ground units and generals do.
+    // Aircraft never hold ground (D17), nor do units that cannot fight, such as generals (D27.1).
     const spain = loadScenario(sources, defaultScenarioId(scenarioSources()));
     const start = initialGameState(spain);
     expect(holdsGround(spain, start, "rep-catalan-recon")).toBe(false);
     expect(holdsGround(spain, start, "rep-wad-ras-1")).toBe(true);
-    expect(holdsGround(spain, start, "rep-general-miaja")).toBe(true);
+    expect(holdsGround(spain, start, "rep-general-miaja")).toBe(false);
     // Retreats and retreating bounces are driven out; a Withdraw order (C1) is a choice (D24).
     const outcomes = [
       { kind: "battle", retreats: [{ from: "a", to: "b", unitId: "retreated" }] },

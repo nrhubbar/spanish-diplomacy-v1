@@ -156,3 +156,21 @@ describe("raised units are numbered as they appear (m7)", () => {
     expect(outcomesFor(ground, result.finalState, completed, north)).toEqual(completed);
   });
 });
+
+describe("interceptions of recon flights (CT-46, D27.3)", () => {
+  const fighters: AirMissionOrder = { factionId: republic, kind: "air-mission", mission: { kind: "intercept", territoryId: territory("madrid") }, unitId: unit("rep-ni52-fighters") };
+  const northRecon: AirMissionOrder = { factionId: north, kind: "air-mission", mission: { kind: "recon", territoryId: territory("madrid") }, unitId: unit("north-leon-recon") };
+
+  it("shows a shot-down recon's interception only to the fighters' faction and the flier", () => {
+    const shotDown = Array.from({ length: 60 }, (_, seed) => resolveTurn(scenario, start, [{ factionId: republic, orders: [fighters] }, { factionId: north, orders: [northRecon] }], seed + 1))
+      .flatMap((result) => result.outcomes.filter((outcome): outcome is Extract<TurnOutcome, { kind: "interception" }> => outcome.kind === "interception"))[0];
+    expect(shotDown).toMatchObject({ factionId: republic, lostUnitIds: [northRecon.unitId], reconFactionIds: [north], territoryId: "madrid" });
+    if (shotDown === undefined) return;
+    expect(outcomesFor(scenario, start, [shotDown], republic)).toEqual([shotDown]);
+    expect(outcomesFor(scenario, start, [shotDown], north)).toEqual([shotDown]);
+    expect(outcomesFor(scenario, start, [shotDown], faction("south"))).toEqual([]);
+    expect(outcomesFor(scenario, start, [shotDown], undefined)).toEqual([]);
+    const raidInterception: TurnOutcome = { factionId: shotDown.factionId, interceptorIds: shotDown.interceptorIds, kind: "interception", lostUnitIds: [], raiderIds: [unit("north-raider")], territoryId: shotDown.territoryId };
+    expect(outcomesFor(scenario, start, [raidInterception], undefined)).toEqual([raidInterception]);
+  });
+});
