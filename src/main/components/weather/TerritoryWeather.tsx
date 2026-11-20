@@ -17,7 +17,7 @@ export function TerritoryWeather({ scenario, state, territoryId }: { readonly sc
   if (zone === undefined || state.weather === undefined) return null;
   const next = forecast(scenario, zone.id, state.turnNumber + 1).slice(0, forecastShown);
   return (
-    <p aria-label={`Weather in the ${zone.name} zone`} className="territory-weather">
+    <span aria-label={`Weather in the ${zone.name} zone`} className="territory-weather" role="group">
       <WeatherChip scenario={scenario} state={state} territoryId={territoryId} />
       {next.length === 0 ? null : (
         <span className="weather-forecast">
@@ -31,6 +31,6 @@ export function TerritoryWeather({ scenario, state, territoryId }: { readonly sc
           ))}
         </span>
       )}
-    </p>
+    </span>
   );
 }

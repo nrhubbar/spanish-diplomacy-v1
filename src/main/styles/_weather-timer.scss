@@ -32,12 +32,24 @@
   }
 }
 
-.territory-weather {
+// The territory heading's meta row (above the pane tabs): weather, income, recruiting chips.
+.territory-meta {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.35rem;
   margin: 0.25rem 0 0.5rem;
+}
+
+.territory-meta:empty {
+  display: none;
+}
+
+.territory-weather {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
 }
 
 .weather-forecast {

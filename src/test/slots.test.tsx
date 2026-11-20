@@ -34,9 +34,12 @@ describe("the territory pane's tabs and focus view (X3)", () => {
     store.dispatch(clickMapTerritory(territory("madrid")));
     renderPane(store, spain());
     expect(screen.getAllByRole("tab").map((tab) => [tab.textContent, tab.getAttribute("aria-selected")])).toEqual([["Units", "true"], ["Build", "false"], ["Recruit", "false"]]);
-    expect(screen.getByRole("tabpanel")).toHaveTextContent("Madrid");
+    // The heading and its meta row sit above the tabs, so they show on every tab.
+    expect(screen.getByRole("heading", { name: "Madrid" })).toBeVisible();
+    expect(screen.getByRole("tabpanel")).not.toContainElement(screen.getByRole("heading", { name: "Madrid" }));
     await userEvent.click(screen.getByRole("tab", { name: "Build" }));
     expect(screen.getByRole("tabpanel")).toHaveTextContent("");
+    expect(screen.getByRole("heading", { name: "Madrid" })).toBeVisible();
     await userEvent.click(screen.getByRole("tab", { name: "Recruit" }));
     expect(screen.getByRole("tab", { name: "Recruit" })).toHaveAttribute("aria-selected", "true");
   });
