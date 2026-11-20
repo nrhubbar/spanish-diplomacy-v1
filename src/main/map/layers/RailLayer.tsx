@@ -4,7 +4,7 @@ import { armyKey, describeRoute, legsOf, type MoveRoute } from "../../engine/mov
 import type { FactionId, GameState, MoveOrder, Scenario, SubTerritoryId, TerritoryId } from "../../engine/types";
 import { routeTag, selectionRoutes } from "../../presentation/movement";
 import type { MapView } from "../view";
-import type { MapPackage, MapPoint } from "../../scenarios/loader";
+import type { MapPackage, MapPoint, MapSubTerritory } from "../../scenarios/loader";
 import type { MapLayerProps } from "./slots";
 
 type Point = { readonly x: number; readonly y: number };
@@ -31,10 +31,10 @@ export function RailLayer({ game, level, scenarioPackage, toScreen, view }: MapL
     [choosing, game, scenario, selection, view.plannedOrders, view.selectedUnitIds]
   );
   const planned = useMemo(() => plannedRouteList(scenario, game, view.plannedOrders), [game, scenario, view.plannedOrders]);
-  if (map.subTerritories.size === 0 || links.length === 0) return null;
+  if (stationPoints(map).size === 0 || links.length === 0) return null;
 
   const station = (id: SubTerritoryId): Point | undefined => {
-    const entry = map.subTerritories.get(id);
+    const entry = stationPoints(map).get(id);
     return entry === undefined ? undefined : toScreen(entry.capital);
   };
   const shown = links.filter((link) => level !== "overview" || link.level >= 2 || (rideable.has(link.a) && rideable.has(link.b)));
@@ -80,6 +80,13 @@ export function RailLayer({ game, level, scenarioPackage, toScreen, view }: MapL
   );
 }
 
+const noStations: ReadonlyMap<SubTerritoryId, MapSubTerritory> = new Map();
+
+/** Each sub-territory's points on the map (`m3r1-sub-territories`' map field); empty without them. */
+function stationPoints(map: MapPackage): ReadonlyMap<SubTerritoryId, MapSubTerritory> {
+  return map.subTerritories?.entries ?? noStations;
+}
+
 /** X5: each highlighted destination's route tag ("By rail"), for the odds plaques. */
 export function destinationTags(scenario: Scenario, game: GameState, view: MapView): ReadonlyMap<TerritoryId, string> | undefined {
   const selection = selectedArmy(game, [...view.selectedUnitIds]);
@@ -119,7 +126,7 @@ function plannedRouteList(scenario: Scenario, game: GameState, orders: readonly 
 export function routePoints(scenario: Scenario, map: MapPackage, route: MoveRoute): readonly MapPoint[] {
   const territoryPoint = (id: TerritoryId): MapPoint | undefined => {
     const capital = capitalOf(scenario, id);
-    return (capital === undefined ? undefined : map.subTerritories.get(capital)?.capital) ?? map.territories.get(id)?.label;
+    return (capital === undefined ? undefined : stationPoints(map).get(capital)?.capital) ?? map.territories.get(id)?.label;
   };
   const points: MapPoint[] = [];
   const push = (point: MapPoint | undefined): void => {
@@ -128,10 +135,10 @@ export function routePoints(scenario: Scenario, map: MapPackage, route: MoveRout
   push(territoryPoint(route.from));
   for (const leg of route.legs) {
     if (leg.kind === "rail" && route.rail !== undefined) {
-      for (const id of route.rail.stations) push(map.subTerritories.get(id)?.capital);
+      for (const id of route.rail.stations) push(stationPoints(map).get(id)?.capital);
     } else if (leg.kind === "sea" && route.sea !== undefined) {
-      push(map.subTerritories.get(route.sea.departure)?.capital);
-      push(map.subTerritories.get(route.sea.port ?? route.sea.departure)?.capital ?? territoryPoint(leg.to));
+      push(stationPoints(map).get(route.sea.departure)?.capital);
+      push(stationPoints(map).get(route.sea.port ?? route.sea.departure)?.capital ?? territoryPoint(leg.to));
       if (route.sea.port === undefined) push(territoryPoint(leg.to));
     } else {
       push(territoryPoint(leg.to));

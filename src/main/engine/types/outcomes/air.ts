@@ -1,4 +1,4 @@
-import type { BuildingId, FactionId, SubTerritoryId, TerritoryId, UnitId } from "../../ids";
+import type { BuildingId, DevelopmentId, FactionId, SubTerritoryId, TerritoryId, UnitId } from "../../ids";
 import type { AirMissionOrder } from "../orders";
 import type { RaidOutcome } from "../systems";
 
@@ -10,6 +10,8 @@ export interface RaidFlownOutcome {
   readonly aircraftLost: readonly UnitId[];
   /** "Building downgraded or destroyed": the building hit. */
   readonly buildingId?: BuildingId;
+  /** AG-11: with no building there, the development track that lost a level. */
+  readonly developmentId?: DevelopmentId;
   readonly kind: "raid";
   readonly order: AirMissionOrder;
   readonly result: RaidOutcome;
@@ -52,10 +54,29 @@ export interface GroundedOutcome {
   readonly reason: string;
 }
 
+/** AG-9: an aircraft whose base was lost flew to the nearest airbase of its faction in range. */
+export interface AircraftRebasedOutcome {
+  readonly factionId: FactionId;
+  readonly from: TerritoryId;
+  readonly kind: "aircraft-rebased";
+  readonly to: TerritoryId;
+  readonly unitId: UnitId;
+}
+
+/** AG-9: an aircraft whose base was lost had no airbase in range, and was lost on the ground. */
+export interface AircraftLostOutcome {
+  readonly factionId: FactionId;
+  readonly from: TerritoryId;
+  readonly kind: "aircraft-lost";
+  readonly unitId: UnitId;
+}
+
 /** Every outcome of this area. Adding a kind here is all the union needs. */
 export type AirTurnOutcome =
   | RaidFlownOutcome
   | ReconFlownOutcome
   | InterceptionOutcome
   | SupportFlownOutcome
-  | GroundedOutcome;
+  | GroundedOutcome
+  | AircraftRebasedOutcome
+  | AircraftLostOutcome;

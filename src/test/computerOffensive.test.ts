@@ -7,7 +7,7 @@ import { estimateAttack } from "../main/engine/combat";
 import { seededRandom } from "../main/engine/random";
 import type { GameState, TurnOutcome } from "../main/engine/types";
 import { board, demoralize, into, ordersOf, type Placement } from "./aiBoards";
-import { faction, move, spain, territory, tiny, unit, withUnits } from "./support";
+import { faction, move, spainM2, territory, tiny, unit, withUnits } from "./support";
 
 // The South holds everything but Valencia; its objectives are all held, so only an offensive
 // gives its armies a direction. One regiment holds Valencia.
@@ -20,7 +20,7 @@ const valencia: Placement = [
 
 describe("computer player: offensives (C18)", () => {
   it("chooses an offensive target it can reach through friendly ground", () => {
-    const scenario = spain();
+    const scenario = spainM2();
     const state = board(scenario, "south", ["valencia"], [...valencia, ["south-legion", "south", "murcia"]]);
     const ready = Object.values(state.units).filter((army) => army.factionId === "south");
     const offensive = chooseOffensive(scenario, state, assess(scenario, state, faction("south")), ready);
@@ -30,7 +30,7 @@ describe("computer player: offensives (C18)", () => {
   });
 
   it("stages spare armies toward the target before the odds are good", () => {
-    const scenario = spain();
+    const scenario = spainM2();
     const state = board(scenario, "south", ["valencia"], [
       ...valencia,
       ["rep-guadalajara-10", "republic", "valencia"],
@@ -46,7 +46,7 @@ describe("computer player: offensives (C18)", () => {
   });
 
   it("attacks once the massed armies have the odds", () => {
-    const scenario = spain();
+    const scenario = spainM2();
     const massed = board(scenario, "south", ["valencia"], [
       ...valencia,
       ["south-legion", "south", "murcia"],
@@ -59,7 +59,7 @@ describe("computer player: offensives (C18)", () => {
   });
 
   it("accepts worse odds after turns without a gain (stall pressure)", () => {
-    const scenario = spain();
+    const scenario = spainM2();
     // Two colonial counters against a militia column dug in at +3 in Ceuta: 3:1 with three off
     // the roll, one chance in six. Andalucia's demoralized regiments hold it meanwhile.
     const base = demoralize(board(scenario, "south", ["ceuta"], [
@@ -87,7 +87,7 @@ describe("computer player: offensives (C18)", () => {
     expect(stalledTurns([[], [gain]], faction("south"))).toBe(0);
     expect(stalledTurns([[gain]], faction("north"))).toBe(1);
     const offensive = { distance: new Map(), massedTakeChance: 0.5, target: territory("valencia") };
-    const weights = spain().ai.profiles[faction("south")]!.offensive;
+    const weights = spainM2().ai.profiles[faction("south")]!.offensive;
     expect(prizeFactor(weights, offensive, territory("valencia"), 0)).toBe(1 + weights.focus);
     expect(prizeFactor(weights, offensive, territory("murcia"), 99)).toBe(1 + weights.stallStep * weights.stallCap);
     expect(prizeFactor(weights, undefined, territory("murcia"), 1)).toBe(1 + weights.stallStep);
@@ -96,7 +96,7 @@ describe("computer player: offensives (C18)", () => {
 
 describe("computer player: relief and victory alarm", () => {
   it("does not walk into an empty territory its owner can relieve in strength", () => {
-    const scenario = spain();
+    const scenario = spainM2();
     const south: Placement = [["south-lepanto-5", "south", "andalucia"], ["south-granada-6", "south", "andalucia"]];
     const open = board(scenario, "south", ["murcia", "valencia"], south);
     expect(into(ordersOf(scenario, open, "south"), "murcia")).toHaveLength(1);

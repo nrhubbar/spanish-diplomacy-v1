@@ -46,16 +46,17 @@ describe("the turn pipeline (section 2)", () => {
     const draft = startDraft({ dice: () => seededRandom(1), scenario, seed: 1, start: initialGameState(scenario), streams: seededRollStreams(1, 1), submissions: [] });
     for (const phase of [weatherStep, airStep, trainingStep, incomeStep]) expect(phase(draft)).toBe(draft);
     const presets = new Set(ruleAreas.flatMap((area) => Object.values(builtInModuleRegistry.require(area, builtInModules[area][0]).steps)));
-    // Landed slices: dice (m3r1-d20-combat) and movement (`allowance`), so their second modules are no longer skeletons.
-    const landed = new Set<string>(["dice", "movement"]);
-    const skeletons = ruleAreas.filter((area) => !landed.has(area)).flatMap((area) => Object.values(builtInModuleRegistry.require(area, builtInModules[area][1]).steps)).filter((part) => !presets.has(part));
-    expect(skeletons.length).toBeGreaterThan(5);
+    // Landed slices are no longer skeletons: dice (m3r1-d20-combat), movement (`allowance`), partition `provinces` (m3r1-sub-territories) and air (m3r1-air-generals).
+    const skeletons = ruleAreas.filter((area) => area !== "dice" && area !== "air" && area !== "movement").flatMap((area) => Object.values(builtInModuleRegistry.require(area, builtInModules[area][1]).steps)).filter((part) => !presets.has(part))
+      .filter((part) => !Object.values(builtInModuleRegistry.require("partition", "provinces").steps).includes(part));
+    expect(skeletons.length).toBeGreaterThan(2);
     for (const part of skeletons) expect(part(draft)).toBe(draft);
   });
 
   it("plays a modular package exactly like its preset while the new modules are skeletons", () => {
+    // The air module ("missions") has landed; a no-op plugin stands in for a skeleton here.
     const preset = modularWith("none", []);
-    const skeleton = modularWith("missions", []);
+    const skeleton = modularWith("test-air", [{ modules: [{ area: "air", blocks: [], id: "test-air", steps: { air: (draft) => draft } }] }]);
     const orders = [{ factionId: faction("red"), orders: [move("red", "red-guard", "westfold", "lowlands")] }];
     expect(resolveTurn(skeleton, initialGameState(skeleton), orders, 7)).toEqual(resolveTurn(preset, initialGameState(preset), orders, 7));
   });

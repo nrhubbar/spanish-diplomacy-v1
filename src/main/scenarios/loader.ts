@@ -31,17 +31,17 @@ export interface MapTerritory {
   readonly unitAnchor: MapPoint;
 }
 
-/** One relief image and the view box rectangle it covers. */
-export interface TerrainLayerSource {
-  readonly bounds: MapRect;
-  readonly imagePath: string;
-}
-
-/** One sub-territory on the map: where its name and its chief town (a rail station, X6) are drawn. */
+/** X2: where a sub-territory's name and capital star are drawn; its path is in the lazy `svgPath`. */
 export interface MapSubTerritory {
   readonly capital: MapPoint;
   readonly label: MapPoint;
   readonly territoryId: TerritoryId;
+}
+
+/** One relief image and the view box rectangle it covers. */
+export interface TerrainLayerSource {
+  readonly bounds: MapRect;
+  readonly imagePath: string;
 }
 
 /** A validated map package. Asset paths are resolved lazily by the registry. */
@@ -56,8 +56,8 @@ export interface MapPackage {
   readonly regions: ReadonlyMap<string, TerritoryId>;
   readonly rivers: readonly MapRiver[];
   readonly stripSelectors: readonly string[];
-  /** Sub-territory label and capital points (the map package's `subTerritories.entries`); empty without them. */
-  readonly subTerritories: ReadonlyMap<SubTerritoryId, MapSubTerritory>;
+  /** X2: the sub-territory geometry (one path per id, read even-odd) and its label and capital points. */
+  readonly subTerritories?: { readonly entries: ReadonlyMap<SubTerritoryId, MapSubTerritory>; readonly svgPath: string };
   readonly terrain?: { readonly layers: readonly TerrainLayerSource[] };
   readonly territories: ReadonlyMap<TerritoryId, MapTerritory>;
   readonly unitSymbolPaths: ReadonlyMap<UnitTypeId, string>;

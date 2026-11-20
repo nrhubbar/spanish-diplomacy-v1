@@ -106,6 +106,7 @@ export const checkArmies: Phase = (draft) => {
  *   from, and from there it is an ordinary one-step move for the meeting and territory battles
  *   (steps 4 and 5): a bounced army returns there.
  * - Reinforcements arrive (M11), as in the preset.
+ * A general set aside by the air module (d6 table) is sent where his intercepted army stops.
  * Frostbite (T4) is the weather module's step-9 part (`m3r1-weather-timer`, WT-5).
  */
 export const moveAlongRoutes: Phase = (draft) => {
@@ -164,10 +165,22 @@ export const moveAlongRoutes: Phase = (draft) => {
   armies = replaceArmies(armies, [...staged].map(([unitId, staging]) => placeAt(requireArmy(armies, unitId), staging)));
   armies = replaceArmies(armies, reinforcements.map((order) => placeAt(requireArmy(armies, order.unitId), order.to)));
 
+  // AG-3: a general set aside from the ground steps follows his army; an intercepted army stops
+  // short, so he goes where it stops rather than to its destination.
+  const air = draft.scratch.air;
+  const generalMoves = air === undefined ? undefined : { ...air.generalMoves };
+  if (air !== undefined && generalMoves !== undefined) {
+    for (const [generalId, members] of Object.entries(air.armies) as [UnitId, readonly UnitId[]][]) {
+      const stopped = members.map((id) => replaced.get(id)).find((order) => order !== undefined && intercepted.has(order.unitId));
+      if (stopped !== undefined && generalMoves[generalId] !== undefined) generalMoves[generalId] = stopped.to;
+    }
+  }
+
   return {
     ...draft,
     armies,
     events: [...draft.events, ...events],
-    orders: { ...draft.orders, advances, origins, reinforcements, valid }
+    orders: { ...draft.orders, advances, origins, reinforcements, valid },
+    ...(air === undefined || generalMoves === undefined ? {} : { scratch: { ...draft.scratch, air: { ...air, generalMoves } } })
   };
 };

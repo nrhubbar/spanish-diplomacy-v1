@@ -79,11 +79,11 @@ describe("cross-area rule hooks", () => {
 describe("the turn's scratch slots", () => {
   it("carry one area's turn-only data from one step to a later one", () => {
     let seen: unknown;
-    const assign: Phase = (draft) => ({ ...draft, scratch: { ...draft.scratch, air: { support: [] } } });
+    const assign: Phase = (draft) => ({ ...draft, scratch: { ...draft.scratch, air: { armies: {}, aside: {}, generalMoves: {}, support: [] } } });
     const read: Phase = (draft) => { seen = draft.scratch.air; return draft; };
     const scenario = withModule({ area: "air", blocks: [], id: "scratch-air", steps: { air: assign, battles: read } });
     resolveTurn(scenario, initialGameState(scenario), [], 1);
-    expect(seen).toEqual({ support: [] });
+    expect(seen).toEqual({ armies: {}, aside: {}, generalMoves: {}, support: [] });
   });
 });
 

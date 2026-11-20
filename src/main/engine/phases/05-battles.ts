@@ -10,6 +10,7 @@ export const fightBattles: Phase = (draft) => {
     dice,
     firstIndex: draft.meetings.battles.length,
     origins: draft.orders.origins,
+    scratch: draft.scratch,
     start
   });
   return { ...draft, armies: front.armies, front };

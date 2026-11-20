@@ -713,8 +713,11 @@
       "name": "Pa\u00eds Vasco",
       "countsForVictory": true,
       "initialControl": {
-        "kind": "controlled",
-        "factionId": "republic"
+        "kind": "contested",
+        "factionIds": [
+          "republic",
+          "north"
+        ]
       },
       "capitalSubTerritoryId": "bizkaia",
       "weatherZone": "cantabrian"
@@ -796,7 +799,7 @@
         "kind": "contested",
         "factionIds": [
           "republic",
-          "south"
+          "north"
         ]
       },
       "capitalSubTerritoryId": "badajoz",
@@ -2267,6 +2270,148 @@
         }
       ],
       "historicalNote": "The Tetuan No. 1, Ceuta No. 3, and Larache No. 4 groups of Regulares, less a proportional share already in Seville. Estimated."
+    },
+    {
+      "id": "rep-ni52-fighters",
+      "name": "Hispano-Nieuport Ni-52 Fighters",
+      "factionId": "republic",
+      "type": "fighter-squadron",
+      "formationKind": "other",
+      "strength": 100,
+      "fullStrength": 100,
+      "territoryId": "madrid",
+      "sources": [
+        {
+          "sourceId": "enwiki-republican-air-force",
+          "reference": "July 1936 inventory: 60 Breguet XIX, 27 Vickers Vildebeest, 56 Hispano-Nieuport Ni-52; most stayed in the loyalist zone"
+        }
+      ],
+      "historicalNote": "Fighters of the air force that stayed loyal, around Madrid (Getafe). One counter; 100 men is the type's establishment, a design note."
+    },
+    {
+      "id": "rep-breguet-bombers",
+      "name": "Breguet XIX Light Bombers",
+      "factionId": "republic",
+      "type": "bomber-squadron",
+      "formationKind": "other",
+      "strength": 100,
+      "fullStrength": 100,
+      "territoryId": "madrid",
+      "sources": [
+        {
+          "sourceId": "enwiki-republican-air-force",
+          "reference": "July 1936 inventory: 60 Breguet XIX, 27 Vickers Vildebeest, 56 Hispano-Nieuport Ni-52; most stayed in the loyalist zone"
+        }
+      ],
+      "historicalNote": "Breguet XIX and Vildebeest attack aircraft that stayed loyal. One counter; 100 men is the type's establishment, a design note."
+    },
+    {
+      "id": "rep-catalan-recon",
+      "name": "Catalan Reconnaissance Flight",
+      "factionId": "republic",
+      "type": "recon-flight",
+      "formationKind": "other",
+      "strength": 100,
+      "fullStrength": 100,
+      "territoryId": "catalunya",
+      "sources": [
+        {
+          "sourceId": "enwiki-republican-air-force",
+          "reference": "July 1936 inventory: 60 Breguet XIX, 27 Vickers Vildebeest, 56 Hispano-Nieuport Ni-52; most stayed in the loyalist zone"
+        }
+      ],
+      "historicalNote": "Breguet XIX flown for reconnaissance from Barcelona. One counter; 100 men is the type's establishment, a design note."
+    },
+    {
+      "id": "north-leon-recon",
+      "name": "Leon Reconnaissance Flight",
+      "factionId": "north",
+      "type": "recon-flight",
+      "formationKind": "other",
+      "strength": 100,
+      "fullStrength": 100,
+      "territoryId": "castilla-y-leon",
+      "sources": [
+        {
+          "sourceId": "enwiki-republican-air-force",
+          "reference": "the government lost the military planes in aerodromes under rebel control"
+        }
+      ],
+      "historicalNote": "Breguet XIX at the Leon aerodrome, which the rising held. One counter; 100 men is the type's establishment, a design note."
+    },
+    {
+      "id": "south-ju52-bombers",
+      "name": "Junkers Ju 52 Bombers",
+      "factionId": "south",
+      "type": "bomber-squadron",
+      "formationKind": "other",
+      "strength": 100,
+      "fullStrength": 100,
+      "territoryId": "andalucia",
+      "sources": [
+        {
+          "sourceId": "enwiki-airlift-1936",
+          "reference": "German Ju 52s ferrying the Army of Africa, armed as bombers"
+        }
+      ],
+      "historicalNote": "The Ju 52s of the airlift to Seville, which also flew as bombers. One counter; 100 men is the type's establishment, a design note."
+    },
+    {
+      "id": "rep-general-miaja",
+      "name": "General Miaja's Headquarters",
+      "factionId": "republic",
+      "type": "general",
+      "formationKind": "other",
+      "strength": 100,
+      "fullStrength": 100,
+      "territoryId": "madrid",
+      "generalId": "jose-miaja",
+      "sources": [
+        {
+          "sourceId": "enwiki-jose-miaja"
+        },
+        {
+          "sourceId": "eswiki-madrid-1936"
+        }
+      ],
+      "historicalNote": "Miaja commanded the 1st Organic Division in Madrid in July 1936. General's headquarters. Its 100 men stand for the staff, a design note: a general adds no combat value of his own (U5)."
+    },
+    {
+      "id": "north-general-mola",
+      "name": "General Mola's Headquarters",
+      "factionId": "north",
+      "type": "general",
+      "formationKind": "other",
+      "strength": 100,
+      "fullStrength": 100,
+      "territoryId": "navarra",
+      "generalId": "emilio-mola",
+      "sources": [
+        {
+          "sourceId": "enwiki-emilio-mola"
+        }
+      ],
+      "historicalNote": "Mola directed the rising from Pamplona. General's headquarters. Its 100 men stand for the staff, a design note: a general adds no combat value of his own (U5)."
+    },
+    {
+      "id": "south-general-yague",
+      "name": "Lieutenant Colonel Yag\u00fce's Headquarters",
+      "factionId": "south",
+      "type": "general",
+      "formationKind": "other",
+      "strength": 100,
+      "fullStrength": 100,
+      "territoryId": "ceuta",
+      "generalId": "juan-yague",
+      "sources": [
+        {
+          "sourceId": "enwiki-juan-yague"
+        },
+        {
+          "sourceId": "eswiki-ejercito-africa"
+        }
+      ],
+      "historicalNote": "Yag\u00fce led the Army of Africa's columns, which crossed from Morocco in early August. General's headquarters. Its 100 men stand for the staff, a design note: a general adds no combat value of his own (U5)."
     }
   ],
   "subTerritories": [
@@ -4886,7 +5031,8 @@
     ],
     "interceptRoll": -2,
     "reconTurns": 1,
-    "note": "U3, U4 and declog D7. Design note: a starting value for the harness to tune (Q-MR-26, H7)."
+    "generalDeathRoll": 4,
+    "note": "U3, U4 and declog D7. Design note: a starting value for the harness to tune (Q-MR-26, H7). generalDeathRoll 4 (a 1 in 5 chance that a general dies when his army is destroyed or routed) is a design note for the harness to tune (U5, Q-MR-28)."
   },
   "generals": {
     "traits": [
@@ -5180,6 +5326,11 @@
       "id": "enwiki-jose-varela",
       "title": "English Wikipedia, Jos\u00e9 Enrique Varela",
       "url": "https://en.wikipedia.org/wiki/Jos%C3%A9_Enrique_Varela"
+    },
+    {
+      "id": "enwiki-republican-air-force",
+      "title": "English Wikipedia, Spanish Republican Air Force",
+      "url": "https://en.wikipedia.org/wiki/Spanish_Republican_Air_Force"
     }
   ]
 }

@@ -1,3 +1,7 @@
+import { unitTypeIn } from "./air/pieces";
+import { validateAirMission, validateSack } from "./air/validation";
+import { hookedOrderVerdict } from "./hooks";
+import { validateBuildOrder } from "./economy/catalogue";
 import { isNeighbor } from "./lookup";
 import { validateRoute } from "./movement/routes";
 import { validateRecruitOrder, validateReplenishOrder } from "./recruitment/rules";
@@ -30,8 +34,17 @@ export function validateOrder(scenario: Scenario, state: GameState, order: Order
       return scenario.rules.recruitment === "none" ? { ok: false, reason: unavailableOrderReason } : validateRecruitOrder(scenario, state, order);
     case "replenish":
       return scenario.rules.recruitment === "none" ? { ok: false, reason: unavailableOrderReason } : validateReplenishOrder(scenario, state, order);
+    // U2, U5: air missions and sackings (m3r1-air-generals).
+    case "air-mission":
+      return validateAirMission(scenario, state, order);
+    case "sack":
+      return validateSack(scenario, state, order);
+    // $5: the economy module's Build orders (m3r1-economy-builds).
+    case "build":
+      return validateBuildOrder(scenario, state, order);
     default:
-      return { ok: false, reason: unavailableOrderReason };
+      // Other kinds (Withdraw, C1) are valid only when a selected module accepts them (`RuleHooks.orderVerdict`).
+      return hookedOrderVerdict({ order, scenario, state }) ?? { ok: false, reason: unavailableOrderReason };
   }
 }
 
@@ -54,6 +67,10 @@ export function validateMoveOrder(
   if (unit.territoryId !== order.from) {
     return { ok: false, reason: "Selected unit is no longer in that territory." };
   }
+  // W5: a unit takes only the order kinds its type allows (aircraft fly missions, they do not march).
+  if (!(unitTypeIn(scenario, state.raised, unit.id)?.orders.includes("move") ?? true)) {
+    return { ok: false, reason: "This unit cannot move." };
+  }
   if (order.from === order.to) {
     return { ok: false, reason: "Choose a different territory as the destination." };
   }
@@ -74,7 +91,9 @@ export function validateMoveOrder(
   if (unit.morale.demoralized && Object.values(state.units).some((other) => other.territoryId === order.to && other.factionId !== unit.factionId)) {
     return { ok: false, reason: demoralizedAttackReason };
   }
-  return { ok: true };
+  // C1 and the like: a selected module may refuse a move the base rules allow.
+  const verdict = hookedOrderVerdict({ order, scenario, state });
+  return verdict === undefined || verdict.ok ? { ok: true } : verdict;
 }
 
 export function validateSubmission(

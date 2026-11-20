@@ -1,3 +1,4 @@
+import { unitKindIn } from "../air/pieces";
 import type { BattleContext } from "../combat/odds";
 import { requireUnitState } from "../lookup";
 import type { BattleSide, FactionId, GameState, Scenario, TerritoryId, UnitId } from "../types";
@@ -22,8 +23,10 @@ export type GradedEstimate = GradedOdds & {
  * fatigue and the hooks (weather, amphibious, air support).
  */
 export function estimateGradedBattle(scenario: Scenario, state: GameState, factionId: FactionId, unitIds: readonly UnitId[], target: TerritoryId): GradedEstimate {
-  const attackers = unitIds.map((id) => requireUnitState(state, id));
-  const present = Object.values(state.units).filter((unit) => unit.territoryId === target && unit.factionId !== factionId);
+  // D17 (m3r1-air-generals): aircraft are not ground combatants.
+  const fights = (id: UnitId): boolean => unitKindIn(scenario, state.raised, id) !== "air";
+  const attackers = unitIds.filter(fights).map((id) => requireUnitState(state, id));
+  const present = Object.values(state.units).filter((unit) => unit.territoryId === target && unit.factionId !== factionId && fights(unit.id));
   const attacker = gradedSide(scenario, state, attackers.map((unit) => ({ from: unit.territoryId, unit })), "attack");
   const defender = gradedSide(scenario, state, present.map((unit) => ({ from: target, unit })), "defence");
   const modifiers = gradedModifiers(scenario, state, state.weather, {

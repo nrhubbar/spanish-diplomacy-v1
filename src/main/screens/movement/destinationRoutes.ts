@@ -1,5 +1,5 @@
 import { armyKey, armyMovement, plannedRoutes, routeClaims } from "../../engine/movement/routes";
-import type { Scenario } from "../../engine/types";
+import { isMoveOrder, type Scenario } from "../../engine/types";
 import { type PlanningSession, selectedRoutes } from "../../state/planning";
 import type { DestinationRoutes } from "../DestinationChoices";
 
@@ -10,7 +10,7 @@ export function destinationRoutes(scenario: Scenario, session: PlanningSession):
   if (routes === undefined || from === undefined) return undefined;
   const { state } = session.game;
   const selected = new Set(session.draft.selectedUnitIds);
-  const others = session.draft.orders.filter((order) => !selected.has(order.unitId));
+  const others = session.draft.orders.filter(isMoveOrder).filter((order) => !selected.has(order.unitId));
   const boarding = new Map<string, Set<string>>();
   for (const order of others) {
     const route = plannedRoutes(scenario, state, [order])[0]?.route;

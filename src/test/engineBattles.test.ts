@@ -9,7 +9,7 @@ import {
   loadedDice,
   move,
   play,
-  spain,
+  spainM2,
   territory,
   tiny,
   unit,
@@ -292,7 +292,7 @@ describe("M17 and M18: several attackers against one snapshot (section 1.6)", ()
   // North holds La Rioja with one regiment (defence 6, no cities, so no faction modifiers).
   // The Republic attacks from the Pais Vasco and the South from Castilla y Leon; battles are
   // indexed by attacking faction id: the Republic's is 0, the South's 1.
-  const three = (republic: number, south: number) => battlefield(spain(), [
+  const three = (republic: number, south: number) => battlefield(spainM2(), [
     a("n1", "north", "la-rioja", { type: "infantry-regiment" }),
     ...Array.from({ length: republic }, (_, index) => a(`r${String(index + 1)}`, "republic", "pais-vasco", { type: "infantry-regiment" })),
     ...Array.from({ length: south }, (_, index) => a(`s${String(index + 1)}`, "south", "castilla-y-leon", { type: "infantry-regiment" }))
@@ -383,8 +383,8 @@ describe("M19 entry battles in empty territory (section 1.6 step 3)", () => {
   });
 
   it("fights each lesser entrant separately against the standing entrant, three factions at once", () => {
-    const control = { ...initialControl(spain()), [territory("la-rioja")]: { factionIds: [faction("north"), faction("republic")], kind: "contested" as const } };
-    const { scenario, state } = battlefield(spain(), [
+    const control = { ...initialControl(spainM2()), [territory("la-rioja")]: { factionIds: [faction("north"), faction("republic")], kind: "contested" as const } };
+    const { scenario, state } = battlefield(spainM2(), [
       a("n1", "north", "navarra", { type: "infantry-regiment" }),
       a("r1", "republic", "pais-vasco", { type: "infantry-regiment" }),
       a("s1", "south", "castilla-y-leon", { type: "infantry-regiment" }),
@@ -482,7 +482,7 @@ describe("M20 head-on meeting battles (C9)", () => {
   });
 
   it("bounces every move without a battle when more than two factions meet on one road", () => {
-    const { scenario, state } = battlefield(spain(), [
+    const { scenario, state } = battlefield(spainM2(), [
       a("r1", "republic", "madrid", { type: "infantry-regiment" }),
       a("s1", "south", "madrid", { type: "infantry-regiment" }),
       a("n1", "north", "castilla-y-leon", { type: "infantry-regiment" })
@@ -505,7 +505,7 @@ describe("M21 returns, retreats, and surrender (C11)", () => {
   // North attacks the Republic in Castilla-La Mancha from Aragon: 12 against 6 is 2:1, and
   // popular resistance (Toledo, Albacete) takes 1, so a 5 drives the defender out.
   const ousted = (extra: readonly ArmySpec[]) => {
-    const { scenario, state } = battlefield(spain(), [
+    const { scenario, state } = battlefield(spainM2(), [
       a("r1", "republic", "castilla-la-mancha", { type: "infantry-regiment" }),
       ...extra,
       ...["n1", "n2", "n3"].map((id) => a(id, "north", "aragon", { type: "infantry-regiment" }))

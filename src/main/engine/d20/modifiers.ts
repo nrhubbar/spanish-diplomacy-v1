@@ -1,5 +1,6 @@
 import { hookedCombatModifiers } from "../hooks";
 import { citiesIn } from "../lookup";
+import type { TurnScratch } from "../phases/draft";
 import type { BattleSide, CombatModifier, CombatRole, D20Rules, FactionId, GameState, Scenario, TerritoryId, UnitState, UnitTypeId, WeatherState } from "../types";
 import { compareText, gradedValue, isGeneralUnit, requireD20, rosterGeneral, typeOf, unitRank, weatherIn } from "./rules";
 
@@ -21,6 +22,8 @@ export interface GradedContext {
    * armies' own modifiers: generals, unit bonuses and fatigue.
    */
   readonly territoryId?: TerritoryId;
+  /** The turn's scratch while a turn resolves, passed on to the hooks (bomber support, m3r1-air-generals). */
+  readonly scratch?: TurnScratch;
   /** Whose weather the unit bonuses read (D5: tanks); the battle territory, or a meeting's destination. */
   readonly weatherTerritoryId?: TerritoryId;
 }
@@ -76,6 +79,7 @@ export function gradedModifiers(
     attackerUnitIds: attacker.units.map((unit) => unit.id),
     defenderFactionIds: context.defenderFactionIds,
     diggingIn: context.diggingIn,
+    ...(context.scratch === undefined ? {} : { scratch: context.scratch }),
     scenario,
     state,
     territoryId

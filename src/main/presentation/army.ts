@@ -1,21 +1,27 @@
 import { armyValue } from "../engine/combat";
 import { requireFaction, requireUnitDefinition, requireUnitType } from "../engine/lookup";
 import type { StandingOrder } from "../engine/orders";
-import type { GameState, MoveOrder, ReplenishOrder, Scenario, UnitState } from "../engine/types";
+import type { GameState, MoveOrder, ReplenishOrder, Scenario, UnitState, WithdrawOrder } from "../engine/types";
 
-/** An army's one order this turn (O1): a move, or the standing order it follows without one (O5). */
-export type ArmyOrder = MoveOrder["kind"] | ReplenishOrder["kind"] | StandingOrder;
+/**
+ * An army's one order this turn (O1): a move or Replenish, or the standing order it follows
+ * without one (O5); in contested ground, Attack (Hold when demoralized) or Withdraw (C1, C4).
+ */
+export type ArmyOrder = MoveOrder["kind"] | WithdrawOrder["kind"] | ReplenishOrder["kind"] | StandingOrder | "attack" | "hold";
 
 /** What an army with each order is doing, in the player's words. */
 export const orderStatus: Readonly<Record<ArmyOrder, string>> = {
+  attack: "Attacking",
   entrench: "Entrenching",
+  hold: "Holding",
   move: "Moving",
   replenish: "Replenishing",
-  rest: "Resting"
+  rest: "Resting",
+  withdraw: "Withdrawing"
 };
 
 /** Order types in the order the menu, the summary, and accessible names list them. */
-export const armyOrders: readonly ArmyOrder[] = ["move", "replenish", "entrench", "rest"];
+export const armyOrders: readonly ArmyOrder[] = ["move", "withdraw", "attack", "replenish", "entrench", "rest", "hold"];
 
 /**
  * What a counter or an army row shows: the values that fight now (C5), the type's full values,

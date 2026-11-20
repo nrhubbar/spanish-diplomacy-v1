@@ -1,14 +1,18 @@
 import { type JSX, useId } from "react";
 import { useAppDispatch } from "../hooks";
 import { chooseOrderKind, toggleOrderMenu } from "../state/gameSlice";
+import type { BlockedOrder } from "../state/planning";
 import type { OrderKind } from "../state/session";
 
 /** Player-facing name and one-line explanation for each order type. */
 const orderLabels: Readonly<Record<OrderKind, { readonly description: string; readonly label: string }>> = {
+  attack: { description: "Default here. Fight for the territory where you stand.", label: "Attack" },
   entrench: { description: "Stay and dig in. Only healthy armies entrench.", label: "Entrench" },
+  hold: { description: "Default for demoralized armies here: hold and defend.", label: "Hold" },
   move: { description: "March to a neighboring territory.", label: "Move" },
+  rest: { description: "Stay and recover. Demoralized armies rest instead of entrenching.", label: "Rest" },
   replenish: { description: "Restore men and morale. Cancelled and refunded if the unit fights.", label: "Replenish" },
-  rest: { description: "Stay and recover. Demoralized armies rest instead of entrenching.", label: "Rest" }
+  withdraw: { description: "Leave for a neighbouring territory you hold, through your own sub-territories.", label: "Withdraw" }
 };
 
 export function armies(count: number): string {
@@ -23,6 +27,10 @@ function revealWhenShown(element: HTMLElement | null): void {
 interface OrderCommandProps {
   /** Armies in the territory that have no move order. */
   readonly availableCount: number;
+  /** C1: order kinds shown greyed out, with the reason (contested ground). */
+  readonly blocked?: readonly BlockedOrder[];
+  /** Descriptions that depend on the board, such as where a Withdraw leads (C1). */
+  readonly descriptions?: Partial<Readonly<Record<OrderKind, string>>>;
   /** A description for this selection in place of the general one (R5: Replenish's men, cost and arrival). */
   readonly details?: Partial<Readonly<Record<OrderKind, string>>>;
   /** The order types offered for the selected armies, in menu order. */
@@ -32,7 +40,7 @@ interface OrderCommandProps {
 }
 
 /** "Give Selected Armies Order" and, once open, the order types it offers. */
-export function OrderCommand({ availableCount, details, kinds, menuOpen, selectedCount }: OrderCommandProps): JSX.Element {
+export function OrderCommand({ availableCount, blocked = [], descriptions = {}, details, kinds, menuOpen, selectedCount }: OrderCommandProps): JSX.Element {
   const dispatch = useAppDispatch();
   const ids = useId();
   const hintId = `${ids}-hint`;
@@ -72,7 +80,14 @@ export function OrderCommand({ availableCount, details, kinds, menuOpen, selecte
               >
                 {orderLabels[kind].label}
               </button>
-              <span className="order-choice-description" id={`${ids}-${kind}`}>{details?.[kind] ?? orderLabels[kind].description}</span>
+              <span className="order-choice-description" id={`${ids}-${kind}`}>{details?.[kind] ?? descriptions[kind] ?? orderLabels[kind].description}</span>
+            </div>
+          ))}
+          {blocked.map((entry, index) => (
+            <div aria-disabled="true" className="order-choice" data-blocked="true" key={entry.label}>
+              <span aria-hidden="true" className="order-choice-icon" />
+              <span className="order-choice-label" id={`${ids}-blocked-${String(index)}`}>{entry.label}</span>
+              <span className="order-choice-description">{entry.reason}</span>
             </div>
           ))}
         </div>

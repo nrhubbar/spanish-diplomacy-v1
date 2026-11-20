@@ -4,6 +4,7 @@ import { recruitSiteProblem, recruitSlots, recruitableTypes, typeLock } from "..
 import { canAfford, scaleResources, subtractResources } from "../../engine/resources";
 import type { FactionId, GameState, RecruitOrder, ResourceId, Resources, Scenario, TerritoryId, UnitState, UnitTypeDefinition } from "../../engine/types";
 import type { OrderPlanner } from "./planner";
+import { airRecruitChoices } from "./airRecruits";
 import { balanceLeft } from "./spending";
 
 /**
@@ -51,8 +52,8 @@ function worth(type: UnitTypeDefinition, balance: Resources): number {
  * H5, R2-R4: the computer player's Recruit orders. At each allowed site, the most threatened
  * first, it fills the territory's D7 slots with the best ground type the capital can train,
  * adding one support type (artillery) when the faction has too few. It spends only what the
- * earlier planners left, less a reserve for builds. Air types are left to the air planner's
- * stream (TODO(m3r1-air-generals): recruit aircraft where airfields stand). No random draws (CT-36).
+ * earlier planners left, less a reserve for builds. Anti-air and aircraft come first where the
+ * site can train them (`airRecruits.ts`, m3r1-air-generals). No random draws (CT-36).
  */
 export const planRecruits: OrderPlanner<RecruitOrder> = (context) => {
   const { factionId, scenario, state } = context;
@@ -73,8 +74,19 @@ export const planRecruits: OrderPlanner<RecruitOrder> = (context) => {
     const open = ground
       .filter((type) => typeLock(scenario, state, factionId, site.territoryId, type).reasons.length === 0)
       .sort((left, right) => worth(right, start) - worth(left, start) || left.id.localeCompare(right.id));
-    if (open.length === 0) continue;
+    // U1-U3 (m3r1-air-generals): anti-air and aircraft first, where the site can train them.
+    const air = airRecruitChoices(scenario, state, factionId, site.territoryId, recruitableTypes(scenario)
+      .filter((type) => (type.air !== undefined || type.effects.some((effect) => effect.kind === "raid-defence")) && typeLock(scenario, state, factionId, site.territoryId, type).reasons.length === 0));
+    if (open.length === 0 && air.length === 0) continue;
     for (let slot = 0; slot < recruitSlots(scenario, state, site.territoryId); slot += 1) {
+      const airChoice = air.find((type) => type.recruit !== undefined && spendable(type.recruit.cost) && !orders.some((order) => order.territoryId === site.territoryId && order.unitTypeId === type.id)
+        // At most one aircraft a turn across the faction.
+        && !(type.air !== undefined && orders.some((order) => scenario.index.unitTypes.get(order.unitTypeId)?.air !== undefined)));
+      if (airChoice?.recruit !== undefined) {
+        balance = subtractResources(balance, airChoice.recruit.cost);
+        orders.push({ factionId, kind: "recruit", territoryId: site.territoryId, unitTypeId: airChoice.id });
+        continue;
+      }
       const wantsSupport = support * supportRatio < groundCount;
       const supportType = wantsSupport ? open.find((type) => type.effects.some((effect) => effect.kind === "cannot-attack-alone")) : undefined;
       const choice = [supportType, ...open.filter((type) => !type.effects.some((effect) => effect.kind === "cannot-attack-alone"))]

@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { requireUnitDefinition } from "../main/engine/lookup";
-import { canAfford, scaleResources, subtractResources } from "../main/engine/resources";
+import { incomeFor } from "../main/engine/economy/income";
+import { hookedReplenishBonus } from "../main/engine/hooks";
+import { addResources, canAfford, scaleResources, subtractResources } from "../main/engine/resources";
 import {
   isContested,
   raisedDefinition,
@@ -101,7 +103,9 @@ describe("Recruit orders through the turn (R4, R6, R7)", () => {
     const militiaId = raisedUnitId(republic, type("militia-column"), 1);
     expect(turn1.finalState.units[militiaId]).toMatchObject({ strength: 2500, territoryId: "catalunya", fatigue: 0 });
     expect(turn1.finalState.raised[militiaId]?.name).toBe("Militia column No. 1");
-    expect(turn1.finalState.treasuries[republic]).toEqual({ funds: 22, manpower: 6 });
+    // Paid 8 Funds and 4 Manpower, then step 11's income ($2, m3r1-economy-builds), on the ground
+    // held after step 8 (the turn-1 sweeps take Alava and Caceres, P3, m3r1-sub-territories).
+    expect(turn1.finalState.treasuries[republic]).toEqual(addResources({ funds: 22, manpower: 6 } as Resources, incomeFor(scenario, { ...start, subTerritories: turn1.finalState.subTerritories }, republic).paid));
     expect(turn1.finalState.training).toHaveLength(1);
 
     const turn2 = play({ ...turn1.finalState, turnNumber: 2 }, []);
@@ -132,6 +136,8 @@ describe("Recruit orders through the turn (R4, R6, R7)", () => {
     const lerida = sub("lleida");
     const contested: GameState = {
       ...base,
+      // No army in Catalunya, so nobody sweeps Lleida back before training advances (P3, m3r1-sub-territories).
+      units: Object.fromEntries(Object.entries(base.units).filter(([, entry]) => entry.territoryId !== "catalunya")),
       subTerritories: { ...base.subTerritories, [lerida]: { ...base.subTerritories[lerida]!, holder: north } },
       training: [item("militia-column", 1), item("infantry-regiment", 1)]
     };
@@ -154,7 +160,9 @@ describe("Replenish (R5)", () => {
   it("quotes half the recruit price per value point, capped at half the full strength a turn", () => {
     const quote = replenishQuote(scenario, worn, worn.units[durruti.id]!)!;
     const full = requireUnitDefinition(scenario, durruti.id).fullStrength;
-    expect(quote.men).toBe(Math.min(Math.floor(full / 2), full - worn.units[durruti.id]!.strength));
+    // Half the full strength, plus the Depot's cap share through the replenishBonus hook (m3r1-economy-builds).
+    const bonus = hookedReplenishBonus({ scenario, state: worn, territoryId: durruti.territoryId, unitId: durruti.id });
+    expect(quote.men).toBe(Math.min(Math.floor(full * (0.5 + bonus.capShare)), full - worn.units[durruti.id]!.strength));
     expect(quote.recovers).toBe(true);
     expect(Object.values(quote.cost).every((amount) => amount > 0)).toBe(true);
   });
@@ -176,13 +184,21 @@ describe("Replenish (R5)", () => {
 
   it("any battle cancels it with a refund", () => {
     const attacker = Object.values(base.units).find((entry) => entry.factionId === north && entry.territoryId === "aragon")!;
-    const result = resolveTurn(scenario, worn, [
+    // Aragon whole for the North (Huesca taken): units cannot move out of contested ground (C1, m3r1-sub-territories).
+    const huesca = sub("huesca");
+    const northAragon: GameState = {
+      ...worn,
+      control: { ...worn.control, [territory("aragon")]: { factionId: north, kind: "controlled" } },
+      subTerritories: { ...worn.subTerritories, [huesca]: { ...worn.subTerritories[huesca]!, holder: north } }
+    };
+    const result = resolveTurn(scenario, northAragon, [
       { factionId: republic, orders: [replenishOrder("republic", durruti.id)] },
       { factionId: north, orders: [{ factionId: north, from: territory("aragon"), kind: "move", to: territory("catalunya"), unitId: attacker.id }] }
     ], 3);
     const cancelled = ofKind(result.outcomes, "replenish-cancelled");
     expect(cancelled).toHaveLength(1);
-    expect(result.finalState.treasuries[republic]).toEqual(worn.treasuries[republic]);
+    // Refunded in full; only step 11's income ($2) is added.
+    expect(result.finalState.treasuries[republic]).toEqual(addResources(worn.treasuries[republic]!, incomeFor(scenario, { ...worn, subTerritories: result.finalState.subTerritories }, republic).paid));
   });
 });
 

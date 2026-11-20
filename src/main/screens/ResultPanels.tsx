@@ -9,6 +9,7 @@ import { cssVariables } from "../presentation/style";
 import { controllerName, describeOutcomeGroup, factionName, groupOutcomes, route, territoryName, unitName } from "../presentation/text";
 import type { RevealedOrders } from "../state/selectors";
 import { eventsAt, revealInPane } from "./report/focus";
+import { SubTerritoryChanges } from "./report/SubTerritoryChanges";
 
 /** U5: which territories changed hands this turn. */
 export function TerritoryChanges({ result, scenario }: { readonly result: TurnResolutionResult; readonly scenario: Scenario }): JSX.Element {
@@ -27,6 +28,7 @@ export function TerritoryChanges({ result, scenario }: { readonly result: TurnRe
           ))}
         </ul>
       )}
+      <SubTerritoryChanges result={result} scenario={scenario} />
     </section>
   );
 }
@@ -85,7 +87,10 @@ const groups: readonly OutcomeGroupSpec[] = [
   { icon: { tone: "bounced" }, kinds: ["bounced-move"], label: "Bounced", open: true },
   { icon: { medallion: "recovered" }, kinds: ["recovered"], label: outcomeText.recovered.title, open: true },
   { icon: { medallion: "reinforcement-arrived" }, kinds: ["reinforcement-arrived"], label: outcomeText["reinforcement-arrived"].title, open: false },
-  { icon: { tone: "moved" }, kinds: ["successful-move"], label: "Completed moves", open: false }
+  { icon: { tone: "moved" }, kinds: ["successful-move"], label: "Completed moves", open: false },
+  // U2-U5 (m3r1-air-generals): raids, recon, interceptions and support; generals' changes and rallies.
+  { icon: { tone: "moved" }, kinds: ["raid", "recon", "interception", "air-support", "grounded", "aircraft-rebased", "aircraft-lost"], label: "Air missions", open: true },
+  { icon: { tone: "moved" }, kinds: ["general-died", "general-sacked", "replacement-due", "replacement-arrived", "rallied", "general-moved"], label: "Generals", open: true }
 ];
 
 /** Neutral ring for report icons, which stand for a kind of outcome rather than a faction. */

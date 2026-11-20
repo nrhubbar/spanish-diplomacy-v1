@@ -116,7 +116,8 @@ export const planMoves: OrderPlanner<MoveOrder> = ({ factionId, memory: context,
  */
 export function legalMoves(scenario: Scenario, state: GameState, unit: UnitState): readonly MoveOrder[] {
   if (scenario.rules.movement === "allowance") {
-    if (isTransport(scenario, state, unit.id)) return [];
+    // W5, AG-3: only units whose type may move march (never aircraft); trucks go with an army.
+    if (isTransport(scenario, state, unit.id) || !(unitTypeOf(scenario, state, unit.id)?.orders.includes("move") ?? true)) return [];
     return [...unitRoutes(scenario, state, unit).values()]
       .map((route): MoveOrder => ({ factionId: unit.factionId, from: unit.territoryId, kind: "move", ...(route.shape === "step" ? {} : { legs: route.legs }), to: route.to, unitId: unit.id }));
   }

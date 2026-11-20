@@ -28,8 +28,13 @@ export function transportOf(scenario: Scenario, state: GameState, unitIds: reado
   let needing = 0;
   let transports = 0;
   let mobile = 0;
+  let counted = 0;
   for (const unitId of unitIds) {
-    const effects = unitTypeOf(scenario, state, unitId)?.effects ?? [];
+    const type = unitTypeOf(scenario, state, unitId);
+    // AG-3: generals ride with their army and aircraft never march, so neither needs or adds transport.
+    if (type !== undefined && type.kind !== "ground") continue;
+    counted += 1;
+    const effects = type?.effects ?? [];
     const carry = effects.find((effect) => effect.kind === "transport");
     if (carry?.kind === "transport") {
       capacity += carry.carries;
@@ -40,13 +45,13 @@ export function transportOf(scenario: Scenario, state: GameState, unitIds: reado
       needing += 1;
     }
   }
-  return { allMobile: unitIds.length > 0 && mobile === unitIds.length, capacity, needing, transports };
+  return { allMobile: counted > 0 && mobile === counted, capacity, needing, transports };
 }
 
 /** M1: +1 when the army's transport carries every unit that needs it (an all-cavalry army needs none). */
 export function truckBonus(scenario: Scenario, state: GameState, unitIds: readonly UnitId[]): number {
-  if (unitIds.length === 0) return 0;
   const transport = transportOf(scenario, state, unitIds);
+  if (transport.needing + transport.transports === 0 && !transport.allMobile) return 0;
   return transport.capacity >= transport.needing && (transport.transports > 0 || transport.needing === 0) ? 1 : 0;
 }
 

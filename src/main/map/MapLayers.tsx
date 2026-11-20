@@ -5,10 +5,10 @@ import type { MapAssets } from "../scenarios/registry";
 import { CounterLayer, layoutCounters } from "./CounterLayer";
 import { weatherIn } from "../engine/weather";
 import { DestinationOddsLayer } from "./DestinationOddsLayer";
-import { AirLayer } from "./layers/AirLayer";
+import { AirLayer, withoutAircraft } from "./layers/AirLayer";
 import { destinationTags, RailLayer } from "./layers/RailLayer";
 import type { MapLayerProps } from "./layers/slots";
-import { SubTerritoryLayer } from "./layers/SubTerritoryLayer";
+import { SubTerritoryLayer, SubTerritoryWash } from "./layers/SubTerritoryLayer";
 import { mapControlObstacles } from "./MapControls";
 import type { PaneLayout } from "./MapPane";
 import { TerrainLayer } from "./TerrainLayer";
@@ -43,13 +43,15 @@ export function MapLayers({ assets, bounds, camera, game, geometry, layout, leve
   const place = (rect: MapRect): MapRect => ({ ...toScreen(rect), height: rect.height * scale, width: rect.width * scale });
   const landLabels = labelObstacles(scenarioPackage, level, toScreen, viewport.height, layout);
   const expandedTerritoryId = highlightedTerritoryId(view);
-  const counterLayout = layoutCounters(game, map, camera.zoom, toScreen, landLabels, {
+  // U2 (m3r1-air-generals): aircraft are drawn by the air layer at their airfields, not as army counters.
+  const groundGame = withoutAircraft(scenario, game);
+  const counterLayout = layoutCounters(groundGame, map, camera.zoom, toScreen, landLabels, {
     ...(expandedTerritoryId === undefined ? {} : { expandedTerritoryId }),
     narrow: layout === "sheet"
   });
   const { height, width } = counterLayout.metrics;
   const counters = [...counterLayout.positions.values()].map((position) => ({ ...position, height, width }));
-  const layerProps: MapLayerProps = { game, level, scenarioPackage, toScreen, view };
+  const layerProps: MapLayerProps = { game, level, scenarioPackage, toScreen, unitSymbols: assets.unitSymbols, view };
 
   return (
     <>
@@ -61,6 +63,8 @@ export function MapLayers({ assets, bounds, camera, game, geometry, layout, leve
           visible={visible}
         />
       )}
+      {/* X2: the sub-territory wash sits under the vector layer's borders, rivers, cities and names. */}
+      <SubTerritoryWash {...layerProps} />
       <VectorLayer
         contextLabels={visibleContextLabels(map.contextLabels, toScreen, viewport, counters)}
         game={game}
@@ -85,7 +89,7 @@ export function MapLayers({ assets, bounds, camera, game, geometry, layout, leve
       <SubTerritoryLayer {...layerProps} />
       <RailLayer {...layerProps} />
       <CounterLayer
-        game={game}
+        game={groundGame}
         layout={counterLayout}
         level={level}
         scenario={scenario}

@@ -1,4 +1,5 @@
 import { neighborsOf } from "../lookup";
+import { holdsWhole as partitionHoldsWhole, subTerritoriesOf as partitionSubTerritories } from "../partition/holders";
 import { isSeaRouteClosed } from "../weather";
 import type {
   ConnectionDefinition,
@@ -23,23 +24,19 @@ export function unitTypeOf(scenario: Scenario, state: GameState, unitId: UnitId)
   return typeId === undefined ? undefined : scenario.index.unitTypes.get(typeId);
 }
 
-/** The sub-territories of a territory, in scenario order. */
+/** The sub-territory ids of a territory, in scenario order (`partition/holders.ts`). */
 export function subTerritoriesOf(scenario: Scenario, territoryId: TerritoryId): readonly SubTerritoryId[] {
-  return (scenario.index.subTerritoriesByTerritory.get(territoryId) ?? []).map((sub) => sub.id);
+  return partitionSubTerritories(scenario, territoryId).map((sub) => sub.id);
 }
 
+/** The holder of a sub-territory in the given state. */
 export function holderOf(state: GameState, subTerritoryId: SubTerritoryId): FactionId | undefined {
   return state.subTerritories[subTerritoryId]?.holder;
 }
 
-/** M2: the faction holds every sub-territory of the territory. */
+/** M2, W6: the faction holds every sub-territory of the territory (`m3r1-sub-territories`' P7 helper). */
 export function holdsWhole(scenario: Scenario, state: GameState, factionId: FactionId, territoryId: TerritoryId): boolean {
-  const subs = subTerritoriesOf(scenario, territoryId);
-  if (subs.length === 0) {
-    const control = state.control[territoryId];
-    return control?.kind === "controlled" && control.factionId === factionId;
-  }
-  return subs.every((id) => holderOf(state, id) === factionId);
+  return partitionHoldsWhole(scenario, state, territoryId, factionId);
 }
 
 /** Another faction has an army in the territory. */

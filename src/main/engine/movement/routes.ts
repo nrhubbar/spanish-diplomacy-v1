@@ -1,3 +1,4 @@
+import { hookedOrderVerdict } from "../hooks";
 import { isNeighbor, neighborsOf } from "../lookup";
 import type { FactionId, GameState, MoveLeg, MoveOrder, Scenario, SubTerritoryId, TerritoryId, UnitId } from "../types";
 import { armyAllowance, fitsAllowance, stepCost, transportOf } from "./allowance";
@@ -284,6 +285,9 @@ export function moveRoutes(
     const to = legs[legs.length - 1]?.to;
     if (to === undefined || to === from || found.has(to)) return;
     if (demoralized && enemyArmyIn(state, factionId, to)) return;
+    // C1: a module may refuse the move outright (no move leaves contested ground, `orderVerdict`).
+    const [probe] = unitIds;
+    if (probe !== undefined && hookedOrderVerdict({ order: { factionId, from, kind: "move", legs, to, unitId: probe }, scenario, state })?.ok === false) return;
     const check = describeRoute(scenario, state, factionId, from, legs, movement.allMobile, rides);
     if (!check.ok || !fitsAllowance(check.route.cost, check.route.steps, movement.allowance)) return;
     if (!hasRoom(scenario, state, check.route, armyKey(scenario, { factionId, from, legs, to }), usage)) return;

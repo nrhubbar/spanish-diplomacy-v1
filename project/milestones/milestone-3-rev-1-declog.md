@@ -116,3 +116,27 @@ For make-it-right:
 - **Capture name collisions:** three streams use the prefix `20a`-`20f` in `e2e/capture.spec.ts`; renumber them.
 - **S1 early wins under the d20:** in d20-combat's 50-game run, 8 of 50 games ended before turn 4. The computer players leave the contested territories on turn 1, so control settles a territory short of the Republic's threshold. This should change once control comes from sub-territory holders, which `m3r1-sub-territories` is building. Re-measure after that merge.
 - **Republic dominance:** in both the d20 and the recruit runs, the Republic wins 70 to 80 percent of decided games. It starts with 40 Funds against 15, and nobody has income yet. Re-measure once economy merges. Reported, not tuned (H7).
+
+**D19. Economy merged; balance finding.** `m3r1-economy-builds` (`ac2b0ee`) merged into `milestone-3-rev-1` with no conflicts; typecheck and lint pass. With the economy on, no game freezes in 50 runs, but the Republic wins 96 to 98 percent of decided games (67 percent with the economy off). This is because Andalucía is contested from turn 1 and pays nobody, so the Southern command earns about 1 Fund a turn. Turn-1 income:
+
+| Faction | Funds | Manpower |
+|---|---|---|
+| Republic | 14 | 27 |
+| North | 5 | 27 |
+| Southern command | 1 | 0 |
+
+The owner's answer to Q-MR-10 was to leave the South poor and, if needed, raise Ceuta's and Melilla's Funds. Reported, not tuned (H7). The levers are Ceuta and Melilla's yields, starting stocks, the insurgents' development levels and sub-territory flips, so re-measure once `m3r1-sub-territories` merges. Requests for make-it-right:
+- a per-resource display scale, to read "Manpower 18k" as in the approved capture (EB-12);
+- an order-validation hook per module;
+- a report-line API that takes the whole outcome;
+- an AI profile field for the build budget.
+
+**D20. Sub-territories merged, reconciled with economy.** `m3r1-sub-territories` (`744c51e`) merged into `milestone-3-rev-1` with no conflicts; typecheck and lint pass. Before the merge, the stream reconciled with economy:
+- **Rail damage:** applied once, at economy's step 10. The two rules were the same.
+- **Focus view:** economy's `BuildList` is mounted there.
+- **Contested and held-whole:** one implementation, `engine/partition/holders.ts`. Economy's helpers delegate to it.
+- **Captures:** renumbered `22a` to `22e`.
+
+A new red for make-it-fast: the smoke determinism test times out (76 s against 15 s). Games now run longer, and the computer player's attack estimates (`bestAttackOn`, `estimateGradedBattle`) take about 170 ms of planning a turn by turn 20.
+
+Merge order for the last two streams: air-generals, then movement-rail-ports. Each merges the integration branch first and keeps one Withdraw implementation and one contested test. Capture numbers: economy `21`, sub-territories `22`, movement `23`, air-generals `24`.

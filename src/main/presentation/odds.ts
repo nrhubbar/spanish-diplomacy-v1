@@ -134,7 +134,7 @@ export function modifierName(modifier: CombatModifier, scenario?: Scenario): str
     case "general":
       return "General";
     case "trait":
-      return "General's trait";
+      return `General's trait: ${modifier.traitId.replace(/-/g, " ")}`;
     case "barricades":
       return "Barricades (city held)";
     case "unit-bonus":
@@ -146,7 +146,7 @@ export function modifierName(modifier: CombatModifier, scenario?: Scenario): str
     case "amphibious":
       return "Amphibious assault";
     case "air-support":
-      return "Air support";
+      return modifier.role === "attack" ? "Bomber support" : "Bomber support for the defender";
     case "building":
       return "Fortifications";
   }

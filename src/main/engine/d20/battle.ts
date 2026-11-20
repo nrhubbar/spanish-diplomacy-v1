@@ -2,6 +2,7 @@ import type { BattleReport } from "../battle";
 import type { Casualties } from "../battleResults";
 import type { Armies, Combatant } from "../board";
 import { pick } from "../dice";
+import type { TurnScratch } from "../phases/draft";
 import type { RandomSource } from "../random";
 import type { BattleSide, BattleSite, CombatRole, D20BattleOutcome, FactionId, GameState, GradeDefinition, Scenario, WeatherState } from "../types";
 import { applyGradeSide } from "./grades";
@@ -11,6 +12,8 @@ import { d20Faces, requireD20 } from "./rules";
 
 /** What a d20 battle reads besides its sides: the start of the turn and the turn's weather. */
 export interface GradedInput {
+  /** The turn's scratch, for the combat hooks (bomber support, m3r1-air-generals). */
+  readonly scratch?: TurnScratch;
   readonly start: GameState;
   readonly weather: WeatherState | undefined;
 }
@@ -57,7 +60,8 @@ export function fightGraded(scenario: Scenario, input: GradedInput, armies: Armi
   const { start } = input;
   const attacker = gradedSide(scenario, start, engagement.attackers, "attack");
   const defender = gradedSide(scenario, start, engagement.defenders, engagement.defenderRole);
-  const modifiers = gradedModifiers(scenario, start, input.weather, engagement.context,
+  const context = input.scratch === undefined ? engagement.context : { ...engagement.context, scratch: input.scratch };
+  const modifiers = gradedModifiers(scenario, start, input.weather, context,
     { role: "attack", side: attacker, units: engagement.attackers.map((combatant) => combatant.unit) },
     { role: "defence", side: defender, units: engagement.defenders.map((combatant) => combatant.unit) });
   const odds = gradedOdds(rules, attacker.value, defender.value, modifiers);
