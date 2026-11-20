@@ -140,3 +140,25 @@ The owner's answer to Q-MR-10 was to leave the South poor and, if needed, raise 
 A new red for make-it-fast: the smoke determinism test times out (76 s against 15 s). Games now run longer, and the computer player's attack estimates (`bestAttackOn`, `estimateGradedBattle`) take about 170 ms of planning a turn by turn 20.
 
 Merge order for the last two streams: air-generals, then movement-rail-ports. Each merges the integration branch first and keeps one Withdraw implementation and one contested test. Capture numbers: economy `21`, sub-territories `22`, movement `23`, air-generals `24`.
+
+**D21. Make it work: complete.** All seven feature streams are merged into `milestone-3-rev-1` (`0704660`):
+- `m3r1-air-generals` at `7a51b84`, reconciled with sub-territories;
+- `m3r1-movement-rail-ports` at `0a5d84f`, now with one Withdraw implementation and contested origins refused through `orderVerdict`.
+
+Typecheck, lint and build pass. The initial chunk is 142.44 kB gzip against the 155 kB budget. Nine unit tests are red, all known, for make-it-right:
+- the six harness tests that assume blunders are pending (D14);
+- the smoke test's line count;
+- the smoke test's determinism, which times out;
+- the smoke test's S1 check;
+- `state.test` replay R3, which times out under the full suite.
+
+**First full-game harness reading** (100 seeds, 66 turns, `build/sim/m3r1-all-merged-100`):
+
+| | Decided | Freezes | Republic / North / South (of decided) | Early wins (S1) | Abandonments (S3) |
+|---|---|---|---|---|---|
+| With blunders | 100% | 0% | 33% / 47% / 20% | 10 | 0 |
+| Without blunders | 99% | 1% | 48.5% / 39.4% / 12.1% | 12 | 3 |
+
+With blunders, which is the shipped setting, H7 is met at 100 games: freezes at or under 15 percent, and every faction wins at least 20 percent of decided games. The 1000-game run comes at the end. Two invariants fail and are make-it-right items:
+- S1: early wins are 10 to 12 percent against a 5 percent limit;
+- S3: 3 abandonments without blunders, against a limit of 0.
