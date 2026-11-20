@@ -212,3 +212,12 @@ A 30-seed probe was byte-identical before and after every change. One gap is lef
 - `m3r1-review-ui`: the UI against the approved `ux-*.webp` captures, icons (X8), axe, phone layouts and the report sections.
 
 Fresh fixers then take their gap lists, at most four at once.
+
+**D27. Integrator defaults for gaps the review found.** None of these is covered by the owner's answers. Each is reported to the owner and can be overridden.
+1. **Only units that can fight take ground or attack.** A force with no attack value (generals, trucks, anti-air) cannot occupy or sweep a territory, and cannot attack on its own. This sits beside D17 for aircraft. It is the same rule as the artillery-alone rule (D5), applied to every unit with no attack.
+2. **Aircraft rebase whenever they lose their base.** This covers the airfield being destroyed by a raid, its sub-territory flipping, and the territory being taken whole. If no friendly airfield is in range, they are destroyed.
+3. **Enemy fighters can intercept any mission in range,** including support and recon flights, not only raids (U2: "losses from enemy fighters").
+4. **A general's rally never cancels a demoralization from the same turn.** It recovers units that started the turn demoralized. A unit at the top of the fatigue track that attacks is demoralized again. This closes the fatigue-3 loop.
+5. **Head-on meeting battles take the weather modifier** of the zone they are fought in, using the destination territory's zone.
+6. **"Weakest first" demoralization counts combat units only.** Trucks and anti-air come last.
+7. **A replacement general appears in the faction's seat** if the faction holds the seat's capital sub-territory, even while the seat is contested. Otherwise it appears in the faction's nearest held territory.
