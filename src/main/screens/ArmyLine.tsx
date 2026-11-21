@@ -1,5 +1,5 @@
 import type { JSX } from "react";
-import { type ArmyFigures, dugInLabel, fatigueLabel, figuresDescription, menLabel, strengthShare, valuesLabel } from "../presentation/army";
+import { type ArmyFigures, fatigueLabel, figuresDugInLabel, figuresDescription, menLabel, strengthShare, valuesLabel } from "../presentation/army";
 import { medallionMarkup } from "../presentation/outcomeArt";
 import { cssVariables } from "../presentation/style";
 
@@ -25,7 +25,7 @@ export function ArmyLine({ factionColor, figures }: { readonly factionColor: str
           {figures.demoralized ? <StatusChip icon={medallionMarkup("demoralized", factionColor)} label="Demoralized" tone="demoralized" /> : null}
           {figures.fatigue > 0 ? <StatusChip icon={fatigueIcon(figures.fatigue)} label={fatigueLabel(figures.fatigue)} tone="fatigue" /> : null}
           {figures.dugIn === undefined ? null : (
-            <StatusChip icon={medallionMarkup("dug-in", factionColor, figures.dugIn)} label={dugInLabel(figures.dugIn)} tone="dug-in" />
+            <StatusChip icon={medallionMarkup("dug-in", factionColor, figures.dugIn)} label={figuresDugInLabel(figures)} tone="dug-in" />
           )}
         </span>
       )}

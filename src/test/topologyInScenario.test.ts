@@ -11,7 +11,7 @@ interface Topology {
 }
 interface Scenario {
   readonly subTerritoryBorders: readonly (readonly [string, string])[];
-  readonly connections: readonly { readonly between: readonly [string, string]; readonly entry?: readonly [string, string] }[];
+  readonly connections: readonly { readonly "@data": { readonly between: readonly [string, string]; readonly entry?: readonly [string, string] } }[];
   readonly cities: readonly { readonly id: string; readonly subTerritoryId?: string }[];
 }
 
@@ -25,7 +25,7 @@ describe("scenario topology", () => {
   });
 
   it("uses the generated connection entries, in scenario order", () => {
-    expect(scenario.connections.map((c) => [c.between, c.entry])).toEqual(topology.connections.map((c) => [c.between, c.entry]));
+    expect(scenario.connections.map((c) => [c["@data"].between, c["@data"].entry])).toEqual(topology.connections.map((c) => [c.between, c.entry]));
   });
 
   it("places every city in its generated sub-territory", () => {

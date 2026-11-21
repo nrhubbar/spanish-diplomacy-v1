@@ -26,6 +26,8 @@ function route(overrides: Partial<MoveRoute> = {}): MoveRoute {
     cost: 1,
     from: territory("madrid"),
     legs: [{ kind: "land", to: territory("castilla-la-mancha") }],
+    mode: "march",
+    path: [],
     rough: [],
     shape: "step",
     staging: territory("madrid"),

@@ -22,7 +22,8 @@ import type {
   TurnOutcome,
   TurnResolutionResult,
   UnitId,
-  UnitState
+  UnitState,
+  UnitTypeId
 } from "../main/engine/types";
 import { canFight } from "../main/engine/units/fighting";
 import { type ArmySpec, battlefield, faction, move, onD6Dice, spainD20, territory, unit } from "./support";
@@ -163,7 +164,10 @@ describe("B2, D27.4: the top of the fatigue track", () => {
       { faction: "south", id: "s2", territory: "andalucia", type: "colonial-veterans" },
       { faction: "republic", id: "r1", territory: "andalucia", type: "militia-column" }
     ], withYague ? { "south-general-yague": "andalucia" } : {});
-    return { field, state: changed(changed(state, "s1", { fatigue: 3 }), "s2", { fatigue: 3 }) };
+    // R1, R2: the militia holds out in its Jaen pocket when Malaga falls, so Andalucia stays
+    // contested and nobody rests there next turn.
+    const placed = changed(state, "r1", { subTerritoryId: "jaen" as SubTerritoryId });
+    return { field, state: changed(changed(placed, "s1", { fatigue: 3 }), "s2", { fatigue: 3 }) };
   };
 
   for (const withYague of [false, true]) {
@@ -250,7 +254,7 @@ describe("M1: the move planner's board", () => {
     expect(view.units[unit("rep-general-miaja")]).toBeDefined();
     expect(view.units[unit("north-general-mola")]).toBeUndefined();
     expect(view.units[unit("rep-breguet-bombers")]).toBeUndefined();
-    const attackers = ["north-san-marcial-22", "north-san-quintin-25", "north-la-victoria-28"].map(unit);
+    const attackers = ["north-san-marcial-22", "north-san-quintin-25"].map(unit);
     const estimate = estimateAttack(scenario, view, faction("north"), attackers, territory("madrid"));
     const resolved = estimateAttack(scenario, opening, faction("north"), attackers, territory("madrid"));
     expect(estimate.kind === "battle" ? estimate.modifiers : []).toEqual(resolved.kind === "battle" ? resolved.modifiers : ["missing"]);
@@ -272,7 +276,11 @@ describe("M5, D5: one best general for the roll and the rally", () => {
   });
 
   it("rallies with the general who would count for the army's role: Pozas when it did not attack", () => {
-    const { scenario: field, state } = board([{ faction: "republic", id: "r1", territory: "andalucia", type: "infantry-regiment", demoralized: true }]);
+    // R2: a South truck column keeps Andalucia contested, so the regiment cannot rest there.
+    const { scenario: field, state } = board([
+      { faction: "republic", id: "r1", territory: "andalucia", type: "infantry-regiment", demoralized: true },
+      { faction: "south", id: "s9", territory: "andalucia", type: "truck-column" }
+    ]);
     const withPozas = withGeneral(withGeneral(state, "sebastian-pozas", "republic", "andalucia"), "jose-asensio", "republic", "andalucia");
     const result = resolveTurn(field, withPozas, [], 3);
     expect(ofKind(result, "rallied")).toEqual([{ factionId: "republic", generalId: "sebastian-pozas", kind: "rallied", territoryId: "andalucia", unitIds: ["r1"] }]);
@@ -333,7 +341,7 @@ describe("D27.2: aircraft rebase whenever they lose their base", () => {
   });
 
   it("rebases when the airfield's sub-territory is lost and the territory stays contested", () => {
-    // No Republic army stays in Madrid to sweep the ground back at step 8 (P3).
+    // No Republic army stays in Madrid to flip the ground back at step 8 (R2).
     const emptied = without(opening, ...Object.values(opening.units).filter((value) => value.territoryId === "madrid" && !value.id.endsWith("fighters") && !value.id.endsWith("bombers")).map((value) => value.id));
     const flipped: GameState = { ...emptied, subTerritories: Object.fromEntries(Object.entries(emptied.subTerritories).map(([id, site]) => [id, ["madrid", "henares"].includes(id) ? { ...site, holder: faction("north") } : site])) };
     expect(ofKind(resolveTurn(scenario, flipped, [], 3), "aircraft-rebased").map((outcome) => outcome.unitId)).toEqual(["rep-breguet-bombers", "rep-ni52-fighters"]);
@@ -348,21 +356,42 @@ describe("D27.2: aircraft rebase whenever they lose their base", () => {
 });
 
 describe("D27.3: fighters intercept any mission over their territory", () => {
-  const intercept = mission("republic", "rep-ni52-fighters", { kind: "intercept", territoryId: territory("madrid") });
+  const intercept = mission("republic", "rep-ni52-fighters", { kind: "patrol", territoryId: territory("madrid") });
 
-  it("rolls against support: shot down, the bomber is lost and gives no support; else it flies", () => {
+  it("never intercepts Ground Support (R11): the air battle over its battle decides it, and nobody is lost", () => {
     const support = mission("south", "south-ju52-bombers", { kind: "support", territoryId: territory("madrid") });
-    const seen = new Set<boolean>();
-    for (let seed = 1; seed <= 40; seed += 1) {
+    for (let seed = 1; seed <= 10; seed += 1) {
       const result = resolveTurn(scenario, opening, submit(intercept, support), seed);
-      const [interception] = ofKind(result, "interception");
-      expect(interception).toMatchObject({ factionId: "republic", interceptorIds: ["rep-ni52-fighters"], raiderIds: ["south-ju52-bombers"] });
-      const shot = interception?.lostUnitIds.includes(unit("south-ju52-bombers")) === true;
-      seen.add(shot);
-      expect(result.finalState.units[unit("south-ju52-bombers")] === undefined).toBe(shot);
-      expect(ofKind(result, "air-support").length).toBe(shot ? 0 : 1);
+      expect(ofKind(result, "interception")).toEqual([]);
+      expect(result.finalState.units[unit("south-ju52-bombers")]).toBeDefined();
+      expect(ofKind(result, "air-support")).toHaveLength(1);
     }
-    expect([...seen].sort()).toEqual([false, true]);
+  });
+
+  it("reports recon shot down by several fighters as one interception per fighters' faction", () => {
+    const raise = (state: GameState, id: string, factionId: string, type: string, territoryId: string): GameState => ({
+      ...state,
+      raised: { ...state.raised, [id]: { factionId: faction(factionId), fullStrength: 100, id: unit(id), name: id, type: type as UnitTypeId } },
+      units: { ...state.units, [id]: { factionId: faction(factionId), fatigue: 0, id: unit(id), morale: { demoralized: false, quietTurns: 0 }, strength: 100, territoryId: territory(territoryId) } }
+    });
+    const crowded = raise(raise(opening, "rep-f2", "republic", "fighter-squadron", "madrid"), "north-r2", "north", "recon-flight", "castilla-y-leon");
+    const orders = [
+      intercept,
+      mission("republic", "rep-f2", { kind: "patrol", territoryId: territory("madrid") }),
+      mission("north", "north-leon-recon", { kind: "recon", territoryId: territory("madrid") }),
+      mission("north", "north-r2", { kind: "recon", territoryId: territory("madrid") })
+    ];
+    const both = Array.from({ length: 60 }, (_, index) => resolveTurn(scenario, crowded, submit(...orders), index + 1))
+      .find((result) => result.finalState.units[unit("north-leon-recon")] === undefined && result.finalState.units[unit("north-r2")] === undefined);
+    expect(both && ofKind(both, "interception")).toEqual([{
+      factionId: "republic",
+      interceptorIds: ["rep-f2", "rep-ni52-fighters"],
+      kind: "interception",
+      lostUnitIds: ["north-leon-recon", "north-r2"],
+      raiderIds: ["north-leon-recon", "north-r2"],
+      reconFactionIds: ["north"],
+      territoryId: "madrid"
+    }]);
   });
 
   it("rolls against recon: shot down, nothing is revealed; else it reveals and stays private", () => {

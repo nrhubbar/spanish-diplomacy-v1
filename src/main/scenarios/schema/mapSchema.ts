@@ -59,7 +59,11 @@ export const mapSchema = z
         unitAnchor: z.strictObject(point),
         label: z.strictObject({ ...point, tier: z.enum(["overview", "detail"]) }),
         shape: z
-          .strictObject({ kind: z.literal("circle"), ...point, r: z.number().positive() })
+          .discriminatedUnion("@type", [
+            z
+              .strictObject({ "@type": z.literal("circle"), "@data": z.strictObject({ ...point, r: z.number().positive() }) })
+              .transform(({ "@data": data }) => ({ kind: "circle" as const, ...data }))
+          ])
           .optional()
           .meta({ description: "Drawn and hit-tested when the territory has no SVG region." })
       })

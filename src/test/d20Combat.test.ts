@@ -107,9 +107,10 @@ describe("the d20 table and odds (D1, D3)", () => {
 });
 
 describe("d20 modifiers (D3-D5, C6, U6)", () => {
-  it("gives the defender works x3, faction modifiers from the d20 block, and barricades for a city it holds", () => {
+  it("gives the defender works at the d20's roll a pip (R8), faction modifiers from the d20 block, and barricades for a city it holds", () => {
     const base = field(d20Scenario(), [{ faction: "red", id: "r1", territory: "highlands" }, { faction: "blue", id: "b1", territory: "harbor" }]);
-    const state: GameState = { ...base.state, fortification: { [territory("harbor")]: { factionId: faction("blue"), level: 6 } } };
+    // The fixture's d20 block makes a pip worth 3, so two pips take 6.
+    const state: GameState = { ...base.state, fortification: { [territory("harbor")]: { factionId: faction("blue"), level: 2 } } };
     const estimate = estimateAttack(base.scenario, state, faction("red"), [unit("r1")], territory("harbor"));
     expect(estimate.kind === "battle" ? estimate.modifiers.map((modifier) => [modifier.kind, modifier.roll]) : []).toEqual([["dug-in", -6], ["faction", -3], ["barricades", -1], ["odds-halving", -3]]);
   });
@@ -297,12 +298,13 @@ describe("fatigue and morale (C4-C6, M22, M23)", () => {
     expect(result.finalState.units[unit("r2")]?.morale.demoralized).toBe(true);
   });
 
-  it("digs in at the d20's rates, x3, up to its cap", () => {
+  it("digs in a pip a turn, up to the scenario's cap in pips (R8)", () => {
     const { scenario, state } = field(every("level"), [{ faction: "red", id: "r1", territory: "highlands" }]);
     const once = play(scenario, state, [], loadedD20([]));
-    expect(once.finalState.fortification[territory("highlands")]).toEqual({ factionId: "red", level: 3 });
-    const capped = play(scenario, { ...state, fortification: { [territory("highlands")]: { factionId: faction("red"), level: 9 } } }, [], loadedD20([]));
-    expect(capped.finalState.fortification[territory("highlands")]?.level).toBe(9);
+    expect(once.finalState.fortification[territory("highlands")]).toEqual({ factionId: "red", level: 1 });
+    const { max } = scenario.combat.diggingIn;
+    const capped = play(scenario, { ...state, fortification: { [territory("highlands")]: { factionId: faction("red"), level: max } } }, [], loadedD20([]));
+    expect(capped.finalState.fortification[territory("highlands")]?.level).toBe(max);
   });
 });
 

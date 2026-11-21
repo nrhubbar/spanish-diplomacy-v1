@@ -1,0 +1,440 @@
+// U1-U4, U10 (Milestone 3 Rev 2): the top bar's actions and menu, End Turn and its confirm, the
+// pane's back link, the selection bar, This turn, and the report by faction.
+
+:root {
+  --end-turn: #b8471f;
+  --end-turn-dark: #8f3416;
+}
+
+.shell-icon {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+// Date and readiness share the kicker's line.
+.game-header-kicker-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+
+  .status-chips {
+    flex-wrap: nowrap;
+    gap: 0.25rem;
+  }
+
+  .status-chips li {
+    font-size: 0.68rem;
+  }
+}
+
+.game-header-actions {
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.turn-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 2px;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 40%);
+}
+
+.turn-nav-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 34px;
+  padding: 0.2rem 0.6rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink);
+  font: 650 0.84rem var(--sans);
+  white-space: nowrap;
+
+  &[aria-pressed="true"] {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  &[aria-pressed="true"] .count-badge {
+    background: rgb(251 246 234 / 25%);
+  }
+}
+
+.count-badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 0.3rem;
+  border-radius: 999px;
+  background: rgb(36 29 24 / 12%);
+  font: 750 0.72rem var(--sans);
+}
+
+// A serious button: orange-red, not an inviting green (Q-R2-15).
+.end-turn-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-height: 40px;
+  padding: 0.3rem 1rem 0.3rem 0.8rem;
+  border: 1px solid var(--end-turn-dark);
+  border-radius: 6px;
+  background: var(--end-turn);
+  box-shadow: inset 0 -2px 0 rgb(0 0 0 / 18%), 0 1px 3px rgb(0 0 0 / 20%);
+  color: #fff8ee;
+  font: 750 0.95rem var(--sans);
+  white-space: nowrap;
+
+  &:hover {
+    background: var(--end-turn-dark);
+  }
+
+  .shell-icon {
+    width: 18px;
+    height: 18px;
+    stroke-width: 2;
+  }
+}
+
+// U1: on a phone End Turn rides in the pane's bar, so the top bar's copy goes.
+.game-screen:has(.campaign-map[data-pane-layout="sheet"]) .game-header .end-turn-button {
+  display: none;
+}
+
+.map-pane-bar-action .end-turn-button {
+  width: 100%;
+}
+
+.game-menu {
+  position: relative;
+}
+
+.game-menu-button {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgb(36 29 24 / 35%);
+  border-radius: 6px;
+  background: rgb(255 255 255 / 55%);
+  color: var(--ink);
+
+  &[aria-expanded="true"] {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  .shell-icon {
+    width: 20px;
+    height: 20px;
+    stroke-width: 2;
+  }
+}
+
+.game-menu-list {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 30;
+  display: grid;
+  min-width: 13rem;
+  padding: 0.3rem;
+  border: 1px solid var(--ink);
+  border-radius: 8px;
+  background: var(--paper);
+  box-shadow: 0 6px 18px rgb(0 0 0 / 30%);
+
+  hr {
+    width: 100%;
+    margin: 0.2rem 0;
+    border: 0;
+    border-top: 1px solid var(--rule);
+  }
+
+  .exit-confirm {
+    padding: 0.4rem;
+  }
+}
+
+.game-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 0.6rem;
+  border: 0;
+  border-radius: 5px;
+  background: none;
+  color: var(--ink);
+  font: 650 0.92rem var(--sans);
+  text-align: left;
+
+  &:hover:not(:disabled) {
+    background: rgb(36 29 24 / 7%);
+  }
+
+  &:disabled {
+    color: rgb(36 29 24 / 45%);
+    cursor: not-allowed;
+  }
+
+  &[data-tone="danger"] {
+    color: var(--accent);
+  }
+}
+
+.game-menu-later {
+  margin-left: auto;
+  padding: 0.05rem 0.4rem;
+  border: 1px solid rgb(36 29 24 / 20%);
+  border-radius: 999px;
+  font: 650 0.68rem var(--sans);
+}
+
+// U2: the End Turn confirm.
+.end-turn-cover {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgb(20 15 10 / 45%);
+}
+
+.end-turn-card {
+  display: grid;
+  gap: 0.6rem;
+  width: min(26rem, 100%);
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  max-height: 80dvh;
+  padding: 1rem 1.1rem;
+  overflow: hidden;
+  border: 1px solid var(--ink);
+  border-top: 5px solid var(--end-turn);
+  border-radius: 12px;
+  background: var(--paper);
+  box-shadow: 0 8px 28px rgb(0 0 0 / 45%);
+
+  h2 {
+    font-size: 1.2rem;
+  }
+
+  p {
+    margin: 0;
+    color: var(--ink-soft);
+    font-size: 0.9rem;
+  }
+}
+
+// The title and the buttons stay in view; only a long list scrolls.
+.end-turn-list {
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.end-turn-list li {
+  padding: 0.2rem 0;
+  border-top: 1px solid rgb(36 29 24 / 10%);
+  font-size: 0.88rem;
+}
+
+.end-turn-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+// U3: the pane's back link sits above the view's title.
+.map-pane-heading {
+  display: grid;
+  flex: 1;
+  gap: 0.05rem;
+  min-width: 0;
+}
+
+.map-pane-back {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  gap: 0.25rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--route);
+  font: 650 0.84rem var(--sans);
+
+  svg {
+    width: 14px;
+    height: 14px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.4;
+  }
+}
+
+// U4: the selection bar, the pane's sticky footer.
+.selection-bar {
+  display: grid;
+  gap: 0.45rem;
+
+  .inline-feedback {
+    margin: 0;
+  }
+}
+
+.selection-bar-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+  color: var(--ink-soft);
+  font: 600 0.84rem var(--sans);
+
+  strong {
+    color: var(--ink);
+  }
+
+  .text-button {
+    margin-left: auto;
+  }
+}
+
+.selection-bar-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr));
+  gap: 0.35rem;
+}
+
+.selection-bar-choice {
+  display: grid;
+}
+
+.selection-bar-action {
+  min-height: 42px;
+  padding: 0.2rem 0.5rem;
+  border: 1px solid rgb(36 29 24 / 35%);
+  border-radius: 6px;
+  background: rgb(255 255 255 / 60%);
+  color: var(--ink);
+  font: 700 0.9rem var(--sans);
+
+  &[data-main="true"] {
+    border-color: var(--ink);
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  &:disabled {
+    border-style: dashed;
+    background: transparent;
+    color: rgb(36 29 24 / 45%);
+    cursor: not-allowed;
+  }
+}
+
+// U3: This turn.
+.this-turn-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+}
+
+.segmented {
+  display: inline-flex;
+  padding: 2px;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+
+  button {
+    padding: 0.25rem 0.7rem;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--ink-soft);
+    font: 650 0.8rem var(--sans);
+  }
+
+  button[aria-pressed="true"] {
+    background: var(--ink);
+    color: var(--paper);
+  }
+}
+
+.this-turn-group h4 {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0.6rem 0 0.3rem;
+}
+
+// U10: "What happened" by faction, the player's own first.
+.faction-report {
+  margin: 0.4rem 0;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid rgb(36 29 24 / 16%);
+  border-left: 4px solid var(--faction-color, var(--ink-soft));
+  border-radius: 6px;
+  background: rgb(255 255 255 / 45%);
+}
+
+.faction-report-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0 0 0.25rem;
+  font: 700 0.98rem var(--serif);
+}
+
+.faction-report-swatch {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 2px;
+  background: var(--faction-color, var(--ink-soft));
+}
+
+.faction-report-count {
+  margin-left: auto;
+  color: var(--ink-soft);
+  font: 600 0.74rem var(--sans);
+}
+
+// Phones: the top bar must never push the page wider than the screen. The readiness chips wrap,
+// and the turn views show their icons and counts only (their names stay as accessible labels).
+@media (width <= 640px) {
+  .game-header-kicker-row {
+    flex-wrap: wrap;
+
+    .status-chips {
+      flex-wrap: wrap;
+    }
+  }
+
+  .turn-nav {
+    max-width: 100%;
+  }
+
+  .turn-nav-button .turn-nav-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}

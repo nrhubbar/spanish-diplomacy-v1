@@ -23,13 +23,6 @@ export function scenarioSources(): readonly PackageSources[] {
 }
 
 /**
- * H6 seam: the JSON Pointer of the computer player's blunder chance in `scenario.json`. It is
- * owned by `m3r1-contract` and expected at `/ai/blunderChance`; the integrator sets it here when
- * that lands. While it is undefined, blunders are "pending": both settings play alike.
- */
-export const blunderChancePointer: string | undefined = "/ai/blunderChance";
-
-/**
  * The scenario a run plays when none is named: the only playable package in `sources`. With
  * none, or more than one, the caller must name one. The harness holds no scenario ids.
  */

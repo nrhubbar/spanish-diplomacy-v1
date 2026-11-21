@@ -146,6 +146,8 @@ export function coastDistance(topology: Topology, a: string, b: string): number 
  */
 export interface EntryOverride {
   readonly entry: Readonly<Record<string, string>>;
+  /** The connection kind it applies to, when a pair has both a land and a sea connection. Absent: either. */
+  readonly kind?: Connection["kind"];
   readonly reason: string;
 }
 
@@ -179,6 +181,7 @@ export function connectionEntries(
     const label = `${connection.kind} connection ${first} - ${second}`;
     const override = overrides.find((candidate) => {
       const territories = Object.keys(candidate.entry).sort();
+      if (candidate.kind !== undefined && candidate.kind !== connection.kind) return false;
       return territories.length === 2 && territories[0] === [first, second].sort()[0] && territories[1] === [first, second].sort()[1];
     });
     if (override !== undefined) {

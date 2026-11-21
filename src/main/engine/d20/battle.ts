@@ -60,7 +60,7 @@ export function fightGraded(scenario: Scenario, input: GradedInput, armies: Armi
   const { start } = input;
   const attacker = gradedSide(scenario, start, engagement.attackers, "attack");
   const defender = gradedSide(scenario, start, engagement.defenders, engagement.defenderRole);
-  const context = input.scratch === undefined ? engagement.context : { ...engagement.context, scratch: input.scratch };
+  const context = { ...engagement.context, battleIndex: index, ...(input.scratch === undefined ? {} : { scratch: input.scratch }) };
   const modifiers = gradedModifiers(scenario, start, input.weather, context,
     { role: "attack", side: attacker, units: engagement.attackers.map((combatant) => combatant.unit) },
     { role: "defence", side: defender, units: engagement.defenders.map((combatant) => combatant.unit) });

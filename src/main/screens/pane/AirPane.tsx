@@ -1,6 +1,6 @@
 import { type JSX, useId, useState } from "react";
 import { generalOf, isAllWeatherAirbaseFor, unitDefinitionIn, unitKindIn, unitTypeIn } from "../../engine/air/pieces";
-import { airMissionKinds, type AirMission, type AirMissionKind, type Scenario, type UnitId, type UnitState } from "../../engine/types";
+import { type AirMission, type AirMissionKind, type Scenario, type UnitId, type UnitState } from "../../engine/types";
 import { weatherEffectsIn, weatherIn, zoneOf } from "../../engine/weather";
 import { WeatherChip } from "../../components/weather/WeatherChip";
 import { WeatherIcon } from "../../components/weather/WeatherIcon";
@@ -16,6 +16,7 @@ import {
   fightersLabel,
   generalPill,
   missionHints,
+  missionButtonOrder,
   missionNames,
   missionTitle
 } from "../../presentation/airPane";
@@ -77,7 +78,7 @@ export function AirPane({ scenario, session, unitId }: AirPaneProps): JSX.Elemen
       </div>
       <h4>Mission</h4>
       <div aria-label="Mission" className="air-missions" role="group">
-        {airMissionKinds.map((mission) => (
+        {missionButtonOrder.map((mission) => (
           <button
             aria-pressed={shown === mission}
             className="air-mission-button"

@@ -53,10 +53,13 @@ export function isSackPlanned(draft: Draft, unitId: UnitId): boolean {
 export function selectAircraft(session: PlanningSession, unitId: UnitId): PlanningSession {
   const unit = session.game.state.units[unitId];
   if (unit === undefined || unit.factionId !== session.factionId) return session;
-  return {
-    ...session,
-    draft: { ...keepAirOrders(session.draft), orders: session.draft.orders, selectedAircraftId: unitId, selectedTerritoryId: unit.territoryId, selectedUnitIds: [] }
-  };
+  // Everything planned stays (the Recruit basket, builds, Replenish, U2's armies told to stay); the selection, stage and feedback go.
+  const draft: Draft = { ...session.draft, selectedAircraftId: unitId, selectedTerritoryId: unit.territoryId, selectedUnitIds: [] };
+  const cleared = draft as { feedback?: string; focusedSubTerritoryId?: unknown; stage?: unknown };
+  delete cleared.feedback;
+  delete cleared.focusedSubTerritoryId;
+  delete cleared.stage;
+  return { ...session, draft };
 }
 
 /** Closes the aircraft's missions and returns to its territory. */
@@ -145,7 +148,7 @@ export function raidPreview(scenario: Scenario, state: GameState, unitId: UnitId
     if (other.factionId === unit.factionId) continue;
     const type = unitTypeIn(scenario, state.raised, other.id);
     if (other.territoryId === territoryId) for (const effect of type?.effects ?? []) if (effect.kind === "raid-defence") antiAir = Math.min(antiAir, effect.roll);
-    if (type?.air?.missions.includes("intercept") === true && isAirbaseFor(scenario, state, other.territoryId, other.factionId)
+    if (type?.air?.missions.includes("patrol") === true && isAirbaseFor(scenario, state, other.territoryId, other.factionId)
       && territoriesWithin(scenario, other.territoryId, type.air.range).has(territoryId)) fightersInReach += 1;
   }
   const chances: Record<RaidOutcome, number> = { "air-eliminated": 0, "building-hit": 0, "income-cut": 0, "nothing-hit": 0 };

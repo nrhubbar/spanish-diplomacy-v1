@@ -3,6 +3,10 @@ import { type JSX, type ReactNode, useId } from "react";
 export interface PaneContent {
   /** When this changes, a collapsed pane opens so the player sees the response. */
   readonly attentionKey?: string;
+  /** U3: the back link above the title, naming the view it returns to. */
+  readonly back?: { readonly label: string; readonly onBack: () => void };
+  /** U1: on a phone, the action that rides in the sheet's bar (End Turn), whatever the body is. */
+  readonly barAction?: ReactNode;
   readonly body: ReactNode;
   /**
    * Set for reading content with no controls of its own: the body becomes a tab stop so a
@@ -50,10 +54,22 @@ export function paneWidthFor(mapWidth: number): number {
 export function MapPane({ content, layout, onToggle, open }: MapPaneProps): JSX.Element {
   const bodyId = useId();
   const collapsedSheet = layout === "sheet" && !open;
+  // U1: on a phone the bar keeps its action (End Turn) open or closed; without one, a collapsed bar shows the footer.
+  const barAction = layout !== "sheet" || content.sheetFocus !== undefined ? undefined : content.barAction ?? (open ? undefined : content.footer);
   return (
     <aside aria-label={content.title} className="map-pane" data-layout={layout} data-map-control="" data-open={open}>
       <div className="map-pane-header">
-        {open ? <h2 className="map-pane-title">{content.title}</h2> : null}
+        {open ? (
+          <div className="map-pane-heading">
+            {content.back === undefined ? null : (
+              <button className="map-pane-back" onClick={content.back.onBack} type="button">
+                <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" /></svg>
+                {content.back.label}
+              </button>
+            )}
+            <h2 className="map-pane-title">{content.title}</h2>
+          </div>
+        ) : null}
         <button
           aria-controls={bodyId}
           aria-expanded={open}
@@ -62,10 +78,10 @@ export function MapPane({ content, layout, onToggle, open }: MapPaneProps): JSX.
           type="button"
         >
           <span aria-hidden="true" className="map-pane-toggle-icon" />
-          <span>{open ? `Hide ${content.title.toLowerCase()}` : content.title}</span>
+          <span>{open ? `Hide ${content.title.charAt(0).toLowerCase()}${content.title.slice(1)}` : content.title}</span>
         </button>
         {collapsedSheet && content.sheetFocus !== undefined ? <div className="map-pane-bar-focus" role="status">{content.sheetFocus}</div> : null}
-        {collapsedSheet && content.sheetFocus === undefined && content.footer !== undefined ? <div className="map-pane-bar-action">{content.footer}</div> : null}
+        {barAction === undefined ? null : <div className="map-pane-bar-action">{barAction}</div>}
       </div>
       <div className="map-pane-panel" hidden={!open} id={bodyId}>
         <div className="map-pane-body" {...(content.bodyFocusable === true ? { tabIndex: 0 } : {})}>{content.body}</div>

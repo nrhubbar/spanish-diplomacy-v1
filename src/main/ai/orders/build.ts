@@ -5,7 +5,7 @@ import { requireAiProfile } from "../../engine/lookup";
 import { addResources, subtractResources } from "../../engine/resources";
 import type {
   BuildOrder,
-  BuildProject,
+  SiteProject,
   BuildingDefinition,
   BuildingEffect,
   FactionId,
@@ -17,6 +17,7 @@ import type {
   TerritoryId
 } from "../../engine/types";
 import type { OrderPlanner, PlanningContext } from "./planner";
+import { linkWorkCandidate } from "./linkWorks";
 import { balanceLeft } from "./spending";
 
 /**
@@ -33,7 +34,10 @@ import { balanceLeft } from "./spending";
  *   none built or queued, since only the strongest counts, once per battle;
  * - more development: best yield for the price, the scarcest resource first;
  * - m5: then, while the budget lasts, a Hospital at a front capital, a Rail yard at a capital
- *   with rail (each once per territory), more rail at a capital, and a better port where one is.
+ *   with rail (each once per territory), more rail at a capital, and a better port where one is;
+ * - R7: one link work (a new rail line, a rail or road upgrade) when it opens routes the armies
+ *   would use, scored by the routes it opens for its price (`linkWorks.ts`);
+ * - R9: the Factory as any unlocking building; its Manpower is part of its price.
  * It never draws from the tie-break source: ties go by scenario order.
  */
 
@@ -56,7 +60,9 @@ export const planBuilds: OrderPlanner<BuildOrder> = (context) => {
   // The share of what Recruit left that only the development target may spend.
   const saved = subtractResources(left, budget);
   const target = developmentTarget(context);
-  const candidates = [...candidatesFor(context, target?.order)].sort((a, b) => b.score - a.score);
+  // R7: at most one link work, and only one that opens a route (`linkWorks.ts`).
+  const link = linkWorkCandidate(context, frontTerritories(scenario, state, factionId), budget);
+  const candidates = [...candidatesFor(context, target?.order), ...(link === undefined ? [] : [link])].sort((a, b) => b.score - a.score);
 
   const chosen: BuildOrder[] = [];
   let ledger: GameState = { ...state, treasuries: { ...state.treasuries, [factionId]: budget } };
@@ -109,7 +115,7 @@ export function developmentTarget(context: Where): { readonly order: BuildOrder;
 
 /**
  * M5: what the Recruit planner leaves unspent for builds: the profile's `reserveShare` of each
- * resource some build costs (no Spanish build costs Manpower, so Manpower is never held back),
+ * resource some build costs (in Spain only the factory costs Manpower, R9),
  * and at least the price of this turn's development target while that price is at most the
  * profile's `developmentShare` of the balance.
  */
@@ -197,7 +203,7 @@ interface Site {
   readonly scarce: ResourceId | undefined;
 }
 
-function scoreOf(scenario: Scenario, state: GameState, factionId: FactionId, sub: SubTerritoryDefinition, project: BuildProject, where: Site): number {
+function scoreOf(scenario: Scenario, state: GameState, factionId: FactionId, sub: SubTerritoryDefinition, project: SiteProject, where: Site): number {
   const site = state.subTerritories[sub.id];
   const cost = projectCost(scenario, project);
   if (site === undefined || cost === undefined) return 0;

@@ -5,9 +5,8 @@ import { afterEach, describe, expect, it } from "vitest";
 import { initialGameState } from "../../main/engine/resolution";
 import type { BuildingId, BuildOrder, BuildProject, DevelopmentId, GameState, QueueItem, Scenario, SubTerritoryId, SubTerritoryState } from "../../main/engine/types";
 import { RegistryContext } from "../../main/hooks";
-import { BuildList } from "../../main/screens/pane/build/BuildList";
+import { BuildOptions } from "../../main/screens/pane/build/BuildOptions";
 import { Pips, SiteCard } from "../../main/screens/pane/build/SiteCard";
-import { SubTerritoryFocus } from "../../main/screens/pane/SubTerritoryFocus";
 import type { PlanningSession } from "../../main/state/planning";
 import { emptyDraft, type Draft } from "../../main/state/session";
 import { faction, spain, spainId, spainM2, testRegistry, testStore } from "../support";
@@ -55,25 +54,56 @@ describe("the site card (X7)", () => {
   const scenario = spain();
   const start = initialGameState(scenario);
 
-  const card = (state: GameState, id: string, props: { readonly planned?: readonly { readonly index: number; readonly order: BuildOrder }[]; readonly scenario?: Scenario; readonly withBuildButton?: boolean } = {}) =>
-    renderIn(planning(state), <SiteCard planned={props.planned ?? []} scenario={props.scenario ?? scenario} state={state} subTerritoryId={sub(id)} viewer={republic} withBuildButton={props.withBuildButton ?? true} />);
+  const card = (state: GameState, id: string, props: { readonly expanded?: boolean; readonly planned?: readonly { readonly index: number; readonly order: BuildOrder }[]; readonly scenario?: Scenario } = {}) => {
+    const toggles: string[] = [];
+    const shown = renderIn(planning(state), <SiteCard expanded={props.expanded ?? true} onToggle={() => { toggles.push(id); }} planned={props.planned ?? []} scenario={props.scenario ?? scenario} state={state} subTerritoryId={sub(id)} viewer={republic} />);
+    return { ...shown, toggles };
+  };
 
-  it("shows an own capital: star, yield, levels, buildings and the Build button", async () => {
-    const { store, user } = card(start, "madrid");
+  it("shows an own capital open: star, yield, terrain, cities, levels, buildings and what can be added", async () => {
+    const { toggles, user } = card(start, "madrid");
     const article = screen.getByRole("article", { name: "Madrid" });
     expect(article).toHaveClass("site-card-own");
-    expect(within(article).getByRole("heading").textContent).toBe("Madrid (capital)");
+    expect(within(article).getByRole("button", { expanded: true }).textContent).toMatch(/^\u25beMadrid \(capital\)\+/u);
     expect(article.querySelector(".site-yield")?.textContent).toMatch(/^\+/u);
     expect(article.querySelector(".site-holder")).toBeNull();
+    expect(within(within(article).getByRole("list", { name: "About this sub-territory" })).getAllByRole("listitem").map((chip) => chip.textContent)).toEqual(["Open ground", "Rail 2"]);
+    expect(within(article).getByText(/^Cities: /u)).toBeTruthy();
     const levels = within(article).getByRole("list", { name: "Development and improvements" });
     expect(within(levels).getByRole("img", { name: /^Industry level 2 of \d+$/u })).toBeTruthy();
-    expect(within(levels).getByRole("img", { name: /^Rail level 3 of \d+$/u })).toBeTruthy();
+    expect(within(levels).getByRole("img", { name: /^Rail level 2 of \d+$/u })).toBeTruthy();
     expect(within(levels).queryByText("Port")).toBeNull();
     expect(within(within(article).getByRole("list", { name: "Buildings" })).getByText("Factory")).toBeTruthy();
     expect(within(article).queryByRole("list", { name: "Build queue" })).toBeNull();
     expect(within(article).queryByText("Queue hidden")).toBeNull();
-    await user.click(within(article).getByRole("button", { name: "Build in Madrid" }));
-    expect(draftOf(store)?.focusedSubTerritoryId).toBe("madrid");
+    expect(within(article).getByRole("region", { name: "Add to the queue" })).toBeTruthy();
+    await user.click(within(article).getByRole("button", { expanded: true }));
+    expect(toggles).toEqual(["madrid"]);
+  });
+
+  it("closed, shows only the head of the queue and how many wait behind it", () => {
+    const queue = [item(development("farms"), 1), item(building("fortifications"), 0, { funds: 4 })];
+    card(withSite(start, "madrid", { queue }), "madrid", { expanded: false });
+    const article = screen.getByRole("article", { name: "Madrid" });
+    expect(within(article).getByRole("button", { expanded: false })).toBeTruthy();
+    expect(article.querySelector(".site-summary")?.textContent).toBe("Farms 1 \u2192 22 turns left \u00b7 +1 queued");
+    expect(within(article).queryByRole("list", { name: "Build queue" })).toBeNull();
+    cleanup();
+    card(withSite(start, "madrid", { queue: queue.slice(0, 1) }), "madrid", { expanded: false });
+    expect(document.querySelector(".site-summary")?.textContent).toBe("Farms 1 \u2192 22 turns left");
+    cleanup();
+    card(start, "madrid", { expanded: false });
+    expect(document.querySelector(".site-summary")).toBeNull();
+  });
+
+  it("marks contested ground and a coast, and draws a contested queue paused", () => {
+    const coastal = withSite(start, "granada", { holder: republic, port: 1, queue: [item(building("fortifications"), 1)], rail: 0 });
+    card(coastal, "granada");
+    const chips = within(screen.getByRole("list", { name: "About this sub-territory" })).getAllByRole("listitem").map((chip) => chip.textContent);
+    expect(chips).toEqual(["Mountains", "Port 1", "Contested ground"]);
+    const list = screen.getByRole("list", { name: "Build queue" });
+    expect(list).toHaveAttribute("data-paused", "true");
+    expect(list.querySelector(".queue-status")?.textContent).toMatch(/left when it resumes$/u);
   });
 
   it("hides another faction's queue and names its holder", () => {
@@ -82,14 +112,15 @@ describe("the site card (X7)", () => {
     expect(article).not.toHaveClass("site-card-own");
     expect(article.querySelector(".site-holder")?.textContent).toMatch(/^Held by /u);
     expect(within(article).getByText("Queue hidden")).toBeTruthy();
-    expect(within(article).queryByRole("button", { name: /^Build in/u })).toBeNull();
+    expect(within(article).queryByRole("region", { name: "Add to the queue" })).toBeNull();
   });
 
   it("leaves out city-only tracks without a city, shows a port, and says when nothing is yielded", () => {
     const barren = withSite(start, "guadarrama", { buildings: [], development: {}, port: 2 });
     card(barren, "guadarrama");
     const article = screen.getByRole("article", { name: "Sierra de Guadarrama" });
-    expect(within(article).getByRole("heading").textContent).toBe("Sierra de Guadarrama");
+    expect(article.querySelector(".site-name")?.textContent).toBe("Sierra de Guadarrama");
+    expect(article.querySelector(".visually-hidden")).toBeNull();
     expect(article.querySelector(".site-yield")?.textContent).toBe("no yield");
     expect(within(article).queryByText("Industry")).toBeNull();
     expect(within(article).getByRole("img", { name: /^Port level 2 of \d+$/u })).toBeTruthy();
@@ -101,11 +132,10 @@ describe("the site card (X7)", () => {
     const state = withSite(start, "madrid", { buildings: ["barracks", "mystery"] as BuildingId[] });
     const bare = { ...scenario };
     delete (bare as { improvements?: unknown }).improvements;
-    card(state, "madrid", { scenario: bare, withBuildButton: false });
+    card(state, "madrid", { scenario: bare });
     const article = screen.getByRole("article", { name: "Madrid" });
     expect(within(within(article).getByRole("list", { name: "Buildings" })).getAllByRole("listitem").map((entry) => entry.textContent)).toEqual(["Barracks"]);
     expect(within(article).queryByText("Rail")).toBeNull();
-    expect(within(article).queryByRole("button", { name: /^Build in/u })).toBeNull();
   });
 
   it("lists the queue: the head with its turns left, queued items, this turn's plans and progress", async () => {
@@ -116,16 +146,17 @@ describe("the site card (X7)", () => {
     const list = screen.getByRole("list", { name: "Build queue" });
     const rows = within(list).getAllByRole("listitem");
     expect(rows).toHaveLength(4);
-    expect(rows[0]).toHaveClass("queue-head");
+    expect(rows[0]).toHaveClass("queue-active");
     expect(rows[0]?.querySelector("strong")?.textContent).toBe("Farms 1 \u2192 2");
     expect(rows[0]?.querySelector(".queue-status")?.textContent).toBe("2 turns left");
     expect(within(rows[0]!).getByRole("progressbar", { name: "Farms 1 \u2192 2 progress" })).toHaveAttribute("aria-valuenow", "1");
-    expect(rows[1]).toHaveClass("queue-next");
-    expect(rows[1]?.textContent).toMatch(/^Next: Farms 2 \u2192 3/u);
-    expect(rows[1]?.querySelector(".queue-status")?.textContent).toBe("queued \u00b7 6 Funds");
-    expect(rows[2]?.querySelector("strong")?.textContent).toBe("Fortifications");
-    expect(rows[3]?.querySelector(".queue-status")?.textContent).toBe("this turn \u00b7 nothing");
-    expect(within(rows[3]!).getByRole("progressbar")).toHaveAttribute("aria-valuemax", "1");
+    expect(rows[1]).toHaveClass("queue-waiting");
+    expect(rows[1]?.querySelector(".queue-number")?.textContent).toBe("1");
+    expect(rows[1]?.querySelector(".queue-name")?.textContent).toBe("Farms 2 \u2192 3");
+    expect(rows[1]?.querySelector(".queue-status")?.textContent).toBe("then 3 turns");
+    expect(within(rows[1]!).queryByRole("progressbar")).toBeNull();
+    expect(rows[2]?.querySelector(".queue-name")?.textContent).toBe("Fortifications");
+    expect(rows[3]?.querySelector(".queue-status")?.textContent).toBe("ordered this turn \u00b7 1 turn");
     await user.click(within(rows[3]!).getByRole("button", { name: "Cancel mystery" }));
     // Cancelling an order the draft does not have leaves the plan as it was.
     expect(draftOf(store)?.builds ?? []).toEqual([]);
@@ -142,58 +173,12 @@ describe("the site card (X7)", () => {
   });
 });
 
-describe("the sub-territory focus (X3)", () => {
-  const scenario = spain();
-  const start = initialGameState(scenario);
-
-  const focus = (state: GameState, id: string, given: Scenario = scenario) =>
-    renderIn(planning(state, { ...emptyDraft, focusedSubTerritoryId: sub(id) }), <SubTerritoryFocus factionId={republic} scenario={given} state={state} subTerritoryId={sub(id)} />);
-
-  it("names a capital, its holder, terrain, rail and cities, and goes back to the territory", async () => {
-    const { store, user } = focus(start, "madrid");
-    const pane = document.querySelector("[data-sub-territory-id='madrid']")!;
-    expect(pane.querySelector(".capital-star")).not.toBeNull();
-    expect(screen.getByRole("heading", { level: 3 }).textContent).toMatch(/Madrid$/u);
-    expect(screen.getByText(/^Capital sub-territory of Madrid \u00b7 held by /u)).toBeTruthy();
-    const chips = within(screen.getByRole("list", { name: "About this sub-territory" })).getAllByRole("listitem").map((chip) => chip.textContent);
-    expect(chips).toEqual(["Open ground", "Rail 3"]);
-    expect(screen.getByText(/^Cities: /u)).toBeTruthy();
-    expect(screen.queryByText(/is contested/u)).toBeNull();
-    await user.click(screen.getByRole("button", { name: "Back to Madrid" }));
-    expect(draftOf(store)?.focusedSubTerritoryId).toBeUndefined();
-  });
-
-  it("marks contested ground, a coast and mountains", () => {
-    const coastal = withSite(start, "granada", { port: 1, rail: 0 });
-    focus(coastal, "granada");
-    expect(screen.getByText(/^Sub-territory of Andaluc\u00eda \u00b7 held by /u)).toBeTruthy();
-    const chips = within(screen.getByRole("list", { name: "About this sub-territory" })).getAllByRole("listitem").map((chip) => chip.textContent);
-    expect(chips).toEqual(["Mountains", "Coast \u00b7 port 1", "Contested ground"]);
-    expect(screen.getByText(/^Andaluc\u00eda is contested: it pays no income/u)).toBeTruthy();
-  });
-
-  it("falls back to the scenario's start for a sub-territory with no state, and names a marsh", () => {
-    const missing = { ...start, subTerritories: { ...start.subTerritories } };
-    delete (missing.subTerritories as Record<string, unknown>)["henares"];
-    const marshy: Scenario = { ...scenario, index: { ...scenario.index, subTerritories: new Map([...scenario.index.subTerritories].map(([id, entry]) => [id, id === sub("henares") ? { ...entry, terrain: "swamp" as const } : entry])) } };
-    focus(missing, "henares", marshy);
-    expect(screen.getByText(/^Sub-territory of Madrid \u00b7 held by /u)).toBeTruthy();
-    expect(within(screen.getByRole("list", { name: "About this sub-territory" })).getAllByRole("listitem")[0]?.textContent).toBe("Marsh");
-    expect(screen.queryByRole("article")).toBeNull();
-  });
-
-  it("draws nothing for an unknown sub-territory", () => {
-    focus(start, "atlantis");
-    expect(document.querySelector(".sub-territory-focus")).toBeNull();
-  });
-});
-
-describe("the build list ($4, $5)", () => {
+describe("what can be added to a queue ($4, $5)", () => {
   const scenario = spain();
   const start = initialGameState(scenario);
 
   const list = (state: GameState, id: string, given: Scenario = scenario, draft: Draft = emptyDraft) =>
-    renderIn(planning(state, draft), <BuildList scenario={given} subTerritoryId={sub(id)} />);
+    renderIn(planning(state, draft), <BuildOptions scenario={given} state={state} subTerritoryId={sub(id)} viewer={republic} />);
 
   it("offers the projects that can be queued first, then the locked ones with their reasons", async () => {
     const { store, user } = list(start, "madrid");
@@ -232,31 +217,16 @@ describe("the build list ($4, $5)", () => {
     expect(capitalNames).toContain("Factory");
   });
 
-  it("shows only the card for another faction's sub-territory", () => {
+  it("draws nothing for another faction's sub-territory, a missing site or an unknown sub-territory", () => {
     list(start, "burgos");
-    expect(screen.getByRole("article", { name: "Burgos" })).toBeTruthy();
     expect(screen.queryByRole("region", { name: "Add to the queue" })).toBeNull();
-  });
-
-  it("draws nothing without the economy, without a site, or for an unknown sub-territory", () => {
-    list(start, "madrid", { ...scenario, rules: { ...scenario.rules, economy: "none" } });
-    expect(document.querySelector(".build-list")).toBeNull();
     cleanup();
     list(start, "atlantis");
-    expect(document.querySelector(".build-list")).toBeNull();
+    expect(document.querySelector(".build-options")).toBeNull();
     cleanup();
     const ghost = { ...start, subTerritories: { ...start.subTerritories, [sub("atlantis")]: start.subTerritories[sub("madrid")]! } };
     list(ghost, "atlantis");
-    expect(document.querySelector(".build-list")).toBeNull();
-  });
-
-  it("shows a planned build as this turn's, with its Cancel", async () => {
-    const order: BuildOrder = { factionId: republic, kind: "build", project: building("fortifications"), subTerritoryId: sub("madrid") };
-    const { store, user } = list(start, "madrid", scenario, { ...emptyDraft, builds: [order] });
-    const rows = within(screen.getByRole("list", { name: "Build queue" })).getAllByRole("listitem");
-    expect(rows.at(-1)?.querySelector(".queue-status")?.textContent).toMatch(/^this turn \u00b7 \d+ Funds/u);
-    await user.click(screen.getByRole("button", { name: "Cancel Fortifications" }));
-    expect(draftOf(store)?.builds).toEqual([]);
+    expect(document.querySelector(".build-options")).toBeNull();
   });
 
   it("is the same list without partition", () => {

@@ -6,6 +6,7 @@ import type { PaneContent } from "../map/MapPane";
 import type { MapBriefing } from "../map/usePaneView";
 import type { MapView } from "../map/view";
 import { briefingAutoOpened } from "../state/briefingSlice";
+import { mapLayersChosen } from "../state/mapLayersSlice";
 import { addInfoNotification } from "../state/notificationSlice";
 import { BriefingView } from "./BriefingView";
 
@@ -26,6 +27,7 @@ export function MapScreenFrame({ briefingFor, game, header, label, pane, scenari
   const scenarioPackage = useScenarioPackage(scenarioId);
   const assets = useMapAssets(scenarioId);
   const briefing = useBriefing(briefingFor, game, scenarioId, assets !== undefined);
+  const layers = useAppSelector((state) => state.mapLayers.chosen);
   const notified = useRef(false);
   const onTerrainFallback = useCallback((reason: string) => {
     if (notified.current) return;
@@ -43,6 +45,8 @@ export function MapScreenFrame({ briefingFor, game, header, label, pane, scenari
           assets={assets}
           {...(briefing === undefined ? {} : { briefing })}
           game={game}
+          layers={layers}
+          onLayersChange={(chosen) => { dispatch(mapLayersChosen(chosen)); }}
           onTerrainFallback={onTerrainFallback}
           pane={pane}
           scenarioPackage={scenarioPackage}

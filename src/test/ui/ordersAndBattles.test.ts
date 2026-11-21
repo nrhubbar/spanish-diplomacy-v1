@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { initialGameState } from "../../main/engine/resolution";
-import type { D20BattleOutcome, GameState, GradeId, TurnOutcome } from "../../main/engine/types";
+import type { D20BattleOutcome, GameState, GradeId, SubTerritoryId, TurnOutcome } from "../../main/engine/types";
 import { affectedFaction, attackSucceeded, changedHands, claimants, decisiveBattle, groupBattles, groupTerritory, siteKey } from "../../main/presentation/battle";
 import { chooseDestination, chooseOrder, type PlanningSession } from "../../main/state/planning";
 import type { Draft } from "../../main/state/session";
@@ -103,7 +103,11 @@ describe("order choices at the edges (O2, C1, P6)", () => {
   });
 
   it("says where a withdrawal may go when the choice is refused", () => {
-    const choosing = chooseOrder(scenario, planning(start, { orders: [], selectedTerritoryId: territory("andalucia"), selectedUnitIds: [unit("rep-vitoria-8")] }), "withdraw");
+    // R1: with Granada the Málaga regiment's pocket has two ways out, so it must choose.
+    const granada = start.subTerritories["granada" as SubTerritoryId];
+    if (granada === undefined) throw new Error("granada");
+    const joined: GameState = { ...start, subTerritories: { ...start.subTerritories, ["granada" as SubTerritoryId]: { ...granada, holder: faction("republic") } } };
+    const choosing = chooseOrder(scenario, planning(joined, { orders: [], selectedTerritoryId: territory("andalucia"), selectedUnitIds: [unit("rep-vitoria-8")] }), "withdraw");
     expect(chooseDestination(scenario, choosing, territory("andalucia")).draft.feedback).toBe("Choose a different territory as the destination.");
     expect(chooseDestination(scenario, choosing, territory("galicia")).draft.feedback).toMatch(/^Withdraw to a highlighted territory/u);
   });

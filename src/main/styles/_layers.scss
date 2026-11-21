@@ -1,0 +1,213 @@
+// U8, U13 (m3r2-map-layers): the Map Layers toolbar, the Roads layer and the layer switches.
+
+// The bar sits along the bottom, centred on the map left free by the pane (`layersControlObstacle`).
+.map-layers-toolbar {
+  position: absolute;
+  z-index: 4;
+  bottom: 0.75rem;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.4rem;
+  border: 1px solid rgb(36 29 24 / 30%);
+  border-radius: 8px;
+  background: rgb(251 246 234 / 92%);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 18%);
+  font-size: 0.8rem;
+  transform: translateX(-50%);
+}
+
+.campaign-map[data-pane-layout="side"][data-pane-open="true"] .map-layers-toolbar {
+  left: calc((100% - var(--pane-width) - 0.75rem) / 2);
+}
+
+.map-layers-title {
+  padding: 0 0.3rem;
+  color: var(--ink-soft);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.map-layers-presets {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.map-layers-preset,
+.map-layers-more > summary,
+.map-layers-menu > summary {
+  min-height: 2rem;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid rgb(36 29 24 / 30%);
+  border-radius: 6px;
+  color: var(--ink);
+  background: transparent;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.map-layers-preset[aria-pressed="true"] {
+  color: var(--paper);
+  background: var(--ink);
+}
+
+.map-layers-more,
+.map-layers-menu {
+  position: relative;
+
+  > summary {
+    display: flex;
+    align-items: center;
+    list-style: none;
+  }
+
+  > summary::-webkit-details-marker {
+    display: none;
+  }
+}
+
+.map-layers-popover {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 15rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid rgb(36 29 24 / 30%);
+  border-radius: 8px;
+  background: rgb(251 246 234 / 97%);
+  box-shadow: 0 0.5rem 1.5rem rgb(20 14 10 / 25%);
+}
+
+// More opens upwards, over the map; the phone menu opens downwards from the top right.
+.map-layers-more .map-layers-popover {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 0.5rem);
+}
+
+.map-layers-menu {
+  position: absolute;
+  z-index: 4;
+  top: 0.75rem;
+  right: 0.75rem;
+  font-size: 0.8rem;
+
+  > summary {
+    background: rgb(251 246 234 / 92%);
+    box-shadow: 0 2px 8px rgb(0 0 0 / 18%);
+  }
+
+  .map-layers-popover {
+    position: absolute;
+    top: calc(100% + 0.4rem);
+    right: 0;
+  }
+}
+
+.map-layers-switches {
+  display: grid;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+
+  legend {
+    margin-bottom: 0.3rem;
+    font-weight: 700;
+  }
+}
+
+.map-layers-switch {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.map-layers-auto,
+.map-layers-note {
+  color: var(--ink-soft);
+  font-size: 0.72rem;
+}
+
+.map-layers-auto {
+  margin-left: auto;
+  font-style: italic;
+}
+
+.map-layers-note {
+  margin: 0.2rem 0 0;
+}
+
+// U8: roads are quiet lines under the rail; a pass is a chevron on a paper disc, named on hover.
+.road-layer {
+  pointer-events: none;
+}
+
+.road-line {
+  fill: none;
+  stroke: #6b4f36;
+  stroke-linecap: round;
+}
+
+.road-pass {
+  cursor: help;
+  pointer-events: auto;
+}
+
+.road-pass-disc {
+  fill: var(--paper);
+  stroke: #3b2f26;
+  stroke-width: 1;
+}
+
+.road-pass-chevron {
+  fill: none;
+  stroke: #3b2f26;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.4;
+}
+
+.legend-main-road,
+.legend-track {
+  height: 0;
+  border: 0;
+  border-top: 2px solid #6b4f36;
+}
+
+.legend-track {
+  border-top: 1px dashed rgb(107 79 54 / 70%);
+}
+
+.legend-pass svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+// Note 4: past 250% every sub-territory shows its border, dashed and quiet.
+.sub-territory-wash .sub-territory-border {
+  stroke: rgb(36 29 24 / 45%);
+  stroke-dasharray: 3 3;
+  stroke-width: 0.8px;
+  vector-effect: non-scaling-stroke;
+}
+
+// U13: a layer switched off. Rail, order lines and battles are drawn by other layers, so they are
+// hidden here; the rail's traced routes are order lines and follow that switch.
+.campaign-map[data-hidden-layers~="rail"] .rail-layer > g[data-level],
+.campaign-map[data-hidden-layers~="rail"] .rail-station,
+.campaign-map[data-hidden-layers~="order-lines"] .map-route-halo,
+.campaign-map[data-hidden-layers~="order-lines"] .map-route-line,
+.campaign-map[data-hidden-layers~="order-lines"] .map-route-head,
+.campaign-map[data-hidden-layers~="order-lines"] .map-route-badge,
+.campaign-map[data-hidden-layers~="order-lines"] .map-route-faction,
+.campaign-map[data-hidden-layers~="order-lines"] .move-route,
+.campaign-map[data-hidden-layers~="order-lines"] .air-mission-line,
+.campaign-map[data-hidden-layers~="battles"] .map-outcome-hover,
+.campaign-map[data-hidden-layers~="battles"] .battle-icon-layer,
+.campaign-map[data-hidden-layers~="sub-territories"] .sub-territory-name,
+.campaign-map[data-hidden-layers~="sub-territories"] .sub-territory-star {
+  display: none;
+}

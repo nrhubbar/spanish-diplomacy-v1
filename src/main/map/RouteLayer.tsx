@@ -1,31 +1,36 @@
 import type { JSX } from "react";
-import type { BattleOutcome, FactionId, Scenario, TerritoryId, TurnOutcome } from "../engine/types";
+import type { BattleOutcome, FactionId, GameState, Scenario, TerritoryId, TurnOutcome } from "../engine/types";
 import { battleKind } from "../presentation/battle";
 import { isBattle } from "../presentation/grades";
 import { medallionMarkup } from "../presentation/outcomeArt";
 import type { MapPoint } from "../scenarios/loader";
-import { arrowHead, groupRoutes, laneBend, pointOnCurve, type RouteBattle, routeBattle, type RouteGroup, routeCurve, shortenCurve } from "./routes";
+import { groupRoutes, type RouteBattle, routeBattle, type RouteGroup, type RoutePoints, routeShape } from "./routes";
 import type { MapView } from "./view";
 
 interface RouteLayerProps {
   readonly anchor: (id: TerritoryId) => MapPoint;
   readonly factionColor: (id: FactionId) => string;
+  /** U8: the start-of-turn state the moves are read against, so each line follows the links it uses. */
+  readonly game?: GameState;
   /** Names d20 grades (D8); optional so d6-only callers need not pass it. */
   readonly scenario?: Scenario;
   /** Map units per screen pixel. */
   readonly unit: number;
   readonly view: MapView;
+  /** U8: where the map draws each sub-territory's capital, the points a line runs through. */
+  readonly subPoint?: RoutePoints["subPoint"];
 }
 
 /**
  * Planned moves and last turn's results, one route per group (V10). Battles fought where nobody
  * moved (standing battles, M27) are marked at the territory instead.
  */
-export function RouteLayer({ anchor, factionColor, scenario, unit, view }: RouteLayerProps): JSX.Element {
+export function RouteLayer({ anchor, factionColor, game, scenario, subPoint, unit, view }: RouteLayerProps): JSX.Element {
+  const points: RoutePoints = subPoint === undefined ? { anchor } : { anchor, subPoint };
   return (
     <g className="map-routes" aria-hidden="true">
-      {groupRoutes(view.plannedOrders, view.outcomes, scenario).map((route) => (
-        <Route anchor={anchor} factionColor={factionColor} key={route.key} route={route} unit={unit} />
+      {groupRoutes(view.plannedOrders, view.outcomes, scenario, game).map((route) => (
+        <Route factionColor={factionColor} key={route.key} points={points} route={route} unit={unit} />
       ))}
       {standingBattles(view.outcomes).map(({ battle, territoryId }) => (
         <BattleMark
@@ -51,13 +56,19 @@ export interface BattleMarkPoint {
 /**
  * B5: every battle medallion's centre, for the battle-icon layer's buttons: halfway along a
  * route that ended in a battle, or just above the territory for a standing battle. The same
- * geometry as `Route` and `BattleMark` below.
+ * geometry as `Route` and `BattleMark` below (U8: `game` and `subPoint` as for `RouteLayer`).
  */
-export function battleMarkPoints(view: MapView, scenario: Scenario | undefined, anchor: (id: TerritoryId) => MapPoint, unit: number): readonly BattleMarkPoint[] {
-  const routes = groupRoutes(view.plannedOrders, view.outcomes, scenario).flatMap((route): BattleMarkPoint[] => {
+export function battleMarkPoints(
+  view: MapView,
+  scenario: Scenario | undefined,
+  anchor: (id: TerritoryId) => MapPoint,
+  unit: number,
+  lines: { readonly game?: GameState; readonly subPoint?: RoutePoints["subPoint"] } = {}
+): readonly BattleMarkPoint[] {
+  const points: RoutePoints = lines.subPoint === undefined ? { anchor } : { anchor, subPoint: lines.subPoint };
+  const routes = groupRoutes(view.plannedOrders, view.outcomes, scenario, lines.game).flatMap((route): BattleMarkPoint[] => {
     if (route.battle === undefined) return [];
-    const curve = shortenCurve(routeCurve(anchor(route.from), anchor(route.to), 0.18 + laneBend * route.lane), 6 * unit, 10 * unit);
-    return [{ at: pointOnCurve(curve, 0.5), key: route.key, territoryId: route.to, title: route.battle.title }];
+    return [{ at: routeShape(route, points, unit).middle, key: route.key, territoryId: route.to, title: route.battle.title }];
   });
   const standing = standingBattles(view.outcomes).map(({ battle, territoryId }) => {
     const at = anchor(territoryId);
@@ -92,43 +103,40 @@ function BattleMark({ at, mark, ring, unit }: { readonly at: MapPoint; readonly 
 const shortRoutePixels = 90;
 
 interface RouteProps {
-  readonly anchor: (id: TerritoryId) => MapPoint;
   readonly factionColor: (id: FactionId) => string;
+  readonly points: RoutePoints;
   readonly route: RouteGroup;
   readonly unit: number;
 }
 
 /**
- * One route: a paper halo so it reads on any terrain, a line (dashed while planned or failed,
- * solid once completed or fought) colored by result, and an arrowhead. A medallion halfway
+ * One route, along the links it uses (U8): a paper halo so it reads on any terrain, a line
+ * (dashed while planned or failed, solid once completed or fought) colored by result, and an arrowhead. A medallion halfway
  * along, away from the counters at either end, names the faction by its color and the result by
  * its icon; a battle shows H's result medallion, ringed in the colour of the faction it fell on.
  * The count badge sits near the arrowhead, clear of the origin's counters.
  */
-function Route({ anchor, factionColor: colorOf, route, unit }: RouteProps): JSX.Element {
+function Route({ factionColor: colorOf, points, route, unit }: RouteProps): JSX.Element {
   const factionColor = colorOf(route.factionId);
-  const curve = shortenCurve(routeCurve(anchor(route.from), anchor(route.to), 0.18 + laneBend * route.lane), 6 * unit, 10 * unit);
-  const head = arrowHead(curve, 9 * unit);
-  const middle = pointOnCurve(curve, 0.5);
-  const badge = pointOnCurve(curve, 0.8);
+  const { badge, head, length, middle, path: d } = routeShape(route, points, unit);
   const dashed = route.kind === "planned" || route.kind === "bounced" || route.kind === "disbanded";
   // On a route shorter than a counter cluster the medallion can sit under counters, so the
   // arrowhead takes the faction color too.
-  const short = Math.hypot(curve.end.x - curve.start.x, curve.end.y - curve.start.y) / unit < shortRoutePixels;
-  const d = `M ${String(curve.start.x)} ${String(curve.start.y)} Q ${String(curve.control.x)} ${String(curve.control.y)} ${String(curve.end.x)} ${String(curve.end.y)}`;
+  const short = length / unit < shortRoutePixels;
   return (
-    <g className={`map-route map-route-${route.kind}`} data-route-kind={route.kind}>
-      <path className="map-route-halo" d={d} strokeWidth={6 * unit} />
+    <g className={`map-route map-route-${route.kind}`} data-route-kind={route.kind} data-route-links={route.line.length > 0 ? route.line.join(" ") : undefined}>
+      <path className="map-route-halo" d={d} strokeLinejoin="round" strokeWidth={6 * unit} />
       <path
         className="map-route-line"
         d={d}
+        strokeLinejoin="round"
         strokeDasharray={dashed ? `${String(7 * unit)} ${String(4 * unit)}` : undefined}
         strokeWidth={3 * unit}
       />
       <polygon
         className="map-route-head"
         data-faction-head={short ? "" : undefined}
-        points={head.points}
+        points={head}
         strokeWidth={2.4 * unit}
         style={short ? { fill: factionColor, stroke: "#241d18" } : undefined}
       />

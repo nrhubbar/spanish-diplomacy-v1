@@ -5,6 +5,8 @@ export const glyphs = {
   approx: "\u2248",
   arrow: "\u2192",
   back: "\u2190",
+  caretDown: "\u25be",
+  caretRight: "\u25b8",
   check: "\u2713",
   close: "\u00d7",
   dot: "\u00b7",

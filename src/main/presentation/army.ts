@@ -1,6 +1,7 @@
 import { armyValue } from "../engine/combat";
 import { requireFaction, requireUnitDefinition, requireUnitType } from "../engine/lookup";
 import type { StandingOrder } from "../engine/orders";
+import { worksRoll } from "../engine/works";
 import type { GameState, MoveOrder, ReplenishOrder, Scenario, UnitState, WithdrawOrder } from "../engine/types";
 
 /**
@@ -34,8 +35,10 @@ export interface ArmyFigures {
   readonly demoralized: boolean;
   /** C6: the fatigue track, 0 to 3; shown from 1 (X7). */
   readonly fatigue: number;
-  /** Dug-in level of the territory's works when they belong to this army's faction. */
+  /** Dug-in level (pips, 1 to 3) of the territory's works when they belong to this army's faction (R8). */
   readonly dugIn?: number;
+  /** What those works take off an attacker's roll, set with `dugIn` (R8: 2 a pip on the d20). */
+  readonly dugInRoll?: number;
   readonly fullAttack: number;
   readonly fullDefence: number;
   readonly fullStrength: number;
@@ -56,7 +59,7 @@ export function armyFigures(scenario: Scenario, state: GameState, unit: UnitStat
     defence,
     demoralized: unit.morale.demoralized,
     fatigue: unit.fatigue,
-    ...(dugIn === undefined ? {} : { dugIn }),
+    ...(dugIn === undefined ? {} : { dugIn, dugInRoll: worksRoll(scenario, dugIn) }),
     fullAttack: type.attack,
     fullDefence: type.defence,
     fullStrength: definition.fullStrength,
@@ -85,8 +88,20 @@ export function fatigueLabel(fatigue: number): string {
   return `Fatigue ${String(fatigue)}`;
 }
 
-export function dugInLabel(level: number): string {
-  return `Dug in +${String(level)}`;
+/** R8: "Dug in level 2 (+4)": the works' pips, then what they add for the defender. */
+export function dugInLabel(level: number, roll: number): string {
+  return `Dug in level ${String(level)} (+${String(roll)})`;
+}
+
+/** R8: the works the figures show and what they add on the die (one a pip when unknown); undefined without works. */
+export function figuresWorks(figures: ArmyFigures): { readonly dugIn: number; readonly dugInRoll: number } | undefined {
+  return figures.dugIn === undefined ? undefined : { dugIn: figures.dugIn, dugInRoll: figures.dugInRoll ?? figures.dugIn };
+}
+
+/** R8: "Dug in level 2 (+4)" for the figures' works; empty without works. */
+export function figuresDugInLabel(figures: ArmyFigures): string {
+  const works = figuresWorks(figures);
+  return works === undefined ? "" : dugInLabel(works.dugIn, works.dugInRoll);
 }
 
 /** The figures in words, for accessible names: "attack 2, defence 3 (full 4-6), 370 of 740 men". */
@@ -97,7 +112,7 @@ export function figuresDescription(figures: ArmyFigures): string {
     `${String(figures.strength)} of ${String(figures.fullStrength)} men`,
     ...(figures.demoralized ? ["demoralized, cannot attack"] : []),
     ...(figures.fatigue > 0 ? [fatigueLabel(figures.fatigue).toLowerCase()] : []),
-    ...(figures.dugIn === undefined ? [] : [dugInLabel(figures.dugIn).toLowerCase()])
+    ...(figures.dugIn === undefined ? [] : [figuresDugInLabel(figures).toLowerCase()])
   ].join(", ");
 }
 
@@ -148,14 +163,14 @@ export function groupFigures(scenario: Scenario, state: GameState, units: readon
   const fullAttack = sum((figures) => figures.fullAttack);
   const fullDefence = sum((figures) => figures.fullDefence);
   const demoralizedCount = each.filter((figures) => figures.demoralized).length;
-  const dugIn = each.find((figures) => figures.dugIn !== undefined)?.dugIn;
+  const works = each.map(figuresWorks).find((entry) => entry !== undefined);
   return {
     attack,
     count: each.length,
     defence,
     demoralized: demoralizedCount > 0,
     demoralizedCount,
-    ...(dugIn === undefined ? {} : { dugIn }),
+    ...works,
     // C6: a group shows its most tired army's fatigue.
     fatigue: Math.max(0, ...each.map((figures) => figures.fatigue)),
     fullAttack,
@@ -173,6 +188,6 @@ export function groupLabel(factionName: string, territoryName: string, figures: 
     `combined attack ${String(figures.attack)}, defence ${String(figures.defence)}`,
     `${String(figures.strength)} of ${String(figures.fullStrength)} men`,
     ...(figures.demoralizedCount > 0 ? [`${String(figures.demoralizedCount)} demoralized`] : []),
-    ...(figures.dugIn === undefined ? [] : [dugInLabel(figures.dugIn).toLowerCase()])
+    ...(figures.dugIn === undefined ? [] : [figuresDugInLabel(figures).toLowerCase()])
   ].join(", ");
 }

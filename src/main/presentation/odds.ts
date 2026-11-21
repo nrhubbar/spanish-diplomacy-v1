@@ -1,5 +1,5 @@
 import { type AttackEstimate, estimateAttack } from "../engine/combat";
-import type { CombatModifier, FactionId, GameState, MoveOrder, Scenario, TerritoryId, UnitId } from "../engine/types";
+import type { AirMissionOrder, CombatModifier, FactionId, GameState, MoveOrder, SackOrder, Scenario, TerritoryId, UnitId } from "../engine/types";
 import { glyphs } from "./glyphs";
 import { weatherModifierName } from "./weatherName";
 
@@ -13,7 +13,8 @@ export type DestinationEstimate = AttackEstimate;
 
 /**
  * A1: the odds at each destination count every army this faction would send there: the
- * selected armies plus the planned moves to that destination, each army once. A selected army
+ * selected armies plus the planned moves to that destination, each army once, and (R11) the
+ * aircraft planned on Ground Support there. A selected army
  * that already has a planned order is counted once, where it is about to go.
  */
 export function destinationEstimates(
@@ -22,13 +23,14 @@ export function destinationEstimates(
   factionId: FactionId,
   unitIds: readonly UnitId[],
   destinations: readonly TerritoryId[],
-  plannedOrders: readonly MoveOrder[] = []
+  plannedOrders: readonly MoveOrder[] = [],
+  airOrders: readonly (AirMissionOrder | SackOrder)[] = []
 ): ReadonlyMap<TerritoryId, DestinationEstimate> {
   const estimates = new Map<TerritoryId, DestinationEstimate>();
   if (unitIds.length === 0) return estimates;
   for (const territoryId of destinations) {
     const attackers = new Set([...unitIds, ...plannedAttackers(plannedOrders, factionId, territoryId)]);
-    estimates.set(territoryId, estimateAttack(scenario, state, factionId, [...attackers], territoryId));
+    estimates.set(territoryId, estimateAttack(scenario, state, factionId, [...attackers], territoryId, plannedSupport(airOrders, factionId, territoryId)));
   }
   return estimates;
 }
@@ -41,14 +43,20 @@ export function plannedEstimates(
   scenario: Scenario,
   state: GameState,
   factionId: FactionId,
-  plannedOrders: readonly MoveOrder[]
+  plannedOrders: readonly MoveOrder[],
+  airOrders: readonly (AirMissionOrder | SackOrder)[] = []
 ): ReadonlyMap<TerritoryId, DestinationEstimate> {
   const destinations = new Set(plannedOrders.filter((order) => order.factionId === factionId).map((order) => order.to));
   const estimates = new Map<TerritoryId, DestinationEstimate>();
   for (const territoryId of destinations) {
-    estimates.set(territoryId, estimateAttack(scenario, state, factionId, plannedAttackers(plannedOrders, factionId, territoryId), territoryId));
+    estimates.set(territoryId, estimateAttack(scenario, state, factionId, plannedAttackers(plannedOrders, factionId, territoryId), territoryId, plannedSupport(airOrders, factionId, territoryId)));
   }
   return estimates;
+}
+
+/** R11: the faction's aircraft planned on Ground Support over `territoryId`, which the odds weigh by the air battle. */
+export function plannedSupport(airOrders: readonly (AirMissionOrder | SackOrder)[], factionId: FactionId, territoryId: TerritoryId): readonly UnitId[] {
+  return airOrders.flatMap((order) => (order.kind === "air-mission" && order.factionId === factionId && order.mission.kind === "support" && order.mission.territoryId === territoryId ? [order.unitId] : []));
 }
 
 /** The armies of `factionId` with a planned move into `territoryId`. */
@@ -114,13 +122,14 @@ export function signed(value: number): string {
 
 /**
  * A modifier by name, as the battle breakdown lists it. Defender bonuses read as the bonus
- * ("Dug in +2", "Popular resistance +1"); the roll column shows their effect on the die.
+ * ("Dug in level 1 (+2)", "Popular resistance +1"); the roll column shows their effect on the die.
  */
 /** A modifier's name; with the scenario, unit bonuses name their unit type (D5). */
 export function modifierName(modifier: CombatModifier, scenario?: Scenario): string {
   switch (modifier.kind) {
     case "dug-in":
-      return `Dug in +${String(modifier.level)}`;
+      // R8: the works' level in pips, then what it is worth for the defender on the die.
+      return `Dug in level ${String(modifier.level)} (+${String(-modifier.roll)})`;
     case "faction":
       return `${modifier.name} +${String(Math.abs(modifier.roll))}`;
     case "odds-overflow":
@@ -145,6 +154,8 @@ export function modifierName(modifier: CombatModifier, scenario?: Scenario): str
       return weatherModifierName(modifier.weatherId);
     case "amphibious":
       return "Amphibious assault";
+    case "pass":
+      return `${modifier.name} pass`;
     case "air-support":
       return modifier.role === "attack" ? "Bomber support" : "Bomber support for the defender";
     case "building":

@@ -6,12 +6,6 @@ import type { FactionId, GameState, Order, Scenario, TurnOutcome } from "../../e
  * and the revealed outcomes of the previous turn, never another faction's pending orders.
  */
 export interface ComputerPlayerContext {
-  /**
-   * H6: the faction's blunder stream this turn, `rollStream(seed, "blunder", turn, faction
-   * index)`, kept apart from the tie-break source so blunder rolls never shift today's games.
-   * Nothing reads it yet; `scenario.ai.blunderChance` is the chance per order.
-   */
-  readonly blunder?: RandomSource;
   /** Every earlier turn's outcomes, oldest first. */
   readonly history?: readonly (readonly TurnOutcome[])[];
   readonly previousOutcomes?: readonly TurnOutcome[];

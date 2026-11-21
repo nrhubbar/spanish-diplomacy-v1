@@ -1,32 +1,18 @@
 import { holdsWhole } from "../partition/holders";
 import { generalModifiers } from "../generals/command";
 import type { CombatHookContext, IncomeContext, RuleHooks } from "../hooks";
-import type { CombatModifier, CombatRole, FactionId, Resources, UnitId } from "../types";
-import { unitTypeIn } from "./pieces";
+import type { CombatModifier, Resources } from "../types";
+import { airOverHookedBattle, supportModifiersOf } from "./groundSupport";
 
 /**
- * D7: bombers flying support over the battle's territory add their `battle-support` roll for
- * their side. Only the best one counts per side (AG-6). Support is known only while the turn
- * resolves (the air scratch), so planning estimates leave it out.
+ * R10, R11: Ground Support over the battle's territory, after the air battle when one is fought
+ * (`groundSupport.ts`). Only the side that has the air gets it: +3 an aircraft, at most two.
+ * The flights are known only while the turn resolves (the air scratch); planning estimates add
+ * planned Ground Support themselves (`combat/estimate.ts`).
  */
 export function supportModifiers(context: CombatHookContext): readonly CombatModifier[] {
-  const support = context.scratch?.air?.support ?? [];
-  const { scenario, state } = context;
-  const side = (factionIds: readonly FactionId[], role: CombatRole): readonly CombatModifier[] => {
-    const flying = support.filter((order) => order.mission.kind === "support" && order.mission.territoryId === context.territoryId && factionIds.includes(order.factionId));
-    let best = 0;
-    const unitIds: UnitId[] = [];
-    for (const order of flying) {
-      for (const effect of unitTypeIn(scenario, state.raised, order.unitId)?.effects ?? []) {
-        if (effect.kind === "battle-support") best = Math.max(best, effect.roll);
-      }
-      unitIds.push(order.unitId);
-    }
-    const factionId = flying[0]?.factionId;
-    if (best === 0 || factionId === undefined) return [];
-    return [{ factionId, kind: "air-support", role, roll: role === "attack" ? best : -best, unitIds }];
-  };
-  return [...side([context.attackerFactionId], "attack"), ...side(context.defenderFactionIds, "defence")];
+  const scratch = context.scratch?.air;
+  return scratch === undefined ? [] : supportModifiersOf(airOverHookedBattle(context, scratch));
 }
 
 /**

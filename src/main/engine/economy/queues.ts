@@ -1,6 +1,9 @@
 import type {
   BuildProject,
+  FactionId,
   EconomyTurnOutcome,
+  LinkModifier,
+  LinkProject,
   RailDamagedOutcome,
   Scenario,
   SubTerritoryId,
@@ -8,7 +11,8 @@ import type {
   SystemOutcome
 } from "../types";
 import { draftState, type Phase, type SystemState } from "../phases/draft";
-import { applyBuildOrder, maxLevel, projectCost } from "./catalogue";
+import { afterWork, linkBetween, linkKey, linkModifiers, stationCap } from "../network/links";
+import { applyBuildOrder, levelCap, projectCost } from "./catalogue";
 import { holdersIn, isContested } from "./holdings";
 import { incomeFor } from "./income";
 import { credit } from "./resources";
@@ -115,9 +119,9 @@ export function damageRail(
   return { events, systems: { ...systems, subTerritories } };
 }
 
-/** A finished project applied to its sub-territory. */
-function complete(scenario: Scenario, site: SubTerritoryState, project: BuildProject): SubTerritoryState {
-  const max = maxLevel(scenario, project);
+/** A finished project applied to its sub-territory; link works are applied by `completeLink`. */
+function complete(scenario: Scenario, systems: SystemState, subTerritoryId: SubTerritoryId, site: SubTerritoryState, project: BuildProject): SubTerritoryState {
+  const max = levelCap(scenario, systems, subTerritoryId, project);
   switch (project.kind) {
     case "building":
       return site.buildings.includes(project.buildingId) ? site : { ...site, buildings: [...site.buildings, project.buildingId] };
@@ -125,33 +129,65 @@ function complete(scenario: Scenario, site: SubTerritoryState, project: BuildPro
       return { ...site, development: { ...site.development, [project.developmentId]: Math.min(max, (site.development[project.developmentId] ?? 0) + 1) } };
     case "improvement":
       return { ...site, [project.improvement]: Math.min(max, site[project.improvement] + 1) };
+    case "link":
+      return site;
   }
 }
 
 /**
- * $5: each queue's head gains a turn of progress, unless its territory is contested (paused).
+ * R7: a finished link work changes the link's modifiers (`builtLinks`). A station at either end
+ * gains what its cap gained, so a new line opens a station and an upgrade adds a departure.
+ * A work that no longer fits the link (another finished first) changes nothing.
+ */
+function completeLink(scenario: Scenario, systems: SystemState, subTerritories: Record<SubTerritoryId, SubTerritoryState>, project: LinkProject): SystemState["builtLinks"] {
+  const link = linkBetween(scenario, project.a, project.b);
+  const modifiers = link === undefined ? undefined : afterWork(linkModifiers(link, systems), project.work);
+  if (modifiers === undefined) return systems.builtLinks;
+  const builtLinks: Record<string, readonly LinkModifier[]> = { ...systems.builtLinks, [linkKey(project.a, project.b)]: modifiers };
+  for (const end of [project.a, project.b]) {
+    const site = subTerritories[end];
+    const gain = stationCap(scenario, { builtLinks }, end) - stationCap(scenario, systems, end);
+    if (site !== undefined && gain > 0) subTerritories[end] = { ...site, rail: site.rail + gain };
+  }
+  return builtLinks;
+}
+
+/** R7, declog D16: a link work waits while its far end is not the builder's, or its territory is contested. */
+function farEndReady(scenario: Scenario, subTerritories: SystemState["subTerritories"], at: SubTerritoryId, project: LinkProject, factionId: FactionId): boolean {
+  const far = project.a === at ? project.b : project.a;
+  const territoryId = scenario.index.subTerritories.get(far)?.territoryId;
+  return subTerritories[far]?.holder === factionId && territoryId !== undefined && !isContested(scenario, subTerritories, territoryId);
+}
+
+/**
+ * $5: each queue's head gains a turn of progress, unless its territory is contested (paused); a
+ * link work also waits on its far end (`farEndReady`).
  * An item queued this turn makes its first turn of progress at once, so a 2-turn building
  * ordered on turn t stands at the end of turn t + 1. A finished item applies and leaves the
  * queue; the next one starts next turn.
  */
 export function advanceQueues(scenario: Scenario, systems: SystemState): { readonly events: readonly EconomyTurnOutcome[]; readonly systems: SystemState } {
   const subTerritories: Record<SubTerritoryId, SubTerritoryState> = { ...systems.subTerritories };
+  let { builtLinks } = systems;
   const events: EconomyTurnOutcome[] = [];
   for (const sub of scenario.subTerritories) {
     const site = subTerritories[sub.id];
     const head = site?.queue[0];
     if (site === undefined || head === undefined || isContested(scenario, subTerritories, sub.territoryId)) continue;
+    if (head.project.kind === "link" && !farEndReady(scenario, subTerritories, sub.id, head.project, head.factionId)) continue;
     const turns = projectCost(scenario, head.project)?.turns ?? 1;
     const progress = head.progress + 1;
     if (progress >= turns) {
-      subTerritories[sub.id] = { ...complete(scenario, site, head.project), queue: site.queue.slice(1) };
+      const now: SystemState = builtLinks === undefined ? systems : { ...systems, builtLinks };
+      subTerritories[sub.id] = { ...complete(scenario, now, sub.id, site, head.project), queue: site.queue.slice(1) };
+      if (head.project.kind === "link") builtLinks = completeLink(scenario, now, subTerritories, head.project);
       events.push({ factionId: head.factionId, kind: "build-completed", project: head.project, subTerritoryId: sub.id });
     } else {
       subTerritories[sub.id] = { ...site, queue: [{ ...head, progress }, ...site.queue.slice(1)] };
       events.push({ factionId: head.factionId, kind: "build-progressed", progress, project: head.project, subTerritoryId: sub.id, turns });
     }
   }
-  return { events, systems: { ...systems, subTerritories } };
+  return { events, systems: { ...systems, ...(builtLinks === undefined ? {} : { builtLinks }), subTerritories } };
 }
 
 /** Step 10 ($5, $8): hand-overs and rail damage from this turn's flips, then the queues advance. */

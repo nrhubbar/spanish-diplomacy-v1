@@ -58,5 +58,5 @@ export const validateSingleStepMove = withLegRule(({ order, scenario }: MoveCont
 /** M1-M5: multi-leg routes (rail, sea, marches) under `allowance`. */
 export const validateAllowanceMove = withLegRule(({ order, scenario, state }: MoveContext): ValidationResult => {
   const route = validateRoute(scenario, state, order satisfies MoveOrder);
-  return route.ok ? { ok: true } : route;
+  return route.ok ? { ok: true } : { ok: false, reason: route.reason };
 });

@@ -12,12 +12,13 @@ import {
   clickUnit,
   closeAircraft,
   focusOn,
+  type MusterOrder,
+  orderMuster,
   planBuild,
   removeOrder,
   selectAllAvailable,
   setAirMission,
   setRecruitQuantity,
-  toggleOrderChoice,
   toggleSack,
   toggleUnit,
   type PlanningSession,
@@ -52,11 +53,12 @@ export const clickMapUnit = createAction<UnitId>("game/clickMapUnit");
 export const toggleUnitSelection = createAction<UnitId>("game/toggleUnitSelection");
 export const selectAllAvailableUnits = createAction("game/selectAllAvailableUnits");
 export const clearUnitSelection = createAction("game/clearUnitSelection");
-export const toggleOrderMenu = createAction("game/toggleOrderMenu");
 export const chooseOrderKind = createAction<OrderKind>("game/chooseOrderKind");
 export const cancelOrderStage = createAction("game/cancelOrderStage");
 export const removePlannedOrder = createAction<UnitId>("game/removePlannedOrder");
 export const endTurn = createAction("game/endTurn");
+/** U6: the Invade or Reinforce pane's orders, given in one go. */
+export const orderFromMuster = createAction<MusterOrder>("game/orderFromMuster");
 /** X3: focus the pane on a sub-territory, or (undefined) back to its territory. */
 export const focusSubTerritory = createAction<SubTerritoryId | undefined>("game/focusSubTerritory");
 /** X4: how many units of a type the draft recruits at a territory (m3r1-recruit-replenish). */
@@ -142,8 +144,6 @@ export function createGameReducer(dependencies: GameReducerDependencies) {
         set(inPlanning(state.session, (scenario, planning) => selectAllAvailable(planning, scenario))))
       .addCase(clearUnitSelection, (state) =>
         set(inPlanning(state.session, (_scenario, planning) => clearSelection(planning))))
-      .addCase(toggleOrderMenu, (state) =>
-        set(inPlanning(state.session, (_scenario, planning) => toggleOrderChoice(planning))))
       .addCase(focusSubTerritory, (state, { payload }) =>
         set(inPlanning(state.session, (scenario, planning) => (payload === undefined ? unfocus(planning) : focusOn(scenario, planning, payload)))))
       .addCase(queueBuildOrder, (state, { payload }) =>
@@ -154,6 +154,8 @@ export function createGameReducer(dependencies: GameReducerDependencies) {
         set(inPlanning(state.session, (scenario, planning) => chooseOrder(scenario, planning, payload))))
       .addCase(cancelOrderStage, (state) =>
         set(inPlanning(state.session, (_scenario, planning) => cancelOrder(planning))))
+      .addCase(orderFromMuster, (state, { payload }) =>
+        set(inPlanning(state.session, (scenario, planning) => orderMuster(scenario, planning, payload))))
       .addCase(removePlannedOrder, (state, { payload }) =>
         set(inPlanning(state.session, (_scenario, planning) => removeOrder(planning, payload))))
       .addCase(planAirMission, (state, { payload }) =>

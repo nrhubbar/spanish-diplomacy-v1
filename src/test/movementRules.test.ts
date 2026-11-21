@@ -39,7 +39,7 @@ describe("rail rides past enemy armies (M-1, M2, Q-MR-16)", () => {
       expect(ride.through).not.toContain("pais-vasco");
     }
     // With the column gone, the same contested ground may be passed.
-    const empty = withUnits(scenario, [["north-sierra-column", "north", "castilla-y-leon"]]);
+    const empty = withUnits(scenario, [["north-navarre-requetes", "north", "castilla-y-leon"]]);
     const passing = [...railReach(scenario, empty, faction("north"), territory("castilla-y-leon")).values()].filter((ride) => ride.through.includes(territory("pais-vasco")));
     expect(passing.length).toBeGreaterThan(0);
   });

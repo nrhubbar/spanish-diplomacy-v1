@@ -1,6 +1,8 @@
 import { z } from "zod";
 import {
   basisShape,
+  markerEntry,
+  typedEntry,
   resourcesSchema,
   shareSchema,
   slugSchema,
@@ -36,38 +38,38 @@ export const unitSymbolSchema = z.enum([
   "fixed-wing",
   "headquarters"
 ]);
-export const airMissionSchema = z.enum(["raid", "intercept", "support", "recon"]);
+export const airMissionSchema = z.enum(["raid", "patrol", "support", "recon"]);
 export const terrainSchema = z.enum(["open", "mountain", "swamp"]);
 const roleSchema = z.enum(["attack", "defence"]);
 const signedRoll = z.number().int();
 
-export const unitEffectSchema = z.discriminatedUnion("kind", [
-  z.strictObject({
-    kind: z.literal("roll-bonus-per-points"),
+export const unitEffectSchema = z.discriminatedUnion("@type", [
+  typedEntry("roll-bonus-per-points", {
     role: roleSchema,
     per: positiveWholeSchema,
     bonus: positiveWholeSchema,
     max: positiveWholeSchema,
     exceptWeather: z.array(slugSchema).default([]).meta({ description: "Weather outcomes in which the bonus does not apply." })
   }),
-  z.strictObject({ kind: z.literal("cannot-attack-alone") }),
-  z.strictObject({ kind: z.literal("transport"), carries: positiveWholeSchema }),
-  z.strictObject({ kind: z.literal("mobile") }),
-  z.strictObject({ kind: z.literal("raid-defence"), roll: signedRoll.negative() }),
-  z.strictObject({ kind: z.literal("trains-in-contested") }),
-  z.strictObject({ kind: z.literal("command-bonus"), roll: positiveWholeSchema }),
-  z.strictObject({ kind: z.literal("rally") }),
-  z.strictObject({ kind: z.literal("battle-support"), roll: positiveWholeSchema })
+  markerEntry("cannot-attack-alone"),
+  typedEntry("transport", { carries: positiveWholeSchema }),
+  markerEntry("mobile"),
+  typedEntry("raid-defence", { roll: signedRoll.negative() }),
+  markerEntry("trains-in-contested"),
+  typedEntry("command-bonus", { roll: positiveWholeSchema }),
+  markerEntry("rally"),
+  typedEntry("battle-support", { roll: positiveWholeSchema }),
+  typedEntry("air-battle", { roll: positiveWholeSchema })
 ]);
 
-export const buildingEffectSchema = z.discriminatedUnion("kind", [
-  z.strictObject({ kind: z.literal("recruit-slots"), extra: positiveWholeSchema }),
-  z.strictObject({ kind: z.literal("replenish-cap"), share: shareSchema }),
-  z.strictObject({ kind: z.literal("replenish-discount"), resource: slugSchema, share: shareSchema }),
-  z.strictObject({ kind: z.literal("rail-departures"), extra: positiveWholeSchema }),
-  z.strictObject({ kind: z.literal("airbase") }),
-  z.strictObject({ kind: z.literal("all-weather-airbase") }),
-  z.strictObject({ kind: z.literal("defence-roll"), roll: positiveWholeSchema })
+export const buildingEffectSchema = z.discriminatedUnion("@type", [
+  typedEntry("recruit-slots", { extra: positiveWholeSchema }),
+  typedEntry("replenish-cap", { share: shareSchema }),
+  typedEntry("replenish-discount", { resource: slugSchema, share: shareSchema }),
+  typedEntry("rail-departures", { extra: positiveWholeSchema }),
+  markerEntry("airbase"),
+  markerEntry("all-weather-airbase"),
+  typedEntry("defence-roll", { roll: positiveWholeSchema })
 ]);
 
 const buildCostShape = {
@@ -80,6 +82,7 @@ export const modularUnitTypeSchema = z.strictObject({
   attack: wholeSchema.meta({ description: "Attack value of a full-strength unit. 0 for units that add no combat value (trucks, generals)." }),
   defence: wholeSchema.meta({ description: "Defence value of a full-strength unit." }),
   kind: unitKindSchema,
+  foot: z.boolean().default(false).meta({ description: "R5: a foot unit may March across a link with no road. Absent means false." }),
   symbol: unitSymbolSchema.meta({ description: "NATO APP-6A function shown on the counter; the map package draws it." }),
   orders: z.array(unitOrderKindSchema).min(1).meta({ description: "Order kinds a unit of this type may take." }),
   effects: z.array(unitEffectSchema).default([]),
@@ -108,14 +111,64 @@ export const subTerritorySchema = z.strictObject({
   startHolder: slugSchema.meta({ description: "P1: holder on the start date, whatever the territory's controller." }),
   development: z.record(slugSchema, wholeSchema).default({}).meta({ description: "Starting level per development track. Missing tracks are 0." }),
   buildings: z.array(slugSchema).default([]),
-  rail: wholeSchema.max(3),
+  buildable: z
+    .array(slugSchema)
+    .meta({ description: "D4: everything the sub-territory may build: building ids, development track ids, and the improvements rail and port. There are no rule defaults (L29)." }),
   port: wholeSchema.max(2),
   ...basisShape
-}).meta({ description: "A sub-territory needs sources or a note (L18)." });
+}).meta({ description: "A sub-territory needs sources or a note (L18). Its rail level is read from its links (D3)." });
 
 export const subTerritoryBordersSchema = z
   .array(z.tuple([slugSchema, slugSchema]))
   .meta({ description: "Undirected sub-territory adjacency, inside and across territories. Generated from the map geometry." });
+
+export const roadLevelSchema = z.enum(["track", "main"]);
+export const railLevelSchema = z.enum(["single", "main"]);
+
+/** D2: what a link has, as typed entries. No `road` entry means no road; no `rail` entry, no railway. */
+export const linkModifierSchema = z.discriminatedUnion("@type", [
+  typedEntry("road", { level: roadLevelSchema.meta({ description: "track: an unmetalled road; main: a main road trucks can use." }) }),
+  typedEntry("rail", { level: railLevelSchema.meta({ description: "single: a single-track or secondary line; main: a trunk line." }) }),
+  typedEntry("pass", { name: textSchema.meta({ description: "The pass's name, shown to players." }) })
+]);
+
+export const linkSchema = z
+  .strictObject({
+    a: slugSchema,
+    b: slugSchema,
+    modifiers: z.array(linkModifierSchema).default([]),
+    ...basisShape
+  })
+  .meta({ description: "D2: the link between two bordering sub-territories. Every border has exactly one link; each needs sources or a note (L28)." });
+
+/** D2: what each link modifier kind does, defined by the scenario. Each kind at most once (L28). */
+export const linkModifierRuleSchema = z.discriminatedUnion("@type", [
+  typedEntry("road", {
+    label: textSchema,
+    motorLevel: roadLevelSchema.meta({ description: "R5: the road level Motor moves need." }),
+    motorRange: positiveWholeSchema.meta({ description: "R5: territories a Motor move may cover." })
+  }),
+  typedEntry("rail", {
+    label: textSchema,
+    rangeByLevel: z
+      .strictObject({ single: positiveWholeSchema, main: positiveWholeSchema })
+      .meta({ description: "R5: rail range in territories, by the weakest rail level on the route." })
+  }),
+  typedEntry("pass", {
+    label: textSchema,
+    noMotor: z.boolean().meta({ description: "R5, R6: Motor moves may not cross the link." }),
+    defenderRoll: z.number().int().nonpositive().meta({ description: "R6: the attacker's roll change when every attacking ground unit crosses such a link. Stacks with dug-in." }),
+    lostToFlanking: z.boolean().meta({ description: "R6: one attacking ground unit over another kind of link cancels the change." })
+  })
+]);
+
+/** R7: the works a link may take, with their prices and build times. */
+export const linkProjectsSchema = z.strictObject({
+  "new-rail": z.strictObject(buildCostShape).meta({ description: "A new single-track line on a link with none." }),
+  "rail-upgrade": z.strictObject(buildCostShape).meta({ description: "A single line upgraded to main." }),
+  "road-upgrade": z.strictObject(buildCostShape).meta({ description: "A road built (to track) or upgraded (track to main)." }),
+  ...basisShape
+});
 
 export const developmentSchema = z.strictObject({
   id: slugSchema,
@@ -157,6 +210,5 @@ export const recruitmentSchema = z.strictObject({
 
 export const movementSchema = z.strictObject({
   landingsPerPortLevel: positiveWholeSchema,
-  railRangePerLevel: positiveWholeSchema,
   ...basisShape
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { flipOrder, attackSources, groundTaken } from "../main/engine/partition/flips";
+import { attackDistances, flipOrder, groundTaken } from "../main/engine/partition/flips";
 import { applyGround } from "../main/engine/partition/steps";
 import { controlFromHolders, holdersIn, isContested } from "../main/engine/partition/holders";
 import { contestedReasons, partitionRetreatAllowed, validateWithdrawOrder } from "../main/engine/partition/orders";
@@ -47,9 +47,21 @@ describe("which ground falls first (P4)", () => {
   it("takes the losers' ground nearest the attack's origin first and the capital last", () => {
     const scenario = spain();
     const state = initialGameState(scenario);
-    const order = flipOrder(scenario, state.subTerritories, territory("andalucia"), new Set([faction("south")]), attackSources(scenario, [territory("murcia")]));
+    const order = flipOrder(scenario, state.subTerritories, territory("andalucia"), new Set([faction("south")]), attackDistances(scenario, territory("andalucia"), [territory("murcia")]));
     expect(order.at(-1)).toBe("sevilla");
     expect(order[0]).toBe("granada");
+    // A land attack from Murcia is measured over land: Malaga's sea lane does not bring Cadiz
+    // level with Cordoba (D5), so Cordoba falls before Cadiz.
+    expect(order.slice(0, 2)).toEqual(["granada", "cordoba"]);
+    expect(order.indexOf(sub("cordoba"))).toBeLessThan(order.indexOf(sub("cadiz")));
+  });
+
+  it("measures an attack from across the sea from the landing port (D5)", () => {
+    const scenario = spain();
+    const state = initialGameState(scenario);
+    // Ceuta has no land connection to Andalucia: the Strait lands at Cadiz.
+    const order = flipOrder(scenario, state.subTerritories, territory("andalucia"), new Set([faction("south")]), attackDistances(scenario, territory("andalucia"), [territory("ceuta")]));
+    expect(order[0]).toBe("cadiz");
     expect(new Set(order)).toEqual(new Set(["sevilla", "cadiz", "huelva", "cordoba", "granada"]));
   });
 
@@ -67,6 +79,7 @@ describe("battle ground (P4, P5)", () => {
     const state = initialGameState(scenario);
     const result = { battleIndex: 3, gainer: faction("republic"), losers: new Set([faction("south")]), origins: [territory("murcia")], territoryId: territory("andalucia") };
     const two = applyGround(scenario, state.subTerritories, [{ ...result, ground: 2 }]);
+    // A land attack is measured over land: Málaga's sea lane (R3) does not bring Cádiz level with Córdoba (D5).
     expect(two.changes.map((change) => [change.subTerritoryId, change.cause, change.battleIndex])).toEqual([["granada", "battle", 3], ["cordoba", "battle", 3]]);
     const all = applyGround(scenario, state.subTerritories, [{ ...result, ground: "all" }]);
     expect(holdersIn(scenario, all.holdings, territory("andalucia"))).toEqual(["republic"]);
@@ -84,22 +97,23 @@ describe("occupation and the sweep (P3)", () => {
     expect(result.finalState.cityControl["burgos" as never]).toBe("republic");
   });
 
-  it("sweeps one enemy sub-territory a turn where one faction alone has armies in contested ground", () => {
+  it("flips contested ground whole where one side alone has ground armies (R2)", () => {
     const scenario = spain();
     const state = withUnits(scenario, [["rep-castilla-3", "republic", "extremadura"], ["rep-vitoria-8", "republic", "andalucia"]]);
     const first = resolveTurn(scenario, state, [], 1);
     const swept = first.subTerritoryChanges.filter((change) => change.cause === "sweep").map((change) => change.subTerritoryId);
-    expect(swept).toHaveLength(2);
-    expect(swept).toContain("caceres");
+    expect(swept).toEqual(["caceres", "sevilla", "cadiz", "huelva", "cordoba", "granada"]);
     expect(holding(first.finalState, "caceres")).toBe("republic");
     expect(first.finalState.control[territory("extremadura")]).toEqual({ factionId: "republic", kind: "controlled" });
-    // Andalucia falls one a turn, the capital last.
-    let current = first.finalState;
-    for (let turn = 0; turn < 5; turn += 1) current = resolveTurn(scenario, { ...current, turnNumber: current.turnNumber + 1 }, [], 1).finalState;
-    expect(holdersIn(scenario, current.subTerritories, territory("andalucia"))).toEqual(["republic"]);
+    // Andalucia falls whole in one turn, the capital with it.
+    expect(holdersIn(scenario, first.finalState.subTerritories, territory("andalucia"))).toEqual(["republic"]);
+    expect(first.outcomes.filter((outcome) => outcome.kind === "territory-flipped")).toEqual([
+      { factionId: "republic", kind: "territory-flipped", subTerritoryIds: ["caceres"], territoryId: "extremadura" },
+      { factionId: "republic", kind: "territory-flipped", subTerritoryIds: ["sevilla", "cadiz", "huelva", "cordoba", "granada"], territoryId: "andalucia" }
+    ]);
   });
 
-  it("does not sweep where a territory-level garrison stands: C\u00e1ceres, \u00c1lava, Mallorca, Ibiza and Menorca (D23)", () => {
+  it("does not flip where a territory-level garrison stands: C\u00e1ceres, \u00c1lava, Mallorca, Ibiza and Menorca (D23)", () => {
     // Units stand in a territory, not a sub-territory, so a garrison anywhere in Extremadura
     // defends C\u00e1ceres: the faction there is not alone, and the turn is a standing battle.
     const scenario = spain();
@@ -107,7 +121,7 @@ describe("occupation and the sweep (P3)", () => {
     const garrisons = [["extremadura", "north-argel-27"], ["islas-baleares", "south-palma-36"], ["islas-baleares", "rep-baleares-37"], ["pais-vasco", "north-flandes-5"]] as const;
     for (const [territoryId, unitId] of garrisons) expect(start.units[unit(unitId)]?.territoryId).toBe(territoryId);
     // Dice that leave every standing battle's sides in place, so only the sweep rule is tested.
-    const swept = (state: GameState): readonly string[] => resolveTurn(scenario, state, [], 1, loadedDice([3, 4, 5, 4, 3])).subTerritoryChanges
+    const swept = (state: GameState): readonly string[] => resolveTurn(scenario, state, [], 1, loadedDice([3, 4, 4, 5, 4, 3])).subTerritoryChanges
       .filter((change) => change.cause === "sweep")
       .map((change) => change.subTerritoryId);
     expect(swept(start).filter((id) => ["caceres", "alava", "mallorca", "ibiza", "menorca"].includes(id))).toEqual([]);
@@ -124,9 +138,12 @@ describe("contested ground orders (C1) and the path rule (P6)", () => {
   it("refuses a move out of contested ground but offers Withdraw through own ground", () => {
     const scenario = spain();
     const state = initialGameState(scenario);
-    expect(validateMoveOrder(scenario, state, move("republic", "rep-vitoria-8", "andalucia", "murcia"))).toEqual({ ok: false, reason: contestedReasons.move });
+    // R1, R5: Malaga's pocket has no land link to Murcia, so the route check refuses before C1 does.
+    expect(validateMoveOrder(scenario, state, move("republic", "rep-vitoria-8", "andalucia", "murcia")).ok).toBe(false);
+    expect(validateMoveOrder(scenario, state, move("republic", "rep-asturian-militia", "asturias", "cantabria"))).toEqual({ ok: false, reason: contestedReasons.move });
     expect(validateOrder(scenario, state, withdrawal("republic", "rep-vitoria-8", "andalucia", "murcia"))).toEqual({ ok: true });
-    expect(withdrawRoutes(scenario, state, faction("republic"), territory("andalucia")).map((route) => route.to)).toEqual(["castilla-la-mancha", "murcia"]);
+    // R1, D5: the Malaga regiment's pocket is Malaga alone; its only way out is the sea lane.
+    expect(withdrawRoutes(scenario, state, faction("republic"), territory("andalucia"))).toEqual([{ through: ["malaga"], to: "murcia" }]);
     expect(validateMoveOrder(scenario, state, move("republic", "rep-wad-ras-1", "madrid", "castilla-la-mancha"))).toEqual({ ok: true });
   });
 
@@ -163,7 +180,7 @@ describe("the loader keeps initialControl and holders in step (L26)", () => {
     const document = modularScenario();
     const territories = document["territories"] as Json[];
     const isle = territories.find((entry) => entry["id"] === "isle");
-    if (isle !== undefined) isle["initialControl"] = { factionId: "blue", kind: "controlled" };
+    if (isle !== undefined) isle["initialControl"] = { "@type": "controlled", "@data": { factionId: "blue" } };
     const assetPaths = new Set(["assets/maps/tiny-front.svg", "assets/maps/tiny-front-relief.webp", "assets/icons/nato/infantry.svg"]);
     try {
       loadPackage({ assetPaths, mapDocument: modularMap(), mapPath: "map.json", scenarioDocument: document, scenarioPath: "scenario.json" });
@@ -190,7 +207,8 @@ describe("the computer player in contested ground (H5)", () => {
     expect(planWithdrawals({ factionId: faction("republic"), memory: {}, planned: [], random: seededRandom(1), scenario, state: holdable })).toEqual([]);
     const state = withUnits(scenario, [...units, ["south-africa-vanguard", "south", "andalucia"]]);
     const orders = planWithdrawals({ factionId: faction("republic"), memory: {}, planned: [], random: seededRandom(1), scenario, state });
-    expect(orders).toEqual([withdrawal("republic", "rep-vitoria-8", "andalucia", "castilla-la-mancha")]);
+    // R1: its pocket is Málaga alone, so the only way out is the sea lane to Murcia.
+    expect(orders).toEqual([withdrawal("republic", "rep-vitoria-8", "andalucia", "murcia")]);
     // The South, stronger there, stays and attacks; the North in the Oviedo pocket has no way out.
     expect(planWithdrawals({ factionId: faction("south"), memory: {}, planned: [], random: seededRandom(1), scenario, state })).toEqual([]);
     const pocket = withUnits(scenario, [["north-milan-32", "north", "asturias"], ["rep-asturian-militia", "republic", "asturias"], ["rep-santander-column", "republic", "asturias"]]);
@@ -211,7 +229,7 @@ describe("the computer player in contested ground (H5)", () => {
 
   it("never gives an impossible or rejected order over whole computer games", async () => {
     const { generateComputerSubmission } = await import("../main/ai/computerPlayer");
-    const { rollStream, deriveSeed } = { ...(await import("../main/engine/dice")), ...(await import("../main/engine/random")) };
+    const { deriveSeed } = await import("../main/engine/random");
     const { seededRandom } = await import("../main/engine/random");
     const d20Ground: unknown[] = [];
     // Kept short (M-6, as D22 did for the others): two games of eight turns, one per dice module, so it
@@ -220,7 +238,7 @@ describe("the computer player in contested ground (H5)", () => {
       let state = initialGameState(scenario);
       for (let turn = 1; turn <= 8; turn += 1) {
         const submissions = scenario.factions.map((entry, index) =>
-          generateComputerSubmission(scenario, state, entry.id, seededRandom(deriveSeed(seed, turn, index)), { blunder: rollStream(seed, "blunder", turn, index) }));
+          generateComputerSubmission(scenario, state, entry.id, seededRandom(deriveSeed(seed, turn, index))));
         const result = resolveTurn(scenario, state, submissions, seed);
         const bad = result.outcomes.filter((outcome) => outcome.kind === "invalid-order" || (outcome.kind === "rejected-order" && outcome.order.kind === "withdraw"));
         expect(bad).toEqual([]);

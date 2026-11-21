@@ -1,0 +1,153 @@
+[
+ {
+  "id": "Q-R2B-0",
+  "idea": "locked",
+  "text": "Málaga is sealed, but its only sea lane today goes to Melilla, which the South holds. What should its sea exit be?",
+  "options": [
+   {
+    "label": "Add a coastal lane from Málaga to the Republic's ports (Almería, then Cartagena/Murcia)",
+    "recommended": true,
+    "rationale": "Sealed by land, but it can be reinforced or evacuated by sea, as the Republican fleet at Cartagena could. The South can still take it."
+   },
+   {
+    "label": "Leave it: Málaga is a last stand with no way out"
+   },
+   {
+    "label": "Reconsider: open the Motril corridor by land after all"
+   }
+  ]
+ },
+ {
+  "id": "Q-R2B-1",
+  "idea": "actions",
+  "text": "Should Recruit be its own quick action?",
+  "context": "You listed Invade, Reinforce, Info and Build. Recruitment and Building get separate global views, so they're separate jobs.",
+  "options": [
+   {
+    "label": "Yes: five actions (Invade, Reinforce, Recruit, Build, Info)",
+    "recommended": true,
+    "rationale": "Matches the two global views; recruiting is the most common action on your own ground."
+   },
+   {
+    "label": "No: four actions; Build opens a card with both Build and Recruit"
+   }
+  ]
+ },
+ {
+  "id": "Q-R2B-2",
+  "idea": "actions",
+  "text": "Should the Invade pane also list aircraft in range for Ground Support?",
+  "options": [
+   {
+    "label": "Yes, as a small group under the units, capped at 2",
+    "recommended": true,
+    "rationale": "A joint attack is one screen, and the odds bar includes the air battle."
+   },
+   {
+    "label": "No: air orders only through the aircraft counters"
+   }
+  ]
+ },
+ {
+  "id": "Q-R2B-3",
+  "idea": "actions",
+  "text": "Where do Global Recruitment and Global Building open from?",
+  "options": [
+   {
+    "label": "Top bar buttons with counts, opening in the pane",
+    "recommended": true
+   },
+   {
+    "label": "Tabs inside the This turn view"
+   },
+   {
+    "label": "The hamburger menu"
+   }
+  ]
+ },
+ {
+  "id": "Q-R2B-4",
+  "idea": "actions",
+  "text": "Should End Turn ask for confirmation?",
+  "options": [
+   {
+    "label": "Only when some armies have no order, listing them, with End anyway and Back",
+    "recommended": true,
+    "rationale": "Serious, without a confirm on every turn."
+   },
+   {
+    "label": "Always confirm"
+   },
+   {
+    "label": "Never: the colour is enough"
+   }
+  ]
+ },
+ {
+  "id": "Q-R2B-5",
+  "idea": "moves",
+  "text": "Order lines and roads: what should replace the Bézier arrows?",
+  "options": [
+   {
+    "label": "Motor and Rail lines follow the links they use; March stays a short curve; roads drawn in the Logistics preset",
+    "recommended": true
+   },
+   {
+    "label": "Every line follows links, March included"
+   },
+   {
+    "label": "Keep the curves; only draw the roads"
+   }
+  ]
+ },
+ {
+  "id": "Q-R2B-6",
+  "idea": "moves",
+  "text": "What bonus do defenders beyond a pass get?",
+  "options": [
+   {
+    "label": "−2 on the attacker's roll; stacks with dug-in; lost if any attacking ground unit comes over a non-pass link",
+    "recommended": true
+   },
+   {
+    "label": "−3 (one odds column), same flanking rule"
+   },
+   {
+    "label": "−2 always, no flanking exception"
+   }
+  ]
+ },
+ {
+  "id": "Q-R2B-7",
+  "idea": "air",
+  "text": "Does the loser of the air battle lose aircraft?",
+  "options": [
+   {
+    "label": "No: the air battle only decides who gets Ground Support; losses stay where they are today (raid interceptions)",
+    "recommended": true,
+    "rationale": "One roll and one effect; easy to read in the odds bar."
+   },
+   {
+    "label": "Yes: if beaten by 5 or more, one losing aircraft unit takes a step of losses"
+   }
+  ]
+ },
+ {
+  "id": "Q-R2B-8",
+  "idea": "plan",
+  "text": "Is the locked list and the implementation plan right to start building?",
+  "context": "Use the notes for anything I misread. Two render quirks aren't design changes: the gold selection outline left on some shots, and the readiness chips shortened to fit one row.",
+  "options": [
+   {
+    "label": "Yes, start Rev 2",
+    "recommended": true
+   },
+   {
+    "label": "Yes, with the changes in my notes"
+   },
+   {
+    "label": "Not yet (explain in the notes)"
+   }
+  ]
+ }
+]

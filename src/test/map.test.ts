@@ -16,7 +16,7 @@ import { legendEntries } from "../main/map/MapLegend";
 import { paneLayoutFor, paneWidthFor } from "../main/map/MapPane";
 import { prepareGeometry, prepareSymbol } from "../main/map/markup";
 import { intersects, placeCounters, visibleContextLabels } from "../main/map/placement";
-import { arrowHead, groupRoutes, pointOnCurve, routeCurve, shortenCurve } from "../main/map/routes";
+import { groupRoutes, routeCurve } from "../main/map/routes";
 import { terrainFrustum, terrainRenderMetrics } from "../main/map/terrainRendering";
 import { staticMapView } from "../main/map/view";
 import { initialGameState, resolveTurn } from "../main/engine/resolution";
@@ -190,14 +190,10 @@ describe("routes (V10)", () => {
     ]);
   });
 
-  it("draws arcs, heads, and trims", () => {
+  it("bows the sea lanes' arcs (order lines follow the links instead, U8)", () => {
     const curve = routeCurve({ x: 0, y: 0 }, { x: 100, y: 0 });
     expect(curve.control.y).toBeGreaterThan(0);
-    expect(pointOnCurve(curve, 1)).toEqual({ x: 100, y: 0 });
-    expect(arrowHead(curve, 5).points.split(" ")).toHaveLength(3);
-    expect(shortenCurve(curve, 10, 10).end.x).toBeLessThan(100);
-    const point = routeCurve({ x: 5, y: 5 }, { x: 5, y: 5 });
-    expect(shortenCurve(point, 1, 1)).toBe(point);
+    expect(curve.end).toEqual({ x: 100, y: 0 });
   });
 });
 
@@ -243,7 +239,7 @@ describe("markup and rendering helpers", () => {
       { factionId: faction("republic"), orders: [move("republic", "rep-wad-ras-1", "madrid", "castilla-y-leon")] },
       { factionId: faction("north"), orders: [move("north", "north-san-marcial-22", "castilla-y-leon", "madrid")] }
     ], 1);
-    expect(legendEntries(scenario, state, { ...staticMapView, outcomes: result.outcomes, plannedOrders: result.submittedOrders.filter(isMoveOrder) })).toEqual(["contested", "sea", "planned", "bounced", "attacker-eliminated", "attacker-demoralized", "both-demoralized", "defender-demoralized", "rail"]);
+    expect(legendEntries(scenario, state, { ...staticMapView, outcomes: result.outcomes, plannedOrders: result.submittedOrders.filter(isMoveOrder) })).toEqual(["contested", "sea", "planned", "bounced", "attacker-eliminated", "attacker-demoralized", "both-demoralized", "defender-demoralized", "defender-exchange", "rail"]);
   });
 });
 

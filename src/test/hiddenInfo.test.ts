@@ -158,7 +158,7 @@ describe("raised units are numbered as they appear (m7)", () => {
 });
 
 describe("interceptions of recon flights (CT-46, D27.3)", () => {
-  const fighters: AirMissionOrder = { factionId: republic, kind: "air-mission", mission: { kind: "intercept", territoryId: territory("madrid") }, unitId: unit("rep-ni52-fighters") };
+  const fighters: AirMissionOrder = { factionId: republic, kind: "air-mission", mission: { kind: "patrol", territoryId: territory("madrid") }, unitId: unit("rep-ni52-fighters") };
   const northRecon: AirMissionOrder = { factionId: north, kind: "air-mission", mission: { kind: "recon", territoryId: territory("madrid") }, unitId: unit("north-leon-recon") };
 
   it("shows a shot-down recon's interception only to the fighters' faction and the flier", () => {

@@ -71,9 +71,9 @@ describe("army figures (C4, C5, C6)", () => {
     const half = shaken({ ...state, fortification: { [territory("madrid")]: { factionId: faction("republic"), level: 2 } } }, "rep-covadonga-4", { strength: 370 });
     const figures = armyFigures(scenario, half, armyIn(half, "rep-covadonga-4"));
     expect(figures).toMatchObject({ attack: 1, defence: 2, dugIn: 2, reduced: true, strength: 370 });
-    expect(figuresDescription(figures)).toBe("attack 1, defence 2 (full 4-6), 370 of 550 men, demoralized, cannot attack, dug in +2");
+    expect(figuresDescription(figures)).toBe("attack 1, defence 2 (full 4-6), 370 of 550 men, demoralized, cannot attack, dug in level 2 (+2)");
     expect(counterLabel(scenario, figures, armyIn(half, "rep-covadonga-4"), "rest"))
-      .toBe("Covadonga Infantry Regiment No. 4, Republican Government, attack 1, defence 2 (full 4-6), 370 of 550 men, demoralized, cannot attack, dug in +2, resting");
+      .toBe("Covadonga Infantry Regiment No. 4, Republican Government, attack 1, defence 2 (full 4-6), 370 of 550 men, demoralized, cannot attack, dug in level 2 (+2), resting");
     expect(counterLabel(scenario, full, armyIn(state, "rep-wad-ras-1"), undefined)).toBe("Wad-Ras Infantry Regiment No. 1, Republican Government, attack 4, defence 6, 550 of 550 men");
     expect(groupOrdersDescription(["entrench", "move", "rest", "move"])).toBe("2 moving, 1 entrenching, 1 resting");
     expect(groupOrdersDescription([])).toBe("");
@@ -183,13 +183,13 @@ describe("destination odds (C15)", () => {
     expect(oddsSummary({ kind: "unopposed" })).toMatchObject({ chip: "Unopposed", tone: "safe" });
     expect([chanceTone(5 / 6), chanceTone(0.5), chanceTone(1 / 6)]).toEqual(["good", "even", "poor"]);
     expect([percent(0.5), percent(1 / 6), signed(2), signed(-1), signed(0)]).toEqual(["50%", "17%", "+2", "\u22121", "0"]);
-    expect(modifierName({ kind: "dug-in", level: 2, roll: -2 })).toBe("Dug in +2");
+    expect(modifierName({ kind: "dug-in", level: 2, roll: -2 })).toBe("Dug in level 2 (+2)");
     expect(modifierName({ factionId: faction("republic"), kind: "faction", modifierId: "popular-resistance", name: "Popular resistance", role: "defence", roll: -1 }))
       .toBe("Popular resistance +1");
     expect(modifierPhrase({ kind: "odds-overflow", roll: 2 })).toBe("Odds beyond 6:1 +2");
     expect(modifierPhrase({ halvings: 1, kind: "odds-halving", roll: -1 })).toBe("Odds below 1:1 (1 halving) \u22121");
     expect(modifierName({ halvings: 2, kind: "odds-halving", roll: -2 })).toBe("Odds below 1:1 (2 halvings)");
-    expect(modifierPhrase({ kind: "dug-in", level: 1, roll: -1 })).toBe("Dug in +1");
+    expect(modifierPhrase({ kind: "dug-in", level: 1, roll: -1 })).toBe("Dug in level 1 (+1)");
   });
 
   it("places plaques clear of counters and of each other", () => {

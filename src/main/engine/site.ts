@@ -56,7 +56,9 @@ export function settleSite(scenario: Scenario, front: Front, site: Site, firstIn
       defenders: site.defenders,
       situational: situationalModifiers(scenario, front.start, {
         attackerFactionId: factionId,
+        battleIndex: index,
         defenderFactionIds,
+        defenderUnitIds: site.defenders.map((combatant) => combatant.unit.id),
         diggingIn: site.kind === "assault",
         ...(front.scratch === undefined ? {} : { scratch: front.scratch }),
         territoryId: site.territoryId

@@ -1,15 +1,17 @@
 import { neighborsOf } from "../lookup";
+import { linksOf, railOn, railRank, territoryOfSub } from "../network/links";
 import { holdsWhole as partitionHoldsWhole, subTerritoriesOf as partitionSubTerritories } from "../partition/holders";
 import { isSeaRouteClosed } from "../weather";
-import type {
-  ConnectionDefinition,
-  FactionId,
-  GameState,
-  Scenario,
-  SubTerritoryId,
-  TerritoryId,
-  UnitId,
-  UnitTypeDefinition
+import {
+  type ConnectionDefinition,
+  type FactionId,
+  type GameState,
+  railLevels,
+  type Scenario,
+  type SubTerritoryId,
+  type TerritoryId,
+  type UnitId,
+  type UnitTypeDefinition
 } from "../types";
 
 /**
@@ -68,13 +70,6 @@ export function entrySubTerritory(scenario: Scenario, from: TerritoryId, to: Ter
   return connection.between[0] === to ? connection.entry[0] : connection.entry[1];
 }
 
-/** M1, P8: the step enters a mountain or swamp sub-territory. */
-export function roughEntry(scenario: Scenario, from: TerritoryId, to: TerritoryId, kind?: "land" | "sea"): SubTerritoryId | undefined {
-  const entry = entrySubTerritory(scenario, from, to, kind);
-  const terrain = entry === undefined ? undefined : scenario.index.subTerritories.get(entry)?.terrain;
-  return terrain === "mountain" || terrain === "swamp" ? entry : undefined;
-}
-
 export function landNeighbors(scenario: Scenario, territoryId: TerritoryId): readonly TerritoryId[] {
   return neighborsOf(scenario, territoryId).filter((neighbor) => neighbor.kind === "land").map((neighbor) => neighbor.territoryId);
 }
@@ -85,6 +80,7 @@ export function seaNeighbors(scenario: Scenario, territoryId: TerritoryId): read
 
 /* ---------------------------------------------------------------- rail (M3) */
 
+/** M3, D3: a station's level now: its departures, lowered by damage ($8) and raised by repairs, never above its best link. */
 export function railLevel(state: GameState, subTerritoryId: SubTerritoryId): number {
   return state.subTerritories[subTerritoryId]?.rail ?? 0;
 }
@@ -103,14 +99,14 @@ export function railDepartures(scenario: Scenario, state: GameState, capital: Su
   return sub.rail + extra;
 }
 
-/** One rail ride from a territory's capital to another's (M3). */
+/** One rail ride from a territory's capital to another's (M3, R5). */
 export interface RailRide {
   /** The boarding capital. */
   readonly boarding: SubTerritoryId;
   /** Territory borders the ride crosses; at most `range`. */
   readonly crossings: number;
   readonly end: TerritoryId;
-  /** The lowest rail level on the route, which sets the range. */
+  /** The weakest rail link on the route, which sets the range: 1 single, 2 main (`railRank`). */
   readonly level: number;
   readonly range: number;
   /** Every station from the boarding capital to the end capital, in order. */
@@ -121,13 +117,14 @@ export interface RailRide {
 }
 
 /**
- * M3, D7: every territory an army in `from` can reach by rail this turn. It boards at `from`'s
- * capital, rides through rail sub-territories its faction holds, in territories where no other
- * faction's army stands (M2, Q-MR-16; contested ground with no enemy army may be passed), and
- * leaves the train at another territory's capital in friendly ground. The lowest level on the route sets the range in
- * territory borders crossed (`railRangePerLevel` per level). For each level from the highest
- * down, a search over the sub-territories with at least that level finds the routes it allows;
- * the first level that reaches a territory gives its ride, so a ride always uses the best line.
+ * M3, R5, D7: every territory an army in `from` can reach by rail this turn. It boards at
+ * `from`'s capital, rides along rail links through stations its faction holds (a station
+ * wrecked to level 0 is closed), in territories where no other faction's army stands (M2,
+ * Q-MR-16; contested ground with no enemy army may be passed), and leaves the train at another
+ * territory's capital in friendly ground. The weakest link on the route sets the range in
+ * territory borders crossed (the scenario's `rail.rangeByLevel`). For each level from main down,
+ * a search over the links with at least that level finds the routes it allows; the first level
+ * that reaches a territory gives its ride, so a ride always uses the best line.
  */
 export function railReach(scenario: Scenario, state: GameState, factionId: FactionId, from: TerritoryId): ReadonlyMap<TerritoryId, RailRide> {
   return railSearch(scenario, state, factionId, from).rides;
@@ -159,22 +156,21 @@ function computeRailReach(scenario: Scenario, state: GameState, factionId: Facti
   const rides = new Map<TerritoryId, RailRide>();
   const reached = new Set<SubTerritoryId>();
   const boarding = capitalOf(scenario, from);
-  const perLevel = scenario.movement?.railRangePerLevel ?? 0;
-  const maxLevel = scenario.improvements?.rail.maxLevel ?? 3;
-  if (boarding === undefined || perLevel <= 0 || holderOf(state, boarding) !== factionId) return { rides, stations: reached };
-  const territoryOf = (id: SubTerritoryId): TerritoryId | undefined => scenario.index.subTerritories.get(id)?.territoryId;
+  const ranges = scenario.linkModifiers.rail?.rangeByLevel;
+  if (boarding === undefined || ranges === undefined || holderOf(state, boarding) !== factionId || railLevel(state, boarding) <= 0) return { rides, stations: reached };
   // M2, Q-MR-16: a train runs only through territories where no other faction's army (ground
   // units; aircraft at their bases and generals are not armies, AG-3) stands at the start of the turn.
   const blocked = new Set<TerritoryId>();
   for (const unit of Object.values(state.units)) {
     if (unit.factionId !== factionId && unit.territoryId !== from && isArmyUnit(scenario, state, unit.id)) blocked.add(unit.territoryId);
   }
-  for (let level = Math.min(maxLevel, railLevel(state, boarding)); level >= 1; level -= 1) {
-    const range = perLevel * level;
-    const usable = (id: SubTerritoryId): boolean => {
-      const territoryId = territoryOf(id);
-      return holderOf(state, id) === factionId && railLevel(state, id) >= level && (territoryId === undefined || !blocked.has(territoryId));
-    };
+  const station = (id: SubTerritoryId): boolean => {
+    const territoryId = territoryOfSub(scenario, id);
+    return holderOf(state, id) === factionId && railLevel(state, id) > 0 && (territoryId === undefined || !blocked.has(territoryId));
+  };
+  for (const level of [...railLevels].reverse()) {
+    const rank = railRank(level);
+    const range = ranges[level];
     // 0-1 breadth-first search: crossing a territory border costs 1, a station inside one costs 0.
     const distance = new Map<SubTerritoryId, number>([[boarding, 0]]);
     const previous = new Map<SubTerritoryId, SubTerritoryId>();
@@ -182,9 +178,9 @@ function computeRailReach(scenario: Scenario, state: GameState, factionId: Facti
     while (queue.length > 0) {
       const current = queue.shift() as SubTerritoryId;
       const here = distance.get(current) ?? 0;
-      for (const next of scenario.index.subTerritoryNeighbors.get(current) ?? []) {
-        if (!usable(next)) continue;
-        const cost = here + (territoryOf(next) === territoryOf(current) ? 0 : 1);
+      for (const { link, to: next } of linksOf(scenario, current)) {
+        if (railRank(railOn(state, link)) < rank || !station(next)) continue;
+        const cost = here + (territoryOfSub(scenario, next) === territoryOfSub(scenario, current) ? 0 : 1);
         if (cost > range || cost >= (distance.get(next) ?? Number.POSITIVE_INFINITY)) continue;
         distance.set(next, cost);
         previous.set(next, current);
@@ -192,7 +188,7 @@ function computeRailReach(scenario: Scenario, state: GameState, factionId: Facti
         else queue.push(next);
       }
     }
-    if (distance.size > 1) for (const station of distance.keys()) reached.add(station);
+    if (distance.size > 1) for (const reachedStation of distance.keys()) reached.add(reachedStation);
     for (const territory of scenario.territories) {
       const end = territory.id;
       const capital = territory.capitalSubTerritoryId;
@@ -202,24 +198,21 @@ function computeRailReach(scenario: Scenario, state: GameState, factionId: Facti
       const stations: SubTerritoryId[] = [capital];
       for (let at = previous.get(capital); at !== undefined; at = previous.get(at)) stations.unshift(at);
       const through: TerritoryId[] = [];
-      for (const station of stations) {
-        const territoryId = territoryOf(station);
+      for (const each of stations) {
+        const territoryId = territoryOfSub(scenario, each);
         if (territoryId !== undefined && territoryId !== from && territoryId !== end && !through.includes(territoryId)) through.push(territoryId);
       }
-      rides.set(end, { boarding, crossings, end, level, range, start: from, stations, through });
+      rides.set(end, { boarding, crossings, end, level: rank, range, start: from, stations, through });
     }
   }
   return { rides, stations: reached };
 }
 
-/**
- * X6: every rail link between adjacent sub-territories that both have rail, with the lower of
- * their two levels. Each pair appears once, in border order.
- */
+/** X6, R5: every link with a railway now, with its level (1 single, 2 main), in link order; a line with a wrecked station at either end ($8) is closed and left out. */
 export function railLinks(scenario: Scenario, state: GameState): readonly { readonly a: SubTerritoryId; readonly b: SubTerritoryId; readonly level: number }[] {
-  return scenario.subTerritoryBorders.flatMap(([a, b]) => {
-    const level = Math.min(railLevel(state, a), railLevel(state, b));
-    return level > 0 ? [{ a, b, level }] : [];
+  return scenario.links.flatMap((link) => {
+    const level = railRank(railOn(state, link));
+    return level > 0 && railLevel(state, link.a) > 0 && railLevel(state, link.b) > 0 ? [{ a: link.a, b: link.b, level }] : [];
   });
 }
 

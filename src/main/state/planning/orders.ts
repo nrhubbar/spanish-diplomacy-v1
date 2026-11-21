@@ -2,24 +2,15 @@ import { isNeighbor, requireTerritory } from "../../engine/lookup";
 import { type StandingOrder, standingOrder } from "../../engine/orders";
 import type { MoveOrder, Scenario, TerritoryId, UnitId, WithdrawOrder } from "../../engine/types";
 import { validateMoveOrder } from "../../engine/validation";
-import type { OrderKind, PlannedOrder } from "../session";
+import type { Draft, OrderKind, PlannedOrder } from "../session";
 import { selectedWithdrawRoutes } from "./contested";
 import { chooseReplenish, replenishWithout } from "./recruitment";
-import { type PlanningSession, availableUnitIds, feedback, selectedDestinations, selectedRoutes, selectedUnits, selecting, selectionOf, withDraft } from "./selection";
-
-/** "Give Selected Armies Order": opens the order choice, or closes it when it is open. */
-export function toggleOrderChoice(session: PlanningSession): PlanningSession {
-  if (session.draft.selectedUnitIds.length === 0) {
-    return feedback(session, "Select at least one unit first.");
-  }
-  const base = selectionOf(session.draft);
-  return withDraft(session, session.draft.stage?.step === "choose-order" ? base : { ...base, stage: { step: "choose-order" } });
-}
+import { type PlanningSession, feedback, selectedDestinations, selectedRoutes, selectedUnits, selecting, selectionOf, withDraft } from "./selection";
 
 /**
- * Picks the order type for the selected armies. Move starts choosing its destination. Entrench
- * and Rest cancel the moves of the selected armies they fit (O2, O5), and the territory returns
- * to the selection rule.
+ * Picks the order type for the selected armies (U4: from the selection bar). Move starts choosing
+ * its destination. Entrench and Rest cancel the moves of the selected armies they fit (O2, O5).
+ * Once an order is given, nothing is selected (note 11).
  */
 export function chooseOrder(scenario: Scenario, session: PlanningSession, orderKind: OrderKind): PlanningSession {
   if (session.draft.selectedUnitIds.length === 0) {
@@ -37,7 +28,7 @@ export function chooseOrder(scenario: Scenario, session: PlanningSession, orderK
       return chooseDefault(session, orderKind);
     case "entrench":
     case "rest":
-      return chooseStanding(session, orderKind, scenario);
+      return chooseStanding(session, orderKind);
   }
 }
 
@@ -45,10 +36,9 @@ export function chooseOrder(scenario: Scenario, session: PlanningSession, orderK
 function chooseDefault(session: PlanningSession, kind: "attack" | "hold"): PlanningSession {
   const chosen = new Set(session.draft.selectedUnitIds);
   const orders = session.draft.orders.filter((order) => !chosen.has(order.unitId));
-  const territoryId = session.draft.selectedTerritoryId;
-  const draft = territoryId === undefined ? { orders, selectedUnitIds: [] } : selecting(territoryId, availableUnitIds(session, territoryId, orders), orders);
+  const draft = afterOrder(session.draft.selectedTerritoryId, orders);
   const who = chosen.size === 1 ? "1 unit" : `${String(chosen.size)} units`;
-  return withDraft(session, { ...draft, feedback: `${who} will ${kind === "attack" ? "attack where they stand" : "hold"}.` });
+  return withDraft(session, { ...draft, ...toldToStay(session.draft, chosen), feedback: `${who} will ${kind === "attack" ? "attack where they stand" : "hold"}.` });
 }
 
 /** C1, P6: Withdraw. With one way out it is planned at once; with several, the player picks a highlighted territory. */
@@ -60,18 +50,13 @@ function chooseWithdraw(scenario: Scenario, session: PlanningSession): PlanningS
   return routes.length === 1 ? chooseDestination(scenario, choosing, only.to) : choosing;
 }
 
-function chooseStanding(session: PlanningSession, kind: StandingOrder, scenario?: Scenario): PlanningSession {
+function chooseStanding(session: PlanningSession, kind: StandingOrder): PlanningSession {
   const fitting = new Set(selectedUnits(session).filter((unit) => standingOrder(unit) === kind).map((unit) => unit.id));
   if (fitting.size === 0) {
     return feedback(session, kind === "entrench" ? "Demoralized units cannot entrench. They rest instead." : "Only demoralized units rest.");
   }
   const orders = session.draft.orders.filter((order) => !fitting.has(order.unitId));
-  const territoryId = session.draft.selectedTerritoryId;
-  const kept = replenishWithout(session.draft, fitting);
-  const draft = {
-    ...(territoryId === undefined ? { orders, selectedUnitIds: [] } : selecting(territoryId, availableUnitIds(session, territoryId, orders, kept.replenishments, scenario), orders)),
-    ...kept
-  };
+  const draft = { ...afterOrder(session.draft.selectedTerritoryId, orders), ...replenishWithout(session.draft, fitting), ...toldToStay(session.draft, fitting) };
   const who = fitting.size === 1 ? "1 unit" : `${String(fitting.size)} units`;
   return withDraft(session, { ...draft, feedback: `${who} will ${kind === "entrench" ? "entrench" : "rest"}.` });
 }
@@ -90,8 +75,8 @@ export function cancelOrder(session: PlanningSession): PlanningSession {
 
 /**
  * Choosing a legal destination plans the move immediately; there is no separate confirm step.
- * It replaces any move a selected army already had. The origin stays selected with its armies
- * that have no move order, following the selection rule.
+ * It replaces any move a selected army already had. The origin stays open with nothing selected
+ * (note 11).
  */
 export function chooseDestination(scenario: Scenario, session: PlanningSession, territoryId: TerritoryId): PlanningSession {
   const origin = session.draft.selectedTerritoryId;
@@ -124,15 +109,35 @@ export function chooseDestination(scenario: Scenario, session: PlanningSession, 
   }));
   const replanned = new Set(session.draft.selectedUnitIds);
   const orders = [...session.draft.orders.filter((order) => !replanned.has(order.unitId)), ...planned];
-  return withDraft(session, { ...selecting(origin, availableUnitIds(session, origin, orders, undefined, scenario), orders), ...replenishWithout(session.draft, replanned) });
+  // A move replaces a stay order given earlier (U2).
+  return withDraft(session, { ...afterOrder(origin, orders), ...replenishWithout(session.draft, replanned), ...stayWithout(session.draft, [...replanned]) });
 }
 
-/** Clears an army's move or Replenish order, which returns it to its standing order (O5). */
+/** Note 11: after an order the territory stays open and nothing is selected. */
+export function afterOrder(territoryId: TerritoryId | undefined, orders: readonly PlannedOrder[]): Draft {
+  return territoryId === undefined ? { orders, selectedUnitIds: [] } : selecting(territoryId, [], orders);
+}
+
+/** U2: the draft's armies told to stay, with these added. */
+function toldToStay(draft: Draft, unitIds: ReadonlySet<UnitId>): Pick<Draft, "orderedToStay"> {
+  return { orderedToStay: [...(draft.orderedToStay ?? []).filter((id) => !unitIds.has(id)), ...unitIds] };
+}
+
+/** U2: the draft's armies told to stay, less these (their order was cleared). */
+export function stayWithout(draft: Draft, unitIds: readonly UnitId[]): Pick<Draft, "orderedToStay"> {
+  return draft.orderedToStay === undefined ? {} : { orderedToStay: draft.orderedToStay.filter((id) => !unitIds.includes(id)) };
+}
+
+/** Clears an army's move, Replenish or stay order, which returns it to its standing order (O5). */
 export function removeOrder(session: PlanningSession, unitId: UnitId): PlanningSession {
+  // The feedback was about the order being cleared, so it goes too.
+  const draft: Draft = { ...session.draft };
+  delete (draft as { feedback?: string }).feedback;
   return withDraft(session, {
-    ...session.draft,
+    ...draft,
     orders: session.draft.orders.filter((order) => order.unitId !== unitId),
-    ...replenishWithout(session.draft, [unitId])
+    ...replenishWithout(session.draft, [unitId]),
+    ...stayWithout(session.draft, [unitId])
   });
 }
 

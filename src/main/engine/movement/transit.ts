@@ -66,7 +66,7 @@ export const checkArmies: Phase = (draft) => {
     if (first === undefined) continue;
     const unitIds = army.orders.map((order) => order.unitId);
     const transport = transportOf(scenario, start, unitIds);
-    const check = describeRoute(scenario, start, first.factionId, first.from, legsOf(scenario, first), transport.allMobile);
+    const check = describeRoute(scenario, start, first.factionId, first.from, legsOf(scenario, first), transport.allMobile, undefined, unitIds);
     const reason = ((): HeldBackReason | undefined => {
       if (!check.ok) return "allowance";
       const { route } = check;

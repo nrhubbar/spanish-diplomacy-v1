@@ -46,7 +46,7 @@ export function validateWithdrawOrder(scenario: Scenario, state: GameState, orde
   if (!isNeighbor(scenario, order.from, order.to) || !holdsWhole(scenario, state, order.to, order.factionId)) {
     return { ok: false, reason: contestedReasons.withdrawTarget };
   }
-  if (pathThrough(scenario, state, order.factionId, order.from, order.to).length === 0) {
+  if (pathThrough(scenario, state, order.factionId, order.from, order.to, [order.unitId]).length === 0) {
     return { ok: false, reason: isSeaRouteClosed(scenario, state, order.from, order.to) ? contestedReasons.withdrawSeaClosed : contestedReasons.withdrawNoPath };
   }
   return { ok: true };
@@ -64,9 +64,9 @@ export function partitionOrderVerdict({ order, scenario, state }: OrderHookConte
   return undefined;
 }
 
-/** The partition module's `retreatAllowed` hook (P6), on the start-of-turn holders. */
-export function partitionRetreatAllowed({ factionId, from, scenario, state, to }: RetreatContext): boolean {
-  return !isPartitioned(scenario) || hasPath(scenario, state, factionId, from, to);
+/** The partition module's `retreatAllowed` hook (P6, R1: out of the army's pocket), on the start-of-turn holders. */
+export function partitionRetreatAllowed({ factionId, from, scenario, state, to, unitId }: RetreatContext): boolean {
+  return !isPartitioned(scenario) || hasPath(scenario, state, factionId, from, to, unitId === undefined ? [] : [unitId]);
 }
 
 /** The partition module's `canDigIn` hook: no works grow in contested ground (C1). */

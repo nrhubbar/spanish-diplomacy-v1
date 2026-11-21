@@ -6,7 +6,9 @@ import { generateComputerSubmission } from "../main/ai/computerPlayer";
 import { seededRandom } from "../main/engine/random";
 import { type GameState, isMoveOrder, type Scenario, type TerritoryControl } from "../main/engine/types";
 import { victoryProgress } from "../main/engine/victory";
-import { faction, spain, spainD20, territory, unit, withUnits } from "./support";
+import { armyValue } from "../main/engine/combat";
+import type { Placement } from "./aiBoards";
+import { armyIn, faction, spain, spainD20, territory, unit, withUnits } from "./support";
 
 // D23 and D24: the computer player's defence of the ground that decides the game, and of its seat.
 
@@ -122,15 +124,30 @@ describe("withdrawals from the seat and the last objective (D24)", () => {
     expect(planWithdrawals(context(scenario, elsewhere, "north")).map((order) => order.unitId)).toEqual([unit("north-argel-27")]);
   });
 
-  it("gives up its seat only when the stand is hopeless", () => {
+  it("on a hopeless seat, withdraws all but a rearguard, and a lone defender stays (R2, S3)", () => {
     const scenario = spain();
-    const state = withUnits(scenario, [
-      ["south-granada-6", "south", "andalucia"],
+    const republicans: Placement = [
       ["rep-vitoria-8", "republic", "andalucia"], ["rep-sevilla-34", "republic", "andalucia"], ["rep-castilla-3", "republic", "andalucia"],
       ["rep-otumba-9", "republic", "andalucia"], ["rep-guadalajara-10", "republic", "andalucia"],
       ["rep-catalan-columns", "republic", "andalucia"], ["rep-durruti-column", "republic", "andalucia"]
-    ]);
-    expect(planWithdrawals(context(scenario, state, "south")).map((order) => order.unitId)).toEqual([unit("south-granada-6")]);
+    ];
+    // Leaving would leave the Republic alone there, which takes Andalucia whole (R2).
+    const lone = withUnits(scenario, [["south-granada-6", "south", "andalucia"], ...republicans]);
+    expect(planWithdrawals(context(scenario, lone, "south"))).toEqual([]);
+    // With two, the stronger stays as the rearguard and the other leaves.
+    const more: Placement = [
+      ["rep-wad-ras-1", "republic", "andalucia"], ["rep-covadonga-4", "republic", "andalucia"], ["rep-basque-column", "republic", "andalucia"],
+      ["rep-santander-column", "republic", "andalucia"], ["rep-barcelona-security", "republic", "andalucia"]
+    ];
+    const full = withUnits(scenario, [["south-granada-6", "south", "andalucia"], ["south-cadiz-33", "south", "andalucia"], ...republicans, ...more]);
+    // A worn second regiment: the stand is hopeless with it too.
+    const two: GameState = { ...full, units: { ...full.units, [unit("south-cadiz-33")]: { ...armyIn(full, "south-cadiz-33"), strength: 20 } } };
+    const leaving = planWithdrawals(context(scenario, two, "south")).map((order) => order.unitId);
+    expect(leaving).toHaveLength(1);
+    const stays = [unit("south-granada-6"), unit("south-cadiz-33")].find((id) => !leaving.includes(id));
+    const value = (id: string) => armyValue(scenario, armyIn(two, id), "defence");
+    expect(stays).toBe(unit("south-granada-6"));
+    expect(value("south-granada-6")).toBeGreaterThan(value("south-cadiz-33"));
   });
 
   it("never gives up two objectives at once: the second becomes the last stand", () => {

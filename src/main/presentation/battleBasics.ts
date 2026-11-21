@@ -2,6 +2,7 @@ import { battleOdds } from "../engine/combat";
 import { gradedOdds } from "../engine/d20/odds";
 import { usesD20 } from "../engine/d20/rules";
 import type { CombatModifier, Scenario } from "../engine/types";
+import { worksRoll } from "../engine/works";
 
 export interface ExampleCase {
   readonly armies: number;
@@ -13,7 +14,10 @@ export interface ExampleCase {
 export interface BattleExample {
   readonly cases: readonly ExampleCase[];
   readonly defence: number;
+  /** R8: the defender's works in pips after one turn of entrenching. */
   readonly dugIn: number;
+  /** What those works add for the defender on the die. */
+  readonly dugInRoll: number;
   readonly typeName: string;
 }
 
@@ -25,9 +29,10 @@ export interface BattleExample {
 export function battleExample(scenario: Scenario): BattleExample | undefined {
   const type = scenario.unitTypes[0];
   if (type === undefined) return undefined;
-  const { max, perTurn } = digRates(scenario);
+  const { max, perTurn } = scenario.combat.diggingIn;
   const dugIn = Math.min(perTurn, max);
-  const works: readonly CombatModifier[] = dugIn > 0 ? [{ kind: "dug-in", level: dugIn, roll: -dugIn }] : [];
+  const dugInRoll = worksRoll(scenario, dugIn);
+  const works: readonly CombatModifier[] = dugIn > 0 ? [{ kind: "dug-in", level: dugIn, roll: -dugInRoll }] : [];
   const cases = [2, 3].map((armies): ExampleCase => {
     // D1: on the d20, "take" means a grade that takes the whole territory.
     const odds = scenario.d20 !== undefined && usesD20(scenario)
@@ -35,12 +40,10 @@ export function battleExample(scenario: Scenario): BattleExample | undefined {
       : battleOdds(scenario.combat, armies * type.attack, type.defence, works);
     return { armies, attack: odds.attack, oddsLabel: odds.oddsLabel, takeChance: odds.takeChance };
   });
-  return { cases, defence: type.defence, dugIn, typeName: type.name.toLowerCase() };
+  return { cases, defence: type.defence, dugIn, dugInRoll, typeName: type.name.toLowerCase() };
 }
 
-/** M22, D3: works gained per turn of entrenching, and their cap, on the scenario's dice. */
-export function digRates(scenario: Scenario): { readonly max: number; readonly perTurn: number } {
-  return scenario.d20 !== undefined && usesD20(scenario)
-    ? { max: scenario.d20.modifiers.worksMax, perTurn: scenario.d20.modifiers.worksPerTurn }
-    : scenario.combat.diggingIn;
+/** M22, R8: works levels (pips) gained per turn of entrenching, their cap, and what one level is worth on the die. */
+export function digRates(scenario: Scenario): { readonly max: number; readonly perLevel: number; readonly perTurn: number } {
+  return { ...scenario.combat.diggingIn, perLevel: worksRoll(scenario, 1) };
 }

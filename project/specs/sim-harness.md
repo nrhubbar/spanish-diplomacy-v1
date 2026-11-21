@@ -18,7 +18,6 @@ npm run sim -- --games 1000 --variant src/sim/variants/digging-in-cap-2.json --r
 | `--seeds LIST` | | Explicit seeds, for example `1-50,77`. Overrides the two options above. |
 | `--turns N` | 66 | The turn limit. A game still running after it is a freeze. |
 | `--variant FILE` | | A variant patch file, played on the same seeds as the baseline. Repeatable. |
-| `--blunders MODE` | see below | `with`, `without` or `both`. |
 | `--scenario ID` | the only shipped scenario | Which scenario package to play. Required when more than one is shipped. |
 | `--workers N` | cores less one | Worker threads. The results do not depend on it. |
 | `--run NAME` | a UTC time stamp | The run folder's name. |
@@ -37,7 +36,7 @@ Standard sizes (H2): `npm test` runs a 10-game smoke run (`src/test/sim/smoke.te
 
 ## Cells
 
-A run plays one cell per variant and blunder setting: the baseline first, then each variant in the order given. Each cell plays every seed. A cell's id is `<variant>/<with|without>-blunders`, for example `baseline/without-blunders`.
+A run plays one cell per variant: the baseline first, then each variant in the order given. Each cell plays every seed. A cell's id is the variant's name, for example `baseline`. (Rev 2 removed the computer player's blunders, and with them the `--blunders` option.)
 
 ## Outputs
 
@@ -51,7 +50,7 @@ The console prints a few ASCII lines per cell and per comparison. There is no HT
 
 | Field | Meaning |
 |---|---|
-| `variant`, `blunders`, `seed` | Which cell and seed. |
+| `variant`, `seed` | Which cell and seed. |
 | `end` | `decided` (a faction won) or `freeze` (no winner by the turn limit). |
 | `turns` | Turns played: the winning turn, or the turn limit. |
 | `winners`, `victory` | Winning faction ids (more than one for a shared victory) and the victory condition. |
@@ -65,7 +64,7 @@ The console prints a few ASCII lines per cell and per comparison. There is no HT
 
 ### `summary.json`
 
-Top level: `format` (`spanish-diplomacy-sim/1`), `scenarioId`, `seeds` (as ranges), `turnLimit`, `games`, `factions`, `blunders` (the mode), `blunderControl`, `cells[]` and `comparisons[]`. Each cell has `id`, `variant`, `variantDescription` (if any), `blunders` and `metrics`.
+Top level: `format` (`spanish-diplomacy-sim/1`), `scenarioId`, `seeds` (as ranges), `turnLimit`, `games`, `factions`, `cells[]` and `comparisons[]`. Each cell has `id`, `variant`, `variantDescription` (if any) and `metrics`.
 
 Every interval is `{ value, low, high }`, rounded to 4 decimal places. It is `null` when there is nothing to measure, for example a share of decided games when no game was decided.
 
@@ -94,9 +93,7 @@ Every interval is `{ value, low, high }`, rounded to 4 decimal places. It is `nu
 
 ## Comparisons
 
-Two cells are compared seed by seed, over the seeds both played:
-- each variant against the baseline, with the same blunder setting;
-- each variant with blunders against the same variant without.
+Two cells are compared seed by seed, over the seeds both played: each variant against the baseline.
 
 For each seed the harness takes the difference, subject minus baseline, in:
 - each faction's win credit;
@@ -131,16 +128,6 @@ A variant is a JSON file. It is either an object, or a bare patch array, which t
 - **Example:** `src/sim/variants/digging-in-cap-2.json`.
 
 **AI profiles.** Each faction's computer-player profile (E7) is expected at `/ai/profiles/<factionId>` in `scenario.json`. Once `m3r1-contract` adds it and the computer player reads it, a variant can change a profile with an ordinary patch, for example `{ "op": "replace", "path": "/ai/profiles/south/caution", "value": 0.3 }`. Until then the weights are code constants, and such a patch fails validation.
-
-## Blunders (H6)
-
-The computer player's blunder chance is a scenario value at `/ai/blunderChance`, owned by `m3r1-contract`. The harness's seam is `blunderChancePointer` in `src/sim/engine.ts`, and it is set: `blunderControl` is `scenario`.
-
-- A cell without blunders sets the chance to 0 with a JSON Patch `add` after the variant's own patch. `add` works whether or not the scenario states the chance; it needs `/ai` to exist. The loader requires the chance, so a variant that removes it plays only without blunders.
-- `--blunders` defaults to `both`, so every report carries both settings.
-- The smoke run plays `without` only, to stay at 10 games.
-
-The seam is passed explicitly (`blunderControl(pointer)`, `blunderPatch(blunders, pointer)`), so the `pending` case stays tested: with no pointer, `blunderControl` is `pending`, no patch is added, `--blunders` would default to `without`, and the console says that both settings play alike.
 
 ## Re-check at the contract merge
 

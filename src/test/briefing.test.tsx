@@ -130,11 +130,11 @@ const region = (territoryId: string): Element => {
   return element;
 };
 
-/** The pane's primary action (ending the player's turn), found by place rather than by label. */
-function primaryAction(): HTMLElement {
-  const button = document.querySelector(".map-pane-footer .primary-action");
-  if (!(button instanceof HTMLElement)) throw new Error("No primary action in the pane");
-  return button;
+/** End Turn in the top bar (U1), answering its confirm (U2) when armies have no order. */
+async function endTheTurn(user: ReturnType<typeof userEvent.setup>): Promise<void> {
+  await user.click(screen.getByRole("button", { name: "End Turn" }));
+  const confirm = screen.queryByRole("alertdialog");
+  if (confirm !== null) await user.click(within(confirm).getByRole("button", { name: "End anyway" }));
 }
 
 const briefingOf = (factionId: string) => requireFaction(spain(), faction(factionId)).briefing;
@@ -154,16 +154,16 @@ describe("Briefing view", () => {
     expect(within(briefing).getByRole("meter", { name: /^Cities: \d+ held, 19 of 25 needed$/ })).toBeVisible();
     expect(within(briefing).getByRole("heading", { name: "How battles work" })).toBeVisible();
     expect(within(briefing).getByText(/an attack and a defence value/)).toBeVisible();
-    expect(within(briefing).getByText(/up to 3\./)).toBeVisible();
+    expect(within(briefing).getByText(/up to three, and each level shifts the die 1 in the defenders' favour\./)).toBeVisible();
     expect(within(briefing).getByText(/Every unit has one order each turn: Move, Entrench, or Rest\./)).toBeVisible();
     expect(within(briefing).getByText(/Armies that move do not dig in/)).toBeVisible();
     expect(within(briefing).getByText(/cannot attack\. It cannot entrench either: it rests/)).toBeVisible();
-    expect(within(briefing).getByText(/Example: two infantry regiment units attack with 8 against one with defence 6, dug in \+1\. That is 1:1 odds: 17% to take the territory\. A third unit makes it 12 against 6, 2:1 odds: 33%\./)).toBeVisible();
+    expect(within(briefing).getByText(/Example: two infantry regiment units attack with 8 against one with defence 6, dug in level 1 \(\+1\)\. That is 1:1 odds: 17% to take the territory\. A third unit makes it 12 against 6, 2:1 odds: 33%\./)).toBeVisible();
     expect(within(briefing).getByRole("heading", { name: "Map controls" })).toBeVisible();
     // Reading content with no controls: the body is a tab stop so the keyboard can scroll it.
     expect(briefing.querySelector(".map-pane-body")).toHaveAttribute("tabindex", "0");
-    // The turn can still be ended from the Briefing.
-    expect(within(briefing).getByRole("button", { name: primaryAction().textContent })).toBeVisible();
+    // The turn can still be ended while the Briefing shows: End Turn is in the top bar (U1).
+    expect(within(screen.getByRole("banner")).getByRole("button", { name: "End Turn" })).toBeVisible();
   });
 
   it("toggles with the i control and gives way to the Orders pane on a map selection", async () => {
@@ -180,7 +180,7 @@ describe("Briefing view", () => {
     await user.click(toggle);
     expect(toggle).toHaveAttribute("aria-pressed", "false");
     expect(screen.queryByRole("complementary", { name: "Briefing" })).not.toBeInTheDocument();
-    expect(screen.getByRole("complementary", { name: "Orders" })).toBeVisible();
+    expect(screen.getByRole("complementary", { name: "This turn" })).toBeVisible();
     expect(document.querySelector(".map-pane-body")).not.toHaveAttribute("tabindex");
 
     await user.click(toggle);
@@ -189,14 +189,14 @@ describe("Briefing view", () => {
 
     await user.click(region("madrid"));
     expect(toggle).toHaveAttribute("aria-pressed", "false");
-    expect(within(screen.getByRole("complementary", { name: "Orders" })).getByRole("heading", { name: "Madrid" })).toBeVisible();
+    expect(within(screen.getByRole("complementary", { name: "Territory info" })).getByRole("heading", { name: "Madrid" })).toBeVisible();
 
-    // Collapsing the pane closes the Briefing; reopening shows the Orders.
+    // Collapsing the pane closes the Briefing; reopening shows the view under it.
     await user.click(toggle);
     await user.click(screen.getByRole("button", { name: "Hide briefing" }));
     expect(toggle).toHaveAttribute("aria-pressed", "false");
-    await user.click(screen.getByRole("button", { name: "Orders" }));
-    expect(screen.getByRole("complementary", { name: "Orders" })).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Territory info" }));
+    expect(screen.getByRole("complementary", { name: "Territory info" })).toBeVisible();
   });
 
   it("opens once for each local player on their own turn, and not again after closing", async () => {
@@ -208,15 +208,15 @@ describe("Briefing view", () => {
     const first = await screen.findByRole("complementary", { name: "Briefing" });
     expect(within(first).getByText(briefingOf("republic").objective)).toBeVisible();
     await user.click(screen.getByRole("button", { name: "Briefing" }));
-    expect(screen.getByRole("complementary", { name: "Orders" })).toBeVisible();
+    expect(screen.getByRole("complementary", { name: "This turn" })).toBeVisible();
 
     // A remount of the same player's map does not reopen it.
     unmount();
     renderApp(store, "/orders");
-    expect(await screen.findByRole("complementary", { name: "Orders" })).toBeVisible();
+    expect(await screen.findByRole("complementary", { name: "This turn" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Briefing" })).toHaveAttribute("aria-pressed", "false");
 
-    await user.click(primaryAction());
+    await endTheTurn(user);
     await user.click(screen.getByRole("button", { name: "Continue to Northern Insurgent Command" }));
     const second = await screen.findByRole("complementary", { name: "Briefing" });
     expect(within(second).getByText(briefingOf("north").objective)).toBeVisible();
@@ -227,14 +227,14 @@ describe("Briefing view", () => {
     const state = { ...initialGameState(spain()), turnNumber: 2 };
     const game = { assignments: { [faction("republic")]: "local-human" as const }, history: [], locked: {}, scenarioId: spainId, seed: 1, state };
     const { user } = renderApp(testStore({ game: { session: { draft: emptyDraft, factionId: faction("republic"), game, phase: "planning" } } }), "/orders");
-    expect(await screen.findByRole("complementary", { name: "Orders" })).toBeVisible();
+    expect(await screen.findByRole("complementary", { name: "This turn" })).toBeVisible();
     await user.click(screen.getByRole("button", { name: "Briefing" }));
     const briefing = screen.getByRole("complementary", { name: "Briefing" });
     expect(within(briefing).getByRole("heading", { name: "Objective" })).toBeVisible();
     expect(within(briefing).queryByRole("heading", { name: "Intelligence report" })).not.toBeInTheDocument();
   });
 
-  it("opens the phone sheet for the Briefing and collapses back to the Orders bar", async () => {
+  it("opens the phone sheet for the Briefing and collapses back to the This turn bar, with End Turn in it", async () => {
     const width = vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(400);
     const { user } = renderApp();
     await user.click(screen.getByRole("button", { name: "Create Game" }));
@@ -242,8 +242,11 @@ describe("Briefing view", () => {
     const briefing = await screen.findByRole("complementary", { name: "Briefing" });
     expect(document.querySelector(".campaign-map")).toHaveAttribute("data-pane-layout", "sheet");
     expect(within(briefing).getByRole("button", { name: "Hide briefing" })).toHaveAttribute("aria-expanded", "true");
+    // U1: on a phone End Turn rides in the pane's bar, the Briefing's included.
+    expect(within(briefing.querySelector<HTMLElement>(".map-pane-bar-action")!).getByRole("button", { name: "End Turn" })).toBeVisible();
     await user.click(within(briefing).getByRole("button", { name: "Hide briefing" }));
-    expect(screen.getByRole("button", { name: "Orders" })).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getByRole("button", { name: "This turn" })).toHaveAttribute("aria-expanded", "false");
+    expect(within(document.querySelector<HTMLElement>(".map-pane-bar-action")!).getByRole("button", { name: "End Turn" })).toBeVisible();
     await user.click(screen.getByRole("button", { name: "Briefing" }));
     expect(screen.getByRole("button", { name: "Hide briefing" })).toHaveAttribute("aria-expanded", "true");
     width.mockRestore();
@@ -272,6 +275,7 @@ describe("battle example (B2)", () => {
       ],
       defence: 6,
       dugIn: 1,
+      dugInRoll: 1,
       typeName: "infantry regiment"
     });
   });

@@ -79,6 +79,7 @@ function privacyOf(scenario: Scenario, state: GameState, outcome: TurnOutcome): 
       return outcome.reconFactionIds === undefined ? undefined : { factionIds: [outcome.factionId, ...outcome.reconFactionIds], scope: "owner" };
     // Public: on the board, or every side's to see (CT-46). Listed one by one, so a new kind
     // cannot be added without deciding who sees it.
+    case "air-battle":
     case "air-support":
     case "aircraft-lost":
     case "aircraft-rebased":
@@ -97,6 +98,7 @@ function privacyOf(scenario: Scenario, state: GameState, outcome: TurnOutcome): 
     case "move-transit":
     case "no-move":
     case "path-surrender":
+    case "pocket-cut":
     case "raid":
     case "rail-damaged":
     case "rallied":
@@ -105,6 +107,7 @@ function privacyOf(scenario: Scenario, state: GameState, outcome: TurnOutcome): 
     case "replacement-arrived":
     case "replacement-due":
     case "successful-move":
+    case "territory-flipped":
     case "time-ran-out":
     case "training-completed":
     case "weather-rolled":

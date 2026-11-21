@@ -181,6 +181,7 @@ export const entryOverrides: readonly EntryOverride[] = [
   { entry: { andalucia: "malaga", melilla: "melilla" }, reason: "The Malaga-Melilla ferry line (the closest coasts would give Almeria)." },
   { entry: { catalunya: "barcelona", "islas-baleares": "mallorca" }, reason: "The Barcelona-Palma line." },
   { entry: { valencia: "valencia", "islas-baleares": "mallorca" }, reason: "The Valencia-Palma line (the closest coasts would give Alicante-Ibiza)." },
+  { kind: "sea", entry: { andalucia: "malaga", murcia: "murcia" }, reason: "R3: Malaga's sea lane to Cartagena, the Republican fleet's other base, once the coast road is cut." },
   // Land: the main roads and railways where the longest shared border misleads.
   { entry: { "castilla-la-mancha": "toledo", extremadura: "caceres" }, reason: "The Tajo valley road from Navalmoral to Talavera, the Army of Africa's march on Madrid." },
   { entry: { andalucia: "sevilla", extremadura: "badajoz" }, reason: "The Sevilla-Merida road and railway (the Via de la Plata), the column route of August 1936." },

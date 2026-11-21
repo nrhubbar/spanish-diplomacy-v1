@@ -24,7 +24,7 @@ function without(state: GameState, ...ids: readonly string[]): GameState {
 describe("air and generals on the d20", () => {
   const scenario = spainD20();
   const state = initialGameState(scenario);
-  const attack = ["north-san-marcial-22", "north-san-quintin-25", "north-la-victoria-28"].map((id) => move("north", id, "castilla-y-leon", "madrid"));
+  const attack = ["north-san-marcial-22", "north-san-quintin-25"].map((id) => move("north", id, "castilla-y-leon", "madrid"));
 
   it("keeps aircraft off both battle sides, and lets the d20 give the defending general his +1 once", () => {
     const battle = battleOf(resolveTurn(scenario, state, [{ factionId: faction("north"), orders: attack }], seed).outcomes);
@@ -43,7 +43,7 @@ describe("air and generals on the d20", () => {
     expect(battleOf(result.outcomes)?.modifiers.some((modifier) => modifier.kind === "air-support")).toBe(false);
     const own: AirMissionOrder = { ...support, factionId: faction("republic"), unitId: unit("rep-breguet-bombers") };
     const defended = resolveTurn(scenario, state, [{ factionId: faction("north"), orders: attack }, { factionId: faction("republic"), orders: [own] }], seed);
-    expect(battleOf(defended.outcomes)?.modifiers).toContainEqual({ factionId: "republic", kind: "air-support", role: "defence", roll: -2, unitIds: ["rep-breguet-bombers"] });
+    expect(battleOf(defended.outcomes)?.modifiers).toContainEqual({ factionId: "republic", kind: "air-support", role: "defence", roll: -3, unitIds: ["rep-breguet-bombers"] });
   });
 
   it("rolls for a general left alone in ground the enemy took", () => {
@@ -71,7 +71,7 @@ describe("a replacement general in the d20 battles (D7)", () => {
       raised: { [rojo.id]: rojo },
       units: { ...thin.units, [rojo.id]: { factionId: faction("republic"), fatigue: 0, id: rojo.id, morale: { demoralized: false, quietTurns: 0 }, strength: 100, territoryId: territory("madrid") } }
     };
-    const attack = ["north-san-marcial-22", "north-san-quintin-25", "north-la-victoria-28", "north-sierra-column"].map((id) => move("north", id, "castilla-y-leon", "madrid"));
+    const attack = ["north-san-marcial-22", "north-san-quintin-25"].map((id) => move("north", id, "castilla-y-leon", "madrid"));
     let fought = 0;
     for (let trial = 1; trial <= 12; trial += 1) {
       const result = resolveTurn(scenario, state, [{ factionId: faction("north"), orders: attack }], trial);

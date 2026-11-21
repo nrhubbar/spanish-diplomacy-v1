@@ -34,7 +34,9 @@ export type CombatModifier =
   | { readonly kind: "weather"; readonly roll: number; readonly weatherId: WeatherId }
   /** M5, D7: an amphibious assault. */
   | { readonly kind: "amphibious"; readonly roll: number }
-  /** D7: bombers supporting one side. */
+  /** R6: every attacking ground unit crossed a mountain pass, named `name`, into the territory. */
+  | { readonly kind: "pass"; readonly name: string; readonly roll: number }
+  /** R10, R11: aircraft on Ground Support for the side that won the air (or flew unopposed). */
   | { readonly factionId: FactionId; readonly kind: "air-support"; readonly role: CombatRole; readonly roll: number; readonly unitIds: readonly UnitId[] }
   /** $4: a defending building, such as Fortifications, in a sub-territory the defender holds. */
   | { readonly buildingId: BuildingId; readonly kind: "building"; readonly roll: number; readonly subTerritoryId: SubTerritoryId };

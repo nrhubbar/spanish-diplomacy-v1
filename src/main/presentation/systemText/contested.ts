@@ -12,5 +12,12 @@ export const contestedLines: ReportLines<ContestedTurnOutcome> = {
   "path-surrender": (outcome, { scenario }) =>
     `${factionLabel(scenario, outcome.factionId)}: ${unitLabel(scenario, outcome.unitId)} was cut off in ${territoryLabel(scenario, outcome.from)} and surrendered; no path led out through its own sub-territories.`,
   "rail-damaged": (outcome, { scenario }) =>
-    `Fighting damaged the rail at ${subTerritoryLabel(scenario, outcome.subTerritoryId)}: level ${String(outcome.before)} to ${String(outcome.after)}.`
+    `Fighting damaged the rail at ${subTerritoryLabel(scenario, outcome.subTerritoryId)}: level ${String(outcome.before)} to ${String(outcome.after)}.`,
+  "pocket-cut": (outcome, { scenario }) => {
+    const armies = outcome.unitIds.length === 1 ? "1 army is" : `${String(outcome.unitIds.length)} armies are`;
+    const pocket = outcome.subTerritoryIds.map((id) => subTerritoryLabel(scenario, id)).join(", ");
+    return `${factionLabel(scenario, outcome.factionId)}: ${armies} cut off in ${territoryLabel(scenario, outcome.territoryId)}, in a pocket of ${pocket}.`;
+  },
+  "territory-flipped": (outcome, { scenario }) =>
+    `${factionLabel(scenario, outcome.factionId)} now holds all of ${territoryLabel(scenario, outcome.territoryId)}: no other side has ground armies there.`
 };

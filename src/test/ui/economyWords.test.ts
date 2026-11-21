@@ -74,7 +74,8 @@ describe("projects in words ($3-$5)", () => {
     expect(projectName(scenario, undefined, development("farms"))).toBe("Farms");
     expect(projectName(scenario, madrid, development("farms"))).toBe("Farms 1 \u2192 2");
     expect(projectName(scenario, madrid, development("mines"))).toBe("Mines 0 \u2192 1");
-    expect(projectName(scenario, madrid, rail)).toBe("Rail 3 \u2192 4");
+    // D3: Madrid starts at rail 2, read from its main lines.
+    expect(projectName(scenario, madrid, rail)).toBe("Rail 2 \u2192 3");
     expect(projectName(scenario, madrid, development("farms"), 2)).toBe("Farms 2 \u2192 3");
     const queued: SubTerritoryState = { ...madrid, queue: [{ factionId: "republic" as FactionId, paid: {}, project: development("farms"), turnsLeft: 3 } as never] };
     expect(projectName(scenario, queued, development("farms"))).toBe("Farms 2 \u2192 3");
@@ -128,7 +129,7 @@ describe("projects in words ($3-$5)", () => {
     expect(levelsOf(scenario, madrid, building("factory"))).toEqual({ level: 1, max: 1 });
     expect(levelsOf(scenario, madrid, building("fortifications"))).toEqual({ level: 0, max: 1 });
     expect(levelsOf(scenario, madrid, development("orchards"))).toEqual({ level: 0, max: 0 });
-    expect(levelsOf(scenario, madrid, rail).level).toBe(3);
+    expect(levelsOf(scenario, madrid, rail).level).toBe(2);
     const noImprovements = { ...scenario };
     delete (noImprovements as { improvements?: unknown }).improvements;
     expect(levelsOf(noImprovements, madrid, port)).toEqual({ level: 0, max: 0 });

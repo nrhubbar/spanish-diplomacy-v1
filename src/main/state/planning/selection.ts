@@ -59,11 +59,17 @@ export function orderCounts(session: PlanningSession, scenario?: Scenario): Read
  * Selection rule: selecting a territory selects all of the player's armies there that have no
  * move order, so they would entrench or rest; the player then unselects the ones that should
  * stay, or adds a moving army to change its order. Any change to the selection closes an open
- * order choice, so an order never applies to a stale selection.
+ * destination choice, so an order never applies to a stale selection. Once an order is given,
+ * nothing is selected (U4, note 11).
  */
 export function withDraft(session: PlanningSession, draft: Draft): PlanningSession {
-  // The Recruit basket, Replenish orders (m3r1-recruit-replenish), air missions and sackings (m3r1-air-generals) outlive selection changes unless the new draft sets them.
-  return { ...session, draft: { ...keepBasket(session.draft), ...keepAirOrders(session.draft), ...draft } };
+  // The Recruit basket, Replenish orders (m3r1-recruit-replenish), air missions and sackings (m3r1-air-generals) and the armies told to stay (U2) outlive selection changes unless the new draft sets them.
+  return { ...session, draft: { ...keepBasket(session.draft), ...keepAirOrders(session.draft), ...keepOrderedToStay(session.draft), ...draft } };
+}
+
+/** U2: the armies told to stay, carried through selection changes. */
+function keepOrderedToStay(draft: Draft): Pick<Draft, "orderedToStay"> {
+  return draft.orderedToStay === undefined ? {} : { orderedToStay: draft.orderedToStay };
 }
 
 export function feedback(session: PlanningSession, message: string): PlanningSession {

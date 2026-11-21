@@ -90,8 +90,10 @@
       ]
     ],
     "belowOneToOne": {
-      "kind": "halving",
-      "rollPenalty": 1
+      "@type": "halving",
+      "@data": {
+        "rollPenalty": 1
+      }
     },
     "diggingIn": {
       "perTurn": 1,
@@ -109,7 +111,6 @@
     ]
   },
   "ai": {
-    "blunderChance": 0.01,
     "profiles": {
       "republic": {
         "computer": {
@@ -232,7 +233,7 @@
         }
       }
     },
-    "note": "Design note. The weights are the Revision 7 computer player's constants (computerWeights, offensiveWeights, stakeWeights and victoryAlarm), moved into data unchanged, one profile per faction so a harness variant can change one side (E7, H4). The blunder chance is 1 in 100 orders (H6, Q-MR-33). The Build budget (EB-15) is economy-builds' starting value: builds spend at most 60 percent of what Recruit orders leave, at most 3 orders a turn, one new item per sub-territory with an empty queue; a design note for the harness to tune (H7). Design note (D23, D24, m3r1-ai-fixes): victoryAlarm.critical raises, by 1 + 3, the stake of a territory whose change of hands alone would decide the game: own ground a rival in reach would win by taking, and ground the faction itself would win by taking. It sits above the x2.5 the alarm gives a leader's territory one step short, so holding the deciding ground outranks attacking the leader, and taking it is weighed as much as holding it. withdraw.hopelessTakeChance 0.5: the computer player gives up contested ground when the standing battle is at least even odds to take it whole this turn, by the engine's own odds. withdraw.lastStandTakeChance 0.75: its seat, last objective or a victory-critical territory is given up only when it would be lost whole at least three times in four. Starting values, not tuned."
+    "note": "Design note. The weights are the Revision 7 computer player's constants (computerWeights, offensiveWeights, stakeWeights and victoryAlarm), moved into data unchanged, one profile per faction so a harness variant can change one side (E7, H4). The Build budget (EB-15) is economy-builds' starting value: builds spend at most 60 percent of what Recruit orders leave, at most 3 orders a turn, one new item per sub-territory with an empty queue; a design note for the harness to tune (H7). Design note (D23, D24, m3r1-ai-fixes): victoryAlarm.critical raises, by 1 + 3, the stake of a territory whose change of hands alone would decide the game: own ground a rival in reach would win by taking, and ground the faction itself would win by taking. It sits above the x2.5 the alarm gives a leader's territory one step short, so holding the deciding ground outranks attacking the leader, and taking it is weighed as much as holding it. withdraw.hopelessTakeChance 0.5: the computer player gives up contested ground when the standing battle is at least even odds to take it whole this turn, by the engine's own odds. withdraw.lastStandTakeChance 0.75: its seat, last objective or a victory-critical territory is given up only when it would be lost whole at least three times in four. Starting values, not tuned."
   },
   "unitTypes": [
     {
@@ -241,6 +242,7 @@
       "attack": 4,
       "defence": 6,
       "kind": "ground",
+      "foot": true,
       "symbol": "infantry",
       "orders": [
         "move",
@@ -267,6 +269,7 @@
       "attack": 3,
       "defence": 4,
       "kind": "ground",
+      "foot": true,
       "symbol": "militia",
       "orders": [
         "move",
@@ -275,7 +278,7 @@
       ],
       "effects": [
         {
-          "kind": "trains-in-contested"
+          "@type": "trains-in-contested"
         }
       ],
       "recruit": {
@@ -295,6 +298,7 @@
       "attack": 6,
       "defence": 5,
       "kind": "ground",
+      "foot": true,
       "symbol": "infantry",
       "orders": [
         "move",
@@ -325,6 +329,7 @@
       "attack": 3,
       "defence": 5,
       "kind": "ground",
+      "foot": true,
       "symbol": "security",
       "orders": [
         "move",
@@ -359,14 +364,16 @@
       ],
       "effects": [
         {
-          "kind": "roll-bonus-per-points",
-          "role": "attack",
-          "per": 3,
-          "bonus": 1,
-          "max": 3
+          "@type": "roll-bonus-per-points",
+          "@data": {
+            "role": "attack",
+            "per": 3,
+            "bonus": 1,
+            "max": 3
+          }
         },
         {
-          "kind": "cannot-attack-alone"
+          "@type": "cannot-attack-alone"
         }
       ],
       "recruit": {
@@ -389,6 +396,7 @@
       "attack": 3,
       "defence": 3,
       "kind": "ground",
+      "foot": true,
       "symbol": "cavalry",
       "orders": [
         "move",
@@ -397,7 +405,7 @@
       ],
       "effects": [
         {
-          "kind": "mobile"
+          "@type": "mobile"
         }
       ],
       "recruit": {
@@ -427,15 +435,17 @@
       ],
       "effects": [
         {
-          "kind": "roll-bonus-per-points",
-          "role": "attack",
-          "per": 3,
-          "bonus": 1,
-          "max": 2,
-          "exceptWeather": [
-            "mud",
-            "snow"
-          ]
+          "@type": "roll-bonus-per-points",
+          "@data": {
+            "role": "attack",
+            "per": 3,
+            "bonus": 1,
+            "max": 2,
+            "exceptWeather": [
+              "mud",
+              "snow"
+            ]
+          }
         }
       ],
       "recruit": {
@@ -466,8 +476,10 @@
       ],
       "effects": [
         {
-          "kind": "transport",
-          "carries": 2
+          "@type": "transport",
+          "@data": {
+            "carries": 2
+          }
         }
       ],
       "recruit": {
@@ -498,8 +510,10 @@
       ],
       "effects": [
         {
-          "kind": "raid-defence",
-          "roll": -3
+          "@type": "raid-defence",
+          "@data": {
+            "roll": -3
+          }
         }
       ],
       "recruit": {
@@ -555,10 +569,25 @@
       "orders": [
         "air-mission"
       ],
+      "effects": [
+        {
+          "@type": "battle-support",
+          "@data": {
+            "roll": 3
+          }
+        },
+        {
+          "@type": "air-battle",
+          "@data": {
+            "roll": 2
+          }
+        }
+      ],
       "air": {
         "range": 3,
         "missions": [
-          "intercept"
+          "patrol",
+          "support"
         ]
       },
       "recruit": {
@@ -573,7 +602,7 @@
           "factory"
         ]
       },
-      "note": "U2, U3. Design note: a starting value for the harness to tune (Q-MR-26, H7)."
+      "note": "U2, U3. R10, R11: flies Patrol or Ground Support; +3 on Ground Support when its side wins the air, and +2 a fighter in the air battle (closeout, Air). Design note: a starting value for the harness to tune (Q-MR-26, H7)."
     },
     {
       "id": "bomber-squadron",
@@ -587,8 +616,16 @@
       ],
       "effects": [
         {
-          "kind": "battle-support",
-          "roll": 2
+          "@type": "battle-support",
+          "@data": {
+            "roll": 3
+          }
+        },
+        {
+          "@type": "air-battle",
+          "@data": {
+            "roll": 1
+          }
         }
       ],
       "air": {
@@ -610,7 +647,7 @@
           "factory"
         ]
       },
-      "note": "U2, U3, D7: +2 in battle support. Design note: a starting value for the harness to tune (Q-MR-26, H7)."
+      "note": "U2, U3, R11: +3 on Ground Support when its side wins the air, and +1 a bomber in the air battle (closeout, Air). Design note: a starting value for the harness to tune (Q-MR-26, H7)."
     },
     {
       "id": "general",
@@ -618,6 +655,7 @@
       "attack": 0,
       "defence": 0,
       "kind": "general",
+      "foot": true,
       "symbol": "headquarters",
       "orders": [
         "move",
@@ -626,11 +664,13 @@
       ],
       "effects": [
         {
-          "kind": "command-bonus",
-          "roll": 1
+          "@type": "command-bonus",
+          "@data": {
+            "roll": 1
+          }
         },
         {
-          "kind": "rally"
+          "@type": "rally"
         }
       ],
       "note": "U5, D4: +1 on the d20 and the rally for his army. Never recruited; generals come from the roster."
@@ -716,8 +756,10 @@
       "name": "Galicia",
       "countsForVictory": true,
       "initialControl": {
-        "kind": "controlled",
-        "factionId": "north"
+        "@type": "controlled",
+        "@data": {
+          "factionId": "north"
+        }
       },
       "capitalSubTerritoryId": "a-coruna",
       "weatherZone": "cantabrian"
@@ -727,11 +769,13 @@
       "name": "Asturias",
       "countsForVictory": true,
       "initialControl": {
-        "kind": "contested",
-        "factionIds": [
-          "republic",
-          "north"
-        ]
+        "@type": "contested",
+        "@data": {
+          "factionIds": [
+            "republic",
+            "north"
+          ]
+        }
       },
       "capitalSubTerritoryId": "oviedo",
       "weatherZone": "cantabrian"
@@ -741,8 +785,10 @@
       "name": "Cantabria",
       "countsForVictory": true,
       "initialControl": {
-        "kind": "controlled",
-        "factionId": "republic"
+        "@type": "controlled",
+        "@data": {
+          "factionId": "republic"
+        }
       },
       "capitalSubTerritoryId": "cantabria",
       "weatherZone": "cantabrian"
@@ -752,11 +798,13 @@
       "name": "Pa\u00eds Vasco",
       "countsForVictory": true,
       "initialControl": {
-        "kind": "contested",
-        "factionIds": [
-          "republic",
-          "north"
-        ]
+        "@type": "contested",
+        "@data": {
+          "factionIds": [
+            "republic",
+            "north"
+          ]
+        }
       },
       "capitalSubTerritoryId": "bizkaia",
       "weatherZone": "cantabrian"
@@ -766,8 +814,10 @@
       "name": "Navarra",
       "countsForVictory": true,
       "initialControl": {
-        "kind": "controlled",
-        "factionId": "north"
+        "@type": "controlled",
+        "@data": {
+          "factionId": "north"
+        }
       },
       "capitalSubTerritoryId": "navarra",
       "weatherZone": "cantabrian"
@@ -777,8 +827,10 @@
       "name": "La Rioja",
       "countsForVictory": true,
       "initialControl": {
-        "kind": "controlled",
-        "factionId": "north"
+        "@type": "controlled",
+        "@data": {
+          "factionId": "north"
+        }
       },
       "capitalSubTerritoryId": "la-rioja",
       "weatherZone": "meseta"
@@ -788,11 +840,13 @@
       "name": "Arag\u00f3n",
       "countsForVictory": true,
       "initialControl": {
-        "kind": "contested",
-        "factionIds": [
-          "north",
-          "republic"
-        ]
+        "@type": "contested",
+        "@data": {
+          "factionIds": [
+            "north",
+            "republic"
+          ]
+        }
       },
       "capitalSubTerritoryId": "zaragoza",
       "weatherZone": "meseta"
@@ -802,8 +856,10 @@
       "name": "Madrid",
       "countsForVictory": true,
       "initialControl": {
-        "kind": "controlled",
-        "factionId": "republic"
+        "@type": "controlled",
+        "@data": {
+          "factionId": "republic"
+        }
       },
       "capitalSubTerritoryId": "madrid",
       "weatherZone": "meseta"
@@ -813,8 +869,10 @@
       "name": "Castilla y Le\u00f3n",
       "countsForVictory": true,
       "initialControl": {
-        "kind": "controlled",
-        "factionId": "north"
+        "@type": "controlled",
+        "@data": {
+          "factionId": "north"
+        }
       },
       "capitalSubTerritoryId": "burgos",
       "weatherZone": "meseta"
@@ -824,8 +882,10 @@
       "name": "Castilla-La Mancha",
       "countsForVictory": true,
       "initialControl": {
-        "kind": "controlled",
-        "factionId": "republic"
+        "@type": "controlled",
+        "@data": {
+          "factionId": "republic"
+        }
       },
       "capitalSubTerritoryId": "toledo",
       "weatherZone": "meseta"
@@ -835,11 +895,13 @@
       "name": "Extremadura",
       "countsForVictory": true,
       "initialControl": {
-        "kind": "contested",
-        "factionIds": [
-          "republic",
-          "north"
-        ]
+        "@type": "contested",
+        "@data": {
+          "factionIds": [
+            "republic",
+            "north"
+          ]
+        }
       },
       "capitalSubTerritoryId": "badajoz",
       "weatherZone": "south"
@@ -849,8 +911,10 @@
       "name": "Catalu\u00f1a",
       "countsForVictory": true,
       "initialControl": {
-        "kind": "controlled",
-        "factionId": "republic"
+        "@type": "controlled",
+        "@data": {
+          "factionId": "republic"
+        }
       },
       "capitalSubTerritoryId": "barcelona",
       "weatherZone": "mediterranean"
@@ -860,8 +924,10 @@
       "name": "Valencia",
       "countsForVictory": true,
       "initialControl": {
-        "kind": "controlled",
-        "factionId": "republic"
+        "@type": "controlled",
+        "@data": {
+          "factionId": "republic"
+        }
       },
       "capitalSubTerritoryId": "valencia",
       "weatherZone": "mediterranean"
@@ -871,11 +937,13 @@
       "name": "Islas Baleares",
       "countsForVictory": true,
       "initialControl": {
-        "kind": "contested",
-        "factionIds": [
-          "republic",
-          "south"
-        ]
+        "@type": "contested",
+        "@data": {
+          "factionIds": [
+            "republic",
+            "south"
+          ]
+        }
       },
       "capitalSubTerritoryId": "mallorca",
       "weatherZone": "mediterranean"
@@ -885,11 +953,13 @@
       "name": "Andaluc\u00eda",
       "countsForVictory": true,
       "initialControl": {
-        "kind": "contested",
-        "factionIds": [
-          "republic",
-          "south"
-        ]
+        "@type": "contested",
+        "@data": {
+          "factionIds": [
+            "republic",
+            "south"
+          ]
+        }
       },
       "capitalSubTerritoryId": "sevilla",
       "weatherZone": "south"
@@ -899,8 +969,10 @@
       "name": "Murcia",
       "countsForVictory": true,
       "initialControl": {
-        "kind": "controlled",
-        "factionId": "republic"
+        "@type": "controlled",
+        "@data": {
+          "factionId": "republic"
+        }
       },
       "capitalSubTerritoryId": "murcia",
       "weatherZone": "mediterranean"
@@ -910,8 +982,10 @@
       "name": "Ceuta",
       "countsForVictory": true,
       "initialControl": {
-        "kind": "controlled",
-        "factionId": "south"
+        "@type": "controlled",
+        "@data": {
+          "factionId": "south"
+        }
       },
       "capitalSubTerritoryId": "ceuta",
       "weatherZone": "south"
@@ -921,8 +995,10 @@
       "name": "Melilla",
       "countsForVictory": true,
       "initialControl": {
-        "kind": "controlled",
-        "factionId": "south"
+        "@type": "controlled",
+        "@data": {
+          "factionId": "south"
+        }
       },
       "capitalSubTerritoryId": "melilla",
       "weatherZone": "south"
@@ -930,371 +1006,451 @@
   ],
   "connections": [
     {
-      "between": [
-        "galicia",
-        "asturias"
-      ],
-      "kind": "land",
-      "entry": [
-        "lugo",
-        "asturias"
-      ]
+      "@type": "land",
+      "@data": {
+        "between": [
+          "galicia",
+          "asturias"
+        ],
+        "entry": [
+          "lugo",
+          "asturias"
+        ]
+      }
     },
     {
-      "between": [
-        "galicia",
-        "castilla-y-leon"
-      ],
-      "kind": "land",
-      "entry": [
-        "lugo",
-        "leon"
-      ]
+      "@type": "land",
+      "@data": {
+        "between": [
+          "galicia",
+          "castilla-y-leon"
+        ],
+        "entry": [
+          "lugo",
+          "leon"
+        ]
+      }
     },
     {
-      "between": [
-        "asturias",
-        "cantabria"
-      ],
-      "kind": "land",
-      "entry": [
-        "asturias",
-        "cantabria"
-      ]
+      "@type": "land",
+      "@data": {
+        "between": [
+          "asturias",
+          "cantabria"
+        ],
+        "entry": [
+          "asturias",
+          "cantabria"
+        ]
+      }
     },
     {
-      "between": [
-        "asturias",
-        "castilla-y-leon"
-      ],
-      "kind": "land",
-      "entry": [
-        "asturias",
-        "leon"
-      ]
+      "@type": "land",
+      "@data": {
+        "between": [
+          "asturias",
+          "castilla-y-leon"
+        ],
+        "entry": [
+          "asturias",
+          "leon"
+        ]
+      }
     },
     {
-      "between": [
-        "cantabria",
-        "pais-vasco"
-      ],
-      "kind": "land",
-      "entry": [
-        "cantabria",
-        "bizkaia"
-      ]
+      "@type": "land",
+      "@data": {
+        "between": [
+          "cantabria",
+          "pais-vasco"
+        ],
+        "entry": [
+          "cantabria",
+          "bizkaia"
+        ]
+      }
     },
     {
-      "between": [
-        "cantabria",
-        "castilla-y-leon"
-      ],
-      "kind": "land",
-      "entry": [
-        "cantabria",
-        "burgos"
-      ]
+      "@type": "land",
+      "@data": {
+        "between": [
+          "cantabria",
+          "castilla-y-leon"
+        ],
+        "entry": [
+          "cantabria",
+          "burgos"
+        ]
+      }
     },
     {
-      "between": [
-        "pais-vasco",
-        "navarra"
-      ],
-      "kind": "land",
-      "entry": [
-        "gipuzkoa",
-        "navarra"
-      ]
+      "@type": "land",
+      "@data": {
+        "between": [
+          "pais-vasco",
+          "navarra"
+        ],
+        "entry": [
+          "gipuzkoa",
+          "navarra"
+        ]
+      }
     },
     {
-      "between": [
-        "pais-vasco",
-        "la-rioja"
-      ],
-      "kind": "land",
-      "entry": [
-        "alava",
-        "la-rioja"
-      ]
+      "@type": "land",
+      "@data": {
+        "between": [
+          "pais-vasco",
+          "la-rioja"
+        ],
+        "entry": [
+          "alava",
+          "la-rioja"
+        ]
+      }
     },
     {
-      "between": [
-        "pais-vasco",
-        "castilla-y-leon"
-      ],
-      "kind": "land",
-      "entry": [
-        "alava",
-        "burgos"
-      ]
+      "@type": "land",
+      "@data": {
+        "between": [
+          "pais-vasco",
+          "castilla-y-leon"
+        ],
+        "entry": [
+          "alava",
+          "burgos"
+        ]
+      }
     },
     {
-      "between": [
-        "navarra",
-        "la-rioja"
-      ],
-      "kind": "land",
-      "entry": [
-        "navarra",
-        "la-rioja"
-      ]
+      "@type": "land",
+      "@data": {
+        "between": [
+          "navarra",
+          "la-rioja"
+        ],
+        "entry": [
+          "navarra",
+          "la-rioja"
+        ]
+      }
     },
     {
-      "between": [
-        "navarra",
-        "aragon"
-      ],
-      "kind": "land",
-      "entry": [
-        "navarra",
-        "zaragoza"
-      ]
+      "@type": "land",
+      "@data": {
+        "between": [
+          "navarra",
+          "aragon"
+        ],
+        "entry": [
+          "navarra",
+          "zaragoza"
+        ]
+      }
     },
     {
-      "between": [
-        "la-rioja",
-        "aragon"
-      ],
-      "kind": "land",
-      "entry": [
-        "la-rioja",
-        "zaragoza"
-      ]
+      "@type": "land",
+      "@data": {
+        "between": [
+          "la-rioja",
+          "aragon"
+        ],
+        "entry": [
+          "la-rioja",
+          "zaragoza"
+        ]
+      }
     },
     {
-      "between": [
-        "la-rioja",
-        "castilla-y-leon"
-      ],
-      "kind": "land",
-      "entry": [
-        "la-rioja",
-        "burgos"
-      ]
+      "@type": "land",
+      "@data": {
+        "between": [
+          "la-rioja",
+          "castilla-y-leon"
+        ],
+        "entry": [
+          "la-rioja",
+          "burgos"
+        ]
+      }
     },
     {
-      "between": [
-        "aragon",
-        "castilla-y-leon"
-      ],
-      "kind": "land",
-      "entry": [
-        "zaragoza",
-        "soria"
-      ]
+      "@type": "land",
+      "@data": {
+        "between": [
+          "aragon",
+          "castilla-y-leon"
+        ],
+        "entry": [
+          "zaragoza",
+          "soria"
+        ]
+      }
     },
     {
-      "between": [
-        "aragon",
-        "castilla-la-mancha"
-      ],
-      "kind": "land",
-      "entry": [
-        "teruel",
-        "guadalajara"
-      ]
+      "@type": "land",
+      "@data": {
+        "between": [
+          "aragon",
+          "castilla-la-mancha"
+        ],
+        "entry": [
+          "teruel",
+          "guadalajara"
+        ]
+      }
     },
     {
-      "between": [
-        "aragon",
-        "valencia"
-      ],
-      "kind": "land",
-      "entry": [
-        "teruel",
-        "castellon"
-      ]
+      "@type": "land",
+      "@data": {
+        "between": [
+          "aragon",
+          "valencia"
+        ],
+        "entry": [
+          "teruel",
+          "castellon"
+        ]
+      }
     },
     {
-      "between": [
-        "aragon",
-        "catalunya"
-      ],
-      "kind": "land",
-      "entry": [
-        "huesca",
-        "lleida"
-      ]
+      "@type": "land",
+      "@data": {
+        "between": [
+          "aragon",
+          "catalunya"
+        ],
+        "entry": [
+          "huesca",
+          "lleida"
+        ]
+      }
     },
     {
-      "between": [
-        "madrid",
-        "castilla-y-leon"
-      ],
-      "kind": "land",
-      "entry": [
-        "guadarrama",
-        "segovia"
-      ]
+      "@type": "land",
+      "@data": {
+        "between": [
+          "madrid",
+          "castilla-y-leon"
+        ],
+        "entry": [
+          "guadarrama",
+          "segovia"
+        ]
+      }
     },
     {
-      "between": [
-        "madrid",
-        "castilla-la-mancha"
-      ],
-      "kind": "land",
-      "entry": [
-        "madrid",
-        "toledo"
-      ]
+      "@type": "land",
+      "@data": {
+        "between": [
+          "madrid",
+          "castilla-la-mancha"
+        ],
+        "entry": [
+          "madrid",
+          "toledo"
+        ]
+      }
     },
     {
-      "between": [
-        "castilla-y-leon",
-        "castilla-la-mancha"
-      ],
-      "kind": "land",
-      "entry": [
-        "soria",
-        "guadalajara"
-      ]
+      "@type": "land",
+      "@data": {
+        "between": [
+          "castilla-y-leon",
+          "castilla-la-mancha"
+        ],
+        "entry": [
+          "soria",
+          "guadalajara"
+        ]
+      }
     },
     {
-      "between": [
-        "castilla-y-leon",
-        "extremadura"
-      ],
-      "kind": "land",
-      "entry": [
-        "salamanca",
-        "caceres"
-      ]
+      "@type": "land",
+      "@data": {
+        "between": [
+          "castilla-y-leon",
+          "extremadura"
+        ],
+        "entry": [
+          "salamanca",
+          "caceres"
+        ]
+      }
     },
     {
-      "between": [
-        "castilla-la-mancha",
-        "valencia"
-      ],
-      "kind": "land",
-      "entry": [
-        "cuenca",
-        "valencia"
-      ]
+      "@type": "land",
+      "@data": {
+        "between": [
+          "castilla-la-mancha",
+          "valencia"
+        ],
+        "entry": [
+          "cuenca",
+          "valencia"
+        ]
+      }
     },
     {
-      "between": [
-        "castilla-la-mancha",
-        "murcia"
-      ],
-      "kind": "land",
-      "entry": [
-        "albacete",
-        "murcia"
-      ]
+      "@type": "land",
+      "@data": {
+        "between": [
+          "castilla-la-mancha",
+          "murcia"
+        ],
+        "entry": [
+          "albacete",
+          "murcia"
+        ]
+      }
     },
     {
-      "between": [
-        "castilla-la-mancha",
-        "andalucia"
-      ],
-      "kind": "land",
-      "entry": [
-        "ciudad-real",
-        "jaen"
-      ]
+      "@type": "land",
+      "@data": {
+        "between": [
+          "castilla-la-mancha",
+          "andalucia"
+        ],
+        "entry": [
+          "ciudad-real",
+          "jaen"
+        ]
+      }
     },
     {
-      "between": [
-        "castilla-la-mancha",
-        "extremadura"
-      ],
-      "kind": "land",
-      "entry": [
-        "toledo",
-        "caceres"
-      ]
+      "@type": "land",
+      "@data": {
+        "between": [
+          "castilla-la-mancha",
+          "extremadura"
+        ],
+        "entry": [
+          "toledo",
+          "caceres"
+        ]
+      }
     },
     {
-      "between": [
-        "extremadura",
-        "andalucia"
-      ],
-      "kind": "land",
-      "entry": [
-        "badajoz",
-        "sevilla"
-      ]
+      "@type": "land",
+      "@data": {
+        "between": [
+          "extremadura",
+          "andalucia"
+        ],
+        "entry": [
+          "badajoz",
+          "sevilla"
+        ]
+      }
     },
     {
-      "between": [
-        "catalunya",
-        "valencia"
-      ],
-      "kind": "land",
-      "entry": [
-        "tarragona",
-        "castellon"
-      ]
+      "@type": "land",
+      "@data": {
+        "between": [
+          "catalunya",
+          "valencia"
+        ],
+        "entry": [
+          "tarragona",
+          "castellon"
+        ]
+      }
     },
     {
-      "between": [
-        "valencia",
-        "murcia"
-      ],
-      "kind": "land",
-      "entry": [
-        "alicante",
-        "murcia"
-      ]
+      "@type": "land",
+      "@data": {
+        "between": [
+          "valencia",
+          "murcia"
+        ],
+        "entry": [
+          "alicante",
+          "murcia"
+        ]
+      }
     },
     {
-      "between": [
-        "andalucia",
-        "murcia"
-      ],
-      "kind": "land",
-      "entry": [
-        "almeria",
-        "murcia"
-      ]
+      "@type": "land",
+      "@data": {
+        "between": [
+          "andalucia",
+          "murcia"
+        ],
+        "entry": [
+          "almeria",
+          "murcia"
+        ]
+      }
     },
     {
-      "between": [
-        "andalucia",
-        "ceuta"
-      ],
-      "kind": "sea",
-      "label": "Strait of Gibraltar",
-      "entry": [
-        "cadiz",
-        "ceuta"
-      ]
+      "@type": "sea",
+      "@data": {
+        "between": [
+          "andalucia",
+          "ceuta"
+        ],
+        "label": "Strait of Gibraltar",
+        "entry": [
+          "cadiz",
+          "ceuta"
+        ]
+      }
     },
     {
-      "between": [
-        "andalucia",
-        "melilla"
-      ],
-      "kind": "sea",
-      "label": "Alboran Sea",
-      "entry": [
-        "malaga",
-        "melilla"
-      ]
+      "@type": "sea",
+      "@data": {
+        "between": [
+          "andalucia",
+          "melilla"
+        ],
+        "label": "Alboran Sea",
+        "entry": [
+          "malaga",
+          "melilla"
+        ]
+      }
     },
     {
-      "between": [
-        "catalunya",
-        "islas-baleares"
-      ],
-      "kind": "sea",
-      "label": "Balearic Sea",
-      "entry": [
-        "barcelona",
-        "mallorca"
-      ]
+      "@type": "sea",
+      "@data": {
+        "between": [
+          "catalunya",
+          "islas-baleares"
+        ],
+        "label": "Balearic Sea",
+        "entry": [
+          "barcelona",
+          "mallorca"
+        ]
+      }
     },
     {
-      "between": [
-        "valencia",
-        "islas-baleares"
-      ],
-      "kind": "sea",
-      "label": "Balearic Sea",
-      "entry": [
-        "valencia",
-        "mallorca"
-      ]
+      "@type": "sea",
+      "@data": {
+        "between": [
+          "valencia",
+          "islas-baleares"
+        ],
+        "label": "Balearic Sea",
+        "entry": [
+          "valencia",
+          "mallorca"
+        ]
+      }
+    },
+    {
+      "@type": "sea",
+      "@data": {
+        "between": [
+          "andalucia",
+          "murcia"
+        ],
+        "label": "Alboran coast",
+        "entry": [
+          "malaga",
+          "murcia"
+        ]
+      }
     }
   ],
   "cities": [
@@ -1661,6 +1817,23 @@
       "historicalNote": "Left Barcelona for the Aragon front on 24 July with about 2,500 men. The figure is unfootnoted."
     },
     {
+      "id": "rep-barbastro-garrison",
+      "name": "Barbastro Garrison",
+      "factionId": "republic",
+      "type": "security-forces",
+      "formationKind": "security",
+      "strength": 600,
+      "fullStrength": 600,
+      "territoryId": "aragon",
+      "sources": [
+        {
+          "sourceId": "warwick-timeline",
+          "reference": "Barbastro not checked in this source; the garrison is a design note (declog D8)"
+        }
+      ],
+      "historicalNote": "Colonel Jos\u00e9 Villalba's loyal Barbastro garrison, with the local Civil and Assault Guards and militia, held eastern Huesca for the Republic. Size estimated; no figure was found."
+    },
+    {
       "id": "rep-catalan-columns",
       "name": "Catalan Militia Columns",
       "factionId": "republic",
@@ -2011,27 +2184,6 @@
       "historicalNote": "Garrisoned at Zaragoza. Strength from V Division's Nationalist-zone barracks figures."
     },
     {
-      "id": "north-la-victoria-28",
-      "name": "La Victoria Infantry Regiment No. 28",
-      "factionId": "north",
-      "type": "infantry-regiment",
-      "formationKind": "regiment",
-      "strength": 700,
-      "fullStrength": 700,
-      "territoryId": "castilla-y-leon",
-      "cityId": "salamanca",
-      "sources": [
-        {
-          "sourceId": "arzanegui-1993",
-          "reference": "VII Division barracks-strength row"
-        },
-        {
-          "sourceId": "warwick-timeline"
-        }
-      ],
-      "historicalNote": "Garrisoned at Salamanca. Strength from VII Division's barracks figures."
-    },
-    {
       "id": "north-milan-32",
       "name": "Mil\u00e1n Infantry Regiment No. 32",
       "factionId": "north",
@@ -2123,27 +2275,6 @@
         }
       ],
       "historicalNote": "Carlist volunteers mobilised in Navarre; 8,000 were enrolled at the start of 1936. The field strength is estimated after the detachments sent to the Sierra and Gipuzkoa."
-    },
-    {
-      "id": "north-sierra-column",
-      "designation": "MOLA",
-      "name": "Mola's Sierra Columns",
-      "factionId": "north",
-      "type": "militia-column",
-      "formationKind": "column",
-      "strength": 2500,
-      "fullStrength": 2500,
-      "territoryId": "castilla-y-leon",
-      "sources": [
-        {
-          "sourceId": "eswiki-sierra-1936",
-          "reference": "Batalla de Guadarrama"
-        },
-        {
-          "sourceId": "warwick-timeline"
-        }
-      ],
-      "historicalNote": "Mola's columns at Somosierra and the Alto del Leon under Garcia Escamez, Serrador, and Gistau: regulars with requete and Falange companies. Total estimated."
     },
     {
       "id": "north-argel-27",
@@ -2561,14 +2692,28 @@
         "depot",
         "airfield"
       ],
-      "rail": 2,
+      "buildable": [
+        "barracks",
+        "factory",
+        "depot",
+        "fortifications",
+        "hospital",
+        "airfield",
+        "paved-airfield",
+        "rail-yard",
+        "farms",
+        "mines",
+        "industry",
+        "rail",
+        "port"
+      ],
       "port": 2,
       "sources": [
         {
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "VIII Division seat; naval and air station. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "VIII Division seat; naval and air station. Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
     },
     {
       "id": "lugo",
@@ -2580,14 +2725,25 @@
         "farms": 2
       },
       "buildings": [],
-      "rail": 1,
+      "buildable": [
+        "depot",
+        "fortifications",
+        "hospital",
+        "airfield",
+        "paved-airfield",
+        "rail-yard",
+        "farms",
+        "mines",
+        "rail",
+        "port"
+      ],
       "port": 0,
       "sources": [
         {
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
     },
     {
       "id": "ourense",
@@ -2599,14 +2755,24 @@
         "farms": 1
       },
       "buildings": [],
-      "rail": 1,
+      "buildable": [
+        "depot",
+        "fortifications",
+        "hospital",
+        "airfield",
+        "paved-airfield",
+        "rail-yard",
+        "farms",
+        "mines",
+        "rail"
+      ],
       "port": 0,
       "sources": [
         {
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
     },
     {
       "id": "pontevedra",
@@ -2618,14 +2784,25 @@
         "farms": 2
       },
       "buildings": [],
-      "rail": 1,
+      "buildable": [
+        "depot",
+        "fortifications",
+        "hospital",
+        "airfield",
+        "paved-airfield",
+        "rail-yard",
+        "farms",
+        "mines",
+        "rail",
+        "port"
+      ],
       "port": 2,
       "sources": [
         {
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "Port level for Vigo. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "Port level for Vigo. Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
     },
     {
       "id": "oviedo",
@@ -2641,7 +2818,20 @@
         "barracks",
         "factory"
       ],
-      "rail": 2,
+      "buildable": [
+        "barracks",
+        "factory",
+        "depot",
+        "fortifications",
+        "hospital",
+        "airfield",
+        "paved-airfield",
+        "rail-yard",
+        "farms",
+        "mines",
+        "industry",
+        "rail"
+      ],
       "port": 0,
       "sources": [
         {
@@ -2651,7 +2841,7 @@
           "sourceId": "eswiki-oviedo-1936"
         }
       ],
-      "note": "Aranda's garrison held the city (eswiki-oviedo-1936); the arms works stand for Trubia and La Vega. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "Aranda's garrison held the city (eswiki-oviedo-1936); the arms works stand for Trubia and La Vega. Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
     },
     {
       "id": "asturias",
@@ -2665,14 +2855,26 @@
         "industry": 2
       },
       "buildings": [],
-      "rail": 2,
+      "buildable": [
+        "depot",
+        "fortifications",
+        "hospital",
+        "airfield",
+        "paved-airfield",
+        "rail-yard",
+        "farms",
+        "mines",
+        "industry",
+        "rail",
+        "port"
+      ],
       "port": 2,
       "sources": [
         {
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "The Asturian coalfield and Gij\u00f3n's works and port (El Musel). Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune. D28.4: the 1936 garrison's Barracks and Factory are not listed, since only the territory's capital may hold one."
+      "note": "The Asturian coalfield and Gij\u00f3n's works and port (El Musel). Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune. D28.4: the 1936 garrison's Barracks and Factory are not listed, since only the territory's capital may hold one."
     },
     {
       "id": "cantabria",
@@ -2688,14 +2890,28 @@
       "buildings": [
         "barracks"
       ],
-      "rail": 2,
+      "buildable": [
+        "barracks",
+        "factory",
+        "depot",
+        "fortifications",
+        "hospital",
+        "airfield",
+        "paved-airfield",
+        "rail-yard",
+        "farms",
+        "mines",
+        "industry",
+        "rail",
+        "port"
+      ],
       "port": 2,
       "sources": [
         {
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "Port level for Santander. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "Port level for Santander. Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
     },
     {
       "id": "bizkaia",
@@ -2712,14 +2928,28 @@
         "factory",
         "depot"
       ],
-      "rail": 3,
+      "buildable": [
+        "barracks",
+        "factory",
+        "depot",
+        "fortifications",
+        "hospital",
+        "airfield",
+        "paved-airfield",
+        "rail-yard",
+        "farms",
+        "mines",
+        "industry",
+        "rail",
+        "port"
+      ],
       "port": 2,
       "sources": [
         {
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "Basque iron, steel and shipyards around Bilbao. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "Basque iron, steel and shipyards around Bilbao. Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
     },
     {
       "id": "gipuzkoa",
@@ -2731,14 +2961,26 @@
         "industry": 1
       },
       "buildings": [],
-      "rail": 2,
+      "buildable": [
+        "depot",
+        "fortifications",
+        "hospital",
+        "airfield",
+        "paved-airfield",
+        "rail-yard",
+        "farms",
+        "mines",
+        "industry",
+        "rail",
+        "port"
+      ],
       "port": 1,
       "sources": [
         {
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "Eibar's small-arms works. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune. D28.4: the 1936 garrison's Barracks and Factory are not listed, since only the territory's capital may hold one."
+      "note": "Eibar's small-arms works. Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune. D28.4: the 1936 garrison's Barracks and Factory are not listed, since only the territory's capital may hold one."
     },
     {
       "id": "alava",
@@ -2750,14 +2992,24 @@
         "farms": 1
       },
       "buildings": [],
-      "rail": 2,
+      "buildable": [
+        "depot",
+        "fortifications",
+        "hospital",
+        "airfield",
+        "paved-airfield",
+        "rail-yard",
+        "farms",
+        "mines",
+        "rail"
+      ],
       "port": 0,
       "sources": [
         {
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "Vitoria rose with Mola (Q-PART-9). Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune. D28.4: the 1936 garrison's Barracks is not listed, since only the territory's capital may hold one."
+      "note": "Vitoria rose with Mola (Q-PART-9). Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune. D28.4: the 1936 garrison's Barracks is not listed, since only the territory's capital may hold one."
     },
     {
       "id": "navarra",
@@ -2772,14 +3024,27 @@
         "barracks",
         "depot"
       ],
-      "rail": 1,
+      "buildable": [
+        "barracks",
+        "factory",
+        "depot",
+        "fortifications",
+        "hospital",
+        "airfield",
+        "paved-airfield",
+        "rail-yard",
+        "farms",
+        "mines",
+        "industry",
+        "rail"
+      ],
       "port": 0,
       "sources": [
         {
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "Pamplona, Mola's seat. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "Pamplona, Mola's seat. Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
     },
     {
       "id": "la-rioja",
@@ -2791,14 +3056,25 @@
         "farms": 2
       },
       "buildings": [],
-      "rail": 1,
+      "buildable": [
+        "barracks",
+        "depot",
+        "fortifications",
+        "hospital",
+        "airfield",
+        "paved-airfield",
+        "rail-yard",
+        "farms",
+        "mines",
+        "rail"
+      ],
       "port": 0,
       "sources": [
         {
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
     },
     {
       "id": "zaragoza",
@@ -2816,14 +3092,27 @@
         "airfield",
         "rail-yard"
       ],
-      "rail": 3,
+      "buildable": [
+        "barracks",
+        "factory",
+        "depot",
+        "fortifications",
+        "hospital",
+        "airfield",
+        "paved-airfield",
+        "rail-yard",
+        "farms",
+        "mines",
+        "industry",
+        "rail"
+      ],
       "port": 0,
       "sources": [
         {
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "V Division seat and rail junction. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "V Division seat and rail junction. Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
     },
     {
       "id": "huesca",
@@ -2835,14 +3124,24 @@
         "farms": 1
       },
       "buildings": [],
-      "rail": 1,
+      "buildable": [
+        "depot",
+        "fortifications",
+        "hospital",
+        "airfield",
+        "paved-airfield",
+        "rail-yard",
+        "farms",
+        "mines",
+        "rail"
+      ],
       "port": 0,
       "sources": [
         {
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "Hand override (P1): the city held for the rising, but the province's east was Republican. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "Hand override (P1): the city held for the rising, but the province's east was Republican. Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
     },
     {
       "id": "teruel",
@@ -2855,14 +3154,25 @@
         "mines": 1
       },
       "buildings": [],
-      "rail": 1,
+      "buildable": [
+        "depot",
+        "fortifications",
+        "hospital",
+        "airfield",
+        "paved-airfield",
+        "rail-yard",
+        "farms",
+        "mines",
+        "industry",
+        "rail"
+      ],
       "port": 0,
       "sources": [
         {
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "Utrillas coal. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "Utrillas coal. Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
     },
     {
       "id": "madrid",
@@ -2882,14 +3192,27 @@
         "airfield",
         "rail-yard"
       ],
-      "rail": 3,
+      "buildable": [
+        "barracks",
+        "factory",
+        "depot",
+        "fortifications",
+        "hospital",
+        "airfield",
+        "paved-airfield",
+        "rail-yard",
+        "farms",
+        "mines",
+        "industry",
+        "rail"
+      ],
       "port": 0,
       "sources": [
         {
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "Capital: I Division, the arsenal, Getafe and Cuatro Vientos airfields. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "Capital: I Division, the arsenal, Getafe and Cuatro Vientos airfields. Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
     },
     {
       "id": "guadarrama",
@@ -2899,7 +3222,17 @@
       "startHolder": "republic",
       "development": {},
       "buildings": [],
-      "rail": 1,
+      "buildable": [
+        "depot",
+        "fortifications",
+        "hospital",
+        "airfield",
+        "paved-airfield",
+        "rail-yard",
+        "farms",
+        "mines",
+        "rail"
+      ],
       "port": 0,
       "sources": [
         {
@@ -2909,7 +3242,7 @@
           "sourceId": "eswiki-sierra-1936"
         }
       ],
-      "note": "Mola's columns held the Somosierra and Alto del Le\u00f3n passes, not the Madrid side (eswiki-sierra-1936). Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "Mola's columns held the Somosierra and Alto del Le\u00f3n passes, not the Madrid side (eswiki-sierra-1936). Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
     },
     {
       "id": "henares",
@@ -2923,14 +3256,24 @@
       "buildings": [
         "airfield"
       ],
-      "rail": 3,
+      "buildable": [
+        "depot",
+        "fortifications",
+        "hospital",
+        "airfield",
+        "paved-airfield",
+        "rail-yard",
+        "farms",
+        "mines",
+        "rail"
+      ],
       "port": 0,
       "sources": [
         {
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "Alcal\u00e1 and the Zaragoza main line; Barajas. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "Alcal\u00e1 and the Zaragoza main line; Barajas. Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
     },
     {
       "id": "burgos",
@@ -2946,14 +3289,27 @@
         "depot",
         "rail-yard"
       ],
-      "rail": 2,
+      "buildable": [
+        "barracks",
+        "factory",
+        "depot",
+        "fortifications",
+        "hospital",
+        "airfield",
+        "paved-airfield",
+        "rail-yard",
+        "farms",
+        "mines",
+        "industry",
+        "rail"
+      ],
       "port": 0,
       "sources": [
         {
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "VI Division seat; the junta's seat from 24 July. The rail yard stands for the region's main junction (Medina del Campo): rail yards count only at the boarding capital (M3). Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "VI Division seat; the junta's seat from 24 July. The rail yard stands for the region's main junction (Medina del Campo): rail yards count only at the boarding capital (M3). Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
     },
     {
       "id": "valladolid",
@@ -2968,14 +3324,25 @@
       "buildings": [
         "depot"
       ],
-      "rail": 3,
+      "buildable": [
+        "depot",
+        "fortifications",
+        "hospital",
+        "airfield",
+        "paved-airfield",
+        "rail-yard",
+        "farms",
+        "mines",
+        "industry",
+        "rail"
+      ],
       "port": 0,
       "sources": [
         {
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "VII Division seat; Medina del Campo junction. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune. D28.4: the 1936 garrison's Barracks is not listed, since only the territory's capital may hold one."
+      "note": "VII Division seat; Medina del Campo junction. Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune. D28.4: the 1936 garrison's Barracks is not listed, since only the territory's capital may hold one."
     },
     {
       "id": "leon",
@@ -2990,14 +3357,24 @@
       "buildings": [
         "airfield"
       ],
-      "rail": 2,
+      "buildable": [
+        "depot",
+        "fortifications",
+        "hospital",
+        "airfield",
+        "paved-airfield",
+        "rail-yard",
+        "farms",
+        "mines",
+        "rail"
+      ],
       "port": 0,
       "sources": [
         {
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "Le\u00f3n coalfield; air base. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune. D28.4: the 1936 garrison's Barracks is not listed, since only the territory's capital may hold one."
+      "note": "Le\u00f3n coalfield; air base. Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune. D28.4: the 1936 garrison's Barracks is not listed, since only the territory's capital may hold one."
     },
     {
       "id": "palencia",
@@ -3010,14 +3387,24 @@
         "mines": 1
       },
       "buildings": [],
-      "rail": 2,
+      "buildable": [
+        "depot",
+        "fortifications",
+        "hospital",
+        "airfield",
+        "paved-airfield",
+        "rail-yard",
+        "farms",
+        "mines",
+        "rail"
+      ],
       "port": 0,
       "sources": [
         {
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
     },
     {
       "id": "zamora",
@@ -3029,14 +3416,24 @@
         "farms": 2
       },
       "buildings": [],
-      "rail": 1,
+      "buildable": [
+        "depot",
+        "fortifications",
+        "hospital",
+        "airfield",
+        "paved-airfield",
+        "rail-yard",
+        "farms",
+        "mines",
+        "rail"
+      ],
       "port": 0,
       "sources": [
         {
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
     },
     {
       "id": "salamanca",
@@ -3048,14 +3445,25 @@
         "farms": 2
       },
       "buildings": [],
-      "rail": 1,
+      "buildable": [
+        "depot",
+        "fortifications",
+        "hospital",
+        "airfield",
+        "paved-airfield",
+        "rail-yard",
+        "farms",
+        "mines",
+        "industry",
+        "rail"
+      ],
       "port": 0,
       "sources": [
         {
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune. D28.4: the 1936 garrison's Barracks is not listed, since only the territory's capital may hold one."
+      "note": "Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune. D28.4: the 1936 garrison's Barracks is not listed, since only the territory's capital may hold one."
     },
     {
       "id": "avila",
@@ -3067,14 +3475,24 @@
         "farms": 1
       },
       "buildings": [],
-      "rail": 2,
+      "buildable": [
+        "depot",
+        "fortifications",
+        "hospital",
+        "airfield",
+        "paved-airfield",
+        "rail-yard",
+        "farms",
+        "mines",
+        "rail"
+      ],
       "port": 0,
       "sources": [
         {
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "The Gredos range. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "The Gredos range. Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
     },
     {
       "id": "segovia",
@@ -3086,14 +3504,24 @@
         "farms": 1
       },
       "buildings": [],
-      "rail": 1,
+      "buildable": [
+        "depot",
+        "fortifications",
+        "hospital",
+        "airfield",
+        "paved-airfield",
+        "rail-yard",
+        "farms",
+        "mines",
+        "rail"
+      ],
       "port": 0,
       "sources": [
         {
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
     },
     {
       "id": "soria",
@@ -3105,14 +3533,24 @@
         "farms": 1
       },
       "buildings": [],
-      "rail": 1,
+      "buildable": [
+        "depot",
+        "fortifications",
+        "hospital",
+        "airfield",
+        "paved-airfield",
+        "rail-yard",
+        "farms",
+        "mines",
+        "rail"
+      ],
       "port": 0,
       "sources": [
         {
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
     },
     {
       "id": "toledo",
@@ -3128,14 +3566,27 @@
         "factory",
         "rail-yard"
       ],
-      "rail": 2,
+      "buildable": [
+        "barracks",
+        "factory",
+        "depot",
+        "fortifications",
+        "hospital",
+        "airfield",
+        "paved-airfield",
+        "rail-yard",
+        "farms",
+        "mines",
+        "industry",
+        "rail"
+      ],
       "port": 0,
       "sources": [
         {
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "The Toledo arms factory. The rail yard stands for the region's main junction (Alc\u00e1zar de San Juan): rail yards count only at the boarding capital (M3). Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "The Toledo arms factory. The rail yard stands for the region's main junction (Alc\u00e1zar de San Juan): rail yards count only at the boarding capital (M3). Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
     },
     {
       "id": "ciudad-real",
@@ -3148,14 +3599,24 @@
         "mines": 2
       },
       "buildings": [],
-      "rail": 2,
+      "buildable": [
+        "depot",
+        "fortifications",
+        "hospital",
+        "airfield",
+        "paved-airfield",
+        "rail-yard",
+        "farms",
+        "mines",
+        "rail"
+      ],
       "port": 0,
       "sources": [
         {
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "Almad\u00e9n mercury and Puertollano coal. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "Almad\u00e9n mercury and Puertollano coal. Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
     },
     {
       "id": "cuenca",
@@ -3167,14 +3628,24 @@
         "farms": 1
       },
       "buildings": [],
-      "rail": 1,
+      "buildable": [
+        "depot",
+        "fortifications",
+        "hospital",
+        "airfield",
+        "paved-airfield",
+        "rail-yard",
+        "farms",
+        "mines",
+        "rail"
+      ],
       "port": 0,
       "sources": [
         {
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
     },
     {
       "id": "guadalajara",
@@ -3186,14 +3657,24 @@
         "farms": 1
       },
       "buildings": [],
-      "rail": 2,
+      "buildable": [
+        "depot",
+        "fortifications",
+        "hospital",
+        "airfield",
+        "paved-airfield",
+        "rail-yard",
+        "farms",
+        "mines",
+        "rail"
+      ],
       "port": 0,
       "sources": [
         {
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
     },
     {
       "id": "albacete",
@@ -3205,14 +3686,25 @@
         "farms": 2
       },
       "buildings": [],
-      "rail": 2,
+      "buildable": [
+        "depot",
+        "fortifications",
+        "hospital",
+        "airfield",
+        "paved-airfield",
+        "rail-yard",
+        "farms",
+        "mines",
+        "industry",
+        "rail"
+      ],
       "port": 0,
       "sources": [
         {
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune. D28.4: the 1936 garrison's Barracks is not listed, since only the territory's capital may hold one."
+      "note": "Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune. D28.4: the 1936 garrison's Barracks is not listed, since only the territory's capital may hold one."
     },
     {
       "id": "badajoz",
@@ -3226,14 +3718,27 @@
       "buildings": [
         "barracks"
       ],
-      "rail": 1,
+      "buildable": [
+        "barracks",
+        "factory",
+        "depot",
+        "fortifications",
+        "hospital",
+        "airfield",
+        "paved-airfield",
+        "rail-yard",
+        "farms",
+        "mines",
+        "industry",
+        "rail"
+      ],
       "port": 0,
       "sources": [
         {
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
     },
     {
       "id": "caceres",
@@ -3245,7 +3750,17 @@
         "farms": 2
       },
       "buildings": [],
-      "rail": 1,
+      "buildable": [
+        "depot",
+        "fortifications",
+        "hospital",
+        "airfield",
+        "paved-airfield",
+        "rail-yard",
+        "farms",
+        "mines",
+        "rail"
+      ],
       "port": 0,
       "sources": [
         {
@@ -3255,7 +3770,7 @@
           "sourceId": "nafziger-1936"
         }
       ],
-      "note": "Nationalist on 31 July (Q-PART-9). It lay in the VII Organic Division (Valladolid) and rose under Mola, so it starts with the Northern command (nafziger-1936). Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "Nationalist on 31 July (Q-PART-9). It lay in the VII Organic Division (Valladolid) and rose under Mola, so it starts with the Northern command (nafziger-1936). Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
     },
     {
       "id": "barcelona",
@@ -3275,14 +3790,28 @@
         "airfield",
         "rail-yard"
       ],
-      "rail": 3,
+      "buildable": [
+        "barracks",
+        "factory",
+        "depot",
+        "fortifications",
+        "hospital",
+        "airfield",
+        "paved-airfield",
+        "rail-yard",
+        "farms",
+        "mines",
+        "industry",
+        "rail",
+        "port"
+      ],
       "port": 2,
       "sources": [
         {
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "IV Division seat; Catalan industry; El Prat. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "IV Division seat; Catalan industry; El Prat. Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
     },
     {
       "id": "girona",
@@ -3294,14 +3823,25 @@
         "farms": 1
       },
       "buildings": [],
-      "rail": 2,
+      "buildable": [
+        "depot",
+        "fortifications",
+        "hospital",
+        "airfield",
+        "paved-airfield",
+        "rail-yard",
+        "farms",
+        "mines",
+        "rail",
+        "port"
+      ],
       "port": 0,
       "sources": [
         {
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
     },
     {
       "id": "lleida",
@@ -3313,14 +3853,24 @@
         "farms": 2
       },
       "buildings": [],
-      "rail": 2,
+      "buildable": [
+        "depot",
+        "fortifications",
+        "hospital",
+        "airfield",
+        "paved-airfield",
+        "rail-yard",
+        "farms",
+        "mines",
+        "rail"
+      ],
       "port": 0,
       "sources": [
         {
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
     },
     {
       "id": "tarragona",
@@ -3332,14 +3882,25 @@
         "farms": 2
       },
       "buildings": [],
-      "rail": 2,
+      "buildable": [
+        "depot",
+        "fortifications",
+        "hospital",
+        "airfield",
+        "paved-airfield",
+        "rail-yard",
+        "farms",
+        "mines",
+        "rail",
+        "port"
+      ],
       "port": 1,
       "sources": [
         {
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
     },
     {
       "id": "valencia",
@@ -3358,14 +3919,28 @@
         "airfield",
         "rail-yard"
       ],
-      "rail": 3,
+      "buildable": [
+        "barracks",
+        "factory",
+        "depot",
+        "fortifications",
+        "hospital",
+        "airfield",
+        "paved-airfield",
+        "rail-yard",
+        "farms",
+        "mines",
+        "industry",
+        "rail",
+        "port"
+      ],
       "port": 2,
       "sources": [
         {
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "III Division seat; Manises. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "III Division seat; Manises. Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
     },
     {
       "id": "castellon",
@@ -3377,14 +3952,25 @@
         "farms": 2
       },
       "buildings": [],
-      "rail": 2,
+      "buildable": [
+        "depot",
+        "fortifications",
+        "hospital",
+        "airfield",
+        "paved-airfield",
+        "rail-yard",
+        "farms",
+        "mines",
+        "rail",
+        "port"
+      ],
       "port": 1,
       "sources": [
         {
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
     },
     {
       "id": "alicante",
@@ -3397,14 +3983,26 @@
         "industry": 1
       },
       "buildings": [],
-      "rail": 2,
+      "buildable": [
+        "depot",
+        "fortifications",
+        "hospital",
+        "airfield",
+        "paved-airfield",
+        "rail-yard",
+        "farms",
+        "mines",
+        "industry",
+        "rail",
+        "port"
+      ],
       "port": 1,
       "sources": [
         {
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
     },
     {
       "id": "sevilla",
@@ -3422,7 +4020,21 @@
         "airfield",
         "rail-yard"
       ],
-      "rail": 3,
+      "buildable": [
+        "barracks",
+        "factory",
+        "depot",
+        "fortifications",
+        "hospital",
+        "airfield",
+        "paved-airfield",
+        "rail-yard",
+        "farms",
+        "mines",
+        "industry",
+        "rail",
+        "port"
+      ],
       "port": 1,
       "sources": [
         {
@@ -3432,7 +4044,7 @@
           "sourceId": "eswiki-sevilla-1936"
         }
       ],
-      "note": "II Division seat; Tablada; Queipo de Llano's rising (eswiki-sevilla-1936). Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "II Division seat; Tablada; Queipo de Llano's rising (eswiki-sevilla-1936). Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
     },
     {
       "id": "cadiz",
@@ -3445,14 +4057,26 @@
         "industry": 1
       },
       "buildings": [],
-      "rail": 2,
+      "buildable": [
+        "depot",
+        "fortifications",
+        "hospital",
+        "airfield",
+        "paved-airfield",
+        "rail-yard",
+        "farms",
+        "mines",
+        "industry",
+        "rail",
+        "port"
+      ],
       "port": 2,
       "sources": [
         {
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "Port and naval base; the Strait crossing. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune. D28.4: the 1936 garrison's Barracks is not listed, since only the territory's capital may hold one."
+      "note": "Port and naval base; the Strait crossing. Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune. D28.4: the 1936 garrison's Barracks is not listed, since only the territory's capital may hold one."
     },
     {
       "id": "huelva",
@@ -3465,14 +4089,25 @@
         "mines": 3
       },
       "buildings": [],
-      "rail": 1,
+      "buildable": [
+        "depot",
+        "fortifications",
+        "hospital",
+        "airfield",
+        "paved-airfield",
+        "rail-yard",
+        "farms",
+        "mines",
+        "rail",
+        "port"
+      ],
       "port": 1,
       "sources": [
         {
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "R\u00edo Tinto copper. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "R\u00edo Tinto copper. Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
     },
     {
       "id": "cordoba",
@@ -3485,14 +4120,25 @@
         "mines": 1
       },
       "buildings": [],
-      "rail": 2,
+      "buildable": [
+        "depot",
+        "fortifications",
+        "hospital",
+        "airfield",
+        "paved-airfield",
+        "rail-yard",
+        "farms",
+        "mines",
+        "industry",
+        "rail"
+      ],
       "port": 0,
       "sources": [
         {
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "Pe\u00f1arroya mines. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune. D28.4: the 1936 garrison's Barracks is not listed, since only the territory's capital may hold one."
+      "note": "Pe\u00f1arroya mines. Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune. D28.4: the 1936 garrison's Barracks is not listed, since only the territory's capital may hold one."
     },
     {
       "id": "granada",
@@ -3504,14 +4150,26 @@
         "farms": 2
       },
       "buildings": [],
-      "rail": 1,
+      "buildable": [
+        "depot",
+        "fortifications",
+        "hospital",
+        "airfield",
+        "paved-airfield",
+        "rail-yard",
+        "farms",
+        "mines",
+        "industry",
+        "rail",
+        "port"
+      ],
       "port": 0,
       "sources": [
         {
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune. D28.4: the 1936 garrison's Barracks is not listed, since only the territory's capital may hold one."
+      "note": "Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune. D28.4: the 1936 garrison's Barracks is not listed, since only the territory's capital may hold one."
     },
     {
       "id": "malaga",
@@ -3524,14 +4182,26 @@
         "industry": 1
       },
       "buildings": [],
-      "rail": 1,
+      "buildable": [
+        "depot",
+        "fortifications",
+        "hospital",
+        "airfield",
+        "paved-airfield",
+        "rail-yard",
+        "farms",
+        "mines",
+        "industry",
+        "rail",
+        "port"
+      ],
       "port": 2,
       "sources": [
         {
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
     },
     {
       "id": "jaen",
@@ -3544,14 +4214,24 @@
         "mines": 2
       },
       "buildings": [],
-      "rail": 2,
+      "buildable": [
+        "depot",
+        "fortifications",
+        "hospital",
+        "airfield",
+        "paved-airfield",
+        "rail-yard",
+        "farms",
+        "mines",
+        "rail"
+      ],
       "port": 0,
       "sources": [
         {
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "Linares lead; olives. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "Linares lead; olives. Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
     },
     {
       "id": "almeria",
@@ -3564,14 +4244,25 @@
         "mines": 1
       },
       "buildings": [],
-      "rail": 1,
+      "buildable": [
+        "depot",
+        "fortifications",
+        "hospital",
+        "airfield",
+        "paved-airfield",
+        "rail-yard",
+        "farms",
+        "mines",
+        "rail",
+        "port"
+      ],
       "port": 1,
       "sources": [
         {
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
     },
     {
       "id": "murcia",
@@ -3588,14 +4279,28 @@
         "barracks",
         "factory"
       ],
-      "rail": 2,
+      "buildable": [
+        "barracks",
+        "factory",
+        "depot",
+        "fortifications",
+        "hospital",
+        "airfield",
+        "paved-airfield",
+        "rail-yard",
+        "farms",
+        "mines",
+        "industry",
+        "rail",
+        "port"
+      ],
       "port": 2,
       "sources": [
         {
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "Cartagena naval base, arsenal and port; La Uni\u00f3n mines. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "Cartagena naval base, arsenal and port; La Uni\u00f3n mines. Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
     },
     {
       "id": "ceuta",
@@ -3607,14 +4312,26 @@
       "buildings": [
         "barracks"
       ],
-      "rail": 0,
+      "buildable": [
+        "barracks",
+        "depot",
+        "fortifications",
+        "hospital",
+        "airfield",
+        "paved-airfield",
+        "rail-yard",
+        "farms",
+        "mines",
+        "rail",
+        "port"
+      ],
       "port": 2,
       "sources": [
         {
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "One-sub-territory enclave with a port (Q-CITY-7). No yield: the Southern command stays poor (Q-MR-10). Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "One-sub-territory enclave with a port (Q-CITY-7). No yield: the Southern command stays poor (Q-MR-10). Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
     },
     {
       "id": "melilla",
@@ -3629,14 +4346,26 @@
         "barracks",
         "airfield"
       ],
-      "rail": 0,
+      "buildable": [
+        "barracks",
+        "depot",
+        "fortifications",
+        "hospital",
+        "airfield",
+        "paved-airfield",
+        "rail-yard",
+        "farms",
+        "mines",
+        "rail",
+        "port"
+      ],
       "port": 2,
       "sources": [
         {
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "The Rif iron mines; where the rising began. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "The Rif iron mines; where the rising began. Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
     },
     {
       "id": "mallorca",
@@ -3651,14 +4380,26 @@
         "barracks",
         "airfield"
       ],
-      "rail": 1,
+      "buildable": [
+        "barracks",
+        "depot",
+        "fortifications",
+        "hospital",
+        "airfield",
+        "paved-airfield",
+        "rail-yard",
+        "farms",
+        "mines",
+        "rail",
+        "port"
+      ],
       "port": 2,
       "sources": [
         {
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "Goded's rising held Palma. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "Goded's rising held Palma. Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
     },
     {
       "id": "menorca",
@@ -3668,14 +4409,25 @@
       "startHolder": "republic",
       "development": {},
       "buildings": [],
-      "rail": 0,
+      "buildable": [
+        "depot",
+        "fortifications",
+        "hospital",
+        "airfield",
+        "paved-airfield",
+        "rail-yard",
+        "farms",
+        "mines",
+        "rail",
+        "port"
+      ],
       "port": 1,
       "sources": [
         {
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "Mah\u00f3n's garrison stayed loyal. Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "Mah\u00f3n's garrison stayed loyal. Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
     },
     {
       "id": "ibiza",
@@ -3685,14 +4437,25 @@
       "startHolder": "south",
       "development": {},
       "buildings": [],
-      "rail": 0,
+      "buildable": [
+        "depot",
+        "fortifications",
+        "hospital",
+        "airfield",
+        "paved-airfield",
+        "rail-yard",
+        "farms",
+        "mines",
+        "rail",
+        "port"
+      ],
       "port": 1,
       "sources": [
         {
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "Holder on 31 July 1936 from the source map. Rail, port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
     }
   ],
   "subTerritoryBorders": [
@@ -4177,6 +4940,2614 @@
       "ibiza"
     ]
   ],
+  "links": [
+    {
+      "a": "a-coruna",
+      "b": "lugo",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "main"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "single"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-oeste"
+        },
+        {
+          "sourceId": "eswiki-cnfe"
+        }
+      ],
+      "note": "Monforte-Lugo-A Coru\u00f1a (Oeste); the A Coru\u00f1a road (CNFE IV) (rail: inferred from a named route). Main road: a CNFE itinerary or radial highway."
+    },
+    {
+      "a": "a-coruna",
+      "b": "pontevedra",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "single"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-oeste"
+        }
+      ],
+      "note": "Pontevedra-Santiago (Oeste) (rail: verified in a fetched source). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "lugo",
+      "b": "ourense",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "single"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-oeste"
+        }
+      ],
+      "note": "Monforte-Ourense (Oeste) (rail: verified in a fetched source). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "lugo",
+      "b": "pontevedra",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        }
+      ],
+      "note": "No line: the Vigo line runs through Ourense (rail: design note). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "lugo",
+      "b": "asturias",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        }
+      ],
+      "note": "No broad-gauge line along the Cantabrian coast (rail: design note). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "lugo",
+      "b": "leon",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "main"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-cnfe"
+        }
+      ],
+      "note": "The A Coru\u00f1a road (CNFE IV) over Piedrafita; the railway runs through Valdeorras (Ourense) (rail: design note). Main road: a CNFE itinerary or radial highway."
+    },
+    {
+      "a": "ourense",
+      "b": "pontevedra",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "single"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-oeste"
+        }
+      ],
+      "note": "Ourense-Vigo (Oeste) (rail: verified in a fetched source). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "ourense",
+      "b": "leon",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "single"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-oeste"
+        }
+      ],
+      "note": "Ponferrada-Monforte, Galicia's only line to the Meseta in 1936, along the Sil through Valdeorras (the table's Le\u00f3n-Lugo edge, placed by geography) (rail: unverified, needed for connectivity). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "ourense",
+      "b": "zamora",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-historia-ferrocarril"
+        }
+      ],
+      "note": "No line: Zamora-Ourense opened only in 1958 (rail: verified in a fetched source). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "oviedo",
+      "b": "asturias",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "main"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "main"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-norte"
+        }
+      ],
+      "note": "The Pajares line on to Oviedo and Gijon, with the Langreo branch (Norte) (rail: verified in a fetched source). Main road: a CNFE itinerary or radial highway."
+    },
+    {
+      "a": "asturias",
+      "b": "cantabria",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "single"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-historia-ferrocarril"
+        }
+      ],
+      "note": "Narrow gauge only along the Cantabrian coast (rail: unverified, needed for connectivity). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "asturias",
+      "b": "leon",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "main"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "main"
+          }
+        },
+        {
+          "@type": "pass",
+          "@data": {
+            "name": "Pajares"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-norte"
+        },
+        {
+          "sourceId": "eswiki-cnfe"
+        }
+      ],
+      "note": "Le\u00f3n-Pajares-Asturias (Norte, 1884; 70 tunnels); the Oviedo road (CNFE III) (rail: verified in a fetched source). Main road: a CNFE itinerary or radial highway."
+    },
+    {
+      "a": "cantabria",
+      "b": "bizkaia",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "single"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-historia-ferrocarril"
+        }
+      ],
+      "note": "The Santander-Bilbao narrow gauge (rail: verified in a fetched source). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "cantabria",
+      "b": "burgos",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-santander-mediterraneo"
+        }
+      ],
+      "note": "No line: the Santander-Mediterr\u00e1neo never reached Santander (rail: verified in a fetched source). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "cantabria",
+      "b": "leon",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        }
+      ],
+      "note": "No broad-gauge line (rail: design note). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "cantabria",
+      "b": "palencia",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "main"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-norte"
+        }
+      ],
+      "note": "Venta de Ba\u00f1os-Alar del Rey-Reinosa-Santander (Norte) (rail: verified in a fetched source). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "bizkaia",
+      "b": "gipuzkoa",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "single"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-historia-ferrocarril"
+        }
+      ],
+      "note": "Ferrocarriles Vascongados, narrow gauge (rail: verified in a fetched source). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "bizkaia",
+      "b": "alava",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "single"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-norte"
+        }
+      ],
+      "note": "Tudela-Bilbao line through Llodio and Amurrio to Miranda (rail: inferred from a named route). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "bizkaia",
+      "b": "burgos",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        }
+      ],
+      "note": "The Bilbao line runs through \u00c1lava (rail: design note). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "gipuzkoa",
+      "b": "alava",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-norte"
+        }
+      ],
+      "note": "The trunk runs through Alsasua (Navarra) (rail: design note). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "gipuzkoa",
+      "b": "navarra",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "main"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "main"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-norte"
+        },
+        {
+          "sourceId": "eswiki-cnfe"
+        }
+      ],
+      "note": "Alsasua-Beasain-San Sebasti\u00e1n-Ir\u00fan (Norte trunk); the Ir\u00fan road (CNFE I) (rail: verified in a fetched source). Main road: a CNFE itinerary or radial highway."
+    },
+    {
+      "a": "alava",
+      "b": "navarra",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "main"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "main"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-norte"
+        },
+        {
+          "sourceId": "eswiki-cnfe"
+        }
+      ],
+      "note": "Vitoria-Alsasua (Norte trunk); the Ir\u00fan road (CNFE I) (rail: verified in a fetched source). Main road: a CNFE itinerary or radial highway."
+    },
+    {
+      "a": "alava",
+      "b": "la-rioja",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-norte"
+        }
+      ],
+      "note": "No line: the Ebro line runs Haro-Miranda (Burgos) (rail: design note). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "alava",
+      "b": "burgos",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "main"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "main"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-norte"
+        },
+        {
+          "sourceId": "eswiki-cnfe"
+        }
+      ],
+      "note": "Miranda de Ebro-Vitoria (Norte trunk); the Ir\u00fan road (CNFE I) (rail: verified in a fetched source). Main road: a CNFE itinerary or radial highway."
+    },
+    {
+      "a": "navarra",
+      "b": "la-rioja",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "single"
+          }
+        }
+      ],
+      "note": "Castej\u00f3n-Logro\u00f1o (Tudela-Bilbao) (rail: inferred from a named route). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "navarra",
+      "b": "zaragoza",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "single"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-norte"
+        }
+      ],
+      "note": "Zaragoza-Pamplona (Norte) and Castej\u00f3n-Zaragoza (rail: verified in a fetched source). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "navarra",
+      "b": "huesca",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        }
+      ],
+      "note": "No line across the Pyrenean foothills (rail: design note). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "la-rioja",
+      "b": "zaragoza",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        }
+      ],
+      "note": "The Ebro line runs through Castej\u00f3n (Navarra) (rail: design note). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "la-rioja",
+      "b": "burgos",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "single"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-norte"
+        }
+      ],
+      "note": "Logro\u00f1o-Haro-Miranda (Tudela-Bilbao) (rail: inferred from a named route). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "la-rioja",
+      "b": "soria",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        }
+      ],
+      "note": "No line over the Cameros (rail: design note). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "zaragoza",
+      "b": "huesca",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "single"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-norte"
+        }
+      ],
+      "note": "Zaragoza-Huesca (Norte) (rail: verified in a fetched source). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "zaragoza",
+      "b": "teruel",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "single"
+          }
+        }
+      ],
+      "note": "Calatayud-Teruel (Central de Arag\u00f3n) (rail: inferred from a named route). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "zaragoza",
+      "b": "soria",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "main"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "main"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-norte"
+        },
+        {
+          "sourceId": "eswiki-mza"
+        },
+        {
+          "sourceId": "eswiki-cnfe"
+        }
+      ],
+      "note": "Madrid-Zaragoza through Medinaceli and Ariza (MZA); the Barcelona road (CNFE XIII) (rail: verified in a fetched source). Main road: a CNFE itinerary or radial highway."
+    },
+    {
+      "a": "zaragoza",
+      "b": "guadalajara",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-norte"
+        },
+        {
+          "sourceId": "eswiki-mza"
+        }
+      ],
+      "note": "The MZA main line runs through Soria (Medinaceli), not across this border (the table's inferred edge) (rail: design note). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "zaragoza",
+      "b": "lleida",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "main"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "main"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-norte"
+        },
+        {
+          "sourceId": "eswiki-cnfe"
+        }
+      ],
+      "note": "Zaragoza-Lleida-Barcelona (Norte); the Barcelona road (CNFE XIII) (rail: verified in a fetched source). Main road: a CNFE itinerary or radial highway."
+    },
+    {
+      "a": "zaragoza",
+      "b": "tarragona",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "single"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-mza"
+        }
+      ],
+      "note": "Zaragoza-Caspe-Reus (MZA) (rail: inferred from a named route). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "huesca",
+      "b": "lleida",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "single"
+          }
+        }
+      ],
+      "note": "Through Monz\u00f3n (rail: inferred from a named route). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "teruel",
+      "b": "cuenca",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        }
+      ],
+      "note": "No line (rail: design note). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "teruel",
+      "b": "guadalajara",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        }
+      ],
+      "note": "No line (rail: design note). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "teruel",
+      "b": "tarragona",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-historia-ferrocarril"
+        }
+      ],
+      "note": "No line: the Val de Zaf\u00e1n was unfinished (rail: verified in a fetched source). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "teruel",
+      "b": "valencia",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        }
+      ],
+      "note": "The Central de Arag\u00f3n runs through Segorbe (Castell\u00f3n) to Sagunto (rail: design note). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "teruel",
+      "b": "castellon",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "single"
+          }
+        }
+      ],
+      "note": "Teruel-Segorbe-Sagunto (Central de Arag\u00f3n) (rail: inferred from a named route). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "madrid",
+      "b": "guadarrama",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "main"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "main"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-norte"
+        },
+        {
+          "sourceId": "eswiki-cnfe"
+        }
+      ],
+      "note": "Madrid-Villalba (Norte trunk); the Ir\u00fan and A Coru\u00f1a roads (CNFE I, IV) (rail: verified in a fetched source). Main road: a CNFE itinerary or radial highway."
+    },
+    {
+      "a": "madrid",
+      "b": "henares",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "main"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "main"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-mza"
+        },
+        {
+          "sourceId": "eswiki-cnfe"
+        }
+      ],
+      "note": "Madrid-Alcal\u00e1 (MZA Madrid-Zaragoza); the Barcelona road (CNFE XIII) (rail: verified in a fetched source). Main road: a CNFE itinerary or radial highway."
+    },
+    {
+      "a": "madrid",
+      "b": "avila",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-norte"
+        }
+      ],
+      "note": "The road through the Alberche valley that flanks the Guadarrama passes; the trunk runs through Villalba (rail: design note). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "madrid",
+      "b": "toledo",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "main"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "main"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-mza"
+        },
+        {
+          "sourceId": "eswiki-oeste"
+        },
+        {
+          "sourceId": "eswiki-cnfe"
+        }
+      ],
+      "note": "Aranjuez-Alc\u00e1zar (MZA) and Madrid-Talavera (Oeste); the C\u00e1diz and Badajoz roads (CNFE IX, VII) (rail: verified in a fetched source). Main road: a CNFE itinerary or radial highway."
+    },
+    {
+      "a": "madrid",
+      "b": "cuenca",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "main"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "single"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-mza"
+        },
+        {
+          "sourceId": "eswiki-cnfe"
+        }
+      ],
+      "note": "Aranjuez-Cuenca, a dead end (MZA); the Valencia road through Taranc\u00f3n (CNFE XII) (rail: verified in a fetched source). Main road: a CNFE itinerary or radial highway."
+    },
+    {
+      "a": "madrid",
+      "b": "guadalajara",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        }
+      ],
+      "note": "The main line runs through Alcal\u00e1 (Henares) (rail: design note). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "guadarrama",
+      "b": "henares",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        }
+      ],
+      "note": "No line (rail: design note). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "guadarrama",
+      "b": "avila",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "main"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-norte"
+        }
+      ],
+      "note": "Villalba-El Escorial-\u00c1vila (Norte trunk) (rail: verified in a fetched source). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "guadarrama",
+      "b": "segovia",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "main"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "single"
+          }
+        },
+        {
+          "@type": "pass",
+          "@data": {
+            "name": "Somosierra"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-norte"
+        },
+        {
+          "sourceId": "eswiki-sierra-1936"
+        }
+      ],
+      "note": "Villalba-Segovia (Norte); the Ir\u00fan and A Coru\u00f1a roads over the Guadarrama crest, where Mola's columns took Somosierra and the Alto del Le\u00f3n (Navacerrada is on the same crest, unverified) (rail: verified in a fetched source). Main road: a CNFE itinerary or radial highway."
+    },
+    {
+      "a": "guadarrama",
+      "b": "guadalajara",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        }
+      ],
+      "note": "No line (rail: design note). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "henares",
+      "b": "guadalajara",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "main"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "main"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-mza"
+        },
+        {
+          "sourceId": "eswiki-cnfe"
+        }
+      ],
+      "note": "Madrid-Guadalajara-Zaragoza (MZA, 350.5 km); the Barcelona road (CNFE XIII) (rail: verified in a fetched source). Main road: a CNFE itinerary or radial highway."
+    },
+    {
+      "a": "burgos",
+      "b": "valladolid",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "single"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-mza"
+        }
+      ],
+      "note": "Ariza-Aranda-Valladolid (MZA) (rail: inferred from a named route). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "burgos",
+      "b": "palencia",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "main"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-norte"
+        }
+      ],
+      "note": "Venta de Ba\u00f1os-Burgos (Norte trunk) (rail: verified in a fetched source). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "burgos",
+      "b": "segovia",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "main"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-cnfe"
+        },
+        {
+          "sourceId": "eswiki-historia-ferrocarril"
+        }
+      ],
+      "note": "The Ir\u00fan road (CNFE I); no line: Madrid-Burgos direct opened only in 1968 (rail: verified in a fetched source). Main road: a CNFE itinerary or radial highway."
+    },
+    {
+      "a": "burgos",
+      "b": "soria",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "single"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-santander-mediterraneo"
+        }
+      ],
+      "note": "Burgos-Soria (Santander-Mediterr\u00e1neo, 1927-1930) (rail: from a source snippet). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "valladolid",
+      "b": "leon",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "main"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-cnfe"
+        }
+      ],
+      "note": "The Oviedo road (CNFE III); the railway runs through Palencia (rail: design note). Main road: a CNFE itinerary or radial highway."
+    },
+    {
+      "a": "valladolid",
+      "b": "palencia",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "main"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-norte"
+        }
+      ],
+      "note": "Valladolid-Venta de Ba\u00f1os (Norte trunk) (rail: verified in a fetched source). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "valladolid",
+      "b": "zamora",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "main"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "single"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-norte"
+        }
+      ],
+      "note": "Medina-Zamora; the A Coru\u00f1a road through Tordesillas and Benavente (rail: inferred from a named route). Main road: a CNFE itinerary or radial highway."
+    },
+    {
+      "a": "valladolid",
+      "b": "salamanca",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "single"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-norte"
+        },
+        {
+          "sourceId": "eswiki-oeste"
+        }
+      ],
+      "note": "Medina-Salamanca (Oeste) (rail: verified in a fetched source). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "valladolid",
+      "b": "avila",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "main"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "main"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-norte"
+        }
+      ],
+      "note": "\u00c1vila-Medina del Campo (Norte trunk); the A Coru\u00f1a road (rail: verified in a fetched source). Main road: a CNFE itinerary or radial highway."
+    },
+    {
+      "a": "valladolid",
+      "b": "segovia",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "main"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "single"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-norte"
+        }
+      ],
+      "note": "Segovia-Medina; the Valladolid road (rail: unverified, needed for connectivity). Main road: a CNFE itinerary or radial highway."
+    },
+    {
+      "a": "leon",
+      "b": "palencia",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "single"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-norte"
+        }
+      ],
+      "note": "Palencia-Le\u00f3n (Norte) (rail: inferred from a named route). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "leon",
+      "b": "zamora",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "main"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "single"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-oeste"
+        }
+      ],
+      "note": "The Via de la Plata line to Astorga; the A Coru\u00f1a road through Benavente (rail: verified in a fetched source). Main road: a CNFE itinerary or radial highway."
+    },
+    {
+      "a": "zamora",
+      "b": "salamanca",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "main"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "single"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-oeste"
+        },
+        {
+          "sourceId": "eswiki-cnfe"
+        }
+      ],
+      "note": "The Via de la Plata line; the A Coru\u00f1a road (CNFE IV through Salamanca and Benavente) (rail: verified in a fetched source). Main road: a CNFE itinerary or radial highway."
+    },
+    {
+      "a": "salamanca",
+      "b": "avila",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "main"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "single"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-oeste"
+        },
+        {
+          "sourceId": "eswiki-cnfe"
+        }
+      ],
+      "note": "\u00c1vila-Salamanca (Oeste); the A Coru\u00f1a road (CNFE IV) (rail: verified in a fetched source). Main road: a CNFE itinerary or radial highway."
+    },
+    {
+      "a": "salamanca",
+      "b": "caceres",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "single"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-oeste"
+        }
+      ],
+      "note": "Plasencia-Salamanca (Oeste, Via de la Plata) (rail: verified in a fetched source). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "avila",
+      "b": "segovia",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "main"
+          }
+        }
+      ],
+      "note": "The A Coru\u00f1a road through Villacast\u00edn; no line (rail: design note). Main road: a CNFE itinerary or radial highway."
+    },
+    {
+      "a": "avila",
+      "b": "toledo",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        }
+      ],
+      "note": "No line (rail: design note). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "avila",
+      "b": "caceres",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        }
+      ],
+      "note": "No line (rail: design note). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "segovia",
+      "b": "soria",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        }
+      ],
+      "note": "No line (rail: design note). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "segovia",
+      "b": "guadalajara",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        }
+      ],
+      "note": "No line (rail: design note). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "soria",
+      "b": "guadalajara",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "main"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "main"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-norte"
+        },
+        {
+          "sourceId": "eswiki-mza"
+        },
+        {
+          "sourceId": "eswiki-cnfe"
+        }
+      ],
+      "note": "Madrid-Zaragoza through Sig\u00fcenza and Medinaceli (MZA); the Barcelona road (CNFE XIII) (rail: inferred from a named route). Main road: a CNFE itinerary or radial highway."
+    },
+    {
+      "a": "toledo",
+      "b": "ciudad-real",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "main"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "main"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-mza"
+        },
+        {
+          "sourceId": "eswiki-cnfe"
+        }
+      ],
+      "note": "Aranjuez-Alc\u00e1zar de San Juan (MZA) and Madrid-Ciudad Real; the C\u00e1diz road (CNFE IX) (rail: verified in a fetched source). Main road: a CNFE itinerary or radial highway."
+    },
+    {
+      "a": "toledo",
+      "b": "cuenca",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        }
+      ],
+      "note": "No line (rail: design note). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "toledo",
+      "b": "badajoz",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        }
+      ],
+      "note": "No line (rail: design note). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "toledo",
+      "b": "caceres",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "main"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "main"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-oeste"
+        },
+        {
+          "sourceId": "eswiki-cnfe"
+        }
+      ],
+      "note": "Madrid-Talavera-C\u00e1ceres-Valencia de Alc\u00e1ntara (Oeste, 431 km); the Badajoz road (CNFE VII) (rail: inferred from a named route). Main road: a CNFE itinerary or radial highway."
+    },
+    {
+      "a": "ciudad-real",
+      "b": "cuenca",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        }
+      ],
+      "note": "No line (rail: design note). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "ciudad-real",
+      "b": "albacete",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "main"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-mza"
+        }
+      ],
+      "note": "Alc\u00e1zar de San Juan-Albacete (MZA Madrid-Alicante) (rail: verified in a fetched source). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "ciudad-real",
+      "b": "badajoz",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "single"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-mza"
+        }
+      ],
+      "note": "Ciudad Real-Almorch\u00f3n-Badajoz (MZA) (rail: verified in a fetched source). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "ciudad-real",
+      "b": "cordoba",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-mza"
+        }
+      ],
+      "note": "The C\u00f3rdoba line runs through Despe\u00f1aperros (Ja\u00e9n) or Almorch\u00f3n (Badajoz) (rail: design note). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "ciudad-real",
+      "b": "jaen",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "main"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "main"
+          }
+        },
+        {
+          "@type": "pass",
+          "@data": {
+            "name": "Despe\u00f1aperros"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-mza"
+        },
+        {
+          "sourceId": "eswiki-cnfe"
+        },
+        {
+          "sourceId": "enwiki-despenaperros"
+        }
+      ],
+      "note": "Alc\u00e1zar-Manzanares-Despe\u00f1aperros-Linares-Baeza (MZA); the C\u00e1diz road (CNFE IX); the only natural pass of the Sierra Morena (rail: verified in a fetched source). Main road: a CNFE itinerary or radial highway."
+    },
+    {
+      "a": "cuenca",
+      "b": "guadalajara",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        }
+      ],
+      "note": "No line (rail: design note). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "cuenca",
+      "b": "albacete",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        }
+      ],
+      "note": "No line (rail: design note). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "cuenca",
+      "b": "valencia",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "main"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-cnfe"
+        },
+        {
+          "sourceId": "eswiki-historia-ferrocarril"
+        }
+      ],
+      "note": "The Valencia road (CNFE XII); no line: Cuenca-Utiel was not open (rail: verified in a fetched source). Main road: a CNFE itinerary or radial highway."
+    },
+    {
+      "a": "albacete",
+      "b": "valencia",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "main"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-norte"
+        }
+      ],
+      "note": "Almansa-X\u00e0tiva-Valencia (Norte AVT), the Madrid-Valencia rail route (rail: verified in a fetched source). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "albacete",
+      "b": "alicante",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "main"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-mza"
+        }
+      ],
+      "note": "Albacete-Almansa-Alicante (MZA) (rail: verified in a fetched source). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "albacete",
+      "b": "granada",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        }
+      ],
+      "note": "No line (rail: design note). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "albacete",
+      "b": "jaen",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-historia-ferrocarril"
+        }
+      ],
+      "note": "No line: Baeza-Utiel was never finished (rail: verified in a fetched source). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "albacete",
+      "b": "murcia",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "single"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-mza"
+        }
+      ],
+      "note": "Chinchilla-Murcia-Cartagena (MZA) (rail: verified in a fetched source). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "badajoz",
+      "b": "caceres",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "main"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "single"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-cnfe"
+        }
+      ],
+      "note": "M\u00e9rida-C\u00e1ceres; the Badajoz road through Trujillo (CNFE VII) (rail: inferred from a named route). Main road: a CNFE itinerary or radial highway."
+    },
+    {
+      "a": "badajoz",
+      "b": "sevilla",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "single"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-mza"
+        }
+      ],
+      "note": "M\u00e9rida-Sevilla (MZA) (rail: verified in a fetched source). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "badajoz",
+      "b": "huelva",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "single"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "atlas-andalucia-58"
+        }
+      ],
+      "note": "Zafra-Huelva (rail: read off the 1936 Andalusia atlas map). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "badajoz",
+      "b": "cordoba",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "single"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-mza"
+        }
+      ],
+      "note": "Almorch\u00f3n-B\u00e9lmez (MZA) (rail: verified in a fetched source). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "barcelona",
+      "b": "girona",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "main"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "main"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-cnfe"
+        }
+      ],
+      "note": "Barcelona-Portbou; the La Junquera road (CNFE XIII) (rail: inferred from a named route). Main road: a CNFE itinerary or radial highway."
+    },
+    {
+      "a": "barcelona",
+      "b": "lleida",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "main"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "main"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-norte"
+        },
+        {
+          "sourceId": "eswiki-cnfe"
+        }
+      ],
+      "note": "Lleida-Barcelona (Norte ZPB); the Barcelona road (CNFE XIII) (rail: verified in a fetched source). Main road: a CNFE itinerary or radial highway."
+    },
+    {
+      "a": "barcelona",
+      "b": "tarragona",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "main"
+          }
+        }
+      ],
+      "note": "The coast line, the Mediterranean through line to Barcelona (rail: inferred from a named route; main as the coast trunk, a design note). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "girona",
+      "b": "lleida",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        }
+      ],
+      "note": "No line (rail: design note). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "lleida",
+      "b": "tarragona",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "single"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-norte"
+        }
+      ],
+      "note": "Lleida-Reus-Tarragona (Norte) (rail: verified in a fetched source). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "tarragona",
+      "b": "castellon",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "main"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-norte"
+        }
+      ],
+      "note": "Valencia-Tarragona (Norte AVT, 1891), the Mediterranean through line (rail: verified in a fetched source; main as the coast trunk, a design note). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "valencia",
+      "b": "castellon",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "main"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-norte"
+        }
+      ],
+      "note": "Valencia-Tarragona (Norte AVT, 1891), the Mediterranean through line (rail: verified in a fetched source; main as the coast trunk, a design note). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "valencia",
+      "b": "alicante",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "single"
+          }
+        }
+      ],
+      "note": "X\u00e0tiva-La Encina (rail: inferred from a named route). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "alicante",
+      "b": "murcia",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "single"
+          }
+        }
+      ],
+      "note": "Murcia-Alicante (rail: unverified, needed for connectivity). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "sevilla",
+      "b": "cadiz",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "main"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "single"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "atlas-andalucia-58"
+        },
+        {
+          "sourceId": "eswiki-cnfe"
+        }
+      ],
+      "note": "Utrera-Jerez-C\u00e1diz; the C\u00e1diz road (CNFE IX) (rail: read off the 1936 Andalusia atlas map). Main road: a CNFE itinerary or radial highway."
+    },
+    {
+      "a": "sevilla",
+      "b": "huelva",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "single"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-mza"
+        }
+      ],
+      "note": "Sevilla-Huelva (MZA) (rail: verified in a fetched source). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "sevilla",
+      "b": "cordoba",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "main"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "main"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-mza"
+        },
+        {
+          "sourceId": "eswiki-cnfe"
+        }
+      ],
+      "note": "C\u00f3rdoba-Sevilla (MZA); the C\u00e1diz road (CNFE IX) (rail: verified in a fetched source). Main road: a CNFE itinerary or radial highway."
+    },
+    {
+      "a": "sevilla",
+      "b": "malaga",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "single"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "atlas-andalucia-58"
+        }
+      ],
+      "note": "Utrera-Osuna-Bobadilla (rail: read off the 1936 Andalusia atlas map). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "cadiz",
+      "b": "huelva",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        }
+      ],
+      "note": "No line (rail: design note). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "cadiz",
+      "b": "malaga",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "single"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "atlas-andalucia-58"
+        }
+      ],
+      "note": "Bobadilla-Ronda-Algeciras (rail: read off the 1936 Andalusia atlas map). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "cordoba",
+      "b": "granada",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "atlas-andalucia-58"
+        }
+      ],
+      "note": "The Granada line runs through Bobadilla (M\u00e1laga) or Linares (Ja\u00e9n) (rail: design note). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "cordoba",
+      "b": "malaga",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "single"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "atlas-andalucia-58"
+        }
+      ],
+      "note": "C\u00f3rdoba-Puente Genil-Bobadilla-M\u00e1laga (Andaluces) (rail: read off the 1936 Andalusia atlas map). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "cordoba",
+      "b": "jaen",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "main"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "main"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "eswiki-mza"
+        },
+        {
+          "sourceId": "eswiki-cnfe"
+        }
+      ],
+      "note": "Linares-Baeza-C\u00f3rdoba (MZA); the C\u00e1diz road (CNFE IX) (rail: verified in a fetched source). Main road: a CNFE itinerary or radial highway."
+    },
+    {
+      "a": "granada",
+      "b": "malaga",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "single"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "atlas-andalucia-58"
+        },
+        {
+          "sourceId": "eswiki-malaga-1937"
+        }
+      ],
+      "note": "Bobadilla-Granada (Andaluces); the coast road to Motril (rail: read off the 1936 Andalusia atlas map). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "granada",
+      "b": "jaen",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "single"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "atlas-andalucia-58"
+        }
+      ],
+      "note": "Linares-Moreda (rail: read off the 1936 Andalusia atlas map). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "granada",
+      "b": "almeria",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "single"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "atlas-andalucia-58"
+        },
+        {
+          "sourceId": "eswiki-malaga-1937"
+        }
+      ],
+      "note": "Moreda-Guadix-Almer\u00eda; the coast road from Motril, M\u00e1laga's only land link in 1936 (rail: read off the 1936 Andalusia atlas map). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "granada",
+      "b": "murcia",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "single"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "atlas-andalucia-58"
+        }
+      ],
+      "note": "Lorca-Baza (rail: read off the 1936 Andalusia atlas map). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "almeria",
+      "b": "murcia",
+      "modifiers": [
+        {
+          "@type": "road",
+          "@data": {
+            "level": "track"
+          }
+        },
+        {
+          "@type": "rail",
+          "@data": {
+            "level": "single"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "atlas-andalucia-58"
+        }
+      ],
+      "note": "Lorca-Baza through Hu\u00e9rcal-Overa (rail: read off the 1936 Andalusia atlas map). Track road: roads of some quality ran almost everywhere."
+    },
+    {
+      "a": "mallorca",
+      "b": "menorca",
+      "modifiers": [],
+      "note": "A sea crossing between the islands: no road and no railway (rail: design note)."
+    },
+    {
+      "a": "mallorca",
+      "b": "ibiza",
+      "modifiers": [],
+      "note": "A sea crossing between the islands: no road and no railway (rail: design note)."
+    }
+  ],
+  "linkModifiers": [
+    {
+      "@type": "road",
+      "@data": {
+        "label": "Road",
+        "motorLevel": "main",
+        "motorRange": 2
+      }
+    },
+    {
+      "@type": "rail",
+      "@data": {
+        "label": "Railway",
+        "rangeByLevel": {
+          "single": 2,
+          "main": 4
+        }
+      }
+    },
+    {
+      "@type": "pass",
+      "@data": {
+        "label": "Mountain pass",
+        "noMotor": true,
+        "defenderRoll": -2,
+        "lostToFlanking": true
+      }
+    }
+  ],
+  "linkProjects": {
+    "new-rail": {
+      "cost": {
+        "funds": 24
+      },
+      "turns": 8
+    },
+    "rail-upgrade": {
+      "cost": {
+        "funds": 10
+      },
+      "turns": 4
+    },
+    "road-upgrade": {
+      "cost": {
+        "funds": 6
+      },
+      "turns": 2
+    },
+    "note": "R7, design note scaled to the catalogue: a factory is 12 Funds over 4 turns. A new single line costs twice that and takes twice as long (a province-to-province line; the 91 km Via Negrin took 40 days); a rail upgrade to main costs about a factory; a road upgrade costs a Barracks. Starting values for the harness to tune."
+  },
   "resources": [
     {
       "id": "funds",
@@ -4251,18 +7622,21 @@
       "id": "factory",
       "name": "Factory",
       "cost": {
-        "funds": 12
+        "funds": 12,
+        "manpower": 6
       },
       "turns": 4,
       "capitalOnly": true,
       "cityOnly": true,
       "effects": [
         {
-          "kind": "recruit-slots",
-          "extra": 1
+          "@type": "recruit-slots",
+          "@data": {
+            "extra": 1
+          }
         }
       ],
-      "note": "R3, D7: one more Recruit order a turn. D28.4: built only in a capital sub-territory, the only place it unlocks anything. Design note: a starting value for the harness to tune (Q-MR-26, H7)."
+      "note": "R3, D7: one more Recruit order a turn. D28.4: built only in a capital sub-territory, the only place it unlocks anything. Design note: a starting value for the harness to tune (Q-MR-26, H7). R9: plus a one-time 6 Manpower, the workers it takes from the front (history.md note 13: the Catalan war industry employed 50,000-80,000; factory labour and soldiers came from one pool)."
     },
     {
       "id": "depot",
@@ -4273,9 +7647,11 @@
       "turns": 2,
       "effects": [
         {
-          "kind": "replenish-discount",
-          "resource": "funds",
-          "share": 0.25
+          "@type": "replenish-discount",
+          "@data": {
+            "resource": "funds",
+            "share": 0.25
+          }
         }
       ],
       "note": "$4, D28.1: materiel on hand makes Replenish cost 25 percent less Funds; it also gates trucks and tanks (R3). Design note: a starting value for the harness to tune (Q-MR-26, H7)."
@@ -4289,8 +7665,10 @@
       "turns": 2,
       "effects": [
         {
-          "kind": "defence-roll",
-          "roll": 1
+          "@type": "defence-roll",
+          "@data": {
+            "roll": 1
+          }
         }
       ],
       "note": "$4. Design note: a starting value for the harness to tune (Q-MR-26, H7)."
@@ -4304,8 +7682,10 @@
       "turns": 2,
       "effects": [
         {
-          "kind": "replenish-cap",
-          "share": 0.25
+          "@type": "replenish-cap",
+          "@data": {
+            "share": 0.25
+          }
         }
       ],
       "note": "R5, D28.1: the per-turn Replenish cap rises from half the establishment to three quarters. Design note: a starting value for the harness to tune (Q-MR-26, H7)."
@@ -4319,7 +7699,7 @@
       "turns": 3,
       "effects": [
         {
-          "kind": "airbase"
+          "@type": "airbase"
         }
       ],
       "note": "U2. Design note: a starting value for the harness to tune (Q-MR-26, H7)."
@@ -4334,7 +7714,7 @@
       "upgradeOf": "airfield",
       "effects": [
         {
-          "kind": "all-weather-airbase"
+          "@type": "all-weather-airbase"
         }
       ],
       "note": "U2: flies in Mud and Snow. Design note: a starting value for the harness to tune (Q-MR-26, H7)."
@@ -4348,8 +7728,10 @@
       "turns": 3,
       "effects": [
         {
-          "kind": "rail-departures",
-          "extra": 1
+          "@type": "rail-departures",
+          "@data": {
+            "extra": 1
+          }
         }
       ],
       "note": "M3: one more army by rail a turn from its capital. Design note: a starting value for the harness to tune (Q-MR-26, H7)."
@@ -4361,7 +7743,7 @@
         "funds": 6
       },
       "turns": 3,
-      "maxLevel": 3
+      "maxLevel": 2
     },
     "port": {
       "cost": {
@@ -4371,7 +7753,7 @@
       "maxLevel": 2
     },
     "railDamageOnContest": 1,
-    "note": "$4, $8. Design note: a starting value for the harness to tune (Q-MR-26, H7)."
+    "note": "$4, $8. Design note: a starting value for the harness to tune (Q-MR-26, H7). The rail improvement repairs a station: it never rises above its best link (single 1, main 2; declog D12), so maxLevel is 2."
   },
   "recruitment": {
     "maxPerTerritory": 2,
@@ -4381,8 +7763,7 @@
   },
   "movement": {
     "landingsPerPortLevel": 1,
-    "railRangePerLevel": 2,
-    "note": "Declog D7."
+    "note": "Declog D7. Rail range is the links' (linkModifiers rail rangeByLevel, R5)."
   },
   "d20": {
     "grades": [
@@ -4721,8 +8102,8 @@
       ]
     ],
     "modifiers": {
-      "worksPerTurn": 3,
-      "worksMax": 9,
+      "worksPerTurn": 2,
+      "worksMax": 6,
       "belowOneToOnePenalty": 3,
       "barricades": 1,
       "fatigued": -2,
@@ -4742,7 +8123,7 @@
         "defence": 3
       }
     ],
-    "note": "D1-D7: the 13-grade catalogue (Q-MR-06), today's modifiers x3 (Q-D20-6), fatigue (Q-MR-04), break-up at 10 percent (Q-MR-08). Column k reads grade floor((score + 3k + 4) / 3), with scores 0-1 destroying the attacker at 1:1 and below (Q-D20-1 note); a starting table for the harness to tune."
+    "note": "D1-D7: the 13-grade catalogue (Q-MR-06), today's modifiers x3 (Q-D20-6), but dug-in at -2 a pip to -6 (three pips; Q-R2-12a), fatigue (Q-MR-04), break-up at 10 percent (Q-MR-08). Column k reads grade floor((score + 3k + 4) / 3), with scores 0-1 destroying the attacker at 1:1 and below (Q-D20-1 note); a starting table for the harness to tune."
   },
   "weather": {
     "outcomes": [
@@ -4762,12 +8143,17 @@
         "attackRoll": 0,
         "effects": [
           {
-            "kind": "closes-sea",
-            "months": [
-              12,
-              1,
-              2
-            ]
+            "@type": "grounds-aircraft"
+          },
+          {
+            "@type": "closes-sea",
+            "@data": {
+              "months": [
+                12,
+                1,
+                2
+              ]
+            }
           }
         ]
       },
@@ -4777,11 +8163,13 @@
         "attackRoll": -3,
         "effects": [
           {
-            "kind": "movement-penalty",
-            "amount": 1
+            "@type": "movement-penalty",
+            "@data": {
+              "amount": 1
+            }
           },
           {
-            "kind": "grounds-aircraft"
+            "@type": "grounds-aircraft"
           }
         ]
       },
@@ -4791,14 +8179,16 @@
         "attackRoll": -3,
         "effects": [
           {
-            "kind": "blocks-digging-in"
+            "@type": "blocks-digging-in"
           },
           {
-            "kind": "movement-penalty",
-            "amount": 1
+            "@type": "movement-penalty",
+            "@data": {
+              "amount": 1
+            }
           },
           {
-            "kind": "grounds-aircraft"
+            "@type": "grounds-aircraft"
           }
         ]
       },
@@ -4808,11 +8198,13 @@
         "attackRoll": -6,
         "effects": [
           {
-            "kind": "blocks-digging-in"
+            "@type": "blocks-digging-in"
           },
           {
-            "kind": "frostbite",
-            "share": 0.05
+            "@type": "frostbite",
+            "@data": {
+              "share": 0.05
+            }
           }
         ]
       }
@@ -5149,8 +8541,9 @@
     ],
     "interceptRoll": -2,
     "reconTurns": 1,
+    "supportMax": 2,
     "generalDeathRoll": 4,
-    "note": "U3, U4 and declog D7. Design note: a starting value for the harness to tune (Q-MR-26, H7). generalDeathRoll 4 (a 1 in 5 chance that a general dies when his army is destroyed or routed) is a design note for the harness to tune (U5, Q-MR-28)."
+    "note": "U3, U4 and declog D7. Design note: a starting value for the harness to tune (Q-MR-26, H7). R11: supportMax 2, at most two aircraft count for Ground Support on one side (closeout, Air). R10: Rain grounds aircraft like Mud and Snow; a paved airfield still flies. generalDeathRoll 4 (a 1 in 5 chance that a general dies when his army is destroyed or routed) is a design note for the harness to tune (U5, Q-MR-28)."
   },
   "generals": {
     "traits": [
@@ -5159,9 +8552,11 @@
         "name": "Aggressive",
         "effects": [
           {
-            "kind": "roll-modifier",
-            "role": "attack",
-            "roll": 1
+            "@type": "roll-modifier",
+            "@data": {
+              "role": "attack",
+              "roll": 1
+            }
           }
         ]
       },
@@ -5170,9 +8565,11 @@
         "name": "Tenacious",
         "effects": [
           {
-            "kind": "roll-modifier",
-            "role": "defence",
-            "roll": 1
+            "@type": "roll-modifier",
+            "@data": {
+              "role": "defence",
+              "roll": 1
+            }
           }
         ]
       },
@@ -5181,9 +8578,11 @@
         "name": "Cautious",
         "effects": [
           {
-            "kind": "roll-modifier",
-            "role": "attack",
-            "roll": -1
+            "@type": "roll-modifier",
+            "@data": {
+              "role": "attack",
+              "roll": -1
+            }
           }
         ]
       },
@@ -5192,7 +8591,7 @@
         "name": "Uninspiring",
         "effects": [
           {
-            "kind": "no-rally"
+            "@type": "no-rally"
           }
         ]
       }
@@ -5449,6 +8848,51 @@
       "id": "enwiki-republican-air-force",
       "title": "English Wikipedia, Spanish Republican Air Force",
       "url": "https://en.wikipedia.org/wiki/Spanish_Republican_Air_Force"
+    },
+    {
+      "id": "eswiki-norte",
+      "title": "Spanish Wikipedia, Compa\u00f1\u00eda de los Caminos de Hierro del Norte de Espa\u00f1a",
+      "url": "https://es.wikipedia.org/wiki/Compa%C3%B1%C3%ADa_de_los_Caminos_de_Hierro_del_Norte_de_Espa%C3%B1a"
+    },
+    {
+      "id": "eswiki-mza",
+      "title": "Spanish Wikipedia, Compa\u00f1\u00eda de los Ferrocarriles de Madrid a Zaragoza y a Alicante",
+      "url": "https://es.wikipedia.org/wiki/Compa%C3%B1%C3%ADa_de_los_Ferrocarriles_de_Madrid_a_Zaragoza_y_a_Alicante"
+    },
+    {
+      "id": "eswiki-oeste",
+      "title": "Spanish Wikipedia, Compa\u00f1\u00eda Nacional de los Ferrocarriles del Oeste",
+      "url": "https://es.wikipedia.org/wiki/Compa%C3%B1%C3%ADa_Nacional_de_los_Ferrocarriles_del_Oeste"
+    },
+    {
+      "id": "atlas-andalucia-58",
+      "title": "Junta de Andaluc\u00eda, Atlas de la Historia del Territorio de Andaluc\u00eda, sheet 58: El ferrocarril de las compa\u00f1\u00edas",
+      "url": "https://ws089.juntadeandalucia.es/atlasterritorio/at/pdf/58_elferrocarrildelascompa%C3%B1%C3%ADas.pdf"
+    },
+    {
+      "id": "eswiki-historia-ferrocarril",
+      "title": "Spanish Wikipedia, Historia del ferrocarril en Espa\u00f1a",
+      "url": "https://es.wikipedia.org/wiki/Historia_del_ferrocarril_en_Espa%C3%B1a"
+    },
+    {
+      "id": "eswiki-cnfe",
+      "title": "Spanish Wikipedia, Circuito Nacional de Firmes Especiales",
+      "url": "https://es.wikipedia.org/wiki/Circuito_Nacional_de_Firmes_Especiales"
+    },
+    {
+      "id": "enwiki-despenaperros",
+      "title": "English Wikipedia, Despe\u00f1aperros Pass",
+      "url": "https://en.wikipedia.org/wiki/Despe%C3%B1aperros_Pass"
+    },
+    {
+      "id": "eswiki-santander-mediterraneo",
+      "title": "Spanish Wikipedia, Ferrocarril Santander-Mediterr\u00e1neo",
+      "url": "https://es.wikipedia.org/wiki/Ferrocarril_Santander-Mediterr%C3%A1neo"
+    },
+    {
+      "id": "eswiki-malaga-1937",
+      "title": "Spanish Wikipedia, Batalla de M\u00e1laga (1937)",
+      "url": "https://es.wikipedia.org/wiki/Batalla_de_M%C3%A1laga_(1937)"
     }
   ]
 }

@@ -9,7 +9,7 @@ import { legalDestinations } from "../main/engine/validation";
 import { groupRoutes } from "../main/map/routes";
 import { describeOutcome, describeOutcomeGroup, groupOutcomes } from "../main/presentation/text";
 import { OutcomeSummary } from "../main/screens/ResultPanels";
-import { chooseOrderKind, clickMapTerritory, openSetup, startGame, toggleOrderMenu } from "../main/state/gameSlice";
+import { chooseOrderKind, clickMapTerritory, openSetup, startGame } from "../main/state/gameSlice";
 import { emptyDraft } from "../main/state/session";
 import { type ArmySpec, battlefield, battlesOf, faction, loadedDice, move, play as resolve, spainM2, spainId, territory, testStore, tiny, unit, withUnits } from "./support";
 
@@ -185,7 +185,7 @@ describe("friendly consolidation (engine)", () => {
       move("north", "north-aragon-17", "aragon", "castilla-la-mancha"),
       move("south", "south-granada-6", "andalucia", "castilla-la-mancha"),
       move("south", "south-lepanto-5", "andalucia", "castilla-la-mancha")
-    ], loadedDice([1, 1, 4, 4, 4, 4, 4]));
+    ], loadedDice([1, 4, 1, 4, 4, 4, 4, 4]));
     expect([resultOf(result, "rep-wad-ras-1"), resultOf(result, "rep-covadonga-4")]).toEqual(["reinforced", "reinforced"]);
     const attacks = battlesOf(result).filter((battle) => battle.site.kind === "assault");
     expect(attacks.map((battle) => battle.attackerFactionId)).toEqual(["north", "south"]);
@@ -247,7 +247,6 @@ describe("friendly consolidation (planning and computer players)", () => {
     // open the order menu, choose Move, pick the destination.
     const moveAll = (from: string, to: string) => {
       store.dispatch(clickMapTerritory(territory(from)));
-      store.dispatch(toggleOrderMenu());
       store.dispatch(chooseOrderKind("move"));
       store.dispatch(clickMapTerritory(territory(to)));
     };
@@ -276,7 +275,6 @@ describe("friendly consolidation (planning and computer players)", () => {
     const game = { assignments: { [faction("republic")]: "local-human" as const }, history: [], locked: {}, scenarioId: spainId, seed: 1, state: { ...start, units } };
     const store = testStore({ game: { session: { draft: emptyDraft, factionId: faction("republic"), game, phase: "planning" } } });
     store.dispatch(clickMapTerritory(territory("madrid")));
-    store.dispatch(toggleOrderMenu());
     store.dispatch(chooseOrderKind("move"));
     // Castilla y Leon is held by the Northern command; Castilla-La Mancha is the Republic's own.
     store.dispatch(clickMapTerritory(territory("castilla-y-leon")));
@@ -400,9 +398,14 @@ describe("friendly consolidation (turn report)", () => {
   });
 
   it("shows one line per group in the summary and says that own armies never block each other", () => {
-    render(<OutcomeSummary result={reportedCase(false)} scenario={spainM2()} />);
-    const bounced = screen.getByText("Bounced (6)").closest("details");
-    expect(within(bounced!).getAllByRole("listitem")).toHaveLength(3);
+    const { container } = render(<OutcomeSummary result={reportedCase(false)} scenario={spainM2()} />);
+    // U10: by faction, so each faction's bounced pair reads as its own group of one line.
+    const bounced = [...container.querySelectorAll("details.outcome-group")].filter((details) => details.querySelector("summary")?.textContent.startsWith("Bounced"));
+    expect(bounced.map((details) => [details.closest("section")?.querySelector("h4")?.textContent, details.querySelector("summary")?.textContent, within(details as HTMLElement).getAllByRole("listitem").length])).toEqual([
+      ["Republican Government2 events", "Bounced (2)", 1],
+      ["Northern Insurgent Command2 events", "Bounced (2)", 1],
+      [expect.stringMatching(/2 events$/u), "Bounced (2)", 1]
+    ]);
     expect(screen.getByText(/A faction's own units never block each other/)).toBeVisible();
     cleanup();
 

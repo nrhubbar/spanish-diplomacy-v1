@@ -45,12 +45,12 @@ describe("loader edge cases", () => {
   it("indexes optional fields, isolated territories, and terrain layers", () => {
     const scenario = structuredClone(tinyScenario) as unknown as Json;
     const map = structuredClone(tinyMap) as unknown as Json;
-    (scenario["territories"] as Json[]).push({ countsForVictory: false, id: "outpost", initialControl: { factionId: "blue", kind: "controlled" }, isolated: { reason: "Out of reach" }, name: "Outpost" });
+    (scenario["territories"] as Json[]).push({ countsForVictory: false, id: "outpost", initialControl: { "@type": "controlled", "@data": { factionId: "blue" } }, isolated: { reason: "Out of reach" }, name: "Outpost" });
     (scenario["cities"] as Json[]).push({ countsForVictory: false, id: "free-town", name: "Free Town", territoryId: "lowlands" });
     (scenario["sources"] as Json[]).push({ id: "atlas", title: "Atlas", url: "https://example.org/atlas" });
     (scenario["units"] as Json[])[0]!["sources"] = [{ reference: "p. 4", sourceId: "atlas" }];
     (scenario["units"] as Json[])[0]!["historicalNote"] = "Note.";
-    (map["territories"] as Json)["outpost"] = { label: { tier: "detail", x: 10, y: 10 }, shape: { kind: "circle", r: 4, x: 10, y: 10 }, unitAnchor: { x: 10, y: 10 } };
+    (map["territories"] as Json)["outpost"] = { label: { tier: "detail", x: 10, y: 10 }, shape: { "@type": "circle", "@data": { r: 4, x: 10, y: 10 } }, unitAnchor: { x: 10, y: 10 } };
     (map["cities"] as Json)["free-town"] = { tier: "detail", x: 120, y: 160 };
     map["terrain"] = { layers: [{ bounds: { height: 400, width: 600, x: 0, y: 0 }, image: "a/relief.webp" }] };
     const loaded = loadPackage({
@@ -141,7 +141,7 @@ describe("engine and computer edge cases", () => {
   it("keeps a territory-less draft intact when clearing or cancelling, and refuses orders with no destinations", () => {
     const scenario = tiny();
     const game: GameRecord = { assignments: {}, history: [], locked: {}, scenarioId: tinyId, seed: 1, state: initialGameState(scenario) };
-    const planning: PlanningSession = { draft: { orders: [], selectedUnitIds: [unit("red-guard")], stage: { step: "choose-order" } }, factionId: faction("red"), game, phase: "planning" };
+    const planning: PlanningSession = { draft: { orders: [], selectedUnitIds: [unit("red-guard")], stage: { orderKind: "move", step: "choose-destination" } }, factionId: faction("red"), game, phase: "planning" };
     expect(clearSelection(planning).draft).toEqual({ orders: [], selectedUnitIds: [] });
     expect(cancelOrder(planning).draft).toEqual({ orders: [], selectedUnitIds: [unit("red-guard")] });
     const stranded: PlanningSession = { ...planning, draft: { orders: [], selectedTerritoryId: territory("westfold"), selectedUnitIds: [unit("ghost")] } };

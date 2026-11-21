@@ -20,7 +20,7 @@
     "isle": {
       "unitAnchor": { "x": 180, "y": 30 },
       "label": { "x": 180, "y": 14, "tier": "overview" },
-      "shape": { "kind": "circle", "x": 180, "y": 30, "r": 12 }
+      "shape": { "@type": "circle", "@data": { "x": 180, "y": 30, "r": 12 } }
     }
   },
   "cities": {

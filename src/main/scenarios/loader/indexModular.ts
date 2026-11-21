@@ -1,4 +1,7 @@
+import { linkKey } from "../../engine/network/links";
+import { linkWorks } from "../../engine/types";
 import type {
+  BuildableId,
   BuildingDefinition,
   BuildingId,
   CityId,
@@ -8,7 +11,13 @@ import type {
   GeneralDefinition,
   GeneralId,
   GradeId,
+  LinkDefinition,
+  LinkModifierRules,
+  LinkProjectRules,
+  PassRules,
+  RailRules,
   ResourceId,
+  RoadRules,
   Resources,
   Scenario,
   ScenarioIndex,
@@ -27,9 +36,9 @@ import type { ModularScenarioDocument, ScenarioDocument } from "../schema/scenar
 import { citations, factionModifier } from "./convert";
 
 type SystemFields =
-  | "air" | "buildings" | "calendar" | "d20" | "development" | "generalTraits" | "generals" | "improvements"
-  | "movement" | "recruitment" | "resources" | "subTerritories" | "subTerritoryBorders" | "weather";
-type SystemIndex = "buildings" | "development" | "generals" | "generalsByFaction" | "subTerritories" | "subTerritoriesByTerritory" | "subTerritoryNeighbors";
+  | "air" | "buildings" | "calendar" | "d20" | "development" | "generalTraits" | "generals" | "improvements" | "links" | "linkModifiers"
+  | "linkProjects" | "movement" | "recruitment" | "resources" | "subTerritories" | "subTerritoryBorders" | "weather";
+type SystemIndex = "buildings" | "development" | "generals" | "generalsByFaction" | "links" | "subTerritories" | "subTerritoriesByTerritory" | "subTerritoryNeighbors";
 
 export interface ModularParts {
   readonly index: Pick<ScenarioIndex, SystemIndex>;
@@ -43,16 +52,35 @@ export function emptySystems(): ModularParts {
   return indexSystems(undefined);
 }
 
+/** D3: the rail level of a link, as today's per-sub-territory levels count it: single 1, main 2. */
+function linkRail(link: LinkDefinition): number {
+  const rail = link.modifiers.find((modifier) => modifier.kind === "rail");
+  return rail === undefined ? 0 : rail.level === "main" ? 2 : 1;
+}
+
 export function indexSystems(document: ModularScenarioDocument | undefined): ModularParts {
+  const links = (document?.links ?? []).map((link): LinkDefinition => ({
+    a: link.a as SubTerritoryId,
+    b: link.b as SubTerritoryId,
+    basis: { sources: citations(link.sources), ...(link.note === undefined ? {} : { note: link.note }) },
+    modifiers: link.modifiers
+  }));
+  // TODO(network-engine): the engine still reads a rail level per sub-territory; until rail moves
+  // to the links, a sub-territory's level is the best of its links' (D3).
+  const railLevels = new Map<string, number>();
+  for (const link of links) {
+    for (const end of [link.a, link.b]) railLevels.set(end, Math.max(railLevels.get(end) ?? 0, linkRail(link)));
+  }
   const subTerritories = (document?.subTerritories ?? []).map((sub): SubTerritoryDefinition => ({
     basis: { sources: citations(sub.sources), ...(sub.note === undefined ? {} : { note: sub.note }) },
+    buildable: sub.buildable as BuildableId[],
     buildings: sub.buildings as BuildingId[],
     cityIds: (document?.cities ?? []).filter((city) => city.subTerritoryId === sub.id).map((city) => city.id as CityId),
     development: sub.development as Record<DevelopmentId, number>,
     id: sub.id as SubTerritoryId,
     name: sub.name,
     port: sub.port,
-    rail: sub.rail,
+    rail: railLevels.get(sub.id) ?? 0,
     startHolder: sub.startHolder as FactionId,
     terrain: sub.terrain,
     territoryId: sub.territoryId as TerritoryId
@@ -99,6 +127,7 @@ export function indexSystems(document: ModularScenarioDocument | undefined): Mod
       development: new Map(development.map((track) => [track.id, track])),
       generals: new Map(generals.map((general) => [general.id, general])),
       generalsByFaction: group(generals, (general) => general.factionId),
+      links: new Map(links.map((link) => [linkKey(link.a, link.b), link])),
       subTerritories: new Map(subTerritories.map((sub) => [sub.id, sub])),
       subTerritoriesByTerritory: group(subTerritories, (sub) => sub.territoryId),
       subTerritoryNeighbors: neighbors
@@ -108,6 +137,8 @@ export function indexSystems(document: ModularScenarioDocument | undefined): Mod
       development,
       generalTraits: (document?.generals?.traits ?? []).map((trait) => ({ ...trait, id: trait.id as TraitId })),
       generals,
+      links,
+      linkModifiers: linkModifierRules(document),
       resources: (document?.resources ?? []).map((resource) => ({
         ...(resource.display === undefined ? {} : { display: resource.display }),
         id: resource.id as ResourceId,
@@ -120,10 +151,26 @@ export function indexSystems(document: ModularScenarioDocument | undefined): Mod
   };
 }
 
+/** D2: the scenario's link modifier entries, by kind. */
+function linkModifierRules(document: ModularScenarioDocument | undefined): LinkModifierRules {
+  const rules: { pass?: PassRules; rail?: RailRules; road?: RoadRules } = {};
+  for (const { kind, ...entry } of document?.linkModifiers ?? []) {
+    if (kind === "pass") rules.pass = entry as PassRules;
+    else if (kind === "rail") rules.rail = entry as RailRules;
+    else rules.road = entry as RoadRules;
+  }
+  return rules;
+}
+
 function optionalBlocks(document: ModularScenarioDocument | undefined): Partial<Pick<Scenario, SystemFields>> {
   if (document === undefined) return {};
-  const { air, calendar, d20, improvements, movement, recruitment, weather } = document;
+  const { air, calendar, d20, improvements, linkProjects, movement, recruitment, weather } = document;
   return {
+    ...(linkProjects === undefined
+      ? {}
+      : {
+          linkProjects: Object.fromEntries(linkWorks.map((work) => [work, { cost: resources(linkProjects[work].cost), turns: linkProjects[work].turns }])) as LinkProjectRules
+        }),
     ...(air === undefined ? {} : { air }),
     ...(calendar === undefined ? {} : { calendar }),
     ...(d20 === undefined
@@ -182,6 +229,7 @@ export function indexUnitTypes(document: ScenarioDocument): UnitTypeDefinition[]
     defence: type.defence,
     effects: type.effects.map((effect) => (effect.kind === "roll-bonus-per-points" ? { ...effect, exceptWeather: effect.exceptWeather as WeatherId[] } : effect)),
     id: type.id as UnitTypeId,
+    foot: type.foot,
     kind: type.kind,
     name: type.name,
     orders: type.orders,

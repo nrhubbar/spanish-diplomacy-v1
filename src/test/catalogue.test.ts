@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyBuildOrder, maxLevel, plannedSpend, siteRefusal, withBuildOrders } from "../main/engine/economy/catalogue";
+import { applyBuildOrder, maxLevel, plannedSpend, siteRefusal, validateBuildOrder, withBuildOrders } from "../main/engine/economy/catalogue";
 import { initialGameState } from "../main/engine/resolution";
 import type { BuildOrder, BuildProject, BuildingId, DevelopmentId, GameState, Order, Resources, SubTerritoryId, UnitTypeId } from "../main/engine/types";
 import { faction, spainD20, territory } from "./support";
@@ -46,10 +46,13 @@ describe("where a building may go (D28.4, L18)", () => {
   });
 
   it("levels stop at their maximum, rail and port included", () => {
-    expect(maxLevel(scenario, { improvement: "rail", kind: "improvement" })).toBe(3);
+    expect(maxLevel(scenario, { improvement: "rail", kind: "improvement" })).toBe(2);
     expect(maxLevel(scenario, { improvement: "port", kind: "improvement" })).toBe(2);
     expect(maxLevel(scenario, develop("unknown"))).toBe(0);
-    expect(siteRefusal(scenario, state, republic, sub("barcelona"), { improvement: "rail", kind: "improvement" })).toBe("Max level is 3.");
+    // D3, declog D12: Barcelona starts at rail 2, its main lines' level, so a repair has nothing to raise.
+    expect(siteRefusal(scenario, state, republic, sub("barcelona"), { improvement: "rail", kind: "improvement" })).toBe("Max level is 2.");
+    // D4: Madrid lists no port.
+    expect(siteRefusal(scenario, state, republic, sub("madrid"), { improvement: "port", kind: "improvement" })).toBe("Can't be built in Madrid.");
     expect(siteRefusal(scenario, state, republic, sub("barcelona"), develop("industry"))).toBe("Max level is 3.");
   });
 });
@@ -74,5 +77,25 @@ describe("queuing and pricing builds ($5)", () => {
       { factionId: republic, kind: "replenish", unitId: "rep-sevilla-34" as never }
     ];
     expect(plannedSpend(scenario, orders)).toEqual({ funds: 12, manpower: 1 });
+  });
+});
+
+describe("the Factory's one-time Manpower (R9)", () => {
+  const cantabria = (): BuildOrder => order("cantabria", building("factory"));
+  const short = (manpower: number): GameState => {
+    const base = initialGameState(scenario);
+    return { ...base, treasuries: { ...base.treasuries, [republic]: { funds: 99, manpower } as Resources } };
+  };
+
+  it("charges its 6 Manpower with the Funds when it is queued", () => {
+    const applied = applyBuildOrder(scenario, short(10), cantabria());
+    expect(applied.ok && applied.paid).toEqual({ funds: 12, manpower: 6 });
+    expect(applied.ok && applied.state.treasuries[republic]).toEqual({ funds: 87, manpower: 4 });
+    expect(plannedSpend(scenario, [cantabria()])).toEqual({ funds: 12, manpower: 6 });
+  });
+
+  it("refuses the order when the Manpower is short", () => {
+    expect(applyBuildOrder(scenario, short(5), cantabria())).toEqual({ ok: false, reason: "Needs 1 more Manpower." });
+    expect(validateBuildOrder(scenario, short(5), cantabria())).toEqual({ ok: false, reason: "Needs 1 more Manpower." });
   });
 });

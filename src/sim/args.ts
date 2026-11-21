@@ -1,11 +1,9 @@
-import { type BlunderMode, defaultTurnLimit } from "./run";
+import { defaultTurnLimit } from "./run";
 
 export const defaultGames = 200;
 export const defaultOutDir = "build/sim";
 
 export interface CliOptions {
-  /** Absent: the default for the current blunder control (`defaultBlunderMode`). */
-  readonly blunders?: BlunderMode;
   readonly help: boolean;
   readonly outDir: string;
   /** The run folder's name; the CLI picks a time-stamped one when absent. */
@@ -27,8 +25,6 @@ export const usage = `Usage: npm run sim -- [options]
   --seeds LIST       explicit seeds, for example 1-50,77 (overrides --games and --first-seed)
   --turns N          turn limit; a game still running after it is a freeze (default ${defaultTurnLimit})
   --variant FILE     a JSON patch variant, played on the same seeds as the baseline (repeatable)
-  --blunders MODE    with, without or both (default: without while blunders are pending
-                     in the computer player, both once the scenario sets a blunder chance)
   --scenario ID      scenario id (default: the only shipped scenario)
   --workers N        worker threads (default: one per core, less one)
   --run NAME         run folder name under the output folder (default: a time stamp)
@@ -64,14 +60,11 @@ export function parseSeeds(raw: string): readonly number[] {
   return unique;
 }
 
-const blunderModes: readonly BlunderMode[] = ["with", "without", "both"];
-
 export function parseArgs(argv: readonly string[]): CliOptions {
   let games = defaultGames;
   let firstSeed = 1;
   let seeds: readonly number[] | undefined;
   let turnLimit = defaultTurnLimit;
-  let blunders: BlunderMode | undefined;
   let scenarioId: string | undefined;
   let workers: number | undefined;
   let run: string | undefined;
@@ -108,18 +101,10 @@ export function parseArgs(argv: readonly string[]): CliOptions {
         run = name;
         break;
       }
-      case "--blunders": {
-        const mode = value();
-        const known = blunderModes.find((entry) => entry === mode);
-        if (known === undefined) throw new UsageError(`--blunders must be with, without or both, not "${mode}".`);
-        blunders = known;
-        break;
-      }
       default: throw new UsageError(`Unknown option "${arg}". Try --help.`);
     }
   }
   return {
-    ...(blunders === undefined ? {} : { blunders }),
     help,
     outDir,
     ...(run === undefined ? {} : { run }),

@@ -118,7 +118,7 @@ export function indexScenario(document: ScenarioDocument, modules: ModuleRegistr
 
   return {
     ...parts.scenario,
-    ai: { blunderChance: document.ai.blunderChance, profiles: aiProfiles(document.ai.profiles) },
+    ai: { profiles: aiProfiles(document.ai.profiles) },
     cities,
     combat,
     connections,

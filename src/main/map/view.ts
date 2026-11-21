@@ -1,6 +1,10 @@
 import type { AirMissionOrder, MoveOrder, SubTerritoryId, TerritoryId, TurnOutcome, UnitId, UnitState } from "../engine/types";
 import type { ArmyOrder } from "../presentation/army";
 import type { DestinationEstimate } from "../presentation/odds";
+import type { MapPoint } from "../scenarios/loader";
+
+/** How a press was made: a mouse (or pen) or a finger (U5, U7). */
+export type PointerInput = "mouse" | "touch";
 
 /** What a screen asks the map to show and how map input flows back to it. */
 export interface MapView {
@@ -17,7 +21,12 @@ export interface MapView {
   readonly focusedSubTerritoryId?: SubTerritoryId;
   /** A click or Enter on the map that hit no territory or counter. */
   readonly onSelectNothing?: () => void;
-  readonly onSelectTerritory?: (territoryId: TerritoryId) => void;
+  /** `input` says how the click was made, when the map knows (U7: a tap on a phone). */
+  readonly onSelectTerritory?: (territoryId: TerritoryId, input?: PointerInput) => void;
+  /** U7: the mouse moved onto a territory (undefined: off every territory), at a viewport point. */
+  readonly onTerritoryHover?: (territoryId: TerritoryId | undefined, at: MapPoint) => void;
+  /** U5: a right-click, or a long-press on a phone, on a territory, at a viewport point. */
+  readonly onTerritoryMenu?: (territoryId: TerritoryId, at: MapPoint, input: PointerInput) => void;
   /** X3: zoomed in, a click also names the sub-territory under it (after `onSelectTerritory`). */
   readonly onSelectSubTerritory?: (subTerritoryId: SubTerritoryId) => void;
   readonly onSelectUnit?: (unit: UnitState) => void;

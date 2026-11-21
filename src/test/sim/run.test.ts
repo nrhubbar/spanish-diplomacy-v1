@@ -4,15 +4,11 @@ import { faction } from "../support";
 import { defaultScenarioId, holdsGround, loadScenario, objectivesOf, scenarioSources, territoryIdsOf, type TurnOutcome } from "../../sim/engine";
 import { assertInTerritories, playGame, retreatedUnits } from "../../sim/game";
 import { initialGameState } from "../../main/engine/resolution";
-import { applyPatch, PatchError } from "../../sim/patch";
+import { PatchError } from "../../sim/patch";
 import {
   baselineName,
-  blunderControl,
-  blunderPatch,
   buildSummary,
-  cellId,
   cellsOf,
-  defaultBlunderMode,
   orderLines,
   prepare,
   type RunPlan,
@@ -24,7 +20,6 @@ import { compare, stallQuietTurns, summarize } from "../../sim/summary";
 
 const sources = [...scenarioSources(), fixtureSources];
 const tinyPlan = (overrides: Partial<RunPlan> = {}): RunPlan => ({
-  blunders: "with",
   scenarioId: "tiny-front",
   seeds: [1, 2, 3, 4, 5, 6],
   turnLimit: 30,
@@ -35,7 +30,7 @@ const tinyPlan = (overrides: Partial<RunPlan> = {}): RunPlan => ({
 describe("harness core on the tiny-front fixture", () => {
   it("plays seeded games into complete game lines", () => {
     const scenario = loadScenario(sources, "tiny-front");
-    const line = playGame({ blunders: true, scenario, turnLimit: 30, variant: baselineName }, 1);
+    const line = playGame({ scenario, turnLimit: 30, variant: baselineName }, 1);
     expect(line.seed).toBe(1);
     expect(line.variant).toBe(baselineName);
     expect(line.battlesByTurn).toHaveLength(line.turns);
@@ -48,7 +43,7 @@ describe("harness core on the tiny-front fixture", () => {
 
   it("reads losses, control and S3 from the board, and fails loudly where it cannot match a unit or objective", () => {
     const scenario = loadScenario(sources, "tiny-front");
-    const line = playGame({ blunders: true, scenario, turnLimit: 30, variant: baselineName }, 2);
+    const line = playGame({ scenario, turnLimit: 30, variant: baselineName }, 2);
     // Tiny-front's objectives start in enemy hands, so S3 is checked only once one is taken.
     expect(line.objectiveChecks).toBeGreaterThanOrEqual(0);
     for (const losses of Object.values(line.losses)) expect(losses.men).toBeGreaterThanOrEqual(losses.units);
@@ -85,7 +80,7 @@ describe("harness core on the tiny-front fixture", () => {
 
   it("stops at the turn limit and calls a game still running a freeze", () => {
     const scenario = loadScenario(sources, "tiny-front");
-    const line = playGame({ blunders: false, scenario, turnLimit: 1, variant: baselineName }, 3);
+    const line = playGame({ scenario, turnLimit: 1, variant: baselineName }, 3);
     expect(line.turns).toBe(1);
     expect(line.end).toBe(line.winners.length > 0 ? "decided" : "freeze");
   });
@@ -96,7 +91,7 @@ describe("harness core on the tiny-front fixture", () => {
     expect(again).toEqual(first);
     const metrics = first.summary.cells[0]?.metrics;
     if (metrics === undefined) throw new Error("no cell");
-    expect(first.summary.cells.map((cell) => cell.id)).toEqual(["baseline/with-blunders"]);
+    expect(first.summary.cells.map((cell) => cell.id)).toEqual(["baseline"]);
     expect(metrics.games).toBe(6);
     expect(metrics.decided + metrics.freezes).toBe(6);
     expect(metrics.decided).toBeGreaterThan(0);
@@ -122,75 +117,29 @@ describe("harness core on the tiny-front fixture", () => {
     expect(buildSummary(tinyPlan(), ["red", "blue"], reversed)).toEqual(buildSummary(tinyPlan(), ["red", "blue"], lines));
   });
 
-  it("plays variants and both blunder settings on the same seeds, and compares them", () => {
+  it("plays variants on the same seeds, and compares them with the baseline", () => {
     const plan = tinyPlan({
-      blunders: "both",
       seeds: [1, 2, 3],
-      variants: [{ description: "No works", name: "no-works", patch: [{ op: "replace", path: "/combat/diggingIn/max", value: 1 }] }]
+      variants: [{ description: "No works", name: "no-works", patch: [{ op: "replace", path: "/combat/diggingIn/max", value: 1 }] }, { name: "same", patch: [] }]
     });
-    expect(cellsOf(plan).map((cell) => cell.id)).toEqual([
-      "baseline/with-blunders", "baseline/without-blunders", "no-works/with-blunders", "no-works/without-blunders"
-    ]);
-    expect(tasksOf(plan)).toHaveLength(12);
+    expect(cellsOf(plan).map((cell) => cell.id)).toEqual(["baseline", "no-works", "same"]);
+    expect(tasksOf(plan)).toHaveLength(9);
     const { lines, summary } = runInProcess(sources, plan);
-    expect(lines.map((line) => cellId(line.variant, line.blunders))).toEqual(cellsOf(plan).flatMap((cell) => [cell.id, cell.id, cell.id]));
-    expect(summary.cells[2]?.variantDescription).toBe("No works");
-    expect(summary.blunderControl).toBe("scenario");
-    expect(summary.comparisons.map((comparison) => `${comparison.subject} vs ${comparison.against}`)).toEqual([
-      "no-works/with-blunders vs baseline/with-blunders",
-      "no-works/without-blunders vs baseline/without-blunders",
-      "baseline/with-blunders vs baseline/without-blunders",
-      "no-works/with-blunders vs no-works/without-blunders"
-    ]);
-    // Tiny-front states a blunder chance of 0, so with and without play alike there.
-    const blunderComparison = summary.comparisons[2];
-    expect(blunderComparison?.pairs).toBe(3);
-    expect(blunderComparison?.freezeRate).toEqual({ high: 0, low: 0, value: 0 });
-    expect(blunderComparison?.winShare["red"]).toEqual({ high: 0, low: 0, value: 0 });
+    expect(lines.map((line) => line.variant)).toEqual(cellsOf(plan).flatMap((cell) => [cell.id, cell.id, cell.id]));
+    expect(summary.cells[1]?.variantDescription).toBe("No works");
+    expect(summary.comparisons.map((comparison) => `${comparison.subject} vs ${comparison.against}`)).toEqual(["no-works vs baseline", "same vs baseline"]);
+    expect(summary.comparisons[0]?.pairs).toBe(3);
+    // An empty patch plays the baseline's games again, so every difference is 0.
+    expect(summary.comparisons[1]?.freezeRate).toEqual({ high: 0, low: 0, value: 0 });
+    expect(summary.comparisons[1]?.winShare["red"]).toEqual({ high: 0, low: 0, value: 0 });
+    // A line from an unknown cell sorts last.
+    expect(orderLines(plan, [{ ...lines[0]!, variant: "elsewhere" }, lines[1]!]).map((line) => line.variant)).toEqual(["baseline", "elsewhere"]);
   });
 
-  it("leaves a seam for the blunder chance: pending plays without, a pointer turns blunders off by patch", () => {
-    // Pending: no pointer, so no patch, and a run plays one setting.
-    expect(blunderControl(undefined)).toBe("pending");
-    expect(defaultBlunderMode("pending")).toBe("without");
-    expect(blunderPatch(false, undefined)).toEqual([]);
-    expect(blunderPatch(true, undefined)).toEqual([]);
-    // Scenario: the chance is in scenario data (where the harness points now), so a run plays both.
-    expect(blunderControl("/ai/blunderChance")).toBe("scenario");
-    expect(defaultBlunderMode("scenario")).toBe("both");
-    expect(defaultBlunderMode()).toBe("both");
-    expect(blunderPatch(true, "/ai/blunderChance")).toEqual([]);
-    const off = blunderPatch(false, "/ai/blunderChance");
-    expect(off).toEqual([{ op: "add", path: "/ai/blunderChance", value: 0 }]);
-    // `add` sets the chance whether or not the scenario states it.
-    expect(applyPatch({ ai: { blunderChance: 0.01, profiles: {} } }, off)).toEqual({ ai: { blunderChance: 0, profiles: {} } });
-    expect(applyPatch({ ai: { profiles: {} } }, off)).toEqual({ ai: { blunderChance: 0, profiles: {} } });
-  });
-
-  it("plays a stated blunder chance with blunders, and the chance 0 without", () => {
-    // Present: a variant states a chance of 1, so every unit order blunders with blunders on;
-    // the without-blunders cell patches it back to 0 and plays the planned orders.
-    const plan = tinyPlan({
-      blunders: "both",
-      seeds: [1, 2],
-      turnLimit: 3,
-      variants: [{ name: "always", patch: [{ op: "replace", path: "/ai/blunderChance", value: 1 }] }]
-    });
-    const { lines } = runInProcess(sources, plan);
-    const routes = (variant: string, blunders: boolean) =>
-      lines.filter((line) => line.variant === variant && line.blunders === blunders).map((line) => line.firstTurnRoutes);
-    expect(routes("always", false)).toEqual(routes(baselineName, false));
-    expect(routes("always", true)).not.toEqual(routes("always", false));
-    // Tiny-front's own chance is 0: with and without play the same orders.
-    expect(routes(baselineName, true)).toEqual(routes(baselineName, false));
-  });
-
-  it("restores an absent blunder chance without blunders, and refuses it with them", () => {
-    // Absent: the scenario must state the chance (the loader requires it). The without-blunders
-    // patch adds it back, so that cell loads; the with-blunders cell has nothing to play.
-    const absent = { name: "absent", patch: [{ op: "remove", path: "/ai/blunderChance" }] } as const;
-    expect(prepare(sources, tinyPlan({ blunders: "without", seeds: [1], variants: [absent] }))).toEqual(["red", "blue"]);
-    expect(() => prepare(sources, tinyPlan({ blunders: "with", seeds: [1], variants: [absent] }))).toThrow(/Invalid package .*tiny-front/);
+  it("refuses a variant whose patch breaks the package before any game is played", () => {
+    const broken = { name: "broken", patch: [{ op: "remove", path: "/victory" }] } as const;
+    expect(prepare(sources, tinyPlan({ seeds: [1] }))).toEqual(["red", "blue"]);
+    expect(() => prepare(sources, tinyPlan({ seeds: [1], variants: [broken] }))).toThrow(/Invalid package .*tiny-front/);
   });
 
   it("collects factions across every cell, so a variant that adds one is reported", () => {
@@ -205,7 +154,7 @@ describe("harness core on the tiny-front fixture", () => {
           // L23: every faction needs a computer-player profile.
           { op: "add", path: "/ai/profiles/green", value: scenario.ai.profiles[faction("red")] },
           { op: "test", path: "/territories/3/id", value: "lowlands" },
-          { op: "replace", path: "/territories/3/initialControl", value: { factionId: "green", kind: "controlled" } }
+          { op: "replace", path: "/territories/3/initialControl", value: { "@type": "controlled", "@data": { factionId: "green" } } }
         ]
       }]
     });

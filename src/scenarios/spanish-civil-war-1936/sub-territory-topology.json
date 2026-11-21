@@ -1126,6 +1126,18 @@
         "valencia",
         "mallorca"
       ]
+    },
+    {
+      "between": [
+        "andalucia",
+        "murcia"
+      ],
+      "kind": "sea",
+      "label": "Alboran coast",
+      "entry": [
+        "malaga",
+        "murcia"
+      ]
     }
   ],
   "cities": {
@@ -2329,6 +2341,15 @@
         "km": 214,
         "rule": "override",
         "reason": "The Valencia-Palma line (the closest coasts would give Alicante-Ibiza)."
+      },
+      {
+        "entry": [
+          "malaga",
+          "murcia"
+        ],
+        "km": 204.5,
+        "rule": "override",
+        "reason": "R3: Malaga's sea lane to Cartagena, the Republican fleet's other base, once the coast road is cut."
       }
     ]
   }

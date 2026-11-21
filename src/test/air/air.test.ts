@@ -73,7 +73,7 @@ describe("aircraft and their missions (U2)", () => {
     expect(validateAirMission(scenario, state, raid("republic", "rep-wad-ras-1", "burgos")).ok).toBe(false);
     expect(validateAirMission(scenario, state, raid("north", "rep-breguet-bombers", "burgos")).ok).toBe(false);
     const outOfRange = scenario.territories.find((candidate) => !territoriesWithin(scenario, territory("madrid"), 1).has(candidate.id));
-    expect(validateAirMission(scenario, state, mission("republic", "rep-ni52-fighters", { kind: "intercept", territoryId: territory("castilla-y-leon") })).ok).toBe(true);
+    expect(validateAirMission(scenario, state, mission("republic", "rep-ni52-fighters", { kind: "patrol", territoryId: territory("castilla-y-leon") })).ok).toBe(true);
     expect(outOfRange).toBeDefined();
     expect(validateAirMission(scenario, state, mission("republic", "rep-catalan-recon", { kind: "recon", territoryId: territory("catalunya") })).ok).toBe(false);
     expect(validateAirMission(scenario, state, mission("republic", "rep-catalan-recon", { kind: "recon", territoryId: territory("aragon") })).ok).toBe(true);
@@ -116,12 +116,23 @@ describe("raids (U3)", () => {
     const guarded = withRaised(state, "north-fighters", "north", "fighter-squadron", "castilla-y-leon");
     const outcomes = resolveTurn(scenario, guarded, submit(
       raid("republic", "rep-breguet-bombers", "burgos"),
-      mission("north", "north-fighters", { kind: "intercept", territoryId: territory("castilla-y-leon") })
+      mission("north", "north-fighters", { kind: "patrol", territoryId: territory("castilla-y-leon") })
     ), seed).outcomes;
     const flown = raidOf(outcomes);
     expect(flown?.roll).toBe(die - 2);
     const interception = outcomes.find((outcome) => outcome.kind === "interception");
     expect(interception).toMatchObject({ factionId: "north", interceptorIds: ["north-fighters"], raiderIds: ["rep-breguet-bombers"] });
+  });
+
+  it("names a fighter once when it intercepts two raids over its territory", () => {
+    const guarded = withRaised(withRaised(state, "north-fighters", "north", "fighter-squadron", "castilla-y-leon"), "rep-bombers-2", "republic", "bomber-squadron", "madrid");
+    const outcomes = resolveTurn(scenario, guarded, submit(
+      raid("republic", "rep-breguet-bombers", "burgos"),
+      raid("republic", "rep-bombers-2", "valladolid"),
+      mission("north", "north-fighters", { kind: "patrol", territoryId: territory("castilla-y-leon") })
+    ), seed).outcomes;
+    const interceptions = outcomes.filter((outcome) => outcome.kind === "interception");
+    expect(interceptions).toEqual([expect.objectContaining({ interceptorIds: ["north-fighters"], raiderIds: ["rep-bombers-2", "rep-breguet-bombers"] })]);
   });
 
   it("loses the raider on an air-eliminated result", () => {
@@ -131,7 +142,7 @@ describe("raids (U3)", () => {
     for (const id of fighters) doomed = withRaised(doomed, id, "north", "fighter-squadron", "castilla-y-leon");
     const result = resolveTurn(scenario, doomed, submit(
       raid("republic", "rep-breguet-bombers", "burgos"),
-      ...fighters.map((id) => mission("north", id, { kind: "intercept", territoryId: territory("castilla-y-leon") }))
+      ...fighters.map((id) => mission("north", id, { kind: "patrol", territoryId: territory("castilla-y-leon") }))
     ), seed);
     expect(raidOf(result.outcomes)).toMatchObject({ aircraftLost: ["rep-breguet-bombers"], result: "air-eliminated" });
     expect(result.finalState.units[unit("rep-breguet-bombers")]).toBeUndefined();
@@ -143,6 +154,16 @@ describe("raids (U3)", () => {
     expect(raidIncomeDelta({ factionId: faction("north"), income: {}, scenario, state: cut })).toEqual({ funds: -1, manpower: -3 });
     expect(raidIncomeDelta({ factionId: faction("republic"), income: {}, scenario, state: cut })).toEqual({});
     expect(raidIncomeDelta({ factionId: faction("north"), income: {}, scenario, state: { ...cut, turnNumber: 2 } })).toEqual({});
+  });
+
+  it("cuts nothing from an unknown or lost sub-territory, or from a track with no levels", () => {
+    const at = (subTerritoryId: string, patch: Partial<GameState> = {}): GameState => ({ ...state, ...patch, raidCuts: [{ factionId: faction("north"), subTerritoryId: subTerritoryId as SubTerritoryId, turnNumber: 1 }] });
+    expect(raidIncomeDelta({ factionId: faction("north"), income: {}, scenario, state: at("nowhere") })).toEqual({});
+    const valladolid = state.subTerritories["valladolid" as SubTerritoryId]!;
+    const lost = at("valladolid", { subTerritories: { ...state.subTerritories, ["valladolid" as SubTerritoryId]: { ...valladolid, holder: faction("republic") } } });
+    expect(raidIncomeDelta({ factionId: faction("north"), income: {}, scenario, state: lost })).toEqual({});
+    const idle = at("valladolid", { subTerritories: { ...state.subTerritories, ["valladolid" as SubTerritoryId]: { ...valladolid, development: { ...Object.fromEntries(Object.keys(valladolid.development).map((id) => [id, 0])), unknown: 2 } } } });
+    expect(raidIncomeDelta({ factionId: faction("north"), income: {}, scenario, state: idle })).toEqual({});
   });
 
   it("writes an income cut for the next turn, and drops it once that turn's income is paid", () => {
@@ -185,12 +206,14 @@ describe("recon, support, grounding and rebasing (U2, U4, D7)", () => {
     const support = mission("republic", "rep-breguet-bombers", { kind: "support", territoryId: territory("castilla-y-leon") });
     const result = resolveTurn(scenario, state, [{ factionId: faction("republic"), orders: [...attack, support] }], seed);
     const battle = result.outcomes.find((outcome) => outcome.kind === "battle");
-    expect(battle?.modifiers).toContainEqual({ factionId: "republic", kind: "air-support", role: "attack", roll: 2, unitIds: ["rep-breguet-bombers"] });
-    expect(result.outcomes.find((outcome) => outcome.kind === "air-support")).toMatchObject({ battleIndex: 0, territoryId: "castilla-y-leon" });
+    // R11: no enemy aircraft or AA over the battle, so there is no air battle and its +3 applies.
+    expect(battle?.modifiers).toContainEqual({ factionId: "republic", kind: "air-support", role: "attack", roll: 3, unitIds: ["rep-breguet-bombers"] });
+    expect(result.outcomes.find((outcome) => outcome.kind === "air-support")).toMatchObject({ applied: true, battleIndex: 0, territoryId: "castilla-y-leon" });
+    expect(kinds(result.outcomes)).not.toContain("air-battle");
   });
 
   it("keeps aircraft out of the ground battles", () => {
-    const attack = ["north-san-marcial-22", "north-san-quintin-25", "north-la-victoria-28"].map((id) => move("north", id, "castilla-y-leon", "madrid"));
+    const attack = ["north-san-marcial-22", "north-san-quintin-25"].map((id) => move("north", id, "castilla-y-leon", "madrid"));
     const result = resolveTurn(scenario, state, [{ factionId: faction("north"), orders: attack }], seed);
     const battle = result.outcomes.find((outcome) => outcome.kind === "battle");
     const defenders = battle?.defender.armies.map((army) => army.unitId) ?? [];

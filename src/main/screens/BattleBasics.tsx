@@ -31,7 +31,7 @@ export function BattleBasics({ scenario }: { readonly scenario: Scenario }): JSX
         )}
         <li>Every unit has one order each turn: Move, Entrench, or Rest. A unit you do not move entrenches, or rests if it is demoralized.</li>
         <li>
-          {`Entrenching units dig the territory in: each turn shifts the die ${String(diggingIn.perTurn)} in the defenders' favour, up to ${String(diggingIn.max)}. `}
+          {`Entrenching units dig the territory in: each turn adds ${count(diggingIn.perTurn)} ${diggingIn.perTurn === 1 ? "level" : "levels"} of works, up to ${count(diggingIn.max)}, and each level shifts the die ${String(diggingIn.perLevel)} in the defenders' favour. `}
           Armies that move do not dig in, and a battle in the territory stops the digging for that turn.
         </li>
         <li>{`A demoralized unit fights at ${weakened} and cannot attack. It cannot entrench either: it rests, and recovers after one turn of rest.`}</li>
@@ -46,7 +46,7 @@ export function BattleBasics({ scenario }: { readonly scenario: Scenario }): JSX
 function ExampleText({ example }: { readonly example: BattleExample }): JSX.Element | null {
   const [first, second] = example.cases;
   if (first === undefined || second === undefined) return null;
-  const dug = example.dugIn > 0 ? `, dug in +${String(example.dugIn)}` : "";
+  const dug = example.dugIn > 0 ? `, dug in level ${String(example.dugIn)} (+${String(example.dugInRoll)})` : "";
   return (
     <p className="pane-hint">
       {`Example: ${count(first.armies)} ${example.typeName} units attack with ${String(first.attack)} against one with defence ${String(example.defence)}${dug}. `}

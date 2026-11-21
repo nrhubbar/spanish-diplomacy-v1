@@ -8,7 +8,6 @@ import { type PoolWorker, runPool } from "./pool";
 import {
   baselineName,
   buildSummary,
-  defaultBlunderMode,
   type GameTask,
   orderLines,
   prepare,
@@ -56,7 +55,6 @@ export function readVariants(files: readonly string[], readText: (path: string) 
 /** The run plan, with the defaults the options leave open filled in. */
 export function planOf(options: CliOptions, variants: readonly Variant[], sources: readonly PackageSources[]): RunPlan {
   return {
-    blunders: options.blunders ?? defaultBlunderMode(),
     scenarioId: options.scenarioId ?? defaultScenarioId(sources),
     seeds: options.seeds,
     turnLimit: options.turnLimit,

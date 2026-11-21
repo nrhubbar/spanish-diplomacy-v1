@@ -1,0 +1,123 @@
+[
+ {"id": "Q-R2-0", "idea": "position", "text": "Where should an army stand?", "context": "This decides notes 1, 6, 14 and 15.", "options": [
+  {"label": "A. Pockets: inside contested territories only, each side's armies belong to a connected group of held sub-territories and leave only across its borders", "recommended": true, "rationale": "Gives Málaga, Oviedo and 'cut off' real meaning; uncontested territories are unchanged."},
+  {"label": "B. Every army stands in a sub-territory", "rationale": "The most faithful; it touches combat, movement, orders, counters and the AI, and doubles the places on the board."},
+  {"label": "C. Keep territory positions; fix Málaga with data only"}
+ ]},
+ {"id": "Q-R2-1", "idea": "malaga", "text": "How should Málaga connect to the rest of the Republic?", "options": [
+  {"label": "Split coastal Granada (Motril) into a Republican sub-territory, joined to Málaga and Almería by road only", "recommended": true, "rationale": "The historical corridor, which the South can cut."},
+  {"label": "Start Granada contested"},
+  {"label": "Leave Málaga sealed: it can leave only by sea"}
+ ]},
+ {"id": "Q-R2-2a", "idea": "balance", "text": "How much smaller should the North's starting army be?", "options": [
+  {"label": "Two fewer: the Salamanca regiment and the Sierra column", "recommended": true, "rationale": "Sim: North 65.8% to 56.2%, Republic 10.0% to 15.8%. The Republic's gain is near the noise floor at 400 games."},
+  {"label": "One fewer: the Salamanca regiment", "rationale": "Sim: North 58.8%, Republic 12.5%."},
+  {"label": "None removed; pin the Oviedo and Gijón garrisons in place instead"},
+  {"label": "No change"}
+ ]},
+ {"id": "Q-R2-2b", "idea": "balance", "text": "What should Mallorca have at the start?", "options": [
+  {"label": "A garrison that can't leave the island", "recommended": true, "rationale": "Bayo's landing failed historically. An empty island brings back the free Baleares sweep and the early wins."},
+  {"label": "A pinned garrison plus Italian bombers based at Palma"},
+  {"label": "Nothing: remove the army", "rationale": "Sim: Republic +0.8 points, and early wins return."},
+  {"label": "Keep today's army"}
+ ]},
+ {"id": "Q-R2-2c", "idea": "balance", "text": "No unit cut gets the Republic to 20%. What should Rev 2 do about that?", "options": [
+  {"label": "Accept about 15% for now, and revisit after playtests", "recommended": true},
+  {"label": "Keep the 20% target and tune another lever in Rev 2 (stocks, yields or the AI)"}
+ ]},
+ {"id": "Q-R2-3a", "idea": "air", "text": "Air orders: is the six-order set right (Patrol, Ground Support, Interdict, Raid, Recon, Airlift)?", "options": [
+  {"label": "Yes, all six, with Airlift for the Ju 52 only, gated by the scenario", "recommended": true},
+  {"label": "Five: drop Airlift"},
+  {"label": "Four: drop Airlift and Interdict"}
+ ]},
+ {"id": "Q-R2-3b", "idea": "air", "text": "What should air do on the d20?", "options": [
+  {"label": "Ground Support +3 per aircraft unit, at most 2 per side; enemy fighters on Patrol cancel one each; rain and snow ground all air", "recommended": true, "rationale": "+3 is exactly one odds column, so players will feel it."},
+  {"label": "Keep today's +2 from bombers only"},
+  {"label": "Different values per aircraft type (explain in the notes)"}
+ ]},
+ {"id": "Q-R2-3c", "idea": "air", "text": "Should aircraft be counters at their airfields that you select and order like other units?", "options": [
+  {"label": "Yes", "recommended": true},
+  {"label": "No: keep air orders in the pane only"}
+ ]},
+ {"id": "Q-R2-6a", "idea": "transport", "text": "Should rail and roads be stored as one link record per pair of bordering sub-territories (road level, rail level, optional named pass or river)?", "options": [
+  {"label": "Yes, one link type in the scenario's map data", "recommended": true},
+  {"label": "Separate rail and road graphs"}
+ ]},
+ {"id": "Q-R2-6b", "idea": "transport", "text": "What should roads do?", "options": [
+  {"label": "Three move modes. March: one territory, infantry only across no-road links. Motor: two territories along main roads with trucks. Rail: on the graph", "recommended": true},
+  {"label": "Your original rule: no road means infantry only, a road means all units can cross, and road plus trucks acts like rail; no road levels"}
+ ]},
+ {"id": "Q-R2-6c", "idea": "transport", "text": "What should crossing a named mountain pass cost?", "options": [
+  {"label": "An extra turn; no Motor moves across passes; defenders beyond a pass get a bonus", "recommended": true},
+  {"label": "It ends the move there and adds fatigue"},
+  {"label": "Fatigue only"}
+ ]},
+ {"id": "Q-R2-6d", "idea": "transport", "text": "Can players build new rail lines, or only upgrade existing ones?", "options": [
+  {"label": "Both: a new line takes many turns, and an upgrade is cheaper", "recommended": true},
+  {"label": "Upgrades only; the 1936 network is fixed"},
+  {"label": "Neither in Rev 2"}
+ ]},
+ {"id": "Q-R2-6e", "idea": "transport", "text": "Where should the rail and road data come from?", "options": [
+  {"label": "The researched 1936 province table, with every inferred or unknown link checked against a period map before shipping", "recommended": true},
+  {"label": "A playable approximation; history second"}
+ ]},
+ {"id": "Q-R2-12a", "idea": "digin", "text": "Today, dug-in shows 3/6/9 pips and takes −3/−6/−9 off the roll. What should it be?", "options": [
+  {"label": "Pips 1/2/3, roll −2/−4/−6, with level 3 only in mountains and cities", "recommended": true},
+  {"label": "Pips 1/2/3, roll −2/−4/−6, level 3 everywhere"},
+  {"label": "Pips 1/2/3 and keep −3/−6/−9"},
+  {"label": "I meant something else (explain in the notes)"}
+ ]},
+ {"id": "Q-R2-12b", "idea": "digin", "text": "The Fortifications building gives only +1 today. What should it do?", "options": [
+  {"label": "Start the garrison at works level 1 and raise its cap by one", "recommended": true},
+  {"label": "Leave it at +1"}
+ ]},
+ {"id": "Q-R2-13", "idea": "economy", "text": "How should the factory's Manpower cost work?", "options": [
+  {"label": "A one-time cost (about 6), and teach the AI to build factories", "recommended": true},
+  {"label": "Ongoing upkeep each turn"},
+  {"label": "A one-time cost only; leave the AI alone"}
+ ]},
+ {"id": "Q-R2-5", "idea": "economy", "text": "How should each sub-territory's building list be set?", "options": [
+  {"label": "A rule in the data (a port needs a coast, a factory needs a city), with per-sub-territory overrides", "recommended": true},
+  {"label": "An explicit list on every sub-territory"}
+ ]},
+ {"id": "Q-R2-14", "idea": "control", "text": "When a territory has armies from only one side at the end of a turn, does every sub-territory in it flip to that side?", "options": [
+  {"label": "Yes. If both sides are wiped out, holders keep what they held, and aircraft never count", "recommended": true},
+  {"label": "Yes, but a sub-territory with a city or fortifications takes one more turn"},
+  {"label": "Keep the one-sub-territory-a-turn sweep"}
+ ]},
+ {"id": "Q-R2-8", "idea": "map", "text": "Which Map Layers design?", "options": [
+  {"label": "A bottom toolbar whose first three buttons are presets (Orders, Logistics, Economy), with the switches under a More menu; layers also switch on automatically while you give an order", "recommended": true},
+  {"label": "A. The bottom toolbar with all nine switches"},
+  {"label": "B. One Layers button with a popover"}
+ ]},
+ {"id": "Q-R2-15", "idea": "pane", "text": "How should you switch between Orders and Territory Info?", "options": [
+  {"label": "B (two lasting tabs) on desktop, A (switch with a back link) on phone", "recommended": true},
+  {"label": "A everywhere"},
+  {"label": "B everywhere"}
+ ]},
+ {"id": "Q-R2-10", "idea": "report", "text": "Which faction should come first in the grouped report?", "options": [
+  {"label": "Your own faction, then the others", "recommended": true},
+  {"label": "A fixed order: Republic, North, South"}
+ ]},
+ {"id": "Q-R2-11", "idea": "replenish", "text": "Which Replenish design?", "options": [
+  {"label": "A. One action for the selection, naming skipped units and why", "recommended": true},
+  {"label": "B. A checkbox column with a running total"}
+ ]},
+ {"id": "Q-R2-16", "idea": "ledger", "text": "Should the balance view also list expenses (builds under way, Replenish, upkeep)?", "options": [
+  {"label": "Yes, with the total matching the chip", "recommended": true},
+  {"label": "No: income rows only"}
+ ]},
+ {"id": "Q-R2-17", "idea": "tooling", "multi": true, "text": "Which tooling should I set up at the start of Rev 2?", "options": [
+  {"label": "TypeScript language-server plugin", "recommended": true},
+  {"label": "A diff-scoped reviewer agent", "recommended": true},
+  {"label": "Hooks: block bare git stash; lint after edits", "recommended": true},
+  {"label": "Project skills: sims, screenshots, merge and worktree removal", "recommended": true},
+  {"label": "Project rules in the existing CLAUDE.md (brings forward part of the M5 deferral)"},
+  {"label": "Playwright MCP"}
+ ]},
+ {"id": "Q-R2-C", "idea": "carry", "text": "Should Rev 2 start by regenerating the Linux baselines and fixing the production smoke test, so deploys are unblocked?", "options": [
+  {"label": "Yes, first", "recommended": true},
+  {"label": "Yes, but at the end of Rev 2"},
+  {"label": "I'll handle it myself"}
+ ]}
+]

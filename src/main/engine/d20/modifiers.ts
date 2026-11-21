@@ -1,4 +1,5 @@
 import { hookedCombatModifiers } from "../hooks";
+import { worksRoll } from "../works";
 import { citiesIn } from "../lookup";
 import type { TurnScratch } from "../phases/draft";
 import type { BattleSide, CombatModifier, CombatRole, D20Rules, FactionId, GameState, Scenario, TerritoryId, UnitState, UnitTypeId, WeatherState } from "../types";
@@ -15,6 +16,8 @@ export interface GradedSide {
 /** Where and how a d20 battle is fought, for the modifiers that depend on the situation. */
 export interface GradedContext {
   readonly attackerFactionId: FactionId;
+  /** R11: the battle's index while the turn resolves, for its air battle's rolls. */
+  readonly battleIndex?: number;
   readonly defenderFactionIds: readonly FactionId[];
   /** Whether the territory's works count (M22): assaults only. */
   readonly diggingIn: boolean;
@@ -31,7 +34,7 @@ export interface GradedContext {
 
 /**
  * D3-D7, C6: every roll modifier of one d20 battle, signed from the attacker's view.
- * - Situational (not on the road): works x3 (M22, D3), faction modifiers such as Popular
+ * - Situational (not on the road): works, 2 a pip (M22, R8), faction modifiers such as Popular
  *   resistance from the d20 block (M24, D3), barricades (D4), and the selected modules'
  *   `combatModifiers` hooks: weather, amphibious, air support, buildings (D7). A meeting on the
  *   road takes the hooks' weather only, from its attackers' destination (D27.5).
@@ -52,7 +55,7 @@ export function gradedModifiers(
   if (territoryId !== undefined) {
     const works = state.fortification[territoryId];
     if (context.diggingIn && works !== undefined && works.level > 0 && context.defenderFactionIds.includes(works.factionId)) {
-      situational.push({ kind: "dug-in", level: works.level, roll: -works.level });
+      situational.push({ kind: "dug-in", level: works.level, roll: -worksRoll(scenario, works.level) });
     }
     for (const modifier of rules.factionModifiers) {
       if (!holdsCity(scenario, state, modifier.factionId, territoryId)) continue;
@@ -81,7 +84,9 @@ export function gradedModifiers(
   const hooks = hookTerritoryId === undefined ? [] : hookedCombatModifiers({
     attackerFactionId: context.attackerFactionId,
     attackerUnitIds: attacker.units.map((unit) => unit.id),
+    ...(context.battleIndex === undefined ? {} : { battleIndex: context.battleIndex }),
     defenderFactionIds: context.defenderFactionIds,
+    defenderUnitIds: defender.units.map((unit) => unit.id),
     diggingIn: context.diggingIn,
     ...(context.scratch === undefined ? {} : { scratch: context.scratch }),
     scenario,

@@ -1,14 +1,15 @@
-import { type JSX, useState } from "react";
-import { useAppDispatch } from "../hooks";
+import type { JSX, ReactNode } from "react";
 import type { SubmissionStatus } from "../state/selectors";
-import { exitGame } from "../state/gameSlice";
 import { DateChip } from "./header/DateChip";
+import { GameMenu } from "./header/GameMenu";
 import { ReadinessChips } from "./header/ReadinessChips";
 import { ResourceChips } from "./header/ResourceChips";
 import type { HeaderSlotProps } from "./header/slots";
 import { TimerChip } from "./header/TimerChip";
 
 interface GameHeaderProps {
+  /** U1: the planning controls before the menu: Last turn, Recruitment, Building and End Turn. */
+  readonly actions?: ReactNode;
   readonly kicker: string;
   /** The slots' data; without it the Milestone 3 slots stay empty. */
   readonly slots?: HeaderSlotProps;
@@ -17,18 +18,18 @@ interface GameHeaderProps {
 }
 
 /**
- * Compact header for game screens, leaving the height to the map. Its slots, left to right:
- * the date, the timer, the resources, then the readiness chips (X1, T1, T6). Each slot is its
- * own component under `header/`, owned by its slice.
+ * Compact top bar for game screens, leaving the height to the map (U1). Left to right: the date
+ * and readiness (X1, T6) by the title, the timer and the resources, then the screen's actions and
+ * the game menu. Each slot is its own component under `header/`, owned by its slice.
  */
-export function GameHeader({ kicker, slots, status = [], title }: GameHeaderProps): JSX.Element {
-  const dispatch = useAppDispatch();
-  const [confirming, setConfirming] = useState(false);
-
+export function GameHeader({ actions, kicker, slots, status = [], title }: GameHeaderProps): JSX.Element {
   return (
     <header className="game-header">
       <div className="game-header-title">
-        <p className="screen-kicker">{kicker}</p>
+        <div className="game-header-kicker-row">
+          <p className="screen-kicker">{kicker}</p>
+          <ReadinessChips status={status} />
+        </div>
         <h1>{title}</h1>
       </div>
       {slots === undefined ? null : (
@@ -38,17 +39,9 @@ export function GameHeader({ kicker, slots, status = [], title }: GameHeaderProp
           <ResourceChips {...slots} />
         </>
       )}
-      <ReadinessChips status={status} />
       <div className="game-header-actions">
-        {confirming ? (
-          <div className="exit-confirm" role="group" aria-label="Leave this game?">
-            <span>Leave this game?</span>
-            <button className="secondary-button compact-button" onClick={() => { dispatch(exitGame()); }} type="button">Leave</button>
-            <button className="compact-button" onClick={() => { setConfirming(false); }} type="button">Stay</button>
-          </div>
-        ) : (
-          <button className="secondary-button compact-button" onClick={() => { setConfirming(true); }} type="button">Exit game</button>
-        )}
+        {actions}
+        <GameMenu />
       </div>
     </header>
   );

@@ -59,7 +59,10 @@ describe("the rail layer (X6)", () => {
   });
 
   it("sizes a station by its rail level", () => {
-    const container = renderLayer();
+    // D3: the links give levels 1 and 2; an upgrade to 3 draws the larger station.
+    const start = initialGameState(spainPackage().scenario);
+    const madrid = start.subTerritories["madrid" as SubTerritoryId];
+    const container = renderLayer({ game: { ...start, subTerritories: { ...start.subTerritories, ["madrid" as SubTerritoryId]: { ...madrid!, rail: 3 } } } });
     const sizes = new Set([...container.querySelectorAll(".rail-station")].map((station) => Number(station.getAttribute("width"))));
     // Busier stations are drawn larger.
     expect(sizes.size).toBeGreaterThan(1);
@@ -143,7 +146,7 @@ describe("route points and destination tags (X5)", () => {
   const capital = (id: string) => map.subTerritories?.entries.get(sub(id))?.capital;
 
   const base = (overrides: Partial<MoveRoute>): MoveRoute => ({
-    cost: 1, from: territory("valencia"), legs: [], rough: [], shape: "step", staging: territory("valencia"), steps: 1, to: territory("islas-baleares"), transit: [], ...overrides
+    cost: 1, from: territory("valencia"), legs: [], mode: "march", path: [], rough: [], shape: "step", staging: territory("valencia"), steps: 1, to: territory("islas-baleares"), transit: [], ...overrides
   });
 
   it("passes each station of a ride", () => {

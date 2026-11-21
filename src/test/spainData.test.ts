@@ -44,7 +44,6 @@ describe("the Spanish Civil War package (spec v2, m3-modular)", () => {
       expect(scenario.ai.profiles[faction.id]).toBeDefined();
       expect(scenario.index.generalsByFaction.get(faction.id)?.length).toBeGreaterThanOrEqual(3);
     }
-    expect(scenario.ai.blunderChance).toBe(0.01);
   });
 
   it("carries the full d20 catalogue and table, weather, calendar and air data (D1, D2, T1, T2, U3)", () => {

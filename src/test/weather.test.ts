@@ -145,11 +145,13 @@ describe("the weather's effects (T4)", () => {
     expect(delta(withWeather(base(), { meseta: "severe-cold" }))).toBe(0);
   });
 
-  it("grounds aircraft in Mud and Snow unless their airfield is paved", () => {
+  it("grounds aircraft in Rain, Mud and Snow unless their airfield is paved (R10)", () => {
     const muddy = withWeather(base(), { meseta: "mud" });
     const grounded = (state: GameState) => hookedGrounded({ scenario: spain(), state, territoryId: madrid, unitId: unit("r1") });
     expect(grounded(muddy)).toBe(true);
-    expect(grounded(withWeather(base(), { meseta: "rain" }))).toBe(false);
+    expect(grounded(withWeather(base(), { meseta: "rain" }))).toBe(true);
+    expect(grounded(withWeather(base(), { meseta: "snow" }))).toBe(true);
+    expect(grounded(withWeather(base(), { meseta: "clear" }))).toBe(false);
     const site = "madrid" as SubTerritoryId;
     const current = muddy.subTerritories[site];
     if (current === undefined) throw new Error("Madrid has no sub-territory state.");

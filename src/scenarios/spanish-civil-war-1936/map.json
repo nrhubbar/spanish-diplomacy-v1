@@ -288,10 +288,12 @@
         "tier": "detail"
       },
       "shape": {
-        "kind": "circle",
-        "x": -208.9,
-        "y": 454.3,
-        "r": 12
+        "@type": "circle",
+        "@data": {
+          "x": -208.9,
+          "y": 454.3,
+          "r": 12
+        }
       }
     },
     "melilla": {
@@ -305,10 +307,12 @@
         "tier": "detail"
       },
       "shape": {
-        "kind": "circle",
-        "x": 5.4,
-        "y": 523.4,
-        "r": 12
+        "@type": "circle",
+        "@data": {
+          "x": 5.4,
+          "y": 523.4,
+          "r": 12
+        }
       }
     }
   },

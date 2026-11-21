@@ -7,7 +7,7 @@ import { initialGameState } from "../main/engine/resolution";
 import type { BuildOrder, GameState, SubTerritoryId } from "../main/engine/types";
 import { viewFor } from "../main/engine/visibility";
 import { RegistryContext } from "../main/hooks";
-import { OrderBuilder } from "../main/screens/OrderBuilder";
+import { TerritoryView } from "../main/screens/shell/views/TerritoryView";
 import { cancelBuildOrder, clickMapTerritory, endTurn, focusSubTerritory, queueBuildOrder } from "../main/state/gameSlice";
 import { plannedBuilds, type PlanningSession } from "../main/state/planning";
 import { emptyDraft } from "../main/state/session";
@@ -27,7 +27,7 @@ function planning(state: GameState = initialGameState(spain())) {
 const session = (store: ReturnType<typeof planning>): PlanningSession => store.getState().game.session as PlanningSession;
 
 function renderPane(store: ReturnType<typeof planning>) {
-  const view = () => <Provider store={store}><RegistryContext value={testRegistry()}><OrderBuilder estimates={new Map()} scenario={spain()} session={session(store)} /></RegistryContext></Provider>;
+  const view = () => <Provider store={store}><RegistryContext value={testRegistry()}><TerritoryView scenario={spain()} session={session(store)} territoryId={session(store).draft.selectedTerritoryId!} /></RegistryContext></Provider>;
   const rendered = render(view());
   return { rerender: () => { rendered.rerender(view()); } };
 }
@@ -59,16 +59,17 @@ describe("planned Build orders ($5)", () => {
   });
 });
 
-describe("the Build tab and the focused build list (X3, X7)", () => {
-  it("shows sub-territory cards with pips, buildings and a Build button", async () => {
+describe("the Buildings tab and its opening cards (X3, X7, U9)", () => {
+  it("shows closed sub-territory cards that open on pips and buildings, focusing the sub-territory", async () => {
     const store = planning();
     store.dispatch(clickMapTerritory(territory("catalunya")));
     renderPane(store);
-    await userEvent.click(screen.getByRole("tab", { name: "Build" }));
+    await userEvent.click(screen.getByRole("tab", { name: "Buildings" }));
     const card = screen.getByRole("article", { name: "Barcelona" });
+    expect(within(card).queryByRole("list", { name: "Buildings" })).toBeNull();
+    await userEvent.click(within(card).getByRole("button", { expanded: false }));
     expect(within(card).getByRole("img", { name: "Industry level 3 of 3" })).toBeInTheDocument();
     expect(within(card).getByRole("list", { name: "Buildings" })).toHaveTextContent("Barracks");
-    await userEvent.click(within(card).getByRole("button", { name: "Build in Barcelona" }));
     expect(session(store).draft.focusedSubTerritoryId).toBe(barcelona);
   });
 
@@ -107,7 +108,8 @@ describe("the Funds and Manpower chips (X1, $6)", () => {
     // EB-12: Manpower reads through its display scale, as in the approved capture ("Manpower 18k").
     const manpower = screen.getByRole("button", { name: /^Manpower 10k \+27k ?next turn$/ });
     await userEvent.click(manpower);
-    expect(screen.getByRole("region", { name: "Manpower detail" })).toHaveTextContent("Manpower: 10k (10,000)");
+    expect(screen.getByRole("region", { name: "Manpower detail" })).toHaveTextContent("Manpower: 10k now \u00b7 +27k next turn");
+    expect(screen.getByRole("region", { name: "Manpower detail" })).toHaveTextContent("You hold 10k (10,000).");
     await userEvent.click(funds);
     expect(funds).toHaveAttribute("aria-expanded", "true");
     const detail = screen.getByRole("region", { name: "Funds detail" });

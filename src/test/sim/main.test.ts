@@ -84,28 +84,26 @@ describe("sim command line", () => {
     const out = tempOut();
     const files = { "cap.json": JSON.stringify({ name: "cap", patch: [{ op: "replace", path: "/combat/diggingIn/max", value: 1 }] }) };
     const run = io(files);
-    const code = await runCli(["--scenario", "tiny-front", "--games", "4", "--turns", "20", "--variant", "cap.json", "--blunders", "both", "--out", out], run.io);
+    const code = await runCli(["--scenario", "tiny-front", "--games", "8", "--turns", "20", "--variant", "cap.json", "--out", out], run.io);
     expect(code).toBe(0);
     const dir = join(out, "20261119-140509");
     const summary = JSON.parse(readFileSync(join(dir, "summary.json"), "utf8")) as Summary;
     const lines = readFileSync(join(dir, "games.jsonl"), "utf8").trim().split("\n").map((line) => JSON.parse(line) as GameLine);
     expect(summary.games).toBe(16);
-    expect(summary.cells.map((cell) => cell.id)).toEqual([
-      "baseline/with-blunders", "baseline/without-blunders", "cap/with-blunders", "cap/without-blunders"
-    ]);
+    expect(summary.cells.map((cell) => cell.id)).toEqual(["baseline", "cap"]);
     expect(lines).toHaveLength(16);
     expect(lines.slice(0, 4).map((line) => line.seed)).toEqual([1, 2, 3, 4]);
     expect(run.err.join("")).toContain("16 games on 2 worker threads");
     expect(run.err.join("")).toContain("sim: 16/16");
-    expect(run.out.join("")).toContain("cap/with-blunders vs baseline/with-blunders (4 seeds)");
+    expect(run.out.join("")).toContain("cap vs baseline (8 seeds)");
   });
 
   it("writes the same files whatever the worker count and the order games finish in", async () => {
     const out = tempOut();
     const read = (name: string, file: string) => readFileSync(join(out, name, file), "utf8");
-    await runCli(["--scenario", "tiny-front", "--seeds", "1-5", "--blunders", "with", "--workers", "1", "--run", "one", "--out", out], io().io);
+    await runCli(["--scenario", "tiny-front", "--seeds", "1-5", "--workers", "1", "--run", "one", "--out", out], io().io);
     finished.length = 0;
-    await runCli(["--scenario", "tiny-front", "--seeds", "1-5", "--blunders", "with", "--workers", "4", "--run", "four", "--out", out], io().io);
+    await runCli(["--scenario", "tiny-front", "--seeds", "1-5", "--workers", "4", "--run", "four", "--out", out], io().io);
     // With four workers, later seeds finish first.
     expect(finished).toEqual([4, 3, 2, 1, 5]);
     expect(read("four", "summary.json")).toBe(read("one", "summary.json"));
@@ -134,7 +132,7 @@ describe("sim command line", () => {
   it("reports a game that fails on a worker thread instead of losing it", () => {
     const posted: FromWorker<GameLine>[] = [];
     let send: (message: ToWorker<GameTask>) => void = () => undefined;
-    const plan = { blunders: "with" as const, scenarioId: "tiny-front", seeds: [1], turnLimit: 2, variants: [] };
+    const plan = { scenarioId: "tiny-front", seeds: [1], turnLimit: 2, variants: [] };
     serveWorker({ plan }, sources, { on: (_event, listener) => { send = listener; }, postMessage: (message) => posted.push(message) });
     send({ kind: "task", task: { cell: 5, seed: 9 } });
     send({ kind: "task", task: { cell: 0, seed: 1 } });
@@ -142,14 +140,12 @@ describe("sim command line", () => {
     expect(posted[1]?.kind).toBe("result");
   });
 
-  it("defaults to the only shipped scenario, and plays both blunder settings now that the scenario sets the chance", () => {
+  it("defaults to the only shipped scenario", () => {
     const shipped = scenarioSources();
     const plan = planOf(parseArgs([]), [], shipped);
     expect(plan.scenarioId).toBe(defaultScenarioId(shipped));
-    expect(plan.blunders).toBe("both");
-    expect(planOf(parseArgs(["--blunders", "without"]), [], shipped).blunders).toBe("without");
     expect(() => defaultScenarioId([])).toThrow(/playable ones are: none/);
-    expect(planOf(parseArgs(["--scenario", "x", "--blunders", "with"]), [], []).scenarioId).toBe("x");
+    expect(planOf(parseArgs(["--scenario", "x"]), [], []).scenarioId).toBe("x");
   });
 
   it("refuses two variants with one name, or one named like the baseline", () => {
@@ -161,19 +157,13 @@ describe("sim command line", () => {
   it("formats an ASCII console summary and names run folders by time", async () => {
     const out = tempOut();
     const run = io();
-    await runCli(["--scenario", "tiny-front", "--games", "2", "--turns", "1", "--blunders", "without", "--out", out, "--run", "r"], run.io);
+    await runCli(["--scenario", "tiny-front", "--games", "2", "--turns", "1", "--out", out, "--run", "r"], run.io);
     const text = run.out.join("");
     expect(text).toMatch(/^sim: tiny-front, seeds 1-2, turn limit 1, 2 games/);
-    expect(text).toContain("baseline/without-blunders: 2 games");
+    expect(text).toContain("baseline: 2 games");
     expect(/^[\x20-\x7e\n]*$/.test(text)).toBe(true);
     const summary = JSON.parse(readFileSync(join(out, "r", "summary.json"), "utf8")) as Summary;
-    // The blunder chance is in scenario data, so the console carries no pending note.
-    expect(summary.blunderControl).toBe("scenario");
-    expect(text).not.toContain("blunder chance");
-    // While pending, the note says what the run does.
-    const pending = { ...summary, blunderControl: "pending" as const };
-    expect(formatSummary(pending, "x")).toContain("this run plays without them");
-    expect(formatSummary({ ...pending, blunders: "both" }, "x")).toContain("with and without play alike");
+    expect(formatSummary(summary, "x")).not.toContain("blunder");
     expect(text).toContain("stalled: 5 or more quiet turns");
     expect(runStamp(new Date("2026-01-02T03:04:05.678Z"))).toBe("20260102-030405");
   });

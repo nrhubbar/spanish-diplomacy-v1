@@ -21,6 +21,8 @@ import {
 import { builtInModuleRegistry } from "../main/engine/modules";
 import { builtInSources } from "../main/scenarios/builtInSources";
 import { createScenarioRegistry, type ScenarioRegistry } from "../main/scenarios/registry";
+import { clickMapTerritory } from "../main/state/gameSlice";
+import { pushView } from "../main/state/paneSlice";
 import { createAppStore } from "../main/state/store";
 import { fixtureSources } from "./fixtures/scenarios/fixtureSources";
 
@@ -144,6 +146,12 @@ export function armyIn(state: GameState, id: string): UnitState {
 
 export function testStore(preloadedState?: Parameters<typeof createAppStore>[0]["preloadedState"]) {
   return createAppStore({ registry: testRegistry(), ...(preloadedState === undefined ? {} : { preloadedState }) });
+}
+
+/** A map click on a territory as the planning screen makes it (U3): select it, and open Territory Info. */
+export function clickTerritoryIn(store: ReturnType<typeof testStore>, id: string): void {
+  store.dispatch(clickMapTerritory(territory(id)));
+  store.dispatch(pushView({ id: territory(id), kind: "territory" }));
 }
 
 /** One army for `battlefield`. Synthetic ids get a definition of the given type and strength. */

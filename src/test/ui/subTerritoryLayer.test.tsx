@@ -171,3 +171,35 @@ describe("finding the province under a point (X3)", () => {
     }
   });
 });
+
+describe("sub-territory borders past 250% (note 4)", () => {
+  function renderWithBorders(Component: Layer, borders: boolean) {
+    const scenarioPackage = spainPackage();
+    const { container } = render(
+      <svg>
+        <Component borders={borders} game={initialGameState(scenarioPackage.scenario)} level="detail" scenarioPackage={scenarioPackage} toScreen={toScreen} unitSymbols={new Map()} view={staticMapView} />
+      </svg>
+    );
+    return container;
+  }
+
+  it("outlines every uncontested sub-territory, and only when asked", async () => {
+    const container = renderWithBorders(SubTerritoryWash, true);
+    await waitFor(() => { expect(container.querySelector(".sub-territory-border")).not.toBeNull(); });
+    expect(container.querySelector("[data-sub-territory-id='madrid']")).toHaveClass("sub-territory-hit", "sub-territory-border");
+    cleanup();
+    const plain = renderWithBorders(SubTerritoryWash, false);
+    await waitFor(() => { expect(plain.querySelector(".sub-territory-hit")).not.toBeNull(); });
+    expect(plain.querySelector(".sub-territory-border")).toBeNull();
+  });
+
+  it("names the sub-territories of uncontested territories too", () => {
+    const withBorders = renderWithBorders(SubTerritoryLayer, true);
+    const named = (container: HTMLElement) => [...container.querySelectorAll(".sub-territory-name")].map((node) => node.textContent);
+    const all = named(withBorders);
+    cleanup();
+    const contestedOnly = named(renderWithBorders(SubTerritoryLayer, false));
+    expect(all.length).toBeGreaterThan(contestedOnly.length);
+    expect(all).toEqual(expect.arrayContaining(contestedOnly));
+  });
+});

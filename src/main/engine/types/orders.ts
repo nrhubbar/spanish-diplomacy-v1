@@ -59,10 +59,14 @@ export interface BuildOrder {
   readonly subTerritoryId: SubTerritoryId;
 }
 
-/** U2-U4: what an aircraft flies this turn. */
+/**
+ * U2-U4, R10: what an aircraft flies this turn. Patrol (fighters) replaced Intercept and still
+ * intercepts raids. Ground Support (`support`) may be flown by fighters or bombers: a type's
+ * `air.missions` says which it flies.
+ */
 export type AirMission =
   | { readonly kind: "raid"; readonly subTerritoryId: SubTerritoryId }
-  | { readonly kind: "intercept"; readonly territoryId: TerritoryId }
+  | { readonly kind: "patrol"; readonly territoryId: TerritoryId }
   | { readonly kind: "support"; readonly territoryId: TerritoryId }
   | { readonly kind: "recon"; readonly territoryId: TerritoryId };
 

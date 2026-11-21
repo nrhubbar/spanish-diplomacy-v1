@@ -138,7 +138,7 @@ describe("computer player: attacks (C18)", () => {
   it("does not attack at hopeless odds", () => {
     const scenario = spainM2();
     const state = board(scenario, "north", ["madrid"], [
-      ["north-la-victoria-28", "north", "castilla-y-leon"],
+      ["north-argel-27", "north", "castilla-y-leon"],
       ["rep-wad-ras-1", "republic", "madrid"],
       ["rep-covadonga-4", "republic", "madrid"],
       ["rep-madrid-security", "republic", "madrid"],
@@ -156,7 +156,7 @@ describe("computer player: attacks (C18)", () => {
       ["north-san-marcial-22", "north", "castilla-y-leon"],
       ["north-zamora-29", "north", "castilla-y-leon"],
       ["north-san-quintin-25", "north", "castilla-la-mancha"],
-      ["north-la-victoria-28", "north", "castilla-la-mancha"],
+      ["north-argel-27", "north", "castilla-la-mancha"],
       ["rep-madrid-sierra-column", "republic", "madrid"]
     ]);
     const attackers = into(ordersOf(scenario, state, "north"), "madrid");
@@ -220,14 +220,14 @@ describe("computer player: defence and morale (C18, M23)", () => {
     const placement: Placement = [
       ["north-san-marcial-22", "north", "castilla-y-leon"],
       ["north-san-quintin-25", "north", "castilla-y-leon"],
-      ["north-la-victoria-28", "north", "castilla-y-leon"],
+      ["north-argel-27", "north", "castilla-y-leon"],
       ["north-zamora-29", "north", "castilla-y-leon"],
       ["rep-madrid-sierra-column", "republic", "madrid"]
     ];
     const start = board(scenario, "north", ["madrid"], placement);
     expect(into(ordersOf(scenario, start, "north"), "madrid").length).toBeGreaterThan(0);
 
-    const allDown = demoralize(start, ["north-san-marcial-22", "north-san-quintin-25", "north-la-victoria-28", "north-zamora-29"]);
+    const allDown = demoralize(start, ["north-san-marcial-22", "north-san-quintin-25", "north-argel-27", "north-zamora-29"]);
     expect(ordersOf(scenario, allDown, "north")).toEqual([]);
 
     const someDown = demoralize(start, ["north-san-marcial-22", "north-san-quintin-25"]);

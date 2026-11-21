@@ -60,7 +60,7 @@ describe("the air pane (U2, M11, `ux-air-a`)", () => {
     expect(screen.getByText(/based at Madrid/u)).toBeVisible();
     expect(screen.getByText("1 mission a turn")).toBeVisible();
     expect(screen.getByTitle(flying!.name)).toBeVisible();
-    expect(screen.getByRole("button", { name: "Intercept" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Patrol" })).toBeDisabled();
     expect(screen.getByText("Choose a mission, then its target.")).toBeVisible();
     await userEvent.click(screen.getByRole("button", { name: "Raid" }));
     // m14: sub-territory, not province.
@@ -137,8 +137,8 @@ describe("the air pane's targets and cards (U2, U3)", () => {
   it("gives a support mission a card with its range but no raid figures", () => {
     const support: AirMissionOrder = { ...raid, mission: { kind: "support", territoryId: territory("castilla-la-mancha") } };
     withStore(<AirPane scenario={scenario} session={session(start, [support])} unitId={bomber} />);
-    expect(screen.getByRole("button", { name: "Support" })).toHaveAttribute("aria-pressed", "true");
-    const card = screen.getByText(/^Support /u).closest(".air-target-card") as HTMLElement;
+    expect(screen.getByRole("button", { name: "Ground Support" })).toHaveAttribute("aria-pressed", "true");
+    const card = screen.getByText(/^Ground Support /u).closest(".air-target-card") as HTMLElement;
     expect(within(card).getByText("Range").nextElementSibling).toHaveTextContent(/^1 of 4$/u);
     expect(within(card).queryByText(/^Anti-air/u)).toBeNull();
     expect(screen.queryByRole("list", { name: "Raid chances before interception" })).toBeNull();
@@ -164,7 +164,7 @@ describe("the air pane's targets and cards (U2, U3)", () => {
       subTerritories: Object.fromEntries(Object.entries(start.subTerritories).map(([id, site]) => [id, madridSubs.has(id as SubTerritoryId) ? { ...site, buildings: [] } : site]))
     };
     withStore(<AirPane scenario={scenario} session={session(unpaved)} unitId={bomber} />);
-    await userEvent.click(screen.getByRole("button", { name: "Support" }));
+    await userEvent.click(screen.getByRole("button", { name: "Ground Support" }));
     expect(screen.getByText("Nothing in range for this mission.")).toBeVisible();
     expect(screen.queryByRole("combobox")).toBeNull();
   });
@@ -184,7 +184,7 @@ describe("the air pane's targets and cards (U2, U3)", () => {
 describe("the air layer (B1, M3)", () => {
   it("tags squadrons by mission and leaves aircraft out of the army counters", () => {
     expect(aircraftTag(["raid"])).toBe("BOMB");
-    expect(aircraftTag(["intercept"])).toBe("FTR");
+    expect(aircraftTag(["patrol"])).toBe("FTR");
     expect(aircraftTag(["recon"])).toBe("RCN");
     const ground = withoutAircraft(scenario, start);
     expect(Object.keys(ground.units).length).toBeLessThan(Object.keys(start.units).length);
@@ -331,11 +331,12 @@ describe("the meta row's contested pills and Recruits-at chip (M5, M12)", () => 
   it("counts the viewer's units and queued sub-territories for the tabs (M6)", () => {
     const props = at("catalunya");
     expect(tabCount("units", props)).toBeGreaterThan(0);
-    expect(tabCount("build", props)).toBe(0);
-    expect(tabCount("recruit", props)).toBeUndefined();
+    expect(tabCount("buildings", props)).toBe(0);
+    expect(tabCount("recruit", props)).toBe(0);
+    expect(tabCount("production", props)).toBeUndefined();
     const site = (ground.index.subTerritoriesByTerritory.get(territory("catalunya")) ?? [])[0]!;
     const planned = { ...props, session: { ...props.session, draft: { ...emptyDraft, builds: [{ factionId: republic, kind: "build" as const, project: { developmentId: "farms", kind: "development" } as never, subTerritoryId: site.id }] } } };
-    expect(tabCount("build", planned)).toBe(1);
+    expect(tabCount("buildings", planned)).toBe(1);
   });
 });
 

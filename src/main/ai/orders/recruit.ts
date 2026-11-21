@@ -5,6 +5,7 @@ import { recruitSiteProblem, recruitSlots, recruitableTypes, typeLock } from "..
 import { canAfford, subtractResources } from "../../engine/resources";
 import type { FactionId, GameState, RecruitOrder, ResourceId, Resources, Scenario, TerritoryId, UnitState, UnitTypeDefinition } from "../../engine/types";
 import type { OrderPlanner } from "./planner";
+import { motorPays } from "../reach";
 import { airRecruitChoices } from "./airRecruits";
 import { buildReserve } from "./build";
 import { balanceLeft } from "./spending";
@@ -61,7 +62,7 @@ function worth(type: UnitTypeDefinition, balance: Resources): number {
  * first, it fills the territory's D7 slots with the best ground type the capital can train,
  * adding one support type (artillery) when the faction has too few. While its trucks carry too
  * few of its units (M1), it first recruits one transport type a turn at the most threatened
- * site that can train it. It spends only what the
+ * site that can train it and where trucks pay (`motorPays`, R5: a Motor road leaves it). It spends only what the
  * earlier planners left, less a reserve for builds. Anti-air and aircraft come first where the
  * site can train them (`airRecruits.ts`, m3r1-air-generals). No random draws (CT-36).
  */
@@ -88,7 +89,8 @@ export const planRecruits: OrderPlanner<RecruitOrder> = (context) => {
   if (carrying * transportRatio < groundCount) {
     for (const site of sites) {
       const transport = trainable(site.territoryId).find((type) => carriesOf(type) > 0 && type.recruit !== undefined && spendable(type.recruit.cost));
-      if (transport?.recruit === undefined || recruitSlots(scenario, state, site.territoryId) === 0) continue;
+      // R5: only where a Motor road leaves the site; elsewhere trucks carry nothing.
+      if (transport?.recruit === undefined || recruitSlots(scenario, state, site.territoryId) === 0 || !motorPays(scenario, state, factionId, site.territoryId)) continue;
       balance = subtractResources(balance, transport.recruit.cost);
       orders.push({ factionId, kind: "recruit", territoryId: site.territoryId, unitTypeId: transport.id });
       groundCount += 1;

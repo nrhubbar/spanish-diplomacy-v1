@@ -1,4 +1,4 @@
-import { type JSX, useEffect, useRef } from "react";
+import { type JSX, useEffect, useId, useRef } from "react";
 import { unitKindIn } from "../engine/air/pieces";
 import { requireFaction } from "../engine/lookup";
 import type { FactionId, Scenario, TerritoryId, TurnOutcome, TurnResolutionResult } from "../engine/types";
@@ -9,6 +9,7 @@ import { cssVariables } from "../presentation/style";
 import { controllerName, describeOutcomeGroup, factionName, groupOutcomes, type ReportView, route, territoryName, unitName } from "../presentation/text";
 import type { RevealedOrders } from "../state/selectors";
 import { eventsAt, revealInPane } from "./report/focus";
+import { eventCount, type FactionReport, factionReportTitle, outcomesByFaction } from "./report/factions";
 import { groupMembers, groupOpen, type OutcomeGroupIcon, outcomeGroups } from "./report/groups";
 import { SiteIcon } from "./pane/SiteIcons";
 import { SubTerritoryChanges } from "./report/SubTerritoryChanges";
@@ -80,11 +81,15 @@ export function FocusNote({ battle, focusedTerritoryId, result, scenario, viewer
 /** Neutral ring for report icons, which stand for a kind of outcome rather than a faction. */
 const reportRing = "#5b4d40";
 
+/** What a report reads: the turn's outcomes and the board they left (a history entry gives the board of now). */
+export type ReportSource = Pick<TurnResolutionResult, "finalState" | "outcomes">;
+
 /**
- * U2: a compact summary grouped by result, with routine detail collapsed. Formations of one
- * faction that took the same route with the same result share one line.
+ * U2, U10: a compact summary by faction (the viewer's own first), each grouped by result, with
+ * routine detail collapsed. Formations of one faction that took the same route with the same
+ * result share one line.
  */
-export function OutcomeSummary({ result, scenario, viewer }: { readonly result: TurnResolutionResult; readonly scenario: Scenario; readonly viewer?: FactionId | undefined }): JSX.Element {
+export function OutcomeSummary({ result, scenario, viewer }: { readonly result: ReportSource; readonly scenario: Scenario; readonly viewer?: FactionId | undefined }): JSX.Element {
   // The Milestone 3 lines read the viewer's board (development) and keep other factions' numbers private.
   const view = { state: result.finalState, ...(viewer === undefined ? {} : { viewer }) };
   // Armies only: aircraft and generals have no order to hold on ($6: holds come from public orders, T6).
@@ -95,8 +100,27 @@ export function OutcomeSummary({ result, scenario, viewer }: { readonly result: 
     <section aria-labelledby="outcomes-title" className="pane-section">
       <h3 id="outcomes-title">What happened</h3>
       {bounced ? <p className="pane-hint">{"Only another faction's units can stop a move. A faction's own units never block each other."}</p> : null}
+      {outcomesByFaction(scenario, result.finalState, result.outcomes, viewer).map((entry) => (
+        <FactionSection entry={entry} key={entry.factionId ?? "other"} result={result} scenario={scenario} view={view} viewer={viewer} />
+      ))}
+      {holds === 0 ? null : <p className="pane-hint">{`${String(holds)} ${holds === 1 ? "unit" : "units"} held without orders.`}</p>}
+    </section>
+  );
+}
+
+/** One faction's part of "What happened": a heading with its count, then its groups. */
+function FactionSection({ entry, result, scenario, view, viewer }: { readonly entry: FactionReport; readonly result: ReportSource; readonly scenario: Scenario; readonly view: ReportView; readonly viewer: FactionId | undefined }): JSX.Element {
+  const headingId = useId();
+  const color = entry.factionId === undefined ? reportRing : requireFaction(scenario, entry.factionId).color;
+  return (
+    <section aria-labelledby={headingId} className="faction-report" data-own={entry.factionId !== undefined && entry.factionId === viewer} style={cssVariables({ "--faction-color": color })}>
+      <h4 className="faction-report-title" id={headingId}>
+        <span aria-hidden="true" className="faction-report-swatch" />
+        {factionReportTitle(scenario, entry.factionId, viewer)}
+        <span className="faction-report-count">{eventCount(entry.outcomes.length)}</span>
+      </h4>
       {outcomeGroups.map((group) => {
-        const outcomes = groupMembers(group, result.outcomes);
+        const outcomes = groupMembers(group, entry.outcomes);
         if (outcomes.length === 0) return null;
         return (
           <details className="outcome-group" key={group.label} open={groupOpen(group, outcomes)}>
@@ -112,7 +136,6 @@ export function OutcomeSummary({ result, scenario, viewer }: { readonly result: 
           </details>
         );
       })}
-      {holds === 0 ? null : <p className="pane-hint">{`${String(holds)} ${holds === 1 ? "unit" : "units"} held without orders.`}</p>}
     </section>
   );
 }

@@ -1,20 +1,20 @@
 import { type JSX, memo, useId, useMemo, useState } from "react";
-import { plannedSpend } from "../../engine/economy/catalogue";
-import { holdersIn, territoriesHeldWhole } from "../../engine/economy/holdings";
-import { incomeFor } from "../../engine/economy/income";
-import { amountOf, treasuryOf } from "../../engine/economy/resources";
-import { addResources } from "../../engine/resources";
+import { amountOf } from "../../engine/economy/resources";
 import type { ResourceId } from "../../engine/types";
 import { useSession } from "../../hooks";
 import { isInGame } from "../../state/session";
 import { replenishmentCost } from "../../state/planning/recruitment";
 import { resourceAmount, resourceAmountInFull, signedResourceAmount } from "../../presentation/economy";
+import { glyphs } from "../../presentation/glyphs";
+import { ledgersFor } from "../../presentation/ledger";
+import { Ledger } from "./Ledger";
 import { EconomyIcon, resourceIcon } from "../economy/EconomyIcon";
 import type { HeaderSlotProps } from "./slots";
 
 /**
- * X1: one chip per resource with the balance and next turn's income. Tapping a chip opens its
- * detail: where the income comes from, what this turn's orders will spend, and other factions'
+ * X1, U11: one chip per resource: the balance after this turn's Build and Recruit orders, then
+ * next turn's change. Tapping a chip opens its balance view (`Ledger`): one row per territory,
+ * the expense rows, and a total that is the chip's second figure, then other factions'
  * balances, which stay hidden unless recon reveals them ($6). Renders nothing without an
  * economy or a viewer.
  */
@@ -29,28 +29,28 @@ function Chips({ scenario, state, viewer }: HeaderSlotProps): JSX.Element | null
   const source = record?.turnNumber === state.turnNumber ? record : state;
   const [open, setOpen] = useState<ResourceId | undefined>(undefined);
   const id = useId();
-  const income = useMemo(() => (viewer === undefined || scenario.rules.economy === "none" ? undefined : incomeFor(scenario, source, viewer)), [scenario, source, viewer]);
-  if (viewer === undefined || income === undefined || state.treasuries[viewer] === undefined) return null;
-  const balance = treasuryOf(state, viewer);
-  // m11: builds, Recruit and Replenish orders, as the Recruit tab's "Left" counts them.
-  const spend = addResources(plannedSpend(scenario, [...(builds ?? []), ...(recruits ?? [])]), replenishmentCost(scenario, state, viewer, replenishments ?? []));
-  const whole = open === undefined ? 0 : territoriesHeldWhole(scenario, source.subTerritories, viewer).length;
-  const contested = open === undefined ? 0 : scenario.territories.filter((territory) => {
-    const holders = holdersIn(scenario, source.subTerritories, territory.id);
-    return holders.length > 1 && holders.includes(viewer);
-  }).length;
+  const ledgers = useMemo(() => {
+    if (viewer === undefined || scenario.rules.economy === "none" || state.treasuries[viewer] === undefined) return undefined;
+    const replenishing = replenishments ?? [];
+    return ledgersFor(scenario, { ...source, treasuries: state.treasuries }, viewer, {
+      builds: builds ?? [],
+      recruits: recruits ?? [],
+      replenish: replenishmentCost(scenario, state, viewer, replenishing),
+      replenishCount: replenishing.length
+    });
+  }, [builds, recruits, replenishments, scenario, source, state, viewer]);
+  if (ledgers === undefined) return null;
   const others = scenario.factions.filter((faction) => faction.id !== viewer);
 
   return (
     <>
       {scenario.resources.map((resource, index) => {
+        const ledger = ledgers[index];
+        if (ledger === undefined) return null;
         const expanded = open === resource.id;
-        const gain = amountOf(income.paid, resource.id);
-        const spent = amountOf(spend, resource.id);
         // EB-12: every amount reads through the resource's display scale ("Manpower 18k +9k").
         const shown = (value: number): string => resourceAmount(scenario, resource.id, value);
-        const gainText = signedResourceAmount(scenario, resource.id, gain);
-        const held = amountOf(balance, resource.id);
+        const next = signedResourceAmount(scenario, resource.id, ledger.total);
         return (
           <div className={`resource-chip-wrap header-meter${index === 0 ? " resource-chip-first" : ""}`} key={resource.id}>
             <button
@@ -62,20 +62,19 @@ function Chips({ scenario, state, viewer }: HeaderSlotProps): JSX.Element | null
             >
               <EconomyIcon name={resourceIcon(scenario, resource.id)} />
               <span className="resource-name">{resource.name}</span>{" "}
-              <span className="resource-balance">{shown(held - spent)}</span>{" "}
-              <span className="resource-income">{gainText}</span>
+              <span className="resource-balance">{shown(ledger.now)}</span>{" "}
+              <span className="resource-income">{next}</span>
               <span className="visually-hidden"> next turn</span>
             </button>
             {expanded ? (
               <div className="resource-detail" id={`${id}-${resource.id}`} role="region" aria-label={`${resource.name} detail`}>
                 <p>
-                  <strong>{`${resource.name}: ${shown(held)}`}</strong>
-                  {resource.display === undefined ? null : ` (${resourceAmountInFull(scenario, resource.id, held)})`}
+                  <strong>{`${resource.name}: ${shown(ledger.now)} now ${glyphs.dot} ${next} next turn`}</strong>
                 </p>
-                {spent > 0 ? <p>{`This turn's orders spend ${shown(spent)} when revealed.`}</p> : null}
-                <p>{`Next turn ${gainText} from ${String(whole)} ${whole === 1 ? "territory" : "territories"} held whole.`}</p>
-                {amountOf(income.cut, resource.id) > 0 ? <p>{`Raids cut ${shown(amountOf(income.cut, resource.id))}.`}</p> : null}
-                {contested > 0 ? <p>{`${String(contested)} contested ${contested === 1 ? "territory pays" : "territories pay"} nothing.`}</p> : null}
+                <Ledger ledger={ledger} scenario={scenario} />
+                {ledger.spent > 0
+                  ? <p>{`This turn's Build and Recruit orders spend ${shown(ledger.spent)} of the ${shown(ledger.held)}${resource.display === undefined ? "" : ` (${resourceAmountInFull(scenario, resource.id, ledger.held)})`} you hold.`}</p>
+                  : <p>{`You hold ${shown(ledger.held)}${resource.display === undefined ? "" : ` (${resourceAmountInFull(scenario, resource.id, ledger.held)})`}.`}</p>}
                 <ul aria-label="Other factions" className="resource-others">
                   {others.map((faction) => {
                     const theirs = state.treasuries[faction.id];

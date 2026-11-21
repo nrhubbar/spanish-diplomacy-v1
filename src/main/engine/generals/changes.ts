@@ -1,5 +1,6 @@
 import { holdsWhole } from "../partition/holders";
 import { generalsSetAside, heldWholeByAnother, isAirbaseFor, territoriesWithin, unitDefinitionIn, unitKindIn, unitTypeIn } from "../air/pieces";
+import { airOverFoughtBattles } from "../air/groundSupport";
 import { airScratch } from "../air/scratch";
 import { compareIds, removeArmies, replaceArmies } from "../board";
 import { pick } from "../dice";
@@ -83,7 +84,8 @@ function fallbackTerritory(scenario: Scenario, state: Pick<GameState, "control" 
  * 3. The best general with each army rallies the units that started the turn demoralized and
  *    were not demoralized again this turn (C5, D5, D27.4).
  * 4. Replacement generals due this turn appear in the fallback territory (D7, D27.7).
- * Support missions are reported with the battle they joined.
+ * Air battles are reported, then Ground Support missions with the battle they joined and whether
+ * they counted (R11).
  */
 export const commandChanges: Phase = (draft) => {
   const { scenario, start, streams } = draft.input;
@@ -95,14 +97,25 @@ export const commandChanges: Phase = (draft) => {
   let generals = draft.systems.generals;
   let raised = draft.systems.raised;
 
+  // R11: each air battle fought, then each Ground Support flight with the battle it joined and whether it counted.
+  const airOver = airOverFoughtBattles(draft);
+  for (const { air, battleIndex, territoryId } of airOver) {
+    if (air.result !== undefined) events.push({ battleIndex, input: air.input, kind: "air-battle", result: air.result, support: air.support, territoryId });
+  }
   for (const order of scratch.support) {
-    const territoryId = order.mission.kind === "support" ? order.mission.territoryId : undefined;
-    if (territoryId === undefined) continue;
+    if (order.mission.kind !== "support") continue;
+    const territoryId = order.mission.territoryId;
     const battle = [...draft.front.battles, ...draft.standing].find((pending) =>
       pending.site.territoryId === territoryId
       && (pending.battle.engagement.attackerFactionId === order.factionId
         || pending.battle.engagement.defenders.some((combatant) => combatant.unit.factionId === order.factionId)));
-    events.push({ kind: "air-support", order, territoryId, ...(battle === undefined ? {} : { battleIndex: battle.battle.index }) });
+    if (battle === undefined) {
+      events.push({ kind: "air-support", order, territoryId });
+      continue;
+    }
+    const support = airOver.find((entry) => entry.battleIndex === battle.battle.index)?.air.support;
+    const applied = support !== undefined && [...support.attacker.unitIds, ...support.defender.unitIds].includes(order.unitId);
+    events.push({ applied, battleIndex: battle.battle.index, kind: "air-support", order, territoryId });
   }
 
   const aside = Object.values(scratch.aside).sort((a, b) => compareIds(a.id, b.id));

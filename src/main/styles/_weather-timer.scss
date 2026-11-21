@@ -229,39 +229,35 @@
   }
 }
 
-// X1: the header's meter row (timer, Funds, Manpower). Each meter chip carries `header-meter`.
-// Desktop: the readiness chips sit by the title and the meters on the right, before Exit.
+// X1, U1: the top bar. The date and readiness sit by the title, then the meters (timer, Funds,
+// Manpower; each carries `header-meter`), then the actions (Last turn, Recruitment, Building,
+// End Turn) and the menu. The first meter pushes the rest to the right.
 .game-header {
-  > .status-chips {
-    order: 1;
-    margin-right: auto;
-  }
-
-  > .status-chips ~ .game-header-actions {
-    margin-left: 0;
-  }
+  flex-wrap: nowrap;
 
   > .header-meter {
     order: 2;
   }
 
-  // m17: without readiness chips (resolution), the meters still sit at the right.
-  @media (width > 720px) {
-    > .game-header-title + .header-meter {
-      margin-left: auto;
-    }
+  > .game-header-title + .header-meter {
+    margin-left: auto;
   }
 
   > .game-header-actions {
     order: 3;
   }
+
+  > .header-meter ~ .game-header-actions {
+    margin-left: 0;
+  }
 }
 
-// Phone (X1, Q-UX-12, M1): title and Exit, then one compact row of meters, then the readiness
-// chips. The meters keep a small gap and drop their visible names (the icon carries the name;
-// screen readers still hear it).
+// Phone (X1, Q-UX-12, M1): the title and the menu, then one compact row of meters and actions.
+// The meters keep a small gap and drop their visible names (the icon carries the name; screen
+// readers still hear it). End Turn moves to the pane's bar (U1, `_shell.scss`).
 @media (max-width: 720px) {
   .game-header {
+    flex-wrap: wrap;
     column-gap: 0.35rem;
 
     .resource-name {
@@ -273,24 +269,18 @@
       white-space: nowrap;
     }
 
-    &::after {
-      flex-basis: 100%;
-      order: 2;
-      height: 0;
-      content: "";
-    }
-
-    > .game-header-actions {
-      order: 1;
+    > .game-header-title {
+      flex: 1 1 100%;
     }
 
     > .header-meter {
-      order: 3;
+      margin-left: 0 !important;
     }
 
-    > .status-chips {
-      order: 4;
-      margin-right: 0;
+    > .game-header-actions {
+      flex: 1 1 auto;
+      justify-content: flex-end;
+      margin-left: auto;
     }
 
     .timer-chip {

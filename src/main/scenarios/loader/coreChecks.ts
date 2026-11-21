@@ -72,7 +72,7 @@ export function checkCore(document: ScenarioDocument, issues: Issues): void {
   }
 }
 
-/** L6, L7: connections are undirected, unique, never loops, and reach every territory not declared isolated. */
+/** L6, L7: connections are undirected, unique per kind, never loops, and reach every territory not declared isolated. */
 function checkConnections(document: ScenarioDocument, territories: ReadonlySet<string>, issues: Issues): void {
   const edges = new Set<string>();
   const degree = new Map<string, number>();
@@ -81,8 +81,9 @@ function checkConnections(document: ScenarioDocument, territories: ReadonlySet<s
     issues.ref(`connections[${index}].between`, a, territories, "territory");
     issues.ref(`connections[${index}].between`, b, territories, "territory");
     if (a === b) issues.add(`connections[${index}]: a territory cannot connect to itself (L6)`);
-    const key = [a, b].sort().join("|");
-    if (edges.has(key)) issues.add(`connections[${index}]: duplicate connection ${a} - ${b} (L6)`);
+    // R3: a pair may have one land and one sea connection (Málaga's sea lane beside a land border).
+    const key = `${connection.kind}:${[a, b].sort().join("|")}`;
+    if (edges.has(key)) issues.add(`connections[${index}]: duplicate ${connection.kind} connection ${a} - ${b} (L6)`);
     edges.add(key);
     degree.set(a, (degree.get(a) ?? 0) + 1);
     degree.set(b, (degree.get(b) ?? 0) + 1);

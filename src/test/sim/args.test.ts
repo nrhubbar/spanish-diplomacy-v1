@@ -3,7 +3,7 @@ import { defaultGames, defaultOutDir, parseArgs, parseSeeds, usage, UsageError }
 import { defaultTurnLimit } from "../../sim/run";
 
 describe("sim arguments", () => {
-  it("defaults to 200 games from seed 1 and 66 turns, leaving the scenario and blunders to the run", () => {
+  it("defaults to 200 games from seed 1 and 66 turns, leaving the scenario to the run", () => {
     const options = parseArgs([]);
     expect(options).toEqual({
       help: false,
@@ -18,10 +18,9 @@ describe("sim arguments", () => {
   it("reads every option, in either --flag value or --flag=value form", () => {
     const options = parseArgs([
       "--games", "3", "--first-seed=10", "--turns", "12", "--variant", "a.json", "--variant=b.json",
-      "--blunders", "without", "--scenario", "tiny-front", "--workers", "2", "--run", "ab_1.x", "--out", "tmp/sim"
+      "--scenario", "tiny-front", "--workers", "2", "--run", "ab_1.x", "--out", "tmp/sim"
     ]);
     expect(options).toEqual({
-      blunders: "without",
       help: false,
       outDir: "tmp/sim",
       run: "ab_1.x",
@@ -42,7 +41,8 @@ describe("sim arguments", () => {
     expect(() => parseArgs(["--games", "two"])).toThrow(/positive whole number/);
     expect(() => parseArgs(["--turns"])).toThrow(/needs a value/);
     expect(() => parseArgs(["--turns", "--games"])).toThrow(/needs a value/);
-    expect(() => parseArgs(["--blunders", "some"])).toThrow(/with, without or both/);
+    expect(() => parseArgs(["--blunders", "with"])).toThrow(/Unknown option/);
+    expect(() => parseArgs(new Array<string>(1))).toThrow(/Unknown option ""/);
     expect(() => parseArgs(["--run", "../up"])).toThrow(/--run/);
     expect(() => parseArgs(["--fast"])).toThrow(/Unknown option/);
   });

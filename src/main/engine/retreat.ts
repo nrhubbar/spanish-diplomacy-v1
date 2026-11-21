@@ -55,7 +55,7 @@ export function settleDepartures(scenario: Scenario, start: GameState, armies: A
       return { kind: "home", leaving: entry };
     }
     const unit = requireArmy(armies, entry.unitId);
-    const to = retreatDestination(scenario, start, staying, unit.factionId, entry.from);
+    const to = retreatDestination(scenario, start, staying, unit.factionId, entry.from, unit.id);
     const taken = takenBy === undefined ? {} : { takenBy };
     return to === undefined ? { kind: "surrendered", leaving: entry, ...taken } : { kind: "retreated", leaving: entry, to, ...taken };
   });
@@ -88,7 +88,9 @@ export function retreatDestination(
   start: GameState,
   staying: readonly UnitState[],
   factionId: FactionId,
-  from: TerritoryId
+  from: TerritoryId,
+  /** R1: the army retreating, whose pocket the path leaves from; without one, any of the side's ground. */
+  unitId?: UnitId
 ): TerritoryId | undefined {
   const candidates = neighborsOf(scenario, from)
     .map((neighbor) => neighbor.territoryId)
@@ -96,8 +98,8 @@ export function retreatDestination(
       const control = start.control[id];
       return control?.kind === "controlled" && control.factionId === factionId
         && !staying.some((unit) => unit.territoryId === id && unit.factionId !== factionId)
-        // P6: a module may require a path (through the army's own sub-territories).
-        && hookedRetreatAllowed({ factionId, from, scenario, state: start, to: id });
+        // P6, R1: a module may require a path (out of the army's own pocket).
+        && hookedRetreatAllowed({ factionId, from, scenario, state: start, to: id, ...(unitId === undefined ? {} : { unitId }) });
     })
     .map((id) => ({ friends: staying.filter((unit) => unit.territoryId === id).length, id, rank: scenario.territories.findIndex((territory) => territory.id === id) }))
     .sort((left, right) => right.friends - left.friends || left.rank - right.rank);

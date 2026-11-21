@@ -19,7 +19,7 @@ const sub = (id: string): SubTerritoryId => id as SubTerritoryId;
 const t = territory;
 
 function route(partial: Partial<MoveRoute> & Pick<MoveRoute, "shape" | "to">): MoveRoute {
-  return { cost: 1, from: t("madrid"), legs: [{ kind: "land", to: partial.to }], rough: [], staging: t("madrid"), steps: 1, transit: [], ...partial };
+  return { cost: 1, from: t("madrid"), legs: [{ kind: "land", to: partial.to }], mode: "march", path: [], rough: [], staging: t("madrid"), steps: 1, transit: [], ...partial };
 }
 
 const ride = { boarding: sub("madrid"), crossings: 2, end: t("catalunya"), level: 2, range: 4, start: t("madrid"), stations: [sub("madrid"), sub("barcelona")], through: [t("castilla-la-mancha"), t("valencia")] };
@@ -156,7 +156,8 @@ describe("planning in contested ground: the helpers (C1)", () => {
     const start = initialGameState(scenario);
     expect(selectedWithdrawRoutes(scenario, session(start))).toEqual([]);
     const andalucia = selectTerritory(session(start), t("andalucia"));
-    expect(withdrawDestinations(scenario, andalucia)).toEqual(["castilla-la-mancha", "murcia"]);
+    // R1: the Málaga regiment's pocket is Málaga alone; its only way out is the sea lane.
+    expect(withdrawDestinations(scenario, andalucia)).toEqual(["murcia"]);
     expect(inContestedGround(scenario, andalucia, armyIn(start, "rep-vitoria-8"))).toBe(true);
     expect(inContestedGround(undefined, andalucia, armyIn(start, "rep-vitoria-8"))).toBe(false);
     expect(enemyPresent(andalucia, t("andalucia"))).toBe(true);

@@ -48,10 +48,10 @@ describe("a partial grade that takes the defender's last ground (B1, P5, Q-PART-
   it("makes the defender retreat from an assault (step 5)", () => {
     const scenario = spainD20();
     const state = withUnits(scenario, [
-      ["north-san-marcial-22", "north", "castilla-y-leon"], ["north-san-quintin-25", "north", "castilla-y-leon"], ["north-la-victoria-28", "north", "castilla-y-leon"],
+      ["north-san-marcial-22", "north", "castilla-y-leon"], ["north-san-quintin-25", "north", "castilla-y-leon"], ["north-argel-27", "north", "castilla-y-leon"],
       ["rep-castilla-3", "republic", "extremadura"]
     ]);
-    const orders = ["north-san-marcial-22", "north-san-quintin-25", "north-la-victoria-28"].map((id) => move("north", id, "castilla-y-leon", "extremadura"));
+    const orders = ["north-san-marcial-22", "north-san-quintin-25", "north-argel-27"].map((id) => move("north", id, "castilla-y-leon", "extremadura"));
     const { battle, result } = partialBattle(scenario, state, [{ factionId: faction("north"), orders }], "extremadura");
     expect(battle.site.kind).toBe("assault");
     expect(result.finalState.subTerritories[sub("badajoz")]?.holder).toBe("north");
@@ -64,7 +64,7 @@ describe("a partial grade that takes the defender's last ground (B1, P5, Q-PART-
 describe("only units that can fight take ground (B2, D27.1)", () => {
   it("holds back a lone general advancing into enemy ground, and does not let him take it", () => {
     const scenario = spainD20();
-    const base = withUnits(scenario, [["north-general-mola", "north", "castilla-y-leon"], ["north-sierra-column", "north", "castilla-y-leon"]]);
+    const base = withUnits(scenario, [["north-general-mola", "north", "castilla-y-leon"], ["north-navarre-requetes", "north", "castilla-y-leon"]]);
     const order = move("north", "north-general-mola", "castilla-y-leon", "castilla-la-mancha");
     // Each order validates on its own (M9); the army is checked as an army at step 1.
     expect(validateMoveOrder(scenario, base, order)).toEqual({ ok: true });
@@ -76,8 +76,8 @@ describe("only units that can fight take ground (B2, D27.1)", () => {
 
   it("lets a general advance with his army, which takes the ground", () => {
     const scenario = spainD20();
-    const state = withUnits(scenario, [["north-general-mola", "north", "castilla-y-leon"], ["north-sierra-column", "north", "castilla-y-leon"]]);
-    const orders = ["north-general-mola", "north-sierra-column"].map((id) => move("north", id, "castilla-y-leon", "castilla-la-mancha"));
+    const state = withUnits(scenario, [["north-general-mola", "north", "castilla-y-leon"], ["north-navarre-requetes", "north", "castilla-y-leon"]]);
+    const orders = ["north-general-mola", "north-navarre-requetes"].map((id) => move("north", id, "castilla-y-leon", "castilla-la-mancha"));
     const result = resolveTurn(scenario, state, [{ factionId: faction("north"), orders }], 1);
     expect(result.finalState.control[territory("castilla-la-mancha")]).toEqual({ factionId: "north", kind: "controlled" });
   });
@@ -210,13 +210,13 @@ describe("partition helpers at their edges", () => {
   const start = initialGameState(scenario);
 
   it("does not let a lone general occupy, called directly (D27.1)", async () => {
-    const { occupy, sweep } = await import("../main/engine/partition/steps");
+    const { flipWhole, occupy } = await import("../main/engine/partition/steps");
     const general = start.units[unit("north-general-mola")];
     if (general === undefined) throw new Error("mola");
     const armies = { [general.id]: { ...general, territoryId: territory("castilla-la-mancha") } };
     expect(occupy(scenario, start, armies, start.subTerritories).changes).toEqual([]);
-    expect(sweep(scenario, start, { [general.id]: { ...general, territoryId: territory("extremadura") } }, start.subTerritories).changes).toEqual([]);
-    const column = start.units[unit("north-sierra-column")];
+    expect(flipWhole(scenario, start, { [general.id]: { ...general, territoryId: territory("extremadura") } }, start.subTerritories).changes).toEqual([]);
+    const column = start.units[unit("north-navarre-requetes")];
     if (column === undefined) throw new Error("column");
     const both = { ...armies, [column.id]: { ...column, territoryId: territory("castilla-la-mancha") } };
     expect(occupy(scenario, start, both, start.subTerritories).changes.length).toBeGreaterThan(0);

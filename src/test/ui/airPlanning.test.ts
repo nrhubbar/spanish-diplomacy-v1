@@ -117,8 +117,8 @@ describe("air orders in the planning draft (U2, U5)", () => {
     // A sub-territory named like its territory is named once.
     expect(raids.some((target) => target.name === "Navarra")).toBe(true);
     expect(raids.some((target) => target.territoryId === "madrid")).toBe(false);
-    const intercepts = airTargets(scenario, state, unit("rep-ni52-fighters"), "intercept");
-    expect(intercepts.find((target) => target.territoryId === "castilla-y-leon")).toMatchObject({ mission: { kind: "intercept", territoryId: "castilla-y-leon" }, name: "Castilla y Le\u00f3n" });
+    const intercepts = airTargets(scenario, state, unit("rep-ni52-fighters"), "patrol");
+    expect(intercepts.find((target) => target.territoryId === "castilla-y-leon")).toMatchObject({ mission: { kind: "patrol", territoryId: "castilla-y-leon" }, name: "Castilla y Le\u00f3n" });
     expect(airTargets(scenario, state, unit("rep-ni52-fighters"), "raid")).toEqual([]);
     expect(airTargets(scenario, state, unit("rep-wad-ras-1"), "raid")).toEqual([]);
     expect(airTargets(scenario, state, unit("no-such-unit"), "recon")).toEqual([]);

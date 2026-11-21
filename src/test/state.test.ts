@@ -19,7 +19,6 @@ import {
   setActorKind,
   startGame,
   startNextTurn,
-  toggleOrderMenu,
   toggleUnitSelection
 } from "../main/state/gameSlice";
 import { loadMapAssets } from "../main/state/mapAssetsSlice";
@@ -212,33 +211,28 @@ describe("planning drafts", () => {
     expect(draftOf(store).selectedTerritoryId).toBe("valencia");
   });
 
-  it("gives the selected armies an order through the order menu", () => {
+  it("gives the selected armies an order from the selection bar, then selects nothing (note 11)", () => {
     const store = startWith({});
     store.dispatch(clickMapTerritory(territory("valencia")));
     store.dispatch(toggleUnitSelection(unit("rep-otumba-9")));
-    store.dispatch(toggleOrderMenu());
-    expect(draftOf(store).stage).toEqual({ step: "choose-order" });
-    store.dispatch(toggleOrderMenu());
-    expect(draftOf(store).stage).toBeUndefined();
-    store.dispatch(toggleOrderMenu());
     store.dispatch(chooseOrderKind("move"));
     expect(draftOf(store).stage).toEqual({ orderKind: "move", step: "choose-destination" });
     store.dispatch(clickMapTerritory(territory("castilla-la-mancha")));
     expect(draftOf(store)).toEqual({
       orders: [{ factionId: "republic", from: "valencia", kind: "move", to: "castilla-la-mancha", unitId: "rep-guadalajara-10" }],
       selectedTerritoryId: "valencia",
-      selectedUnitIds: ["rep-otumba-9"]
+      selectedUnitIds: []
     });
     store.dispatch(removePlannedOrder(unit("rep-guadalajara-10")));
     expect(draftOf(store).orders).toEqual([]);
   });
 
-  it("closes the order menu whenever the selection changes", () => {
+  it("closes the destination choice whenever the selection changes", () => {
     const store = startWith({});
     store.dispatch(clickMapTerritory(territory("madrid")));
-    for (const change of [toggleUnitSelection(unit("rep-wad-ras-1")), selectAllAvailableUnits(), clickMapTerritory(territory("valencia"))]) {
-      store.dispatch(toggleOrderMenu());
-      expect(draftOf(store).stage).toEqual({ step: "choose-order" });
+    for (const change of [toggleUnitSelection(unit("rep-wad-ras-1")), selectAllAvailableUnits()]) {
+      store.dispatch(chooseOrderKind("move"));
+      expect(draftOf(store).stage).toEqual({ orderKind: "move", step: "choose-destination" });
       store.dispatch(change);
       expect(draftOf(store).stage).toBeUndefined();
     }
@@ -268,8 +262,6 @@ describe("planning drafts", () => {
     const feedback = () => draftOf(store).feedback;
     store.dispatch(selectAllAvailableUnits());
     expect(feedback()).toContain("Select a territory");
-    store.dispatch(toggleOrderMenu());
-    expect(feedback()).toContain("at least one unit");
     store.dispatch(chooseOrderKind("move"));
     expect(feedback()).toContain("at least one unit");
     store.dispatch(clickMapTerritory(territory("galicia")));
@@ -369,13 +361,13 @@ describe("standing orders: Entrench and Rest (O1-O5)", () => {
     ]);
 
     store.dispatch(toggleUnitSelection(unit("rep-otumba-9")));
-    store.dispatch(toggleOrderMenu());
     store.dispatch(chooseOrderKind("entrench"));
     expect(planningOf(store).draft).toEqual({
       feedback: "1 unit will entrench.",
+      orderedToStay: ["rep-otumba-9"],
       orders: [{ factionId: "republic", from: "valencia", kind: "move", to: "castilla-la-mancha", unitId: "rep-guadalajara-10" }],
       selectedTerritoryId: "valencia",
-      selectedUnitIds: ["rep-otumba-9"]
+      selectedUnitIds: []
     });
 
     store.dispatch(removePlannedOrder(unit("rep-guadalajara-10")));
@@ -386,12 +378,12 @@ describe("standing orders: Entrench and Rest (O1-O5)", () => {
 });
 
 describe("routing (R5)", () => {
-  it("maps each phase to one path and allows settings outside games", () => {
+  it("maps each phase to one path and allows settings in and out of games", () => {
     const store = startWith({});
     expect(routeForSession({ phase: "idle" })).toBe(paths.home);
     expect(routeForSession(session(store))).toBe(paths.orders);
     expect(isPathAllowed({ phase: "idle" }, paths.settings)).toBe(true);
-    expect(isPathAllowed(session(store), paths.settings)).toBe(false);
+    expect(isPathAllowed(session(store), paths.settings)).toBe(true);
     expect(isPathAllowed(session(store), paths.resolution)).toBe(false);
     store.dispatch(exitGame());
     expect(session(store)).toEqual({ phase: "idle" });

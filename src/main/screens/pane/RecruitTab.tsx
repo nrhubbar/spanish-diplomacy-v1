@@ -20,12 +20,14 @@ import {
   resourcesLabel,
   shortfallLabel
 } from "../../presentation/recruitment";
+import { trainingEntries } from "../../presentation/queues";
 import { changeRecruitQuantity } from "../../state/gameSlice";
 import { balanceAfterBasket, basketCost, recruitQuantity } from "../../state/planning";
+import { PausedChip, QueueList } from "../queues/QueueList";
 import type { TerritoryTabProps } from "./TerritoryTabs";
 
 /**
- * X4 (Q-UX-05): every unit type the scenario recruits, with its values, cost, men, training
+ * U9, X4 (Q-UX-05): the units training here (the shared queue), then every unit type the scenario recruits, with its values, cost, men, training
  * time and a quantity. A locked type says why inline, and hovering or focusing it gives the
  * details. The basket line totals the turn's Recruit and Replenish orders and what is left.
  */
@@ -42,6 +44,9 @@ export function RecruitTab({ scenario, session, territoryId }: TerritoryTabProps
   const slots = recruitSlots(scenario, state, territoryId);
   const here = (session.draft.recruits ?? []).filter((order) => order.territoryId === territoryId).length;
   const left = balanceAfterBasket(scenario, session);
+  // U9 (note 9): the shared queue: units training here (others' by recon), then this turn's orders.
+  const queue = trainingEntries(scenario, state, territoryId, session.draft.recruits ?? [], factionId, false);
+  const paused = state.training.some((item) => item.territoryId === territoryId && item.paused);
   const spent = basketCost(scenario, session);
   const symbols = useMemo(() => {
     const color = faction?.color ?? "#000";
@@ -59,6 +64,12 @@ export function RecruitTab({ scenario, session, territoryId }: TerritoryTabProps
       {site === undefined ? (
         <p className="pane-meta recruit-slots">{`${String(here)} of ${String(slots)} Recruit orders here this turn`}</p>
       ) : <p className="pane-note recruit-site-note" role="note">{site}</p>}
+      {queue.length === 0 ? null : (
+        <div className="recruit-queue">
+          <h4>{paused ? <>In training <PausedChip /></> : "In training"}</h4>
+          <QueueList entries={queue} label={`${capitalName} training`} paused={paused} scenario={scenario} />
+        </div>
+      )}
       <ul aria-labelledby={headingId} className="recruit-list">
         {recruitableTypes(scenario).map((type) => (
           <RecruitRow

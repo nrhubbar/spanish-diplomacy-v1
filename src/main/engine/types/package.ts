@@ -19,6 +19,7 @@ import type {
   ResourceDefinition,
   SubTerritoryDefinition
 } from "./economy";
+import type { LinkDefinition, LinkModifierRules, LinkProjectRules } from "./links";
 import type { RuleModule } from "../modules";
 import type { RulesetId, RulesSelection } from "./rules";
 import type {
@@ -52,6 +53,8 @@ export interface ScenarioIndex {
   /** U5: each faction's roster, in scenario order. Empty without generals. */
   readonly generalsByFaction: ReadonlyMap<FactionId, readonly GeneralDefinition[]>;
   readonly generals: ReadonlyMap<GeneralId, GeneralDefinition>;
+  /** D2: every link by its sub-territories, keyed `a|b` with the ids sorted. Empty without sub-territories. */
+  readonly links: ReadonlyMap<string, LinkDefinition>;
   readonly neighbors: ReadonlyMap<TerritoryId, readonly Neighbor[]>;
   /** Sub-territories bordering each sub-territory, inside and across territory borders. */
   readonly subTerritoryNeighbors: ReadonlyMap<SubTerritoryId, readonly SubTerritoryId[]>;
@@ -85,6 +88,11 @@ export interface Scenario {
   readonly id: ScenarioId;
   readonly improvements?: ImprovementRules;
   readonly index: ScenarioIndex;
+  /** D2: one link per sub-territory border, in scenario order. Empty without sub-territories. */
+  readonly links: readonly LinkDefinition[];
+  readonly linkModifiers: LinkModifierRules;
+  /** R7: link works' prices; absent when the scenario offers none. */
+  readonly linkProjects?: LinkProjectRules;
   /** The modules `rules` selects, resolved by the loader, in `ruleAreas` order. */
   readonly modules: readonly RuleModule[];
   readonly movement?: MovementRules;

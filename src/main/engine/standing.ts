@@ -62,7 +62,9 @@ export function resolveStanding(
       defenders: present.filter((unit) => unit.factionId === defender.factionId).map((unit) => ({ from: territoryId, unit })),
       situational: situationalModifiers(scenario, start, {
         attackerFactionId: attacker.factionId,
+        battleIndex: index,
         defenderFactionIds: [defender.factionId],
+        defenderUnitIds: present.filter((unit) => unit.factionId === defender.factionId).map((unit) => unit.id),
         diggingIn: false,
         ...(scratch === undefined ? {} : { scratch }),
         territoryId

@@ -3,8 +3,10 @@ import type { ScenarioRegistry } from "../scenarios/registry";
 import { briefingSlice } from "./briefingSlice";
 import { createGameReducer } from "./gameSlice";
 import { mapAssetsSlice } from "./mapAssetsSlice";
+import { mapLayersSlice } from "./mapLayersSlice";
 import { notificationMiddleware } from "./notificationMiddleware";
 import { notificationReducer } from "./notificationSlice";
+import { paneSlice } from "./paneSlice";
 import { timerSlice } from "./timerSlice";
 
 export function createRootReducer(registry: ScenarioRegistry) {
@@ -12,7 +14,9 @@ export function createRootReducer(registry: ScenarioRegistry) {
     briefing: briefingSlice.reducer,
     game: createGameReducer({ registry }),
     mapAssets: mapAssetsSlice.reducer,
+    mapLayers: mapLayersSlice.reducer,
     notifications: notificationReducer,
+    pane: paneSlice.reducer,
     timer: timerSlice.reducer
   });
 }

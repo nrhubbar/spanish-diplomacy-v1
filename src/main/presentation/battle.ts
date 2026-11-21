@@ -1,5 +1,6 @@
 import { armyValue, isSuccessful } from "../engine/combat";
-import { type BattleOutcome, battleResults, type BattleSide, type FactionId, type GameState, type Scenario, type TerritoryId, type TurnOutcome } from "../engine/types";
+import { type AirBattleOutcome, type BattleOutcome, battleResults, type BattleSide, type FactionId, type GameState, type Scenario, type TerritoryId, type TurnOutcome } from "../engine/types";
+import { airBattleFor } from "./battleAir";
 import { isBattle } from "./grades";
 
 /**
@@ -28,6 +29,8 @@ export interface BattleGroup {
 
 /** A battle and its position among the turn's outcomes, which seeds its flavor line. */
 export interface IndexedBattle {
+  /** R11: the air battle fought before it, if any. */
+  readonly air?: AirBattleOutcome;
   readonly battle: BattleOutcome;
   readonly index: number;
 }
@@ -47,7 +50,8 @@ export function groupBattles(outcomes: readonly TurnOutcome[]): readonly BattleG
   outcomes.forEach((outcome, index) => {
     if (!isBattle(outcome)) return;
     const key = siteKey(outcome);
-    groups.set(key, [...(groups.get(key) ?? []), { battle: outcome, index }]);
+    const air = airBattleFor(outcomes, outcome);
+    groups.set(key, [...(groups.get(key) ?? []), { ...(air === undefined ? {} : { air }), battle: outcome, index }]);
   });
   const men = (group: BattleGroup) => menLost(group.battles.map((entry) => entry.battle));
   return [...groups]

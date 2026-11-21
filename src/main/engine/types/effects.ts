@@ -15,7 +15,8 @@ export const unitEffectKinds = [
   "trains-in-contested",
   "command-bonus",
   "rally",
-  "battle-support"
+  "battle-support",
+  "air-battle"
 ] as const;
 
 /** A unit type's special effect (unit sheet, Q-MR-26). */
@@ -43,8 +44,10 @@ export type UnitEffect =
   | { readonly kind: "command-bonus"; readonly roll: number }
   /** C5, U5: restores the morale of the army the unit is in. */
   | { readonly kind: "rally" }
-  /** D7: a bomber supporting a battle adds `roll` for its side. */
-  | { readonly kind: "battle-support"; readonly roll: number };
+  /** R11: an aircraft on Ground Support adds `roll` for its side when its side has the air. */
+  | { readonly kind: "battle-support"; readonly roll: number }
+  /** R11: an aircraft over a battle (Ground Support or Patrol) adds `roll` to its side's air battle d20. */
+  | { readonly kind: "air-battle"; readonly roll: number };
 
 export const buildingEffectKinds = [
   "recruit-slots",

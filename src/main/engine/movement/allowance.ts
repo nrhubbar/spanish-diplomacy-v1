@@ -1,11 +1,12 @@
 import { type AllowanceContext, hookedAllowanceDelta } from "../hooks";
 import type { FactionId, GameState, Scenario, TerritoryId, UnitId } from "../types";
-import { roughEntry, unitTypeOf } from "./network";
+import { unitTypeOf } from "./network";
 
 /**
  * M1: the movement allowance, in territories. An army moves 1, plus 1 when its trucks carry
  * every unit that needs carrying, minus 1 in Mud or Snow (the weather module's hook), never
- * below 1. Entering a mountain or swamp sub-territory costs one more (P8). Rail legs are free.
+ * below 1. Entering a mountain or swamp sub-territory costs one more on a March (P8, priced in
+ * `routes.ts`). Rail legs are free.
  */
 
 /** The base allowance before any hook (M1). */
@@ -61,11 +62,6 @@ export const truckAllowanceDelta = (context: AllowanceContext): number => truckB
 /** M1: the army's allowance before terrain: 1 plus every hook's change (trucks, weather), never below 1. */
 export function armyAllowance(scenario: Scenario, state: GameState, factionId: FactionId, from: TerritoryId, unitIds: readonly UnitId[]): number {
   return Math.max(1, baseAllowance + hookedAllowanceDelta({ factionId, from, scenario, state, unitIds }));
-}
-
-/** M1, P8: what one land step costs: 1, plus 1 entering a mountain or swamp sub-territory unless every unit is mobile. */
-export function stepCost(scenario: Scenario, from: TerritoryId, to: TerritoryId, allMobile: boolean): number {
-  return 1 + (!allMobile && roughEntry(scenario, from, to, "land") !== undefined ? 1 : 0);
 }
 
 /** M1: a path of steps fits the allowance when its cost does, and a single step always fits. */

@@ -104,7 +104,7 @@ describe("Recruit orders through the turn (R4, R6, R7)", () => {
     expect(turn1.finalState.units[militiaId]).toMatchObject({ strength: 2500, territoryId: "catalunya", fatigue: 0 });
     expect(turn1.finalState.raised[militiaId]?.name).toBe("Militia column No. 1");
     // Paid 8 Funds and 4 Manpower, then step 11's income ($2, m3r1-economy-builds), on the ground
-    // held after step 8 (the turn-1 sweeps take Alava and Caceres, P3, m3r1-sub-territories).
+    // held after step 8 (the turn-1 flips take Alava and Caceres, R2).
     expect(turn1.finalState.treasuries[republic]).toEqual(addResources({ funds: 22, manpower: 6 } as Resources, incomeFor(scenario, { ...start, subTerritories: turn1.finalState.subTerritories }, republic).paid));
     expect(turn1.finalState.training).toHaveLength(1);
 
@@ -138,7 +138,7 @@ describe("Recruit orders through the turn (R4, R6, R7)", () => {
     const lerida = sub("lleida");
     const contested: GameState = {
       ...base,
-      // No army in Catalunya, so nobody sweeps Lleida back before training advances (P3, m3r1-sub-territories).
+      // No army in Catalunya, so nobody flips Lleida back before training advances (R2).
       units: Object.fromEntries(Object.entries(base.units).filter(([, entry]) => entry.territoryId !== "catalunya")),
       subTerritories: { ...base.subTerritories, [lerida]: { ...base.subTerritories[lerida]!, holder: north } },
       training: [item("militia-column", 1), item("infantry-regiment", 1)]

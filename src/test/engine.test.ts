@@ -87,7 +87,7 @@ describe("turn resolution (m2-strength movement)", () => {
     // Andalucia (battle 0), Asturias, Extremadura, the Balearics and Pais Vasco are shared, so each has a standing battle (M27).
     const result = resolveTurn(scenario, state, [
       { factionId: faction("south"), orders: [move("south", "south-legion", "ceuta", "andalucia")] }
-    ], 1, loadedDice([1, 4, 4, 3, 4]));
+    ], 1, loadedDice([1, 4, 4, 4, 3, 4]));
     expect(result.outcomes[0]).toEqual({ kind: "reinforcement-arrived", order: move("south", "south-legion", "ceuta", "andalucia") });
     expect(result.finalState.units[unit("south-legion")]?.territoryId).toBe("andalucia");
     expect(result.finalState.control[territory("andalucia")]?.kind).toBe("contested");
@@ -118,15 +118,17 @@ describe("turn resolution (m2-strength movement)", () => {
     // Changed in Revision 6: shared territories now fight each turn, so holding is no longer
     // guaranteed to leave the historical start unchanged.
     const scenario = spainM2();
-    const result = resolveTurn(scenario, initialGameState(scenario), [], 1, loadedDice([3, 4, 5, 4, 3]));
+    const result = resolveTurn(scenario, initialGameState(scenario), [], 1, loadedDice([3, 4, 4, 5, 4, 3]));
     expect(battlesOf(result).map((battle) => [battle.site.kind, "territoryId" in battle.site ? battle.site.territoryId : ""])).toEqual([
       ["standing", "andalucia"],
+      // R2: the Barbastro garrison holds eastern Huesca against Zaragoza's regiments.
+      ["standing", "aragon"],
       ["standing", "asturias"],
       ["standing", "extremadura"],
       ["standing", "islas-baleares"],
       ["standing", "pais-vasco"]
     ]);
-    expect(battlesOf(result).map((battle) => battle.result)).toEqual(["both-demoralized", "both-demoralized", "attacker-demoralized", "attacker-demoralized", "attacker-demoralized"]);
+    expect(battlesOf(result).map((battle) => battle.result)).toEqual(["both-demoralized", "both-demoralized", "both-demoralized", "attacker-demoralized", "attacker-demoralized", "attacker-demoralized"]);
     expect(result.controlChanges).toEqual([]);
     expect(result.finalState.control[territory("aragon")]?.kind).toBe("contested");
   });
@@ -136,7 +138,7 @@ describe("turn resolution (m2-strength movement)", () => {
     const state = initialGameState(scenario);
     const result = resolveTurn(scenario, state, [
       { factionId: faction("north"), orders: [move("north", "north-milan-32", "asturias", "galicia"), move("north", "north-simancas-40", "asturias", "galicia"), move("north", "north-oviedo-guards", "asturias", "galicia")] }
-    ], 1, loadedDice([4, 3, 3, 3]));
+    ], 1, loadedDice([4, 4, 3, 3, 3]));
     expect(kinds(result.outcomes).slice(0, 2)).toEqual(["reinforcement-arrived", "reinforcement-arrived"]);
     expect(result.finalState.control[territory("asturias")]).toEqual({ factionId: "republic", kind: "controlled" });
     expect(result.finalState.cityControl[city("oviedo")]).toBe("republic");
@@ -148,7 +150,7 @@ describe("turn resolution (m2-strength movement)", () => {
     const state = initialGameState(scenario);
     const result = resolveTurn(scenario, state, [
       { factionId: faction("north"), orders: [move("north", "north-milan-32", "asturias", "galicia")] }
-    ], 1, loadedDice([3, 5, 3, 3, 3]));
+    ], 1, loadedDice([3, 4, 5, 3, 3, 3]));
     expect(battlesOf(result).map((battle) => battle.result).slice(0, 2)).toEqual(["both-demoralized", "both-demoralized"]);
     expect(result.finalState.cityControl[city("oviedo")]).toBe("north");
     expect(result.finalState.control[territory("asturias")]?.kind).toBe("contested");

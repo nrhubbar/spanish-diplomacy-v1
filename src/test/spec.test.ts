@@ -82,18 +82,18 @@ describe("loader rules", () => {
     ["L3 unknown reference", (scenario: Json) => { list(scenario["units"])[0]!["cityId"] = "las-palmas"; }, "unknown city"],
     ["L3 unknown objective", (scenario: Json) => { list(scenario["factions"])[0]!["objectiveTerritoryIds"] = ["atlantis"]; }, "unknown territory"],
     ["L4 city outside territory", (scenario: Json) => { list(scenario["units"])[0]!["cityId"] = "port-town"; }, "(L4)"],
-    ["L5 contested duplicates", (scenario: Json) => { list(scenario["territories"])[4]!["initialControl"] = { factionIds: ["red", "red"], kind: "contested" }; }, "(L5)"],
-    ["L6 self loop", (scenario: Json) => { list(scenario["connections"]).push({ between: ["harbor", "harbor"], kind: "land" }); }, "(L6)"],
-    ["L6 duplicate connection", (scenario: Json) => { list(scenario["connections"]).push({ between: ["highlands", "westfold"], kind: "land" }); }, "(L6)"],
-    ["L7 unreachable", (scenario: Json) => { scenario["connections"] = list(scenario["connections"]).filter((connection) => !(connection["between"] as string[]).includes("isle")); }, "(L7)"],
+    ["L5 contested duplicates", (scenario: Json) => { list(scenario["territories"])[4]!["initialControl"] = { "@type": "contested", "@data": { factionIds: ["red", "red"] } }; }, "(L5)"],
+    ["L6 self loop", (scenario: Json) => { list(scenario["connections"]).push({ "@type": "land", "@data": { between: ["harbor", "harbor"] } }); }, "(L6)"],
+    ["L6 duplicate connection", (scenario: Json) => { list(scenario["connections"]).push({ "@type": "land", "@data": { between: ["highlands", "westfold"] } }); }, "(L6)"],
+    ["L7 unreachable", (scenario: Json) => { scenario["connections"] = list(scenario["connections"]).filter((connection) => !((connection["@data"] as Json)["between"] as string[]).includes("isle")); }, "(L7)"],
     ["L7 isolated but connected", (scenario: Json) => { list(scenario["territories"])[4]!["isolated"] = { reason: "test" }; }, "(L7)"],
     ["L8 empty faction", (scenario: Json) => {
       scenario["units"] = list(scenario["units"]).filter((unit) => unit["factionId"] !== "blue");
       for (const territory of list(scenario["territories"])) {
-        if ((territory["initialControl"] as Json)["factionId"] === "blue") territory["initialControl"] = { factionId: "red", kind: "controlled" };
+        if (((territory["initialControl"] as Json)["@data"] as Json)["factionId"] === "blue") territory["initialControl"] = { "@type": "controlled", "@data": { factionId: "red" } };
       }
     }, "(L8)"],
-    ["L9 starts at threshold", (scenario: Json) => { list(scenario["territories"])[3]!["initialControl"] = { factionId: "red", kind: "controlled" }; }, "(L9)"],
+    ["L9 starts at threshold", (scenario: Json) => { list(scenario["territories"])[3]!["initialControl"] = { "@type": "controlled", "@data": { factionId: "red" } }; }, "(L9)"],
     ["L10 missing territory entry", (_scenario: Json, map: Json) => { delete (map["territories"] as Json)["isle"]; }, "missing \"isle\""],
     ["L10 anchor outside view box", (_scenario: Json, map: Json) => { ((map["territories"] as Json)["harbor"] as Json)["unitAnchor"] = { x: 999, y: 1 }; }, "outside the view box"],
     ["L10 missing city position", (_scenario: Json, map: Json) => { delete (map["cities"] as Json)["port-town"]; }, "missing \"port-town\""],
@@ -113,7 +113,7 @@ describe("loader rules", () => {
     ["L1 table with six columns", (scenario: Json) => { list(combat(scenario)["table"]).pop(); }, "combat.table"],
     ["L1 table column with six rows", (scenario: Json) => { (list(combat(scenario)["table"])[3] as unknown as string[]).pop(); }, "combat.table.3"],
     ["L1 unknown result", (scenario: Json) => { (list(combat(scenario)["table"])[2] as unknown as string[])[4] = "attacker-routed"; }, "combat.table.2.4"],
-    ["L1 unknown below-1:1 rule", (scenario: Json) => { combat(scenario)["belowOneToOne"] = { kind: "none", rollPenalty: 1 }; }, "combat.belowOneToOne.kind"],
+    ["L1 unknown below-1:1 rule", (scenario: Json) => { combat(scenario)["belowOneToOne"] = { "@type": "none", "@data": { rollPenalty: 1 } }; }, "combat.belowOneToOne.@type"],
     ["L1 zero digging-in step", (scenario: Json) => { combat(scenario)["diggingIn"] = { max: 3, perTurn: 0 }; }, "combat.diggingIn.perTurn"],
     ["L1 demoralization factor above 1", (scenario: Json) => { combat(scenario)["demoralizationFactor"] = 1.5; }, "combat.demoralizationFactor"],
     ["L1 demoralization factor of 0", (scenario: Json) => { combat(scenario)["demoralizationFactor"] = 0; }, "combat.demoralizationFactor"],

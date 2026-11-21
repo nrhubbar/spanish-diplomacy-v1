@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { act, cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Provider } from "react-redux";
 import { MemoryRouter } from "react-router";
@@ -15,12 +15,11 @@ import { viewFor } from "../main/engine/visibility";
 import { RegistryContext } from "../main/hooks";
 import { describeOutcome } from "../main/presentation/text";
 import type { ScenarioRegistry } from "../main/scenarios/registry";
-import { clickMapTerritory } from "../main/state/gameSlice";
 import { paths } from "../main/state/routing";
 import { emptyDraft, type Session } from "../main/state/session";
 import { createAppStore } from "../main/state/store";
 import { visibleSession } from "../main/state/visible";
-import { faction, shippedRegistry, spain, spainId, territory, testRegistry, tiny, unit } from "./support";
+import { faction, shippedRegistry, spain, spainId, clickTerritoryIn, territory, testRegistry, tiny, unit } from "./support";
 
 afterEach(cleanup);
 
@@ -81,7 +80,9 @@ describe("the turn report keeps other factions' secrets (CT-45, CT-46)", () => {
       const assignments = Object.fromEntries([republic, north, south].map((factionId, index) => [factionId, index < humans ? "local-human" : "computer"])) as Assignments;
       mount(registry, report(assignments), paths.resolution);
       await screen.findByRole("application", { name: /map/ });
-      const page = document.body.textContent;
+      // The Map Layers toolbar names its own Rail switch; the secrets are looked for in the rest of the page.
+      const toolbar = document.querySelector(".map-layers-toolbar, .map-layers-menu")?.textContent ?? "";
+      const page = document.body.textContent.replace(toolbar, "");
       expect(page).toContain(line(outcomes[2]));
       expect(page).not.toContain(line(outcomes[0]));
       expect(page).not.toContain(line(outcomes[1]));
@@ -120,9 +121,12 @@ describe("hot-seat planning after another player locked orders (CT-52)", () => {
     const store = mount(testRegistry(), session, paths.orders);
     await screen.findByRole("application", { name: /map/ });
     expect(screen.getAllByRole("listitem").find((item) => item.textContent.startsWith("Republican Government"))).toHaveTextContent(/ready$/);
-    store.dispatch(clickMapTerritory(territory("catalunya")));
-    await userEvent.click(await screen.findByRole("tab", { name: "Build" }));
+    act(() => { clickTerritoryIn(store, "catalunya"); });
+    await userEvent.click(await screen.findByRole("tab", { name: "Buildings" }));
+    await userEvent.click(within(screen.getByRole("article", { name: "Barcelona" })).getByRole("button", { expanded: false }));
     expect(screen.getAllByText("Queue hidden")).not.toHaveLength(0);
+    await userEvent.click(screen.getByRole("tab", { name: "Recruit" }));
+    expect(screen.queryByRole("list", { name: /training$/u })).toBeNull();
     await userEvent.click(screen.getByRole("button", { name: /^Funds/ }));
     expect(within(screen.getByRole("list", { name: "Other factions" })).getAllByText("hidden")).toHaveLength(2);
     for (const secret of ["777", "999", "Militia column (new)"]) expect(document.body.textContent).not.toContain(secret);
@@ -137,9 +141,11 @@ describe("what recon shows in the pane (U4)", () => {
     const session: Session = { draft: emptyDraft, factionId: north, game: { assignments: { [north]: "local-human", [republic]: "computer", [south]: "computer" }, history: [], locked: {}, scenarioId: spainId, seed: 1, state: emptied }, phase: "planning" };
     const store = mount(testRegistry(), session, paths.orders);
     await screen.findByRole("application", { name: /map/ });
-    store.dispatch(clickMapTerritory(territory("catalunya")));
-    expect(await screen.findByText(/Militia column \(new\) \(Republican Government, recon\)/)).toBeInTheDocument();
-    await userEvent.click(screen.getByRole("tab", { name: "Build" }));
+    act(() => { clickTerritoryIn(store, "catalunya"); });
+    await userEvent.click(await screen.findByRole("tab", { name: /^Recruit/u }));
+    expect(within(screen.getByRole("list", { name: "Barcelona training" })).getByText("(Republican Government, recon)", { exact: false })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("tab", { name: /^Buildings/u }));
+    await userEvent.click(within(screen.getByRole("article", { name: "Barcelona" })).getByRole("button", { expanded: false }));
     expect(screen.getAllByText("Queue empty (recon)").length).toBeGreaterThan(0);
     expect(screen.queryByText("Queue hidden")).toBeNull();
   });

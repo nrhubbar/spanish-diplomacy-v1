@@ -27,8 +27,8 @@ export const briefingTitle = "Briefing";
  * - The pane follows its layout default (open beside the map, collapsed as a sheet) until the
  *   player chooses.
  * - A new selection or message (the attention key) opens the pane on the screen's content.
- * - The Briefing replaces that content while shown and keeps the screen's footer, so the
- *   primary action stays in reach. Collapsing the pane closes the Briefing.
+ * - The Briefing replaces that content while shown and keeps the screen's footer and phone bar
+ *   action, so the primary action stays in reach. Collapsing the pane closes the Briefing.
  */
 export function usePaneView(pane: PaneContent | undefined, briefing: MapBriefing | undefined): PaneView {
   const openOnStart = briefing?.openOnStart === true;
@@ -47,7 +47,13 @@ export function usePaneView(pane: PaneContent | undefined, briefing: MapBriefing
 
   const briefingShown = briefingChosen && briefing !== undefined;
   const content = briefingShown
-    ? { body: briefing.body, bodyFocusable: true, title: briefingTitle, ...(pane?.footer === undefined ? {} : { footer: pane.footer }) }
+    ? {
+        body: briefing.body,
+        bodyFocusable: true,
+        title: briefingTitle,
+        ...(pane?.footer === undefined ? {} : { footer: pane.footer }),
+        ...(pane?.barAction === undefined ? {} : { barAction: pane.barAction })
+      }
     : pane;
   const hasPane = content !== undefined;
   const insetsFor = useCallback((width: number) => {

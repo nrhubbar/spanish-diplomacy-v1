@@ -1,13 +1,18 @@
 import { hookedOrderVerdict } from "../hooks";
 import { isNeighbor, neighborsOf } from "../lookup";
+import { hasLinks } from "../network/links";
+import { allFoot, marchCrossing, motorPath, startSubTerritories } from "../network/paths";
+import type { LinkStep, MoveMode, UnreachableCode } from "../network/reach";
+import { isContested } from "../partition/holders";
 import type { FactionId, GameState, MoveLeg, MoveOrder, Scenario, SubTerritoryId, TerritoryId, UnitId } from "../types";
 import { hasFighter } from "../units/fighting";
-import { armyAllowance, fitsAllowance, stepCost, transportOf } from "./allowance";
+import { armyAllowance, fitsAllowance, transportOf } from "./allowance";
 import {
   connectionBetween,
   connectionKey,
   departurePort,
   enemyArmyIn,
+  entrySubTerritory,
   isFriendlyGround,
   landingAt,
   landNeighbors,
@@ -15,8 +20,9 @@ import {
   type RailRide,
   railDepartures,
   railReach,
-  roughEntry,
-  seaClosed
+  seaClosed,
+  seaEndPort,
+  subTerritoriesOf
 } from "./network";
 
 /**
@@ -24,9 +30,11 @@ import {
  * The reveal check, the planning screen and the computer player all read moves through this
  * file, so they agree on every leg.
  *
- * - `step`: one land step, anywhere (it may attack).
- * - `march`: two or more land steps within the allowance (M1); every step but the last ends in
- *   friendly ground (M2).
+ * - `step`: one land step, anywhere (it may attack): R5's March, across a link with a road or,
+ *   for foot units, any link.
+ * - `march`: two or more land steps within the allowance (M1): R5's Motor, along main roads,
+ *   never over a pass or into contested ground, at most the road rules' `motorRange`, with no
+ *   rough-ground cost on the roads; every step but the last ends in friendly ground (M2).
  * - `rail`: a ride from the territory's capital to another capital in friendly ground (M3).
  * - `step-rail`: one step into friendly ground, then a ride from its capital (M4).
  * - `rail-step`: a ride, then one step that may attack (M4).
@@ -53,6 +61,13 @@ export interface MoveRoute {
   readonly cost: number;
   readonly from: TerritoryId;
   readonly legs: readonly MoveLeg[];
+  /** R5: how the army moves: March (one land step), Motor (a road march), Rail (any route with a ride) or Sea. */
+  readonly mode: MoveMode;
+  /**
+   * R5: the links the route crosses, sub-territory to sub-territory, in order. A sea leg is one
+   * step from port to landing. Empty in a scenario without links.
+   */
+  readonly path: readonly LinkStep[];
   /** The ride, when the route uses rail. */
   readonly rail?: RailRide;
   /** Mountain or swamp sub-territories the steps enter (P8), in order. */
@@ -69,7 +84,33 @@ export interface MoveRoute {
   readonly transit: readonly TerritoryId[];
 }
 
-export type RouteCheck = { readonly ok: true; readonly route: MoveRoute } | { readonly ok: false; readonly reason: string };
+export type RouteCheck = { readonly ok: true; readonly route: MoveRoute } | { readonly code: UnreachableCode; readonly ok: false; readonly reason: string };
+
+function refuse(code: UnreachableCode, reason: string): RouteCheck {
+  return { code, ok: false, reason };
+}
+
+/** R5: the move mode a route shape is. */
+export function modeOf(shape: RouteShape): MoveMode {
+  switch (shape) {
+    case "step":
+      return "march";
+    case "march":
+      return "motor";
+    case "sea":
+      return "sea";
+    case "rail":
+    case "step-rail":
+    case "rail-step":
+      return "rail";
+  }
+}
+
+/** M1, P8: the sub-territory is mountain or swamp, which costs a step one more. */
+function isRough(scenario: Scenario, subTerritoryId: SubTerritoryId): boolean {
+  const terrain = scenario.index.subTerritories.get(subTerritoryId)?.terrain;
+  return terrain === "mountain" || terrain === "swamp";
+}
 
 /** CT-6: the legs of an order; absent means one step along the connection (land first). */
 export function legsOf(scenario: Scenario, order: Pick<MoveOrder, "from" | "legs" | "to">): readonly MoveLeg[] {
@@ -109,9 +150,12 @@ function ridesFor(scenario: Scenario, state: GameState, factionId: FactionId): R
 }
 
 /**
- * M2-M5: whether the legs make a legal route from `from` for the faction, and what it is. The
- * allowance (M1) and the per-turn capacities are the army's and are checked by the caller; the
- * cost here assumes the army is `allMobile` or not.
+ * M2-M5, R5: whether the legs make a legal route from `from` for the faction, and what it is,
+ * with the links it crosses. The allowance (M1) and the per-turn capacities are the army's and
+ * are checked by the caller; the cost here assumes the army is `allMobile` or not. `unitIds`
+ * are the units that move: March reads whether they are all foot units, and every land route
+ * leaves from their pocket (R1). Without them, the army is taken to be foot and to stand in all
+ * its side's ground there.
  */
 export function describeRoute(
   scenario: Scenario,
@@ -120,57 +164,94 @@ export function describeRoute(
   from: TerritoryId,
   legs: readonly MoveLeg[],
   allMobile = false,
-  rides: Rides = ridesFor(scenario, state, factionId)
+  rides: Rides = ridesFor(scenario, state, factionId),
+  unitIds?: readonly UnitId[]
 ): RouteCheck {
   const shape = shapeOf(legs);
   const last = legs[legs.length - 1];
-  if (shape === undefined || last === undefined) return { ok: false, reason: "That route is not one of the allowed shapes of move." };
+  if (shape === undefined || last === undefined) return refuse("not-connected", "That route is not one of the allowed shapes of move.");
+  const linked = hasLinks(scenario);
+  const foot = allFoot(scenario, state, unitIds);
+  const start = linked ? startSubTerritories(scenario, state, factionId, from, unitIds) : [];
+  const roads = scenario.linkModifiers.road;
+  if (shape === "march" && linked && roads !== undefined && legs.length > roads.motorRange) return refuse("too-far", `Motor reaches at most ${String(roads.motorRange)} territories.`);
   let at = from;
+  let subs = start;
   let cost = 0;
   let steps = 0;
   let rail: RailRide | undefined;
   let sea: SeaLanding | undefined;
+  const path: LinkStep[] = [];
   const rough: SubTerritoryId[] = [];
   const transit: TerritoryId[] = [];
   const visited = new Set<TerritoryId>([from]);
+  const enter = (entry: SubTerritoryId | undefined): void => {
+    cost += 1;
+    steps += 1;
+    if (entry === undefined || !isRough(scenario, entry)) return;
+    rough.push(entry);
+    if (!allMobile) cost += 1;
+  };
   for (const [index, leg] of legs.entries()) {
     const final = index === legs.length - 1;
-    if (visited.has(leg.to)) return { ok: false, reason: "A route may not enter the same territory twice." };
+    if (visited.has(leg.to)) return refuse("not-connected", "A route may not enter the same territory twice.");
     if (leg.kind === "rail") {
       const ride = rides(at).get(leg.to);
-      if (ride === undefined) return { ok: false, reason: "No rail line your side holds reaches that capital this turn." };
+      if (ride === undefined) return refuse("no-rail", "No rail line your side holds reaches that capital this turn.");
       rail = ride;
+      for (const [stop, station] of ride.stations.slice(1).entries()) path.push({ from: ride.stations[stop] as SubTerritoryId, mode: "rail", to: station });
       // M2, Q-MR-16: the territories the train passes are on the way too; an enemy entering one stops it there.
       for (const passed of ride.through) {
-        if (visited.has(passed)) return { ok: false, reason: "A route may not enter the same territory twice." };
+        if (visited.has(passed)) return refuse("not-connected", "A route may not enter the same territory twice.");
         visited.add(passed);
         transit.push(passed);
       }
     } else if (leg.kind === "land") {
-      if (connectionBetween(scenario, at, leg.to, "land") === undefined) return { ok: false, reason: "Destination is not connected to the unit's territory." };
-      cost += stepCost(scenario, at, leg.to, allMobile);
-      steps += 1;
-      const entry = roughEntry(scenario, at, leg.to, "land");
-      if (entry !== undefined) rough.push(entry);
+      if (connectionBetween(scenario, at, leg.to, "land") === undefined) return refuse("not-connected", "Destination is not connected to the unit's territory.");
+      if (linked && shape === "march") {
+        // R5: Motor's links are found for the whole route below; count the step here.
+        cost += 1;
+        steps += 1;
+      } else if (linked) {
+        const crossing = marchCrossing(scenario, state, subs, leg.to, foot);
+        if (!crossing.ok) return crossing;
+        path.push(crossing.step);
+        enter(crossing.step.to);
+      } else {
+        enter(entrySubTerritory(scenario, at, leg.to, "land"));
+      }
     } else {
-      if (connectionBetween(scenario, at, leg.to, "sea") === undefined) return { ok: false, reason: "No sea lane joins those territories." };
+      if (connectionBetween(scenario, at, leg.to, "sea") === undefined) return refuse("not-connected", "No sea lane joins those territories.");
       const departure = departurePort(scenario, state, factionId, at, leg.to);
-      if (departure === undefined) return { ok: false, reason: "An army can sail only from the lane's port, and your side must hold it." };
-      if (seaClosed(scenario, state, at, leg.to)) return { ok: false, reason: "The sea is closed by winter storms this turn." };
+      if (departure === undefined) return refuse("no-port", "An army can sail only from the lane's port, and your side must hold it.");
+      if (seaClosed(scenario, state, at, leg.to)) return refuse("sea-closed", "The sea is closed by winter storms this turn.");
       const landing = landingAt(scenario, state, factionId, at, leg.to);
       sea = landing.kind === "port"
         ? { departure: departure.subTerritoryId, kind: "port", level: landing.level, port: landing.subTerritoryId }
         : { departure: departure.subTerritoryId, kind: "amphibious" };
+      const ashore = landing.kind === "port" ? landing.subTerritoryId : (seaEndPort(scenario, at, leg.to, leg.to) ?? subTerritoriesOf(scenario, leg.to)[0]);
+      if (ashore !== undefined) path.push({ from: departure.subTerritoryId, mode: "sea", to: ashore });
       cost += 1;
       steps += 1;
     }
     if (!final) {
       // M2: only the last leg may enter enemy or contested ground.
-      if (!isFriendlyGround(scenario, state, factionId, leg.to)) return { ok: false, reason: "Only the last step of a move may enter enemy or contested ground." };
+      if (!isFriendlyGround(scenario, state, factionId, leg.to)) return refuse("enemy-ground", "Only the last step of a move may enter enemy or contested ground.");
       transit.push(leg.to);
     }
     visited.add(leg.to);
     at = leg.to;
+    // A later leg leaves from ground held whole (M2: a ride ends and every leg but the last stops
+    // only in friendly ground), so the army's pocket there is the whole territory.
+    subs = linked ? subTerritoriesOf(scenario, leg.to) : [];
+  }
+  if (shape === "march" && linked) {
+    // R5: Motor never enters contested ground, and runs along main roads the whole way.
+    if (isContested(scenario, state, last.to)) return refuse("contested", "Motor can't enter contested ground.");
+    // Declog D13: a main road crosses mountain and swamp, so Motor pays no rough-ground step (P8).
+    const motor = motorPath(scenario, state, start, legs.map((leg) => leg.to));
+    if (!motor.ok) return motor;
+    path.push(...motor.path.map(({ step }) => step));
   }
   const staging = legs.length > 1 ? (legs[legs.length - 2]?.to ?? from) : from;
   return {
@@ -179,6 +260,8 @@ export function describeRoute(
       cost,
       from,
       legs,
+      mode: modeOf(shape),
+      path,
       ...(rail === undefined ? {} : { rail }),
       rough,
       ...(sea === undefined ? {} : { sea }),
@@ -251,7 +334,7 @@ export function hasRoom(scenario: Scenario, state: GameState, route: MoveRoute, 
 /** The planned moves of a faction as routes, for `usageOf`. Orders whose legs no longer describe a route are left out. */
 export function plannedRoutes(scenario: Scenario, state: GameState, orders: readonly MoveOrder[]): readonly { readonly army: string; readonly route: MoveRoute }[] {
   return orders.flatMap((order) => {
-    const check = describeRoute(scenario, state, order.factionId, order.from, legsOf(scenario, order), true);
+    const check = describeRoute(scenario, state, order.factionId, order.from, legsOf(scenario, order), true, undefined, [order.unitId]);
     return check.ok ? [{ army: armyKey(scenario, order), route: check.route }] : [];
   });
 }
@@ -301,7 +384,7 @@ export function moveRoutes(
     // C1: a module may refuse the move outright (no move leaves contested ground, `orderVerdict`).
     const [probe] = unitIds;
     if (probe !== undefined && hookedOrderVerdict({ order: { factionId, from, kind: "move", legs, to, unitId: probe }, scenario, state })?.ok === false) return;
-    const check = describeRoute(scenario, state, factionId, from, legs, movement.allMobile, rides);
+    const check = describeRoute(scenario, state, factionId, from, legs, movement.allMobile, rides, unitIds);
     if (!check.ok || !fitsAllowance(check.route.cost, check.route.steps, movement.allowance)) return;
     if (!hasRoom(scenario, state, check.route, armyKey(scenario, { factionId, from, legs, to }), usage)) return;
     found.set(to, check.route);
@@ -350,9 +433,9 @@ function marches(scenario: Scenario, state: GameState, factionId: FactionId, fro
 /** M1-M5: the per-order check of a move's legs against the start-of-turn state, under the `allowance` module. */
 export function validateRoute(scenario: Scenario, state: GameState, order: MoveOrder): RouteCheck {
   const legs = legsOf(scenario, order);
-  if (legs[legs.length - 1]?.to !== order.to) return { ok: false, reason: "The route does not end at the destination." };
+  if (legs[legs.length - 1]?.to !== order.to) return refuse("not-connected", "The route does not end at the destination.");
   if (legs.length === 1 && legs[0]?.kind !== "rail" && !isNeighbor(scenario, order.from, order.to)) {
-    return { ok: false, reason: "Destination is not connected to the unit's territory." };
+    return refuse("not-connected", "Destination is not connected to the unit's territory.");
   }
-  return describeRoute(scenario, state, order.factionId, order.from, legs, true);
+  return describeRoute(scenario, state, order.factionId, order.from, legs, true, undefined, [order.unitId]);
 }

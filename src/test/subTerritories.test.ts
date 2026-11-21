@@ -33,11 +33,13 @@ interface Topology {
 }
 
 const map = mapSchema.parse(JSON.parse(readFileSync(mapDocument, "utf8")));
-const scenario = JSON.parse(readFileSync(scenarioDocument, "utf8")) as {
+const rawScenario = JSON.parse(readFileSync(scenarioDocument, "utf8")) as {
   territories: { id: string }[];
-  connections: { between: [string, string]; kind: string; entry?: [string, string] }[];
+  connections: { "@type": string; "@data": { between: [string, string]; entry?: [string, string] } }[];
   cities: { id: string; territoryId: string }[];
 };
+/** Connections are typed entries in scenario.json (D1); the topology keeps them plain. */
+const scenario = { ...rawScenario, connections: rawScenario.connections.map(({ "@type": kind, "@data": data }) => ({ ...data, kind })) };
 const topology = JSON.parse(readFileSync(topologyDocument, "utf8")) as Topology;
 const subTerritoryMap = map.subTerritories;
 if (subTerritoryMap === undefined) throw new Error("map.json has no sub-territories");

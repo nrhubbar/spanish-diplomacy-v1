@@ -8,18 +8,24 @@ import { MapLayers } from "./MapLayers";
 import { MapLegend } from "./MapLegend";
 import { MapPane, type PaneContent, paneLayoutFor, paneWidthFor } from "./MapPane";
 import { type CameraBounds, semanticLevel } from "./camera";
+import { autoLayers, defaultLayers, hiddenLayers, type LayerId, shownLayers } from "./layers/layerChoice";
+import { LayersToolbar } from "./layers/LayersToolbar";
 import { subTerritoryAt } from "./layers/SubTerritoryLayer";
 import { prepareGeometry } from "./markup";
 import { useFocusRescue } from "./useFocusRescue";
 import { useMapCamera } from "./useMapCamera";
+import { useTerritoryPress } from "./useTerritoryPress";
 import { type MapBriefing, usePaneView } from "./usePaneView";
 import { highlightedTerritoryId, type MapView } from "./view";
-import { type JSX, useCallback, useMemo } from "react";
+import { type JSX, useCallback, useMemo, useState } from "react";
 
 interface CampaignMapProps {
   readonly assets: MapAssets;
   readonly briefing?: MapBriefing;
   readonly game: GameState;
+  /** U13: the player's choice of layers and where a change goes; without them the map keeps its own. */
+  readonly layers?: readonly LayerId[];
+  readonly onLayersChange?: (layers: readonly LayerId[]) => void;
   readonly onTerrainFallback?: (reason: string) => void;
   readonly pane?: PaneContent;
   readonly scenarioPackage: ScenarioPackage;
@@ -27,22 +33,32 @@ interface CampaignMapProps {
 }
 
 /** Map package interpreter: terrain, vector geometry, counters, controls, and the details pane. */
-export function CampaignMap({ assets, briefing, game, onTerrainFallback, pane, scenarioPackage, view }: CampaignMapProps): JSX.Element {
+export function CampaignMap({ assets, briefing, game, layers, onLayersChange, onTerrainFallback, pane, scenarioPackage, view }: CampaignMapProps): JSX.Element {
   const { map, scenario } = scenarioPackage;
   const paneView = usePaneView(pane, briefing);
+  const [ownLayers, setOwnLayers] = useState(defaultLayers);
+  const chosen = layers ?? ownLayers;
+  const auto = autoLayers(view);
+  const shown = shownLayers(chosen, view);
   const bounds = useMemo<CameraBounds>(() => ({ content: map.viewBox, focus: map.focus }), [map]);
   const geometry = useMemo(
     () => prepareGeometry(assets.geometrySvg, map, (id) => territoryName(scenario, id)),
     [assets.geometrySvg, map, scenario]
   );
 
-  const selectFrom = useCallback((target: EventTarget | null) => {
+  const territoryAt = useCallback((target: EventTarget | null) => {
+    // React hands its handlers elements only; anything else names no territory.
+    const value = (target as Partial<Element> | null)?.closest?.("[data-territory-id]")?.getAttribute("data-territory-id");
+    return scenario.territories.find((candidate) => candidate.id === value)?.id;
+  }, [scenario]);
+  const selectFrom = useCallback((target: EventTarget | null, input?: "mouse" | "touch") => {
     if (!(target instanceof Element)) return;
-    const value = target.closest("[data-territory-id]")?.getAttribute("data-territory-id");
-    const territory = scenario.territories.find((candidate) => candidate.id === value);
-    if (territory !== undefined) view.onSelectTerritory?.(territory.id);
+    const territoryId = territoryAt(target);
+    if (territoryId !== undefined) view.onSelectTerritory?.(territoryId, input);
     else view.onSelectNothing?.();
-  }, [scenario, view]);
+  }, [territoryAt, view]);
+  // U5, U7: right-click and long-press open a territory's quick actions; the mouse over one feeds the reach card.
+  const press = useTerritoryPress(view, territoryAt);
 
   const {
     camera,
@@ -70,6 +86,7 @@ export function CampaignMap({ assets, briefing, game, onTerrainFallback, pane, s
       aria-label="Campaign map"
       className="campaign-map"
       data-pane-layout={layout}
+      data-hidden-layers={hiddenLayers(shown)}
       data-pane-open={paneContent !== undefined && paneOpen}
       style={cssVariables({ "--map-background": map.background, "--pane-width": `${String(paneWidth)}px` })}
     >
@@ -81,8 +98,8 @@ export function CampaignMap({ assets, briefing, game, onTerrainFallback, pane, s
         data-semantic-level={level}
         data-zoom={camera.zoom.toFixed(2)}
         onClick={(event) => {
-          if (consumeDrag()) return;
-          selectFrom(event.target);
+          if (consumeDrag() || press.consumeLongPress()) return;
+          selectFrom(event.target, press.lastInput());
           // X3: zoomed in, the click may also focus the pane on the sub-territory under it.
           if (level !== "overview" && view.onSelectSubTerritory !== undefined) {
             const subTerritoryId = subTerritoryAt(event.clientX, event.clientY);
@@ -91,11 +108,13 @@ export function CampaignMap({ assets, briefing, game, onTerrainFallback, pane, s
         }}
         onBlur={focusRescue.onBlur}
         onFocus={focusRescue.onFocus}
+        onContextMenu={press.onContextMenu}
         onKeyDown={onKeyDown}
-        onPointerCancel={onPointerCancel}
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
+        onPointerCancel={(event) => { press.onPointerEnd(); onPointerCancel(event); }}
+        onPointerDown={(event) => { press.onPointerDown(event); onPointerDown(event); }}
+        onPointerLeave={press.onPointerLeave}
+        onPointerMove={(event) => { press.onPointerMove(event); onPointerMove(event); }}
+        onPointerUp={(event) => { press.onPointerEnd(); onPointerUp(event); }}
         ref={containerRef}
         role="application"
         aria-roledescription="map"
@@ -113,6 +132,7 @@ export function CampaignMap({ assets, briefing, game, onTerrainFallback, pane, s
             camera={camera}
             game={game}
             geometry={geometry}
+            layers={shown}
             layout={layout}
             level={level}
             onTerrainFallback={onTerrainFallback}
@@ -128,7 +148,8 @@ export function CampaignMap({ assets, briefing, game, onTerrainFallback, pane, s
         onZoom={zoomBy}
         zoom={camera.zoom}
       />
-      <MapLegend game={game} scenario={scenario} view={view} />
+      <MapLegend game={game} layers={shown} scenario={scenario} view={view} />
+      <LayersToolbar auto={auto} chosen={chosen} layout={layout} onChange={onLayersChange ?? setOwnLayers} />
       {/* The pane waits for measurement so it never flashes in the wrong layout. */}
       {paneContent === undefined || !measured ? null : (
         <MapPane content={paneContent} layout={layout} onToggle={() => { paneView.togglePane(paneOpen); }} open={paneOpen} />

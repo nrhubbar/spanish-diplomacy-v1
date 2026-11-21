@@ -29,7 +29,6 @@ export interface GameLine {
   readonly battles: Readonly<Record<string, Readonly<Record<string, number>>>>;
   /** Battles fought on each turn, turn 1 first. */
   readonly battlesByTurn: readonly number[];
-  readonly blunders: boolean;
   /** "decided" when a faction won, "freeze" when the turn limit came first. */
   readonly end: "decided" | "freeze";
   /** S3: a faction left every objective it held with no loss and no retreat. */
@@ -53,7 +52,6 @@ export interface GameLine {
 
 /** What a game is played under. */
 export interface GameSetup {
-  readonly blunders: boolean;
   readonly scenario: Scenario;
   readonly turnLimit: number;
   readonly variant: string;
@@ -190,7 +188,6 @@ export function playGame(setup: GameSetup, seed: number): GameLine {
     abandonments,
     battles,
     battlesByTurn,
-    blunders: setup.blunders,
     end: winners.length > 0 ? "decided" : "freeze",
     firstTurnRoutes,
     longestQuiet,

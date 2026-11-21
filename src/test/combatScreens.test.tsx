@@ -87,7 +87,7 @@ describe("turn report battle cards (C14)", () => {
     const scope = within(card);
     expect(scope.getByText("Exchange")).toBeVisible();
     expect(scope.getByText(/attack: Attacker demoralized$/)).toBeVisible();
-    expect(scope.getAllByRole("rowheader", { name: "Dug in +1" })).toHaveLength(2);
+    expect(scope.getAllByRole("rowheader", { name: "Dug in level 1 (+1)" })).toHaveLength(2);
     expect(scope.getAllByRole("rowheader", { name: "Popular resistance +1" })).toHaveLength(2);
     expect(scope.getByRole("rowheader", { name: "Odds below 1:1 (1 halving)" })).toBeVisible();
     expect(scope.getAllByRole("table", { name: "Die roll and modifiers" })).toHaveLength(2);
@@ -147,7 +147,7 @@ describe("planning with strength and morale (C5, C6, C15)", () => {
     expect(document.querySelector('[data-unit-id="rep-durruti-column"] .unit-counter-designation')?.textContent).toBe("DURR");
     expect(counter.querySelector(".unit-counter-designation")?.textContent).toBe("C4");
     expect(counter).toHaveAccessibleName(
-      "Covadonga Infantry Regiment No. 4, Republican Government, attack 1, defence 2 (full 4-6), 370 of 550 men, demoralized, cannot attack, dug in +2, resting"
+      "Covadonga Infantry Regiment No. 4, Republican Government, attack 1, defence 2 (full 4-6), 370 of 550 men, demoralized, cannot attack, dug in level 2 (+2), resting"
     );
     expect(counter.querySelector(".unit-counter-current")?.textContent).toBe("1-2");
     expect(counter.querySelector(".unit-counter-full")?.textContent).toBe("4-6");
@@ -155,9 +155,9 @@ describe("planning with strength and morale (C5, C6, C15)", () => {
     expect(counter.querySelector(".unit-counter-demoralized svg")).not.toBeNull();
 
     await user.click(counter);
-    const pane = screen.getByRole("complementary", { name: "Orders" });
+    const pane = document.querySelector<HTMLElement>(".map-pane")!;
     expect(within(pane).getByRole("button", { name: /Covadonga Infantry Regiment No. 4/ })).toHaveAccessibleName(
-      /370 of 550 men, demoralized, cannot attack, dug in \+2/
+      /370 of 550 men, demoralized, cannot attack, dug in level 2 \(\+2\)/
     );
     expect(within(pane).getByText(/Demoralized units fight at half their values and cannot attack/)).toBeVisible();
   });
@@ -168,10 +168,9 @@ describe("planning with strength and morale (C5, C6, C15)", () => {
     // Individual counters show from 125% zoom (Z1).
     await user.click(screen.getByRole("button", { name: "Zoom in" }));
     await user.click(screen.getByRole("button", { name: /^Wad-Ras Infantry Regiment No. 1/ }));
-    const pane = screen.getByRole("complementary", { name: "Orders" });
+    const pane = document.querySelector<HTMLElement>(".map-pane")!;
     await user.click(within(pane).getByRole("button", { name: "Clear" }));
     await user.click(within(pane).getByRole("button", { name: /^Wad-Ras Infantry Regiment No. 1/ }));
-    await user.click(within(pane).getByRole("button", { name: "Give Selected Units Order" }));
     await user.click(within(pane).getByRole("button", { name: "Move" }));
     const list = within(pane).getByRole("list", { name: "Destinations" });
     // Under `allowance` rail adds destinations beyond the two neighbours (M3, M4).
@@ -182,7 +181,8 @@ describe("planning with strength and morale (C5, C6, C15)", () => {
     expect(document.querySelector('.odds-layer .odds-chip[data-territory-id="castilla-la-mancha"]')?.textContent).toBe("Reinforce");
 
     await user.click(within(list).getByRole("button", { name: /^Castilla-La Mancha.*Reinforcement/ }));
-    expect(within(pane).getByRole("list", { name: "Planned moves (1)" })).toBeVisible();
+    await user.click(within(pane).getByRole("button", { name: "This turn" }));
+    expect(within(pane).getByRole("list", { name: "Unit orders (1)" })).toBeVisible();
     expect(document.querySelector(".odds-layer")).toBeNull();
   });
 
@@ -197,7 +197,7 @@ describe("planning with strength and morale (C5, C6, C15)", () => {
     await screen.findByRole("application", { name: /map/ });
     // Individual counters show from 125% zoom (Z1).
     await user.click(screen.getByRole("button", { name: "Zoom in" }));
-    const pane = screen.getByRole("complementary", { name: "Orders" });
+    const pane = document.querySelector<HTMLElement>(".map-pane")!;
     // The planned attack shows the odds of everything ordered there.
     expect(pane.querySelector(".order-list .planned-odds")).toHaveTextContent(/^Approx\. 1:\d+ \u00b7 \d+%Approximately 1:\d+, \d+ percent to take it\.$/);
     expect(within(pane).getByRole("button", { name: "About the planned odds" })).toHaveAttribute("aria-expanded", "false");
@@ -205,7 +205,6 @@ describe("planning with strength and morale (C5, C6, C15)", () => {
     await user.click(screen.getByRole("button", { name: /^Wad-Ras Infantry Regiment No. 1/ }));
     await user.click(within(pane).getByRole("button", { name: "Clear" }));
     await user.click(within(pane).getByRole("button", { name: /^Wad-Ras Infantry Regiment No. 1/ }));
-    await user.click(within(pane).getByRole("button", { name: "Give Selected Units Order" }));
     await user.click(within(pane).getByRole("button", { name: "Move" }));
     const list = within(pane).getByRole("list", { name: "Destinations" });
     // Wad-Ras (attack 4) joins Castilla No. 3 (attack 4), already ordered there.
@@ -240,8 +239,7 @@ describe("planning with strength and morale (C5, C6, C15)", () => {
     // Individual counters show from 125% zoom (Z1).
     await user.click(screen.getByRole("button", { name: "Zoom in" }));
     await user.click(screen.getByRole("button", { name: /^Covadonga Infantry Regiment No. 4/ }));
-    const pane = screen.getByRole("complementary", { name: "Orders" });
-    await user.click(within(pane).getByRole("button", { name: "Give Selected Units Order" }));
+    const pane = document.querySelector<HTMLElement>(".map-pane")!;
     await user.click(within(pane).getByRole("button", { name: "Move" }));
     // The engine offers a demoralized army only empty or friendly destinations (M23).
     const list = within(pane).getByRole("list", { name: "Destinations" });

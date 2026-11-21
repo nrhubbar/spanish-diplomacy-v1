@@ -1,6 +1,7 @@
+import { type PlannedAir, plannedAir } from "../air/groundSupport";
 import { isGroundUnit, onGroundBoard } from "../air/pieces";
 import { requireUnitState } from "../lookup";
-import type { BattleSide, FactionId, GameState, Scenario, TerritoryId, UnitId } from "../types";
+import type { BattleResult, BattleSide, CombatModifier, FactionId, GameState, Scenario, TerritoryId, UnitId } from "../types";
 import { estimateGradedBattle, type GradedEstimate, gradedOddsForValues } from "../d20/estimate";
 import type { GradedOdds } from "../d20/odds";
 import { usesD20 } from "../d20/rules";
@@ -13,7 +14,8 @@ export type AttackEstimate =
   | { readonly kind: "reinforcement" }
   /** No army of another faction is there; the move is unopposed unless another faction also enters. */
   | { readonly kind: "unopposed" }
-  | (BattleOdds & { readonly attacker: BattleSide; readonly defender: BattleSide; readonly kind: "battle" })
+  /** R11: `air` as on the d20 (`GradedEstimate`). */
+  | (BattleOdds & { readonly air?: PlannedAir; readonly attacker: BattleSide; readonly defender: BattleSide; readonly kind: "battle" })
   /** D1-D8: the same on the d20, with grade chances in place of d6 results. */
   | GradedEstimate;
 
@@ -22,13 +24,16 @@ export type AttackEstimate =
  * assuming every army there stays and no other faction joins in. Uses each army's current
  * strength and morale, the territory's works, and the scenario's faction modifiers. It does
  * not judge whether the order is legal (a demoralized army cannot attack, M23); validation does.
+ * R11: `support` names the faction's aircraft planned on Ground Support over the target; their
+ * support counts with the chance it wins the air battle against the defenders' AA.
  */
 export function estimateAttack(
   scenario: Scenario,
   state: GameState,
   factionId: FactionId,
   unitIds: readonly UnitId[],
-  targetTerritoryId: TerritoryId
+  targetTerritoryId: TerritoryId,
+  support: readonly UnitId[] = []
 ): AttackEstimate {
   const ordered = unitIds.map((id) => requireUnitState(state, id));
   if (ordered.length === 0 || ordered.some((unit) => unit.factionId !== factionId)) {
@@ -47,18 +52,24 @@ export function estimateAttack(
   if (present.length === 0) {
     return { kind: "unopposed" };
   }
-  if (usesD20(scenario)) return estimateGradedBattle(scenario, state, factionId, unitIds, targetTerritoryId);
+  if (usesD20(scenario)) return estimateGradedBattle(scenario, state, factionId, unitIds, targetTerritoryId, support);
   const attacker = battleSide(scenario, attackers, "attack");
   const defender = battleSide(scenario, present, "defence");
+  const defenderFactionIds = [...new Set(present.map((unit) => unit.factionId))];
   const situational = situationalModifiers(scenario, state, {
     attackerFactionId: factionId,
     attackerUnitIds: unitIds,
-    defenderFactionIds: [...new Set(present.map((unit) => unit.factionId))],
+    defenderFactionIds,
     diggingIn: true,
     territoryId: targetTerritoryId
   });
+  const plain = battleOdds(scenario.combat, attacker.value, defender.value, situational);
+  const air = plannedAir(scenario, state, { attackerFactionId: factionId, defenderFactionIds, defenderUnitIds: present.map((unit) => unit.id), territoryId: targetTerritoryId }, support);
+  const supported = (extra: CombatModifier): BattleOdds => battleOdds(scenario.combat, attacker.value, defender.value, [...situational, extra]);
+  const odds = air === undefined ? plain : air.chance === 1 ? supported(air.modifier) : weighOdds(plain, supported(air.modifier), air.chance);
   return {
-    ...battleOdds(scenario.combat, attacker.value, defender.value, situational),
+    ...odds,
+    ...(air === undefined ? {} : { air }),
     attacker,
     defender,
     kind: "battle"
@@ -72,4 +83,15 @@ export function estimateAttack(
 export function oddsForValues(scenario: Scenario, state: GameState, context: BattleContext, attack: number, defence: number): BattleOdds | GradedOdds {
   if (usesD20(scenario)) return gradedOddsForValues(scenario, state, context, attack, defence);
   return battleOdds(scenario.combat, attack, defence, situationalModifiers(scenario, state, context));
+}
+
+/**
+ * R11 on the d6: the odds over the air battle, `supported` with chance `chance`, else `plain`.
+ * Only the result chances and the take chance are weighed; the faces, column, label and modifiers
+ * are `plain`'s (the battle without the support).
+ */
+export function weighOdds(plain: BattleOdds, supported: BattleOdds, chance: number): BattleOdds {
+  const chances = Object.fromEntries(Object.entries(plain.chances).map(([result, value]) =>
+    [result, value * (1 - chance) + supported.chances[result as BattleResult] * chance])) as Record<BattleResult, number>;
+  return { ...plain, chances, takeChance: plain.takeChance * (1 - chance) + supported.takeChance * chance };
 }

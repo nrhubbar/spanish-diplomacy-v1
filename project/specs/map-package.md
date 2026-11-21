@@ -26,7 +26,7 @@ A package with relief should produce its geometry, relief images, and coordinate
 | `regions` | `{ [svgElementId]: { territoryId } }` | Which SVG elements belong to which territory. Several regions may share one territory. Unlisted elements are inert context. |
 | `territories[id].unitAnchor` | point | Where counters for units without a city stack. |
 | `territories[id].label` | `{ x, y, tier }` | Territory label. `overview` labels always show; `detail` labels show from operational zoom. |
-| `territories[id].shape` | `{ kind: "circle", x, y, r }` | Drawn and hit-tested for territories with no SVG region (small enclaves). Its rendered radius is at least 9 screen pixels. |
+| `territories[id].shape` | typed `{ "@type": "circle", "@data": { x, y, r } }` (D1) | Drawn and hit-tested for territories with no SVG region (small enclaves). Its rendered radius is at least 9 screen pixels. |
 | `subTerritories` | `{ svg, entries }` | Optional. Sub-territory geometry (W2). `svg` is an asset path to an SVG with one `path` per sub-territory, its element id the sub-territory id, read even-odd. `entries[id]` is `{ territoryId, label: { x, y }, capital: { x, y } }`: the territory it is part of, where its name is drawn (inside it, far from its edges), and its chief town (inside it). A territory's sub-territories exactly cover its region, and their outer edges are the region's edges. |
 | `cities[id]` | `{ x, y, tier }` | City marker position and label tier. |
 | `contextLabels[]` | `{ text, x, y }` | Labels for neutral land (neighbouring countries). |
@@ -48,7 +48,7 @@ The reference package's sub-territories (the 1936 provinces, Baleares by island,
 - Each territory's region rings, the same rings as its SVG region, are cut by internal lines: geoBoundaries ADM2 province borders, or hand-drawn split lines with a seed (the capital) per part. Province data only decides which side of a line a point falls on, so outer edges never move.
 - The build fails if a territory's parts do not add up to its region's area, if a province's part differs from its ADM2 area by more than 3 percent, or if two internal lines cross.
 
-The build also writes `sub-territory-topology.json` beside `map.json` in the scenario package. It is generated (do not edit) and the app does not load it: the scenario package copies its fields into `scenario.json`.
+The build also writes `sub-territory-topology.json` beside `map.json` in the scenario package. It is generated (do not edit) and the app does not load it: the scenario package copies its fields into `scenario.json`. Its `connections` stay plain (`{ between, kind, label?, entry }`) while `scenario.json` writes them as typed entries (D1); an entry override may name the connection `kind` it applies to, for a pair with both a land and a sea connection.
 
 | Field | Type | Meaning |
 |---|---|---|

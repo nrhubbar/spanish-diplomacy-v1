@@ -47,7 +47,7 @@ describe("compact counters", () => {
     const figures = groupFigures(spain(), game, madrid);
     expect(figures).toMatchObject({ attack: 12, count: 4, defence: 18, demoralizedCount: 1, dugIn: 2, fullAttack: 14, reduced: true, strength: 9100 });
     expect(groupLabel("Republican Government", "Madrid", figures))
-      .toBe("Republican Government, 4 units in Madrid, combined attack 12, defence 18, 9100 of 9100 men, 1 demoralized, dug in +2");
+      .toBe("Republican Government, 4 units in Madrid, combined attack 12, defence 18, 9100 of 9100 men, 1 demoralized, dug in level 2 (+2)");
   });
 
   it("is compact on a phone's overview, stays individual at the detail zoom, and reacts to crowding", () => {
@@ -124,7 +124,7 @@ describe("compact counters", () => {
       />
     );
     const group = screen.getByRole("button", { name: /^Republican Government, 4 units in Madrid/ });
-    expect(group).toHaveAccessibleName(/1 demoralized, dug in \+2, 4 moving$/);
+    expect(group).toHaveAccessibleName(/1 demoralized, dug in level 2 \(\+2\), 4 moving$/);
     expect(group).toHaveAttribute("data-ordered", "true");
     expect(group.querySelector(".unit-counter-current")?.textContent).toBe("12-18");
     expect(group.querySelector(".unit-counter-count")?.textContent).toBe("\u00d74");

@@ -1,0 +1,283 @@
+// U9: the shared queue component, Global Recruitment and Global Building, the opening
+// sub-territory cards and the Production tab. U11: the balance view.
+
+.queue-list {
+  margin: 0.4rem 0 0;
+  padding: 0;
+  list-style: none;
+
+  li + li {
+    margin-top: 0.35rem;
+  }
+
+  &[data-paused="true"] .queue-bar span {
+    background: var(--ink-soft);
+  }
+}
+
+.queue-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.queue-waiting .queue-name {
+  color: var(--ink-soft);
+}
+
+.queue-number {
+  display: inline-grid;
+  place-items: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  border: 1px solid var(--rule);
+  border-radius: 50%;
+  color: var(--ink-soft);
+  font-size: 0.7rem;
+}
+
+.queue-owner {
+  color: var(--ink-soft);
+  font-style: italic;
+}
+
+.paused-chip {
+  display: inline-block;
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  background: rgb(125 47 42 / 12%);
+  color: var(--accent);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.queue-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.8rem;
+  margin: 0 0 0.6rem;
+  padding: 0.45rem 0.6rem;
+  border-radius: 6px;
+  background: var(--paper-deep);
+  font-size: 0.85rem;
+}
+
+.queue-summary-spend {
+  flex-basis: 100%;
+}
+
+.queue-groups {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0 0 0.6rem;
+  padding: 0;
+  list-style: none;
+}
+
+.queue-group {
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: var(--paper);
+
+  &[data-paused="true"] {
+    border-style: dashed;
+    background: var(--paper-deep);
+  }
+}
+
+.queue-group-head,
+.queue-site-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.25rem 0.75rem;
+
+  h4 {
+    margin: 0;
+    font-family: var(--serif);
+    font-size: 1rem;
+  }
+}
+
+.queue-group-name,
+.queue-site-name {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  cursor: pointer;
+  text-align: left;
+
+  &:hover,
+  &:focus-visible {
+    text-decoration: underline;
+  }
+}
+
+.queue-group-name {
+  font-family: var(--serif);
+  font-size: 1rem;
+}
+
+.queue-site {
+  margin-top: 0.45rem;
+  padding-top: 0.4rem;
+  border-top: 1px solid var(--rule);
+}
+
+.queue-site-name {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.queue-paused-note {
+  margin: 0.4rem 0 0;
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+  font-style: italic;
+}
+
+.recruit-queue {
+  margin: 0 0 0.6rem;
+
+  h4 {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 0;
+  }
+}
+
+// U9 (note 15): a sub-territory card opens on its header.
+h4.site-card-head {
+  display: block;
+}
+
+.site-card-toggle {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+
+  .site-name {
+    flex: 1;
+  }
+
+  .site-yield {
+    font-family: var(--sans);
+    font-size: 0.8rem;
+  }
+}
+
+.site-card-caret {
+  color: var(--ink-soft);
+  font-size: 0.75rem;
+}
+
+.site-summary {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.25rem 0.5rem;
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+}
+
+.site-card-body {
+  margin-top: 0.4rem;
+}
+
+.site-cities {
+  margin: 0.3rem 0 0;
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+}
+
+.production-table,
+.ledger {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+
+  th,
+  td {
+    padding: 0.3rem 0.2rem;
+    border-bottom: 1px solid var(--rule);
+    text-align: right;
+    vertical-align: top;
+  }
+
+  th[scope="row"],
+  thead th:first-child {
+    text-align: left;
+  }
+
+  tfoot th,
+  tfoot td {
+    border-bottom: 0;
+    font-weight: 700;
+  }
+}
+
+.production-table thead th {
+  color: var(--ink-soft);
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.production-name {
+  display: block;
+  font-weight: 600;
+}
+
+.production-levels {
+  display: block;
+  color: var(--ink-soft);
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+
+.production-table td,
+.ledger-yield {
+  color: var(--success);
+}
+
+.production-table tfoot tr[data-contested="true"] td {
+  color: var(--ink-soft);
+}
+
+.ledger {
+  margin: 0.3rem 0 0.5rem;
+
+  th[scope="row"] {
+    font-weight: 600;
+  }
+}
+
+.ledger-note {
+  color: var(--ink-soft);
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+
+.ledger-loss {
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.ledger tr[data-kind="expense"] .ledger-value,
+.ledger tr[data-kind="raid"] .ledger-value {
+  color: var(--accent);
+}

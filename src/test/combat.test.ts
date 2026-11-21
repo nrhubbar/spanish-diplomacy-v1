@@ -299,7 +299,7 @@ describe("attack estimates (C15)", () => {
     const opening = initialGameState(spain());
     const regimentsOnly = Object.entries(opening.units).filter(([id]) => !["rep-madrid-security", "rep-madrid-sierra-column", "rep-general-miaja"].includes(id));
     const state = { ...opening, units: Object.fromEntries(regimentsOnly) };
-    const attackers = [unit("north-san-marcial-22"), unit("north-san-quintin-25"), unit("north-la-victoria-28")];
+    const attackers = [unit("north-san-marcial-22"), unit("north-san-quintin-25"), unit("north-argel-27")];
     const estimate = estimateAttack(spain(), state, faction("north"), attackers, territory("madrid"));
     if (estimate.kind !== "battle") throw new Error("expected a battle");
     expect([estimate.attack, estimate.defence, estimate.oddsLabel]).toEqual([12, 12, "1:1"]);
@@ -307,7 +307,7 @@ describe("attack estimates (C15)", () => {
       { factionId: "republic", kind: "faction", modifierId: "popular-resistance", name: "Popular resistance", role: "defence", roll: -1 }
     ]);
     expect(estimate.takeChance).toBe(1 / 6);
-    const alone = estimateAttack(spain(), state, faction("north"), [unit("north-la-victoria-28")], territory("madrid"));
+    const alone = estimateAttack(spain(), state, faction("north"), [unit("north-argel-27")], territory("madrid"));
     if (alone.kind !== "battle") throw new Error("expected a battle");
     expect(alone.oddsLabel).toBe("1:3");
     expect(alone.modifiers.map((modifier) => modifier.roll)).toEqual([-1, -1]);

@@ -223,30 +223,43 @@
           },
           "shape": {
             "description": "Drawn and hit-tested when the territory has no SVG region.",
-            "type": "object",
-            "properties": {
-              "kind": {
-                "type": "string",
-                "const": "circle"
-              },
-              "x": {
-                "type": "number"
-              },
-              "y": {
-                "type": "number"
-              },
-              "r": {
-                "type": "number",
-                "exclusiveMinimum": 0
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "@type": {
+                    "type": "string",
+                    "const": "circle"
+                  },
+                  "@data": {
+                    "type": "object",
+                    "properties": {
+                      "x": {
+                        "type": "number"
+                      },
+                      "y": {
+                        "type": "number"
+                      },
+                      "r": {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      }
+                    },
+                    "required": [
+                      "x",
+                      "y",
+                      "r"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "@type",
+                  "@data"
+                ],
+                "additionalProperties": false
               }
-            },
-            "required": [
-              "kind",
-              "x",
-              "y",
-              "r"
-            ],
-            "additionalProperties": false
+            ]
           }
         },
         "required": [

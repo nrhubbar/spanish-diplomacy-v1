@@ -30,7 +30,7 @@ describe("the computer player's air missions (H5)", () => {
     const orders = planAirMissions(context(state, "republic"));
     const byUnit = new Map(orders.map((order) => [order.unitId as string, order.mission.kind]));
     expect(byUnit.get("rep-breguet-bombers")).toBe("raid");
-    expect(byUnit.get("rep-ni52-fighters")).toBe("intercept");
+    expect(byUnit.get("rep-ni52-fighters")).toBe("patrol");
     expect(byUnit.get("rep-catalan-recon")).toBe("recon");
   });
 

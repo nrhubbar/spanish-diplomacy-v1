@@ -3,7 +3,7 @@ import {
   basisShape,
   cityShape,
   combatSchema,
-  connectionShape,
+  connectionSchema,
   factionShape,
   positiveWholeSchema,
   resourcesSchema,
@@ -19,6 +19,9 @@ import {
   buildingSchema,
   developmentSchema,
   improvementsSchema,
+  linkModifierRuleSchema,
+  linkProjectsSchema,
+  linkSchema,
   modularUnitTypeSchema,
   movementSchema,
   recruitmentSchema,
@@ -58,7 +61,7 @@ const m2StrengthSchema = z
     unitTypes: z.array(z.strictObject(unitTypeShape)).min(1),
     factions: z.array(z.strictObject(factionShape)).min(2),
     territories: z.array(z.strictObject(territoryShape)).min(2),
-    connections: z.array(z.strictObject(connectionShape)),
+    connections: z.array(connectionSchema({})),
     cities: z.array(z.strictObject(cityShape))
   })
   .meta({ title: "m2-strength scenario" });
@@ -94,8 +97,7 @@ const m3ModularSchema = z
       )
       .min(2),
     connections: z.array(
-      z.strictObject({
-        ...connectionShape,
+      connectionSchema({
         entry: z
           .tuple([slugSchema, slugSchema])
           .optional()
@@ -110,6 +112,9 @@ const m3ModularSchema = z
     ),
     subTerritories: z.array(subTerritorySchema).default([]),
     subTerritoryBorders: subTerritoryBordersSchema.default([]),
+    links: z.array(linkSchema).default([]),
+    linkModifiers: z.array(linkModifierRuleSchema).default([]),
+    linkProjects: linkProjectsSchema.optional(),
     resources: z
       .array(
         z.strictObject({

@@ -1,4 +1,5 @@
 import type { Armies } from "./board";
+import { usesD20 } from "./d20/rules";
 import { hookedCanDigIn } from "./hooks";
 import { standingOrder } from "./orders";
 import type { TurnDraft } from "./phases/draft";
@@ -25,17 +26,18 @@ export function notEntrenching(draft: TurnDraft): ReadonlySet<UnitId> {
  * or paid Replenish order (`moved` lists the armies that had one, `notEntrenching`), and is
  * still there at the end (M23, O3, Q-RECR-5). The
  * selected modules' `canDigIn` hooks may stop the works growing (T4: Snow).
+ *
+ * R8: the level is the works' pips (`combat.diggingIn`) under either dice; what a pip is worth
+ * on the roll is `worksRoll`'s.
  */
 export function digIn(
   scenario: Scenario,
   start: GameState,
   end: { readonly armies: Armies; readonly control: GameState["control"] },
   foughtIn: ReadonlySet<TerritoryId>,
-  moved: ReadonlySet<UnitId>,
-  /** The gain per turn and the cap: the d6 block's, or the d20's x3 (D3). */
-  rates: { readonly max: number; readonly perTurn: number } = scenario.combat.diggingIn
+  moved: ReadonlySet<UnitId>
 ): GameState["fortification"] {
-  const { max, perTurn } = rates;
+  const { max, perTurn } = scenario.combat.diggingIn;
   const fortification: Record<TerritoryId, Fortification> = {};
   for (const { id } of scenario.territories) {
     const holder = holderOf(end.control, end.armies, id);
@@ -65,4 +67,15 @@ export function holderOf(control: GameState["control"], armies: Armies, territor
   return Object.values(armies).some((unit) => unit.territoryId === territoryId && unit.factionId === current.factionId)
     ? current.factionId
     : undefined;
+}
+
+/**
+ * R8 (M22, D3): what works of `level` pips take off the attacker's roll, as a positive number.
+ * On the d20 each pip is worth the d20 block's `worksPerTurn`, up to `worksMax` (2 a pip to 6 in
+ * Spain); on the d6 table each pip is worth 1.
+ */
+export function worksRoll(scenario: Scenario, level: number): number {
+  const d20 = scenario.d20;
+  if (d20 === undefined || !usesD20(scenario)) return level;
+  return Math.min(d20.modifiers.worksMax, level * d20.modifiers.worksPerTurn);
 }

@@ -204,7 +204,8 @@ function approachTargets(scenario: Scenario, state: GameState, assessment: Asses
 /**
  * H5 for rail, trucks and sea (M1-M5). The planner chose destinations; this gives each order
  * the route the game offers for its unit, then checks the plan as armies (W4):
- * - free trucks go with the largest army leaving their territory, a marching one first;
+ * - free trucks go with the largest army leaving their territory whose route they may take
+ *   (R5: not across a link with no road), a marching (Motor) one first;
  * - a march its army's trucks cannot carry takes the army's own route there, or is cut to its
  *   first step, into friendly ground;
  * - armies beyond a capital's departures, a port's landings or a lane's one assault stay home;
@@ -223,8 +224,13 @@ export function withRoutes(scenario: Scenario, state: GameState, factionId: Fact
   const result: MoveOrder[] = [...routed];
   for (const truck of trucks) {
     const leaving = armiesOf((order) => armyKey(scenario, order), result.filter((order) => order.from === truck.territoryId));
+    // R5: only with an army whose route a truck may take (trucks are not foot: no March across a link without a road).
+    const carries = (army: (typeof leaving)[number]): boolean => {
+      const [lead] = army.orders;
+      return lead !== undefined && describeRoute(scenario, state, factionId, lead.from, legsOf(scenario, lead), true, undefined, [...army.orders.map((order) => order.unitId), truck.id]).ok;
+    };
     const marching = leaving.filter((army) => (army.orders[0]?.legs?.length ?? 1) > 1 && army.orders[0]?.legs?.every((leg) => leg.kind === "land") === true);
-    const target = [...marching, ...leaving].sort((left, right) => right.orders.length - left.orders.length)[0]?.orders[0];
+    const target = [...marching, ...leaving].filter(carries).sort((left, right) => right.orders.length - left.orders.length)[0]?.orders[0];
     if (target !== undefined) result.push({ ...target, unitId: truck.id });
   }
   const fitted = result.map((order) => {
@@ -245,7 +251,8 @@ export function withRoutes(scenario: Scenario, state: GameState, factionId: Fact
   for (const army of armiesOf((order) => armyKey(scenario, order), fitted)) {
     const [first] = army.orders;
     if (first === undefined) continue;
-    const check = describeRoute(scenario, state, factionId, first.from, legsOf(scenario, first), true);
+    // R1, R5: the army's own units, so the foot rule and its pocket are checked.
+    const check = describeRoute(scenario, state, factionId, first.from, legsOf(scenario, first), true, undefined, army.orders.map((order) => order.unitId));
     if (!check.ok) continue;
     const claims = routeClaims(check.route);
     const fits = (map: Map<string, number>, key: string | undefined, limit: number): boolean => key === undefined || (map.get(key) ?? 0) < limit;

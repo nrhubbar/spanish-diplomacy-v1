@@ -1,9 +1,10 @@
 import type { ModularScenarioDocument } from "../schema/scenarioSchema";
 import { idSet, type Issues } from "./issues";
+import { checkBuildable, checkLinks } from "./linkChecks";
 
 type SubTerritoryDocument = ModularScenarioDocument["subTerritories"][number];
 
-/** Rules L16, L18 and L19: sub-territories, their data, borders and connection entries. */
+/** Rules L16, L18, L19, L28 and L29: sub-territories, their data, borders and links, and connection entries. */
 export function checkSubTerritories(document: ModularScenarioDocument, issues: Issues): void {
   const subTerritories = new Map(document.subTerritories.map((sub) => [sub.id, sub]));
   const factions = idSet(document.factions);
@@ -47,6 +48,7 @@ export function checkSubTerritories(document: ModularScenarioDocument, issues: I
 
   document.subTerritories.forEach((sub, index) => { checkSiteData(document, sub, `subTerritories[${index}]`, { capital: capitals.has(sub.id), city: cityHosts.has(sub.id) }, issues); });
   checkBorders(document, subTerritories, issues);
+  checkLinks(document, issues);
 }
 
 /** L18: development, buildings and improvement levels fit the catalogues. */
@@ -78,8 +80,8 @@ function checkSiteData(
     }
   }
   if (new Set(sub.buildings).size !== sub.buildings.length) issues.add(`${path}.buildings: a building is listed twice (L18)`);
+  checkBuildable(document, sub, path, site, issues);
   const improvements = document.improvements;
-  if (improvements !== undefined && sub.rail > improvements.rail.maxLevel) issues.add(`${path}.rail: above ${String(improvements.rail.maxLevel)} (L18)`);
   if (improvements !== undefined && sub.port > improvements.port.maxLevel) issues.add(`${path}.port: above ${String(improvements.port.maxLevel)} (L18)`);
 }
 

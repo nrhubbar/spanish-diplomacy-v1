@@ -96,6 +96,7 @@ export function startDraft(input: TurnInput): TurnDraft {
   const systems: SystemState = {
     generals, raidCuts, raised, reveals, subTerritories, training, treasuries,
     ...(start.replenishCarry === undefined ? {} : { replenishCarry: start.replenishCarry }),
+    ...(start.builtLinks === undefined ? {} : { builtLinks: start.builtLinks }),
     ...(start.weather === undefined ? {} : { weather: start.weather })
   };
   return {

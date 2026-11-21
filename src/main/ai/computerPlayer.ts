@@ -1,7 +1,6 @@
 import type { RandomSource } from "../engine/random";
 import type { FactionId, GameState, Order, PlayerSubmission, Scenario, UnitId } from "../engine/types";
 import { viewFor } from "../engine/visibility";
-import { applyBlunders } from "./blunder";
 import { unitKindIn } from "../engine/air/pieces";
 import { planAirMissions } from "./orders/air-mission";
 import { planBuilds } from "./orders/build";
@@ -49,8 +48,8 @@ const planners: readonly OrderPlanner<Order>[] = [
 
 /**
  * C18: a computer player's whole submission. It plans on its own view of the board (hidden
- * balances stay hidden) with the weights of its profile (`ai.profiles`, E7), then blunders now
- * and then (H6, `blunder.ts`). The move planner is `orders/move.ts`.
+ * balances stay hidden) with the weights of its profile (`ai.profiles`, E7). The move planner
+ * is `orders/move.ts`.
  */
 export function generateComputerSubmission(
   scenario: Scenario,
@@ -65,5 +64,5 @@ export function generateComputerSubmission(
     const context: PlanningContext = { factionId, memory, planned, random, scenario, state: view };
     planned = [...planned, ...planner(context)];
   }
-  return { factionId, orders: applyBlunders(scenario, view, planned, memory.blunder, scenario.ai.blunderChance) };
+  return { factionId, orders: planned };
 }

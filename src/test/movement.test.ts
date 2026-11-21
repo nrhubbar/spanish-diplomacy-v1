@@ -19,8 +19,8 @@ function load(mutate: (scenario: Json) => void = () => undefined): Scenario {
   const scenario = modularScenario();
   const types = scenario["unitTypes"] as Json[];
   types.push(
-    { id: "lorry", name: "Lorry", attack: 0, defence: 0, kind: "ground", symbol: "transport", orders: ["move"], effects: [{ kind: "transport", carries: 2 }] },
-    { id: "horse", name: "Horse", attack: 3, defence: 3, kind: "ground", symbol: "cavalry", orders: ["move"], effects: [{ kind: "mobile" }] }
+    { id: "lorry", name: "Lorry", attack: 0, defence: 0, kind: "ground", symbol: "transport", orders: ["move"], effects: [{ "@type": "transport", "@data": { carries: 2 } }] },
+    { id: "horse", name: "Horse", attack: 3, defence: 3, kind: "ground", symbol: "cavalry", orders: ["move"], effects: [{ "@type": "mobile" }] }
   );
   const units = scenario["units"] as Json[];
   const extra = (id: string, type: string, territoryId = "westfold", factionId = "red"): Json => ({ id, name: id, factionId, type, formationKind: "other", strength: 400, fullStrength: 400, territoryId, sources: [{ sourceId: "fixture" }] });
@@ -33,6 +33,19 @@ function load(mutate: (scenario: Json) => void = () => undefined): Scenario {
 }
 
 const sub = (id: string): SubTerritoryId => id as SubTerritoryId;
+
+/** R5: Motor runs on main roads; the fixture's roads are tracks, so these tests upgrade the Westfold-Highlands-Harbor road. */
+function mainRoads(data: Json): void {
+  for (const entry of data["links"] as Json[]) {
+    if (!["west-hills|highlands", "highlands|port-quarter", "highlands|west-hills", "port-quarter|highlands"].includes(`${String(entry["a"])}|${String(entry["b"])}`)) continue;
+    entry["modifiers"] = (entry["modifiers"] as Json[]).map((modifier) => (modifier["@type"] === "road" ? { "@type": "road", "@data": { level: "main" } } : modifier));
+  }
+}
+
+function openHighlands(data: Json): void {
+  for (const entry of data["subTerritories"] as Json[]) if (entry["id"] === "highlands") entry["terrain"] = "open";
+  mainRoads(data);
+}
 
 function withSubs(state: GameState, changes: Readonly<Record<string, Partial<SubTerritoryState>>>): GameState {
   const subTerritories = { ...state.subTerritories };
@@ -105,7 +118,7 @@ describe("movement: ground and rail (M2, M3)", () => {
 
   it("counts a capital's departures as its rail level plus its buildings' rail departures", () => {
     const scenario = load((data) => {
-      (data["buildings"] as Json[]).push({ id: "yard", name: "Yard", cost: { funds: 1 }, turns: 1, effects: [{ kind: "rail-departures", extra: 1 }] });
+      (data["buildings"] as Json[]).push({ id: "yard", name: "Yard", cost: { funds: 1 }, turns: 1, effects: [{ "@type": "rail-departures", "@data": { extra: 1 } }] });
     });
     const state = initialGameState(scenario);
     expect(railDepartures(scenario, state, sub("west-town-quarter"))).toBe(2);
@@ -125,15 +138,15 @@ describe("movement: allowance (M1)", () => {
     expect(armyAllowance(scenario, state, faction("red"), territory("westfold"), [unit("red-guard")])).toBe(1);
   });
 
-  it("offers a march only within the allowance, counting a mountain entry as one more", () => {
-    const scenario = load();
+  it("offers Motor only within the allowance, and counts a mountain entry on a March", () => {
+    const scenario = load(mainRoads);
     const state = initialGameState(scenario);
     const trucked = [unit("red-guard"), unit("red-lorry")];
-    // Westfold to Highlands enters a mountain (cost 2), so a march on to Harbor would cost 3.
-    expect(moveRoutes(scenario, state, faction("red"), territory("westfold"), trucked).get(territory("harbor"))?.shape).toBe("rail-step");
-    const open = load((data) => {
-      for (const entry of data["subTerritories"] as Json[]) if (entry["id"] === "highlands") entry["terrain"] = "open";
-    });
+    // R5, declog D13: Motor runs on the main road through the mountain at no extra cost.
+    expect(moveRoutes(scenario, state, faction("red"), territory("westfold"), trucked).get(territory("harbor"))).toMatchObject({ cost: 2, mode: "motor", rough: [], shape: "march" });
+    // Without trucks there is no Motor: the guard rides, then steps.
+    expect(moveRoutes(scenario, state, faction("red"), territory("westfold"), [unit("red-guard")]).get(territory("harbor"))?.shape).toBe("rail-step");
+    const open = load(openHighlands);
     const openState = withSubs(initialGameState(open), { "west-hills": { rail: 0 } });
     expect(moveRoutes(open, openState, faction("red"), territory("westfold"), trucked).get(territory("harbor"))?.legs).toEqual([land("highlands"), land("harbor")]);
     expect(moveRoutes(open, openState, faction("red"), territory("westfold"), [unit("red-guard")]).has(territory("harbor"))).toBe(false);
@@ -205,9 +218,7 @@ describe("movement: resolution (step 1 armies, step 3 transit)", () => {
   });
 
   it("holds back an army whose route is longer than its allowance", () => {
-    const open = load((data) => {
-      for (const entry of data["subTerritories"] as Json[]) if (entry["id"] === "highlands") entry["terrain"] = "open";
-    });
+    const open = load(openHighlands);
     const state = initialGameState(open);
     const result = play(open, state, [order("red", "red-guard", "westfold", [land("highlands"), land("harbor")])]);
     expect(result.outcomes.find((outcome) => outcome.kind === "move-held-back")).toMatchObject({ reason: "allowance" });
@@ -255,9 +266,7 @@ describe("movement: the computer player (H5)", () => {
   });
 
   it("sends a free truck with a march, and cuts a march no truck can carry", () => {
-    const open = load((data) => {
-      for (const entry of data["subTerritories"] as Json[]) if (entry["id"] === "highlands") entry["terrain"] = "open";
-    });
+    const open = load(openHighlands);
     const state = withSubs(initialGameState(open), { "west-hills": { rail: 0 } });
     const march = order("red", "red-guard", "westfold", [land("highlands"), land("harbor")]);
     const routed = withRoutes(open, state, faction("red"), [march]);

@@ -34,7 +34,7 @@ describe("the aircraft pane's words (U2, U3, M11)", () => {
     expect(allowedMissions(typeOf("general"))).toEqual([]);
     expect(allowedMissions(undefined)).toEqual([]);
     expect(missionTitle(bomber, "raid")).toBe(missionHints.raid);
-    expect(missionTitle(bomber, "intercept")).toBe(`A ${bomber.name} cannot fly this mission.`);
+    expect(missionTitle(bomber, "patrol")).toBe(`A ${bomber.name} cannot fly this mission.`);
     expect(missionTitle(undefined, "recon")).toBe("A aircraft cannot fly this mission.");
   });
 

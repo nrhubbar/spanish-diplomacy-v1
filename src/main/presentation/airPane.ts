@@ -7,14 +7,17 @@ import { glyphs } from "./glyphs";
  * general's pill. The pane renders what these return.
  */
 
-/** U2: mission names as the pane's buttons read them. */
-export const missionNames: Readonly<Record<AirMissionKind, string>> = { intercept: "Intercept", raid: "Raid", recon: "Recon", support: "Support" };
+/** U2, U14: mission names as the pane's buttons read them. */
+export const missionNames: Readonly<Record<AirMissionKind, string>> = { patrol: "Patrol", raid: "Raid", recon: "Recon", support: "Ground Support" };
+
+/** U14: the order the pane offers the missions in. */
+export const missionButtonOrder: readonly AirMissionKind[] = ["patrol", "support", "raid", "recon"];
 
 export const missionHints: Readonly<Record<AirMissionKind, string>> = {
-  intercept: "Fighters over a territory worsen enemy raids there and can shoot raiders down.",
+  patrol: "Fighters over a territory worsen enemy raids there and can shoot raiders down.",
   raid: "A raid on one sub-territory rolls: air eliminated, nothing hit, income cut for a turn, or a building hit.",
   recon: "Shows the territory's balances, queues and training next turn.",
-  support: "Bombers over a battle add to their side's roll."
+  support: "Aircraft over a battle add to their side's roll."
 };
 
 /** The line under the aircraft's name: type, base (paved or not) and range. */
@@ -65,7 +68,7 @@ export function generalPill(general: GeneralDefinition, trait: GeneralTrait | un
 /** U2: the counter's short tag, from the missions its type flies. */
 export function aircraftTag(missions: readonly AirMissionKind[]): string {
   if (missions.includes("raid") || missions.includes("support")) return "BOMB";
-  if (missions.includes("intercept")) return "FTR";
+  if (missions.includes("patrol")) return "FTR";
   return "RCN";
 }
 

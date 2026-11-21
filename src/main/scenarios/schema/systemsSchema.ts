@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { basisShape, citationSchema, factionModifierSchema, positiveWholeSchema, shareSchema, slugSchema, textSchema, wholeSchema } from "./coreSchema.ts";
+import { basisShape, citationSchema, factionModifierSchema, markerEntry, positiveWholeSchema, shareSchema, slugSchema, textSchema, typedEntry, wholeSchema } from "./coreSchema.ts";
 
 /**
  * Milestone 3 systems with their own blocks: the d20 battle rules, weather, the calendar, air,
@@ -49,12 +49,12 @@ export const d20Schema = z
 
 const monthSchema = z.number().int().min(1).max(12);
 
-export const weatherEffectSchema = z.discriminatedUnion("kind", [
-  z.strictObject({ kind: z.literal("blocks-digging-in") }),
-  z.strictObject({ kind: z.literal("grounds-aircraft") }),
-  z.strictObject({ kind: z.literal("movement-penalty"), amount: positiveWholeSchema }),
-  z.strictObject({ kind: z.literal("frostbite"), share: shareSchema }),
-  z.strictObject({ kind: z.literal("closes-sea"), months: z.array(monthSchema).min(1) })
+export const weatherEffectSchema = z.discriminatedUnion("@type", [
+  markerEntry("blocks-digging-in"),
+  markerEntry("grounds-aircraft"),
+  typedEntry("movement-penalty", { amount: positiveWholeSchema }),
+  typedEntry("frostbite", { share: shareSchema }),
+  typedEntry("closes-sea", { months: z.array(monthSchema).min(1) })
 ]);
 
 const bandSchema = z.strictObject({ outcome: slugSchema, upTo: z.number().int().min(1).max(20) });
@@ -91,13 +91,14 @@ export const airSchema = z.strictObject({
   raidTable: z.array(z.strictObject({ outcome: raidOutcomeSchema, upTo: z.number().int().min(1).max(20) })).min(1),
   interceptRoll: signedRoll.negative(),
   reconTurns: positiveWholeSchema,
+  supportMax: positiveWholeSchema.optional().meta({ description: "R11: the most aircraft whose Ground Support counts for one side of a battle; absent means no cap." }),
   generalDeathRoll: z.number().int().min(0).max(20).optional().meta({ description: "U5: a general whose army is destroyed or routed dies on a d20 at or under this." }),
   ...basisShape
 });
 
-export const traitEffectSchema = z.discriminatedUnion("kind", [
-  z.strictObject({ kind: z.literal("roll-modifier"), role: z.enum(["attack", "defence"]), roll: signedRoll }),
-  z.strictObject({ kind: z.literal("no-rally") })
+export const traitEffectSchema = z.discriminatedUnion("@type", [
+  typedEntry("roll-modifier", { role: z.enum(["attack", "defence"]), roll: signedRoll }),
+  markerEntry("no-rally")
 ]);
 
 export const generalsSchema = z.strictObject({
@@ -112,7 +113,6 @@ const weight = z.number();
 
 export const aiSchema = z
   .strictObject({
-    blunderChance: shareSchema.meta({ description: "H6: chance that one computer order is a blunder." }),
     profiles: z
       .record(
         slugSchema,
@@ -152,4 +152,4 @@ export const aiSchema = z
       .meta({ description: "E7: one profile per faction, keyed by faction id (L23)." }),
     ...basisShape
   })
-  .meta({ description: "E7, H6: the computer players' weights per faction, and the blunder chance." });
+  .meta({ description: "E7: the computer players' weights per faction." });

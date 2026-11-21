@@ -13,8 +13,14 @@ import { type SubTerritoryPaths, useSubTerritoryPaths } from "./subTerritoryGeom
  * names and every territory's capital star appear. Two layers: the wash sits under the vector
  * layer (borders, rivers, cities and names stay on top) and the labels above it. Zoomed in, every
  * sub-territory is hit-testable from the wash, so a click on the selected territory can focus the
- * pane on one (X3, `subTerritoryAt`).
+ * pane on one (X3, `subTerritoryAt`). Past 250% zoom, with the Sub-territories layer on, every
+ * sub-territory's border and name show (note 4, `showsSubTerritoryBorders`).
  */
+
+/** The sub-territory layers' props: the shared ones, and whether every border and name shows. */
+interface SubTerritoryLayerProps extends MapLayerProps {
+  readonly borders?: boolean;
+}
 
 interface Partition {
   readonly contested: ReadonlySet<TerritoryId>;
@@ -37,6 +43,7 @@ function screenTransform(toScreen: MapLayerProps["toScreen"]): { readonly scale:
 }
 
 interface WashProps {
+  readonly borders: boolean;
   readonly contested: ReadonlySet<TerritoryId>;
   readonly game: GameState;
   readonly hitTestAll: boolean;
@@ -45,7 +52,7 @@ interface WashProps {
 }
 
 /** The provinces themselves, in map units; re-rendered when holders change, not on pan or zoom. */
-const WashPaths = memo(function WashPaths({ contested, game, hitTestAll, paths, scenario }: WashProps): JSX.Element {
+const WashPaths = memo(function WashPaths({ borders, contested, game, hitTestAll, paths, scenario }: WashProps): JSX.Element {
   const color = (id: FactionId | undefined): string => (id === undefined ? "#d8c59d" : requireFaction(scenario, id).color);
   return (
     <>
@@ -58,14 +65,14 @@ const WashPaths = memo(function WashPaths({ contested, game, hitTestAll, paths, 
             <path className="sub-territory-fill" d={d} fill={color(game.subTerritories[sub.id]?.holder)} fillRule="evenodd" />
             <path className="sub-territory-hatch" d={d} fill="url(#sub-territory-hatch)" fillRule="evenodd" />
           </g>
-        ) : <path className="sub-territory-hit" d={d} data-sub-territory-id={sub.id} fillRule="evenodd" key={sub.id} />;
+        ) : <path className={borders ? "sub-territory-hit sub-territory-border" : "sub-territory-hit"} d={d} data-sub-territory-id={sub.id} fillRule="evenodd" key={sub.id} />;
       })}
     </>
   );
 });
 
 /** Under the vector layer: holder washes and diagonal lines in contested territories. */
-export function SubTerritoryWash(props: MapLayerProps): JSX.Element | null {
+export function SubTerritoryWash(props: SubTerritoryLayerProps): JSX.Element | null {
   const partition = partitionOf(props);
   const zoomed = props.level !== "overview";
   const needed = partition !== undefined && (partition.contested.size > 0 || zoomed);
@@ -80,14 +87,14 @@ export function SubTerritoryWash(props: MapLayerProps): JSX.Element | null {
         </pattern>
       </defs>
       <g transform={transform}>
-        <WashPaths contested={partition.contested} game={props.game} hitTestAll={zoomed} paths={paths} scenario={props.scenarioPackage.scenario} />
+        <WashPaths borders={props.borders ?? false} contested={partition.contested} game={props.game} hitTestAll={zoomed} paths={paths} scenario={props.scenarioPackage.scenario} />
       </g>
     </svg>
   );
 }
 
 /** Above the vector layer: names and capital stars on zoom, and the focused sub-territory's outline. */
-export function SubTerritoryLayer(props: MapLayerProps): JSX.Element | null {
+export function SubTerritoryLayer(props: SubTerritoryLayerProps): JSX.Element | null {
   const partition = partitionOf(props);
   const focused = props.view.focusedSubTerritoryId;
   const zoomed = props.level !== "overview";
@@ -97,7 +104,7 @@ export function SubTerritoryLayer(props: MapLayerProps): JSX.Element | null {
   const entries = partition.map.subTerritories?.entries;
   const focusedPath = focused === undefined ? undefined : paths?.get(focused);
   const focusedTerritory = focused === undefined ? undefined : scenario.index.subTerritories.get(focused)?.territoryId;
-  const named = (territoryId: TerritoryId): boolean => partition.contested.has(territoryId) || territoryId === focusedTerritory;
+  const named = (territoryId: TerritoryId): boolean => props.borders === true || partition.contested.has(territoryId) || territoryId === focusedTerritory;
   const { transform } = screenTransform(props.toScreen);
   return (
     <svg aria-hidden="true" className="map-layer sub-territory-labels">

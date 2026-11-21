@@ -114,12 +114,12 @@ export const threeSidedAssault: readonly D6BattleOutcome[] = [
 
 /** An ordinary two-sided assault on dug-in, defended Madrid that costs the attacker men. */
 export const madridRepulsed: D6BattleOutcome = battle({
-  attacker: side(army("north-san-marcial-22", "north", "castilla-y-leon", 4), army("north-la-victoria-28", "north", "castilla-y-leon", 4)),
+  attacker: side(army("north-san-marcial-22", "north", "castilla-y-leon", 4), army("north-argel-27", "north", "castilla-y-leon", 4)),
   attackerFactionId: "north",
   column: 1,
   defender: side(army("rep-covadonga-4", "republic", "madrid", 6)),
   die: 2,
-  losses: [loss("north-san-marcial-22", 700, true), loss("north-la-victoria-28", 350)],
+  losses: [loss("north-san-marcial-22", 700, true), loss("north-argel-27", 350)],
   modifiers: [dugIn(2), resistance],
   oddsLabel: "1:1",
   result: "attacker-attrition",

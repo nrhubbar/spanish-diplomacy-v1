@@ -1,7 +1,7 @@
 import { type JSX, useMemo } from "react";
 import { territoriesWithin, unitKindIn, unitTypeIn } from "../../engine/air/pieces";
 import { compareIds } from "../../engine/board";
-import type { GameState, Scenario, UnitId, UnitState } from "../../engine/types";
+import type { AirMission, GameState, Scenario, UnitId, UnitState } from "../../engine/types";
 import { aircraftCounterText } from "../../presentation/airPane";
 import { glyphs } from "../../presentation/glyphs";
 import { cssVariables } from "../../presentation/style";
@@ -123,7 +123,7 @@ export function AirLayer({ game, placements, scenarioPackage, toScreen, unitSymb
     const from = counters.find((entry) => entry.unit.id === order.unitId);
     const target = missionTerritoryId(scenario, order.mission);
     if (from === undefined || target === undefined) return [];
-    const to = toScreen(mapTerritory(map, target).label);
+    const to = toScreen(missionPoint(map, order.mission) ?? mapTerritory(map, target).label);
     return [{ from: { x: from.position.x + airCounterWidth / 2, y: from.position.y + airCounterHeight / 2 }, id: order.unitId, kind: order.mission.kind, to }];
   });
 
@@ -163,6 +163,11 @@ export function AirLayer({ game, placements, scenarioPackage, toScreen, unitSymb
       })}
     </div>
   );
+}
+
+/** U14 (note 7): a raid's line ends on its target sub-territory's town; other missions end on the territory. */
+function missionPoint(map: MapPackage, mission: AirMission): MapPoint | undefined {
+  return mission.kind === "raid" ? map.subTerritories?.entries.get(mission.subTerritoryId)?.capital : undefined;
 }
 
 /** U2: a circle around the base through the farthest territory in range, in screen space. */

@@ -92,5 +92,7 @@ export function projectIcon(scenario: Scenario, project: BuildProject): EconomyI
     }
     case "improvement":
       return project.improvement === "rail" ? "rail" : "anchor";
+    case "link":
+      return project.work === "road-upgrade" ? "flag" : "rail";
   }
 }

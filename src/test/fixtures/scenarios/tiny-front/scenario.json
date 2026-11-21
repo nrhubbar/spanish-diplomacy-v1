@@ -17,7 +17,7 @@
       ["both-demoralized", "defender-demoralized", "defender-exchange", "defender-eliminated", "defender-eliminated", "defender-eliminated", "defender-eliminated"],
       ["defender-demoralized", "defender-exchange", "defender-eliminated", "defender-eliminated", "defender-eliminated", "defender-eliminated", "defender-eliminated"]
     ],
-    "belowOneToOne": { "kind": "halving", "rollPenalty": 1 },
+    "belowOneToOne": { "@type": "halving", "@data": { "rollPenalty": 1 } },
     "diggingIn": { "perTurn": 1, "max": 2 },
     "demoralizationFactor": 0.5,
     "factionModifiers": [
@@ -25,7 +25,6 @@
     ]
   },
   "ai": {
-    "blunderChance": 0,
     "profiles": {
       "red": {
         "computer": { "approachObjective": 1.5, "bouncedLastTurn": -4, "caution": 0.5, "demoralizedShare": 0.25, "enemyLoss": 0.5, "ownLoss": 0.75 },
@@ -66,18 +65,18 @@
     }
   ],
   "territories": [
-    { "id": "westfold", "name": "Westfold", "countsForVictory": true, "initialControl": { "kind": "controlled", "factionId": "red" } },
-    { "id": "highlands", "name": "Highlands", "countsForVictory": true, "initialControl": { "kind": "controlled", "factionId": "red" } },
-    { "id": "harbor", "name": "Harbor", "countsForVictory": true, "initialControl": { "kind": "controlled", "factionId": "blue" } },
-    { "id": "lowlands", "name": "Lowlands", "countsForVictory": true, "initialControl": { "kind": "controlled", "factionId": "blue" } },
-    { "id": "isle", "name": "Isle", "countsForVictory": true, "initialControl": { "kind": "contested", "factionIds": ["red", "blue"] } }
+    { "id": "westfold", "name": "Westfold", "countsForVictory": true, "initialControl": { "@type": "controlled", "@data": { "factionId": "red" } } },
+    { "id": "highlands", "name": "Highlands", "countsForVictory": true, "initialControl": { "@type": "controlled", "@data": { "factionId": "red" } } },
+    { "id": "harbor", "name": "Harbor", "countsForVictory": true, "initialControl": { "@type": "controlled", "@data": { "factionId": "blue" } } },
+    { "id": "lowlands", "name": "Lowlands", "countsForVictory": true, "initialControl": { "@type": "controlled", "@data": { "factionId": "blue" } } },
+    { "id": "isle", "name": "Isle", "countsForVictory": true, "initialControl": { "@type": "contested", "@data": { "factionIds": ["red", "blue"] } } }
   ],
   "connections": [
-    { "between": ["westfold", "highlands"], "kind": "land" },
-    { "between": ["highlands", "harbor"], "kind": "land" },
-    { "between": ["harbor", "lowlands"], "kind": "land" },
-    { "between": ["lowlands", "westfold"], "kind": "land" },
-    { "between": ["harbor", "isle"], "kind": "sea", "label": "Narrows" }
+    { "@type": "land", "@data": { "between": ["westfold", "highlands"] } },
+    { "@type": "land", "@data": { "between": ["highlands", "harbor"] } },
+    { "@type": "land", "@data": { "between": ["harbor", "lowlands"] } },
+    { "@type": "land", "@data": { "between": ["lowlands", "westfold"] } },
+    { "@type": "sea", "@data": { "between": ["harbor", "isle"], "label": "Narrows" } }
   ],
   "cities": [
     { "id": "west-town", "name": "West Town", "territoryId": "westfold", "countsForVictory": true, "initialController": "red" },

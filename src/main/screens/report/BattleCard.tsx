@@ -1,9 +1,10 @@
-import { type JSX, useEffect, useRef } from "react";
+import { Fragment, type JSX, useEffect, useRef } from "react";
 import type { GameState, Scenario } from "../../engine/types";
 import { type BattleGroup, type BattleKind, decisiveBattle } from "../../presentation/battle";
 import { cardFlavor, flavorSeed, occupationLine, placeName } from "../../presentation/battleText";
 import { emblemMarkup } from "../../presentation/outcomeArt";
 import { battleTitle, resultKeyOf } from "../../presentation/grades";
+import { BattleAir } from "./BattleAir";
 import { BattleEngagement } from "./BattleEngagement";
 import { BattleRule } from "./BattleRule";
 import { revealInPane } from "./focus";
@@ -66,7 +67,12 @@ export function BattleCard({ finalState, focused, group, onToggle, open, reveal,
       </summary>
       <div className="battle-card-body">
         <p className="battle-flavor">{line}</p>
-        {group.battles.map((entry) => <BattleEngagement battle={entry.battle} key={entry.index} labelled={several} scenario={scenario} />)}
+        {group.battles.map((entry) => (
+          <Fragment key={entry.index}>
+            {entry.air === undefined ? null : <BattleAir air={entry.air} scenario={scenario} />}
+            <BattleEngagement battle={entry.battle} labelled={several} scenario={scenario} />
+          </Fragment>
+        ))}
         <BattleRule finalState={finalState} group={group} scenario={scenario} />
       </div>
     </details>

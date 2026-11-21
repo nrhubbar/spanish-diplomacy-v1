@@ -31,7 +31,7 @@ export interface RouteCount {
   readonly share: number;
 }
 
-/** Every metric for one cell: one variant, with or without blunders (H3). */
+/** Every metric for one cell: one variant (H3). */
 export interface RunMetrics {
   readonly battles: {
     readonly byColumn: Readonly<Record<string, ColumnResults>>;

@@ -1,5 +1,5 @@
 import { currentLevel, maxLevel, projectCost, queuedLevel } from "../engine/economy/catalogue";
-import type { BuildingEffect, BuildProject, ResourceId, Resources, Scenario, SubTerritoryState } from "../engine/types";
+import type { BuildingEffect, BuildProject, LinkWork, ResourceId, Resources, Scenario, SubTerritoryState } from "../engine/types";
 import { glyphs } from "./glyphs";
 
 /**
@@ -52,7 +52,10 @@ export function signed(value: number): string {
   return value < 0 ? `${glyphs.minus}${String(-value)}` : `+${String(value)}`;
 }
 
-/** The project's base name: the building, the track, Rail or Port. */
+/** R7: the link works as the build lists name them. */
+export const linkWorkNames: Readonly<Record<LinkWork, string>> = { "new-rail": "New rail line", "rail-upgrade": "Rail upgrade", "road-upgrade": "Road upgrade" };
+
+/** The project's base name: the building, the track, Rail or Port, or the link work. */
 export function projectBaseName(scenario: Scenario, project: BuildProject): string {
   switch (project.kind) {
     case "building":
@@ -61,13 +64,15 @@ export function projectBaseName(scenario: Scenario, project: BuildProject): stri
       return scenario.index.development.get(project.developmentId)?.name ?? project.developmentId;
     case "improvement":
       return project.improvement === "rail" ? "Rail" : "Port";
+    case "link":
+      return linkWorkNames[project.work];
   }
 }
 
 /** A project as the queue shows it: "Factory", or "Farms 1 \u2192 2" for a level after those queued ahead. */
 export function projectName(scenario: Scenario, site: SubTerritoryState | undefined, project: BuildProject, levelBefore?: number): string {
   const base = projectBaseName(scenario, project);
-  if (project.kind === "building" || site === undefined) return base;
+  if (project.kind === "building" || project.kind === "link" || site === undefined) return base;
   const from = levelBefore ?? queuedLevel(site, project);
   return `${base} ${String(from)} ${glyphs.arrow} ${String(from + 1)}`;
 }
@@ -107,6 +112,8 @@ export function projectEffectText(scenario: Scenario, project: BuildProject): st
     }
     case "improvement":
       return project.improvement === "rail" ? "longer rail moves" : "lands more armies";
+    case "link":
+      return project.work === "road-upgrade" ? "a main road for trucks" : "longer rail moves";
     case "building": {
       const building = scenario.index.buildings.get(project.buildingId);
       if (building === undefined) return undefined;

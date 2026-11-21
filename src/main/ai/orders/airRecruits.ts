@@ -57,7 +57,7 @@ export function airRecruitChoices(
   if (antiAir !== undefined && !defended && underAirThreat(scenario, state, factionId, territoryId)) choices.push(antiAir);
   const counts = airCounts(scenario, state, factionId);
   if (counts.aircraft * groundPerAircraft < counts.ground) {
-    const order = ["raid", "intercept", "recon"];
+    const order = ["raid", "patrol", "recon"];
     const air = open
       .filter((type) => type.air !== undefined)
       .map((type) => ({ need: Math.min(...(type.air?.missions ?? []).map((mission) => counts.missions.get(mission) ?? 0)), rank: Math.min(...(type.air?.missions ?? []).map((mission) => order.indexOf(mission))), type }))

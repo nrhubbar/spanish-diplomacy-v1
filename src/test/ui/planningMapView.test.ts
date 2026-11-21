@@ -59,7 +59,6 @@ describe("the planning map's view (O1, C1, U2, X3)", () => {
     const destinations = [territory("murcia")];
     expect(oddsDestinations({ ...emptyDraft, stage: { orderKind: "withdraw", step: "choose-destination" } }, destinations)).toEqual([]);
     expect(oddsDestinations({ ...emptyDraft, stage: { orderKind: "move", step: "choose-destination" } }, destinations)).toBe(destinations);
-    expect(oddsDestinations({ ...emptyDraft, stage: { step: "choose-order" } }, destinations)).toBe(destinations);
     expect(oddsDestinations(emptyDraft, destinations)).toBe(destinations);
   });
 
@@ -69,7 +68,7 @@ describe("the planning map's view (O1, C1, U2, X3)", () => {
     // The first click elsewhere selects the territory instead.
     expect(focusesOnClick(scenario, inMadrid, sub("burgos"))).toBe(false);
     expect(focusesOnClick(scenario, emptyDraft, sub("madrid"))).toBe(false);
-    expect(focusesOnClick(scenario, { ...inMadrid, stage: { step: "choose-order" } }, sub("madrid"))).toBe(false);
+    expect(focusesOnClick(scenario, { ...inMadrid, stage: { orderKind: "move", step: "choose-destination" } }, sub("madrid"))).toBe(false);
     expect(focusesOnClick(scenario, inMadrid, sub("atlantis"))).toBe(false);
   });
 });

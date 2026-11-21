@@ -36,9 +36,42 @@ export function subTerritoryGraph(scenario: Scenario): ReadonlyMap<SubTerritoryI
   return frozen;
 }
 
+/** Sub-territory adjacency over land only: the borders, plus each land connection's entry pair. */
+const landGraphs = new WeakMap<Scenario, ReadonlyMap<SubTerritoryId, readonly SubTerritoryId[]>>();
+
+export function landGraph(scenario: Scenario): ReadonlyMap<SubTerritoryId, readonly SubTerritoryId[]> {
+  const cached = landGraphs.get(scenario);
+  if (cached !== undefined) return cached;
+  const graph = new Map<SubTerritoryId, SubTerritoryId[]>();
+  const link = (a: SubTerritoryId, b: SubTerritoryId): void => {
+    graph.set(a, [...(graph.get(a) ?? []), b]);
+    graph.set(b, [...(graph.get(b) ?? []), a]);
+  };
+  for (const [a, b] of scenario.subTerritoryBorders) link(a, b);
+  for (const connection of scenario.connections) {
+    if (connection.kind === "land" && connection.entry !== undefined && connection.entry[0] !== connection.entry[1]) link(connection.entry[0], connection.entry[1]);
+  }
+  landGraphs.set(scenario, graph);
+  return graph;
+}
+
+/**
+ * D5 (R3): the graph an attack from `origin` into `target` is measured on. Where the two share a
+ * land connection the attack is read as by land, so a sea lane between them (Malaga's) does not
+ * bring the ground beyond its port nearer; otherwise the full graph, sea entries included.
+ */
+export function frontGraph(scenario: Scenario, origin: TerritoryId, target: TerritoryId): ReadonlyMap<SubTerritoryId, readonly SubTerritoryId[]> {
+  const byLand = scenario.connections.some((connection) => connection.kind === "land"
+    && connection.between.includes(origin) && connection.between.includes(target) && origin !== target);
+  return byLand ? landGraph(scenario) : subTerritoryGraph(scenario);
+}
+
 /** Steps from the nearest source to every sub-territory reachable over the graph (breadth first). */
-export function distancesFrom(scenario: Scenario, sources: Iterable<SubTerritoryId>): ReadonlyMap<SubTerritoryId, number> {
-  const graph = subTerritoryGraph(scenario);
+export function distancesFrom(
+  scenario: Scenario,
+  sources: Iterable<SubTerritoryId>,
+  graph: ReadonlyMap<SubTerritoryId, readonly SubTerritoryId[]> = subTerritoryGraph(scenario)
+): ReadonlyMap<SubTerritoryId, number> {
   const distance = new Map<SubTerritoryId, number>();
   let frontier = [...new Set(sources)];
   for (const id of frontier) distance.set(id, 0);
@@ -59,24 +92,36 @@ export function distancesFrom(scenario: Scenario, sources: Iterable<SubTerritory
   return distance;
 }
 
-/** Where an attack comes from, as distance sources: every sub-territory of each origin territory, plus extra ones. */
-export function attackSources(scenario: Scenario, origins: Iterable<TerritoryId>, extra: Iterable<SubTerritoryId> = []): readonly SubTerritoryId[] {
-  return [...new Set([...[...origins].flatMap((id) => subTerritoriesOf(scenario, id).map((sub) => sub.id)), ...extra])];
+/**
+ * P4: how far an attack on `target` is from each sub-territory: the nearest of every origin
+ * territory's sub-territories (each measured on its `frontGraph`) and the `extra` ones (the
+ * gainer's own ground inside, measured over land).
+ */
+export function attackDistances(scenario: Scenario, target: TerritoryId, origins: Iterable<TerritoryId>, extra: Iterable<SubTerritoryId> = []): ReadonlyMap<SubTerritoryId, number> {
+  const best = new Map<SubTerritoryId, number>();
+  const merge = (distances: ReadonlyMap<SubTerritoryId, number>): void => {
+    for (const [id, steps] of distances) if (steps < (best.get(id) ?? Number.POSITIVE_INFINITY)) best.set(id, steps);
+  };
+  for (const origin of new Set(origins)) {
+    merge(distancesFrom(scenario, subTerritoriesOf(scenario, origin).map((sub) => sub.id), frontGraph(scenario, origin, target)));
+  }
+  merge(distancesFrom(scenario, extra, landGraph(scenario)));
+  return best;
 }
 
 /**
  * P4: the sub-territories of `territoryId` that `losers` hold, in the order they fall: nearest
- * the sources first, the capital last, ties (and unreachable ones) in scenario order.
+ * the attack first (`distance`, from `attackDistances`), the capital last, ties (and unreachable
+ * ones) in scenario order.
  */
 export function flipOrder(
   scenario: Scenario,
   holdings: Holdings,
   territoryId: TerritoryId,
   losers: ReadonlySet<FactionId>,
-  sources: readonly SubTerritoryId[]
+  distance: ReadonlyMap<SubTerritoryId, number>
 ): readonly SubTerritoryId[] {
   const capital = scenario.index.territories.get(territoryId)?.capitalSubTerritoryId;
-  const distance = distancesFrom(scenario, sources);
   const rank = (id: SubTerritoryId): number => scenario.subTerritories.findIndex((sub) => sub.id === id);
   return subTerritoriesOf(scenario, territoryId)
     .filter((sub) => {

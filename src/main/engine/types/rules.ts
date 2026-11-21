@@ -68,7 +68,7 @@ export const unitSymbols = [
 export type UnitSymbol = (typeof unitSymbols)[number];
 
 /** U2: the missions an aircraft may fly. */
-export const airMissionKinds = ["raid", "intercept", "support", "recon"] as const;
+export const airMissionKinds = ["raid", "patrol", "support", "recon"] as const;
 export type AirMissionKind = (typeof airMissionKinds)[number];
 
 /** Sub-territory terrain. Mountain and swamp cost one move on the way in (M1). */

@@ -114,22 +114,27 @@ describe("computer development and support builds (M5, m4, m5)", () => {
     expect([...developed].sort()).toEqual(target.factions.map((entry) => entry.id).sort());
   });
 
-  it("the Recruit planner saves the development item's price when it can spare it, and never holds Manpower back", () => {
+  it("the Recruit planner saves the development item's price when it can spare it, and holds back Manpower only for the factory (R9)", () => {
     const start = initialGameState(target);
     const view = viewFor(target, start, republic);
     const context = { factionId: republic, scenario: target, state: view };
     const saving = developmentTarget(context);
     expect(saving?.order.project.kind).toBe("development");
     const reserve = buildReserve(context, { funds: 20, manpower: 50 } as never);
-    expect(Object.keys(reserve)).toEqual(["funds"]);
+    // R9: the factory's 6 Manpower is the only build price in Manpower, so only the profile's share of it is kept.
+    expect(Object.keys(reserve)).toEqual(["funds", "manpower"]);
+    expect(amountOf(reserve, "manpower" as never)).toBe(Math.floor(50 * (target.ai.profiles[republic]?.builds?.reserveShare ?? 0)));
     expect(amountOf(reserve, funds)).toBe(Math.max(6, amountOf(saving!.price, funds)));
     // A poor faction recruits first: the price is more than half its balance, so only the share is kept.
-    expect(buildReserve(context, { funds: 10 } as never)).toEqual({ funds: amountOf(saving!.price, funds) <= 5 ? amountOf(saving!.price, funds) : 3 });
+    expect(buildReserve(context, { funds: 10 } as never)).toEqual({ funds: amountOf(saving!.price, funds) <= 5 ? amountOf(saving!.price, funds) : 3, manpower: 0 });
     // With an item already queued, it keeps only the profile's share.
     const queued = saving!.order;
     const busy: GameState = { ...start, subTerritories: { ...start.subTerritories, [queued.subTerritoryId]: { ...start.subTerritories[queued.subTerritoryId]!, queue: [{ factionId: republic, paid: {}, progress: 0, project: queued.project }] } } };
     expect(developmentTarget({ ...context, state: viewFor(target, busy, republic) })).toBeUndefined();
-    expect(buildReserve({ ...context, state: viewFor(target, busy, republic) }, { funds: 40 } as never)).toEqual({ funds: 12 });
+    // With no ground of its own, there is nothing to develop.
+    const landless: GameState = { ...start, subTerritories: Object.fromEntries(Object.entries(start.subTerritories).map(([id, site]) => [id, { ...site, holder: faction("north") }])) };
+    expect(developmentTarget({ ...context, state: viewFor(target, landless, republic) })).toBeUndefined();
+    expect(buildReserve({ ...context, state: viewFor(target, busy, republic) }, { funds: 40 } as never)).toEqual({ funds: 12, manpower: 0 });
   });
 
   it("builds a Hospital at a front capital and a Rail yard where there is rail, once a territory, when nothing better is left", () => {

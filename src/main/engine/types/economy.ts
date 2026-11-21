@@ -78,14 +78,24 @@ export interface DataBasis {
 }
 
 /** W2: a province, or a scenario override. Units never stand in one. */
+/** D4: what a sub-territory may build: a building id, a development track id, or an improvement. */
+export type BuildableId = BuildingId | DevelopmentId | "port" | "rail";
+
 export interface SubTerritoryDefinition {
   readonly basis: DataBasis;
+  /** D4: everything it may build, listed in data; there are no rule defaults. */
+  readonly buildable: readonly BuildableId[];
   readonly buildings: readonly BuildingId[];
   readonly cityIds: readonly CityId[];
   readonly development: Readonly<Record<DevelopmentId, number>>;
   readonly id: SubTerritoryId;
   readonly name: string;
   readonly port: number;
+  /**
+   * The starting station level, read from the sub-territory's links (D3, declog D6): 2 when any
+   * of them has main rail, 1 when any has single rail, else 0. Rail range and connectivity are
+   * the links' (R5); the station level sets departures and takes damage (`engine/network/links.ts`).
+   */
   readonly rail: number;
   /** P1: the holder on the scenario's start date, whatever the territory's controller. */
   readonly startHolder: FactionId;
@@ -107,6 +117,4 @@ export interface RecruitmentRules {
 export interface MovementRules {
   /** M5: armies a friendly port lands per turn, per port level. */
   readonly landingsPerPortLevel: number;
-  /** M3: rail range in territories, per level of the lowest rail on the route. */
-  readonly railRangePerLevel: number;
 }

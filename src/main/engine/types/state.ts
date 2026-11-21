@@ -12,6 +12,7 @@ import type {
   WeatherZoneId
 } from "../ids";
 import type { Resources } from "./economy";
+import type { LinkModifier } from "./links";
 import type { TerritoryControl, UnitDefinition } from "./scenario";
 
 /** C6: a demoralized army fights at reduced values and recovers after a turn of rest (O4). */
@@ -31,6 +32,8 @@ export interface UnitState {
   readonly morale: Morale;
   /** Men now. Starts at the definition's `strength`; only Replenish raises it (R5). */
   readonly strength: number;
+  /** R1: where the army stands inside a contested territory (its pocket), kept only there. */
+  readonly subTerritoryId?: SubTerritoryId;
   readonly territoryId: TerritoryId;
 }
 
@@ -45,7 +48,27 @@ export interface Fortification {
 export type BuildProject =
   | { readonly buildingId: BuildingId; readonly kind: "building" }
   | { readonly developmentId: DevelopmentId; readonly kind: "development" }
-  | { readonly improvement: "port" | "rail"; readonly kind: "improvement" };
+  | { readonly improvement: "port" | "rail"; readonly kind: "improvement" }
+  | LinkProject;
+
+/** A project built in a sub-territory: everything but link works. */
+export type SiteProject = Exclude<BuildProject, LinkProject>;
+
+/** R7: the works a link may take: a new rail line, a rail upgrade (single to main), a road upgrade. */
+export const linkWorks = ["new-rail", "rail-upgrade", "road-upgrade"] as const;
+export type LinkWork = (typeof linkWorks)[number];
+
+/**
+ * R7: works on the link between bordering sub-territories `a` and `b`, queued in one of them
+ * (the Build order's `subTerritoryId`). Prices and turns are the scenario's `linkProjects`. A
+ * finished work changes the link's modifiers in `GameState.builtLinks`.
+ */
+export interface LinkProject {
+  readonly a: SubTerritoryId;
+  readonly b: SubTerritoryId;
+  readonly kind: "link";
+  readonly work: LinkWork;
+}
 
 /** $5: one queued item, paid in full when queued. Only the first item of a queue progresses. */
 export interface QueueItem {
@@ -139,6 +162,11 @@ export interface GameState {
    * whole points (`engine/recruitment/rules.ts`). Hidden like the treasuries. Absent: nothing owed.
    */
   readonly replenishCarry?: Readonly<Record<FactionId, Resources>>;
+  /**
+   * R7: links whose modifiers changed in play (a new railway, an upgraded road or line), keyed
+   * by `linkKey`; each entry replaces the scenario's modifiers for that link. Absent: none changed.
+   */
+  readonly builtLinks?: Readonly<Record<string, readonly LinkModifier[]>>;
   readonly turnNumber: number;
   readonly units: Readonly<Record<UnitId, UnitState>>;
   /** Absent without the weather module, and before the first roll. */

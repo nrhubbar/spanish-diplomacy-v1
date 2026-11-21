@@ -61,7 +61,7 @@ describe("a general's command bonus and trait (D4, U5, U6)", () => {
   });
 
   it("applies the general's +1 in the turn's battles through the combatModifiers hook", () => {
-    const attack = ["north-san-marcial-22", "north-san-quintin-25", "north-la-victoria-28"].map((id) => move("north", id, "castilla-y-leon", "madrid"));
+    const attack = ["north-san-marcial-22", "north-san-quintin-25"].map((id) => move("north", id, "castilla-y-leon", "madrid"));
     const result = resolveTurn(scenario, state, [{ factionId: faction("north"), orders: attack }], seed);
     const battle = result.outcomes.find((outcome) => outcome.kind === "battle");
     expect(battle?.modifiers.filter((modifier) => modifier.kind === "general")).toEqual([{ factionId: "republic", generalId: "jose-miaja", kind: "general", role: "defence", roll: -1 }]);

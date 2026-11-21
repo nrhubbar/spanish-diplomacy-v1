@@ -20,9 +20,9 @@ export const battleStreamTag = 0x62617474;
  * rolls are exactly those of Milestone 2. Each tag spells its kind in ASCII.
  */
 export const rollStreamTags = {
+  /** "airb": a battle's air battle (R11); the index is the battle's index in the turn. */
+  "air-battle": 0x61697262,
   battle: battleStreamTag,
-  /** "blun": computer-player blunders (H6); the index is the faction's scenario index. */
-  blunder: 0x626c756e,
   /** "gend": a general's death roll (U5); the index is the death's order in the turn. */
   "general-death": 0x67656e64,
   /** "raid": an air raid's roll (U3); the index is the raid's order in the turn. */

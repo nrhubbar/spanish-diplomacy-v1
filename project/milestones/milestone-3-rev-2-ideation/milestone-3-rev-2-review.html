@@ -1,0 +1,934 @@
+<title>Milestone 3 Rev 2 Review</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,500;8..60,700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a design-review dossier. Sticky index on the left (top bar on phones), one reading column, widgets and questions as set-off "cards on the table". */
+:root {
+  --bg: #e6dfcd;          /* table canvas, from the app's --canvas */
+  --paper: #fbf6ea;       /* reading sheet, the app's --paper */
+  --surface: #f4eddc;     /* widget card */
+  --surface-2: #ebe2cc;   /* inset rows, table heads */
+  --ink: #241d18;
+  --ink-soft: #5b4d40;
+  --line: #c9bba0;
+  --accent: #7d2f2a;      /* oxblood, the app's --accent */
+  --accent-ink: #fbf6ea;
+  --gold: #b8891a;
+  --route: #1f3550;
+  --good: #2f7d4f;
+  --bad: #9e2b2b;
+  --warn: #b5730f;
+  --rep: #b1493f;
+  --nic: #a3841f;
+  --sic: #665089;
+  --c1: #7a1f1a; --c2: #b5483c; --c3: #d99a6c; --c4: #cbbf9f; --c5: #7d9bb5; --c6: #3f6a90; --c7: #1f3550;
+  --serif: "Source Serif 4", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --shadow: 0 1px 0 rgb(36 29 24 / 8%), 0 6px 18px rgb(36 29 24 / 8%);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #17120e; --paper: #221a14; --surface: #2b221a; --surface-2: #352a20;
+    --ink: #efe5d2; --ink-soft: #c2b29b; --line: #4d3f31; --accent: #d9897e; --accent-ink: #1b1410;
+    --gold: #e0b54a; --route: #9cb7d6; --good: #6fc08f; --bad: #e07a72; --warn: #e5a54a;
+    --rep: #d9786d; --nic: #d9b84a; --sic: #a88fd1;
+    --c1: #e07a72; --c2: #c9665b; --c3: #b98a63; --c4: #6f6555; --c5: #5f86a8; --c6: #7fa6cc; --c7: #b5cfe8;
+    --shadow: 0 1px 0 rgb(0 0 0 / 30%), 0 6px 18px rgb(0 0 0 / 30%);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #17120e; --paper: #221a14; --surface: #2b221a; --surface-2: #352a20;
+  --ink: #efe5d2; --ink-soft: #c2b29b; --line: #4d3f31; --accent: #d9897e; --accent-ink: #1b1410;
+  --gold: #e0b54a; --route: #9cb7d6; --good: #6fc08f; --bad: #e07a72; --warn: #e5a54a;
+  --rep: #d9786d; --nic: #d9b84a; --sic: #a88fd1;
+  --c1: #e07a72; --c2: #c9665b; --c3: #b98a63; --c4: #6f6555; --c5: #5f86a8; --c6: #7fa6cc; --c7: #b5cfe8;
+  --shadow: 0 1px 0 rgb(0 0 0 / 30%), 0 6px 18px rgb(0 0 0 / 30%);
+  color-scheme: dark;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 72px; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 var(--sans); -webkit-font-smoothing: antialiased; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+a { color: var(--route); text-underline-offset: 2px; }
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+h1, h2, h3, h4 { font-family: var(--serif); line-height: 1.2; text-wrap: balance; margin: 0; }
+code, kbd { font-family: var(--mono); font-size: 0.86em; background: var(--surface-2); padding: 0.05em 0.3em; border-radius: 3px; }
+
+.shell { display: grid; grid-template-columns: 270px minmax(0, 1fr); gap: 28px; max-width: 1180px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 24px 64px; }
+.toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); align-self: start; max-height: calc(100vh - 32px); overflow: auto;
+  background: var(--paper); border: 1px solid var(--line); border-radius: 6px; padding: 14px 14px 16px; font-size: 0.86rem; }
+.toc h2 { font-size: 1rem; margin-bottom: 6px; }
+.toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; }
+.toc li.group { margin-top: 10px; font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-soft); font-weight: 600; }
+.toc a { display: flex; justify-content: space-between; gap: 8px; padding: 3px 6px; border-radius: 4px; text-decoration: none; color: var(--ink); }
+.toc a:hover { background: var(--surface-2); }
+.toc a.active { background: var(--surface-2); box-shadow: inset 2px 0 0 var(--accent); }
+.toc .count { font-family: var(--mono); font-size: 0.72rem; color: var(--ink-soft); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.answerbox { display: grid; gap: 8px; padding-bottom: 12px; margin-bottom: 10px; border-bottom: 1px solid var(--line); }
+.progress-text { font-family: var(--mono); font-size: 0.8rem; font-variant-numeric: tabular-nums; }
+.progress-track { height: 6px; background: var(--surface-2); border-radius: 3px; overflow: hidden; }
+.progress-fill { height: 100%; width: 0; background: var(--accent); transition: width 0.2s; }
+.btn { font: 600 0.86rem var(--sans); border: 1px solid var(--ink); background: var(--accent); color: var(--accent-ink); border-radius: 5px; padding: 8px 12px; cursor: pointer; min-height: 38px; }
+.btn.secondary { background: transparent; color: var(--ink); border-color: var(--line); font-weight: 500; }
+.btn-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.copy-status { font-size: 0.78rem; color: var(--good); min-height: 1.1em; }
+.copy-fallback { width: 100%; min-height: 140px; font: 0.75rem/1.4 var(--mono); }
+.mobile-bar { display: none; }
+
+main { min-width: 0; display: grid; gap: 22px; }
+.sheet { background: var(--paper); border: 1px solid var(--line); border-radius: 6px; padding: 28px clamp(16px, 4vw, 44px) 32px; box-shadow: var(--shadow); min-width: 0; }
+.sheet > * + * { margin-top: 0.9rem; }
+.masthead .eyebrow, .eyebrow { font: 600 0.72rem var(--sans); letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
+.masthead h1 { font-size: clamp(1.9rem, 4.5vw, 2.7rem); }
+.masthead .meta { font-family: var(--mono); font-size: 0.8rem; color: var(--ink-soft); display: flex; flex-wrap: wrap; gap: 6px 18px; }
+.group-head { padding: 6px 4px 0; }
+.group-head h2 { font-size: 1.05rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-soft); font-family: var(--sans); font-weight: 600; }
+.group-head p { color: var(--ink-soft); font-size: 0.92rem; max-width: 70ch; }
+.sheet h2 { font-size: clamp(1.4rem, 3vw, 1.8rem); }
+.sheet h2 .idea-no { font-family: var(--mono); font-size: 0.8em; color: var(--accent); margin-right: 0.4em; }
+.sheet h3 { font-size: 1.12rem; margin-top: 1.6rem; padding-top: 0.9rem; border-top: 1px solid var(--line); }
+.sheet h4 { font-size: 1rem; margin-top: 1.2rem; }
+.sheet p, .sheet li { max-width: 72ch; }
+.sheet ul, .sheet ol { padding-left: 1.25rem; }
+.sheet li + li { margin-top: 0.25rem; }
+.sheet blockquote { margin: 0; padding: 8px 14px; border-left: 3px solid var(--gold); background: var(--surface); font-family: var(--serif); font-style: italic; }
+.summary-line { font-family: var(--serif); font-size: 1.12rem; }
+.table-wrap, .w-scroll { overflow-x: auto; max-width: 100%; -webkit-overflow-scrolling: touch; }
+.sheet table, .w-table { border-collapse: collapse; width: 100%; font-size: 0.88rem; }
+.sheet th, .sheet td, .w-table th, .w-table td { border-bottom: 1px solid var(--line); padding: 6px 8px; text-align: left; vertical-align: top; }
+.sheet th, .w-table th { background: var(--surface-2); font-weight: 600; }
+.sheet td:first-child { min-width: 9rem; }
+.recommend { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--good); padding: 10px 14px; border-radius: 4px; }
+
+figure.mockup { margin: 1rem 0 0; }
+figure.mockup img { display: block; width: 100%; height: auto; border: 1px solid var(--line); border-radius: 4px; background: var(--surface-2); }
+figure.mockup figcaption { font-size: 0.8rem; color: var(--ink-soft); margin-top: 6px; }
+.missing { font-size: 0.85rem; color: var(--ink-soft); background: var(--surface-2); padding: 10px 12px; border-radius: 4px; border: 1px dashed var(--line); }
+
+/* Widgets */
+.widget { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 14px 16px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; font-size: 0.9rem; min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
+.widget > *, .w-row > *, .w-grid > * { min-width: 0; max-width: 100%; }
+.widget svg, .widget canvas { max-width: 100%; height: auto; }
+.widget h4, .widget h5 { margin: 0; font-family: var(--serif); }
+.w-row { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
+.w-label { font-weight: 600; font-size: 0.82rem; color: var(--ink-soft); }
+.w-out { font-family: var(--mono); font-weight: 500; background: var(--paper); border: 1px solid var(--line); border-radius: 4px; padding: 1px 7px; font-variant-numeric: tabular-nums; }
+.w-note { font-size: 0.78rem; color: var(--ink-soft); }
+.w-bar-track { background: var(--surface-2); border-radius: 3px; height: 14px; overflow: hidden; min-width: 60px; flex: 1; }
+.w-bar { height: 100%; background: var(--accent); min-width: 1px; }
+.w-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+.w-card { background: var(--paper); border: 1px solid var(--line); border-radius: 4px; padding: 8px 10px; min-width: 0; }
+.widget select, .widget input[type=number], .widget input[type=text] { font: inherit; color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 4px; padding: 4px 6px; min-height: 34px; max-width: 100%; }
+.widget input[type=range] { accent-color: var(--accent); max-width: 100%; }
+.widget button { font: 500 0.84rem var(--sans); color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 4px; padding: 5px 10px; cursor: pointer; min-height: 34px; }
+.widget button[aria-pressed="true"], .widget button.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.widget label { display: inline-flex; align-items: center; gap: 6px; }
+.widget-error { color: var(--bad); font-size: 0.85rem; }
+
+/* Questions */
+.questions { display: grid; gap: 12px; }
+.q { border: 1px solid var(--line); border-radius: 6px; background: var(--surface); padding: 12px 14px 14px; margin: 0; min-width: 0; }
+.q.answered { border-left: 4px solid var(--good); }
+.q legend { display: contents; }
+.q .q-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; margin-bottom: 8px; }
+.q .q-id { font-family: var(--mono); font-size: 0.74rem; background: var(--paper); border: 1px solid var(--line); border-radius: 3px; padding: 0 6px; color: var(--ink-soft); }
+.q .q-text { font-weight: 600; flex: 1 1 260px; }
+.q .q-ctx { font-size: 0.84rem; color: var(--ink-soft); margin: 0 0 8px; max-width: 72ch; }
+.q .opt > span { min-width: 0; overflow-wrap: anywhere; }
+.phone-row { display: flex; flex-wrap: wrap; gap: 16px; }
+.phone-row figure.mockup { flex: 0 1 280px; margin: 0; }
+figure.mockup figcaption ul { margin: 0.2rem 0 0; padding-left: 1.1rem; }
+figure.mockup img { cursor: zoom-in; }
+.q .q-multi { font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--route); border: 1px solid currentColor; border-radius: 3px; padding: 0 5px; }
+.q .opt { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; align-items: start; padding: 6px 8px; border-radius: 4px; cursor: pointer; }
+.q .opt:hover { background: var(--surface-2); }
+.q .opt input { margin-top: 4px; accent-color: var(--accent); width: 17px; height: 17px; }
+.q .opt .rec { color: var(--good); font-weight: 600; font-size: 0.82rem; margin-left: 4px; }
+.q .opt .why { grid-column: 2; font-size: 0.8rem; color: var(--ink-soft); }
+.q textarea { width: 100%; margin-top: 8px; min-height: 2.4rem; font: 0.86rem var(--sans); color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 4px; padding: 6px 8px; resize: vertical; }
+.q .notes-label { font-size: 0.76rem; color: var(--ink-soft); display: block; margin-top: 6px; }
+
+.sources ol { font-size: 0.82rem; overflow-wrap: anywhere; }
+.diagram { overflow-x: auto; }
+.diagram svg { display: block; min-width: 640px; width: 100%; height: auto; }
+.diagram svg text { fill: var(--ink); font-family: var(--sans); font-size: 12px; }
+.diagram .node { fill: var(--paper); stroke: var(--good); stroke-width: 1.2; }
+.diagram .node.later { fill: var(--surface-2); stroke: var(--ink-soft); stroke-dasharray: 4 3; }
+.diagram .edge { fill: none; stroke: var(--ink-soft); stroke-width: 1.4; }
+.diagram .arrowhead { fill: var(--ink-soft); }
+.diagram .band { fill: var(--surface-2); stroke: var(--line); }
+.diagram svg text.col { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; fill: var(--ink-soft); }
+.pill { display: inline-block; font: 600 0.72rem var(--sans); letter-spacing: 0.04em; padding: 1px 7px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface-2); }
+.pill.m3 { background: var(--good); color: var(--paper); border-color: var(--good); }
+.pill.later { background: var(--surface-2); }
+.pill.drop { color: var(--bad); border-color: var(--bad); }
+
+@media (max-width: 900px) {
+  html { scroll-padding-top: 64px; }
+  .shell { grid-template-columns: minmax(0, 1fr); gap: 16px; padding-block: 0 48px; }
+  .toc { position: static; max-height: none; display: none; }
+  .toc.open { display: block; position: fixed; inset: calc(env(safe-area-inset-top, 0px) + 56px) 0 0; z-index: 20; border-radius: 0; overflow: auto;
+    padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .mobile-bar { display: flex; position: sticky; top: env(safe-area-inset-top, 0px); z-index: 15; align-items: center; justify-content: space-between; gap: 10px;
+    background: var(--paper); border-bottom: 1px solid var(--line); margin: 0 calc(-1 * max(16px, env(safe-area-inset-left, 0px))); padding: 8px max(16px, env(safe-area-inset-right, 0px)) 8px max(16px, env(safe-area-inset-left, 0px)); }
+  .mobile-bar .progress-text { font-size: 0.75rem; }
+  .sheet { padding: 20px 16px 24px; }
+}
+</style>
+
+<div class="shell">
+  <div class="mobile-bar">
+    <button class="btn secondary" id="toc-toggle" type="button" aria-expanded="false" aria-controls="toc">Contents</button>
+    <span class="progress-text" data-progress-text>0 of 0 answered</span>
+    <button class="btn" type="button" data-copy>Copy my answers</button>
+  </div>
+  <nav class="toc" id="toc" aria-label="Contents">
+    <div class="answerbox">
+      <h2>Your answers</h2>
+      <span class="progress-text" data-progress-text>0 of 0 answered</span>
+      <div class="progress-track" aria-hidden="true"><div class="progress-fill" id="progress-fill"></div></div>
+      <div class="btn-row">
+        <button class="btn" type="button" data-copy>Copy my answers</button>
+        <button class="btn secondary" type="button" id="fill-rec">Use recommended for blanks</button>
+      </div>
+      <div class="btn-row">
+        <button class="btn secondary" type="button" id="clear-all">Clear all</button>
+        <button class="btn secondary" type="button" id="clear-confirm" hidden>Yes, clear every answer</button>
+      </div>
+      <div class="copy-status" id="copy-status" role="status" aria-live="polite"></div>
+      <div class="w-note" id="remote-status">Answers save in this browser. Use Copy my answers to send them to the team.</div>
+      <textarea class="copy-fallback" id="copy-fallback" hidden readonly aria-label="Your answers as Markdown"></textarea>
+    </div>
+    <h2>Contents</h2>
+    <ol>
+<li><a href="#verdicts"><span>Verdicts at a glance</span><span class="count"></span></a></li>
+<li><a href="#position"><span>Decision 0: where does an army stand?</span><span class="count" data-toc-idea="position"></span></a></li>
+<li><a href="#malaga"><span>Note 1: Málaga</span><span class="count" data-toc-idea="malaga"></span></a></li>
+<li><a href="#balance"><span>Note 2: balance</span><span class="count" data-toc-idea="balance"></span></a></li>
+<li><a href="#air"><span>Notes 3 and 7: fighters and bombers</span><span class="count" data-toc-idea="air"></span></a></li>
+<li><a href="#transport"><span>Notes 6 and 6a: rail and roads as a network</span><span class="count" data-toc-idea="transport"></span></a></li>
+<li><a href="#digin"><span>Note 12: dug-in</span><span class="count" data-toc-idea="digin"></span></a></li>
+<li><a href="#control"><span>Note 14: contested ground</span><span class="count" data-toc-idea="control"></span></a></li>
+<li><a href="#economy"><span>Notes 5 and 13: what can be built where, and factory Manpower</span><span class="count" data-toc-idea="economy"></span></a></li>
+<li><a href="#map"><span>Notes 4 and 8: what the map shows</span><span class="count" data-toc-idea="map"></span></a></li>
+<li><a href="#pane"><span>Notes 9 and 15: the Orders pane and Territory Info</span><span class="count" data-toc-idea="pane"></span></a></li>
+<li><a href="#report"><span>Note 10: "What happened" by player</span><span class="count" data-toc-idea="report"></span></a></li>
+<li><a href="#replenish"><span>Note 11: Replenish and the selection</span><span class="count" data-toc-idea="replenish"></span></a></li>
+<li><a href="#ledger"><span>Note 16: the balance view</span><span class="count" data-toc-idea="ledger"></span></a></li>
+<li><a href="#tooling"><span>Note 17: tools for building the game</span><span class="count" data-toc-idea="tooling"></span></a></li>
+<li><a href="#carry"><span>Carried over from Rev 1, and the order of work</span><span class="count" data-toc-idea="carry"></span></a></li>
+</ol>
+  </nav>
+  <main id="main">
+    <section class="sheet masthead-sheet" id="intro">
+<header class="masthead">
+<p class="eyebrow">Milestone 3 · Revision 2 · Design review</p>
+<h1>Milestone 3 Rev 2 Review</h1>
+<p class="meta"><span>20 Nov 2026</span><span>UI samples drawn over the live Rev 1 build</span><span>Sources: <code>project/milestones/milestone-3-rev-2-ideation/</code> on branch <code>m3r2-ideation</code></span></p>
+</header>
+
+<p class="summary-line">Your 17 notes for Rev 2, checked against the code, the 1936 record and how other strategy games handle the same problems. Most of them hold up. Two are plain bugs (notes 7 and 11). Two more (notes 1 and 14) are rules you chose in Rev 1 and now want changed. Three need reshaping before we build them: Mallorca, dug-in, and roads.</p>
+
+<p><strong>How to read this page.</strong></p>
+<ul>
+<li>Each note has a verdict, the evidence for it, and at most a few questions. The questions show a recommended answer, and <strong>Use recommended for blanks</strong> fills them all in.</li>
+<li><strong>Copy my answers</strong> produces Markdown keyed by question id, the same as in Rev 1.</li>
+<li><strong>UI samples</strong> are screenshots of the real app on turn 2 of a seeded game (seed 42, Republic). The new parts are mocked in the app&#39;s own styles. Numbers marked as example data are not real.</li>
+<li><strong>Sources</strong> are in <code>research/history.md</code> and <code>research/design.md</code>, with a URL on every claim. Code findings are in <code>milestone-3-rev-2-probe.md</code> on branch <code>m3r2-probe</code>, with failing tests that pin each bug.</li>
+<li><strong>Sims.</strong> The code probe also ran 400-game balance sims. You didn&#39;t ask for them; I added them. They&#39;re reported where they bear on a note.</li>
+</ul>
+<p><strong>The lens I used.</strong> The game works best when each turn is one clear decision per army, the odds can be read at a glance, and history pushes the players rather than being simulated in detail. Every new rule should force a choice the player can see. If it only adds bookkeeping, I flagged it.</p>
+
+</section>
+<section class="sheet" id="verdicts">
+<h2>Verdicts at a glance</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>#</th>
+<th>Note</th>
+<th>Verdict</th>
+<th>Size</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Málaga moves through enemy ground</td>
+<td><strong>Change a Rev 1 rule (P6).</strong> Fix the rule and the map data together</td>
+<td>M</td>
+</tr>
+<tr>
+<td>2</td>
+<td>North 1–2 fewer armies; no army on Mallorca</td>
+<td><strong>North: yes. Mallorca: no.</strong> A pinned garrison, not an empty island</td>
+<td>S</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Fighters and bombers as real units</td>
+<td><strong>Yes, refined:</strong> six orders, and one capped die bonus</td>
+<td>L</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Sub-territory borders past 250%</td>
+<td><strong>Yes</strong></td>
+<td>S</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Per-sub-territory building lists</td>
+<td><strong>Yes.</strong> A rule in the data, with overrides</td>
+<td>S</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Rail as a graph</td>
+<td><strong>Yes.</strong> The largest change in Rev 2</td>
+<td>L</td>
+</tr>
+<tr>
+<td>6a</td>
+<td>Roads, terrain and trucks</td>
+<td><strong>Yes, reshaped:</strong> road levels and named passes, not a road/no-road switch</td>
+<td>L</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Raid lines to the target sub-territory</td>
+<td><strong>Bug.</strong> Fix</td>
+<td>S</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Map Layers toolbar</td>
+<td><strong>Yes</strong></td>
+<td>M</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Queue and progress at a glance</td>
+<td><strong>Yes.</strong> One shared queue component</td>
+<td>M</td>
+</tr>
+<tr>
+<td>10</td>
+<td>&quot;What happened&quot; grouped by player</td>
+<td><strong>Yes</strong></td>
+<td>S</td>
+</tr>
+<tr>
+<td>11</td>
+<td>Group Replenish; select none after an order</td>
+<td><strong>Bug</strong> (selection) <strong>plus UX</strong> (Replenish)</td>
+<td>S–M</td>
+</tr>
+<tr>
+<td>12</td>
+<td>Dug-in 1/2/3 pips, 2/4/6 on the roll</td>
+<td><strong>Yes, but it softens dug-in.</strong> Today it is 3/6/9</td>
+<td>S</td>
+</tr>
+<tr>
+<td>13</td>
+<td>Factory costs Manpower</td>
+<td><strong>Yes, but it won&#39;t fix the Manpower pile-up on its own</strong></td>
+<td>S</td>
+</tr>
+<tr>
+<td>14</td>
+<td>Contested ground clears when one side leaves</td>
+<td><strong>Change a Rev 1 rule (the sweep).</strong> Keep one safeguard</td>
+<td>S–M</td>
+</tr>
+<tr>
+<td>15</td>
+<td>Orders pane and Territory Info pane</td>
+<td><strong>Yes.</strong> Keep &quot;what I ordered&quot; and &quot;what is here&quot; apart</td>
+<td>L</td>
+</tr>
+<tr>
+<td>16</td>
+<td>Funds and Manpower balance view</td>
+<td><strong>Yes</strong></td>
+<td>M</td>
+</tr>
+<tr>
+<td>17</td>
+<td>More agent tooling</td>
+<td>Three setup items worth doing; one conflicts with your M5 deferral</td>
+<td>S</td>
+</tr>
+</tbody></table></div>
+<p><strong>The thread through 1, 6, 6a, 7, 14 and 15.</strong> Today an army stands in a <em>territory</em>, never in a sub-territory. Your notes assume armies have a place inside a territory: Málaga&#39;s regiment is &quot;in Málaga&quot;, rail runs between sub-territories, and clicking a sub-territory opens its card. The first decision below settles how far to take that.</p>
+
+</section>
+<section class="sheet" id="position">
+<h2>Decision 0: where does an army stand?</h2>
+<p><strong>Today.</strong> An army&#39;s position is its territory. In a contested territory it may Attack or Withdraw. A withdrawal may leave through <em>any</em> sub-territory its side holds in that territory (rule P6, <code>partition/paths.ts</code>). So the Republican regiment at Málaga walks out through Jaén or Almería, even though South-held Granada sits between them. A Rev 1 test pins this as intended.</p>
+<p><strong>Options.</strong></p>
+<ul>
+<li><strong>A. Pockets (recommended).</strong> In a contested territory only, each side&#39;s armies belong to a <em>pocket</em>: a connected group of sub-territories that side holds. An army can leave only across the borders of its own pocket. Uncontested territories work exactly as today. The scenario names each army&#39;s starting pocket, and the engine works out pockets from the map at the end of each turn.</li>
+<li><strong>B. Every army stands in a sub-territory.</strong> This is the most faithful option, and it touches everything: combat, movement, orders, the map counters and the AI. It roughly doubles the number of places on the board, which works against the one-decision-per-army feel.</li>
+<li><strong>C. Keep territory positions.</strong> Fix Málaga with data only.</li>
+</ul>
+<p>Pockets give you the Málaga result, Oviedo under siege, and a real meaning for &quot;cut off&quot;, without changing the game&#39;s grain everywhere else. They also give rail (note 6) a natural rule: a line runs through your pocket or it doesn&#39;t.</p>
+<div class="questions" data-idea="position"></div>
+</section>
+<section class="sheet" id="malaga">
+<h2>Note 1: Málaga</h2>
+<p><strong>History refines this note.</strong> From 18 August 1936 Málaga was a Republican <em>peninsula</em>, not an island. It was joined to Almería by one thin coastal road through Motril. There was no railway: Málaga&#39;s only line ran north through Bobadilla, which the Nationalists held. Floods cut the road at Motril in January 1937. The Italian corps took Ventas de Zafarraya on 6 February, overlooking the road, and Málaga fell on 3–8 February. The refugees fled east along that same road (La Desbandá).</p>
+<p><strong>The game can&#39;t show that corridor.</strong> Granada is a single South-held sub-territory, and the coast around Motril sits inside it. So with pockets, Málaga is sealed. That is too harsh, both historically and for play: the Republican player has a regiment with no way out.</p>
+<p><strong>Recommendation.</strong> Split coastal Granada, with Motril, into its own sub-territory, Republican at the start. Join it to Málaga and Almería by <strong>road only</strong>. That gives the Republic a corridor the South can cut, which is the real Málaga campaign. It also makes Málaga a natural first test for roads (note 6a).</p>
+<div class="questions" data-idea="malaga"></div>
+</section>
+<section class="sheet" id="balance">
+<h2>Note 2: balance</h2>
+<p><strong>Today&#39;s armies:</strong> Republic 16, North 14, South 9. Rev 1&#39;s 1,000-game run gave the Republic 9.6% of decided games, the North 64.8% and the South 25.6%, against a target of about 20% for the Republic (H7).</p>
+<p><strong>The North. History supports a cut.</strong> Mola was short of ammunition, not men: 26,000 rounds, against the 600,000 Franco later sent him. Serrador took the Alto del León with 200–300 men. The Sierra front then froze until 1939. Three of the North&#39;s 14 units are historically besieged garrisons: two at Oviedo, and the Simancas barracks at Gijón.</p>
+<p><strong>Mallorca. History argues against removing the army.</strong> Mallorca and Ibiza went with the rising, and Menorca stayed Republican until February 1939. About 1,500 regulars and Guardia Civil threw back Bayo&#39;s landing of about 8,000 men (16 August to 12 September 1936), with Italian aircraft arriving from 27 August. The island then served as an Italian air and naval base. Bombers from Palma flew the March 1938 Barcelona raids.</p>
+<p><strong>What the sims say</strong> (400 games each, the same seeds, blunders on):</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Variant</th>
+<th>Republic</th>
+<th>North</th>
+<th>South</th>
+<th>Median turns</th>
+<th>Early wins</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Today</td>
+<td>10.0%</td>
+<td>65.8%</td>
+<td>24.2%</td>
+<td>13</td>
+<td>0</td>
+</tr>
+<tr>
+<td>North −1 (Salamanca regiment)</td>
+<td>12.5%</td>
+<td>58.8%</td>
+<td>28.8%</td>
+<td>14</td>
+<td>1</td>
+</tr>
+<tr>
+<td>North −2 (+ Sierra column)</td>
+<td>15.8%</td>
+<td>56.2%</td>
+<td>28.0%</td>
+<td>14</td>
+<td>0</td>
+</tr>
+<tr>
+<td>No army on Mallorca</td>
+<td>10.8%</td>
+<td>60.8%</td>
+<td>28.5%</td>
+<td>13</td>
+<td>2</td>
+</tr>
+<tr>
+<td>North −2, no Mallorca</td>
+<td>15.8%</td>
+<td>54.2%</td>
+<td>30.0%</td>
+<td>15</td>
+<td>5</td>
+</tr>
+</tbody></table></div>
+<p><strong>What this shows.</strong></p>
+<ul>
+<li>Cutting the North works. Cutting one army mostly helps the South. Cutting two gives the Republic the larger share (+5.8 points) and the South +3.8. At 400 games, differences under about 6 points are within noise, so the Republic&#39;s gain is borderline.</li>
+<li>Emptying Mallorca does almost nothing for the Republic. It also brings back the free sweep of the Baleares that Rev 1 closed (D23), and that is where the early wins come from.</li>
+<li>No unit cut reaches 20% for the Republic. That lever is the Republic&#39;s own strength (stocks, yields, AI), and it can wait for playtests.</li>
+</ul>
+<p><strong>Recommendation.</strong></p>
+<ul>
+<li><strong>North −2,</strong> taking out the Salamanca regiment and the Sierra column. The Sierra column is the historical one to cut: Mola&#39;s men stalled in the passes.</li>
+<li><strong>Mallorca:</strong> keep a garrison that can&#39;t leave the island. That stops Bayo&#39;s landing from being a walkover without adding to the South&#39;s field army. Optionally, base Italian bombers at Palma, which is what the island really contributed.</li>
+</ul>
+<div class="questions" data-idea="balance"></div>
+</section>
+<section class="sheet" id="air">
+<h2>Notes 3 and 7: fighters and bombers</h2>
+<p><strong>Today.</strong> Aircraft take one order, an air mission, of four kinds: raid, intercept, support and recon. They are off the board for steps 1 to 8 (D17). A bomber flying support adds +2 to a ground battle. Fighters add nothing to a battle.</p>
+<p><strong>History.</strong> Air power decided things locally:</p>
+<ul>
+<li>the airlift of the Army of Africa (Franco &quot;probably would have been defeated&quot; without it);</li>
+<li>Guadalajara;</li>
+<li>Asturias (200 aircraft against 35);</li>
+<li>the Ebro bridges (about 500 aircraft).</li>
+</ul>
+<p>Bombing cities hardened morale rather than breaking it. Interdiction of roads and bridges was the real bomber work: Guernica, and the Málaga road.</p>
+<p><strong>How other games do it.</strong></p>
+<ul>
+<li><strong>Axis &amp; Allies:</strong> air can&#39;t take ground, a raid is that bomber&#39;s only action for the turn, and raid damage is capped.</li>
+<li><strong>Europe Engulfed:</strong> air support is a small, capped bonus that weather can cancel.</li>
+<li><strong>Hearts of Iron IV:</strong> air missions are flown over regions, not over individual battles.</li>
+</ul>
+<p>All three agree that air shapes battles but never holds ground. The risk for us is an air subgame that muddies the turn.</p>
+<p><strong>Recommendation: units you can see, with a short list of orders.</strong></p>
+<ul>
+<li><strong>On the map.</strong> Aircraft are counters at their airfields. You select them and give orders like any unit, and the order menu shows only air orders.</li>
+<li><strong>Six orders, one per aircraft per turn:</strong><ul>
+<li><strong>Patrol</strong> (fighters): air cover over a territory. It intercepts raids and cancels enemy Ground Support one for one.</li>
+<li><strong>Ground Support</strong> (fighters or bombers): <strong>+3 on the d20 per aircraft unit, at most 2 per side per battle.</strong> +3 is exactly one odds column on our table, so players will feel it.</li>
+<li><strong>Interdict</strong> (bombers): hit a sub-territory or a road or rail link. Enemy moves through it cost more, and units there take fatigue.</li>
+<li><strong>Raid</strong> (bombers): a building or port, using today&#39;s raid table.</li>
+<li><strong>Recon:</strong> as today.</li>
+<li><strong>Airlift</strong> (Ju 52 only, scenario-gated): moves one small unit between airfields.</li>
+</ul>
+</li>
+<li><strong>Weather.</strong> Rain and snow ground all air.</li>
+<li><strong>Air never takes or holds ground.</strong></li>
+<li><strong>Note 7 is a bug.</strong> The raid line ends at the territory&#39;s label, not the target. It should end on the target sub-territory, or on the target link for Interdict.</li>
+</ul>
+<figure class="mockup"><a href="images/r2-07-raid.webp" target="_blank" rel="noopener" title="Open full size"><img src="images/r2-07-raid.webp" alt="A real raid on Guadalajara: the line ends on a crosshair over the outlined Guadalajara sub-territory; a faint ghost line shows today's end point"></a><figcaption>Note 7. The real raid on Guadalajara. The line now ends on a crosshair over the target sub-territory. The faint line shows where it ends today.</figcaption></figure>
+
+<div class="questions" data-idea="air"></div>
+</section>
+<section class="sheet" id="transport">
+<h2>Notes 6 and 6a: rail and roads as a network</h2>
+<p><strong>Today.</strong></p>
+<ul>
+<li>Rail is a level from 0 to 3 on each sub-territory. Any two bordering sub-territories that both have rail are joined, and range is 2 × the lowest level on the route.</li>
+<li>There are no roads at all. A one-territory step always fits, so mountains only stop the second step of a truck move. You&#39;re right that the north is too cheap to cross.</li>
+</ul>
+<p><strong>History strongly supports a graph.</strong></p>
+<ul>
+<li>The 1936 network was radial around Madrid, with clear junctions: Medina del Campo, Venta de Baños, Miranda, Alcázar de San Juan, Linares-Baeza, Bobadilla, Zaragoza.</li>
+<li>It had dead ends and single links:<ul>
+<li>Cuenca stopped at Aranjuez.</li>
+<li>Galicia&#39;s only link to the Meseta ran through León until 1958.</li>
+<li>The Cantabrian coast was joined east to west only by narrow gauge.</li>
+<li>Despeñaperros was the one Sierra Morena pass, for both road and rail.</li>
+</ul>
+</li>
+<li><code>research/history.md</code> has a province-to-province rail table rated by confidence, which is a starting graph to check.</li>
+</ul>
+<p><strong>Roads.</strong> One part of 6a needs reshaping. In 1936 roads ran almost everywhere at <em>some</em> quality. The strategic barriers were a handful of mountain passes, not missing roads. A strict &quot;no road, so infantry only&quot; border would be rare on a Spanish map. The thing that slowed armies was the pass. So the edge should carry the pass, not a yes or no.</p>
+<p><strong>Recommendation: one link type, three move modes.</strong></p>
+<ul>
+<li><strong>Data.</strong> Each border between two sub-territories gets one link record: a road level (none, track or main), a rail level (none, single or main), and an optional named obstacle (a pass or major river) with its cost. It lives in the scenario&#39;s map data, so the Seven Years&#39; War or WW1 can set different conditions.</li>
+<li><strong>March</strong> (any unit): one territory. Across a link with no road, infantry only. <strong>Crossing a named pass takes an extra turn,</strong> as marked on the images below, and Motor moves can&#39;t use passes. Defenders holding the far side of a pass get a bonus, as on the Guadarrama front, and at El Mazuco where 5,000 men held for 33 days.</li>
+<li><strong>Motor</strong> (units moving with a truck unit): up to two territories along <strong>main roads</strong>, never into contested ground, capped by the number of trucks. This is your &quot;road plus trucks acts like rail&quot;.</li>
+<li><strong>Rail</strong> (as today, on the graph): the route must follow rail links through sub-territories your side holds. Range is set by the weakest link. Laying a new line takes many turns. The Republic&#39;s 91 km bypass line (the Vía Negrín, Torrejón to Tarancón) was a major wartime project. Upgrading an existing line is cheaper.</li>
+<li><strong>The planner does the pathfinding.</strong> Select a unit and the reachable territories light up, with a reason on each one that isn&#39;t reachable. No player should trace routes by hand.</li>
+<li><strong>Keep your rail drawing exactly as it is.</strong> Roads are quieter lines, and passes get a glyph.</li>
+</ul>
+<p><strong>Your example.</strong> If Madrid joins Toledo, and Toledo joins Extremadura and Valencia, a train from Madrid can&#39;t reach Andalucía. That is exactly what the graph gives. Historically, though, Madrid did reach Andalucía, through Alcázar and Despeñaperros.</p>
+<figure class="mockup"><a href="images/r2-06-graph.webp" target="_blank" rel="noopener" title="Open full size"><img src="images/r2-06-graph.webp" alt="Rail drawn as today plus main roads (thin brown), minor roads (dashed) and pass glyphs, at 150%"></a><figcaption>The network at 150%. Rail is drawn exactly as today. Main roads are thin brown lines, minor roads are dashed, and costly passes have a glyph. Illustrative 1936 data.</figcaption></figure>
+<figure class="mockup"><a href="images/r2-06-passes.webp" target="_blank" rel="noopener" title="Open full size"><img src="images/r2-06-passes.webp" alt="Cantabrian range at 275% with named passes marked +1 turn and red crosses on links with no road"></a><figcaption>The Cantabrian range at 275%. Named passes (Pajares, Reinosa, Escudo, Orduña, Piedrafita, Padornelo) are marked, and red crosses show links with no road (infantry only). Illustrative data.</figcaption></figure>
+<figure class="mockup"><a href="images/r2-06-reach.webp" target="_blank" rel="noopener" title="Open full size"><img src="images/r2-06-reach.webp" alt="A real Move order from Valencia: rail highlighted only along connected Republic-held links to Barcelona and Murcia; cut lines dashed red with callouts"></a><figcaption>A real Move order from Valencia. Only connected links through Republican ground light up: Barcelona and Murcia are in reach. Callouts say why Almería (the line runs through South-held Granada) and Madrid (cut at Albacete) are not.</figcaption></figure>
+
+<div class="questions" data-idea="transport"></div>
+</section>
+<section class="sheet" id="digin">
+<h2>Note 12: dug-in</h2>
+<p><strong>Today it is stronger than you think.</strong> Works grow by 3 each quiet turn, up to 9, and the counter shows the works value itself. So players see 3, 6 or 9 pips and &quot;Dug in +9&quot;, and the attacker&#39;s roll drops by that much. <strong>Your 2/4/6 would soften entrenchment, not strengthen it.</strong> Please check this against what you&#39;ve seen on screen.</p>
+<p><strong>Odds on today&#39;s table</strong> (the chance that the attacker takes <em>all</em> the ground):</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Defender&#39;s works</th>
+<th>2:1</th>
+<th>3:1</th>
+<th>4:1</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>None</td>
+<td>35%</td>
+<td>50%</td>
+<td>65%</td>
+</tr>
+<tr>
+<td>Today, full (−9)</td>
+<td>0%</td>
+<td>5%</td>
+<td>20%</td>
+</tr>
+<tr>
+<td>Today, full, in a Republican city (−13)</td>
+<td>0%</td>
+<td>0%</td>
+<td>0%</td>
+</tr>
+<tr>
+<td>Yours, full (−6)</td>
+<td>5%</td>
+<td>20%</td>
+<td>35%</td>
+</tr>
+<tr>
+<td>Yours, full, in a Republican city (−10)</td>
+<td>0%</td>
+<td>0%</td>
+<td>15%</td>
+</tr>
+</tbody></table></div>
+<p><strong>History favours the softer values.</strong> Bilbao&#39;s Iron Belt fell in under two days to about 150 guns plus aircraft. Madrid held through numbers and street fighting, not prepared works. The Ebro ridges were too rocky to dig. Today&#39;s −9 is a WW1 stalemate engine in a war of manoeuvre. The sims show 2/4/6 doesn&#39;t move the balance, and games end about a turn sooner.</p>
+<p><strong>Recommendation.</strong></p>
+<ul>
+<li>Make your change: pips 1, 2 and 3; the roll takes −2, −4 and −6.</li>
+<li>Cap works by terrain: level 3 only in mountains and cities, level 2 elsewhere.</li>
+<li>Ground Support (note 3) gives attackers a real counter, as flanking and artillery do in WW1 designs like Paths of Glory.</li>
+<li>The Fortifications building currently gives only +1, which is less than one quiet turn of digging. Make it start a garrison at works level 1 and raise its cap by one.</li>
+</ul>
+<div class="questions" data-idea="digin"></div>
+</section>
+<section class="sheet" id="control">
+<h2>Note 14: contested ground</h2>
+<p><strong>Today.</strong> A territory stays contested while two or more factions hold sub-territories in it, whether or not anyone has armies there. Where only one side has armies, it takes one enemy sub-territory per turn. That &quot;sweep&quot; was your Rev 1 rule (Q-MR-21). Both failures you describe are confirmed by tests:</p>
+<ul>
+<li>after the Republic withdraws from Andalucía, the territory stays contested;</li>
+<li>when the attacker is destroyed, the territory stays contested.</li>
+</ul>
+<p><strong>Other games agree with you.</strong></p>
+<ul>
+<li>Axis &amp; Allies: control goes to whoever has surviving land units, and if both sides are wiped out, the defender keeps it.</li>
+<li>Paths of Glory: control changes when units enter, not when they retreat.</li>
+</ul>
+<p><strong>Recommendation.</strong> Work out &quot;contested&quot; at the end of each turn from <strong>whose ground armies are present</strong>. If only one side has armies there, every sub-territory flips to it. Keep two safeguards:</p>
+<ul>
+<li><strong>If both sides are wiped out,</strong> the holders keep what they held.</li>
+<li><strong>Aircraft never count.</strong></li>
+</ul>
+<p>The sweep was also pacing the game. Losing it may bring back early wins. The main risk is turn 1: if any territory starts contested with one side holding sub-territories but no army there, it flips at once. Rev 1&#39;s garrisons (D30) were added to close exactly that gap, so Rev 2 checks every starting contested territory before this ships.</p>
+<div class="questions" data-idea="control"></div>
+</section>
+<section class="sheet" id="economy">
+<h2>Notes 5 and 13: what can be built where, and factory Manpower</h2>
+<p><strong>Note 5. Today</strong> any sub-territory can build a port, inland Madrid included. Only the max level is checked. Industry needs a city, and the Factory needs the capital and a city.</p>
+<p><strong>History.</strong> The ports and arms industry were on the coasts and in the north: Cataluña, Vizcaya and Gipuzkoa, Asturias, Cartagena, Ferrol. Madrid is inland.</p>
+<p><strong>Recommendation.</strong> Write the rule into the data (a port needs a coast, a factory needs a city) and allow per-sub-territory overrides. A rule carries over to other eras; an override handles the odd case.</p>
+<p><strong>Note 13. History supports it.</strong> Catalonia&#39;s war industry employed 50,000 to 80,000 people, and conscription competed with the factories for them. Your idea creates a real choice between the factory and the front. <strong>But</strong> the AI builds almost no factories (0.01 to 0.06 a game), and it spends only 30–60% of its Manpower. A factory cost alone won&#39;t fix the Manpower pile-up from the Rev 1 sitrep. In the sim, factories took 0.1% of Manpower.</p>
+<p><strong>Recommendation.</strong> Add a one-time Manpower cost, and in Rev 2 also teach the AI to buy factories, so the cost actually bites. An upkeep cost is more historical, but it adds a ledger line to every turn. Keep it in reserve.</p>
+<div class="questions" data-idea="economy"></div>
+</section>
+<section class="sheet" id="map">
+<h2>Notes 4 and 8: what the map shows</h2>
+<p><strong>Note 4.</strong> No zoom level draws sub-territory borders today. Only contested territories get a fill and hatch. Past 250%, draw every sub-territory border and name. Tie this to a Map Layers switch, so players can turn it off.</p>
+<figure class="mockup"><a href="images/r2-04-zoom-225.webp" target="_blank" rel="noopener" title="Open full size"><img src="images/r2-04-zoom-225.webp" alt="225%: today's map, sub-territories only in contested ground"></a><figcaption>At 225%, just below the line: the app as it is today.</figcaption></figure>
+<figure class="mockup"><a href="images/r2-04-zoom-275.webp" target="_blank" rel="noopener" title="Open full size"><img src="images/r2-04-zoom-275.webp" alt="275%: dashed sub-territory borders and names everywhere"></a><figcaption>At 275%: dashed sub-territory borders and names everywhere.</figcaption></figure>
+
+<p><strong>Note 8.</strong> No layer controls exist today. Two designs:</p>
+<figure class="mockup"><a href="images/r2-08-layers-a.webp" target="_blank" rel="noopener" title="Open full size"><img src="images/r2-08-layers-a.webp" alt="Option A: a Layers toolbar along the bottom of the map with nine toggles"></a><figcaption><b>A. A toolbar along the bottom</b> with nine toggles: Sub-territories, Rail, Roads, Weather, Order lines, Supply, Contested, Battles, Labels. Every switch is in view, but nine is a lot of chrome.</figcaption></figure>
+<figure class="mockup"><a href="images/r2-08-layers-b.webp" target="_blank" rel="noopener" title="Open full size"><img src="images/r2-08-layers-b.webp" alt="Option B: a Layers button opening a popover with presets and switches"></a><figcaption><b>B. One Layers button</b> with three presets (Orders, Logistics, Economy) and the switches beneath. Here Logistics is on, so order lines are hidden.</figcaption></figure>
+
+<p><strong>Recommendation.</strong> A, as you asked, but with B&#39;s three presets as the first three buttons, and the nine switches folded into a &quot;More&quot; menu at the end of the bar. Presets answer &quot;what am I doing now&quot;; individual switches are for fine-tuning. Also switch layers automatically while an order is being given: choosing a Rail move turns the Rail layer on.</p>
+<div class="questions" data-idea="map"></div>
+</section>
+<section class="sheet" id="pane">
+<h2>Notes 9 and 15: the Orders pane and Territory Info</h2>
+<p><strong>Today.</strong> The right pane is <code>OrdersScreen</code>: a &quot;Selected territory&quot; section (with Units, Build and Recruit tabs), then &quot;Your orders&quot;. &quot;Your orders&quot; lists only moves and withdrawals. Builds, recruits, Replenish and air missions show up only where they were planned. Build cards already have progress bars, but recruit training is text only. Clicking a sub-territory focuses it only on the second click.</p>
+<p><strong>History and design.</strong> Paradox games keep the outliner (&quot;what I&#39;ve ordered&quot;) separate from the province window (&quot;what is here&quot;). Your note draws the same line. My concern is weight: four tabs, plus group-by modes, plus expandable cards, is a lot for one pane. The fix is <strong>one queue component used everywhere</strong>: the Orders list, the Buildings cards and the Recruit tab.</p>
+<figure class="mockup"><a href="images/r2-15-orders-by-type.webp" target="_blank" rel="noopener" title="Open full size"><img src="images/r2-15-orders-by-type.webp" alt="Orders mode grouped by type: unit orders, air missions, recruits, builds with progress bars, and the spend"></a><figcaption><b>Orders mode, by type.</b> Every order and project this turn, with the spend. The orders are the real draft.</figcaption></figure>
+<figure class="mockup"><a href="images/r2-15-orders-by-region.webp" target="_blank" rel="noopener" title="Open full size"><img src="images/r2-15-orders-by-region.webp" alt="The same orders grouped by region"></a><figcaption>The same orders, grouped by region.</figcaption></figure>
+<figure class="mockup"><a href="images/r2-15-info-buildings-a.webp" target="_blank" rel="noopener" title="Open full size"><img src="images/r2-15-info-buildings-a.webp" alt="Territory Info for Cataluña with an Orders back control, four tabs, Girona's card open with build options"></a><figcaption><b>A. The pane switches.</b> Zoomed in, clicking Girona opens <i>Cataluña</i> on the Buildings tab with Girona's card open, and an "← Orders 6" link back.</figcaption></figure>
+<figure class="mockup"><a href="images/r2-15-info-switch-b.webp" target="_blank" rel="noopener" title="Open full size"><img src="images/r2-15-info-switch-b.webp" alt="Option B: two persistent tabs at the top of the pane, Orders 6 and Cataluña"></a><figcaption><b>B. Two lasting tabs</b> at the top of the pane: "Orders 6" and the territory's name.</figcaption></figure>
+<figure class="mockup"><a href="images/r2-15-info-production-a.webp" target="_blank" rel="noopener" title="Open full size"><img src="images/r2-15-info-production-a.webp" alt="Production tab: Funds and Manpower by sub-territory summing to the territory's income"></a><figcaption>The Production tab shows where Cataluña's +3 Funds and +6k Manpower come from, sub-territory by sub-territory. The "Coming up" rows are example data.</figcaption></figure>
+<figure class="mockup"><a href="images/r2-09-queues.webp" target="_blank" rel="noopener" title="Open full size"><img src="images/r2-09-queues.webp" alt="Recruiting and building queues with progress bars, turns left and Next"></a><figcaption><b>Note 9.</b> Recruiting gets the same bar, turns left and "Next" as building. The queued "Next" recruit is example data.</figcaption></figure>
+<div class="phone-row"><figure class="mockup"><a href="images/r2-15-phone-info-a.webp" target="_blank" rel="noopener" title="Open full size"><img src="images/r2-15-phone-info-a.webp" alt="Phone: Territory Info sheet with back link, title and four tabs"></a><figcaption>Phone, option A. Four tabs still fit. Girona's open card is below the fold.</figcaption></figure></div>
+
+<p><strong>Recommendation.</strong> <strong>A</strong> on phone, where there&#39;s no room for two tab rows. <strong>B</strong> on desktop, so Orders is always one click away and you can see which mode you&#39;re in.</p>
+<div class="questions" data-idea="pane"></div>
+</section>
+<section class="sheet" id="report">
+<h2>Note 10: &quot;What happened&quot; by player</h2>
+<p>Today the summary is grouped by kind of event (battles, air, recruiting, building). Grouping by faction first, with the existing groups inside each, matches how a Diplomacy table reads results: power by power. Put your own faction first.</p>
+<figure class="mockup"><a href="images/r2-10-report.webp" target="_blank" rel="noopener" title="Open full size"><img src="images/r2-10-report.webp" alt="Turn 2 What happened regrouped by Republic, North, South"></a><figcaption>The real turn 2 report, regrouped by player, with the existing groups inside each.</figcaption></figure>
+
+<div class="questions" data-idea="report"></div>
+</section>
+<section class="sheet" id="replenish">
+<h2>Note 11: Replenish and the selection</h2>
+<p><strong>Bug, confirmed.</strong> After any order, the selection resets to every unit that has no order. After Entrench, the unit you just entrenched is selected again. It should be <strong>none</strong>.</p>
+<p><strong>Replenish.</strong> It is offered only when <em>every</em> selected unit is below strength, so one full unit in a group hides the button. Both designs below apply it to the eligible units and say which ones were skipped, and why.</p>
+<figure class="mockup"><a href="images/r2-11-replenish-a.webp" target="_blank" rel="noopener" title="Open full size"><img src="images/r2-11-replenish-a.webp" alt="Option A: one Replenish selected action listing skipped units and reasons"></a><figcaption><b>A. One action for the selection:</b> "Replenish selected (9 Funds · 1k)", naming the skipped units. Strengths and costs are example data.</figcaption></figure>
+<figure class="mockup"><a href="images/r2-11-replenish-b.webp" target="_blank" rel="noopener" title="Open full size"><img src="images/r2-11-replenish-b.webp" alt="Option B: Replenish checkbox column with a running total"></a><figcaption><b>B. A Replenish column</b> of checkboxes in the unit list, with a running total.</figcaption></figure>
+<figure class="mockup"><a href="images/r2-11-replenish-after.webp" target="_blank" rel="noopener" title="Open full size"><img src="images/r2-11-replenish-after.webp" alt="After the order: 0 of 5 selected, units read Replenishing"></a><figcaption>After the order: nothing is selected, and the units read "Replenishing".</figcaption></figure>
+
+<p><strong>Recommendation: A.</strong> It works the same way as every other order: select, then act. B adds a second, parallel way of selecting.</p>
+<div class="questions" data-idea="replenish"></div>
+</section>
+<section class="sheet" id="ledger">
+<h2>Note 16: the balance view</h2>
+<p>Today, clicking a chip shows totals only. The data for per-territory rows already exists (<code>incomeFor</code>, <code>subTerritoryYield</code>), and contested territories pay nobody. Victoria 3 treats nested breakdowns as essential, and ends on a total that matches the headline number.</p>
+<figure class="mockup"><a href="images/r2-16-funds.webp" target="_blank" rel="noopener" title="Open full size"><img src="images/r2-16-funds.webp" alt="Funds balance: one row per territory, contested rows with deduction, total matching the chip"></a><figcaption>Funds: territories held whole first, then contested ones ("Andalucía +1 −1 contested = 0"). The +12 total matches the chip.</figcaption></figure>
+<figure class="mockup"><a href="images/r2-16-manpower.webp" target="_blank" rel="noopener" title="Open full size"><img src="images/r2-16-manpower.webp" alt="Manpower balance"></a><figcaption>The same balance for Manpower.</figcaption></figure>
+<div class="phone-row"><figure class="mockup"><a href="images/r2-16-phone-funds.webp" target="_blank" rel="noopener" title="Open full size"><img src="images/r2-16-phone-funds.webp" alt="Funds balance on a phone"></a><figcaption>Funds on a Pixel 7.</figcaption></figure></div>
+
+<p><strong>Recommendation.</strong> Add expense rows below the territories (builds under way, Replenish, upkeep if note 13 adds it), so the view answers &quot;where did my money go&quot;, not only &quot;where did it come from&quot;.</p>
+<div class="questions" data-idea="ledger"></div>
+</section>
+<section class="sheet" id="tooling">
+<h2>Note 17: tools for building the game</h2>
+<p>A Claude Code docs agent checked these against current documentation; details are in <code>research/tooling.md</code>. Ranked by payoff for how we work:</p>
+<ol>
+<li><strong>A TypeScript language-server plugin.</strong> Install <code>typescript-language-server</code>, then run <code>/plugin install typescript-lsp@claude-plugins-official</code>. Agents get go-to-definition, find-references and type errors after each edit, so they read fewer whole files. This targets the 290k-token reviewers.</li>
+<li><strong>A diff-scoped reviewer agent,</strong> in <code>.claude/agents/</code>. It is handed a diff and a file list and doesn&#39;t range beyond them. It replaces &quot;read the whole codebase&quot; reviews.</li>
+<li><strong>Hooks</strong> in <code>.claude/settings.json</code>: block bare <code>git stash</code> (a fixer broke that rule in Rev 1), and run lint after edits.</li>
+<li><strong>Project skills</strong> for the routines we repeat: running sims, regenerating screenshots, and merging a slice and removing its worktree.</li>
+<li><strong>About 40 lines of project rules in <code>CLAUDE.md</code>.</strong> Your infra commit added a <code>CLAUDE.md</code>, but it holds only AWS guidance. Your memory notes don&#39;t reach sub-agents, and CLAUDE.md does. Today the stash rule, the worktree rule and the screenshot SOP never reach the workers. <strong>Adding project rules brings forward part of your M5 deferral,</strong> so it&#39;s your call.</li>
+<li><strong>Optional:</strong> Playwright MCP. Our e2e capture already covers most of what it would add. Skip GitHub MCP; <code>gh</code> does the job.</li>
+</ol>
+<div class="questions" data-idea="tooling"></div>
+</section>
+<section class="sheet" id="carry">
+<h2>Carried over from Rev 1, and the order of work</h2>
+<p><strong>Required before anything deploys.</strong></p>
+<ul>
+<li>CI&#39;s <code>verify</code> job runs the Linux visual baselines, which Rev 1 left stale. Deploy depends on <code>verify</code>, so nothing ships until they are regenerated.</li>
+<li>The production smoke test still expects 35 unit counters. Rev 1 added generals and aircraft, so it will fail after a deploy.</li>
+<li>Branch coverage is 93.39%, against a 93% gate. Rev 2&#39;s new rules need their tests written as they go.</li>
+<li>Add <code>infra/**</code> and <code>.claude/**</code> to vitest&#39;s exclude list.</li>
+</ul>
+<p><strong>Rev 1 decisions these notes settle.</strong></p>
+<ul>
+<li><strong>The balance lever:</strong> note 2.</li>
+<li><strong>Manpower piling up:</strong> note 13, partly.</li>
+<li><strong>D17 (aircraft are never ground combatants):</strong> kept, by note 3.</li>
+<li><strong>D27.2 and D27.3 (air):</strong> replaced by the six orders.</li>
+<li><strong>D5, D6 and the rest of D27 and D28:</strong> still open.</li>
+</ul>
+<p><strong>Suggested order.</strong></p>
+<ol>
+<li><strong>Data and fixes:</strong><ul>
+<li>the pockets model;</li>
+<li>the link data and the Granada split;</li>
+<li>the building rules;</li>
+<li>the bug fixes for notes 7, 11 and 14;</li>
+<li>the CI baselines and the smoke test.</li>
+</ul>
+</li>
+<li><strong>Rules:</strong><ul>
+<li>rail and Motor moves on the graph;</li>
+<li>dug-in;</li>
+<li>air orders;</li>
+<li>army cuts and the Mallorca garrison;</li>
+<li>factory Manpower.</li>
+</ul>
+</li>
+<li><strong>UI:</strong><ul>
+<li>the pane split and the shared queue component;</li>
+<li>map layers;</li>
+<li>the balance view;</li>
+<li>the report grouping;</li>
+<li>Replenish.</li>
+</ul>
+</li>
+</ol>
+<p>Rules come before UI because the pane, the layers and the balance view all show what the rules produce. Building them first means building them twice.</p>
+<div class="questions" data-idea="carry"></div>
+</section>
+
+  </main>
+</div>
+
+<script id="questions-data" type="application/json">[{"id":"Q-R2-0","idea":"position","text":"Where should an army stand?","context":"This decides notes 1, 6, 14 and 15.","options":[{"label":"A. Pockets: inside contested territories only, each side's armies belong to a connected group of held sub-territories and leave only across its borders","recommended":true,"rationale":"Gives Málaga, Oviedo and 'cut off' real meaning; uncontested territories are unchanged."},{"label":"B. Every army stands in a sub-territory","rationale":"The most faithful; it touches combat, movement, orders, counters and the AI, and doubles the places on the board."},{"label":"C. Keep territory positions; fix Málaga with data only"}],"groupTitle":"Where an army stands"},{"id":"Q-R2-1","idea":"malaga","text":"How should Málaga connect to the rest of the Republic?","options":[{"label":"Split coastal Granada (Motril) into a Republican sub-territory, joined to Málaga and Almería by road only","recommended":true,"rationale":"The historical corridor, which the South can cut."},{"label":"Start Granada contested"},{"label":"Leave Málaga sealed: it can leave only by sea"}],"groupTitle":"Málaga"},{"id":"Q-R2-2a","idea":"balance","text":"How much smaller should the North's starting army be?","options":[{"label":"Two fewer: the Salamanca regiment and the Sierra column","recommended":true,"rationale":"Sim: North 65.8% to 56.2%, Republic 10.0% to 15.8%. The Republic's gain is near the noise floor at 400 games."},{"label":"One fewer: the Salamanca regiment","rationale":"Sim: North 58.8%, Republic 12.5%."},{"label":"None removed; pin the Oviedo and Gijón garrisons in place instead"},{"label":"No change"}],"groupTitle":"Balance"},{"id":"Q-R2-2b","idea":"balance","text":"What should Mallorca have at the start?","options":[{"label":"A garrison that can't leave the island","recommended":true,"rationale":"Bayo's landing failed historically. An empty island brings back the free Baleares sweep and the early wins."},{"label":"A pinned garrison plus Italian bombers based at Palma"},{"label":"Nothing: remove the army","rationale":"Sim: Republic +0.8 points, and early wins return."},{"label":"Keep today's army"}],"groupTitle":"Balance"},{"id":"Q-R2-2c","idea":"balance","text":"No unit cut gets the Republic to 20%. What should Rev 2 do about that?","options":[{"label":"Accept about 15% for now, and revisit after playtests","recommended":true},{"label":"Keep the 20% target and tune another lever in Rev 2 (stocks, yields or the AI)"}],"groupTitle":"Balance"},{"id":"Q-R2-3a","idea":"air","text":"Air orders: is the six-order set right (Patrol, Ground Support, Interdict, Raid, Recon, Airlift)?","options":[{"label":"Yes, all six, with Airlift for the Ju 52 only, gated by the scenario","recommended":true},{"label":"Five: drop Airlift"},{"label":"Four: drop Airlift and Interdict"}],"groupTitle":"Air"},{"id":"Q-R2-3b","idea":"air","text":"What should air do on the d20?","options":[{"label":"Ground Support +3 per aircraft unit, at most 2 per side; enemy fighters on Patrol cancel one each; rain and snow ground all air","recommended":true,"rationale":"+3 is exactly one odds column, so players will feel it."},{"label":"Keep today's +2 from bombers only"},{"label":"Different values per aircraft type (explain in the notes)"}],"groupTitle":"Air"},{"id":"Q-R2-3c","idea":"air","text":"Should aircraft be counters at their airfields that you select and order like other units?","options":[{"label":"Yes","recommended":true},{"label":"No: keep air orders in the pane only"}],"groupTitle":"Air"},{"id":"Q-R2-6a","idea":"transport","text":"Should rail and roads be stored as one link record per pair of bordering sub-territories (road level, rail level, optional named pass or river)?","options":[{"label":"Yes, one link type in the scenario's map data","recommended":true},{"label":"Separate rail and road graphs"}],"groupTitle":"Rail and roads"},{"id":"Q-R2-6b","idea":"transport","text":"What should roads do?","options":[{"label":"Three move modes. March: one territory, infantry only across no-road links. Motor: two territories along main roads with trucks. Rail: on the graph","recommended":true},{"label":"Your original rule: no road means infantry only, a road means all units can cross, and road plus trucks acts like rail; no road levels"}],"groupTitle":"Rail and roads"},{"id":"Q-R2-6c","idea":"transport","text":"What should crossing a named mountain pass cost?","options":[{"label":"An extra turn; no Motor moves across passes; defenders beyond a pass get a bonus","recommended":true},{"label":"It ends the move there and adds fatigue"},{"label":"Fatigue only"}],"groupTitle":"Rail and roads"},{"id":"Q-R2-6d","idea":"transport","text":"Can players build new rail lines, or only upgrade existing ones?","options":[{"label":"Both: a new line takes many turns, and an upgrade is cheaper","recommended":true},{"label":"Upgrades only; the 1936 network is fixed"},{"label":"Neither in Rev 2"}],"groupTitle":"Rail and roads"},{"id":"Q-R2-6e","idea":"transport","text":"Where should the rail and road data come from?","options":[{"label":"The researched 1936 province table, with every inferred or unknown link checked against a period map before shipping","recommended":true},{"label":"A playable approximation; history second"}],"groupTitle":"Rail and roads"},{"id":"Q-R2-12a","idea":"digin","text":"Today, dug-in shows 3/6/9 pips and takes −3/−6/−9 off the roll. What should it be?","options":[{"label":"Pips 1/2/3, roll −2/−4/−6, with level 3 only in mountains and cities","recommended":true},{"label":"Pips 1/2/3, roll −2/−4/−6, level 3 everywhere"},{"label":"Pips 1/2/3 and keep −3/−6/−9"},{"label":"I meant something else (explain in the notes)"}],"groupTitle":"Dug-in"},{"id":"Q-R2-12b","idea":"digin","text":"The Fortifications building gives only +1 today. What should it do?","options":[{"label":"Start the garrison at works level 1 and raise its cap by one","recommended":true},{"label":"Leave it at +1"}],"groupTitle":"Dug-in"},{"id":"Q-R2-13","idea":"economy","text":"How should the factory's Manpower cost work?","options":[{"label":"A one-time cost (about 6), and teach the AI to build factories","recommended":true},{"label":"Ongoing upkeep each turn"},{"label":"A one-time cost only; leave the AI alone"}],"groupTitle":"Buildings and factories"},{"id":"Q-R2-5","idea":"economy","text":"How should each sub-territory's building list be set?","options":[{"label":"A rule in the data (a port needs a coast, a factory needs a city), with per-sub-territory overrides","recommended":true},{"label":"An explicit list on every sub-territory"}],"groupTitle":"Buildings and factories"},{"id":"Q-R2-14","idea":"control","text":"When a territory has armies from only one side at the end of a turn, does every sub-territory in it flip to that side?","options":[{"label":"Yes. If both sides are wiped out, holders keep what they held, and aircraft never count","recommended":true},{"label":"Yes, but a sub-territory with a city or fortifications takes one more turn"},{"label":"Keep the one-sub-territory-a-turn sweep"}],"groupTitle":"Contested ground"},{"id":"Q-R2-8","idea":"map","text":"Which Map Layers design?","options":[{"label":"A bottom toolbar whose first three buttons are presets (Orders, Logistics, Economy), with the switches under a More menu; layers also switch on automatically while you give an order","recommended":true},{"label":"A. The bottom toolbar with all nine switches"},{"label":"B. One Layers button with a popover"}],"groupTitle":"Map display"},{"id":"Q-R2-15","idea":"pane","text":"How should you switch between Orders and Territory Info?","options":[{"label":"B (two lasting tabs) on desktop, A (switch with a back link) on phone","recommended":true},{"label":"A everywhere"},{"label":"B everywhere"}],"groupTitle":"Orders and Territory Info"},{"id":"Q-R2-10","idea":"report","text":"Which faction should come first in the grouped report?","options":[{"label":"Your own faction, then the others","recommended":true},{"label":"A fixed order: Republic, North, South"}],"groupTitle":"Turn report"},{"id":"Q-R2-11","idea":"replenish","text":"Which Replenish design?","options":[{"label":"A. One action for the selection, naming skipped units and why","recommended":true},{"label":"B. A checkbox column with a running total"}],"groupTitle":"Replenish"},{"id":"Q-R2-16","idea":"ledger","text":"Should the balance view also list expenses (builds under way, Replenish, upkeep)?","options":[{"label":"Yes, with the total matching the chip","recommended":true},{"label":"No: income rows only"}],"groupTitle":"Balance view"},{"id":"Q-R2-17","idea":"tooling","multi":true,"text":"Which tooling should I set up at the start of Rev 2?","options":[{"label":"TypeScript language-server plugin","recommended":true},{"label":"A diff-scoped reviewer agent","recommended":true},{"label":"Hooks: block bare git stash; lint after edits","recommended":true},{"label":"Project skills: sims, screenshots, merge and worktree removal","recommended":true},{"label":"Project rules in the existing CLAUDE.md (brings forward part of the M5 deferral)"},{"label":"Playwright MCP"}],"groupTitle":"Tooling"},{"id":"Q-R2-C","idea":"carry","text":"Should Rev 2 start by regenerating the Linux baselines and fixing the production smoke test, so deploys are unblocked?","options":[{"label":"Yes, first","recommended":true},{"label":"Yes, but at the end of Rev 2"},{"label":"I'll handle it myself"}],"groupTitle":"Carry-over"}]</script>
+<script>
+
+</script>
+<script>
+(function () {
+  "use strict";
+  var KEY = "m3r2-review-answers-v1";
+  var questions = [];
+  try { questions = JSON.parse(document.getElementById("questions-data").textContent); } catch (e) { questions = []; }
+  var byId = {};
+  questions.forEach(function (q) { byId[q.id] = q; });
+  var answers = {};
+  try { var raw = window.localStorage.getItem(KEY); if (raw) answers = JSON.parse(raw) || {}; } catch (e) { answers = {}; }
+  var remote = null, remoteTimer = null;
+  function remoteStatus(text) { var s = document.getElementById("remote-status"); if (s) s.textContent = text; }
+  function pushRemote() {
+    if (!remote) return;
+    clearTimeout(remoteTimer);
+    remoteTimer = setTimeout(function () {
+      var n = 0; questions.forEach(function (q) { if (isAnswered(q.id)) n += 1; });
+      remote.set({ answers: answers, answered: n, total: questions.length, updatedAt: new Date().toISOString() }).then(
+        function () { remoteStatus("Saved to this artifact for the team."); },
+        function (e) { if (e && (e.code === "invalid_argument" || e.code === "revoked" || e.code === "not_granted")) { remote = null; remoteStatus("Saved in this browser only. Use Copy my answers to send them."); } });
+    }, 1200);
+  }
+  function save() { try { window.localStorage.setItem(KEY, JSON.stringify(answers)); } catch (e) { /* storage unavailable: answers live in the page only */ } pushRemote(); }
+  function isAnswered(id) { var a = answers[id]; return !!(a && a.choices && a.choices.length); }
+
+  function el(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
+
+  function renderQuestion(q) {
+    var fs = el("fieldset", "q"); fs.id = q.id; fs.setAttribute("data-qid", q.id);
+    var lg = el("legend"); var head = el("div", "q-head");
+    head.appendChild(el("span", "q-id", q.id));
+    head.appendChild(el("span", "q-text", q.text));
+    if (q.multi) head.appendChild(el("span", "q-multi", "Choose all that apply"));
+    lg.appendChild(head); if (q.context) lg.appendChild(el("p", "q-ctx", q.context)); fs.appendChild(lg);
+    var type = q.multi ? "checkbox" : "radio";
+    (q.options || []).forEach(function (o, i) {
+      var lab = el("label", "opt");
+      var inp = document.createElement("input"); inp.type = type; inp.name = q.id; inp.value = String(i); inp.id = q.id + "-o" + i;
+      var txt = el("span"); txt.appendChild(document.createTextNode(o.label));
+      if (o.recommended) txt.appendChild(el("span", "rec", "(Recommended)"));
+      lab.appendChild(inp); lab.appendChild(txt);
+      if (o.rationale) lab.appendChild(el("span", "why", o.rationale));
+      fs.appendChild(lab);
+      inp.addEventListener("change", function () { readQuestion(fs, q); });
+    });
+    var nl = el("label", "notes-label", "Other / notes"); nl.htmlFor = q.id + "-notes";
+    var ta = document.createElement("textarea"); ta.id = q.id + "-notes"; ta.rows = 1; ta.placeholder = "Optional: another option, a condition, or a reason";
+    ta.addEventListener("input", function () { readQuestion(fs, q); });
+    fs.appendChild(nl); fs.appendChild(ta);
+    applyAnswer(fs, q);
+    return fs;
+  }
+  function applyAnswer(fs, q) {
+    var a = answers[q.id] || {};
+    var chosen = (a.choices || []).map(String);
+    Array.prototype.forEach.call(fs.querySelectorAll("input"), function (inp) { inp.checked = chosen.indexOf(inp.value) >= 0; });
+    var ta = fs.querySelector("textarea"); if (ta) ta.value = a.notes || "";
+    fs.classList.toggle("answered", isAnswered(q.id));
+  }
+  function readQuestion(fs, q) {
+    var choices = [];
+    Array.prototype.forEach.call(fs.querySelectorAll("input"), function (inp) { if (inp.checked) choices.push(Number(inp.value)); });
+    var notes = fs.querySelector("textarea").value;
+    if (!choices.length && !notes.trim()) delete answers[q.id]; else answers[q.id] = { choices: choices, notes: notes };
+    fs.classList.toggle("answered", isAnswered(q.id));
+    save(); updateProgress();
+  }
+
+  var groups = {};
+  questions.forEach(function (q) { var k = String(q.idea); (groups[k] = groups[k] || []).push(q); });
+  Array.prototype.forEach.call(document.querySelectorAll(".questions[data-idea]"), function (box) {
+    var list = groups[box.getAttribute("data-idea")] || [];
+    if (!list.length) { box.appendChild(el("p", "missing", "No questions were drafted for this item.")); return; }
+    list.forEach(function (q) { box.appendChild(renderQuestion(q)); });
+  });
+
+  function updateProgress() {
+    var n = 0; questions.forEach(function (q) { if (isAnswered(q.id)) n += 1; });
+    var label = n + " of " + questions.length + " answered";
+    Array.prototype.forEach.call(document.querySelectorAll("[data-progress-text]"), function (s) { s.textContent = label; });
+    var fill = document.getElementById("progress-fill"); if (fill) fill.style.width = (questions.length ? (100 * n / questions.length) : 0) + "%";
+    Array.prototype.forEach.call(document.querySelectorAll("[data-toc-idea]"), function (c) {
+      var list = [];
+      c.getAttribute("data-toc-idea").split(",").forEach(function (k) { list = list.concat(groups[k] || []); });
+      var m = 0; list.forEach(function (q) { if (isAnswered(q.id)) m += 1; });
+      c.textContent = list.length ? (m + "/" + list.length) : "";
+    });
+  }
+
+  function answersMarkdown() {
+    var lines = ["# Milestone 3 Rev 2 review answers", ""];
+    var n = 0; questions.forEach(function (q) { if (isAnswered(q.id) || (answers[q.id] && answers[q.id].notes)) n += 1; });
+    lines.push("Answered " + n + " of " + questions.length + " questions. Copied " + new Date().toISOString().slice(0, 10) + ".", "");
+    var currentIdea = null;
+    questions.forEach(function (q) {
+      var a = answers[q.id]; if (!a) return;
+      if (q.idea !== currentIdea) { currentIdea = q.idea; lines.push("## " + (q.groupTitle || ("Idea " + q.idea)), ""); }
+      var picked = (a.choices || []).map(function (i) { var o = q.options[i]; return o ? o.label + (o.recommended ? " (Recommended)" : "") : "?"; });
+      lines.push("- **" + q.id + "** " + q.text);
+      lines.push("  - Answer: " + (picked.length ? picked.join("; ") : "(no option chosen)"));
+      if (a.notes && a.notes.trim()) lines.push("  - Notes: " + a.notes.trim().replace(/\s*\n\s*/g, " / "));
+    });
+    var blanks = questions.filter(function (q) { return !answers[q.id]; }).map(function (q) { return q.id; });
+    if (blanks.length) { lines.push("", "## Unanswered", "", blanks.join(", ")); }
+    return lines.join("\n") + "\n";
+  }
+  var status = document.getElementById("copy-status");
+  var fallback = document.getElementById("copy-fallback");
+  function showFallback(text) {
+    fallback.hidden = false; fallback.value = text; fallback.focus(); fallback.select();
+    status.textContent = "Copying is blocked here. The answers are selected below: copy them by hand.";
+  }
+  Array.prototype.forEach.call(document.querySelectorAll("[data-copy]"), function (b) {
+    b.addEventListener("click", function () {
+      var text = answersMarkdown();
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(function () { status.textContent = "Copied as Markdown. Paste it into the chat or the tasks doc."; fallback.hidden = true; },
+            function () { showFallback(text); });
+        } else { showFallback(text); }
+      } catch (e) { showFallback(text); }
+      if (window.matchMedia("(max-width: 900px)").matches) { document.getElementById("toc").classList.add("open"); document.getElementById("toc-toggle").setAttribute("aria-expanded", "true"); }
+    });
+  });
+  document.getElementById("fill-rec").addEventListener("click", function () {
+    var filled = 0;
+    questions.forEach(function (q) {
+      if (isAnswered(q.id)) return;
+      var picks = []; (q.options || []).forEach(function (o, i) { if (o.recommended && (q.multi || picks.length === 0)) picks.push(i); });
+      if (!picks.length) return;
+      var prev = answers[q.id] || { notes: "" };
+      answers[q.id] = { choices: picks, notes: prev.notes || "" }; filled += 1;
+    });
+    save();
+    Array.prototype.forEach.call(document.querySelectorAll("fieldset.q"), function (fs) { applyAnswer(fs, byId[fs.getAttribute("data-qid")]); });
+    updateProgress(); status.textContent = filled + " blank questions set to the recommended option. Review and change any you disagree with.";
+  });
+  var clearAll = document.getElementById("clear-all"), clearConfirm = document.getElementById("clear-confirm");
+  clearAll.addEventListener("click", function () { clearConfirm.hidden = !clearConfirm.hidden; });
+  clearConfirm.addEventListener("click", function () {
+    answers = {}; save(); clearConfirm.hidden = true;
+    Array.prototype.forEach.call(document.querySelectorAll("fieldset.q"), function (fs) { applyAnswer(fs, byId[fs.getAttribute("data-qid")]); });
+    updateProgress(); status.textContent = "All answers cleared.";
+  });
+  var toggle = document.getElementById("toc-toggle"), toc = document.getElementById("toc");
+  toggle.addEventListener("click", function () { var open = toc.classList.toggle("open"); toggle.setAttribute("aria-expanded", open ? "true" : "false"); });
+  Array.prototype.forEach.call(toc.querySelectorAll("ol a"), function (a) { a.addEventListener("click", function () { toc.classList.remove("open"); toggle.setAttribute("aria-expanded", "false"); }); });
+
+  // Widgets
+  Array.prototype.forEach.call(document.querySelectorAll(".widget[data-widget]"), function (w) {
+    var fn = window.M3W && window.M3W[w.getAttribute("data-widget")];
+    if (typeof fn !== "function") { w.appendChild(el("p", "widget-error", "This widget is not available.")); return; }
+    try { fn(w); } catch (e) { w.appendChild(el("p", "widget-error", "This widget failed to start: " + (e && e.message))); }
+  });
+
+  // Active section in the contents
+  var links = Array.prototype.slice.call(toc.querySelectorAll("ol a[href^='#']"));
+  if ("IntersectionObserver" in window) {
+    var map = {}; links.forEach(function (a) { map[a.getAttribute("href").slice(1)] = a; });
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) { if (en.isIntersecting && map[en.target.id]) { links.forEach(function (l) { l.classList.remove("active"); }); map[en.target.id].classList.add("active"); } });
+    }, { rootMargin: "-10% 0px -80% 0px" });
+    Object.keys(map).forEach(function (id) { var t = document.getElementById(id); if (t) io.observe(t); });
+  }
+  updateProgress();
+
+  // Optional: when this page runs as a claude.ai Artifact with storage, also keep answers there.
+  try {
+    if (window.claude && typeof window.claude.use === "function") {
+      Promise.all([window.claude.use("db"), window.claude.use("user")]).then(function (r) {
+        var db = r[0], user = r[1];
+        if (!db || !user) return null;
+        return user.id().then(function (uid) {
+          if (!uid) return null;
+          var ref; try { ref = db.doc("answers/" + uid); } catch (e) { return null; }
+          return ref.get().then(function (snap) {
+            remote = ref;
+            var d = snap.exists ? snap.data() : null;
+            if (d && d.answers && !Object.keys(answers).length) {
+              answers = d.answers;
+              try { window.localStorage.setItem(KEY, JSON.stringify(answers)); } catch (e) { /* ignore */ }
+              Array.prototype.forEach.call(document.querySelectorAll("fieldset.q"), function (fs) { applyAnswer(fs, byId[fs.getAttribute("data-qid")]); });
+              updateProgress();
+            }
+            remoteStatus("Answers save to this artifact for the team, and to this browser.");
+          });
+        });
+      }).catch(function () { /* no shared storage: browser only */ });
+    }
+  } catch (e) { /* no runtime */ }
+})();
+</script>

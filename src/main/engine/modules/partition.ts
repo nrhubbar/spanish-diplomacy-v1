@@ -10,7 +10,7 @@ const partitionSteps = { control: updateControl, occupation: settleOccupation };
 /**
  * The partition area's modules (P1-P8, C1). `provinces` derives territory control from the
  * sub-territories' holders (`partition/`): battle ground, occupation, the path rule and
- * withdrawals in step 6, standing-battle ground in step 7, and in step 8 the one-a-turn sweep,
+ * withdrawals in step 6, standing-battle ground in step 7, and in step 8 the whole-territory flip (R2), the pockets (R1),
  * rail damage and control. Its hooks validate Withdraw and refuse moves out of contested ground
  * (C1), require a path for retreats (P6), and stop works growing in contested ground.
  */

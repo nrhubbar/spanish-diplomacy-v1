@@ -103,6 +103,8 @@ export interface UnitTypeDefinition {
   readonly defence: number;
   /** E6: special effects, most types none or one. */
   readonly effects: readonly UnitEffect[];
+  /** R5: a foot unit may March across a link with no road. Absent means false. */
+  readonly foot?: boolean;
   readonly id: UnitTypeId;
   readonly kind: UnitKind;
   readonly name: string;

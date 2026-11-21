@@ -1,18 +1,23 @@
 import type {
+  BuildableId,
   BuildCost,
   BuildOrder,
   BuildProject,
   FactionId,
   GameState,
+  LinkModifier,
+  LinkProject,
   Order,
   QueueItem,
   Resources,
   Scenario,
+  SiteProject,
   SubTerritoryDefinition,
   SubTerritoryId,
   SubTerritoryState,
   ValidationResult
 } from "../types";
+import { linkBetween, linkKey, linkModifiers, stationCap, workMisfit } from "../network/links";
 import { isContested } from "./holdings";
 import { sumResources, canAfford, shortfall, subtractResources } from "./resources";
 
@@ -22,8 +27,8 @@ import { sumResources, canAfford, shortfall, subtractResources } from "./resourc
  * so they never disagree.
  */
 
-/** The part of the state a Build order is judged against: the sites and the balances. */
-export type EconomyState = Pick<GameState, "subTerritories" | "treasuries">;
+/** The part of the state a Build order is judged against: the sites, the balances and the links built in play (R7). */
+export type EconomyState = Pick<GameState, "builtLinks" | "subTerritories" | "treasuries">;
 
 /** A stable key for comparing projects. */
 export function projectKey(project: BuildProject): string {
@@ -34,6 +39,22 @@ export function projectKey(project: BuildProject): string {
       return `development:${project.developmentId}`;
     case "improvement":
       return `improvement:${project.improvement}`;
+    case "link":
+      return `link:${project.work}:${[project.a, project.b].sort().join("|")}`;
+  }
+}
+
+/** D4: the id a sub-territory's `buildable` list names the project by; undefined for link works. */
+export function buildableId(project: BuildProject): BuildableId | undefined {
+  switch (project.kind) {
+    case "building":
+      return project.buildingId;
+    case "development":
+      return project.developmentId;
+    case "improvement":
+      return project.improvement;
+    case "link":
+      return undefined;
   }
 }
 
@@ -50,6 +71,8 @@ export function projectCost(scenario: Scenario, project: BuildProject): BuildCos
       return scenario.index.development.get(project.developmentId)?.upgrade;
     case "improvement":
       return scenario.improvements?.[project.improvement];
+    case "link":
+      return scenario.linkProjects?.[project.work];
   }
 }
 
@@ -62,10 +85,12 @@ export function currentLevel(site: SubTerritoryState, project: BuildProject): nu
       return site.development[project.developmentId] ?? 0;
     case "improvement":
       return site[project.improvement];
+    case "link":
+      return 0;
   }
 }
 
-/** The highest level a project may reach; 1 for a building. */
+/** The highest level a project may reach; 1 for a building. A rail station's own cap is `levelCap`. */
 export function maxLevel(scenario: Scenario, project: BuildProject): number {
   switch (project.kind) {
     case "building":
@@ -74,7 +99,17 @@ export function maxLevel(scenario: Scenario, project: BuildProject): number {
       return scenario.index.development.get(project.developmentId)?.maxLevel ?? 0;
     case "improvement":
       return scenario.improvements?.[project.improvement].maxLevel ?? 0;
+    case "link":
+      return 0;
   }
+}
+
+/**
+ * The highest level a project may reach in one sub-territory: `maxLevel`, except a rail station,
+ * which a repair raises no higher than its best link allows (declog D12).
+ */
+export function levelCap(scenario: Scenario, state: Pick<GameState, "builtLinks">, subTerritoryId: SubTerritoryId, project: BuildProject): number {
+  return project.kind === "improvement" && project.improvement === "rail" ? stationCap(scenario, state, subTerritoryId) : maxLevel(scenario, project);
 }
 
 /** The level the project will have once the queue ahead of it is done. */
@@ -83,10 +118,10 @@ export function queuedLevel(site: SubTerritoryState, project: BuildProject): num
 }
 
 /** Every project the scenario offers in a sub-territory, in catalogue order: buildings, development, rail, port. */
-export function allProjects(scenario: Scenario): readonly BuildProject[] {
+export function allProjects(scenario: Scenario): readonly SiteProject[] {
   return [
-    ...scenario.buildings.map((building): BuildProject => ({ buildingId: building.id, kind: "building" })),
-    ...scenario.development.map((track): BuildProject => ({ developmentId: track.id, kind: "development" })),
+    ...scenario.buildings.map((building): SiteProject => ({ buildingId: building.id, kind: "building" })),
+    ...scenario.development.map((track): SiteProject => ({ developmentId: track.id, kind: "development" })),
     ...(scenario.improvements === undefined ? [] : [{ improvement: "rail", kind: "improvement" } as const, { improvement: "port", kind: "improvement" } as const])
   ];
 }
@@ -94,6 +129,34 @@ export function allProjects(scenario: Scenario): readonly BuildProject[] {
 /** W3: the sub-territory is its territory's capital. */
 export function isCapital(scenario: Scenario, sub: SubTerritoryDefinition): boolean {
   return scenario.index.territories.get(sub.territoryId)?.capitalSubTerritoryId === sub.id;
+}
+
+/** R7: the link's modifiers now, and whether a work on it is queued at either end. */
+function queuedLink(scenario: Scenario, state: EconomyState, project: LinkProject): { readonly current: readonly LinkModifier[]; readonly queued: boolean } | undefined {
+  const link = linkBetween(scenario, project.a, project.b);
+  if (link === undefined) return undefined;
+  const key = linkKey(project.a, project.b);
+  const queued = [project.a, project.b].some((end) => (state.subTerritories[end]?.queue ?? []).some((item) => item.project.kind === "link" && linkKey(item.project.a, item.project.b) === key));
+  return { current: linkModifiers(link, state), queued };
+}
+
+/**
+ * R7: why a link work cannot be queued at `subTerritoryId`, past the holding checks: the link
+ * must join it to a bordering sub-territory, the faction must hold that end too, uncontested,
+ * the work must fit the link as it stands, and no other work on it may be queued.
+ */
+function linkRefusal(scenario: Scenario, state: EconomyState, factionId: FactionId, subTerritoryId: SubTerritoryId, project: LinkProject): string | undefined {
+  if (project.a !== subTerritoryId && project.b !== subTerritoryId) return "Queue link works at one end of the link.";
+  const links = queuedLink(scenario, state, project);
+  const otherId = project.a === subTerritoryId ? project.b : project.a;
+  const other = scenario.index.subTerritories.get(otherId);
+  if (links === undefined || other === undefined) return "Those sub-territories don't border each other.";
+  if (state.subTerritories[otherId]?.holder !== factionId) return `${other.name} is not yours.`;
+  if (isContested(scenario, state.subTerritories, other.territoryId)) return "Contested: building waits until the territory is held whole.";
+  const now = workMisfit(links.current, project.work);
+  if (now !== undefined) return now;
+  // One work at a time on a link, so a later one never finishes before the one it needs.
+  return links.queued ? "Another work on this link is in the queue." : undefined;
 }
 
 function resourceName(scenario: Scenario, id: string): string {
@@ -118,7 +181,11 @@ export function siteRefusal(scenario: Scenario, state: EconomyState, factionId: 
   if (site.holder !== factionId) return `${sub.name} is not yours.`;
   if (isContested(scenario, state.subTerritories, sub.territoryId)) return "Contested: building waits until the territory is held whole.";
   if (projectCost(scenario, project) === undefined) return "Not available in this scenario.";
-  const max = maxLevel(scenario, project);
+  if (project.kind === "link") return linkRefusal(scenario, state, factionId, subTerritoryId, project);
+  // D4: the sub-territory's own list, after the catalogue's reasons, which say more.
+  const id = buildableId(project);
+  const unlisted = id === undefined || !sub.buildable.includes(id) ? `Can't be built in ${sub.name}.` : undefined;
+  const max = levelCap(scenario, state, subTerritoryId, project);
   if (project.kind === "building") {
     const building = scenario.index.buildings.get(project.buildingId);
     if (building === undefined) return "Not available in this scenario.";
@@ -126,6 +193,7 @@ export function siteRefusal(scenario: Scenario, state: EconomyState, factionId: 
     if (site.queue.some((item) => sameProject(item.project, project))) return "Already in the queue.";
     if (building.capitalOnly && !isCapital(scenario, sub)) return "Capital sub-territory only.";
     if (building.cityOnly && sub.cityIds.length === 0) return "Needs a city.";
+    if (unlisted !== undefined) return unlisted;
     if (building.upgradeOf !== undefined) {
       const base: BuildProject = { buildingId: building.upgradeOf, kind: "building" };
       if (queuedLevel(site, base) === 0) return `Needs ${scenario.index.buildings.get(building.upgradeOf)?.name ?? building.upgradeOf} first.`;
@@ -133,6 +201,8 @@ export function siteRefusal(scenario: Scenario, state: EconomyState, factionId: 
     return undefined;
   }
   if (project.kind === "development" && scenario.index.development.get(project.developmentId)?.cityOnly === true && sub.cityIds.length === 0) return "Needs a city.";
+  if (unlisted !== undefined) return unlisted;
+  if (project.kind === "improvement" && project.improvement === "rail" && max === 0) return "No railway runs here.";
   if (queuedLevel(site, project) >= max) return `Max level is ${String(max)}.`;
   return undefined;
 }

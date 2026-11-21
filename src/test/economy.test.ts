@@ -53,7 +53,13 @@ const systemsOf = (state: GameState): SystemState => ({
   treasuries: state.treasuries
 });
 
-const start = (): GameState => initialGameState(scenario);
+/** The fixture with West Hills' station wrecked, so a rail repair there has a level to restore (declog D12). */
+const start = (): GameState => {
+  const state = initialGameState(scenario);
+  const hills = state.subTerritories[sub("west-hills")];
+  if (hills === undefined) throw new Error("fixture");
+  return { ...state, subTerritories: { ...state.subTerritories, [sub("west-hills")]: { ...hills, rail: 0 } } };
+};
 
 describe("resource arithmetic ($1)", () => {
   it("adds, subtracts, checks and pays", () => {
@@ -125,8 +131,8 @@ describe("Build orders ($4, $5)", () => {
     expect(siteRefusal(scenario, state, faction("red"), sub("west-hills"), develop("industry"))).toBe("Needs a city.");
     expect(siteRefusal(scenario, state, faction("red"), sub("west-town-quarter"), building("palace"))).toBeUndefined();
     expect(siteRefusal(scenario, state, faction("red"), sub("nowhere"), rail)).toBe("Unknown sub-territory.");
-    const full = withSites(state, { "west-hills": { rail: 3 } });
-    expect(siteRefusal(scenario, full, faction("red"), sub("west-hills"), rail)).toBe("Max level is 3.");
+    // Declog D12: a station is repaired up to its best link, single rail (1) here.
+    expect(siteRefusal(scenario, withSites(state, { "west-hills": { rail: 1 } }), faction("red"), sub("west-hills"), rail)).toBe("Max level is 1.");
     const contested = withSites(state, { highlands: { holder: faction("red") }, "west-hills": { holder: faction("blue") } });
     expect(siteRefusal(scenario, contested, faction("red"), sub("west-town-quarter"), rail)).toMatch(/Contested/);
     expect(buildRefusal(scenario, state, build("red", "west-town-quarter", building("palace")))).toBeUndefined();
@@ -138,7 +144,7 @@ describe("Build orders ($4, $5)", () => {
     expect(siteRefusal(scenario, queued, faction("red"), sub("west-town-quarter"), building("airfield"))).toBe("Already in the queue.");
     expect(siteRefusal(scenario, queued, faction("red"), sub("west-town-quarter"), building("paved-airfield"))).toBeUndefined();
     expect(queued.treasuries[faction("red")]).toEqual({ funds: 1, manpower: 5 });
-    const twice = withBuildOrders(scenario, withSites(start(), { "west-hills": { rail: 2 } }), [build("red", "west-hills", rail), build("red", "west-hills", rail)]);
+    const twice = withBuildOrders(scenario, start(), [build("red", "west-hills", rail), build("red", "west-hills", rail)]);
     expect(twice.subTerritories[sub("west-hills")]?.queue).toHaveLength(1);
   });
 
@@ -178,7 +184,7 @@ describe("Build orders ($4, $5)", () => {
     state = { ...result.finalState, turnNumber: 2 };
     result = resolveTurn(scenario, state, [], 1);
     expect(result.outcomes.some((outcome) => outcome.kind === "build-completed")).toBe(true);
-    expect(result.finalState.subTerritories[sub("west-hills")]).toMatchObject({ rail: 2 });
+    expect(result.finalState.subTerritories[sub("west-hills")]).toMatchObject({ rail: 1 });
     state = { ...result.finalState, turnNumber: 3 };
     result = resolveTurn(scenario, { ...state, turnNumber: 4 }, [], 1);
     result = resolveTurn(scenario, { ...result.finalState, turnNumber: 5 }, [], 1);

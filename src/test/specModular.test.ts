@@ -16,6 +16,7 @@ import {
 } from "../main/engine/types";
 import { loadPackage, PackageValidationError, type ScenarioPackage } from "../main/scenarios/loader";
 import { checkSubTerritoryMap } from "../main/scenarios/loader/map";
+import { entryKinds } from "../main/scenarios/schema/coreSchema";
 import { airMissionSchema, buildingEffectSchema, ruleAreaNames, terrainSchema, unitEffectSchema, unitKindSchema, unitOrderKindSchema, unitSymbolSchema } from "../main/scenarios/schema/modularSchema";
 import { raidOutcomeSchema, traitEffectSchema, weatherEffectSchema } from "../main/scenarios/schema/systemsSchema";
 import { type Json, modularMap, modularScenario } from "./modularFixture";
@@ -24,6 +25,8 @@ import { tiny } from "./support";
 const assetPaths = new Set(["src/test/fixtures/scenarios/tiny-front/geometry.svg", "src/test/fixtures/scenarios/tiny-front/foot.svg"]);
 const list = (value: unknown): Json[] => value as Json[];
 const block = (scenario: Json, key: string): Json => scenario[key] as Json;
+/** The `@data` of a typed entry (D1). */
+const data = (entry: Json): Json => entry["@data"] as Json;
 
 function load(mutate: (scenario: Json) => void = () => undefined): ScenarioPackage {
   const scenario = modularScenario();
@@ -41,8 +44,7 @@ function issuesFor(mutate: (scenario: Json) => void): string {
   }
 }
 
-const kinds = (schema: { readonly options: readonly { readonly shape: { readonly kind: { readonly value: unknown } } }[] }): unknown[] =>
-  schema.options.map((option) => option.shape.kind.value);
+const kinds = entryKinds;
 
 describe("spec version 2 contract", () => {
   it("keeps the schema's literal lists equal to the engine's", () => {
@@ -119,7 +121,7 @@ describe("m3-modular loader rules", () => {
     ["L17 ground type with range", (s: Json) => { list(s["unitTypes"])[0]!["air"] = { range: 1, missions: ["recon"] }; }, "\"foot\" cannot have an air block (L17)"],
     ["L17 unknown required building", (s: Json) => { block(list(s["unitTypes"])[0]!, "recruit")["requires"] = ["foundry"]; }, "unknown building \"foundry\""],
     ["L17 unknown recruiting faction", (s: Json) => { block(list(s["unitTypes"])[0]!, "recruit")["factionIds"] = ["green"]; }, "unknown faction \"green\""],
-    ["L17 unknown weather in an effect", (s: Json) => { list(list(s["unitTypes"])[1]!["effects"])[0]!["exceptWeather"] = ["fog"]; }, "unknown weather outcome \"fog\""],
+    ["L17 unknown weather in an effect", (s: Json) => { data(list(list(s["unitTypes"])[1]!["effects"])[0]!)["exceptWeather"] = ["fog"]; }, "unknown weather outcome \"fog\""],
     ["L18 sub-territory without basis", (s: Json) => { delete list(s["subTerritories"])[0]!["note"]; }, "needs sources or a note (L18)"],
     ["L18 unknown source", (s: Json) => { list(s["subTerritories"])[5]!["sources"] = [{ sourceId: "rumour" }]; }, "unknown source \"rumour\""],
     ["L18 development above its cap", (s: Json) => { list(s["subTerritories"])[1]!["development"] = { farms: 4 }; }, "level 4 is above 3 (L18)"],
@@ -130,14 +132,29 @@ describe("m3-modular loader rules", () => {
     ["L18 city-only building without a city", (s: Json) => { list(s["subTerritories"])[2]!["buildings"] = ["palace"]; }, "needs a city (L18)"],
     ["L18 upgrade without its base", (s: Json) => { list(s["subTerritories"])[0]!["buildings"] = ["paved-airfield"]; }, "needs \"airfield\" first (L18)"],
     ["L18 building listed twice", (s: Json) => { list(s["subTerritories"])[0]!["buildings"] = ["barracks", "barracks"]; }, "listed twice (L18)"],
-    ["L18 rail above the cap", (s: Json) => { block(block(s, "improvements"), "rail")["maxLevel"] = 1; }, "rail: above 1 (L18)"],
+    ["L28 link to an unknown sub-territory", (s: Json) => { list(s["links"])[1]!["a"] = "nowhere"; }, "links[1].a: unknown sub-territory \"nowhere\""],
+    ["L28 duplicate link", (s: Json) => { list(s["links"]).push(structuredClone(list(s["links"])[1]!)); }, "duplicate link west-town-quarter - west-hills (L28)"],
+    ["L28 link off the borders", (s: Json) => { list(s["links"]).push({ a: "isle", b: "highlands", note: "x", modifiers: [] }); }, "isle - highlands is not a sub-territory border (L28)"],
+    ["L28 border without a link", (s: Json) => { list(s["links"]).splice(1, 1); }, "west-town-quarter - west-hills has no link (L28)"],
+    ["L28 link without a basis", (s: Json) => { delete list(s["links"])[1]!["note"]; }, "needs sources or a note (L28)"],
+    ["L28 link citing an unknown source", (s: Json) => { list(s["links"])[1]!["sources"] = [{ sourceId: "nope" }]; }, "links[1].sources: unknown source \"nope\""],
+    ["L28 modifier listed twice", (s: Json) => { list(list(s["links"])[1]!["modifiers"]).push({ "@type": "road", "@data": { level: "main" } }); }, "\"road\" is listed twice (L28)"],
+    ["L28 modifier without rules", (s: Json) => {
+      s["linkModifiers"] = list(s["linkModifiers"]).filter((entry) => entry["@type"] !== "pass");
+      list(list(s["links"])[1]!["modifiers"]).push({ "@type": "pass", "@data": { name: "Gap" } });
+    }, "\"pass\" has no entry in linkModifiers (L28)"],
+    ["L28 modifier rules twice", (s: Json) => { list(s["linkModifiers"]).push(structuredClone(list(s["linkModifiers"])[0]!)); }, "linkModifiers: \"road\" is defined twice (L28)"],
+    ["L29 unknown buildable", (s: Json) => { (list(s["subTerritories"])[1]!["buildable"] as string[]).push("moat"); }, "unknown building, development track or improvement \"moat\" (L29)"],
+    ["L29 buildable listed twice", (s: Json) => { (list(s["subTerritories"])[1]!["buildable"] as string[]).push("rail"); }, "\"rail\" is listed twice (L29)"],
+    ["L29 capital-only buildable elsewhere", (s: Json) => { (list(s["subTerritories"])[1]!["buildable"] as string[]).push("palace"); }, "\"palace\" is built only in a capital (L29)"],
+    ["L29 city-only buildable without a city", (s: Json) => { (list(s["subTerritories"])[1]!["buildable"] as string[]).push("industry"); }, "\"industry\" needs a city (L29)"],
     ["L18 port above the cap", (s: Json) => { block(block(s, "improvements"), "port")["maxLevel"] = 1; }, "port: above 1 (L18)"],
     ["L19 border to itself", (s: Json) => { list(s["subTerritoryBorders"]).push(["isle", "isle"] as never); }, "cannot border itself (L19)"],
     ["L19 duplicate border", (s: Json) => { list(s["subTerritoryBorders"]).push(["west-hills", "west-town-quarter"] as never); }, "duplicate border west-hills - west-town-quarter (L19)"],
     ["L19 unknown border", (s: Json) => { list(s["subTerritoryBorders"]).push(["isle", "atlantis"] as never); }, "unknown sub-territory \"atlantis\""],
-    ["L19 connection without entries", (s: Json) => { delete list(s["connections"])[0]!["entry"]; }, "needs entry sub-territories (L19)"],
-    ["L19 entry on the wrong side", (s: Json) => { list(s["connections"])[0]!["entry"] = ["highlands", "west-town-quarter"]; }, "is not in \"westfold\" (L19)"],
-    ["L19 unknown entry", (s: Json) => { list(s["connections"])[0]!["entry"] = ["nowhere", "highlands"]; }, "unknown sub-territory \"nowhere\""],
+    ["L19 connection without entries", (s: Json) => { delete data(list(s["connections"])[0]!)["entry"]; }, "needs entry sub-territories (L19)"],
+    ["L19 entry on the wrong side", (s: Json) => { data(list(s["connections"])[0]!)["entry"] = ["highlands", "west-town-quarter"]; }, "is not in \"westfold\" (L19)"],
+    ["L19 unknown entry", (s: Json) => { data(list(s["connections"])[0]!)["entry"] = ["nowhere", "highlands"]; }, "unknown sub-territory \"nowhere\""],
     ["L20 territory without a zone", (s: Json) => { delete list(s["territories"])[0]!["weatherZone"]; }, "needs a weatherZone (L20)"],
     ["L20 unknown zone", (s: Json) => { list(s["territories"])[0]!["weatherZone"] = "tundra"; }, "unknown weather zone \"tundra\""],
     ["L20 seasons miss a month", (s: Json) => { list(block(s, "weather")["seasons"])[0]!["months"] = [4, 5]; }, "cover each month once (L20)"],
@@ -174,6 +191,15 @@ describe("m3-modular loader rules", () => {
     expect(issuesFor(mutate)).toContain(expected);
   });
 
+  it("accepts a sea lane beside a land connection (R3), and a package without link works (R7)", () => {
+    expect(issuesFor((s) => {
+      list(s["connections"]).push({ "@type": "sea", "@data": { between: ["westfold", "highlands"], entry: ["west-town-quarter", "highlands"] } });
+      delete s["linkProjects"];
+    })).toBe("");
+    expect(load((s) => { delete s["linkProjects"]; }).scenario.linkProjects).toBeUndefined();
+    expect(load().scenario.linkProjects?.["road-upgrade"]).toEqual({ cost: { funds: 2 }, turns: 1 });
+  });
+
   it("accepts a package that leaves optional systems off", () => {
     expect(issuesFor((s) => {
       block(s, "rules")["weather"] = "none";
@@ -184,7 +210,7 @@ describe("m3-modular loader rules", () => {
       s["units"] = list(s["units"]).filter((entry) => entry["generalId"] === undefined);
       for (const territory of list(s["territories"])) delete territory["weatherZone"];
       for (const faction of list(s["factions"])) delete faction["seatTerritoryId"];
-      list(list(s["unitTypes"])[1]!["effects"])[0]!["exceptWeather"] = [];
+      data(list(list(s["unitTypes"])[1]!["effects"])[0]!)["exceptWeather"] = [];
     })).toBe("");
   });
 });

@@ -9,6 +9,8 @@ import { AirLayer, placeAircraft, withoutAircraft } from "./layers/AirLayer";
 import { BattleIconLayer } from "./BattleIconLayer";
 import { battleMarkPoints } from "./RouteLayer";
 import { destinationTags, RailLayer } from "./layers/RailLayer";
+import { type LayerId, layersControlObstacle, showsSubTerritoryBorders } from "./layers/layerChoice";
+import { RoadLayer } from "./layers/RoadLayer";
 import type { MapLayerProps } from "./layers/slots";
 import { SubTerritoryLayer, SubTerritoryWash } from "./layers/SubTerritoryLayer";
 import { mapControlObstacles } from "./MapControls";
@@ -29,6 +31,8 @@ interface MapLayersProps {
   readonly camera: Camera;
   readonly game: GameState;
   readonly geometry: PreparedGeometry;
+  /** U13: the layers shown (the player's choice plus what the order in progress needs). */
+  readonly layers: readonly LayerId[];
   readonly layout: PaneLayout;
   readonly level: ReturnType<typeof semanticLevel>;
   readonly onTerrainFallback: ((reason: string) => void) | undefined;
@@ -37,13 +41,15 @@ interface MapLayersProps {
   readonly viewport: Viewport;
 }
 
-export function MapLayers({ assets, bounds, camera, game, geometry, layout, level, onTerrainFallback, scenarioPackage, view, viewport }: MapLayersProps): JSX.Element {
+export function MapLayers({ assets, bounds, camera, game, geometry, layers, layout, level, onTerrainFallback, scenarioPackage, view, viewport }: MapLayersProps): JSX.Element {
   const { map, scenario } = scenarioPackage;
   const scale = pixelsPerUnit(camera, viewport, bounds);
   const visible = visibleRect(camera, viewport, bounds);
   const toScreen = (point: { readonly x: number; readonly y: number }) => mapToScreen(point, camera, viewport, bounds);
   const place = (rect: MapRect): MapRect => ({ ...toScreen(rect), height: rect.height * scale, width: rect.width * scale });
-  const landLabels = labelObstacles(scenarioPackage, level, toScreen, viewport.height, layout);
+  const controls = [...mapControlObstacles(layout, viewport.height), layersControlObstacle(layout, viewport)];
+  const landLabels = labelObstacles(scenarioPackage, level, toScreen, controls);
+  const borders = showsSubTerritoryBorders(camera.zoom, layers);
   const expandedTerritoryId = highlightedTerritoryId(view);
   // U2 (m3r1-air-generals): aircraft are drawn by the air layer at their airfields, not as army counters.
   const groundGame = withoutAircraft(scenario, game);
@@ -68,7 +74,7 @@ export function MapLayers({ assets, bounds, camera, game, geometry, layout, leve
         />
       )}
       {/* X2: the sub-territory wash sits under the vector layer's borders, rivers, cities and names. */}
-      <SubTerritoryWash {...layerProps} />
+      <SubTerritoryWash {...layerProps} borders={borders} />
       <VectorLayer
         contextLabels={visibleContextLabels(map.contextLabels, toScreen, viewport, counters)}
         game={game}
@@ -76,7 +82,12 @@ export function MapLayers({ assets, bounds, camera, game, geometry, layout, leve
         level={level}
         map={map}
         scenario={scenario}
-        underlay={<RailLayer {...layerProps} narrow={layout === "sheet"} />}
+        underlay={(
+          <>
+            {layers.includes("roads") ? <RoadLayer scenarioPackage={scenarioPackage} toScreen={toScreen} /> : null}
+            <RailLayer {...layerProps} narrow={layout === "sheet"} />
+          </>
+        )}
         unit={1 / scale}
         view={view}
         visible={visible}
@@ -91,7 +102,7 @@ export function MapLayers({ assets, bounds, camera, game, geometry, layout, leve
         })}
       />
       {/* Milestone 3 layers, between the map and the counters: sub-territories (rail is in the vector layer's underlay). */}
-      <SubTerritoryLayer {...layerProps} />
+      <SubTerritoryLayer {...layerProps} borders={borders} />
       <CounterLayer
         game={groundGame}
         layout={counterLayout}
@@ -102,7 +113,7 @@ export function MapLayers({ assets, bounds, camera, game, geometry, layout, leve
       />
       <AirLayer {...layerProps} placements={air.placements} />
       <BattleIconLayer
-        marks={battleMarkPoints(view, scenario, (id) => territoryAnchor(map, id), 1 / scale)}
+        marks={battleMarkPoints(view, scenario, (id) => territoryAnchor(map, id), 1 / scale, { game, subPoint: (id) => map.subTerritories?.entries.get(id)?.capital })}
         onSelectTerritory={view.onSelectTerritory}
         scenario={scenario}
         toScreen={toScreen}
@@ -110,7 +121,7 @@ export function MapLayers({ assets, bounds, camera, game, geometry, layout, leve
       {view.destinationEstimates === undefined ? null : (
         <DestinationOddsLayer
           compact={layout === "sheet"}
-          counters={[...counters, ...air.rects, ...mapControlObstacles(layout, viewport.height)]}
+          counters={[...counters, ...air.rects, ...controls]}
           viewport={{ height: viewport.height - viewport.insetBottom, width: viewport.width - viewport.insetRight }} estimates={view.destinationEstimates} labelAt={(id) => toScreen(mapTerritory(map, id).label)} tags={destinationTags(scenario, game, view)} weatherAt={(id) => weatherIn(scenario, game, id)?.id} />
       )}
     </>
@@ -126,15 +137,14 @@ function stackSpots(game: GameState, map: MapPackage, toScreen: (point: MapPoint
   });
 }
 
-/** Screen rectangles counters should avoid: visible labels and the fixed map controls (V4, V7). */
+/** Screen rectangles counters should avoid: visible labels and the fixed map controls (V4, V7, U13). */
 function labelObstacles(
   { map, scenario }: ScenarioPackage,
   level: ReturnType<typeof semanticLevel>,
   toScreen: (point: { readonly x: number; readonly y: number }) => { readonly x: number; readonly y: number },
-  height: number,
-  layout: PaneLayout
+  controls: readonly ScreenRect[]
 ): readonly ScreenRect[] {
-  const rects: ScreenRect[] = [...mapControlObstacles(layout, height)];
+  const rects: ScreenRect[] = [...controls];
   for (const city of scenario.cities) {
     const position = map.cities.get(city.id);
     if (position === undefined || (position.tier === "detail" && level === "overview")) continue;

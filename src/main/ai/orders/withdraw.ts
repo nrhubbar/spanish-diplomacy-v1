@@ -1,11 +1,13 @@
 import { groundView } from "../../engine/air/pieces";
 import { compareIds } from "../../engine/board";
 import { armyValue, oddsForValues } from "../../engine/combat";
+import { groundSides, loneSide } from "../../engine/control";
 import { requireAiProfile, requireFaction } from "../../engine/lookup";
 import { isContested, isPartitioned } from "../../engine/partition/holders";
 import { canWithdraw } from "../../engine/partition/orders";
 import { withdrawRoutes } from "../../engine/partition/paths";
 import type { FactionId, TerritoryId, UnitId, UnitState, WithdrawOrder } from "../../engine/types";
+import { canFight } from "../../engine/units/fighting";
 import { assess, type Assessment } from "../assessment";
 import type { OrderPlanner, PlanningContext } from "./planner";
 
@@ -23,6 +25,9 @@ import type { OrderPlanner, PlanningContext } from "./planner";
  * (`Assessment.isCritical`) are a last stand. Every unit leaves them only when the standing battle
  * would take them whole at the stricter `withdraw.lastStandTakeChance`, demoralized or not, so the
  * computer player never walks off them while the odds of holding are better than hopeless.
+ * Under R2 a territory where only one side has ground armies flips to it whole, so a hopeless
+ * last stand keeps a rearguard: its strongest defender stays and holds it, and only the others
+ * leave. A lone defender stays (S3, declog AI3).
  * Each goes to the reachable neighbour (P6) holding the most of its units, ties by scenario order.
  */
 export const planWithdrawals: OrderPlanner<WithdrawOrder> = (context) => {
@@ -36,11 +41,19 @@ export const planWithdrawals: OrderPlanner<WithdrawOrder> = (context) => {
     const own = units.filter((unit) => unit.territoryId === territory.id && unit.factionId === factionId && !ordered.has(unit.id) && canWithdraw(scenario, state, unit.id));
     const enemies = units.filter((unit) => unit.territoryId === territory.id && unit.factionId !== factionId);
     if (own.length === 0 || enemies.length === 0) return [];
-    const to = bestRoute(context, territory.id);
+    const to = bestRoute(context, territory.id, []);
     if (to === undefined) return [];
-    const leaving = hopeless(context, territory.id, own, enemies, stands.isLastStand(territory.id)) ? own : leavingDemoralized(own);
-    stands.leave(territory.id, leaving);
-    return leaving.map((unit) => order(factionId, unit.id, territory.id, to));
+    const lastStand = stands.isLastStand(territory.id);
+    const giving = hopeless(context, territory.id, own, enemies, lastStand) ? own : leavingDemoralized(own);
+    // R2: a last stand is never walked off whole, since the enemy left alone there takes it whole.
+    const leaving = lastStand && handsOver(context, territory.id, giving) ? withRearguard(context, giving) : giving;
+    // R1: each army leaves out of its own pocket; one whose pocket has no way out stays.
+    const orders = leaving.flatMap((unit) => {
+      const way = bestRoute(context, territory.id, [unit.id]);
+      return way === undefined ? [] : [order(factionId, unit.id, territory.id, way)];
+    });
+    stands.leave(territory.id, leaving.filter((unit) => orders.some((entry) => entry.unitId === unit.id)));
+    return orders;
   });
 };
 
@@ -105,15 +118,41 @@ function lastStandsOf({ factionId, scenario, state }: PlanningContext): LastStan
   };
 }
 
+/**
+ * R2: whether these withdrawals leave one other side alone on the ground there, which would take
+ * the territory whole at the end of the turn. Only own units that can fight keep it held (D27.1):
+ * generals follow the armies, and trucks withdraw with them.
+ */
+function handsOver({ factionId, scenario, state }: PlanningContext, territoryId: TerritoryId, leaving: readonly UnitState[]): boolean {
+  const gone = new Set(leaving.map((unit) => unit.id));
+  const staying = Object.values(state.units).filter((unit) => unit.territoryId === territoryId && !gone.has(unit.id) && (unit.factionId !== factionId || canFight(scenario, state.raised, unit.id)));
+  const alone = loneSide(groundSides(scenario, state.raised, Object.fromEntries(staying.map((unit) => [unit.id, unit]))), territoryId);
+  return alone !== undefined && alone !== factionId;
+}
+
+/**
+ * R2: the units to withdraw from a last stand, less its rearguard: the best defender that can
+ * fight, the healthy first, ties by id. With none that can fight, all leave: units that can't
+ * fight don't keep ground held (D27.1), so staying would save nothing.
+ */
+function withRearguard({ scenario, state }: PlanningContext, leaving: readonly UnitState[]): readonly UnitState[] {
+  const [rearguard] = leaving
+    .filter((unit) => canFight(scenario, state.raised, unit.id))
+    .sort((left, right) => Number(left.morale.demoralized) - Number(right.morale.demoralized)
+      || armyValue(scenario, right, "defence") - armyValue(scenario, left, "defence")
+      || compareIds(left.id, right.id));
+  return leaving.filter((unit) => unit !== rearguard);
+}
+
 function leavingDemoralized(own: readonly UnitState[]): readonly UnitState[] {
   const shaken = own.filter((unit) => unit.morale.demoralized);
   return shaken.length < own.length ? shaken : [];
 }
 
-function bestRoute({ factionId, scenario, state }: PlanningContext, from: TerritoryId): TerritoryId | undefined {
+function bestRoute({ factionId, scenario, state }: PlanningContext, from: TerritoryId, unitIds: readonly UnitId[]): TerritoryId | undefined {
   const friends = (id: TerritoryId): number => Object.values(state.units).filter((unit) => unit.territoryId === id && unit.factionId === factionId).length;
   const rank = (id: TerritoryId): number => scenario.territories.findIndex((territory) => territory.id === id);
-  return withdrawRoutes(scenario, state, factionId, from)
+  return withdrawRoutes(scenario, state, factionId, from, unitIds)
     .map((route) => route.to)
     .sort((left, right) => friends(right) - friends(left) || rank(left) - rank(right) || compareIds(left, right))[0];
 }

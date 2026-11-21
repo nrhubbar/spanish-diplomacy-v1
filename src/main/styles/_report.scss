@@ -494,3 +494,45 @@ tr.battle-roll-total {
     cursor: pointer;
   }
 }
+
+// R11: the air battle above an engagement on the battle card.
+.battle-air {
+  display: grid;
+  gap: 6px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed rgb(36 29 24 / 25%);
+}
+
+.battle-air-heading {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.battle-air-side[data-wins="true"] {
+  outline: 2px solid var(--faction-color);
+}
+
+.battle-air-wins {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.battle-air-total {
+  margin: 4px 0 0;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.battle-air-result,
+.battle-air-note {
+  margin: 0;
+}
+
+.battle-air-note {
+  font-size: 0.78rem;
+  font-style: italic;
+}

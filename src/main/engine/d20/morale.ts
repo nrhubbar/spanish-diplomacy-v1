@@ -58,7 +58,7 @@ export function attackedThisTurn(draft: TurnDraft): ReadonlySet<UnitId> {
  *   (C4). Replenish (recruitment) and a general's rally (air) are their modules' later parts of
  *   this step; they run after this one. The rally never clears a demoralization from this turn
  *   (D27.4, `demoralizedThisTurn`).
- * - Digging in (M22, D3): works grow by the d20's `worksPerTurn` up to `worksMax`, never in
+ * - Digging in (M22, R8): works grow a pip a turn up to three (`combat.diggingIn`), never in
  *   contested ground (C1), and as the `canDigIn` hooks allow (T4).
  */
 export const updateGradedMorale: Phase = (draft) => {
@@ -104,7 +104,6 @@ export const updateGradedMorale: Phase = (draft) => {
   }
   const armies: Armies = replaceArmies(draft.armies, updates);
   const foughtIn = new Set([...draft.front.battles, ...draft.standing].map((pending) => pending.site.territoryId));
-  const fortification = digIn(scenario, start, { armies, control: draft.control.control }, new Set([...foughtIn, ...contested]), notEntrenching(draft),
-    { max: rules.modifiers.worksMax, perTurn: rules.modifiers.worksPerTurn });
+  const fortification = digIn(scenario, start, { armies, control: draft.control.control }, new Set([...foughtIn, ...contested]), notEntrenching(draft));
   return { ...draft, armies, events: [...draft.events, ...fatigueEvents], fortification, recovered: [...draft.recovered, ...recovered] };
 };

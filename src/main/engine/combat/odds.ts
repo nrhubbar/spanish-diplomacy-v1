@@ -57,7 +57,11 @@ export interface BattleContext {
   readonly attackerFactionId: FactionId;
   /** The attacking units, when known (planning estimates), so a general with them counts. */
   readonly attackerUnitIds?: readonly UnitId[];
+  /** R11: the battle's index while the turn resolves, for its air battle's rolls. */
+  readonly battleIndex?: number;
   readonly defenderFactionIds: readonly FactionId[];
+  /** R11: the defending units, whose AA joins the air battle. */
+  readonly defenderUnitIds?: readonly UnitId[];
   /** Whether the territory's works count: false for empty-territory entries (M19). */
   readonly diggingIn: boolean;
   /** The turn's scratch, passed on to the hooks while a turn resolves (air support, generals). */

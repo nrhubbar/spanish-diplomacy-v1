@@ -105,8 +105,9 @@ describe("report lines carry the outcome's data (m3r1 contract follow-ups)", () 
     expect(line({ factionId: republic, generalId: "vicente-rojo" as GeneralId, kind: "replacement-arrived", territoryId: territory("madrid"), unitId: unit("general-vicente-rojo") })).toBe("Vicente Rojo took command in Madrid.");
     expect(line({ factionId: south, interceptorIds: [], kind: "interception", lostUnitIds: [], raiderIds: [], territoryId: territory("andalucia") })).toBe("Southern Insurgent Command's fighters intercepted enemy aircraft over Andaluc\u00eda.");
     expect(line({ factionId: south, interceptorIds: [], kind: "interception", lostUnitIds: [unit("rep-breguet-bombers")], raiderIds: [], territoryId: territory("andalucia") })).toMatch(/, shooting down 1\.$/u);
-    expect(line({ battleIndex: 0, kind: "air-support", order: bomber, territoryId: territory("andalucia") })).toMatch(/ supported the battle for Andaluc\u00eda\.$/u);
-    expect(line({ kind: "air-support", order: bomber, territoryId: territory("andalucia") })).toMatch(/, but no battle was fought there\.$/u);
+    expect(line({ applied: true, battleIndex: 0, kind: "air-support", order: bomber, territoryId: territory("andalucia") })).toMatch(/ gave Ground Support in the battle for Andaluc\u00eda\.$/u);
+    expect(line({ applied: false, battleIndex: 0, kind: "air-support", order: bomber, territoryId: territory("andalucia") })).toMatch(/ flew Ground Support for the battle for Andaluc\u00eda, but its support did not count\.$/u);
+    expect(line({ kind: "air-support", order: bomber, territoryId: territory("andalucia") })).toMatch(/ flew Ground Support over Andaluc\u00eda, but no battle was fought there\.$/u);
     expect(line({ kind: "grounded", order: bomber, reason: "Out of range." })).toMatch(/ did not fly: Out of range\.$/u);
     expect(line({ factionId: republic, from: territory("catalunya"), kind: "aircraft-rebased", to: territory("valencia"), unitId: unit("rep-breguet-bombers") })).toMatch(/ lost its airfield in Catalu\u00f1a and flew to Valencia\.$/u);
     expect(line({ factionId: republic, from: territory("catalunya"), kind: "aircraft-lost", unitId: unit("rep-breguet-bombers") })).toMatch(/ was destroyed on the ground\.$/u);

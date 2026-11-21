@@ -32,7 +32,11 @@ export interface HookContext {
 export interface CombatHookContext extends HookContext {
   readonly attackerFactionId: FactionId;
   readonly attackerUnitIds?: readonly UnitId[];
+  /** R11: the battle's index in the turn while it resolves; its air battle rolls on the `air-battle` stream of that index. */
+  readonly battleIndex?: number;
   readonly defenderFactionIds: readonly FactionId[];
+  /** R11: the defending units, whose AA joins the air battle; absent means the defenders' units in the territory. */
+  readonly defenderUnitIds?: readonly UnitId[];
   readonly diggingIn: boolean;
   /** The turn's scratch while a turn resolves (bombers on support, generals on the move); absent for planning estimates. */
   readonly scratch?: TurnScratch;
@@ -105,6 +109,8 @@ export interface RetreatContext extends HookContext {
   readonly factionId: FactionId;
   readonly from: TerritoryId;
   readonly to: TerritoryId;
+  /** R1: the army retreating, so the path leaves from its own pocket. */
+  readonly unitId?: UnitId;
 }
 
 /** R5, $4, D28.1: what buildings change about a Replenish order. */

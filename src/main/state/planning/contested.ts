@@ -18,7 +18,7 @@ export function inContestedGround(scenario: Scenario | undefined, session: Plann
 export function selectedWithdrawRoutes(scenario: Scenario, session: PlanningSession): readonly WithdrawRoute[] {
   const territoryId = session.draft.selectedTerritoryId;
   if (territoryId === undefined || session.draft.selectedUnitIds.length === 0) return [];
-  return withdrawRoutes(scenario, session.game.state, session.factionId, territoryId);
+  return withdrawRoutes(scenario, session.game.state, session.factionId, territoryId, session.draft.selectedUnitIds);
 }
 
 export function withdrawDestinations(scenario: Scenario, session: PlanningSession): readonly TerritoryId[] {

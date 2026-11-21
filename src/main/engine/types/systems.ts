@@ -32,7 +32,7 @@ export interface D20Modifiers {
   readonly belowOneToOnePenalty: number;
   /** C6, D6: a fatigued side (negative). */
   readonly fatigued: number;
-  /** D3: works gained per turn of entrenching, and their cap. */
+  /** R8: what one pip of works takes off the attacker's roll (`worksPerTurn`), and the most all pips may take (`worksMax`). */
   readonly worksMax: number;
   readonly worksPerTurn: number;
 }
@@ -115,6 +115,8 @@ export interface AirRules {
   readonly raidTable: readonly { readonly outcome: RaidOutcome; readonly upTo: number }[];
   /** U4, D7: turns a recon reveal lasts. */
   readonly reconTurns: number;
+  /** R11: the most aircraft whose Ground Support counts for one side; absent means no cap. */
+  readonly supportMax?: number | undefined;
 }
 
 /** U5: a general's trait. */
@@ -196,8 +198,6 @@ export interface AiProfile {
 
 /** E7, H6: computer players' data. */
 export interface AiRules {
-  /** H6: chance that one computer order is a blunder, rolled from the blunder stream. */
-  readonly blunderChance: number;
   /** E7: one profile per faction, keyed by faction id. */
   readonly profiles: Readonly<Record<FactionId, AiProfile>>;
 }

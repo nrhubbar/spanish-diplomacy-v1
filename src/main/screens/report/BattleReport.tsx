@@ -11,7 +11,8 @@ export const openBattleCards = 2;
 interface BattleReportProps {
   /** F1: the place focused on the map; its cards open, scroll into view, and are highlighted. */
   readonly focusedTerritoryId: TerritoryId | undefined;
-  readonly result: TurnResolutionResult;
+  /** The turn's outcomes and the board they left: a resolution result, or a history entry (U10). */
+  readonly result: Pick<TurnResolutionResult, "finalState" | "outcomes">;
   readonly scenario: Scenario;
   /** The game's seed, which picks each battle's flavor line so replays read the same. */
   readonly seed: number;

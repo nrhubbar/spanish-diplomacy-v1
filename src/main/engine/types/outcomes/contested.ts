@@ -31,7 +31,7 @@ export type SubTerritoryChangeCause =
   | "occupation"
   /** P4: a graded battle result's ground. */
   | "battle"
-  /** P3, P7: the one-a-turn sweep inside a contested territory. */
+  /** R2 (replacing the one-a-turn sweep): the end-of-turn flip of a territory only one side has ground armies in. */
   | "sweep";
 
 /** P2-P4: one sub-territory that changed hands this turn, reported in `TurnResolutionResult`. */
@@ -44,8 +44,36 @@ export interface SubTerritoryChange {
   readonly subTerritoryId: SubTerritoryId;
 }
 
+/**
+ * R1: a side's ground in a contested territory split, or a pocket lost ground, leaving these
+ * armies in a pocket of these sub-territories. Produced at step 8 (`partition/steps.ts` `settlePockets`).
+ */
+export interface PocketCutOutcome {
+  readonly factionId: FactionId;
+  readonly kind: "pocket-cut";
+  /** The pocket the armies are left in, in scenario order. */
+  readonly subTerritoryIds: readonly SubTerritoryId[];
+  readonly territoryId: TerritoryId;
+  readonly unitIds: readonly UnitId[];
+}
+
+/**
+ * R2: at the end of the turn only one side had ground armies in the territory, so it flipped
+ * whole to that side. Produced at step 8 (`partition/steps.ts` `flipWhole`).
+ */
+export interface TerritoryFlippedOutcome {
+  /** The side that now holds the whole territory. */
+  readonly factionId: FactionId;
+  readonly kind: "territory-flipped";
+  /** The sub-territories that changed hands, in scenario order. */
+  readonly subTerritoryIds: readonly SubTerritoryId[];
+  readonly territoryId: TerritoryId;
+}
+
 /** Every outcome of this area. Adding a kind here is all the union needs. */
 export type ContestedTurnOutcome =
   | WithdrewOutcome
   | PathSurrenderOutcome
-  | RailDamagedOutcome;
+  | RailDamagedOutcome
+  | PocketCutOutcome
+  | TerritoryFlippedOutcome;

@@ -141,7 +141,7 @@ describe("modifier names and odds words (C15, A2, D5, D7)", () => {
 
   it("names every modifier kind", () => {
     const cases: readonly (readonly [CombatModifier, string | RegExp])[] = [
-      [{ kind: "dug-in", level: 3, roll: -3 }, "Dug in +3"],
+      [{ kind: "dug-in", level: 3, roll: -3 }, "Dug in level 3 (+3)"],
       [resistance, "Popular resistance +1"],
       [{ kind: "odds-overflow", roll: 2 }, "Odds beyond 6:1"],
       [{ halvings: 1, kind: "odds-halving", roll: -1 }, "Odds below 1:1 (1 halving)"],
@@ -169,7 +169,7 @@ describe("modifier names and odds words (C15, A2, D5, D7)", () => {
     expect(modifierPhrase({ kind: "odds-overflow", roll: 2 })).toBe("Odds beyond 6:1 +2");
     expect(modifierPhrase({ halvings: 1, kind: "odds-halving", roll: -1 })).toBe(`Odds below 1:1 (1 halving) ${minus}1`);
     expect(modifierPhrase({ kind: "weather", roll: 0, weatherId: "rain" as WeatherId })).toBe("Rain 0");
-    expect(modifierPhrase({ kind: "dug-in", level: 1, roll: -1 })).toBe("Dug in +1");
+    expect(modifierPhrase({ kind: "dug-in", level: 1, roll: -1 })).toBe("Dug in level 1 (+1)");
   });
 
   it("signs numbers, rounds percentages and tones chances", () => {

@@ -32,7 +32,7 @@ const any = (kinds: readonly OutcomeKind[]) => (outcomes: readonly TurnOutcome[]
 export const outcomeGroups: readonly OutcomeGroupSpec[] = [
   { icon: { medallion: "surrendered" }, kinds: ["disbanded-move"], label: outcomeText.surrendered.title, open: true },
   // C1, P6: units cut off in contested ground with no path out through their own sub-territories.
-  { icon: { medallion: "surrendered" }, kinds: ["path-surrender"], label: "Cut off", open: true },
+  { icon: { medallion: "surrendered" }, kinds: ["path-surrender", "pocket-cut"], label: "Cut off", open: true },
   { icon: { tone: "disbanded" }, kinds: ["invalid-order"], label: "Disbanded", open: true },
   // Section 2 step 1: an order other than a move that failed at reveal (anything paid is refunded).
   { icon: { tone: "disbanded" }, kinds: ["rejected-order"], label: "Orders not carried out", open: true },
@@ -40,9 +40,11 @@ export const outcomeGroups: readonly OutcomeGroupSpec[] = [
   // M1-M5: moves that stopped short: intercepted on the way, or held back by allowance or capacity.
   { icon: { tone: "bounced" }, kinds: ["move-intercepted", "move-held-back"], label: "Stopped on the way", open: true },
   { icon: { site: "withdraw" }, kinds: ["withdrew"], label: "Withdrawals", open: true },
+  // R2: a territory where only one side had ground armies flipped whole.
+  { icon: { tone: "moved" }, kinds: ["territory-flipped"], label: "Territories taken whole", open: true },
   { icon: { medallion: "recovered" }, kinds: ["recovered"], label: outcomeText.recovered.title, open: true },
   // U2-U5 (m3r1-air-generals): raids, recon, interceptions and support; generals' changes and rallies.
-  { icon: { economy: "plane" }, kinds: ["raid", "recon", "interception", "air-support", "grounded", "aircraft-rebased", "aircraft-lost"], label: "Air missions", open: true },
+  { icon: { economy: "plane" }, kinds: ["air-battle", "raid", "recon", "interception", "air-support", "grounded", "aircraft-rebased", "aircraft-lost"], label: "Air missions", open: true },
   { icon: { economy: "star" }, kinds: ["general-died", "general-sacked", "replacement-due", "replacement-arrived", "rallied", "general-moved"], label: "Generals", open: true },
   { icon: { medallion: "reinforcement-arrived" }, kinds: ["reinforcement-arrived"], label: outcomeText["reinforcement-arrived"].title, open: false },
   { icon: { tone: "moved" }, kinds: ["successful-move"], label: "Completed moves", open: false },

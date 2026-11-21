@@ -91,23 +91,36 @@
               "description": "Seven odds columns: below 1:1, then 1:1 to 6:1. Each lists the result for modified rolls 0 to 6."
             },
             "belowOneToOne": {
-              "type": "object",
-              "properties": {
-                "kind": {
-                  "type": "string",
-                  "const": "halving"
-                },
-                "rollPenalty": {
-                  "type": "integer",
-                  "minimum": 0,
-                  "maximum": 9007199254740991
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "@type": {
+                      "type": "string",
+                      "const": "halving"
+                    },
+                    "@data": {
+                      "type": "object",
+                      "properties": {
+                        "rollPenalty": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "rollPenalty"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "@type",
+                    "@data"
+                  ],
+                  "additionalProperties": false
                 }
-              },
-              "required": [
-                "kind",
-                "rollPenalty"
               ],
-              "additionalProperties": false,
               "description": "Below 1:1 the attacker's roll takes rollPenalty for each halving of the odds."
             },
             "diggingIn": {
@@ -201,12 +214,6 @@
         "ai": {
           "type": "object",
           "properties": {
-            "blunderChance": {
-              "type": "number",
-              "minimum": 0,
-              "maximum": 1,
-              "description": "H6: chance that one computer order is a blunder."
-            },
             "profiles": {
               "type": "object",
               "propertyNames": {
@@ -440,11 +447,10 @@
             }
           },
           "required": [
-            "blunderChance",
             "profiles"
           ],
           "additionalProperties": false,
-          "description": "E7, H6: the computer players' weights per faction, and the blunder chance."
+          "description": "E7: the computer players' weights per faction."
         },
         "sources": {
           "type": "array",
@@ -717,43 +723,61 @@
                   {
                     "type": "object",
                     "properties": {
-                      "kind": {
+                      "@type": {
                         "type": "string",
                         "const": "controlled"
                       },
-                      "factionId": {
-                        "type": "string",
-                        "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
-                        "description": "Stable kebab-case identifier. Never shown to players."
+                      "@data": {
+                        "type": "object",
+                        "properties": {
+                          "factionId": {
+                            "type": "string",
+                            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                            "description": "Stable kebab-case identifier. Never shown to players."
+                          }
+                        },
+                        "required": [
+                          "factionId"
+                        ],
+                        "additionalProperties": false
                       }
                     },
                     "required": [
-                      "kind",
-                      "factionId"
+                      "@type",
+                      "@data"
                     ],
                     "additionalProperties": false
                   },
                   {
                     "type": "object",
                     "properties": {
-                      "kind": {
+                      "@type": {
                         "type": "string",
                         "const": "contested"
                       },
-                      "factionIds": {
-                        "minItems": 2,
-                        "type": "array",
-                        "items": {
-                          "type": "string",
-                          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
-                          "description": "Stable kebab-case identifier. Never shown to players."
+                      "@data": {
+                        "type": "object",
+                        "properties": {
+                          "factionIds": {
+                            "minItems": 2,
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                              "description": "Stable kebab-case identifier. Never shown to players."
+                            },
+                            "description": "Factions with a meaningful presence. At least two."
+                          }
                         },
-                        "description": "Factions with a meaningful presence. At least two."
+                        "required": [
+                          "factionIds"
+                        ],
+                        "additionalProperties": false
                       }
                     },
                     "required": [
-                      "kind",
-                      "factionIds"
+                      "@type",
+                      "@data"
                     ],
                     "additionalProperties": false
                   }
@@ -786,43 +810,98 @@
         "connections": {
           "type": "array",
           "items": {
-            "type": "object",
-            "properties": {
-              "between": {
-                "type": "array",
-                "prefixItems": [
-                  {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "@type": {
                     "type": "string",
-                    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
-                    "description": "Stable kebab-case identifier. Never shown to players."
+                    "const": "land"
                   },
-                  {
-                    "type": "string",
-                    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
-                    "description": "Stable kebab-case identifier. Never shown to players."
+                  "@data": {
+                    "type": "object",
+                    "properties": {
+                      "between": {
+                        "type": "array",
+                        "prefixItems": [
+                          {
+                            "type": "string",
+                            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                            "description": "Stable kebab-case identifier. Never shown to players."
+                          },
+                          {
+                            "type": "string",
+                            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                            "description": "Stable kebab-case identifier. Never shown to players."
+                          }
+                        ],
+                        "items": false,
+                        "minItems": 2,
+                        "maxItems": 2
+                      },
+                      "label": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "required": [
+                      "between"
+                    ],
+                    "additionalProperties": false
                   }
+                },
+                "required": [
+                  "@type",
+                  "@data"
                 ],
-                "items": false,
-                "minItems": 2,
-                "maxItems": 2
+                "additionalProperties": false
               },
-              "kind": {
-                "type": "string",
-                "enum": [
-                  "land",
-                  "sea"
-                ]
-              },
-              "label": {
-                "type": "string",
-                "minLength": 1
+              {
+                "type": "object",
+                "properties": {
+                  "@type": {
+                    "type": "string",
+                    "const": "sea"
+                  },
+                  "@data": {
+                    "type": "object",
+                    "properties": {
+                      "between": {
+                        "type": "array",
+                        "prefixItems": [
+                          {
+                            "type": "string",
+                            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                            "description": "Stable kebab-case identifier. Never shown to players."
+                          },
+                          {
+                            "type": "string",
+                            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                            "description": "Stable kebab-case identifier. Never shown to players."
+                          }
+                        ],
+                        "items": false,
+                        "minItems": 2,
+                        "maxItems": 2
+                      },
+                      "label": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "required": [
+                      "between"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "@type",
+                  "@data"
+                ],
+                "additionalProperties": false
               }
-            },
-            "required": [
-              "between",
-              "kind"
-            ],
-            "additionalProperties": false
+            ]
           }
         },
         "cities": {
@@ -974,23 +1053,36 @@
               "description": "Seven odds columns: below 1:1, then 1:1 to 6:1. Each lists the result for modified rolls 0 to 6."
             },
             "belowOneToOne": {
-              "type": "object",
-              "properties": {
-                "kind": {
-                  "type": "string",
-                  "const": "halving"
-                },
-                "rollPenalty": {
-                  "type": "integer",
-                  "minimum": 0,
-                  "maximum": 9007199254740991
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "@type": {
+                      "type": "string",
+                      "const": "halving"
+                    },
+                    "@data": {
+                      "type": "object",
+                      "properties": {
+                        "rollPenalty": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "rollPenalty"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "@type",
+                    "@data"
+                  ],
+                  "additionalProperties": false
                 }
-              },
-              "required": [
-                "kind",
-                "rollPenalty"
               ],
-              "additionalProperties": false,
               "description": "Below 1:1 the attacker's roll takes rollPenalty for each halving of the odds."
             },
             "diggingIn": {
@@ -1084,12 +1176,6 @@
         "ai": {
           "type": "object",
           "properties": {
-            "blunderChance": {
-              "type": "number",
-              "minimum": 0,
-              "maximum": 1,
-              "description": "H6: chance that one computer order is a blunder."
-            },
             "profiles": {
               "type": "object",
               "propertyNames": {
@@ -1323,11 +1409,10 @@
             }
           },
           "required": [
-            "blunderChance",
             "profiles"
           ],
           "additionalProperties": false,
-          "description": "E7, H6: the computer players' weights per faction, and the blunder chance."
+          "description": "E7: the computer players' weights per faction."
         },
         "sources": {
           "type": "array",
@@ -1553,6 +1638,11 @@
                   "general"
                 ]
               },
+              "foot": {
+                "default": false,
+                "description": "R5: a foot unit may March across a link with no road. Absent means false.",
+                "type": "boolean"
+              },
               "symbol": {
                 "type": "string",
                 "enum": [
@@ -1585,184 +1675,276 @@
                 "description": "Order kinds a unit of this type may take."
               },
               "effects": {
-                "default": [],
                 "type": "array",
                 "items": {
                   "oneOf": [
                     {
                       "type": "object",
                       "properties": {
-                        "kind": {
+                        "@type": {
                           "type": "string",
                           "const": "roll-bonus-per-points"
                         },
-                        "role": {
-                          "type": "string",
-                          "enum": [
-                            "attack",
-                            "defence"
-                          ]
-                        },
-                        "per": {
-                          "type": "integer",
-                          "exclusiveMinimum": 0,
-                          "maximum": 9007199254740991
-                        },
-                        "bonus": {
-                          "type": "integer",
-                          "exclusiveMinimum": 0,
-                          "maximum": 9007199254740991
-                        },
-                        "max": {
-                          "type": "integer",
-                          "exclusiveMinimum": 0,
-                          "maximum": 9007199254740991
-                        },
-                        "exceptWeather": {
-                          "default": [],
-                          "description": "Weather outcomes in which the bonus does not apply.",
-                          "type": "array",
-                          "items": {
-                            "type": "string",
-                            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
-                            "description": "Stable kebab-case identifier. Never shown to players."
-                          }
+                        "@data": {
+                          "type": "object",
+                          "properties": {
+                            "role": {
+                              "type": "string",
+                              "enum": [
+                                "attack",
+                                "defence"
+                              ]
+                            },
+                            "per": {
+                              "type": "integer",
+                              "exclusiveMinimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "bonus": {
+                              "type": "integer",
+                              "exclusiveMinimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "max": {
+                              "type": "integer",
+                              "exclusiveMinimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "exceptWeather": {
+                              "default": [],
+                              "description": "Weather outcomes in which the bonus does not apply.",
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                                "description": "Stable kebab-case identifier. Never shown to players."
+                              }
+                            }
+                          },
+                          "required": [
+                            "role",
+                            "per",
+                            "bonus",
+                            "max"
+                          ],
+                          "additionalProperties": false
                         }
                       },
                       "required": [
-                        "kind",
-                        "role",
-                        "per",
-                        "bonus",
-                        "max"
+                        "@type",
+                        "@data"
                       ],
                       "additionalProperties": false
                     },
                     {
                       "type": "object",
                       "properties": {
-                        "kind": {
+                        "@type": {
                           "type": "string",
                           "const": "cannot-attack-alone"
+                        },
+                        "@data": {
+                          "type": "object",
+                          "properties": {},
+                          "additionalProperties": false
                         }
                       },
                       "required": [
-                        "kind"
+                        "@type"
                       ],
                       "additionalProperties": false
                     },
                     {
                       "type": "object",
                       "properties": {
-                        "kind": {
+                        "@type": {
                           "type": "string",
                           "const": "transport"
                         },
-                        "carries": {
-                          "type": "integer",
-                          "exclusiveMinimum": 0,
-                          "maximum": 9007199254740991
+                        "@data": {
+                          "type": "object",
+                          "properties": {
+                            "carries": {
+                              "type": "integer",
+                              "exclusiveMinimum": 0,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "carries"
+                          ],
+                          "additionalProperties": false
                         }
                       },
                       "required": [
-                        "kind",
-                        "carries"
+                        "@type",
+                        "@data"
                       ],
                       "additionalProperties": false
                     },
                     {
                       "type": "object",
                       "properties": {
-                        "kind": {
+                        "@type": {
                           "type": "string",
                           "const": "mobile"
+                        },
+                        "@data": {
+                          "type": "object",
+                          "properties": {},
+                          "additionalProperties": false
                         }
                       },
                       "required": [
-                        "kind"
+                        "@type"
                       ],
                       "additionalProperties": false
                     },
                     {
                       "type": "object",
                       "properties": {
-                        "kind": {
+                        "@type": {
                           "type": "string",
                           "const": "raid-defence"
                         },
-                        "roll": {
-                          "type": "integer",
-                          "minimum": -9007199254740991,
-                          "exclusiveMaximum": 0
+                        "@data": {
+                          "type": "object",
+                          "properties": {
+                            "roll": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "exclusiveMaximum": 0
+                            }
+                          },
+                          "required": [
+                            "roll"
+                          ],
+                          "additionalProperties": false
                         }
                       },
                       "required": [
-                        "kind",
-                        "roll"
+                        "@type",
+                        "@data"
                       ],
                       "additionalProperties": false
                     },
                     {
                       "type": "object",
                       "properties": {
-                        "kind": {
+                        "@type": {
                           "type": "string",
                           "const": "trains-in-contested"
+                        },
+                        "@data": {
+                          "type": "object",
+                          "properties": {},
+                          "additionalProperties": false
                         }
                       },
                       "required": [
-                        "kind"
+                        "@type"
                       ],
                       "additionalProperties": false
                     },
                     {
                       "type": "object",
                       "properties": {
-                        "kind": {
+                        "@type": {
                           "type": "string",
                           "const": "command-bonus"
                         },
-                        "roll": {
-                          "type": "integer",
-                          "exclusiveMinimum": 0,
-                          "maximum": 9007199254740991
+                        "@data": {
+                          "type": "object",
+                          "properties": {
+                            "roll": {
+                              "type": "integer",
+                              "exclusiveMinimum": 0,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "roll"
+                          ],
+                          "additionalProperties": false
                         }
                       },
                       "required": [
-                        "kind",
-                        "roll"
+                        "@type",
+                        "@data"
                       ],
                       "additionalProperties": false
                     },
                     {
                       "type": "object",
                       "properties": {
-                        "kind": {
+                        "@type": {
                           "type": "string",
                           "const": "rally"
+                        },
+                        "@data": {
+                          "type": "object",
+                          "properties": {},
+                          "additionalProperties": false
                         }
                       },
                       "required": [
-                        "kind"
+                        "@type"
                       ],
                       "additionalProperties": false
                     },
                     {
                       "type": "object",
                       "properties": {
-                        "kind": {
+                        "@type": {
                           "type": "string",
                           "const": "battle-support"
                         },
-                        "roll": {
-                          "type": "integer",
-                          "exclusiveMinimum": 0,
-                          "maximum": 9007199254740991
+                        "@data": {
+                          "type": "object",
+                          "properties": {
+                            "roll": {
+                              "type": "integer",
+                              "exclusiveMinimum": 0,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "roll"
+                          ],
+                          "additionalProperties": false
                         }
                       },
                       "required": [
-                        "kind",
-                        "roll"
+                        "@type",
+                        "@data"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "@type": {
+                          "type": "string",
+                          "const": "air-battle"
+                        },
+                        "@data": {
+                          "type": "object",
+                          "properties": {
+                            "roll": {
+                              "type": "integer",
+                              "exclusiveMinimum": 0,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "roll"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "@type",
+                        "@data"
                       ],
                       "additionalProperties": false
                     }
@@ -1842,7 +2024,7 @@
                       "type": "string",
                       "enum": [
                         "raid",
-                        "intercept",
+                        "patrol",
                         "support",
                         "recon"
                       ]
@@ -2044,43 +2226,61 @@
                   {
                     "type": "object",
                     "properties": {
-                      "kind": {
+                      "@type": {
                         "type": "string",
                         "const": "controlled"
                       },
-                      "factionId": {
-                        "type": "string",
-                        "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
-                        "description": "Stable kebab-case identifier. Never shown to players."
+                      "@data": {
+                        "type": "object",
+                        "properties": {
+                          "factionId": {
+                            "type": "string",
+                            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                            "description": "Stable kebab-case identifier. Never shown to players."
+                          }
+                        },
+                        "required": [
+                          "factionId"
+                        ],
+                        "additionalProperties": false
                       }
                     },
                     "required": [
-                      "kind",
-                      "factionId"
+                      "@type",
+                      "@data"
                     ],
                     "additionalProperties": false
                   },
                   {
                     "type": "object",
                     "properties": {
-                      "kind": {
+                      "@type": {
                         "type": "string",
                         "const": "contested"
                       },
-                      "factionIds": {
-                        "minItems": 2,
-                        "type": "array",
-                        "items": {
-                          "type": "string",
-                          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
-                          "description": "Stable kebab-case identifier. Never shown to players."
+                      "@data": {
+                        "type": "object",
+                        "properties": {
+                          "factionIds": {
+                            "minItems": 2,
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                              "description": "Stable kebab-case identifier. Never shown to players."
+                            },
+                            "description": "Factions with a meaningful presence. At least two."
+                          }
                         },
-                        "description": "Factions with a meaningful presence. At least two."
+                        "required": [
+                          "factionIds"
+                        ],
+                        "additionalProperties": false
                       }
                     },
                     "required": [
-                      "kind",
-                      "factionIds"
+                      "@type",
+                      "@data"
                     ],
                     "additionalProperties": false
                   }
@@ -2123,62 +2323,136 @@
         "connections": {
           "type": "array",
           "items": {
-            "type": "object",
-            "properties": {
-              "between": {
-                "type": "array",
-                "prefixItems": [
-                  {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "@type": {
                     "type": "string",
-                    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
-                    "description": "Stable kebab-case identifier. Never shown to players."
+                    "const": "land"
                   },
-                  {
-                    "type": "string",
-                    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
-                    "description": "Stable kebab-case identifier. Never shown to players."
+                  "@data": {
+                    "type": "object",
+                    "properties": {
+                      "between": {
+                        "type": "array",
+                        "prefixItems": [
+                          {
+                            "type": "string",
+                            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                            "description": "Stable kebab-case identifier. Never shown to players."
+                          },
+                          {
+                            "type": "string",
+                            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                            "description": "Stable kebab-case identifier. Never shown to players."
+                          }
+                        ],
+                        "items": false,
+                        "minItems": 2,
+                        "maxItems": 2
+                      },
+                      "label": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "entry": {
+                        "description": "P8: sub-territory entered on each side, in between order. Required with sub-territories (L19).",
+                        "type": "array",
+                        "prefixItems": [
+                          {
+                            "type": "string",
+                            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                            "description": "Stable kebab-case identifier. Never shown to players."
+                          },
+                          {
+                            "type": "string",
+                            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                            "description": "Stable kebab-case identifier. Never shown to players."
+                          }
+                        ],
+                        "items": false,
+                        "minItems": 2,
+                        "maxItems": 2
+                      }
+                    },
+                    "required": [
+                      "between"
+                    ],
+                    "additionalProperties": false
                   }
+                },
+                "required": [
+                  "@type",
+                  "@data"
                 ],
-                "items": false,
-                "minItems": 2,
-                "maxItems": 2
+                "additionalProperties": false
               },
-              "kind": {
-                "type": "string",
-                "enum": [
-                  "land",
-                  "sea"
-                ]
-              },
-              "label": {
-                "type": "string",
-                "minLength": 1
-              },
-              "entry": {
-                "description": "P8: sub-territory entered on each side, in between order. Required with sub-territories (L19).",
-                "type": "array",
-                "prefixItems": [
-                  {
+              {
+                "type": "object",
+                "properties": {
+                  "@type": {
                     "type": "string",
-                    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
-                    "description": "Stable kebab-case identifier. Never shown to players."
+                    "const": "sea"
                   },
-                  {
-                    "type": "string",
-                    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
-                    "description": "Stable kebab-case identifier. Never shown to players."
+                  "@data": {
+                    "type": "object",
+                    "properties": {
+                      "between": {
+                        "type": "array",
+                        "prefixItems": [
+                          {
+                            "type": "string",
+                            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                            "description": "Stable kebab-case identifier. Never shown to players."
+                          },
+                          {
+                            "type": "string",
+                            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                            "description": "Stable kebab-case identifier. Never shown to players."
+                          }
+                        ],
+                        "items": false,
+                        "minItems": 2,
+                        "maxItems": 2
+                      },
+                      "label": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "entry": {
+                        "description": "P8: sub-territory entered on each side, in between order. Required with sub-territories (L19).",
+                        "type": "array",
+                        "prefixItems": [
+                          {
+                            "type": "string",
+                            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                            "description": "Stable kebab-case identifier. Never shown to players."
+                          },
+                          {
+                            "type": "string",
+                            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                            "description": "Stable kebab-case identifier. Never shown to players."
+                          }
+                        ],
+                        "items": false,
+                        "minItems": 2,
+                        "maxItems": 2
+                      }
+                    },
+                    "required": [
+                      "between"
+                    ],
+                    "additionalProperties": false
                   }
+                },
+                "required": [
+                  "@type",
+                  "@data"
                 ],
-                "items": false,
-                "minItems": 2,
-                "maxItems": 2
+                "additionalProperties": false
               }
-            },
-            "required": [
-              "between",
-              "kind"
-            ],
-            "additionalProperties": false
+            ]
           }
         },
         "cities": {
@@ -2280,10 +2554,14 @@
                   "description": "Stable kebab-case identifier. Never shown to players."
                 }
               },
-              "rail": {
-                "type": "integer",
-                "minimum": 0,
-                "maximum": 3
+              "buildable": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                  "description": "Stable kebab-case identifier. Never shown to players."
+                },
+                "description": "D4: everything the sub-territory may build: building ids, development track ids, and the improvements rail and port. There are no rule defaults (L29)."
               },
               "port": {
                 "type": "integer",
@@ -2325,11 +2603,11 @@
               "territoryId",
               "terrain",
               "startHolder",
-              "rail",
+              "buildable",
               "port"
             ],
             "additionalProperties": false,
-            "description": "A sub-territory needs sources or a note (L18)."
+            "description": "A sub-territory needs sources or a note (L18). Its rail level is read from its links (D3)."
           }
         },
         "subTerritoryBorders": {
@@ -2354,6 +2632,430 @@
             "maxItems": 2
           },
           "description": "Undirected sub-territory adjacency, inside and across territories. Generated from the map geometry."
+        },
+        "links": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "a": {
+                "type": "string",
+                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                "description": "Stable kebab-case identifier. Never shown to players."
+              },
+              "b": {
+                "type": "string",
+                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                "description": "Stable kebab-case identifier. Never shown to players."
+              },
+              "modifiers": {
+                "type": "array",
+                "items": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "@type": {
+                          "type": "string",
+                          "const": "road"
+                        },
+                        "@data": {
+                          "type": "object",
+                          "properties": {
+                            "level": {
+                              "type": "string",
+                              "enum": [
+                                "track",
+                                "main"
+                              ],
+                              "description": "track: an unmetalled road; main: a main road trucks can use."
+                            }
+                          },
+                          "required": [
+                            "level"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "@type",
+                        "@data"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "@type": {
+                          "type": "string",
+                          "const": "rail"
+                        },
+                        "@data": {
+                          "type": "object",
+                          "properties": {
+                            "level": {
+                              "type": "string",
+                              "enum": [
+                                "single",
+                                "main"
+                              ],
+                              "description": "single: a single-track or secondary line; main: a trunk line."
+                            }
+                          },
+                          "required": [
+                            "level"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "@type",
+                        "@data"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "@type": {
+                          "type": "string",
+                          "const": "pass"
+                        },
+                        "@data": {
+                          "type": "object",
+                          "properties": {
+                            "name": {
+                              "type": "string",
+                              "minLength": 1,
+                              "description": "The pass's name, shown to players."
+                            }
+                          },
+                          "required": [
+                            "name"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "@type",
+                        "@data"
+                      ],
+                      "additionalProperties": false
+                    }
+                  ]
+                }
+              },
+              "sources": {
+                "default": [],
+                "description": "Citations for the numbers.",
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "sourceId": {
+                      "type": "string",
+                      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                      "description": "Stable kebab-case identifier. Never shown to players."
+                    },
+                    "reference": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "sourceId"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "note": {
+                "description": "Design note for numbers no source gives.",
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "a",
+              "b"
+            ],
+            "additionalProperties": false,
+            "description": "D2: the link between two bordering sub-territories. Every border has exactly one link; each needs sources or a note (L28)."
+          }
+        },
+        "linkModifiers": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "@type": {
+                    "type": "string",
+                    "const": "road"
+                  },
+                  "@data": {
+                    "type": "object",
+                    "properties": {
+                      "label": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "motorLevel": {
+                        "type": "string",
+                        "enum": [
+                          "track",
+                          "main"
+                        ],
+                        "description": "R5: the road level Motor moves need."
+                      },
+                      "motorRange": {
+                        "type": "integer",
+                        "exclusiveMinimum": 0,
+                        "maximum": 9007199254740991,
+                        "description": "R5: territories a Motor move may cover."
+                      }
+                    },
+                    "required": [
+                      "label",
+                      "motorLevel",
+                      "motorRange"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "@type",
+                  "@data"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "@type": {
+                    "type": "string",
+                    "const": "rail"
+                  },
+                  "@data": {
+                    "type": "object",
+                    "properties": {
+                      "label": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "rangeByLevel": {
+                        "type": "object",
+                        "properties": {
+                          "single": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "main": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0,
+                            "maximum": 9007199254740991
+                          }
+                        },
+                        "required": [
+                          "single",
+                          "main"
+                        ],
+                        "additionalProperties": false,
+                        "description": "R5: rail range in territories, by the weakest rail level on the route."
+                      }
+                    },
+                    "required": [
+                      "label",
+                      "rangeByLevel"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "@type",
+                  "@data"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "@type": {
+                    "type": "string",
+                    "const": "pass"
+                  },
+                  "@data": {
+                    "type": "object",
+                    "properties": {
+                      "label": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "noMotor": {
+                        "type": "boolean",
+                        "description": "R5, R6: Motor moves may not cross the link."
+                      },
+                      "defenderRoll": {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 0,
+                        "description": "R6: the attacker's roll change when every attacking ground unit crosses such a link. Stacks with dug-in."
+                      },
+                      "lostToFlanking": {
+                        "type": "boolean",
+                        "description": "R6: one attacking ground unit over another kind of link cancels the change."
+                      }
+                    },
+                    "required": [
+                      "label",
+                      "noMotor",
+                      "defenderRoll",
+                      "lostToFlanking"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "@type",
+                  "@data"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          }
+        },
+        "linkProjects": {
+          "type": "object",
+          "properties": {
+            "new-rail": {
+              "type": "object",
+              "properties": {
+                "cost": {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                    "description": "Stable kebab-case identifier. Never shown to players."
+                  },
+                  "additionalProperties": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "description": "Whole amounts keyed by resource id. A missing resource is zero."
+                },
+                "turns": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0,
+                  "maximum": 9007199254740991,
+                  "description": "Turns of progress the item needs once it heads its queue."
+                }
+              },
+              "required": [
+                "cost",
+                "turns"
+              ],
+              "additionalProperties": false,
+              "description": "A new single-track line on a link with none."
+            },
+            "rail-upgrade": {
+              "type": "object",
+              "properties": {
+                "cost": {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                    "description": "Stable kebab-case identifier. Never shown to players."
+                  },
+                  "additionalProperties": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "description": "Whole amounts keyed by resource id. A missing resource is zero."
+                },
+                "turns": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0,
+                  "maximum": 9007199254740991,
+                  "description": "Turns of progress the item needs once it heads its queue."
+                }
+              },
+              "required": [
+                "cost",
+                "turns"
+              ],
+              "additionalProperties": false,
+              "description": "A single line upgraded to main."
+            },
+            "road-upgrade": {
+              "type": "object",
+              "properties": {
+                "cost": {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                    "description": "Stable kebab-case identifier. Never shown to players."
+                  },
+                  "additionalProperties": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "description": "Whole amounts keyed by resource id. A missing resource is zero."
+                },
+                "turns": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0,
+                  "maximum": 9007199254740991,
+                  "description": "Turns of progress the item needs once it heads its queue."
+                }
+              },
+              "required": [
+                "cost",
+                "turns"
+              ],
+              "additionalProperties": false,
+              "description": "A road built (to track) or upgraded (track to main)."
+            },
+            "sources": {
+              "default": [],
+              "description": "Citations for the numbers.",
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "sourceId": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                    "description": "Stable kebab-case identifier. Never shown to players."
+                  },
+                  "reference": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "sourceId"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "note": {
+              "description": "Design note for numbers no source gives.",
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "new-rail",
+            "rail-upgrade",
+            "road-upgrade"
+          ],
+          "additionalProperties": false
         },
         "resources": {
           "default": [],
@@ -2505,7 +3207,6 @@
           }
         },
         "buildings": {
-          "default": [],
           "type": "array",
           "items": {
             "type": "object",
@@ -2553,134 +3254,188 @@
                 "description": "Stable kebab-case identifier. Never shown to players."
               },
               "effects": {
-                "default": [],
                 "type": "array",
                 "items": {
                   "oneOf": [
                     {
                       "type": "object",
                       "properties": {
-                        "kind": {
+                        "@type": {
                           "type": "string",
                           "const": "recruit-slots"
                         },
-                        "extra": {
-                          "type": "integer",
-                          "exclusiveMinimum": 0,
-                          "maximum": 9007199254740991
+                        "@data": {
+                          "type": "object",
+                          "properties": {
+                            "extra": {
+                              "type": "integer",
+                              "exclusiveMinimum": 0,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "extra"
+                          ],
+                          "additionalProperties": false
                         }
                       },
                       "required": [
-                        "kind",
-                        "extra"
+                        "@type",
+                        "@data"
                       ],
                       "additionalProperties": false
                     },
                     {
                       "type": "object",
                       "properties": {
-                        "kind": {
+                        "@type": {
                           "type": "string",
                           "const": "replenish-cap"
                         },
-                        "share": {
-                          "type": "number",
-                          "minimum": 0,
-                          "maximum": 1
+                        "@data": {
+                          "type": "object",
+                          "properties": {
+                            "share": {
+                              "type": "number",
+                              "minimum": 0,
+                              "maximum": 1
+                            }
+                          },
+                          "required": [
+                            "share"
+                          ],
+                          "additionalProperties": false
                         }
                       },
                       "required": [
-                        "kind",
-                        "share"
+                        "@type",
+                        "@data"
                       ],
                       "additionalProperties": false
                     },
                     {
                       "type": "object",
                       "properties": {
-                        "kind": {
+                        "@type": {
                           "type": "string",
                           "const": "replenish-discount"
                         },
-                        "resource": {
-                          "type": "string",
-                          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
-                          "description": "Stable kebab-case identifier. Never shown to players."
-                        },
-                        "share": {
-                          "type": "number",
-                          "minimum": 0,
-                          "maximum": 1
+                        "@data": {
+                          "type": "object",
+                          "properties": {
+                            "resource": {
+                              "type": "string",
+                              "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                              "description": "Stable kebab-case identifier. Never shown to players."
+                            },
+                            "share": {
+                              "type": "number",
+                              "minimum": 0,
+                              "maximum": 1
+                            }
+                          },
+                          "required": [
+                            "resource",
+                            "share"
+                          ],
+                          "additionalProperties": false
                         }
                       },
                       "required": [
-                        "kind",
-                        "resource",
-                        "share"
+                        "@type",
+                        "@data"
                       ],
                       "additionalProperties": false
                     },
                     {
                       "type": "object",
                       "properties": {
-                        "kind": {
+                        "@type": {
                           "type": "string",
                           "const": "rail-departures"
                         },
-                        "extra": {
-                          "type": "integer",
-                          "exclusiveMinimum": 0,
-                          "maximum": 9007199254740991
+                        "@data": {
+                          "type": "object",
+                          "properties": {
+                            "extra": {
+                              "type": "integer",
+                              "exclusiveMinimum": 0,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "extra"
+                          ],
+                          "additionalProperties": false
                         }
                       },
                       "required": [
-                        "kind",
-                        "extra"
+                        "@type",
+                        "@data"
                       ],
                       "additionalProperties": false
                     },
                     {
                       "type": "object",
                       "properties": {
-                        "kind": {
+                        "@type": {
                           "type": "string",
                           "const": "airbase"
+                        },
+                        "@data": {
+                          "type": "object",
+                          "properties": {},
+                          "additionalProperties": false
                         }
                       },
                       "required": [
-                        "kind"
+                        "@type"
                       ],
                       "additionalProperties": false
                     },
                     {
                       "type": "object",
                       "properties": {
-                        "kind": {
+                        "@type": {
                           "type": "string",
                           "const": "all-weather-airbase"
+                        },
+                        "@data": {
+                          "type": "object",
+                          "properties": {},
+                          "additionalProperties": false
                         }
                       },
                       "required": [
-                        "kind"
+                        "@type"
                       ],
                       "additionalProperties": false
                     },
                     {
                       "type": "object",
                       "properties": {
-                        "kind": {
+                        "@type": {
                           "type": "string",
                           "const": "defence-roll"
                         },
-                        "roll": {
-                          "type": "integer",
-                          "exclusiveMinimum": 0,
-                          "maximum": 9007199254740991
+                        "@data": {
+                          "type": "object",
+                          "properties": {
+                            "roll": {
+                              "type": "integer",
+                              "exclusiveMinimum": 0,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "roll"
+                          ],
+                          "additionalProperties": false
                         }
                       },
                       "required": [
-                        "kind",
-                        "roll"
+                        "@type",
+                        "@data"
                       ],
                       "additionalProperties": false
                     }
@@ -2906,11 +3661,6 @@
               "exclusiveMinimum": 0,
               "maximum": 9007199254740991
             },
-            "railRangePerLevel": {
-              "type": "integer",
-              "exclusiveMinimum": 0,
-              "maximum": 9007199254740991
-            },
             "sources": {
               "default": [],
               "description": "Citations for the numbers.",
@@ -2941,8 +3691,7 @@
             }
           },
           "required": [
-            "landingsPerPortLevel",
-            "railRangePerLevel"
+            "landingsPerPortLevel"
           ],
           "additionalProperties": false
         },
@@ -3286,94 +4035,130 @@
                     "maximum": 0
                   },
                   "effects": {
-                    "default": [],
                     "type": "array",
                     "items": {
                       "oneOf": [
                         {
                           "type": "object",
                           "properties": {
-                            "kind": {
+                            "@type": {
                               "type": "string",
                               "const": "blocks-digging-in"
+                            },
+                            "@data": {
+                              "type": "object",
+                              "properties": {},
+                              "additionalProperties": false
                             }
                           },
                           "required": [
-                            "kind"
+                            "@type"
                           ],
                           "additionalProperties": false
                         },
                         {
                           "type": "object",
                           "properties": {
-                            "kind": {
+                            "@type": {
                               "type": "string",
                               "const": "grounds-aircraft"
+                            },
+                            "@data": {
+                              "type": "object",
+                              "properties": {},
+                              "additionalProperties": false
                             }
                           },
                           "required": [
-                            "kind"
+                            "@type"
                           ],
                           "additionalProperties": false
                         },
                         {
                           "type": "object",
                           "properties": {
-                            "kind": {
+                            "@type": {
                               "type": "string",
                               "const": "movement-penalty"
                             },
-                            "amount": {
-                              "type": "integer",
-                              "exclusiveMinimum": 0,
-                              "maximum": 9007199254740991
+                            "@data": {
+                              "type": "object",
+                              "properties": {
+                                "amount": {
+                                  "type": "integer",
+                                  "exclusiveMinimum": 0,
+                                  "maximum": 9007199254740991
+                                }
+                              },
+                              "required": [
+                                "amount"
+                              ],
+                              "additionalProperties": false
                             }
                           },
                           "required": [
-                            "kind",
-                            "amount"
+                            "@type",
+                            "@data"
                           ],
                           "additionalProperties": false
                         },
                         {
                           "type": "object",
                           "properties": {
-                            "kind": {
+                            "@type": {
                               "type": "string",
                               "const": "frostbite"
                             },
-                            "share": {
-                              "type": "number",
-                              "minimum": 0,
-                              "maximum": 1
+                            "@data": {
+                              "type": "object",
+                              "properties": {
+                                "share": {
+                                  "type": "number",
+                                  "minimum": 0,
+                                  "maximum": 1
+                                }
+                              },
+                              "required": [
+                                "share"
+                              ],
+                              "additionalProperties": false
                             }
                           },
                           "required": [
-                            "kind",
-                            "share"
+                            "@type",
+                            "@data"
                           ],
                           "additionalProperties": false
                         },
                         {
                           "type": "object",
                           "properties": {
-                            "kind": {
+                            "@type": {
                               "type": "string",
                               "const": "closes-sea"
                             },
-                            "months": {
-                              "minItems": 1,
-                              "type": "array",
-                              "items": {
-                                "type": "integer",
-                                "minimum": 1,
-                                "maximum": 12
-                              }
+                            "@data": {
+                              "type": "object",
+                              "properties": {
+                                "months": {
+                                  "minItems": 1,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 12
+                                  }
+                                }
+                              },
+                              "required": [
+                                "months"
+                              ],
+                              "additionalProperties": false
                             }
                           },
                           "required": [
-                            "kind",
-                            "months"
+                            "@type",
+                            "@data"
                           ],
                           "additionalProperties": false
                         }
@@ -3631,6 +4416,12 @@
               "exclusiveMinimum": 0,
               "maximum": 9007199254740991
             },
+            "supportMax": {
+              "description": "R11: the most aircraft whose Ground Support counts for one side of a battle; absent means no cap.",
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            },
             "generalDeathRoll": {
               "description": "U5: a general whose army is destroyed or routed dies on a d20 at or under this.",
               "type": "integer",
@@ -3698,40 +4489,54 @@
                         {
                           "type": "object",
                           "properties": {
-                            "kind": {
+                            "@type": {
                               "type": "string",
                               "const": "roll-modifier"
                             },
-                            "role": {
-                              "type": "string",
-                              "enum": [
-                                "attack",
-                                "defence"
-                              ]
-                            },
-                            "roll": {
-                              "type": "integer",
-                              "minimum": -9007199254740991,
-                              "maximum": 9007199254740991
+                            "@data": {
+                              "type": "object",
+                              "properties": {
+                                "role": {
+                                  "type": "string",
+                                  "enum": [
+                                    "attack",
+                                    "defence"
+                                  ]
+                                },
+                                "roll": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                }
+                              },
+                              "required": [
+                                "role",
+                                "roll"
+                              ],
+                              "additionalProperties": false
                             }
                           },
                           "required": [
-                            "kind",
-                            "role",
-                            "roll"
+                            "@type",
+                            "@data"
                           ],
                           "additionalProperties": false
                         },
                         {
                           "type": "object",
                           "properties": {
-                            "kind": {
+                            "@type": {
                               "type": "string",
                               "const": "no-rally"
+                            },
+                            "@data": {
+                              "type": "object",
+                              "properties": {},
+                              "additionalProperties": false
                             }
                           },
                           "required": [
-                            "kind"
+                            "@type"
                           ],
                           "additionalProperties": false
                         }

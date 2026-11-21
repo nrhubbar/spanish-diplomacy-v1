@@ -24,10 +24,7 @@ export function routeForSession(session: Session): string {
   return phaseRoutes[session.phase];
 }
 
-/** Settings is reachable outside a game; every other path must match the session. */
+/** Settings is reachable at any time (U1: from the game's menu too); every other path must match the session. */
 export function isPathAllowed(session: Session, pathname: string): boolean {
-  if (pathname === paths.settings) {
-    return session.phase === "idle" || session.phase === "setup";
-  }
-  return pathname === routeForSession(session);
+  return pathname === paths.settings || pathname === routeForSession(session);
 }

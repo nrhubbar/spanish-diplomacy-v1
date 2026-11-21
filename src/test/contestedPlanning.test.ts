@@ -1,9 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { initialGameState } from "../main/engine/resolution";
-import type { GameState } from "../main/engine/types";
+import type { GameState, SubTerritoryId } from "../main/engine/types";
 import { chooseOrder, chooseDestination, orderCounts, orderKindsFor, orderOf, type PlanningSession, selectTerritory, toggleUnit } from "../main/state/planning";
 import { emptyDraft } from "../main/state/session";
 import { armyIn, faction, spain, spainId, territory, unit, withUnits } from "./support";
+
+/** R1: with Granada the Republic's Andalusian ground is one pocket, with ways out to Castilla-La Mancha and Murcia. */
+function withGranada(state: GameState): GameState {
+  const granada = state.subTerritories["granada" as SubTerritoryId];
+  if (granada === undefined) throw new Error("granada");
+  return { ...state, subTerritories: { ...state.subTerritories, ["granada" as SubTerritoryId]: { ...granada, holder: faction("republic") } } };
+}
 
 function planning(state: GameState, factionId = "republic"): PlanningSession {
   return {
@@ -26,7 +33,7 @@ describe("planning in contested ground (C1, Q-UX-14)", () => {
 
   it("plans a Withdraw to a chosen destination, and Attack drops it again", () => {
     const scenario = spain();
-    const session = selectTerritory(planning(initialGameState(scenario)), territory("andalucia"));
+    const session = selectTerritory(planning(withGranada(initialGameState(scenario))), territory("andalucia"));
     const choosing = chooseOrder(scenario, session, "withdraw");
     expect(choosing.draft.stage).toEqual({ orderKind: "withdraw", step: "choose-destination" });
     const refused = chooseDestination(scenario, choosing, territory("extremadura"));

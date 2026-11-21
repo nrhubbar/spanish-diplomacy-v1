@@ -27,15 +27,37 @@ export const basisShape = {
   note: textSchema.optional().meta({ description: "Design note for numbers no source gives." })
 };
 
+/**
+ * D1: a typed entry, `{"@type": kind, "@data": {...}}`. Every discriminated union in the
+ * scenario and map JSON is written this way. Parsing reads it as the engine's `{kind, ...data}`,
+ * so the published (input) schema shows `@type`/`@data` and the engine types stay as they are.
+ */
+export function typedEntry<const Kind extends string, Shape extends z.ZodRawShape>(kind: Kind, shape: Shape) {
+  return z
+    .strictObject({ "@type": z.literal(kind), "@data": z.strictObject(shape) })
+    .transform(({ "@data": data }) => ({ kind, ...data }));
+}
+
+/** D1: a typed entry that carries no data; `@data` may be left out or empty. */
+export function markerEntry<const Kind extends string>(kind: Kind) {
+  return z
+    .strictObject({ "@type": z.literal(kind), "@data": z.strictObject({}).optional() })
+    .transform(() => ({ kind }));
+}
+
+/** D1: the `@type` values of a union of typed entries, in schema order. */
+export function entryKinds(union: { readonly options: readonly { readonly in: { readonly shape: { readonly "@type": { readonly value: string } } } }[] }): string[] {
+  return union.options.map((option) => option.in.shape["@type"].value);
+}
+
 /** An amount of each resource, keyed by resource id. */
 export const resourcesSchema = z
   .record(slugSchema, wholeSchema)
   .meta({ description: "Whole amounts keyed by resource id. A missing resource is zero." });
 
-const controlSchema = z.discriminatedUnion("kind", [
-  z.strictObject({ kind: z.literal("controlled"), factionId: slugSchema }),
-  z.strictObject({
-    kind: z.literal("contested"),
+const controlSchema = z.discriminatedUnion("@type", [
+  typedEntry("controlled", { factionId: slugSchema }),
+  typedEntry("contested", {
     factionIds: z.array(slugSchema).min(2).meta({ description: "Factions with a meaningful presence. At least two." })
   })
 ]);
@@ -69,7 +91,7 @@ export const combatSchema = z
       .length(7)
       .meta({ description: "Seven odds columns: below 1:1, then 1:1 to 6:1. Each lists the result for modified rolls 0 to 6." }),
     belowOneToOne: z
-      .strictObject({ kind: z.literal("halving"), rollPenalty: wholeSchema })
+      .discriminatedUnion("@type", [typedEntry("halving", { rollPenalty: wholeSchema })])
       .meta({ description: "Below 1:1 the attacker's roll takes rollPenalty for each halving of the odds." }),
     diggingIn: z
       .strictObject({ perTurn: positiveWholeSchema, max: positiveWholeSchema })
@@ -119,11 +141,18 @@ export const territoryShape = {
     .meta({ description: "Required when a territory deliberately has no connections." })
 };
 
-export const connectionShape = {
+const connectionShape = {
   between: z.tuple([slugSchema, slugSchema]),
-  kind: z.enum(["land", "sea"]),
   label: textSchema.optional()
 };
+
+/** D1: a land or sea connection, as a typed entry. `extra` adds a ruleset's fields to both kinds. */
+export function connectionSchema<Extra extends z.ZodRawShape>(extra: Extra) {
+  return z.discriminatedUnion("@type", [
+    typedEntry("land", { ...connectionShape, ...extra }),
+    typedEntry("sea", { ...connectionShape, ...extra })
+  ]);
+}
 
 export const cityShape = {
   id: slugSchema,

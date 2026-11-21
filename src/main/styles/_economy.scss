@@ -65,7 +65,7 @@
   z-index: 30;
   top: calc(100% + 6px);
   right: 0;
-  width: min(18rem, calc(100vw - 2rem));
+  width: min(22rem, calc(100vw - 2rem));
   padding: 0.6rem 0.8rem;
   border: 1px solid var(--rule);
   border-radius: 8px;
@@ -207,16 +207,6 @@
   background: var(--ink);
 }
 
-.site-queue {
-  margin: 0.5rem 0 0;
-  padding: 0;
-  list-style: none;
-
-  li + li {
-    margin-top: 0.35rem;
-  }
-}
-
 .queue-line {
   display: flex;
   flex-wrap: wrap;
@@ -248,10 +238,6 @@
     border-radius: 2px;
     background: var(--success);
   }
-}
-
-.site-actions {
-  margin-top: 0.5rem;
 }
 
 // X3: the focused sub-territory's build list.

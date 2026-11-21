@@ -21,8 +21,17 @@ function d20Table(): string[][] {
     Array.from({ length: 21 }, (_, score) => grades[Math.min(grades.length - 1, Math.floor((score + 3 * column) / 6))]?.[0] ?? "stalemate"));
 }
 
+/** D4: everything the catalogue allows: the palace only in a capital with a city, industry only with a city. */
+const everything = (city: boolean): string[] => ["barracks", "airfield", "paved-airfield", ...(city ? ["palace"] : []), "farms", ...(city ? ["industry"] : []), "rail", "port"];
+
 const sub = (id: string, territoryId: string, startHolder: string, extra: Json = {}): Json => ({
-  id, name: id, territoryId, terrain: "open", startHolder, rail: 1, port: 0, note: "Invented for tests.", ...extra
+  id, name: id, territoryId, terrain: "open", startHolder, port: 0, buildable: everything(false), note: "Invented for tests.", ...extra
+});
+
+/** D2: a link with typed modifiers: a track road everywhere, rail where given. */
+const link = (a: string, b: string, rail?: "single" | "main"): Json => ({
+  a, b, note: "Invented for tests.",
+  modifiers: [{ "@type": "road", "@data": { level: "track" } }, ...(rail === undefined ? [] : [{ "@type": "rail", "@data": { level: rail } }])]
 });
 
 export function modularScenario(): Json {
@@ -38,7 +47,10 @@ export function modularScenario(): Json {
     rules: { dice: "d20-graded", economy: "development", recruitment: "buildings", weather: "seasonal-zones", movement: "allowance", partition: "provinces", air: "missions" },
     factions,
     territories: (base["territories"] as Json[]).map((territory) => ({ ...territory, capitalSubTerritoryId: capitals[territory["id"] as string], weatherZone: "plains" })),
-    connections: (base["connections"] as Json[]).map((connection) => ({ ...connection, entry: (connection["between"] as string[]).map((id) => capitals[id]) })),
+    connections: (base["connections"] as Json[]).map((connection) => {
+      const data = connection["@data"] as Json;
+      return { ...connection, "@data": { ...data, entry: (data["between"] as string[]).map((id) => capitals[id]) } };
+    }),
     cities: (base["cities"] as Json[]).map((city) => ({ ...city, subTerritoryId: capitals[city["territoryId"] as string] })),
     units: [
       ...(base["units"] as Json[]),
@@ -46,21 +58,36 @@ export function modularScenario(): Json {
     ],
     unitTypes: [
       { id: "foot", name: "Foot", attack: 4, defence: 5, kind: "ground", symbol: "infantry", orders: ["move", "withdraw", "replenish"], recruit: { cost: { funds: 4, manpower: 2 }, establishment: 400, trainingTurns: 2, requires: ["barracks"] } },
-      { id: "guns", name: "Guns", attack: 3, defence: 2, kind: "ground", symbol: "artillery", orders: ["move"], effects: [{ kind: "roll-bonus-per-points", role: "attack", per: 3, bonus: 1, max: 3, exceptWeather: ["mud"] }, { kind: "cannot-attack-alone" }] },
+      { id: "guns", name: "Guns", attack: 3, defence: 2, kind: "ground", symbol: "artillery", orders: ["move"], effects: [{ "@type": "roll-bonus-per-points", "@data": { role: "attack", per: 3, bonus: 1, max: 3, exceptWeather: ["mud"] } }, { "@type": "cannot-attack-alone" }] },
       { id: "wing", name: "Wing", attack: 0, defence: 1, kind: "air", symbol: "fixed-wing", orders: ["air-mission"], air: { range: 2, missions: ["raid", "recon"] } },
-      { id: "staff", name: "Staff", attack: 0, defence: 0, kind: "general", symbol: "headquarters", orders: ["move", "sack"], effects: [{ kind: "command-bonus", roll: 1 }, { kind: "rally" }] }
+      { id: "staff", name: "Staff", attack: 0, defence: 0, kind: "general", symbol: "headquarters", orders: ["move", "sack"], effects: [{ "@type": "command-bonus", "@data": { roll: 1 } }, { "@type": "rally" }] }
     ],
     subTerritories: [
-      sub("west-town-quarter", "westfold", "red", { development: { farms: 1, industry: 1 }, buildings: ["barracks"], rail: 2 }),
+      sub("west-town-quarter", "westfold", "red", { development: { farms: 1, industry: 1 }, buildings: ["barracks"], buildable: everything(true) }),
       sub("west-hills", "westfold", "red", { terrain: "mountain", development: { farms: 2 } }),
       sub("highlands", "highlands", "red", { terrain: "mountain" }),
-      sub("port-quarter", "harbor", "blue", { port: 2, buildings: ["barracks"], development: { industry: 2 } }),
+      sub("port-quarter", "harbor", "blue", { port: 2, buildings: ["barracks"], development: { industry: 2 }, buildable: everything(true) }),
       sub("lowlands", "lowlands", "blue"),
-      sub("isle", "isle", "blue", { port: 1, rail: 0, sources: [{ sourceId: "fixture" }] }),
+      sub("isle", "isle", "blue", { port: 1, sources: [{ sourceId: "fixture" }] }),
       // The isle starts contested (red and blue), so red holds a cove there (L26).
-      sub("isle-cove", "isle", "red", { rail: 0 })
+      sub("isle-cove", "isle", "red")
     ],
     subTerritoryBorders: [["isle", "isle-cove"], ["west-town-quarter", "west-hills"], ["west-hills", "highlands"], ["highlands", "port-quarter"], ["port-quarter", "lowlands"], ["lowlands", "west-town-quarter"]],
+    // Rail levels read from the links (D3): west-town-quarter and lowlands 2, the isle 0, the rest 1.
+    links: [
+      { a: "isle", b: "isle-cove", note: "Invented for tests.", modifiers: [] },
+      link("west-town-quarter", "west-hills", "single"),
+      link("west-hills", "highlands", "single"),
+      link("highlands", "port-quarter", "single"),
+      link("port-quarter", "lowlands", "single"),
+      link("lowlands", "west-town-quarter", "main")
+    ],
+    linkModifiers: [
+      { "@type": "road", "@data": { label: "Road", motorLevel: "main", motorRange: 2 } },
+      { "@type": "rail", "@data": { label: "Railway", rangeByLevel: { single: 2, main: 4 } } },
+      { "@type": "pass", "@data": { label: "Mountain pass", noMotor: true, defenderRoll: -2, lostToFlanking: true } }
+    ],
+    linkProjects: { "new-rail": { cost: { funds: 8 }, turns: 4 }, "rail-upgrade": { cost: { funds: 4 }, turns: 2 }, "road-upgrade": { cost: { funds: 2 }, turns: 1 } },
     resources: [{ id: "funds", name: "Funds" }, { id: "manpower", name: "Manpower" }],
     development: [
       { id: "farms", name: "Farms", resource: "manpower", yieldPerLevel: 1, maxLevel: 3, upgrade: { cost: { funds: 3 }, turns: 2 } },
@@ -68,13 +95,13 @@ export function modularScenario(): Json {
     ],
     buildings: [
       { id: "barracks", name: "Barracks", cost: { funds: 4 }, turns: 2 },
-      { id: "airfield", name: "Airfield", cost: { funds: 6 }, turns: 3, effects: [{ kind: "airbase" }] },
-      { id: "paved-airfield", name: "Paved airfield", cost: { funds: 4 }, turns: 2, upgradeOf: "airfield", effects: [{ kind: "all-weather-airbase" }] },
+      { id: "airfield", name: "Airfield", cost: { funds: 6 }, turns: 3, effects: [{ "@type": "airbase" }] },
+      { id: "paved-airfield", name: "Paved airfield", cost: { funds: 4 }, turns: 2, upgradeOf: "airfield", effects: [{ "@type": "all-weather-airbase" }] },
       { id: "palace", name: "Palace", cost: { funds: 9 }, turns: 4, capitalOnly: true, cityOnly: true }
     ],
-    improvements: { rail: { cost: { funds: 3 }, turns: 2, maxLevel: 3 }, port: { cost: { funds: 4 }, turns: 3, maxLevel: 2 }, railDamageOnContest: 1 },
+    improvements: { rail: { cost: { funds: 3 }, turns: 2, maxLevel: 2 }, port: { cost: { funds: 4 }, turns: 3, maxLevel: 2 }, railDamageOnContest: 1 },
     recruitment: { maxPerTerritory: 2, replenishCostShare: 0.5, replenishShare: 0.5 },
-    movement: { landingsPerPortLevel: 1, railRangePerLevel: 2 },
+    movement: { landingsPerPortLevel: 1 },
     d20: {
       grades: grades.map(([id, attackerLoss, attackerMorale, defenderLoss, defenderMorale, ground]) => ({
         id, name: id, attacker: { lossPercent: attackerLoss, demoralized: attackerMorale }, defender: { lossPercent: defenderLoss, demoralized: defenderMorale }, ground
@@ -88,8 +115,8 @@ export function modularScenario(): Json {
     weather: {
       outcomes: [
         { id: "clear", name: "Clear", attackRoll: 0 },
-        { id: "mud", name: "Mud", attackRoll: -3, effects: [{ kind: "movement-penalty", amount: 1 }, { kind: "grounds-aircraft" }] },
-        { id: "snow", name: "Snow", attackRoll: -3, effects: [{ kind: "blocks-digging-in" }, { kind: "closes-sea", months: [12, 1, 2] }] }
+        { id: "mud", name: "Mud", attackRoll: -3, effects: [{ "@type": "movement-penalty", "@data": { amount: 1 } }, { "@type": "grounds-aircraft" }] },
+        { id: "snow", name: "Snow", attackRoll: -3, effects: [{ "@type": "blocks-digging-in" }, { "@type": "closes-sea", "@data": { months: [12, 1, 2] } }] }
       ],
       seasons: [{ id: "summer", name: "Summer", months: [4, 5, 6, 7, 8, 9] }, { id: "winter", name: "Winter", months: [10, 11, 12, 1, 2, 3] }],
       zones: [{ id: "plains", name: "Plains", coastal: true, tables: { summer: [{ outcome: "clear", upTo: 20 }], winter: [{ outcome: "clear", upTo: 10 }, { outcome: "mud", upTo: 16 }, { outcome: "snow", upTo: 20 }] } }]
@@ -97,7 +124,7 @@ export function modularScenario(): Json {
     calendar: { start: { year: 1936, month: 7, half: "late" }, turnsPerYear: 24 },
     air: { raidTable: [{ outcome: "air-eliminated", upTo: 2 }, { outcome: "nothing-hit", upTo: 10 }, { outcome: "income-cut", upTo: 17 }, { outcome: "building-hit", upTo: 20 }], interceptRoll: -2, reconTurns: 1 },
     generals: {
-      traits: [{ id: "bold", name: "Bold", effects: [{ kind: "roll-modifier", role: "attack", roll: 1 }] }, { id: "timid", name: "Timid", effects: [{ kind: "no-rally" }] }],
+      traits: [{ id: "bold", name: "Bold", effects: [{ "@type": "roll-modifier", "@data": { role: "attack", roll: 1 } }] }, { id: "timid", name: "Timid", effects: [{ "@type": "no-rally" }] }],
       roster: ["red-1", "red-2", "red-3", "blue-1", "blue-2", "blue-3"].map((id) => ({ id, name: id, factionId: id.split("-")[0], trait: id.endsWith("1") ? "bold" : "timid", sources: [{ sourceId: "fixture" }] }))
     }
   };

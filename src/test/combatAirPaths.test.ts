@@ -288,7 +288,7 @@ describe("air mission and sack validation (U2, U5)", () => {
     expect(validateAirMission(scenario, opening, raid("rep-breguet-bombers", "atlantis")).ok).toBe(false);
     const fighters = scenario.index.unitTypes.get("fighter-squadron" as UnitTypeId)!;
     const shortRange: Scenario = { ...scenario, index: { ...scenario.index, unitTypes: new Map([...scenario.index.unitTypes, [fighters.id, { ...fighters, air: { ...fighters.air!, range: 1 } }]]) } };
-    const far = mission("republic", "rep-ni52-fighters", { kind: "intercept", territoryId: territory("valencia") });
+    const far = mission("republic", "rep-ni52-fighters", { kind: "patrol", territoryId: territory("valencia") });
     expect(validateAirMission(scenario, opening, far)).toEqual({ ok: true });
     expect(validateAirMission(shortRange, opening, far)).toEqual({ ok: false, reason: "The target is out of range." });
   });

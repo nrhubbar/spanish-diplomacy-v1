@@ -57,12 +57,10 @@ export type OrderKind = MoveOrder["kind"] | WithdrawOrder["kind"] | ReplenishOrd
 export type PlannedOrder = MoveOrder | WithdrawOrder;
 
 /**
- * Where the player is in giving an order to the selected armies: choosing the order type,
- * then its target. Absent while the player is still choosing armies.
+ * Where the player is in giving an order to the selected armies: choosing the target of a Move
+ * or Withdraw (U4: the selection bar offers the order types directly). Absent otherwise.
  */
-export type OrderStage =
-  | { readonly step: "choose-order" }
-  | { readonly orderKind: PlannedOrder["kind"]; readonly step: "choose-destination" };
+export type OrderStage = { readonly orderKind: PlannedOrder["kind"]; readonly step: "choose-destination" };
 
 /** The current local player's private working set. */
 export interface Draft {
@@ -78,6 +76,11 @@ export interface Draft {
   readonly selectedAircraftId?: UnitId;
   /** X4, R2: the Recruit basket (m3r1-recruit-replenish). Carried through selection changes by `withDraft`. */
   readonly recruits?: readonly RecruitOrder[];
+  /**
+   * U2: armies the player told to stay this turn (Entrench, Rest, Attack or Hold), so End Turn
+   * knows they have an order although nothing is submitted for them. Carried by `withDraft`.
+   */
+  readonly orderedToStay?: readonly UnitId[];
   /** R5: Replenish orders, one per unit, never alongside a move (m3r1-recruit-replenish). */
   readonly replenishments?: readonly ReplenishOrder[];
   readonly selectedTerritoryId?: TerritoryId;

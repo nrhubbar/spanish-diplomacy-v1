@@ -1,0 +1,764 @@
+<title>Rev 2 Close-out</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,500;8..60,700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a design-review dossier. Sticky index on the left (top bar on phones), one reading column, widgets and questions as set-off "cards on the table". */
+:root {
+  --bg: #e6dfcd;          /* table canvas, from the app's --canvas */
+  --paper: #fbf6ea;       /* reading sheet, the app's --paper */
+  --surface: #f4eddc;     /* widget card */
+  --surface-2: #ebe2cc;   /* inset rows, table heads */
+  --ink: #241d18;
+  --ink-soft: #5b4d40;
+  --line: #c9bba0;
+  --accent: #7d2f2a;      /* oxblood, the app's --accent */
+  --accent-ink: #fbf6ea;
+  --gold: #b8891a;
+  --route: #1f3550;
+  --good: #2f7d4f;
+  --bad: #9e2b2b;
+  --warn: #b5730f;
+  --rep: #b1493f;
+  --nic: #a3841f;
+  --sic: #665089;
+  --c1: #7a1f1a; --c2: #b5483c; --c3: #d99a6c; --c4: #cbbf9f; --c5: #7d9bb5; --c6: #3f6a90; --c7: #1f3550;
+  --serif: "Source Serif 4", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --shadow: 0 1px 0 rgb(36 29 24 / 8%), 0 6px 18px rgb(36 29 24 / 8%);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #17120e; --paper: #221a14; --surface: #2b221a; --surface-2: #352a20;
+    --ink: #efe5d2; --ink-soft: #c2b29b; --line: #4d3f31; --accent: #d9897e; --accent-ink: #1b1410;
+    --gold: #e0b54a; --route: #9cb7d6; --good: #6fc08f; --bad: #e07a72; --warn: #e5a54a;
+    --rep: #d9786d; --nic: #d9b84a; --sic: #a88fd1;
+    --c1: #e07a72; --c2: #c9665b; --c3: #b98a63; --c4: #6f6555; --c5: #5f86a8; --c6: #7fa6cc; --c7: #b5cfe8;
+    --shadow: 0 1px 0 rgb(0 0 0 / 30%), 0 6px 18px rgb(0 0 0 / 30%);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #17120e; --paper: #221a14; --surface: #2b221a; --surface-2: #352a20;
+  --ink: #efe5d2; --ink-soft: #c2b29b; --line: #4d3f31; --accent: #d9897e; --accent-ink: #1b1410;
+  --gold: #e0b54a; --route: #9cb7d6; --good: #6fc08f; --bad: #e07a72; --warn: #e5a54a;
+  --rep: #d9786d; --nic: #d9b84a; --sic: #a88fd1;
+  --c1: #e07a72; --c2: #c9665b; --c3: #b98a63; --c4: #6f6555; --c5: #5f86a8; --c6: #7fa6cc; --c7: #b5cfe8;
+  --shadow: 0 1px 0 rgb(0 0 0 / 30%), 0 6px 18px rgb(0 0 0 / 30%);
+  color-scheme: dark;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 72px; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 var(--sans); -webkit-font-smoothing: antialiased; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+a { color: var(--route); text-underline-offset: 2px; }
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+h1, h2, h3, h4 { font-family: var(--serif); line-height: 1.2; text-wrap: balance; margin: 0; }
+code, kbd { font-family: var(--mono); font-size: 0.86em; background: var(--surface-2); padding: 0.05em 0.3em; border-radius: 3px; }
+
+.shell { display: grid; grid-template-columns: 270px minmax(0, 1fr); gap: 28px; max-width: 1180px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 24px 64px; }
+.toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); align-self: start; max-height: calc(100vh - 32px); overflow: auto;
+  background: var(--paper); border: 1px solid var(--line); border-radius: 6px; padding: 14px 14px 16px; font-size: 0.86rem; }
+.toc h2 { font-size: 1rem; margin-bottom: 6px; }
+.toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; }
+.toc li.group { margin-top: 10px; font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-soft); font-weight: 600; }
+.toc a { display: flex; justify-content: space-between; gap: 8px; padding: 3px 6px; border-radius: 4px; text-decoration: none; color: var(--ink); }
+.toc a:hover { background: var(--surface-2); }
+.toc a.active { background: var(--surface-2); box-shadow: inset 2px 0 0 var(--accent); }
+.toc .count { font-family: var(--mono); font-size: 0.72rem; color: var(--ink-soft); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.answerbox { display: grid; gap: 8px; padding-bottom: 12px; margin-bottom: 10px; border-bottom: 1px solid var(--line); }
+.progress-text { font-family: var(--mono); font-size: 0.8rem; font-variant-numeric: tabular-nums; }
+.progress-track { height: 6px; background: var(--surface-2); border-radius: 3px; overflow: hidden; }
+.progress-fill { height: 100%; width: 0; background: var(--accent); transition: width 0.2s; }
+.btn { font: 600 0.86rem var(--sans); border: 1px solid var(--ink); background: var(--accent); color: var(--accent-ink); border-radius: 5px; padding: 8px 12px; cursor: pointer; min-height: 38px; }
+.btn.secondary { background: transparent; color: var(--ink); border-color: var(--line); font-weight: 500; }
+.btn-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.copy-status { font-size: 0.78rem; color: var(--good); min-height: 1.1em; }
+.copy-fallback { width: 100%; min-height: 140px; font: 0.75rem/1.4 var(--mono); }
+.mobile-bar { display: none; }
+
+main { min-width: 0; display: grid; gap: 22px; }
+.sheet { background: var(--paper); border: 1px solid var(--line); border-radius: 6px; padding: 28px clamp(16px, 4vw, 44px) 32px; box-shadow: var(--shadow); min-width: 0; }
+.sheet > * + * { margin-top: 0.9rem; }
+.masthead .eyebrow, .eyebrow { font: 600 0.72rem var(--sans); letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
+.masthead h1 { font-size: clamp(1.9rem, 4.5vw, 2.7rem); }
+.masthead .meta { font-family: var(--mono); font-size: 0.8rem; color: var(--ink-soft); display: flex; flex-wrap: wrap; gap: 6px 18px; }
+.group-head { padding: 6px 4px 0; }
+.group-head h2 { font-size: 1.05rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-soft); font-family: var(--sans); font-weight: 600; }
+.group-head p { color: var(--ink-soft); font-size: 0.92rem; max-width: 70ch; }
+.sheet h2 { font-size: clamp(1.4rem, 3vw, 1.8rem); }
+.sheet h2 .idea-no { font-family: var(--mono); font-size: 0.8em; color: var(--accent); margin-right: 0.4em; }
+.sheet h3 { font-size: 1.12rem; margin-top: 1.6rem; padding-top: 0.9rem; border-top: 1px solid var(--line); }
+.sheet h4 { font-size: 1rem; margin-top: 1.2rem; }
+.sheet p, .sheet li { max-width: 72ch; }
+.sheet ul, .sheet ol { padding-left: 1.25rem; }
+.sheet li + li { margin-top: 0.25rem; }
+.sheet blockquote { margin: 0; padding: 8px 14px; border-left: 3px solid var(--gold); background: var(--surface); font-family: var(--serif); font-style: italic; }
+.summary-line { font-family: var(--serif); font-size: 1.12rem; }
+.table-wrap, .w-scroll { overflow-x: auto; max-width: 100%; -webkit-overflow-scrolling: touch; }
+.sheet table, .w-table { border-collapse: collapse; width: 100%; font-size: 0.88rem; }
+.sheet th, .sheet td, .w-table th, .w-table td { border-bottom: 1px solid var(--line); padding: 6px 8px; text-align: left; vertical-align: top; }
+.sheet th, .w-table th { background: var(--surface-2); font-weight: 600; }
+.sheet td:first-child { min-width: 9rem; }
+.recommend { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--good); padding: 10px 14px; border-radius: 4px; }
+
+figure.mockup { margin: 1rem 0 0; }
+figure.mockup img { display: block; width: 100%; height: auto; border: 1px solid var(--line); border-radius: 4px; background: var(--surface-2); }
+figure.mockup figcaption { font-size: 0.8rem; color: var(--ink-soft); margin-top: 6px; }
+.missing { font-size: 0.85rem; color: var(--ink-soft); background: var(--surface-2); padding: 10px 12px; border-radius: 4px; border: 1px dashed var(--line); }
+
+/* Widgets */
+.widget { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 14px 16px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; font-size: 0.9rem; min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
+.widget > *, .w-row > *, .w-grid > * { min-width: 0; max-width: 100%; }
+.widget svg, .widget canvas { max-width: 100%; height: auto; }
+.widget h4, .widget h5 { margin: 0; font-family: var(--serif); }
+.w-row { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
+.w-label { font-weight: 600; font-size: 0.82rem; color: var(--ink-soft); }
+.w-out { font-family: var(--mono); font-weight: 500; background: var(--paper); border: 1px solid var(--line); border-radius: 4px; padding: 1px 7px; font-variant-numeric: tabular-nums; }
+.w-note { font-size: 0.78rem; color: var(--ink-soft); }
+.w-bar-track { background: var(--surface-2); border-radius: 3px; height: 14px; overflow: hidden; min-width: 60px; flex: 1; }
+.w-bar { height: 100%; background: var(--accent); min-width: 1px; }
+.w-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+.w-card { background: var(--paper); border: 1px solid var(--line); border-radius: 4px; padding: 8px 10px; min-width: 0; }
+.widget select, .widget input[type=number], .widget input[type=text] { font: inherit; color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 4px; padding: 4px 6px; min-height: 34px; max-width: 100%; }
+.widget input[type=range] { accent-color: var(--accent); max-width: 100%; }
+.widget button { font: 500 0.84rem var(--sans); color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 4px; padding: 5px 10px; cursor: pointer; min-height: 34px; }
+.widget button[aria-pressed="true"], .widget button.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.widget label { display: inline-flex; align-items: center; gap: 6px; }
+.widget-error { color: var(--bad); font-size: 0.85rem; }
+
+/* Questions */
+.questions { display: grid; gap: 12px; }
+.q { border: 1px solid var(--line); border-radius: 6px; background: var(--surface); padding: 12px 14px 14px; margin: 0; min-width: 0; }
+.q.answered { border-left: 4px solid var(--good); }
+.q legend { display: contents; }
+.q .q-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; margin-bottom: 8px; }
+.q .q-id { font-family: var(--mono); font-size: 0.74rem; background: var(--paper); border: 1px solid var(--line); border-radius: 3px; padding: 0 6px; color: var(--ink-soft); }
+.q .q-text { font-weight: 600; flex: 1 1 260px; }
+.q .q-ctx { font-size: 0.84rem; color: var(--ink-soft); margin: 0 0 8px; max-width: 72ch; }
+.q .opt > span { min-width: 0; overflow-wrap: anywhere; }
+.phone-row { display: flex; flex-wrap: wrap; gap: 16px; }
+.phone-row figure.mockup { flex: 0 1 280px; margin: 0; }
+figure.mockup figcaption ul { margin: 0.2rem 0 0; padding-left: 1.1rem; }
+figure.mockup img { cursor: zoom-in; }
+.q .q-multi { font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--route); border: 1px solid currentColor; border-radius: 3px; padding: 0 5px; }
+.q .opt { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; align-items: start; padding: 6px 8px; border-radius: 4px; cursor: pointer; }
+.q .opt:hover { background: var(--surface-2); }
+.q .opt input { margin-top: 4px; accent-color: var(--accent); width: 17px; height: 17px; }
+.q .opt .rec { color: var(--good); font-weight: 600; font-size: 0.82rem; margin-left: 4px; }
+.q .opt .why { grid-column: 2; font-size: 0.8rem; color: var(--ink-soft); }
+.q textarea { width: 100%; margin-top: 8px; min-height: 2.4rem; font: 0.86rem var(--sans); color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 4px; padding: 6px 8px; resize: vertical; }
+.q .notes-label { font-size: 0.76rem; color: var(--ink-soft); display: block; margin-top: 6px; }
+
+.sources ol { font-size: 0.82rem; overflow-wrap: anywhere; }
+.diagram { overflow-x: auto; }
+.diagram svg { display: block; min-width: 640px; width: 100%; height: auto; }
+.diagram svg text { fill: var(--ink); font-family: var(--sans); font-size: 12px; }
+.diagram .node { fill: var(--paper); stroke: var(--good); stroke-width: 1.2; }
+.diagram .node.later { fill: var(--surface-2); stroke: var(--ink-soft); stroke-dasharray: 4 3; }
+.diagram .edge { fill: none; stroke: var(--ink-soft); stroke-width: 1.4; }
+.diagram .arrowhead { fill: var(--ink-soft); }
+.diagram .band { fill: var(--surface-2); stroke: var(--line); }
+.diagram svg text.col { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; fill: var(--ink-soft); }
+.pill { display: inline-block; font: 600 0.72rem var(--sans); letter-spacing: 0.04em; padding: 1px 7px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface-2); }
+.pill.m3 { background: var(--good); color: var(--paper); border-color: var(--good); }
+.pill.later { background: var(--surface-2); }
+.pill.drop { color: var(--bad); border-color: var(--bad); }
+
+@media (max-width: 900px) {
+  html { scroll-padding-top: 64px; }
+  .shell { grid-template-columns: minmax(0, 1fr); gap: 16px; padding-block: 0 48px; }
+  .toc { position: static; max-height: none; display: none; }
+  .toc.open { display: block; position: fixed; inset: calc(env(safe-area-inset-top, 0px) + 56px) 0 0; z-index: 20; border-radius: 0; overflow: auto;
+    padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .mobile-bar { display: flex; position: sticky; top: env(safe-area-inset-top, 0px); z-index: 15; align-items: center; justify-content: space-between; gap: 10px;
+    background: var(--paper); border-bottom: 1px solid var(--line); margin: 0 calc(-1 * max(16px, env(safe-area-inset-left, 0px))); padding: 8px max(16px, env(safe-area-inset-right, 0px)) 8px max(16px, env(safe-area-inset-left, 0px)); }
+  .mobile-bar .progress-text { font-size: 0.75rem; }
+  .sheet { padding: 20px 16px 24px; }
+}
+</style>
+
+<div class="shell">
+  <div class="mobile-bar">
+    <button class="btn secondary" id="toc-toggle" type="button" aria-expanded="false" aria-controls="toc">Contents</button>
+    <span class="progress-text" data-progress-text>0 of 0 answered</span>
+    <button class="btn" type="button" data-copy>Copy my answers</button>
+  </div>
+  <nav class="toc" id="toc" aria-label="Contents">
+    <div class="answerbox">
+      <h2>Your answers</h2>
+      <span class="progress-text" data-progress-text>0 of 0 answered</span>
+      <div class="progress-track" aria-hidden="true"><div class="progress-fill" id="progress-fill"></div></div>
+      <div class="btn-row">
+        <button class="btn" type="button" data-copy>Copy my answers</button>
+        <button class="btn secondary" type="button" id="fill-rec">Use recommended for blanks</button>
+      </div>
+      <div class="btn-row">
+        <button class="btn secondary" type="button" id="clear-all">Clear all</button>
+        <button class="btn secondary" type="button" id="clear-confirm" hidden>Yes, clear every answer</button>
+      </div>
+      <div class="copy-status" id="copy-status" role="status" aria-live="polite"></div>
+      <div class="w-note" id="remote-status">Answers save in this browser. Use Copy my answers to send them to the team.</div>
+      <textarea class="copy-fallback" id="copy-fallback" hidden readonly aria-label="Your answers as Markdown"></textarea>
+    </div>
+    <h2>Contents</h2>
+    <ol>
+<li><a href="#locked"><span>Locked decisions</span><span class="count" data-toc-idea="locked"></span></a></li>
+<li><a href="#actions"><span>Orders, decoupled</span><span class="count" data-toc-idea="actions"></span></a></li>
+<li><a href="#moves"><span>Moving: modes, passes and reach</span><span class="count" data-toc-idea="moves"></span></a></li>
+<li><a href="#air"><span>Air: the battle before the battle</span><span class="count" data-toc-idea="air"></span></a></li>
+<li><a href="#ledger"><span>Balance view</span><span class="count"></span></a></li>
+<li><a href="#ai"><span>The AI must use every action</span><span class="count"></span></a></li>
+<li><a href="#plan"><span>Implementation plan</span><span class="count" data-toc-idea="plan"></span></a></li>
+</ol>
+  </nav>
+  <main id="main">
+    <section class="sheet masthead-sheet" id="intro">
+<header class="masthead">
+<p class="eyebrow">Milestone 3 · Revision 2 · Close-out</p>
+<h1>Rev 2 Close-out</h1>
+<p class="meta"><span>21 Nov 2026</span><span>Final pass before implementation</span><span>Sources: <code>project/milestones/milestone-3-rev-2-ideation/</code> on branch <code>m3r2-ideation</code></span></p>
+</header>
+
+<p class="summary-line">Your 25 answers are locked in below as rules with numbers. This pass does three things: it redraws the screens around your point that orders shouldn't live inside one crowded pane, it pins down the mechanics your notes left open (the air battle, passes, and pockets), and it asks the last 9 questions before we build.</p>
+
+<p><strong>How to read this page.</strong></p>
+<ul>
+<li><strong>Locked</strong> means decided. It&#39;s listed so you can catch a misreading, not to re-open it. If something is wrong, say so in the last question&#39;s notes.</li>
+<li><strong>UI samples</strong> are the live game on turn 2 (seed 42, Republic) with the new parts mocked in the app&#39;s own styles. Example numbers are illustrative.</li>
+<li><strong>Your answers</strong> are saved verbatim in <code>answers-r2.md</code>. Where a note overrode the option you ticked, the note wins, and that file says so row by row.</li>
+<li>No sims were run for this pass.</li>
+</ul>
+
+</section>
+<section class="sheet" id="locked">
+<h2>Locked decisions</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Area</th>
+<th>Decided rule</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Where armies stand</strong></td>
+<td><strong>Pockets.</strong> In a contested territory, each side&#39;s armies belong to a connected group of sub-territories that side holds. They leave only across that group&#39;s borders. Uncontested territories work exactly as today.</td>
+</tr>
+<tr>
+<td><strong>Málaga</strong></td>
+<td><strong>Sealed: it leaves by sea only.</strong> Pockets close the Rev 1 withdraw path (P6) through Jaén and Almería. <strong>But I checked, and today its only sea lane is the Alboran Sea to Melilla, which the South holds.</strong> As the data stands, &quot;sealed&quot; means stuck. See the question just below.</td>
+</tr>
+<tr>
+<td><strong>North</strong></td>
+<td><strong>Two fewer armies:</strong> the Salamanca regiment and the Sierra column. Mallorca keeps today&#39;s army. Target about 15% Republic wins for now, and revisit after playtests.</td>
+</tr>
+<tr>
+<td><strong>AI blunders</strong></td>
+<td><strong>Removed entirely.</strong> That covers <code>blunder.ts</code>, <code>blunderChance</code> in the schema and scenario, the coordinator&#39;s blunder roll stream, and the scenario note.</td>
+</tr>
+<tr>
+<td><strong>Air orders</strong></td>
+<td><strong>Four orders: Patrol, Ground Support, Raid, Recon.</strong> No Airlift and no Interdict. Aircraft are counters at their airfields that you select and order like other units. Rain and snow ground all air. Air never takes or holds ground.</td>
+</tr>
+<tr>
+<td><strong>Ground Support</strong></td>
+<td>+3 per aircraft unit, at most 2 per side, and <strong>only one side ever gets it.</strong> The air battle below decides which side.</td>
+</tr>
+<tr>
+<td><strong>Links</strong></td>
+<td><strong>One record per pair of bordering sub-territories:</strong> a road level (none, track or main), a rail level (none, single or main), and a list of <strong>modifiers</strong> that the scenario defines.</td>
+</tr>
+<tr>
+<td><strong>Move modes</strong></td>
+<td><strong>March:</strong> one territory; only infantry can cross a link with no road. <strong>Motor:</strong> two territories along main roads, with trucks. <strong>Rail:</strong> along the rail graph, through ground your side holds, with range set by the weakest link.</td>
+</tr>
+<tr>
+<td><strong>Passes</strong></td>
+<td><strong>No extra turn.</strong> No Motor moves across a pass. Defenders beyond a pass get a bonus (exact rule under <strong>Moving</strong>).</td>
+</tr>
+<tr>
+<td><strong>Rail building</strong></td>
+<td>New lines (many turns) and upgrades (cheaper).</td>
+</tr>
+<tr>
+<td><strong>Map data</strong></td>
+<td>The researched 1936 table, with every inferred or unknown link checked against a period map before shipping. <strong>Each sub-territory lists its buildable buildings explicitly.</strong> No rule-based defaults.</td>
+</tr>
+<tr>
+<td><strong>Dug-in</strong></td>
+<td>Pips 1/2/3; the roll takes −2/−4/−6; level 3 is allowed everywhere. Fortifications stay at +1.</td>
+</tr>
+<tr>
+<td><strong>Factory</strong></td>
+<td>A one-time cost of about 6 Manpower. The AI learns to build factories, and <strong>the AI must use every action in the game</strong> (coverage table below).</td>
+</tr>
+<tr>
+<td><strong>Contested ground</strong></td>
+<td>At the end of each turn, if only one side has ground armies in a territory, all of its sub-territories flip to that side. If both sides are wiped out, holders keep what they held. Aircraft never count. Every starting contested territory gets checked against the turn-1 flip.</td>
+</tr>
+<tr>
+<td><strong>Map</strong></td>
+<td>Sub-territory borders show past 250% zoom. The Map Layers toolbar has three presets (Orders, Logistics, Economy) plus a More menu, and layers switch on automatically while you give an order.</td>
+</tr>
+<tr>
+<td><strong>Bugs</strong></td>
+<td>Raid lines end on the target sub-territory. After an order, the selection resets to none.</td>
+</tr>
+<tr>
+<td><strong>Replenish</strong></td>
+<td>One action for the whole selection, naming any skipped units and why.</td>
+</tr>
+<tr>
+<td><strong>Turn report</strong></td>
+<td>Grouped by faction, your own first. You can bring back last turn&#39;s report while planning.</td>
+</tr>
+<tr>
+<td><strong>Balance view</strong></td>
+<td>One flat list of rows. A contested row shows its loss inline. Expense rows follow, and the total matches the chip.</td>
+</tr>
+<tr>
+<td><strong>Tooling</strong></td>
+<td>All six: TS language server, a diff reviewer agent, hooks (block bare stash, lint after edits), project skills, project rules in <code>CLAUDE.md</code>, and Playwright MCP.</td>
+</tr>
+<tr>
+<td><strong>Baselines and smoke test</strong></td>
+<td><strong>You handle these.</strong> Rev 2 won&#39;t touch the Linux baselines or the production smoke test.</td>
+</tr>
+</tbody></table></div>
+<div class="questions" data-idea="locked"></div>
+</section>
+<section class="sheet" id="actions">
+<h2>Orders, decoupled</h2>
+<p><strong>What I missed last time.</strong> I treated note 15 as a layout problem: two tabs, one for orders and one for territory. Your point is that <strong>giving an order shouldn&#39;t depend on the pane at all.</strong> The map is where you act. The pane shows the one thing you&#39;re doing right now, and then gets out of the way.</p>
+<p><strong>The model.</strong></p>
+<ul>
+<li><strong>Top bar, above the map.</strong> Date and readiness, then the Funds and Manpower chips. After those come <strong>Last turn</strong>, <strong>Recruitment (n)</strong> and <strong>Building (n)</strong>. Then <strong>End Turn</strong>, in a serious orange-red with an icon. A hamburger menu replaces &quot;Exit game&quot;. On a phone, the header has no room for all of this, so End Turn moves to the collapsed pane bar. That bar is renamed This turn.</li>
+<li><strong>The pane is a stack with a back link.</strong><ul>
+<li>When nothing is selected, it shows <strong>This turn</strong>: the orders you&#39;ve given so far.</li>
+<li>Clicking a territory opens <strong>Territory Info</strong>.</li>
+<li>Invade, Reinforce, Build, Recruitment, Building and Last turn each open on top, and <strong>back</strong> returns you to where you were.</li>
+</ul>
+</li>
+<li><strong>The selection bar.</strong> The pane&#39;s sticky footer is the action bar for whatever is selected: &quot;3 units selected · Move · Replenish · Entrench&quot;. The floating &quot;Give Selected Units Order&quot; button is gone, and so is End Turn from the pane.</li>
+<li><strong>Quick actions.</strong> Right-click a territory (long-press on a phone) to get <strong>Invade, Reinforce, Info, Build</strong>.<ul>
+<li>Invade is offered on enemy or contested ground, and Reinforce on friendly or contested ground.</li>
+<li>An unavailable action is greyed out, with its reason on hover.</li>
+</ul>
+</li>
+</ul>
+<figure class="mockup"><a href="images/r2-b-topbar.webp" target="_blank" rel="noopener" title="Open full size"><img src="images/r2-b-topbar.webp" alt="Planning screen with the new top bar and the pane showing This turn"></a><figcaption>The top bar carries End Turn and the global views. The pane shows "This turn", and its footer is the action bar for the selection.</figcaption></figure>
+<figure class="mockup"><a href="images/r2-b-menu.webp" target="_blank" rel="noopener" title="Open full size"><img src="images/r2-b-menu.webp" alt="Hamburger menu open with Settings, Save disabled, Exit Game"></a><figcaption>The hamburger menu: Settings, Save (not available yet), Exit Game.</figcaption></figure>
+<figure class="mockup"><a href="images/r2-b-context-desktop.webp" target="_blank" rel="noopener" title="Open full size"><img src="images/r2-b-context-desktop.webp" alt="Right-click dropdown on a contested territory with Invade, Reinforce, Info, Build"></a><figcaption>Right-click on contested Extremadura.</figcaption></figure>
+<div class="phone-row">
+<figure class="mockup"><a href="images/r2-b-context-phone.webp" target="_blank" rel="noopener" title="Open full size"><img src="images/r2-b-context-phone.webp" alt="Phone long-press radial wheel with four actions"></a><figcaption>Phone: long-press opens a wheel with the same four actions.</figcaption></figure>
+</div>
+
+<p><strong>Invade and Reinforce.</strong></p>
+<ul>
+<li><strong>Invade</strong> opens a pane for the target. At the top, a live odds bar updates as you tick units. Below it are cards for <strong>every unit that can reach the target, grouped by the territory it starts from</strong>, each showing its move mode (March, Motor or Rail).</li>
+<li>A joint attack from three territories is now one screen and one button: <strong>Order 4 units to invade</strong>.</li>
+<li><strong>Reinforce</strong> uses the same layout for friendly ground. Instead of odds, it shows the defence you&#39;ll have after the moves.</li>
+</ul>
+<p><strong>How they work with pockets</strong> (locked unless you object):</p>
+<ul>
+<li>An arriving unit joins the pocket on the side of the border it crosses.</li>
+<li><strong>Invade</strong> lists units that can reach a border of enemy-held ground in the target. Your units already in a pocket there appear as &quot;already here&quot;, because they fight the standing battle anyway.</li>
+<li><strong>Reinforce</strong> lists units that can reach a border of your own pocket.</li>
+<li><strong>On contested ground both actions are offered.</strong> Invade means fighting for the rest of the territory, and Reinforce means holding what you have.</li>
+</ul>
+<figure class="mockup"><a href="images/r2-b-invade.webp" target="_blank" rel="noopener" title="Open full size"><img src="images/r2-b-invade.webp" alt="Invade pane with odds bar, air line, unit cards grouped by source territory and an Order button"></a><figcaption>Invade Castilla y León. The odds and the air battle sit at the top. Units are grouped by where they start, each with its move mode, and the Navacerrada pass allows March only. The Madrid–Ávila road flanks the pass, so the defenders lose their −2. Example data: the Republic has no trucks today, so the Motor chips are mocked, and the enemy's recon plane is shown for context only, because only its AA counts.</figcaption></figure>
+<figure class="mockup"><a href="images/r2-b-reinforce.webp" target="_blank" rel="noopener" title="Open full size"><img src="images/r2-b-reinforce.webp" alt="Reinforce pane for a friendly territory"></a><figcaption>Reinforce Valencia. The layout is the same, with the defence after reinforcing (12 → 22, against a threat of 16) in place of odds.</figcaption></figure>
+
+<p><strong>Global Recruitment and Global Building.</strong> Both views open from the top bar and are grouped by territory. Each territory shows:</p>
+<ul>
+<li>the item being worked on now, with a progress bar and the turns left;</li>
+<li>the queue behind it, as smaller rows.</li>
+</ul>
+<p>Paused contested queues say they&#39;re paused. The same queue component also drives Territory Info (note 9), so the two views always agree.</p>
+<figure class="mockup"><a href="images/r2-b-global-recruitment.webp" target="_blank" rel="noopener" title="Open full size"><img src="images/r2-b-global-recruitment.webp" alt="Global Recruitment view grouped by territory"></a><figcaption>Global Recruitment: what is training now, how long it has left, and what's next.</figcaption></figure>
+<figure class="mockup"><a href="images/r2-b-global-building.webp" target="_blank" rel="noopener" title="Open full size"><img src="images/r2-b-global-building.webp" alt="Global Building view grouped by territory and sub-territory"></a><figcaption>Global Building, grouped by territory and then sub-territory. A queue in contested ground shows as paused.</figcaption></figure>
+
+<p><strong>Last turn.</strong> Opening it while you plan shows last turn&#39;s report in the pane, grouped by faction with yours first. Back returns you to This turn.</p>
+<figure class="mockup"><a href="images/r2-b-last-turn.webp" target="_blank" rel="noopener" title="Open full size"><img src="images/r2-b-last-turn.webp" alt="Last turn report open in the pane during planning"></a><figcaption>Last turn's report, recalled during planning.</figcaption></figure>
+
+<div class="questions" data-idea="actions"></div>
+</section>
+<section class="sheet" id="moves">
+<h2>Moving: modes, passes and reach</h2>
+<p><strong>Unreachable ground stays quiet.</strong> While you give an order, reachable territories light up. An unreachable territory shows nothing until you <strong>hover</strong> over it. Then a small card says why, for example: &quot;Motor can&#39;t cross the Somosierra pass. March reaches it in 2 turns.&quot; On a phone, the same card opens as a modal if you tap an unreachable territory while ordering.</p>
+<figure class="mockup"><a href="images/r2-b-unreachable-hover.webp" target="_blank" rel="noopener" title="Open full size"><img src="images/r2-b-unreachable-hover.webp" alt="Hover tooltip on an unreachable territory explaining why"></a><figcaption>Desktop: hovering over Galicia shows why it's out of reach by March, Motor and Rail.</figcaption></figure>
+<div class="phone-row">
+<figure class="mockup"><a href="images/r2-b-unreachable-phone.webp" target="_blank" rel="noopener" title="Open full size"><img src="images/r2-b-unreachable-phone.webp" alt="Phone modal card for an unreachable territory"></a><figcaption>Phone: tapping an unreachable territory shows the card as a modal.</figcaption></figure>
+</div>
+
+<p><strong>Order lines: your question about Bézier curves.</strong> Today every move arrow is a smooth curve from territory to territory. Once moves follow a network, a curve hides the route the unit actually takes, including the pass it can&#39;t use.</p>
+<p>My recommendation:</p>
+<ul>
+<li><strong>Route Motor and Rail order lines along the links they use.</strong> The line then shows the road or railway itself.</li>
+<li><strong>March</strong> stays a short curve, since it&#39;s always one step.</li>
+<li><strong>Roads are drawn</strong> as quiet lines in the Logistics preset. The rail drawing you liked stays exactly as it is.</li>
+</ul>
+<figure class="mockup"><a href="images/r2-b-routes.webp" target="_blank" rel="noopener" title="Open full size"><img src="images/r2-b-routes.webp" alt="Two panels: today's curved arrow versus an order line routed along roads and rail"></a><figcaption>Left: today's curves. Right: the same Rail move (Barcelona to Zaragoza) and Motor move (Valencia to Murcia) routed along the links, with roads drawn faintly and passes marked with chevrons.</figcaption></figure>
+
+<p><strong>The pass bonus.</strong></p>
+<ul>
+<li>I recommend <strong>−2 on the attacker&#39;s roll</strong>, the same as one level of dug-in. It stacks with dug-in, so the most a pass and full works can give is −8.</li>
+<li><strong>Flanking cancels it:</strong> if at least one attacking ground unit comes over a link that isn&#39;t a pass, the bonus doesn&#39;t apply. That rewards going around, which is what armies actually did at Guadarrama and in Asturias.</li>
+<li>It&#39;s one rule on one die roll, and the odds bar shows it.</li>
+</ul>
+<p><strong>Link data.</strong> This is the shape, and the scenario defines its own modifiers:</p>
+<pre><code class="language-json">&quot;linkModifiers&quot;: {
+  &quot;pass&quot;: { &quot;label&quot;: &quot;Mountain pass&quot;, &quot;noMotor&quot;: true, &quot;defenderRoll&quot;: -2, &quot;lostToFlanking&quot;: true }
+},
+&quot;links&quot;: [
+  { &quot;a&quot;: &quot;madrid&quot;, &quot;b&quot;: &quot;guadalajara&quot;, &quot;road&quot;: &quot;main&quot;, &quot;rail&quot;: &quot;main&quot; },
+  { &quot;a&quot;: &quot;guadarrama&quot;, &quot;b&quot;: &quot;segovia&quot;, &quot;road&quot;: &quot;main&quot;, &quot;rail&quot;: &quot;single&quot;,
+    &quot;modifiers&quot;: [{ &quot;kind&quot;: &quot;pass&quot;, &quot;name&quot;: &quot;Somosierra&quot; }] }
+]
+</code></pre>
+<p>The Spanish scenario ships with passes only. Rivers or bridges can be added later as new modifier kinds, with no code change beyond the effects they use.</p>
+<div class="questions" data-idea="moves"></div>
+</section>
+<section class="sheet" id="air">
+<h2>Air: the battle before the battle</h2>
+<p><strong>Your rule:</strong> only one side gets Ground Support, and if both sides bring air (or AA), an air battle is rolled first. Here it is with numbers, using the same d20 as everything else.</p>
+<p><strong>When it happens.</strong> A ground battle has an air battle first when either:</p>
+<ul>
+<li>both sides have aircraft over it (Ground Support or Patrol), or</li>
+<li>one side&#39;s Ground Support faces the defender&#39;s anti-aircraft in that territory.</li>
+</ul>
+<p>If only one side has air and nothing opposes it, there is no air battle, and its Ground Support applies.</p>
+<p><strong>How it&#39;s rolled.</strong></p>
+<ul>
+<li>Each side rolls <strong>d20 + 2 per fighter + 1 per bomber</strong>.</li>
+<li>The defender also adds its <strong>AA</strong>: the same value that today lowers a raid roll, counted as a plus.</li>
+<li>Recon aircraft don&#39;t take part.</li>
+</ul>
+<p><strong>What it decides.</strong></p>
+<ul>
+<li>The <strong>higher total wins the air.</strong> The winner&#39;s Ground Support applies: <strong>+3 per aircraft unit, at most 2.</strong> The loser&#39;s doesn&#39;t apply.</li>
+<li>A <strong>tie</strong> means neither side gets support.</li>
+<li>The report and the odds bar both show the two rolls and the result.</li>
+</ul>
+<p><strong>Patrol</strong> fighters join the air battle over their territory, and still intercept raids as they do today. This replaces the old &quot;Patrol cancels Ground Support one for one&quot;, so only one rule decides who gets support.</p>
+<figure class="mockup"><a href="images/r2-b-air-battle.webp" target="_blank" rel="noopener" title="Open full size"><img src="images/r2-b-air-battle.webp" alt="Air battle shown before the main battle with both rolls and the result feeding the odds"></a><figcaption>The battle card in the Last turn report: the air battle over Málaga (Málaga's AA against the Ju 52s), then its winner's +3 in the ground battle. The rolls are example data.</figcaption></figure>
+
+<div class="questions" data-idea="air"></div>
+</section>
+<section class="sheet" id="ledger">
+<h2>Balance view</h2>
+<p>There&#39;s one list: each territory&#39;s row shows its yield, and a contested row shows its loss on the same line. Expense rows follow (builds under way, Replenish, upkeep), and the total matches the chip.</p>
+<figure class="mockup"><a href="images/r2-b-ledger.webp" target="_blank" rel="noopener" title="Open full size"><img src="images/r2-b-ledger.webp" alt="Funds balance popover with one flat list, contested minus shown inline, then expenses"></a><figcaption>Funds, as one list. The contested minus appears on its own row. The planned Replenish (−3) is example data, and it moves the chip from +12 to +9 so the total matches.</figcaption></figure>
+</section>
+<section class="sheet" id="ai">
+<h2>The AI must use every action</h2>
+<p>From reading <code>src/main/ai/</code>, here is what the computer player does today, and what Rev 2 has to teach it. These are implementation items, not questions.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Action</th>
+<th>AI today</th>
+<th>Rev 2</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Move: land, rail, sea</td>
+<td>Yes (<code>orders/move.ts</code>), odds-aware</td>
+<td>March, Motor or Rail by mode. It respects passes, picks the pocket exit, and plans joint attacks across source territories, as the Invade pane does.</td>
+</tr>
+<tr>
+<td>Withdraw</td>
+<td>Yes, in contested ground</td>
+<td>Leaves only through its own pocket&#39;s borders.</td>
+</tr>
+<tr>
+<td>Replenish</td>
+<td>Yes</td>
+<td>No change.</td>
+</tr>
+<tr>
+<td>Recruit, including aircraft</td>
+<td>Yes</td>
+<td>No change.</td>
+</tr>
+<tr>
+<td>Build: development, fortifications, rail repair</td>
+<td>Yes</td>
+<td>Also: <strong>factories</strong> (paid in Manpower), <strong>road upgrades</strong>, and <strong>new rail lines and rail upgrades</strong>.</td>
+</tr>
+<tr>
+<td>Air: raid, intercept, support, recon</td>
+<td>Yes, but only bombers fly support</td>
+<td>Patrol replaces intercept, fighters fly Ground Support too, and the AI weighs the air battle before committing.</td>
+</tr>
+<tr>
+<td>Generals: move, sack</td>
+<td>Yes</td>
+<td>No change.</td>
+</tr>
+<tr>
+<td>Entrench</td>
+<td>Implicit (no order)</td>
+<td>No change.</td>
+</tr>
+<tr>
+<td>Blunders</td>
+<td>1 in 100 orders</td>
+<td><strong>Removed.</strong></td>
+</tr>
+</tbody></table></div>
+<p><strong>The guard.</strong> A coverage test lists every order kind, air mission, move mode and build project in the engine. It fails if the AI has no path that produces any one of them. A new action can&#39;t ship without teaching the AI.</p>
+
+</section>
+<section class="sheet" id="plan">
+<h2>Implementation plan</h2>
+<p>The same team shape as Rev 1: a coordinator, a supervisor, and workers in sibling worktrees. Merged to <code>main</code> locally; you decide when to push.</p>
+<ol>
+<li><strong>Setup.</strong><ul>
+<li>Install the tooling you approved.</li>
+<li>Add project rules to <code>CLAUDE.md</code>.</li>
+<li>Exclude <code>.claude/**</code> and <code>infra/**</code> from vitest, since the old worktree leak caused 185 false failures.</li>
+</ul>
+</li>
+<li><strong>Data.</strong><ul>
+<li>Link records and modifiers.</li>
+<li>Explicit building lists.</li>
+<li>The North −2 change, and removing blunders.</li>
+<li>The 1936 rail and road table, checked against a period map.</li>
+</ul>
+</li>
+<li><strong>Engine.</strong><ul>
+<li>Pockets, with the Málaga test.</li>
+<li>Control flip.</li>
+<li>Move modes and passes.</li>
+<li>The rail graph, plus building and upgrading rail.</li>
+<li>Dug-in values.</li>
+<li>Factory Manpower.</li>
+<li>Air orders and the air battle.</li>
+</ul>
+</li>
+<li><strong>AI.</strong> The coverage table above, with its guard test.</li>
+<li><strong>UI.</strong><ul>
+<li>Top bar and menu.</li>
+<li>The pane stack and selection bar.</li>
+<li>Quick actions.</li>
+<li>Invade and Reinforce.</li>
+<li>Global Recruitment and Global Building.</li>
+<li>Last turn.</li>
+<li>The balance view.</li>
+<li>The layers toolbar.</li>
+<li>Sub-territory borders past 250% zoom.</li>
+<li>Replenish.</li>
+<li>Routed order lines.</li>
+<li>Hover-only unreachable notes.</li>
+<li>The two bugs.</li>
+</ul>
+</li>
+<li><strong>Close-out.</strong> The coverage gate, e2e runs and a sitrep. No balance sims unless you ask for them.</li>
+</ol>
+<div class="questions" data-idea="plan"></div>
+</section>
+
+  </main>
+</div>
+
+<script id="questions-data" type="application/json">[{"id":"Q-R2B-0","idea":"locked","text":"Málaga is sealed, but its only sea lane today goes to Melilla, which the South holds. What should its sea exit be?","options":[{"label":"Add a coastal lane from Málaga to the Republic's ports (Almería, then Cartagena/Murcia)","recommended":true,"rationale":"Sealed by land, but it can be reinforced or evacuated by sea, as the Republican fleet at Cartagena could. The South can still take it."},{"label":"Leave it: Málaga is a last stand with no way out"},{"label":"Reconsider: open the Motril corridor by land after all"}],"groupTitle":"Locked decisions"},{"id":"Q-R2B-1","idea":"actions","text":"Should Recruit be its own quick action?","context":"You listed Invade, Reinforce, Info and Build. Recruitment and Building get separate global views, so they're separate jobs.","options":[{"label":"Yes: five actions (Invade, Reinforce, Recruit, Build, Info)","recommended":true,"rationale":"Matches the two global views; recruiting is the most common action on your own ground."},{"label":"No: four actions; Build opens a card with both Build and Recruit"}],"groupTitle":"Orders, decoupled"},{"id":"Q-R2B-2","idea":"actions","text":"Should the Invade pane also list aircraft in range for Ground Support?","options":[{"label":"Yes, as a small group under the units, capped at 2","recommended":true,"rationale":"A joint attack is one screen, and the odds bar includes the air battle."},{"label":"No: air orders only through the aircraft counters"}],"groupTitle":"Orders, decoupled"},{"id":"Q-R2B-3","idea":"actions","text":"Where do Global Recruitment and Global Building open from?","options":[{"label":"Top bar buttons with counts, opening in the pane","recommended":true},{"label":"Tabs inside the This turn view"},{"label":"The hamburger menu"}],"groupTitle":"Orders, decoupled"},{"id":"Q-R2B-4","idea":"actions","text":"Should End Turn ask for confirmation?","options":[{"label":"Only when some armies have no order, listing them, with End anyway and Back","recommended":true,"rationale":"Serious, without a confirm on every turn."},{"label":"Always confirm"},{"label":"Never: the colour is enough"}],"groupTitle":"Orders, decoupled"},{"id":"Q-R2B-5","idea":"moves","text":"Order lines and roads: what should replace the Bézier arrows?","options":[{"label":"Motor and Rail lines follow the links they use; March stays a short curve; roads drawn in the Logistics preset","recommended":true},{"label":"Every line follows links, March included"},{"label":"Keep the curves; only draw the roads"}],"groupTitle":"Moving"},{"id":"Q-R2B-6","idea":"moves","text":"What bonus do defenders beyond a pass get?","options":[{"label":"−2 on the attacker's roll; stacks with dug-in; lost if any attacking ground unit comes over a non-pass link","recommended":true},{"label":"−3 (one odds column), same flanking rule"},{"label":"−2 always, no flanking exception"}],"groupTitle":"Moving"},{"id":"Q-R2B-7","idea":"air","text":"Does the loser of the air battle lose aircraft?","options":[{"label":"No: the air battle only decides who gets Ground Support; losses stay where they are today (raid interceptions)","recommended":true,"rationale":"One roll and one effect; easy to read in the odds bar."},{"label":"Yes: if beaten by 5 or more, one losing aircraft unit takes a step of losses"}],"groupTitle":"Air"},{"id":"Q-R2B-8","idea":"plan","text":"Is the locked list and the implementation plan right to start building?","context":"Use the notes for anything I misread. Two render quirks aren't design changes: the gold selection outline left on some shots, and the readiness chips shortened to fit one row.","options":[{"label":"Yes, start Rev 2","recommended":true},{"label":"Yes, with the changes in my notes"},{"label":"Not yet (explain in the notes)"}],"groupTitle":"Implementation plan"}]</script>
+<script>
+
+</script>
+<script>
+(function () {
+  "use strict";
+  var KEY = "m3r2-closeout-answers-v1";
+  var questions = [];
+  try { questions = JSON.parse(document.getElementById("questions-data").textContent); } catch (e) { questions = []; }
+  var byId = {};
+  questions.forEach(function (q) { byId[q.id] = q; });
+  var answers = {};
+  try { var raw = window.localStorage.getItem(KEY); if (raw) answers = JSON.parse(raw) || {}; } catch (e) { answers = {}; }
+  var remote = null, remoteTimer = null;
+  function remoteStatus(text) { var s = document.getElementById("remote-status"); if (s) s.textContent = text; }
+  function pushRemote() {
+    if (!remote) return;
+    clearTimeout(remoteTimer);
+    remoteTimer = setTimeout(function () {
+      var n = 0; questions.forEach(function (q) { if (isAnswered(q.id)) n += 1; });
+      remote.set({ answers: answers, answered: n, total: questions.length, updatedAt: new Date().toISOString() }).then(
+        function () { remoteStatus("Saved to this artifact for the team."); },
+        function (e) { if (e && (e.code === "invalid_argument" || e.code === "revoked" || e.code === "not_granted")) { remote = null; remoteStatus("Saved in this browser only. Use Copy my answers to send them."); } });
+    }, 1200);
+  }
+  function save() { try { window.localStorage.setItem(KEY, JSON.stringify(answers)); } catch (e) { /* storage unavailable: answers live in the page only */ } pushRemote(); }
+  function isAnswered(id) { var a = answers[id]; return !!(a && a.choices && a.choices.length); }
+
+  function el(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
+
+  function renderQuestion(q) {
+    var fs = el("fieldset", "q"); fs.id = q.id; fs.setAttribute("data-qid", q.id);
+    var lg = el("legend"); var head = el("div", "q-head");
+    head.appendChild(el("span", "q-id", q.id));
+    head.appendChild(el("span", "q-text", q.text));
+    if (q.multi) head.appendChild(el("span", "q-multi", "Choose all that apply"));
+    lg.appendChild(head); if (q.context) lg.appendChild(el("p", "q-ctx", q.context)); fs.appendChild(lg);
+    var type = q.multi ? "checkbox" : "radio";
+    (q.options || []).forEach(function (o, i) {
+      var lab = el("label", "opt");
+      var inp = document.createElement("input"); inp.type = type; inp.name = q.id; inp.value = String(i); inp.id = q.id + "-o" + i;
+      var txt = el("span"); txt.appendChild(document.createTextNode(o.label));
+      if (o.recommended) txt.appendChild(el("span", "rec", "(Recommended)"));
+      lab.appendChild(inp); lab.appendChild(txt);
+      if (o.rationale) lab.appendChild(el("span", "why", o.rationale));
+      fs.appendChild(lab);
+      inp.addEventListener("change", function () { readQuestion(fs, q); });
+    });
+    var nl = el("label", "notes-label", "Other / notes"); nl.htmlFor = q.id + "-notes";
+    var ta = document.createElement("textarea"); ta.id = q.id + "-notes"; ta.rows = 1; ta.placeholder = "Optional: another option, a condition, or a reason";
+    ta.addEventListener("input", function () { readQuestion(fs, q); });
+    fs.appendChild(nl); fs.appendChild(ta);
+    applyAnswer(fs, q);
+    return fs;
+  }
+  function applyAnswer(fs, q) {
+    var a = answers[q.id] || {};
+    var chosen = (a.choices || []).map(String);
+    Array.prototype.forEach.call(fs.querySelectorAll("input"), function (inp) { inp.checked = chosen.indexOf(inp.value) >= 0; });
+    var ta = fs.querySelector("textarea"); if (ta) ta.value = a.notes || "";
+    fs.classList.toggle("answered", isAnswered(q.id));
+  }
+  function readQuestion(fs, q) {
+    var choices = [];
+    Array.prototype.forEach.call(fs.querySelectorAll("input"), function (inp) { if (inp.checked) choices.push(Number(inp.value)); });
+    var notes = fs.querySelector("textarea").value;
+    if (!choices.length && !notes.trim()) delete answers[q.id]; else answers[q.id] = { choices: choices, notes: notes };
+    fs.classList.toggle("answered", isAnswered(q.id));
+    save(); updateProgress();
+  }
+
+  var groups = {};
+  questions.forEach(function (q) { var k = String(q.idea); (groups[k] = groups[k] || []).push(q); });
+  Array.prototype.forEach.call(document.querySelectorAll(".questions[data-idea]"), function (box) {
+    var list = groups[box.getAttribute("data-idea")] || [];
+    if (!list.length) { box.appendChild(el("p", "missing", "No questions were drafted for this item.")); return; }
+    list.forEach(function (q) { box.appendChild(renderQuestion(q)); });
+  });
+
+  function updateProgress() {
+    var n = 0; questions.forEach(function (q) { if (isAnswered(q.id)) n += 1; });
+    var label = n + " of " + questions.length + " answered";
+    Array.prototype.forEach.call(document.querySelectorAll("[data-progress-text]"), function (s) { s.textContent = label; });
+    var fill = document.getElementById("progress-fill"); if (fill) fill.style.width = (questions.length ? (100 * n / questions.length) : 0) + "%";
+    Array.prototype.forEach.call(document.querySelectorAll("[data-toc-idea]"), function (c) {
+      var list = [];
+      c.getAttribute("data-toc-idea").split(",").forEach(function (k) { list = list.concat(groups[k] || []); });
+      var m = 0; list.forEach(function (q) { if (isAnswered(q.id)) m += 1; });
+      c.textContent = list.length ? (m + "/" + list.length) : "";
+    });
+  }
+
+  function answersMarkdown() {
+    var lines = ["# Milestone 3 Rev 2 close-out answers", ""];
+    var n = 0; questions.forEach(function (q) { if (isAnswered(q.id) || (answers[q.id] && answers[q.id].notes)) n += 1; });
+    lines.push("Answered " + n + " of " + questions.length + " questions. Copied " + new Date().toISOString().slice(0, 10) + ".", "");
+    var currentIdea = null;
+    questions.forEach(function (q) {
+      var a = answers[q.id]; if (!a) return;
+      if (q.idea !== currentIdea) { currentIdea = q.idea; lines.push("## " + (q.groupTitle || ("Idea " + q.idea)), ""); }
+      var picked = (a.choices || []).map(function (i) { var o = q.options[i]; return o ? o.label + (o.recommended ? " (Recommended)" : "") : "?"; });
+      lines.push("- **" + q.id + "** " + q.text);
+      lines.push("  - Answer: " + (picked.length ? picked.join("; ") : "(no option chosen)"));
+      if (a.notes && a.notes.trim()) lines.push("  - Notes: " + a.notes.trim().replace(/\s*\n\s*/g, " / "));
+    });
+    var blanks = questions.filter(function (q) { return !answers[q.id]; }).map(function (q) { return q.id; });
+    if (blanks.length) { lines.push("", "## Unanswered", "", blanks.join(", ")); }
+    return lines.join("\n") + "\n";
+  }
+  var status = document.getElementById("copy-status");
+  var fallback = document.getElementById("copy-fallback");
+  function showFallback(text) {
+    fallback.hidden = false; fallback.value = text; fallback.focus(); fallback.select();
+    status.textContent = "Copying is blocked here. The answers are selected below: copy them by hand.";
+  }
+  Array.prototype.forEach.call(document.querySelectorAll("[data-copy]"), function (b) {
+    b.addEventListener("click", function () {
+      var text = answersMarkdown();
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(function () { status.textContent = "Copied as Markdown. Paste it into the chat or the tasks doc."; fallback.hidden = true; },
+            function () { showFallback(text); });
+        } else { showFallback(text); }
+      } catch (e) { showFallback(text); }
+      if (window.matchMedia("(max-width: 900px)").matches) { document.getElementById("toc").classList.add("open"); document.getElementById("toc-toggle").setAttribute("aria-expanded", "true"); }
+    });
+  });
+  document.getElementById("fill-rec").addEventListener("click", function () {
+    var filled = 0;
+    questions.forEach(function (q) {
+      if (isAnswered(q.id)) return;
+      var picks = []; (q.options || []).forEach(function (o, i) { if (o.recommended && (q.multi || picks.length === 0)) picks.push(i); });
+      if (!picks.length) return;
+      var prev = answers[q.id] || { notes: "" };
+      answers[q.id] = { choices: picks, notes: prev.notes || "" }; filled += 1;
+    });
+    save();
+    Array.prototype.forEach.call(document.querySelectorAll("fieldset.q"), function (fs) { applyAnswer(fs, byId[fs.getAttribute("data-qid")]); });
+    updateProgress(); status.textContent = filled + " blank questions set to the recommended option. Review and change any you disagree with.";
+  });
+  var clearAll = document.getElementById("clear-all"), clearConfirm = document.getElementById("clear-confirm");
+  clearAll.addEventListener("click", function () { clearConfirm.hidden = !clearConfirm.hidden; });
+  clearConfirm.addEventListener("click", function () {
+    answers = {}; save(); clearConfirm.hidden = true;
+    Array.prototype.forEach.call(document.querySelectorAll("fieldset.q"), function (fs) { applyAnswer(fs, byId[fs.getAttribute("data-qid")]); });
+    updateProgress(); status.textContent = "All answers cleared.";
+  });
+  var toggle = document.getElementById("toc-toggle"), toc = document.getElementById("toc");
+  toggle.addEventListener("click", function () { var open = toc.classList.toggle("open"); toggle.setAttribute("aria-expanded", open ? "true" : "false"); });
+  Array.prototype.forEach.call(toc.querySelectorAll("ol a"), function (a) { a.addEventListener("click", function () { toc.classList.remove("open"); toggle.setAttribute("aria-expanded", "false"); }); });
+
+  // Widgets
+  Array.prototype.forEach.call(document.querySelectorAll(".widget[data-widget]"), function (w) {
+    var fn = window.M3W && window.M3W[w.getAttribute("data-widget")];
+    if (typeof fn !== "function") { w.appendChild(el("p", "widget-error", "This widget is not available.")); return; }
+    try { fn(w); } catch (e) { w.appendChild(el("p", "widget-error", "This widget failed to start: " + (e && e.message))); }
+  });
+
+  // Active section in the contents
+  var links = Array.prototype.slice.call(toc.querySelectorAll("ol a[href^='#']"));
+  if ("IntersectionObserver" in window) {
+    var map = {}; links.forEach(function (a) { map[a.getAttribute("href").slice(1)] = a; });
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) { if (en.isIntersecting && map[en.target.id]) { links.forEach(function (l) { l.classList.remove("active"); }); map[en.target.id].classList.add("active"); } });
+    }, { rootMargin: "-10% 0px -80% 0px" });
+    Object.keys(map).forEach(function (id) { var t = document.getElementById(id); if (t) io.observe(t); });
+  }
+  updateProgress();
+
+  // Optional: when this page runs as a claude.ai Artifact with storage, also keep answers there.
+  try {
+    if (window.claude && typeof window.claude.use === "function") {
+      Promise.all([window.claude.use("db"), window.claude.use("user")]).then(function (r) {
+        var db = r[0], user = r[1];
+        if (!db || !user) return null;
+        return user.id().then(function (uid) {
+          if (!uid) return null;
+          var ref; try { ref = db.doc("answers/" + uid); } catch (e) { return null; }
+          return ref.get().then(function (snap) {
+            remote = ref;
+            var d = snap.exists ? snap.data() : null;
+            if (d && d.answers && !Object.keys(answers).length) {
+              answers = d.answers;
+              try { window.localStorage.setItem(KEY, JSON.stringify(answers)); } catch (e) { /* ignore */ }
+              Array.prototype.forEach.call(document.querySelectorAll("fieldset.q"), function (fs) { applyAnswer(fs, byId[fs.getAttribute("data-qid")]); });
+              updateProgress();
+            }
+            remoteStatus("Answers save to this artifact for the team, and to this browser.");
+          });
+        });
+      }).catch(function () { /* no shared storage: browser only */ });
+    }
+  } catch (e) { /* no runtime */ }
+})();
+</script>
