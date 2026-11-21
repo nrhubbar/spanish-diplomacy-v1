@@ -293,3 +293,6 @@ $RECYCLE.BIN/
 *.lnk
 
 # End of https://www.toptal.com/developers/gitignore/api/node,windows,visualstudiocode,intellij+all
+# Claude Code local state
+/.claude/worktrees/
+/.claude/settings.local.json

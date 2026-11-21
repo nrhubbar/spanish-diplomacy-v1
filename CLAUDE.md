@@ -1,3 +1,34 @@
+# Spanish Diplomacy: project rules
+
+A turn-based strategy game of the Spanish Civil War (TypeScript, React, Redux Toolkit, Vite, Vitest, Playwright). Design docs live in `project/milestones/`; they are internal and never imported by the app.
+
+## Commands
+- `npm run verify` runs what CI runs: lint, typecheck, unit tests with coverage, build, Playwright.
+- Fast loop: `npm run lint`, `npm run typecheck`, `npx vitest run <file>`.
+- Coverage gate (`vitest.config.ts`): branches 93%, functions/lines/statements 92%. Every new rule or branch needs a unit test.
+- `npm run sim` is the headless balance harness. **Run sims only when the owner asks** (skill: `run-sim`).
+- Screenshots: follow `project/testing-screenshots.md` (skill: `regen-screenshots`). Always set your own `E2E_PORT`.
+- **Don't touch the Linux visual baselines (`npm run e2e:baselines`) or the production smoke test;** the owner maintains them.
+
+## Git and worktrees
+- **Never use bare `git stash` or `git stash pop`;** a hook blocks it. The stash stack is shared by every worktree and session. Use a WIP commit, or `git stash push -u -m <unique-tag>` and `git stash apply <sha>`.
+- Worktrees are sibling directories (`../spanish-diplomacy-v1-<name>`), never under `.claude/worktrees/`. Remove a workstream's worktree once it's merged, keeping the branch (skill: `merge-slice`).
+- Worktrees symlink `node_modules`, and that link shows as untracked. Stage files by path, never with `git add -A` at the root.
+- Commit only when asked. Never push: the owner decides when `main` goes out (pushing deploys to production).
+- Images (`*.png`, `*.webp`, ...) and the map source geojson are in Git LFS (`.gitattributes`).
+
+## Code
+- The engine (`src/main/engine/`) is pure and deterministic. All randomness comes from the seeded roll streams; there are no clocks and no `Math.random`.
+- Rules and numbers live in the scenario data (`src/scenarios/<id>/`), not hard-coded, so other eras can reuse the engine. The Zod schemas (`src/main/scenarios/schema/`) are the source of truth; regenerate the published JSON Schemas with `npm run spec:build` (`spec:check` fails on drift).
+- The computer player (`src/main/ai/`) must be *able* to use every action a human can. A new order kind ships with its AI path and a test.
+- Player-facing text is plain English, with no internal ids, rule codes (D17, Q-MR-21) or design-note jargon.
+
+## How a revision runs
+- A revision is a playtest-driven attempt at the whole milestone. The bar is production-ready.
+- The team is one coordinator, one supervisor and N workers in sibling worktrees. Names are lower-kebab-case, with an optional number (`rail-engine-2`).
+- Each workstream gets one read-only correctness review before hand-off (agent: `diff-reviewer`), scoped to its diff.
+- Keep token use modest and report it: the owner tracks it.
+
 <!-- BEGIN AWS Agent Toolkit rules -->
 # AWS Guidance
 

@@ -3,7 +3,8 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     environment: "jsdom",
-    exclude: ["e2e/**", "node_modules/**", "build/**"],
+    // .claude/** holds agent worktrees (their tests are other checkouts); infra/** is the CDK app.
+    exclude: ["e2e/**", "node_modules/**", "build/**", ".claude/**", "infra/**"],
     setupFiles: ["src/test/setup.ts"],
     // Full user flows in jsdom, measured with coverage, share the CPU with every other test file
     // (and the harness smoke run); under that load the 5 s default can time out a passing test.
