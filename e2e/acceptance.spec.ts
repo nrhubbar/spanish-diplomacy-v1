@@ -2,6 +2,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, type Locator, type Page, test } from "@playwright/test";
 import sharp from "sharp";
 import { zoomFullyOn } from "./mapCamera";
+import { askToEndTurn, chooseMove, endTurnAnyway, selectTerritory } from "./turn";
 
 // User-story acceptance tests (Revision 5, section 8.2). They assert what a player sees and
 // never inspect Redux state.
@@ -16,22 +17,24 @@ async function mapReady(page: Page): Promise<void> {
   await expect(page.locator(".map-vector")).toBeVisible();
 }
 
-async function selectTerritory(page: Page, territoryId: string): Promise<void> {
-  await page.locator(`.map-region[data-territory-id="${territoryId}"]`).focus();
-  await page.keyboard.press("Enter");
-}
-
+/** The pane on the view with this title, opened first if a phone's sheet is collapsed. */
 async function pane(page: Page, name: string) {
   const toggle = page.getByRole("button", { exact: true, name });
   if (await toggle.isVisible()) await toggle.click();
   return page.getByRole("complementary", { name });
 }
 
-/** Gives the selected armies a Move order from the Orders pane and waits for destination choice. */
+/** The pane on This turn, the orders given so far: back from the Territory Info a map click opened (U3). */
+async function thisTurn(page: Page) {
+  const territory = await pane(page, "Territory info");
+  await territory.getByRole("button", { exact: true, name: "This turn" }).click();
+  return page.getByRole("complementary", { name: "This turn" });
+}
+
+/** Gives the selected armies a Move order from the selection bar and waits for destination choice. */
 async function orderMove(page: Page): Promise<void> {
-  const orders = await pane(page, "Orders");
-  await orders.getByRole("button", { name: "Give Selected Units Order" }).click();
-  await orders.getByRole("button", { exact: true, name: "Move" }).click();
+  await pane(page, "Territory info");
+  await chooseMove(page);
   await expect(page.locator('[data-highlight="destination"]').first()).toBeAttached();
 }
 
@@ -66,17 +69,19 @@ test("plays a mixed local and computer turn straight through to the results", as
   await expect(page.getByText(/Turn 1 . Late July 1936/)).toBeVisible();
   await expectAccessible(page);
   await selectTerritory(page, "madrid");
-  const orders = await pane(page, "Orders");
+  const territory = await pane(page, "Territory info");
   // Madrid holds four ground armies and General Miaja (m3r1-air-generals); its aircraft are selected on their own.
-  await expect(orders.getByText("5 of 5 selected")).toBeVisible();
-  await orders.getByRole("button", { name: "Give Selected Units Order" }).click();
+  await expect(territory.getByText("5 of 5 selected")).toBeVisible();
+  await expect(territory.getByText("5 units selected")).toBeVisible();
   await expectAccessible(page);
-  await orders.getByRole("button", { exact: true, name: "Move" }).click();
+  await chooseMove(page);
   await expectAccessible(page);
   await selectTerritory(page, "castilla-la-mancha");
-  await pane(page, "Orders");
-  await expect(orders.getByRole("list", { name: "Planned moves (5)" })).toBeVisible();
-  await page.getByRole("button", { name: "End Turn" }).filter({ visible: true }).click();
+  await expect((await thisTurn(page)).getByRole("list", { name: "Unit orders (5)" })).toBeVisible();
+  // Madrid's armies have their order; the rest don't, so End Turn asks first.
+  const confirm = await askToEndTurn(page);
+  await expectAccessible(page);
+  await confirm.getByRole("button", { name: "End anyway" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Turn resolution" })).toBeVisible();
   await mapReady(page);
   const report = await pane(page, "Turn report");
@@ -93,7 +98,7 @@ test("plays a mixed local and computer turn straight through to the results", as
   await expectAccessible(page);
   await page.getByRole("button", { name: "Start Next Turn" }).filter({ visible: true }).click();
   await mapReady(page);
-  await expect(page.getByText(/^Turn 2/)).toBeVisible();
+  await expect(page.getByText(/^Turn 2 . Early August 1936/)).toBeVisible();
 });
 
 /** A2: an odds "i" opens and closes its one sentence by click and by keyboard, and stays accessible open. */
@@ -127,13 +132,13 @@ test("marks the odds approximate and explains them behind the i (A1, A2)", async
   await expect(page.locator('.odds-layer .odds-chip[data-territory-id="castilla-y-leon"]')).toHaveText(/^\u2248 \d+:\d+ \u00b7 \d+%$/);
   // A phone's sheet stays collapsed while a destination is chosen, so the list shows on wider
   // screens and a phone reaches the same "i" in the sheet's bar.
-  const choosing = page.getByRole("complementary", { name: "Orders" });
+  const choosing = page.getByRole("complementary", { name: "Territory info" });
   if (!isMobile) {
     await expect(choosing.getByRole("button", { name: /Castilla y Le\u00f3n.*Approximately \d+:\d+, \d+ percent to take it/ })).toBeVisible();
   }
   await exerciseOddsInfo(page, choosing, "About the destination odds");
   await selectTerritory(page, "castilla-y-leon");
-  const orders = await pane(page, "Orders");
+  const orders = await thisTurn(page);
   await expect(orders.locator(".planned-odds").first()).toHaveText(/^Approx\. \d+:\d+ \u00b7 \d+%/);
   await exerciseOddsInfo(page, orders, "About the planned odds");
 });
@@ -151,11 +156,11 @@ test("opens the Briefing on turn 1, toggles it with the i control, and stays acc
   await expect(toggle).toHaveAttribute("aria-pressed", "true");
   await toggle.click();
   await expect(toggle).toHaveAttribute("aria-pressed", "false");
-  await expect(page.getByRole("complementary", { name: "Orders" })).toBeAttached();
+  await expect(page.getByRole("complementary", { name: "This turn" })).toBeAttached();
   await toggle.click();
   await expect(briefing).toBeVisible();
   await selectTerritory(page, "madrid");
-  await expect((await pane(page, "Orders")).getByRole("heading", { name: "Madrid" })).toBeVisible();
+  await expect((await pane(page, "Territory info")).getByRole("heading", { name: "Madrid" })).toBeVisible();
 });
 
 test("passes the device privately between three local players", async ({ page }) => {
@@ -168,12 +173,12 @@ test("passes the device privately between three local players", async ({ page })
     await expectAccessible(page);
     await page.getByRole("button", { name: `Continue to ${name}` }).click();
     await mapReady(page);
-    await page.getByRole("button", { name: "End Turn" }).filter({ visible: true }).click();
+    await endTurnAnyway(page);
     await expect(page.getByRole("heading", { name: `Pass to ${next}` })).toBeVisible();
     await expect(page.getByText(`${name} has submitted its orders`)).toBeVisible();
   }
   await page.getByRole("button", { name: "Continue to Southern Insurgent Command" }).click();
-  await page.getByRole("button", { name: "End Turn" }).filter({ visible: true }).click();
+  await endTurnAnyway(page);
   await expect(page.getByRole("heading", { level: 1, name: "Turn resolution" })).toBeVisible();
 });
 
@@ -184,15 +189,19 @@ test("gives two colocated armies different destinations", async ({ page }) => {
   const covadongaCounter = page.locator(".counter-layer").getByRole("button", { name: /Covadonga Infantry Regiment No. 4/ });
   await activateArmy(page, /Wad-Ras Infantry Regiment No. 1/, "Madrid");
   await expect(covadongaCounter).toHaveAttribute("aria-pressed", "true");
-  const armies = (await pane(page, "Orders")).getByRole("list", { name: "Your units" });
+  const armies = (await pane(page, "Territory info")).getByRole("list", { name: "Your units" });
   await armies.getByRole("button", { name: /Covadonga/ }).click();
   await expect(covadongaCounter).toHaveAttribute("aria-pressed", "false");
   await orderMove(page);
   await selectTerritory(page, "castilla-la-mancha");
+  // Nothing stays selected after an order (U4); the territory stays open to pick the next army.
+  await expect(covadongaCounter).toHaveAttribute("aria-pressed", "false");
+  await pane(page, "Territory info");
+  await armies.getByRole("button", { name: /Covadonga/ }).click();
   await expect(covadongaCounter).toHaveAttribute("aria-pressed", "true");
   await orderMove(page);
   await selectTerritory(page, "castilla-y-leon");
-  const orders = await pane(page, "Orders");
+  const orders = await thisTurn(page);
   await expect(orders.getByText(/Madrid . Castilla-La Mancha/).first()).toBeVisible();
   await expect(orders.getByText(/Madrid . Castilla y Le\u00f3n/)).toBeVisible();
 });
@@ -209,10 +218,10 @@ test("ends the fixture scenario in victory and blocks the next turn", async ({ p
   await selectTerritory(page, "westfold");
   await orderMove(page);
   await selectTerritory(page, "lowlands");
-  await page.getByRole("button", { name: "End Turn" }).filter({ visible: true }).click();
+  await endTurnAnyway(page);
   await page.getByRole("button", { name: "Continue to Blue Union" }).click();
   await mapReady(page);
-  await page.getByRole("button", { name: "End Turn" }).filter({ visible: true }).click();
+  await endTurnAnyway(page);
   await expect(page.getByRole("heading", { level: 1, name: "Red League wins" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Start Next Turn" })).toHaveCount(0);
   await expectAccessible(page);
@@ -228,19 +237,24 @@ test("plays a turn with the keyboard alone (B3)", async ({ page }) => {
   const counter = page.getByRole("button", { name: /Wad-Ras Infantry Regiment No. 1/ }).first();
   await activateArmy(page, /Wad-Ras Infantry Regiment No. 1/, "Madrid", "keyboard");
   await expect(counter).toHaveAttribute("aria-pressed", "true");
-  const orders = await pane(page, "Orders");
-  await orders.getByRole("button", { name: "Give Selected Units Order" }).focus();
-  await page.keyboard.press("Enter");
-  await orders.getByRole("button", { exact: true, name: "Move" }).focus();
+  const territory = await pane(page, "Territory info");
+  await territory.getByRole("button", { exact: true, name: "Move" }).focus();
   await page.keyboard.press("Enter");
   // Focus lands on the visible Cancel control instead of being lost with the Move button.
   await expect(page.locator(":focus")).toHaveText(/^Cancel/);
   await selectTerritory(page, "castilla-la-mancha");
-  await expect((await pane(page, "Orders")).getByRole("list", { name: "Planned moves (5)" })).toBeVisible();
+  await territory.getByRole("button", { exact: true, name: "This turn" }).focus();
+  await page.keyboard.press("Enter");
+  await expect((await pane(page, "This turn")).getByRole("list", { name: "Unit orders (5)" })).toBeVisible();
   await page.getByRole("button", { name: "Zoom in" }).focus();
   await page.keyboard.press("Enter");
   await expect(page.getByText("Map zoom 125 percent")).toBeAttached();
   await page.getByRole("button", { name: "End Turn" }).filter({ visible: true }).focus();
+  await page.keyboard.press("Enter");
+  // The confirm takes focus on Back, so a stray Enter does not end the turn.
+  const confirm = page.getByRole("alertdialog", { name: /armies have no order$/ });
+  await expect(confirm.getByRole("button", { name: "Back" })).toBeFocused();
+  await confirm.getByRole("button", { name: "End anyway" }).focus();
   await page.keyboard.press("Enter");
   await expect(page.getByRole("heading", { level: 1, name: "Turn resolution" })).toBeVisible();
 });
@@ -258,8 +272,8 @@ test("moves the Army of Africa across the Strait (B1, OD-7)", async ({ page }) =
   await orderMove(page);
   await expect(page.locator('[data-highlight="destination"][data-territory-highlight="andalucia"]')).toBeAttached();
   await selectTerritory(page, "andalucia");
-  await expect((await pane(page, "Orders")).getByText(/Ceuta . Andaluc\u00eda/).first()).toBeVisible();
-  await page.getByRole("button", { name: "End Turn" }).filter({ visible: true }).click();
+  await expect((await thisTurn(page)).getByText(/Ceuta . Andaluc\u00eda/).first()).toBeVisible();
+  await endTurnAnyway(page);
   const report = await pane(page, "Turn report");
   await expect(report.getByText(/Southern Insurgent Command: Tercio Legion No\. 2 \(Banderas IV-VI\).* (moved|tried to move)( together)? from Ceuta to Andaluc\u00eda/).first()).toBeAttached();
   await expect(report.getByText(/impossible order/)).toHaveCount(0);
@@ -356,11 +370,11 @@ test("draws the relief coastline exactly under the region coastline at full zoom
   await openSetup(page);
   await page.getByRole("button", { name: "Start Campaign" }).click();
   await expect(page.locator(".terrain-layer")).toHaveAttribute("data-refined", "true", { timeout: 15000 });
-  const hide = page.getByRole("button", { name: /Hide (orders|briefing)/ });
+  const hide = page.getByRole("button", { name: /Hide (this turn|briefing)/ });
   if (await hide.isVisible()) await hide.click();
   await zoomFullyOn(page, "Valencia");
   // Leave only the relief visible; the vector layer keeps its geometry for the measurements.
-  await page.addStyleTag({ content: ".map-vector, .counter-layer, .map-pane, .map-legend, .map-controls { visibility: hidden !important; }" });
+  await page.addStyleTag({ content: ".map-vector, .counter-layer, .map-pane, .map-legend, .map-controls, .map-layers-toolbar, .map-layers-menu { visibility: hidden !important; }" });
   await page.waitForTimeout(200);
 
   // Points 1.2 km either side of the bound regions' coastline, in screen pixels. A misregistration
@@ -433,7 +447,7 @@ test("reports missing terrain textures and keeps the game playable", async ({ pa
   await mapReady(page);
   await expect(page.getByText(/could not be loaded/)).toBeVisible();
   await selectTerritory(page, "madrid");
-  await expect((await pane(page, "Orders")).getByRole("heading", { name: "Madrid" })).toBeVisible();
+  await expect((await pane(page, "Territory info")).getByRole("heading", { name: "Madrid" })).toBeVisible();
 });
 
 test("guards direct routes and keeps settings accessible", async ({ page }) => {

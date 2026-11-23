@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { endTurnAnyway } from "./turn";
 
 // Smoke test against a production build, served the way `npm run personal-prod` serves it.
 // Run with: npm run build, serve build/dist, then PROD_URL=http://127.0.0.1:8090/ npx playwright test e2e/production.spec.ts
@@ -16,10 +17,10 @@ test("the production build plays without test fixtures or console errors", async
   await page.getByRole("button", { name: "Start Campaign" }).click();
   await expect(page.locator(".map-vector")).toBeVisible();
   await expect(page.locator(".terrain-layer")).toHaveAttribute("data-renderer", "webgl", { timeout: 15000 });
-  // Every army shows its own counter from 125% zoom (Z1).
+  // Every army and general shows its own counter from 125% zoom (Z1); the five aircraft have theirs in the air layer.
   await page.getByRole("button", { name: "Zoom in" }).click();
-  await expect(page.locator(".unit-counter")).toHaveCount(35);
-  await page.getByRole("button", { name: "End Turn" }).filter({ visible: true }).click();
+  await expect(page.locator(".unit-counter")).toHaveCount(41);
+  await endTurnAnyway(page);
   await expect(page.getByRole("heading", { level: 1, name: "Turn resolution" })).toBeVisible();
   expect(errors).toEqual([]);
 });

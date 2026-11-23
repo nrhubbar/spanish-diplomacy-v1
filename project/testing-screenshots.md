@@ -7,7 +7,7 @@ Use this guide when you need images of the real, current app: for a design revie
 | Kind | Where it lands | How it is made | Committed? |
 |---|---|---|---|
 | **Review captures**: every screen and state, desktop and phone | `build/e2e/screenshots/<project>-<NN-name>.png` | `npm run e2e:capture` (tests tagged `@capture` in `e2e/capture.spec.ts`) | No, `build/` is ignored. Regenerate them. |
-| **Visual baselines**: the pixel-compared reference images | `e2e/baselines/<project>/<name>.png` | `e2e/visual.spec.ts`; update with `npm run e2e:baselines`, but only when the change is intended | Yes |
+| **Visual baselines**: the pixel-compared reference images | `e2e/baselines/<project>/<name>.png` | `e2e/visual.spec.ts`; update the desktop ones with `npm run e2e:baselines` (renders in the Linux container, needs Docker), but only when the change is intended | Yes |
 | **Failure evidence**: what a failing test saw | `build/e2e/test-results/<test>/` (screenshot and trace); HTML report in `build/e2e/playwright-report/` | Any `npm run test:e2e` failure (`screenshot: only-on-failure`, `trace: retain-on-failure`) | No |
 | **Design images**: mockups and reviewed captures kept with the docs | `project/milestones/**/images/*.webp`, `project/milestones/*.png` | Mockup scripts (see the last section) | Yes |
 
@@ -15,7 +15,7 @@ Use this guide when you need images of the real, current app: for a design revie
 - `chromium` is the desktop at 1440 × 800;
 - `mobile-chromium` is a Pixel 7.
 
-Captures run on these two. Firefox and WebKit run only in `test:e2e`.
+Captures run on these two. `test:e2e` runs desktop Chromium only, so the phone baselines are not checked at the moment.
 
 ## Getting fresh review captures
 

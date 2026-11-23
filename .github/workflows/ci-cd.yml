@@ -25,11 +25,15 @@ env:
 jobs:
   verify:
     name: Verify game
-    runs-on: ubuntu-latest
+    # The arm64 runner matches the laptop's container, so `npm run verify:linux` means the same
+    # thing in both places: same architecture, image, fonts and browser.
+    runs-on: ubuntu-24.04-arm
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
       - uses: jdx/mise-action@v5
+        with:
+          install_args: node git-lfs
 
       # Restore LFS objects from the Actions cache so each run does not spend LFS bandwidth.
       - name: List LFS objects
@@ -42,26 +46,10 @@ jobs:
       - name: Pull LFS files
         run: git lfs install --local && git lfs pull
 
-      - uses: actions/cache@v6
-        with:
-          path: ~/.npm
-          key: npm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-          restore-keys: npm-${{ runner.os }}-
-      - run: npm ci
-
-      - uses: actions/cache@v6
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-      - run: npx playwright install --with-deps
-
-      # A commit message containing [skip e2e] skips the Playwright suites (and the production
-      # smoke test below) while the new UI's tests are rewritten; every other check still runs.
-      - run: npm run lint && npm run typecheck && npm run test:unit && npm run build
+      # Runs `npm run verify` in the checks' Linux container (scripts/linux).
+      - run: npm run verify:linux
         env:
           BUILD_COMMIT: ${{ github.sha }}
-      - run: npm run test:e2e
-        if: ${{ !contains(github.event.head_commit.message, '[skip e2e]') }}
 
       - name: Upload Playwright report
         if: failure()
@@ -150,7 +138,6 @@ jobs:
           key: playwright-${{ runner.os }}-chromium-${{ hashFiles('package-lock.json') }}
       - run: npx playwright install --with-deps chromium
       - name: Smoke test (play a turn on the live site)
-        if: ${{ !contains(github.event.head_commit.message, '[skip e2e]') }}
         run: mise run smoke
       - name: Upload Playwright report
         if: failure()

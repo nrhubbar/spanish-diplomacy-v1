@@ -22,14 +22,17 @@ Tools are pinned in `mise.toml` (Node, Git LFS, AWS CLI), and images, map source
 mise install         # once: the pinned toolchain
 mise run setup       # once per clone: LFS hooks and files, npm ci for the game and infra/
 npm run dev          # http://127.0.0.1:5173/assets/
-npm run verify       # lint, types, unit tests with coverage, build, and Playwright
+npm run verify       # lint, types, unit tests with coverage, build, and Playwright (desktop Chromium)
+npm run verify:linux # the same in CI's Linux container, visual baselines included (needs Docker)
 ```
+
+`scripts/linux/run.sh <command>` runs any command in that container, which is built from Playwright's image for the locked version, the Node version in `mise.toml` and the locked npm packages. On a Mac, [colima](https://github.com/abiosoft/colima) provides Docker: `brew install colima docker`, then `colima start --cpu 4 --memory 8`. CI uses an arm64 runner, so on Apple silicon the architecture, image, fonts and browser are the same in both places. CPU speed is not: a local pass of the timing budgets (`e2e/performance.spec.ts`) doesn't prove a pass on CI's runner.
 
 ## Deploying
 
 The game is live at https://spanish-diplomacy.nicholas-hubbard.com/. Every push to `main` deploys it through GitHub Actions (`.github/workflows/ci-cd.yml`):
 
-1. **Verify game** (Ubuntu): `npm run verify`, building with the commit SHA stamped into `<meta name="build-commit">`. The `build/dist` it produces is kept as an artifact.
+1. **Verify game** (Ubuntu on arm64): `npm run verify:linux`, which is `npm run verify` in the checks' container, building with the commit SHA stamped into `<meta name="build-commit">`. The `build/dist` it produces is kept as an artifact.
 2. **Check infrastructure**: typecheck and `cdk synth` of `infra/`.
 3. **Deploy to AWS** (main only): `cdk deploy` of the stacks, then `infra/scripts/publish-site.sh` uploads that exact `build/dist` to S3 and invalidates the HTML.
 4. **Verify production**:
@@ -38,10 +41,10 @@ The game is live at https://spanish-diplomacy.nicholas-hubbard.com/. Every push 
 
 Every branch push and pull request runs steps 1 and 2.
 
-The visual baselines in `e2e/baselines/` are Linux Chromium renders, so `visual.spec.ts` runs only on Linux and skips on a Mac. To refresh them:
+The visual baselines in `e2e/baselines/` are Chromium renders from the container, so `visual.spec.ts` runs only on Linux and skips on a Mac. To refresh the desktop ones:
 
-1. Push a `baselines/<name>` branch. The "Update visual baselines" workflow renders them.
-2. Download its `visual-baselines` artifact and review the images.
+1. Run `npm run e2e:baselines`, which renders them in the container. Without Docker, push a `baselines/<name>` branch; the "Update visual baselines" workflow runs the same command, and its `visual-baselines` artifact holds the images.
+2. Review the images.
 3. Commit them in a commit of their own.
 
 The infrastructure is an AWS CDK (TypeScript) app in `infra/` with two stacks in account 756988898359, us-east-1:

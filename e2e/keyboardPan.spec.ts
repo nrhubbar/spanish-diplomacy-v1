@@ -26,7 +26,9 @@ test("holding D pans the map right in small, steady steps (K1)", async ({ page }
     requestAnimationFrame(sample);
   });
   await page.keyboard.down("d");
+  // Half a second, or longer on a host too slow to draw ten steps in that time.
   await page.waitForTimeout(500);
+  await page.waitForFunction(() => new Set((window as unknown as { panSamples: number[] }).panSamples).size > 10);
   await page.keyboard.up("d");
   await waitForCameraStill(page);
   const samples = await page.evaluate(() => (window as unknown as { panSamples: number[] }).panSamples.slice());

@@ -10,12 +10,16 @@ export default defineConfig({
   fullyParallel: true,
   globalSetup: "./e2e/global-setup.ts",
   outputDir: "build/e2e/test-results",
+  // Three times Playwright's defaults: the tests share the CPU with each other, on hosts of any
+  // speed, and a longer limit only lengthens a test that would fail.
+  timeout: 90_000,
   reporter: [
     ["list"],
     ["html", { open: "never", outputFolder: "build/e2e/playwright-report" }]
   ],
   snapshotPathTemplate: "e2e/baselines/{projectName}/{arg}{ext}",
   expect: {
+    timeout: 15_000,
     toHaveScreenshot: { animations: "disabled", maxDiffPixelRatio: 0.002, threshold: 0.2 }
   },
   use: {

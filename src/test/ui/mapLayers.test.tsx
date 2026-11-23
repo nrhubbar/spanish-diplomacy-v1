@@ -30,6 +30,7 @@ import type { ScenarioPackage } from "../../main/scenarios/loader";
 import { mapLayersChosen } from "../../main/state/mapLayersSlice";
 import { paths } from "../../main/state/routing";
 import { emptyDraft } from "../../main/state/session";
+import { standingBattle } from "../battleFixtures";
 import { faction, shippedRegistry, spainId, territory, testRegistry, testStore, unit } from "../support";
 
 afterEach(() => {
@@ -47,6 +48,34 @@ function withoutSubTerritories(map: ScenarioPackage["map"]): ScenarioPackage["ma
   delete (bare as { subTerritories?: unknown }).subTerritories;
   return bare;
 }
+
+describe("battle icons on the resolution map (B5)", () => {
+  it("are kept clear by the counters, so a focused territory's fanned-out stack leaves its icon clickable", async () => {
+    vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(1408);
+    vi.spyOn(HTMLElement.prototype, "clientHeight", "get").mockReturnValue(704);
+    const pkg = shippedRegistry().require(spainId);
+    const assets = await shippedRegistry().loadAssets(spainId);
+    render(<CampaignMap
+      assets={assets}
+      game={initialGameState(pkg.scenario)}
+      scenarioPackage={pkg}
+      view={{ ...staticMapView, focusedTerritoryId: territory("asturias"), onSelectTerritory: vi.fn(), outcomes: [standingBattle] }}
+    />);
+    await screen.findByRole("application", { name: /map/ });
+    const at = (element: HTMLElement): { readonly x: number; readonly y: number } => ({ x: Number.parseFloat(element.style.left), y: Number.parseFloat(element.style.top) });
+    const icon = document.querySelector<HTMLElement>(".battle-icon");
+    if (icon === null) throw new Error("no battle icon");
+    const centre = at(icon);
+    const counters = [...document.querySelectorAll<HTMLElement>(".unit-counter")];
+    expect(counters.length).toBeGreaterThan(3);
+    // The icon's button is 24 px across its centre.
+    const covering = counters.filter((counter) => {
+      const { x, y } = at(counter);
+      return x < centre.x + 12 && centre.x - 12 < x + Number.parseFloat(counter.style.width) && y < centre.y + 12 && centre.y - 12 < y + Number.parseFloat(counter.style.height);
+    });
+    expect(covering.map((counter) => counter.title)).toEqual([]);
+  });
+});
 
 describe("layer presets and switches (U13)", () => {
   it("opens on the Orders preset, the map as it was: rail, order lines and battles, no roads", () => {

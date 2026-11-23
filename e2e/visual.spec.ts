@@ -1,4 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
+import { chooseMove, endTurnAnyway, selectTerritory } from "./turn";
 
 // Reviewed visual baselines (Revision 5, section 8.3). Chromium on Linux only: other engines
 // and operating systems raster WebGL and fonts differently, and CI runs on Linux. Refresh them
@@ -30,10 +31,8 @@ test("setup", async ({ page }) => {
 test("planning at every zoom level", async ({ page }) => {
   await startGame(page);
   await expect(page).toHaveScreenshot("planning-overview.png");
-  await page.locator('.map-region[data-territory-id="madrid"]').focus();
-  await page.keyboard.press("Enter");
-  await page.getByRole("button", { name: "Give Selected Units Order" }).click();
-  await page.getByRole("button", { exact: true, name: "Move" }).click();
+  await selectTerritory(page, "madrid");
+  await chooseMove(page);
   await expect(page).toHaveScreenshot("planning-destinations.png");
   for (let step = 0; step < 2; step += 1) await page.getByRole("button", { name: "Zoom in" }).click();
   await expect(page).toHaveScreenshot("planning-operational.png");
@@ -43,7 +42,7 @@ test("planning at every zoom level", async ({ page }) => {
 
 test("resolution", async ({ page }) => {
   await startGame(page);
-  await page.getByRole("button", { name: "End Turn" }).filter({ visible: true }).click();
+  await endTurnAnyway(page);
   // Start Next Turn appears under the pointer that pressed End Turn; keep hover out of the baseline.
   await page.mouse.move(0, 0);
   await expect(page.locator(".terrain-layer")).toHaveAttribute("data-renderer", "webgl", { timeout: 15000 });

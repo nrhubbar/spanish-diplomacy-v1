@@ -6,7 +6,7 @@ import { CounterLayer, layoutCounters } from "./CounterLayer";
 import { weatherIn } from "../engine/weather";
 import { DestinationOddsLayer } from "./DestinationOddsLayer";
 import { AirLayer, placeAircraft, withoutAircraft } from "./layers/AirLayer";
-import { BattleIconLayer } from "./BattleIconLayer";
+import { BattleIconLayer, battleIconRects } from "./BattleIconLayer";
 import { battleMarkPoints } from "./RouteLayer";
 import { destinationTags, RailLayer } from "./layers/RailLayer";
 import { type LayerId, layersControlObstacle, showsSubTerritoryBorders } from "./layers/layerChoice";
@@ -55,7 +55,8 @@ export function MapLayers({ assets, bounds, camera, game, geometry, layers, layo
   const groundGame = withoutAircraft(scenario, game);
   // B1: aircraft are placed first, clear of the names, and the army counters are laid out around them.
   const air = placeAircraft(scenarioPackage, game, toScreen, landLabels, stackSpots(groundGame, map, toScreen));
-  const counterLayout = layoutCounters(groundGame, map, camera.zoom, toScreen, [...landLabels, ...air.rects], {
+  const battleMarks = battleMarkPoints(view, scenario, (id) => territoryAnchor(map, id), 1 / scale, { game, subPoint: (id) => map.subTerritories?.entries.get(id)?.capital });
+  const counterLayout = layoutCounters(groundGame, map, camera.zoom, toScreen, [...landLabels, ...air.rects, ...battleIconRects(battleMarks, toScreen)], {
     ...(expandedTerritoryId === undefined ? {} : { expandedTerritoryId }),
     narrow: layout === "sheet"
   });
@@ -113,7 +114,7 @@ export function MapLayers({ assets, bounds, camera, game, geometry, layers, layo
       />
       <AirLayer {...layerProps} placements={air.placements} />
       <BattleIconLayer
-        marks={battleMarkPoints(view, scenario, (id) => territoryAnchor(map, id), 1 / scale, { game, subPoint: (id) => map.subTerritories?.entries.get(id)?.capital })}
+        marks={battleMarks}
         onSelectTerritory={view.onSelectTerritory}
         scenario={scenario}
         toScreen={toScreen}

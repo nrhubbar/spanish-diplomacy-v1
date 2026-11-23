@@ -48,7 +48,7 @@
 - Use Playwright for browser behavior and routing smoke tests.
 - Keep Playwright screenshots and traces under `build/e2e`.
 - Inspect relevant desktop and mobile Playwright screenshots when developing visual features.
-- Run `npm run verify` (lint, typecheck, unit tests with coverage, build, and Playwright) before claiming implementation work is complete. Use `npm run e2e:capture` for fast visual review while iterating, and refresh visual baselines only in a commit that reviews new baselines. Baselines are Linux Chromium renders made by the "Update visual baselines" GitHub workflow (`npm run e2e:baselines` on Ubuntu).
+- Run `npm run verify` (lint, typecheck, unit tests with coverage, build, and Playwright) before claiming implementation work is complete. Use `npm run e2e:capture` for fast visual review while iterating, and refresh visual baselines only in a commit that reviews new baselines. Baselines are Chromium renders from the Linux container CI uses (`npm run e2e:baselines`, which needs Docker, or the "Update visual baselines" GitHub workflow). `npm run verify:linux` runs the whole of `verify` in that container.
 - Keep generated artifacts out of git, including dependency folders, coverage, test results, and build output.
 
 ## UX Direction

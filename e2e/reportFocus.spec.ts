@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, type Page, test } from "@playwright/test";
+import { endTurnAnyway } from "./turn";
 
 // F1 on a real report: Spain fights standing battles every turn (M27), so the first turn's
 // report always has battle cards, and on a busy turn the third card on starts collapsed.
@@ -53,7 +54,7 @@ test("focuses a battle territory on a real turn-1 report: its card opens, in vie
   await page.getByRole("button", { name: "Create Game" }).click();
   await page.getByRole("button", { name: "Start Campaign" }).click();
   await expect(page.locator(".map-vector")).toBeVisible();
-  await page.getByRole("button", { name: "End Turn" }).filter({ visible: true }).click();
+  await endTurnAnyway(page);
   await expect(page.getByRole("heading", { level: 1, name: "Turn resolution" })).toBeVisible();
   await expect(page.locator(".map-vector")).toBeVisible();
   await expect(page.locator("details.battle-card").first()).toBeAttached();

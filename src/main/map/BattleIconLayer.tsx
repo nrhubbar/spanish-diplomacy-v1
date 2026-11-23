@@ -2,6 +2,7 @@ import { type JSX, useId } from "react";
 import type { Scenario, TerritoryId } from "../engine/types";
 import { territoryName } from "../presentation/text";
 import type { MapPoint } from "../scenarios/loader";
+import type { ScreenRect } from "./placement";
 import type { BattleMarkPoint } from "./RouteLayer";
 
 interface BattleIconLayerProps {
@@ -9,6 +10,17 @@ interface BattleIconLayerProps {
   readonly onSelectTerritory: ((territoryId: TerritoryId) => void) | undefined;
   readonly scenario: Scenario;
   readonly toScreen: (point: MapPoint) => MapPoint;
+}
+
+/** The icon button's size in screen pixels (WCAG 2.5.8), as in `.battle-icon-button`. */
+const iconSize = 24;
+
+/** The battle icons' buttons on screen, for the counters to keep clear of so each stays clickable. */
+export function battleIconRects(marks: readonly BattleMarkPoint[], toScreen: (point: MapPoint) => MapPoint): readonly ScreenRect[] {
+  return marks.map((mark) => {
+    const at = toScreen(mark.at);
+    return { height: iconSize, width: iconSize, x: at.x - iconSize / 2, y: at.y - iconSize / 2 };
+  });
 }
 
 /**

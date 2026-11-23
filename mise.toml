@@ -19,8 +19,12 @@ description = "Run the game at http://127.0.0.1:5173/assets/"
 run = "npm run dev"
 
 [tasks.verify]
-description = "Lint, typecheck, unit tests, build, and Playwright (what CI runs)"
+description = "Lint, typecheck, unit tests, build, and Playwright (the visual baselines skip off Linux)"
 run = "npm run verify"
+
+[tasks."verify:linux"]
+description = "The same checks in the Linux container CI runs them in (needs Docker)"
+run = "npm run verify:linux"
 
 [tasks."infra:check"]
 description = "Typecheck and synthesize the CDK app (no AWS credentials needed)"
