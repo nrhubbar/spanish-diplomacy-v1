@@ -11,7 +11,7 @@ async function startCampaign(page: Page): Promise<void> {
 test("the Manpower ledger takes upkeep off by unit type, and stays on the screen", async ({ page }) => {
   await startCampaign(page);
   const chip = page.getByRole("button", { name: /^Manpower/ });
-  await expect(chip).toContainText("+14.1k");
+  await expect(chip).toContainText("+3.3k");
   await chip.click();
   const ledger = page.locator(".resource-detail");
   await expect(ledger.getByRole("row", { name: /Upkeep 20 units/ })).toContainText("−12.9k");
@@ -22,22 +22,60 @@ test("the Manpower ledger takes upkeep off by unit type, and stays on the screen
   expect((box?.y ?? 0) + (box?.height ?? 0)).toBeLessThanOrEqual(page.viewportSize()?.height ?? 0);
 });
 
-test("Disband takes two steps, saves the upkeep at once, can be taken back, and sends the unit home", async ({ page }) => {
+test("Disband is an order for several units, with one confirm, and each can be taken back", async ({ page }) => {
   await startCampaign(page);
   await selectTerritory(page, "madrid");
-  const controls = page.getByRole("group", { name: "Disband Madrid Sierra Columns" });
-  const disband = controls.getByRole("button", { name: "Disband" });
-  // The label can be read: its colour is not its background's.
-  expect(await disband.evaluate((element) => getComputedStyle(element).color === getComputedStyle(element).backgroundColor)).toBe(false);
-  await disband.click();
-  await expect(controls).toContainText("Disband this unit? Saves 1.5k Manpower a turn.");
-  await controls.getByRole("button", { name: "Keep" }).click();
-  await disband.click();
-  await disband.click();
-  await expect(controls).toContainText("Goes home at the end of the turn.");
-  await expect(page.getByRole("button", { name: /^Manpower/ })).toContainText("+15.6k");
-  await controls.getByRole("button", { name: "Keep" }).click();
-  await expect(page.getByRole("button", { name: /^Manpower/ })).toContainText("+14.1k");
+  // The general can't disband, so he leaves the selection first.
+  for (const card of await page.locator(".formation-button[aria-pressed=true]").filter({ hasText: "General" }).all()) await card.click();
+  await expect(page.locator(".formation-button[aria-pressed=true]").filter({ hasText: "General" })).toHaveCount(0);
+  const before = await page.getByRole("button", { name: /^Manpower/ }).innerText();
+  const button = page.getByRole("button", { name: /^Order for \d+ selected units?$/ });
+  await button.click();
+  const menu = page.getByRole("group", { name: /^Order for/ });
+  await expect(menu.getByRole("button").first()).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(button).toBeFocused();
+  await page.keyboard.press("Enter");
+  await menu.getByRole("button", { name: "Disband" }).click();
+  const confirm = page.getByRole("group", { name: /^Disband / });
+  await expect(confirm).toContainText(/Saves [\d.]+k Manpower a turn together\./);
+  await confirm.getByRole("button", { name: "Disband" }).click();
+  await expect(page.getByRole("button", { name: "Select units first" })).toBeFocused();
+  const going = page.getByText("Goes home at the end of the turn.");
+  const count = await going.count();
+  expect(count).toBeGreaterThan(1);
+  await expect(page.getByRole("button", { name: /^Manpower/ })).not.toHaveText(before);
+  await page.getByRole("group", { name: "Disband Madrid Sierra Columns" }).getByRole("button", { name: "Keep" }).click();
+  await expect(going).toHaveCount(count - 1);
+});
+
+test("the order menu is a bottom sheet with large rows on a phone", async ({ page }) => {
+  await page.setViewportSize({ height: 844, width: 390 });
+  await startCampaign(page);
+  await selectTerritory(page, "madrid");
+  const button = page.getByRole("button", { name: /^Order for \d+ selected units?$/ });
+  await button.click();
+  const row = page.getByRole("group", { name: /^Order for/ }).getByRole("button", { name: "Entrench" });
+  await expect(row).toBeVisible();
+  expect((await row.boundingBox())?.height).toBeGreaterThanOrEqual(48);
+  const sheet = await page.locator(".order-menu").boundingBox();
+  const pane = await page.locator(".map-pane").boundingBox();
+  // It lies along the bottom of the pane, edge to edge.
+  expect(Math.abs((sheet?.y ?? 0) + (sheet?.height ?? 0) - (pane?.y ?? 0) - (pane?.height ?? 0))).toBeLessThanOrEqual(2);
+  expect(Math.abs((sheet?.width ?? 0) - (pane?.width ?? 0))).toBeLessThanOrEqual(4);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await row.click();
+  await expect(page.locator(".order-menu")).toHaveCount(0);
+});
+
+test("a general's counter says what he does to the dice on hover, and so does his card", async ({ page }) => {
+  await startCampaign(page);
+  await selectTerritory(page, "madrid");
+  const counter = page.locator(".counter-layer .unit-counter").filter({ has: page.locator(".unit-counter-tip") }).first();
+  await counter.hover();
+  await expect(counter.locator(".unit-counter-tip")).toBeVisible();
+  await expect(counter.locator(".unit-counter-tip")).toContainText(/ on the battle roll of his army/);
+  await expect(page.locator(".general-effect").first()).toContainText(/battle roll of his army/);
 });
 
 test("a Factory is queued in a city for Funds and Manpower, and pays 1.5 Funds a turn", async ({ page }) => {

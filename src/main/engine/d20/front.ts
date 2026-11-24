@@ -1,5 +1,6 @@
 import { type Armies, type Combatant, combatantsOf, compareIds, factionsOf, inScenarioOrder, placeAt, removeArmies, replaceArmies, requireArmy } from "../board";
 import type { BattleDice } from "../dice";
+import { flightsAfter } from "../air/groundSupport";
 import type { Leaving } from "../retreat";
 import type { FactionId, GameState, MoveOrder, Occupation, ReinforcementArrivedOutcome, Scenario, SuccessfulMoveOutcome, TerritoryId, UnitId, UnitState } from "../types";
 import { type BattleInput, fight, type FoughtBattle, type PendingBattle, rollD20 } from "./battle";
@@ -157,6 +158,7 @@ function settleSite(scenario: Scenario, front: Front, site: Site, firstIndex: nu
   const leaving: Leaving[] = [];
   const updates: UnitState[] = [];
   let current = front.armies;
+  let scratch = front.scratch;
   const fought: FoughtBattle[] = [];
   for (const factionId of factionsOf(site.attackers)) {
     const orders = site.attackers.filter((order) => order.factionId === factionId);
@@ -168,7 +170,7 @@ function settleSite(scenario: Scenario, front: Front, site: Site, firstIndex: nu
       continue;
     }
     const index = firstIndex + fought.length;
-    const battle = fight(scenario, front, current, {
+    const battle = fight(scenario, { ...front, ...(scratch === undefined ? {} : { scratch }) }, current, {
       attackerFactionId: factionId,
       attackers,
       context: { attackerFactionId: factionId, defenderFactionIds, diggingIn: site.kind === "assault", territoryId: site.territoryId },
@@ -176,6 +178,8 @@ function settleSite(scenario: Scenario, front: Front, site: Site, firstIndex: nu
       defenders: site.defenders
     }, index, rollD20(front.dice(index)));
     fought.push(battle);
+    // R11: an aircraft shot down over this battle is not over the next one here.
+    if (scratch?.air !== undefined && battle.air !== undefined) scratch = { ...scratch, air: flightsAfter(scratch.air, battle.air) };
     // M17: the defenders' losses add up across attacks.
     const gone = battle.defenderCasualties.losses.filter((loss) => loss.destroyed).map((loss) => loss.unitId);
     current = removeArmies(replaceArmies(current, battle.defenderCasualties.survivors), gone);

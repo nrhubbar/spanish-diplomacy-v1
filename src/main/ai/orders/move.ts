@@ -10,8 +10,9 @@ import type {
   UnitId,
   UnitState
 } from "../../engine/types";
+import { truckBonus } from "../../engine/movement/allowance";
 import { portLandings, railCapacity, railPlaces, unitTypeOf } from "../../engine/movement/network";
-import { armyKey, boardingRefusal, describeRoute, legsOf, moveRoutes, routeClaims } from "../../engine/movement/routes";
+import { armyKey, describeRoute, legsOf, moveRoutes, routeClaims } from "../../engine/movement/routes";
 import { armiesOf } from "../../engine/movement/transit";
 import { classifyMoves } from "../../engine/orders";
 import { canFight, hasFighter } from "../../engine/units/fighting";
@@ -22,6 +23,7 @@ import { type Cached, cached, distancesTo, forget, pickBest } from "../choice";
 import { bouncedMoves, moveKey, stalledTurns } from "../memory";
 import { chooseOffensive, prizeFactor } from "../offensive";
 import { createPlan, type Plan } from "../plan";
+import { movePlanningView } from "../planningView";
 import { isTransport, isTruck, unitRoutes } from "../reach";
 import { createTrains, strongestAboard, type Trains } from "../trains";
 import type { RandomSource } from "../../engine/random";
@@ -45,7 +47,8 @@ import type { OrderPlanner } from "./planner";
  * restores them. The last army on an objective never leaves it. Randomness only breaks exact
  * ties, from the seeded source, so a seed always produces the same orders.
  */
-export const planMoves: OrderPlanner<MoveOrder> = ({ factionId, memory: context, random, scenario, state }) => {
+export const planMoves: OrderPlanner<MoveOrder> = ({ factionId, memory: context, random, scenario, state: whole }) => {
+  const state = movePlanningView(scenario, whole, factionId);
   const assessment = assess(scenario, state, factionId);
   const weights = assessment.profile.computer;
   const own = Object.values(state.units).filter((unit) => unit.factionId === factionId);
@@ -215,12 +218,15 @@ function approachTargets(scenario: Scenario, state: GameState, assessment: Asses
   return new Set(remaining.length > 0 ? remaining : objectives);
 }
 
+/** A march of two or more territories over land, the only move trucks help with (M1). */
+const isLandMarch = (order: MoveOrder): boolean => (order.legs?.length ?? 1) > 1 && order.legs?.every((leg) => leg.kind === "land") === true;
+
 /**
  * H5 for rail, trucks and sea (M1-M5). The planner chose destinations; this gives each order
  * the route the game offers for its unit, then checks the plan as armies (W4):
- * - free trucks go with the largest army leaving their territory whose route they may take
- *   (R5: not across a link with no road) with a train place left for each (D5), a marching (Motor) one first;
- * - a march its army's trucks cannot carry takes the army's own route there, or is cut to its
+ * - idle trucks, and tanks after them, go only with an army that marches two territories or more by
+ *   Motor and cannot make that march without them, and only as many as its foot needs, the largest army first;
+ * - a march its army's transport cannot carry takes the army's own route there, or is cut to its
  *   first step, into friendly ground;
  * - an army its trains can't take whole sends the strongest of its units that fit (D5);
  * - armies beyond a port's landings or a lane's one assault stay home;
@@ -237,32 +243,25 @@ export function withRoutes(scenario: Scenario, state: GameState, factionId: Fact
   // A demoralized truck cannot go with an attack (M23), so it rests instead.
   const idle = own.filter((unit) => !ordered.has(unit.id) && !unit.morale.demoralized && isTransport(scenario, state, unit.id));
   const result: MoveOrder[] = [...routed];
-  for (const truck of idle.filter((unit) => isTruck(scenario, state, unit.id))) {
-    const leaving = armiesOf((order) => armyKey(scenario, order), result.filter((order) => order.from === truck.territoryId));
-    // R5: only with an army whose route a truck may take (trucks are not foot: no March across a link without a road).
-    const carries = (army: (typeof leaving)[number]): boolean => {
-      const [lead] = army.orders;
-      return describeRoute(scenario, state, factionId, lead.from, legsOf(scenario, lead), true, undefined, [...army.orders.map((order) => order.unitId), truck.id]).ok
-        && boardingRefusal(scenario, state, [{ ...lead, unitId: truck.id }], result) === undefined;
-    };
-    const marching = leaving.filter((army) => (army.orders[0].legs?.length ?? 1) > 1 && army.orders[0].legs?.every((leg) => leg.kind === "land") === true);
-    const target = [...marching, ...leaving].filter(carries).sort((left, right) => right.orders.length - left.orders.length)[0]?.orders[0];
-    if (target !== undefined) result.push({ ...target, unitId: truck.id });
-  }
-  // A fighting transport with no order of its own (a tank) leaves only with an army that cannot make its march without it.
-  for (const carrier of idle.filter((unit) => !isTruck(scenario, state, unit.id))) {
-    const target = armiesOf((order) => armyKey(scenario, order), result.filter((order) => order.from === carrier.territoryId && (order.legs?.length ?? 1) > 1))
-      .find((army) => {
-        const { to } = army.orders[0];
-        const unitIds = army.orders.map((order) => order.unitId);
-        const goes = (ids: readonly UnitId[]): boolean => moveRoutes(scenario, state, factionId, carrier.territoryId, ids).has(to);
-        return !goes(unitIds) && goes([...unitIds, carrier.id]);
-      })?.orders[0];
-    if (target !== undefined) result.push({ ...target, unitId: carrier.id });
+  const marching = [...armiesOf((order) => armyKey(scenario, order), routed.filter((order) => isLandMarch(order)))]
+    .sort((left, right) => right.orders.length - left.orders.length);
+  const taken = new Set<UnitId>();
+  for (const army of marching) {
+    const [lead] = army.orders;
+    const unitIds = army.orders.map((order) => order.unitId);
+    const here = idle.filter((unit) => unit.territoryId === lead.from && !taken.has(unit.id));
+    // Trucks first; a fighting transport (a tank) leaves its post only for what they can't carry.
+    const carriers = [...here.filter((unit) => isTruck(scenario, state, unit.id)), ...here.filter((unit) => !isTruck(scenario, state, unit.id))].map((unit) => unit.id);
+    const wanted = [0, ...carriers.map((_carrier, index) => index + 1)].find((count) => truckBonus(scenario, state, [...unitIds, ...carriers.slice(0, count)]) > 0) ?? 0;
+    const joining = carriers.slice(0, wanted);
+    if (wanted === 0 || !moveRoutes(scenario, state, factionId, lead.from, [...unitIds, ...joining]).has(lead.to)) continue;
+    for (const unitId of joining) {
+      taken.add(unitId);
+      result.push({ ...lead, unitId });
+    }
   }
   const fitted = result.map((order) => {
-    const legs = order.legs ?? [];
-    if (legs.length < 2 || !legs.every((leg) => leg.kind === "land")) return order;
+    if (!isLandMarch(order)) return order;
     const army = result.filter((other) => armyKey(scenario, other) === armyKey(scenario, order)).map((other) => other.unitId);
     // The whole army's route there, which may be a ride rather than the march one unit could make.
     const route = moveRoutes(scenario, state, factionId, order.from, army).get(order.to);
@@ -270,7 +269,7 @@ export function withRoutes(scenario: Scenario, state: GameState, factionId: Fact
       const step: MoveOrder = { factionId: order.factionId, from: order.from, kind: "move", to: order.to, unitId: order.unitId };
       return route.shape === "step" ? step : { ...step, legs: route.legs };
     }
-    const first = legs[0];
+    const first = order.legs?.[0];
     return first === undefined ? order : { ...order, legs: [first], to: first.to };
   });
   const usable: MoveOrder[] = [];

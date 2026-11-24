@@ -1,7 +1,7 @@
 import type { ScenarioDocument } from "../schema/scenarioSchema";
 import { bandsCoverD20, idSet, type Issues } from "./issues";
 
-/** Rules L20-L22 and L25: weather, generals, the d20 table and the raid table. */
+/** Rules L20-L22 and L25: weather, generals, the d20 table, and the raid and air battle tables. */
 export function checkSystems(document: ScenarioDocument, issues: Issues): void {
   checkWeather(document, issues);
   checkGenerals(document, issues);
@@ -9,6 +9,9 @@ export function checkSystems(document: ScenarioDocument, issues: Issues): void {
   checkD20(document, issues);
   if (document.air !== undefined && !bandsCoverD20(document.air.raidTable)) {
     issues.add("air.raidTable: bands must rise and end at 20 (L25)");
+  }
+  if (document.air !== undefined && !bandsCoverD20(document.air.battleTable)) {
+    issues.add("air.battleTable: rows must rise and end at 20 (L25)");
   }
 }
 

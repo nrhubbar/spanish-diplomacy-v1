@@ -258,7 +258,7 @@ test("@capture recruit and replenish", async ({ page }) => {
   await capture(page, "25a-recruit-tab");
   const locked = page.locator('.recruit-row[data-locked="true"]').first();
   await locked.scrollIntoViewIfNeeded();
-  await locked.hover();
+  await locked.locator(".recruit-head").hover();
   await capture(page, "25b-recruit-locked-details");
   await page.getByRole("tab", { name: "Units" }).click();
   await page.locator(".training-list").scrollIntoViewIfNeeded();
@@ -402,7 +402,9 @@ test("@capture air missions and generals", async ({ page }) => {
   await page.locator('.air-counter[data-unit-id="rep-breguet-bombers"]').click();
   if (await orders.isVisible()) await orders.click();
   await page.getByRole("button", { exact: true, name: "Raid" }).click();
-  await page.getByRole("combobox").selectOption({ index: 1 });
+  await page.getByRole("list", { name: "Targets" }).getByRole("button").first().click();
+  const site = page.getByRole("list", { name: "Targets" }).getByRole("button").first();
+  if (await site.isVisible()) await site.click();
   await page.waitForTimeout(300); // the mission buttons fade between states
   await capture(page, "24b-air-raid");
   await page.locator('.air-counter[data-unit-id="rep-ni52-fighters"]').click();

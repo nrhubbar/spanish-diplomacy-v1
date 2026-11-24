@@ -68,8 +68,10 @@ export function setRecruitQuantity(scenario: Scenario, session: PlanningSession,
     const slots = recruitSlots(scenario, state, territoryId);
     if (others + wanted > slots) return feedback(session, `At most ${String(slots)} new units a turn can be recruited here.`);
   }
-  const kept = (session.draft.recruits ?? []).filter((order) => !(order.territoryId === territoryId && order.unitTypeId === typeId));
-  const added: RecruitOrder[] = Array.from({ length: wanted }, () => ({ factionId: session.factionId, kind: "recruit", territoryId, unitTypeId: typeId }));
+  // Every order that stays keeps its place: only the last of this type go, and new ones join at the end.
+  const last = (session.draft.recruits ?? []).filter((order) => order.territoryId === territoryId && order.unitTypeId === typeId).slice(wanted);
+  const kept = (session.draft.recruits ?? []).filter((order) => !last.includes(order));
+  const added: RecruitOrder[] = Array.from({ length: Math.max(0, wanted - current) }, () => ({ factionId: session.factionId, kind: "recruit", territoryId, unitTypeId: typeId }));
   const draft: Draft = { ...session.draft, recruits: [...kept, ...added] };
   delete (draft as { feedback?: string }).feedback;
   const short = wanted > current ? upkeepProblem(scenario, state, session.factionId, draftOrders(draft)) : undefined;
@@ -80,6 +82,15 @@ export function setRecruitQuantity(scenario: Scenario, session: PlanningSession,
 export function recruitUpkeepProblem(scenario: Scenario, session: PlanningSession, territoryId: TerritoryId, unitTypeId: UnitTypeId): string | undefined {
   const { draft, factionId, game } = session;
   return upkeepProblem(scenario, game.state, factionId, [...draftOrders(draft), { factionId, kind: "recruit", territoryId, unitTypeId }]);
+}
+
+/** Takes back one of a territory's Recruit orders, by its place among them. The others keep their order. */
+export function takeBackRecruit(session: PlanningSession, territoryId: TerritoryId, at: number): PlanningSession {
+  const order = (session.draft.recruits ?? []).filter((other) => other.territoryId === territoryId)[at];
+  if (order === undefined) return session;
+  const draft: Draft = { ...session.draft, recruits: (session.draft.recruits ?? []).filter((other) => other !== order) };
+  delete (draft as { feedback?: string }).feedback;
+  return withDraft(session, draft);
 }
 
 /** D1: why a unit is left out whose Replenish next turn's stock cannot cover. */

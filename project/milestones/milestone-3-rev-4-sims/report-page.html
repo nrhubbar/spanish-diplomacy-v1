@@ -1,0 +1,246 @@
+<meta name="dash-one-writer">
+<meta name="dash-form" content="freeform">
+<style>
+.sr { display: grid; gap: var(--cds-gap-xl); max-width: 1180px; }
+.sr h1 { font: 400 2rem/1.15 var(--font-anthropic-serif); margin: 0 0 var(--cds-gap-sm); text-wrap: balance; }
+.sr h2 { font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); margin: 0 0 var(--cds-gap-xs); }
+.sr p { margin: 0 0 var(--cds-gap-sm); max-width: 72ch; color: var(--color-fg); }
+.sr .muted { color: var(--color-fg-muted); }
+.sr-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--cds-gap-md); }
+.sr-kpi { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-lg); }
+.sr-kpi b { display: block; font: 400 1.8rem/1.1 var(--font-anthropic-serif); font-variant-numeric: tabular-nums; }
+.sr-kpi span { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); }
+.sr-two { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 430px), 1fr)); gap: var(--cds-gap-xl); }
+.sr-box { position: relative; min-height: 220px; }
+.sr-box svg { display: block; width: 100%; }
+.sr-box text { font-size: var(--cds-font-size-caption); fill: var(--cds-text-secondary); font-family: var(--font-anthropic-sans); }
+.sr-tip { position: absolute; pointer-events: none; background: var(--cds-surface-popover); border: 1px solid var(--cds-border); box-shadow: var(--cds-shadow-popover); border-radius: var(--cds-radius); padding: var(--cds-pad-sm); font-size: var(--cds-font-size-caption); color: var(--color-fg); min-width: 130px; display: none; z-index: 2; }
+.sr-scroll { overflow-x: auto; }
+.sr table { border-collapse: collapse; width: 100%; font-size: var(--cds-font-size-body); font-variant-numeric: tabular-nums; }
+.sr th, .sr td { text-align: right; padding: 4px 10px; border-bottom: 1px solid var(--color-border-line); white-space: nowrap; }
+.sr th:first-child, .sr td:first-child { text-align: left; }
+.sr th { font-weight: var(--cds-font-weight-medium); color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); }
+.sr-legend { display: flex; gap: var(--cds-gap-md); flex-wrap: wrap; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+.sr-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; }
+.sr-pick { display: flex; gap: var(--cds-gap-sm); align-items: center; margin-bottom: var(--cds-gap-sm); flex-wrap: wrap; }
+.sr-exp { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: var(--cds-gap-lg); }
+.sr-exp h3 { font-size: var(--cds-font-size-body); margin: 0 0 4px; }
+.sr-exp dl { display: grid; grid-template-columns: 1fr auto; gap: 1px 12px; margin: 0 0 10px; font-size: var(--cds-font-size-caption); }
+.sr-exp dt { color: var(--color-fg-muted); } .sr-exp dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+</style>
+<div class="sr">
+  <header>
+    <h1>Rev 4: 200 simulated games</h1>
+    <p><strong>Republic <span data-draw="w-republic" data-source="wins" data-field="sharePct" data-where="side=republic">—</span>, North <span data-draw="w-north" data-source="wins" data-field="sharePct" data-where="side=north">—</span>, South <span data-draw="w-south" data-source="wins" data-field="sharePct" data-where="side=south">—</span> of wins.</strong> Its wins come early: a median of <span data-draw="m-republic" data-source="wins" data-field="medianTurns" data-where="side=republic">—</span> turns, against <span data-draw="m-north" data-source="wins" data-field="medianTurns" data-where="side=north">—</span> for the North and <span data-draw="m-south" data-source="wins" data-field="medianTurns" data-where="side=south">—</span> for the South. <span data-draw="early" data-source="summary" data-field="early" data-row="0">—</span> of 200 games (<span data-draw="earlyPct" data-source="summary" data-field="earlyPct" data-row="0">—</span>) end before turn 4, <span data-draw="earlyRep" data-source="summary" data-field="earlyRepublic" data-row="0">—</span> of them Republic wins. The limit the smoke test enforces is 5%, and its 10 games missed this.</p>
+    <p class="muted">All three sides are the computer player. Seeds 1 to 200, baseline scenario (0.6 Manpower a farm level, 8 farm levels in Castilla y León), turn limit 66; every game was decided. No numbers were tuned.</p>
+  </header>
+  <section class="sr-kpis" aria-label="Headline figures">
+    <div class="sr-kpi"><b data-draw="k-median" data-source="summary" data-field="medianTurns" data-row="0">—</b><span>turns, median game</span></div>
+    <div class="sr-kpi"><b data-draw="k-p90" data-source="summary" data-field="p90Turns" data-row="0">—</b><span>turns, 90th percentile (longest <span data-draw="k-max" data-source="summary" data-field="maxTurns" data-row="0">—</span>)</span></div>
+    <div class="sr-kpi"><b data-draw="k-sec" data-source="summary" data-field="medianSeconds" data-row="0">—</b><span>seconds, median game on one worker (longest <span data-draw="k-secmax" data-source="summary" data-field="maxSeconds" data-row="0">—</span>)</span></div>
+    <div class="sr-kpi"><b data-draw="k-wall" data-source="run" data-field="wallSeconds" data-row="0">—</b><span>seconds for all 200 on <span data-draw="k-workers" data-source="run" data-field="workers" data-row="0">—</span> worker threads</span></div>
+  </section>
+  <section class="sr-two">
+    <div>
+      <h2 id="who">Who wins, with 95% intervals</h2>
+      <p class="muted">200 games split three ways: an even split is 33%.</p>
+      <div class="sr-box" data-draw="winchart" data-source="wins" aria-label="Share of wins by side"></div>
+    </div>
+    <div>
+      <h2 id="length">How long games last, by winner</h2>
+      <p class="muted">Turns to a decision; colour shows who won.</p>
+      <div class="sr-legend"><span><i style="background:var(--sr-a)"></i>Republic</span><span><i style="background:var(--sr-b)"></i>North</span><span><i style="background:var(--sr-c)"></i>South</span></div>
+      <div class="sr-box" data-draw="lenchart" data-source="lengths" aria-label="Game length histogram by winner"></div>
+    </div>
+  </section>
+  <section>
+    <h2 id="economy">Funds and Manpower held, turn by turn</h2>
+    <p class="muted">Means over the games still running on that turn, so later turns rest on fewer, longer games. Shown to the last turn that at least 20 games reached.</p>
+    <div class="sr-pick"><label>Show <select class="dash-select" id="econ-measure" aria-label="Measure"><option value="held">held</option><option value="income">income a turn</option><option value="upkeep">upkeep a turn</option><option value="unpaid">unpaid upkeep a turn</option></select></label></div>
+    <div class="sr-two">
+      <div><h3 class="muted">Funds</h3><div class="sr-box" data-draw="econ-funds" data-source="economy" aria-label="Funds by side by turn"></div></div>
+      <div><h3 class="muted">Manpower (thousands of men)</h3><div class="sr-box" data-draw="econ-manpower" data-source="economy" aria-label="Manpower by side by turn"></div></div>
+    </div>
+    <p>Sides often sit on a stock. The Republic holds 20 or more Funds on <span data-draw="idle-republic" data-source="extras" data-field="funds20" data-where="side=republic">—</span>% of its turns, the North on <span data-draw="idle-north" data-source="extras" data-field="funds20" data-where="side=north">—</span>% and the South on <span data-draw="idle-south" data-source="extras" data-field="funds20" data-where="side=south">—</span>%. The South's Manpower piles up: <span data-draw="mp-south" data-source="economy" data-field="held" data-where="side=south&amp;turn=20&amp;resource=manpower">—</span>k on average by turn 20. Upkeep went unpaid at least once in <span data-draw="u-republic" data-source="extras" data-field="unpaidGames" data-where="side=republic">—</span> of 200 games for the Republic, <span data-draw="u-north" data-source="extras" data-field="unpaidGames" data-where="side=north">—</span> for the North and <span data-draw="u-south" data-source="extras" data-field="unpaidGames" data-where="side=south">—</span> for the South.</p>
+  </section>
+  <section class="sr-two">
+    <div>
+      <h2 id="recruits">What each side orders and keeps, per game</h2>
+      <p class="muted">Recruit orders per game, and units on the map at the end.</p>
+      <div class="sr-scroll"><table data-source="recruits" data-row-key="type"><thead><tr><th>Unit</th><th data-field="republic">Rep. orders</th><th data-field="north">North orders</th><th data-field="south">South orders</th><th data-field="republicEnd">Rep. at end</th><th data-field="northEnd">North at end</th><th data-field="southEnd">South at end</th></tr></thead><tbody data-draw="recruit-body"></tbody></table></div>
+    </div>
+    <div>
+      <h2 id="builds">What each side builds, per game</h2>
+      <p class="muted">Build orders per game, then what stands on its ground at the opening and at the end (levels for farms, mines, Factory, rail and port; a paved airfield also counts as an airfield).</p>
+      <div class="sr-scroll"><table data-source="builds" data-row-key="project"><thead><tr><th>Project</th><th data-field="republic">Rep. orders</th><th data-field="north">North orders</th><th data-field="south">South orders</th><th data-field="republicEnd">Rep. end</th><th data-field="northEnd">North end</th><th data-field="southEnd">South end</th></tr></thead><tbody data-draw="build-body"></tbody></table></div>
+    </div>
+  </section>
+  <section>
+    <h2 id="units">Units on the map, turn by turn</h2>
+    <p class="muted">Mean per running game. Choose a side.</p>
+    <div class="sr-pick"><label>Side <select class="dash-select" id="unit-side" aria-label="Side"><option value="republic">Republic</option><option value="north">North</option><option value="south">South</option></select></label></div>
+    <div class="sr-box" data-draw="unitchart" data-source="units" aria-label="Units on the map by type and turn"></div>
+  </section>
+  <section>
+    <h2 id="time">Time per game</h2>
+    <p class="muted">One dot per game. Times are per worker and share the machine, so they plan runs, not code comparisons.</p>
+    <div class="sr-box" data-draw="timechart" data-source="timings" aria-label="Seconds against turns, per game"></div>
+  </section>
+  <section>
+    <h2 id="game">One game</h2>
+    <p class="muted">What each side had at the end of the chosen game, and what it ordered in all. The file <code>games.jsonl.gz</code> holds every turn.</p>
+    <div class="sr-pick"><label>Game <select class="dash-select" id="seed" data-draw="seedlist" data-source="games" aria-label="Game"></select></label></div>
+    <div class="sr-exp" data-draw="explorer" data-source="finals"></div>
+  </section>
+  <details>
+    <summary>How to read this, and what it leaves out</summary>
+    <p>An early win is a game decided before turn 4. A means line that stops is a game ending, not a side vanishing. Stocks are read at the end of a turn; orders are counted when given and never added to stocks. An upgraded building is listed as its own building too.</p>
+    <p>The computer player does not yet count its own generals and aircraft when choosing attacks: with that on, more games ended early, so it is held back. Two sides of the game were therefore not tested: those attack choices, and any human.</p>
+  </details>
+</div>
+<script>
+const SIDES = ["republic", "north", "south"];
+const NAMES = { republic: "Republic", north: "North", south: "South" };
+const root = document.querySelectorAll(".sr");
+root.forEach((el) => { SIDES.forEach((s, i) => { el.style.setProperty(["--sr-a", "--sr-b", "--sr-c"][i], dash.colors[i]); }); });
+const num = (v) => (v === null || v === undefined || v === "" ? NaN : +v);
+const pretty = (id) => { const t = id.replace(/^(building|development|improvement|link):/, "").replace(/-/g, " "); return t[0].toUpperCase() + t.slice(1) + (id.startsWith("development:") || id.startsWith("improvement:") ? " (levels)" : ""); };
+const one = (v) => (Number.isFinite(v) ? (Math.round(v * 10) / 10).toLocaleString("en-US") : "—");
+
+dash.calc("wins", {
+  inputs: ["games"], title: "Wins by side", description: "Share of the 200 games each side won, with the Wilson 95% interval. A shared win would count half each; none happened.",
+  fn: (games) => ["republic", "north", "south"].map((side) => {
+    const n = games.length; const w = games.filter((g) => g.winners === side).length; const z = 1.96; const p = w / n;
+    const c = (p + z * z / (2 * n)) / (1 + z * z / n); const h = z * Math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / (1 + z * z / n);
+    const mine = games.filter((g) => g.winners === side).map((g) => +g.turns).sort((a, b) => a - b); const mid = Math.floor(mine.length / 2);
+    return { side, medianTurns: mine.length % 2 === 1 ? mine[mid] : (mine[mid - 1] + mine[mid]) / 2, wins: w, sharePct: Math.round(p * 1000) / 10, low: (c - h) * 100, high: (c + h) * 100 };
+  })
+});
+dash.calc("summary", {
+  inputs: ["games", "timings"], title: "Headline figures", description: "Early wins, game length and time per game.",
+  fn: (games, timings) => {
+    const turns = games.map((g) => +g.turns).sort((a, b) => a - b); const secs = timings.map((t) => +t.milliseconds / 1000).sort((a, b) => a - b);
+    const q = (a, f) => a[Math.min(a.length - 1, Math.floor(f * a.length))]; const early = games.filter((g) => +g.turns < 4).length; const earlyRepublic = games.filter((g) => +g.turns < 4 && g.winners === "republic").length;
+    return [{ games: games.length, early, earlyRepublic, earlyPct: Math.round(early / games.length * 1000) / 10, medianTurns: (turns[turns.length / 2 - 1] + turns[turns.length / 2]) / 2, p90Turns: q(turns, 0.9), maxTurns: turns[turns.length - 1], medianSeconds: Math.round((secs[secs.length / 2 - 1] + secs[secs.length / 2]) / 2 * 10) / 10, maxSeconds: Math.round(secs[secs.length - 1] * 10) / 10 }];
+  }
+});
+dash.calc("lengths", {
+  inputs: ["games"], title: "Game length by winner", description: "Games decided in each length of turns, by winner.",
+  fn: (games) => {
+    const cuts = [[3, 3], [4, 4], [5, 6], [7, 9], [10, 12], [13, 15], [16, 18], [19, 21], [22, 24], [25, 27], [28, 30], [31, 36], [37, 52]];
+    return cuts.map(([a, b]) => { const inn = games.filter((g) => +g.turns >= a && +g.turns <= b); const c = (s) => inn.filter((g) => g.winners === s).length; return { bucket: a === b ? String(a) : a + "–" + b, republic: c("republic"), north: c("north"), south: c("south"), total: inn.length }; });
+  }
+});
+const meanBy = (finals, side, col) => { const rows = finals.filter((f) => f.side === side); return rows.reduce((s, f) => s + (+f[col] || 0), 0) / rows.length; };
+dash.calc("recruits", {
+  inputs: ["finals", "units"], title: "Recruits per game", description: "Mean recruit orders per game and mean units on the map at the game's end, by side and type.",
+  fn: (finals, units) => [...new Set(units.map((u) => u.type))].filter((t) => t !== "general").map((type) => {
+    const row = { type }; for (const side of ["republic", "north", "south"]) { row[side] = meanBy(finals, side, "total-recruitsOrdered:" + type); row[side + "End"] = meanBy(finals, side, "units:" + type); } return row;
+  }).sort((a, b) => b.republic + b.north + b.south - a.republic - a.north - a.south)
+});
+dash.calc("builds", {
+  inputs: ["finals", "buildings"], title: "Builds per game", description: "Mean build orders per game, and mean standing at the end, by side and project.",
+  fn: (finals, buildings) => [...new Set(buildings.map((b) => b.project))].map((project) => {
+    const row = { project }; for (const side of ["republic", "north", "south"]) { row[side] = meanBy(finals, side, "total-buildsOrdered:" + project); row[side + "End"] = project.startsWith("link:") ? NaN : meanBy(finals, side, "standing:" + project); } return row;
+  }).sort((a, b) => b.republic + b.north + b.south - a.republic - a.north - a.south)
+});
+
+const ok = (id) => { const d = dash.data(id); return d.status === "ok" ? d.data : undefined; };
+const put = (name, get) => dash.draw(name, (el) => { const v = get(); el.textContent = v === undefined ? "—" : v; });
+const row = (id, i = 0) => { const d = ok(id); return d === undefined ? undefined : d[i]; };
+SIDES.forEach((side, i) => put("w-" + side, () => { const d = ok("wins"); return d === undefined ? undefined : d[i].sharePct + "%"; }));
+put("early", () => row("summary")?.early); put("earlyPct", () => { const r = row("summary"); return r && r.earlyPct + "%"; });
+put("k-median", () => row("summary")?.medianTurns); put("k-p90", () => row("summary")?.p90Turns); put("k-max", () => row("summary")?.maxTurns);
+put("k-sec", () => row("summary")?.medianSeconds); put("k-secmax", () => row("summary")?.maxSeconds); put("k-wall", () => row("run")?.wallSeconds); put("k-workers", () => row("run")?.workers);
+const extra = (side) => ok("extras")?.find((r) => r.side === side);
+SIDES.forEach((side) => { put("idle-" + side, () => extra(side)?.funds20); put("u-" + side, () => extra(side)?.unpaidGames); });
+put("mp-south", () => { const r = ok("economy")?.find((e) => e.side === "south" && e.turn === "20" && e.resource === "manpower"); return r && one(+r.held); });
+SIDES.forEach((side, i) => put("m-" + side, () => { const d = ok("wins"); return d === undefined ? undefined : d[i].medianTurns; }));
+put("earlyRep", () => row("summary")?.earlyRepublic);
+
+function frame(el, height, m) {
+  el.replaceChildren(); const width = Math.max(260, el.clientWidth);
+  const svg = d3.select(el).append("svg").attr("viewBox", `0 0 ${width} ${height}`).attr("width", "100%").attr("height", height).attr("role", "img");
+  const label = el.getAttribute("aria-label"); if (label) svg.attr("aria-label", label);
+  const tip = document.createElement("div"); tip.className = "sr-tip"; el.append(tip);
+  return { svg, width, tip, iw: width - m.l - m.r, ih: height - m.t - m.b, g: svg.append("g").attr("transform", `translate(${m.l},${m.t})`) };
+}
+const showTip = (f, el, x, y, lines) => { f.tip.replaceChildren(...lines.map((t, i) => { const p = document.createElement(i === 0 ? "strong" : "div"); p.textContent = t; return p; })); f.tip.style.display = "block"; f.tip.style.left = Math.max(0, Math.min(x + 12, el.clientWidth - 150)) + "px"; f.tip.style.top = Math.max(0, y - 20) + "px"; };
+
+dash.draw("winchart", (el) => {
+  const d = ok("wins"); if (d === undefined) { el.textContent = "—"; return; }
+  const f = frame(el, 190, { t: 6, r: 48, b: 26, l: 70 }); const x = d3.scaleLinear([0, 60], [0, f.iw]); const y = d3.scaleBand(d.map((r) => r.side), [0, f.ih]).padding(0.35);
+  f.g.append("line").attr("x1", x(100 / 3)).attr("x2", x(100 / 3)).attr("y1", 0).attr("y2", f.ih).style("stroke", "var(--cds-chart-reference)").style("stroke-dasharray", "3 3");
+  f.g.selectAll("rect").data(d).join("rect").attr("x", 0).attr("y", (r) => y(r.side)).attr("height", y.bandwidth()).attr("width", (r) => x(r.sharePct)).style("fill", (_, i) => dash.colors[i]);
+  f.g.selectAll("line.ci").data(d).join("line").attr("class", "ci").attr("x1", (r) => x(r.low)).attr("x2", (r) => x(r.high)).attr("y1", (r) => y(r.side) + y.bandwidth() / 2).attr("y2", (r) => y(r.side) + y.bandwidth() / 2).style("stroke", "var(--color-fg)").style("stroke-width", 1.5);
+  f.g.selectAll("text.v").data(d).join("text").attr("class", "v").attr("x", (r) => Math.max(x(r.high), x(r.sharePct)) + 6).attr("y", (r) => y(r.side) + y.bandwidth() / 2 + 4).text((r) => r.sharePct + "%");
+  f.g.selectAll("text.n").data(d).join("text").attr("class", "n").attr("x", -8).attr("text-anchor", "end").attr("y", (r) => y(r.side) + y.bandwidth() / 2 + 4).text((r) => NAMES[r.side]);
+  f.g.append("g").attr("transform", `translate(0,${f.ih})`).call(d3.axisBottom(x).ticks(4).tickFormat((v) => v + "%").tickSizeOuter(0)).call((a) => a.select(".domain").style("stroke", "var(--cds-chart-axis)"));
+  f.g.selectAll("rect").on("pointermove", (e, r) => { const [px, py] = d3.pointer(e, el); showTip(f, el, px, py, [NAMES[r.side], r.wins + " wins of 200", "95% interval " + Math.round(r.low) + "–" + Math.round(r.high) + "%"]); }).on("pointerleave", () => { f.tip.style.display = "none"; });
+});
+dash.draw("lenchart", (el) => {
+  const d = ok("lengths"); if (d === undefined) { el.textContent = "—"; return; }
+  const f = frame(el, 220, { t: 14, r: 8, b: 40, l: 34 }); const x = d3.scaleBand(d.map((r) => r.bucket), [0, f.iw]).padding(0.18); const y = d3.scaleLinear([0, d3.max(d, (r) => r.total)], [f.ih, 0]).nice(5);
+  f.g.append("g").call(d3.axisLeft(y).ticks(5).tickSizeOuter(0)).call((a) => a.select(".domain").remove()).call((a) => a.selectAll("line").attr("x2", f.iw).style("stroke", "var(--cds-chart-grid)"));
+  const stack = d3.stack().keys(SIDES)(d);
+  f.g.selectAll("g.s").data(stack).join("g").attr("class", "s").style("fill", (_, i) => dash.colors[i]).selectAll("rect").data((s) => s.map((v, i) => ({ v, r: d[i] }))).join("rect").attr("x", (p) => x(p.r.bucket)).attr("width", x.bandwidth()).attr("y", (p) => y(p.v[1])).attr("height", (p) => y(p.v[0]) - y(p.v[1]))
+    .on("pointermove", (e, p) => { const [px, py] = d3.pointer(e, el); showTip(f, el, px, py, ["Turns " + p.r.bucket, ...SIDES.map((s) => NAMES[s] + ": " + p.r[s]), "All: " + p.r.total]); }).on("pointerleave", () => { f.tip.style.display = "none"; });
+  f.g.append("g").attr("transform", `translate(0,${f.ih})`).call(d3.axisBottom(x).tickSizeOuter(0)).call((a) => a.select(".domain").style("stroke", "var(--cds-chart-axis)")).selectAll("text").attr("transform", "rotate(-35)").attr("text-anchor", "end").attr("dx", "-0.3em").attr("dy", "0.5em");
+});
+const MIN_GAMES = 20;
+function lines(el, series, height, fmt) {
+  const f = frame(el, height, { t: 10, r: 84, b: 44, l: 44 }); const all = series.flatMap((s) => s.pts); if (all.length === 0) { el.textContent = "—"; return; }
+  const x = d3.scaleLinear([0, d3.max(all, (p) => p.x)], [0, f.iw]); const y = d3.scaleLinear([0, d3.max(all, (p) => p.y) || 1], [f.ih, 0]).nice(5);
+  f.g.append("g").call(d3.axisLeft(y).ticks(5).tickSizeOuter(0)).call((a) => a.select(".domain").remove()).call((a) => a.selectAll("line").attr("x2", f.iw).style("stroke", "var(--cds-chart-grid)"));
+  f.g.append("g").attr("transform", `translate(0,${f.ih})`).call(d3.axisBottom(x).ticks(6).tickSizeOuter(0)).call((a) => a.select(".domain").style("stroke", "var(--cds-chart-axis)"));
+  const line = d3.line((p) => x(p.x), (p) => y(p.y));
+  let last = -99; series.forEach((s) => { f.g.append("path").attr("d", line(s.pts)).style("fill", "none").style("stroke", s.color).style("stroke-width", 1.8); });
+  const ends = series.map((s) => ({ s, p: s.pts[s.pts.length - 1] })).filter((e) => e.p).sort((a, b) => y(a.p.y) - y(b.p.y));
+  ends.forEach((e) => { let ly = y(e.p.y) + 4; if (ly - last < 13) ly = last + 13; last = ly; f.g.append("text").attr("x", f.iw + 6).attr("y", ly).style("fill", e.s.color).text(e.s.name); });
+  f.g.append("text").attr("x", f.iw / 2).attr("y", f.ih + 40).attr("text-anchor", "middle").text("Turn");
+  const rule = f.g.append("line").attr("y1", 0).attr("y2", f.ih).style("stroke", "var(--cds-chart-axis)").style("display", "none");
+  f.g.append("rect").attr("width", f.iw).attr("height", f.ih).style("fill", "transparent").on("pointermove", (e) => { const [mx] = d3.pointer(e); const t = Math.round(x.invert(mx)); const [px, py] = d3.pointer(e, el); rule.style("display", null).attr("x1", x(t)).attr("x2", x(t)); const out = series.flatMap((s) => { const p = s.pts.find((q) => q.x === t); return p ? [s.name + ": " + fmt(p.y)] : []; }); const n = series.flatMap((s) => s.pts.filter((q) => q.x === t))[0]?.n; showTip(f, el, px, py, ["Turn " + t + (n === undefined ? "" : ` · ${n} games`), ...out]); }).on("pointerleave", () => { f.tip.style.display = "none"; rule.style("display", "none"); });
+}
+let econMeasure = "held";
+const economy = (res) => SIDES.map((side, i) => ({ name: NAMES[side], color: dash.colors[i], pts: (ok("economy") ?? []).filter((r) => r.side === side && r.resource === res && +r.games >= MIN_GAMES).map((r) => ({ x: +r.turn, y: +r[econMeasure], n: +r.games })) }));
+["funds", "manpower"].forEach((res) => dash.draw("econ-" + res, (el) => { if (ok("economy") === undefined) { el.textContent = "—"; return; } lines(el, economy(res), 240, (v) => one(v)); }));
+document.querySelectorAll("#econ-measure").forEach((s) => { s.addEventListener("change", () => { econMeasure = s.value; dash.draw("econ-funds"); dash.draw("econ-manpower"); }); });
+let unitSide = "republic"; const topTypes = 7;
+dash.draw("unitchart", (el) => {
+  const d = ok("units"); if (d === undefined) { el.textContent = "—"; return; }
+  const mine = d.filter((r) => r.side === unitSide && r.type !== "general" && +r.games >= MIN_GAMES); const peak = d3.rollup(mine, (v) => d3.max(v, (r) => +r.onMap), (r) => r.type);
+  const types = [...peak].sort((a, b) => b[1] - a[1]).slice(0, topTypes).map(([t]) => t);
+  lines(el, types.map((t, i) => ({ name: pretty(t).slice(0, 12), color: dash.colors[i % dash.colors.length], pts: mine.filter((r) => r.type === t).map((r) => ({ x: +r.turn, y: +r.onMap, n: +r.games })) })), 320, (v) => one(v));
+});
+document.querySelectorAll("#unit-side").forEach((s) => { s.addEventListener("change", () => { unitSide = s.value; dash.draw("unitchart"); }); });
+const table = (name, id, key) => dash.draw(name, (el) => {
+  const d = ok(id); if (d === undefined) return;
+  el.replaceChildren(...d.map((r) => { const tr = document.createElement("tr"); tr.dataset.key = r[key]; const th = document.createElement("td"); th.textContent = pretty(r[key]); tr.append(th); for (const c of ["republic", "north", "south", "republicEnd", "northEnd", "southEnd"]) { const td = document.createElement("td"); td.textContent = Number.isFinite(r[c]) ? one(r[c]) : "–"; tr.append(td); } return tr; }));
+});
+table("recruit-body", "recruits", "type"); table("build-body", "builds", "project");
+dash.draw("timechart", (el) => {
+  const d = ok("timings"); if (d === undefined) { el.textContent = "—"; return; }
+  const f = frame(el, 280, { t: 26, r: 12, b: 46, l: 44 }); const x = d3.scaleLinear([0, d3.max(d, (r) => +r.turns)], [0, f.iw]).nice(); const y = d3.scaleLinear([0, d3.max(d, (r) => +r.milliseconds / 1000)], [f.ih, 0]).nice(5);
+  f.g.append("g").call(d3.axisLeft(y).ticks(5).tickSizeOuter(0)).call((a) => a.select(".domain").remove()).call((a) => a.selectAll("line").attr("x2", f.iw).style("stroke", "var(--cds-chart-grid)"));
+  f.g.append("g").attr("transform", `translate(0,${f.ih})`).call(d3.axisBottom(x).ticks(6).tickSizeOuter(0)).call((a) => a.select(".domain").style("stroke", "var(--cds-chart-axis)"));
+  f.g.append("text").attr("x", f.iw / 2).attr("y", f.ih + 42).attr("text-anchor", "middle").text("Turns"); f.g.append("text").attr("x", -40).attr("y", -14).text("Seconds");
+  f.g.selectAll("circle").data(d).join("circle").attr("cx", (r) => x(+r.turns)).attr("cy", (r) => y(+r.milliseconds / 1000)).attr("r", 3.5).style("fill", dash.colors[0]).style("fill-opacity", 0.6)
+    .on("pointermove", (e, r) => { const [px, py] = d3.pointer(e, el); showTip(f, el, px, py, ["Seed " + r.seed, r.turns + " turns", one(+r.milliseconds / 1000) + " s"]); }).on("pointerleave", () => { f.tip.style.display = "none"; });
+});
+let seed = "1";
+dash.draw("seedlist", (sel) => {
+  const g = ok("games"); sel.replaceChildren(...(g ?? []).map((r) => new Option(`Seed ${r.seed}: ${NAMES[r.winners] ?? r.winners}, ${r.turns} turns, ${r.victory}`, r.seed))); sel.value = seed; sel.onchange = () => { seed = sel.value; dash.draw("explorer"); };
+});
+const group = (title, entries) => { const box = document.createElement("div"); const h = document.createElement("h3"); h.textContent = title; box.append(h); const dl = document.createElement("dl"); for (const [k, v] of entries) { const dt = document.createElement("dt"); dt.textContent = k; const dd = document.createElement("dd"); dd.textContent = v; dl.append(dt, dd); } if (entries.length === 0) { const p = document.createElement("p"); p.className = "muted"; p.textContent = "None"; box.append(p); } else box.append(dl); return box; };
+dash.draw("explorer", (el) => {
+  const d = ok("finals"); if (d === undefined) { el.textContent = "—"; return; }
+  el.replaceChildren(...SIDES.map((side) => {
+    const r = d.find((x) => x.seed === seed && x.side === side); const card = document.createElement("section"); if (r === undefined) return card;
+    const pick = (prefix) => Object.keys(r).filter((k) => k.startsWith(prefix)).map((k) => [pretty(k.slice(prefix.length)), num(r[k])]).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).map(([k, v]) => [k, one(v)]);
+    const title = document.createElement("h2"); title.textContent = `${NAMES[side]}${r.won > 0 ? " (won)" : ""}`; card.append(title);
+    card.append(group("Units on the map", pick("units:")), group("In training", pick("training:").concat(pick("paused:").map(([k, v]) => [k + " (paused)", v]))), group("Standing on its ground", pick("standing:")), group("Builds under way", pick("buildsUnderWay:")), group("Builds waiting", pick("buildsWaiting:")), group("Ordered in all: units", pick("total-recruitsOrdered:")), group("Ordered in all: builds", pick("total-buildsOrdered:")));
+    const money = [["Funds held", one(num(r["held:funds"]))], ["Manpower held", one(num(r["held:manpower"])) + "k"], ["Funds earned", one(num(r["total-income:funds"]))], ["Manpower earned", one(num(r["total-income:manpower"])) + "k"], ["Manpower upkeep", one(num(r["total-upkeep:manpower"])) + "k"], ["Unpaid upkeep", one(num(r["total-unpaid:manpower"])) + "k"], ["Territories", one(num(r["counts:territories"]))]];
+    card.append(group("Money and land", money)); return card;
+  }));
+});
+</script>

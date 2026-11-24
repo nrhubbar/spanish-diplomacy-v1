@@ -135,6 +135,6 @@ describe("U14: selecting an aircraft offers only air orders", () => {
     const session = clickUnit(scenario, planning(initialGameState(scenario)), bomber);
     render(<Provider store={testStore()}><AirPane scenario={scenario} session={session} unitId={bomber} /></Provider>);
     const group = screen.getByRole("group", { name: "Mission" });
-    expect(within(group).getAllByRole("button").map((button) => button.textContent)).toEqual(["Patrol", "Ground Support", "Raid", "Recon", "Stand down"]);
+    expect(within(group).getAllByRole("button").map((button) => button.textContent)).toEqual(["Patrol", "Ground Support", "Raid", "Recon", "Stand down", "Disband"]);
   });
 });

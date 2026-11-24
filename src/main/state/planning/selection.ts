@@ -3,37 +3,41 @@ import { isMoveOrder, type ReplenishOrder, type Scenario, type TerritoryId, type
 import type { MoveRoute } from "../../engine/movement/routes";
 import { legalDestinations } from "../../engine/validation";
 import { selectionRoutes } from "../../presentation/movement";
-import type { Draft, OrderKind, PlannedOrder, Session, UnitOrderKind } from "../session";
-import { isAircraft, keepAirOrders, selectAircraft } from "./air";
+import type { Draft, OrderKind, PlannedOrder, Session } from "../session";
+import { chooseTarget, isAircraft, keepAirOrders, selectAircraft, targetTerritories } from "./air";
 import { inContestedGround, withdrawDestinations } from "./contested";
+import { disbandableSelection } from "./disband";
 import { chooseDestination } from "./orders";
 import { canReplenishSelection, keepBasket } from "./recruitment";
 
 export type PlanningSession = Extract<Session, { readonly phase: "planning" }>;
 
 /** Menu order of the order types. */
-const menuOrder: readonly OrderKind[] = ["replenish", "move", "entrench", "rest"];
+const menuOrder: readonly OrderKind[] = ["replenish", "move", "entrench", "rest", "disband"];
 
 /**
  * The order types offered for the selected armies, in menu order (O2): Move, plus Entrench when
  * every selected army is healthy or Rest when every one is demoralized. A mixed selection is
- * offered Move only, so a healthy army is never offered Rest.
+ * offered Move only, so a healthy army is never offered Rest. Disband comes last, when some of
+ * the selected units can disband (D1, N1).
  */
 export function orderKindsFor(session: PlanningSession, scenario?: Scenario): readonly OrderKind[] {
   const units = selectedUnits(session);
-  // C1: in contested ground the choice is Attack (the default) or Withdraw (m3r1-sub-territories).
-  if (units.length > 0 && units.every((unit) => inContestedGround(scenario, session, unit))) return ["attack", "withdraw"];
+  const disband = scenario !== undefined && disbandableSelection(scenario, session).length > 0;
+  // C1: in contested ground the choice is Attack (the default) or Withdraw (m3r1-sub-territories); units disband there too (D1).
+  if (units.length > 0 && units.every((unit) => inContestedGround(scenario, session, unit))) return ["attack", "withdraw", ...(disband ? ["disband"] as const : [])];
   const standing = new Set(units.map(standingOrder));
   // R5 (m3r1-recruit-replenish): Replenish leads the menu when every selected unit may take it.
   const replenish = scenario !== undefined && canReplenishSelection(scenario, session);
-  return menuOrder.filter((kind) => kind === "move" || (kind === "replenish" ? replenish : standing.size === 1 && standing.has(kind as "entrench" | "rest")));
+  const offered = (kind: OrderKind): boolean => kind === "move" || (kind === "replenish" ? replenish : kind === "disband" ? disband : standing.size === 1 && standing.has(kind as "entrench" | "rest"));
+  return menuOrder.filter(offered);
 }
 
 /**
  * The order a unit has in the draft: its move, withdrawal, Replenish or Disband, or else its default:
  * Attack in contested ground (Hold when demoralized, C1, C4), otherwise its standing order (O1, O5).
  */
-export function orderOf(session: PlanningSession, unit: UnitState, scenario?: Scenario): UnitOrderKind {
+export function orderOf(session: PlanningSession, unit: UnitState, scenario?: Scenario): OrderKind {
   const planned = session.draft.orders.find((order) => order.unitId === unit.id);
   if (planned !== undefined) return planned.kind;
   if (session.draft.replenishments?.some((order) => order.unitId === unit.id) === true) return "replenish";
@@ -43,8 +47,8 @@ export function orderOf(session: PlanningSession, unit: UnitState, scenario?: Sc
 }
 
 /** How many of the player's armies move, replenish, entrench, and rest under the draft; contested-ground kinds appear once used. */
-export function orderCounts(session: PlanningSession, scenario?: Scenario): Readonly<Partial<Record<UnitOrderKind, number>> & Record<"entrench" | "move" | "replenish" | "rest", number>> {
-  const counts: Partial<Record<UnitOrderKind, number>> & Record<"entrench" | "move" | "replenish" | "rest", number> = { entrench: 0, move: 0, replenish: 0, rest: 0 };
+export function orderCounts(session: PlanningSession, scenario?: Scenario): Readonly<Partial<Record<OrderKind, number>> & Record<"entrench" | "move" | "replenish" | "rest", number>> {
+  const counts: Partial<Record<OrderKind, number>> & Record<"entrench" | "move" | "replenish" | "rest", number> = { entrench: 0, move: 0, replenish: 0, rest: 0 };
   for (const unit of Object.values(session.game.state.units)) {
     if (unit.factionId !== session.factionId) continue;
     const kind = orderOf(session, unit, scenario);
@@ -114,6 +118,7 @@ export function availableUnitIds(
 }
 
 export function selectedDestinations(scenario: Scenario, session: PlanningSession): readonly TerritoryId[] {
+  if (session.draft.stage?.step === "choose-target") return targetTerritories(scenario, session);
   if (session.draft.stage?.step !== "choose-destination") return [];
   if (session.draft.stage.orderKind === "withdraw") return withdrawDestinations(scenario, session);
   const routes = selectedRoutes(scenario, session);
@@ -127,22 +132,27 @@ export function selectedRoutes(scenario: Scenario, session: PlanningSession): Re
   return selectionRoutes(scenario, session.game.state, session.factionId, draft.selectedTerritoryId, draft.selectedUnitIds, draft.orders.filter(isMoveOrder));
 }
 
-/** A map click means "select this territory" or, while choosing a destination, "move here". */
+/** A map click means "select this territory" or, while choosing a destination or a mission's target, "there". */
 export function clickTerritory(scenario: Scenario, session: PlanningSession, territoryId: TerritoryId): PlanningSession {
-  return session.draft.stage?.step === "choose-destination"
-    ? chooseDestination(scenario, session, territoryId)
-    : selectTerritory(session, territoryId, scenario);
+  switch (session.draft.stage?.step) {
+    case "choose-destination":
+      return chooseDestination(scenario, session, territoryId);
+    case "choose-target":
+      return chooseTarget(scenario, session, territoryId);
+    case undefined:
+      return selectTerritory(session, territoryId, scenario);
+  }
 }
 
 /**
- * A map counter click. While choosing a destination it targets the counter's territory.
+ * A map counter click. While choosing a destination or a mission's target it targets the counter's territory.
  * Otherwise an own army toggles (or selects its territory, if that is not selected yet), and
  * another faction's counter selects its territory.
  */
 export function clickUnit(scenario: Scenario, session: PlanningSession, unitId: UnitId): PlanningSession {
   const unit = session.game.state.units[unitId];
   if (unit === undefined) return session;
-  if (session.draft.stage?.step === "choose-destination") return chooseDestination(scenario, session, unit.territoryId);
+  if (session.draft.stage !== undefined) return clickTerritory(scenario, session, unit.territoryId);
   if (unit.factionId === session.factionId && isAircraft(scenario, session.game.state, unitId)) return selectAircraft(session, unitId);
   return unit.factionId === session.factionId ? toggleUnit(session, unitId, scenario) : selectTerritory(session, unit.territoryId, scenario);
 }

@@ -11,9 +11,9 @@ import { type BattleOdds, battleOdds } from "./odds";
 /** C15 on the d20: what an attack into a defended territory would meet. */
 export type BattleEstimate = BattleOdds & {
   /**
-   * R11: the planned Ground Support and the chance it applies. The chances above are then
-   * weighed over the air battle; `modifiers` and `rollModifier` leave the support out unless
-   * nothing opposes it (`air.chance` 1).
+   * R11: the planned Ground Support and what the air battle may leave of it. The chances above
+   * are then weighed over the air battle's results; `modifiers` and `rollModifier` leave the
+   * support out when an air battle decides it (`air.results`).
    */
   readonly air?: PlannedAir;
   readonly attacker: BattleSide;
@@ -28,8 +28,8 @@ export type BattleEstimate = BattleOdds & {
  * defenders there stay and nobody else joins. Every modifier the battle would take is counted
  * from the start-of-turn state: works, faction modifiers, barricades, generals, unit bonuses,
  * fatigue and the hooks (weather, amphibious). R11: `support` names the faction's aircraft
- * planned on Ground Support there; their support counts with the chance it wins the air battle
- * against the defenders' AA. `plannedRoutes` names the way each attacker takes, where it is already
+ * planned on Ground Support there; their support counts as the air battle against the defenders'
+ * AA may leave it. `plannedRoutes` names the way each attacker takes, where it is already
  * chosen, so passes and landings are judged on it; the others' is inferred from where they stand.
  */
 export function estimateBattle(
@@ -59,7 +59,7 @@ export function estimateBattle(
   const plain = battleOdds(rules, attacker.value, defender.value, modifiers);
   const air = plannedAir(scenario, state, { attackerFactionId: factionId, defenderFactionIds, defenderUnitIds: present.map((unit) => unit.id), territoryId: target }, support);
   const supported = (extra: CombatModifier): BattleOdds => battleOdds(rules, attacker.value, defender.value, [...modifiers, extra]);
-  const odds = air === undefined ? plain : air.chance === 1 ? supported(air.modifier) : weighOdds(plain, supported(air.modifier), air.chance);
+  const odds = air === undefined ? plain : air.results === undefined ? supported(air.modifier) : weighOdds(plain, air.results.map(({ chance, roll }) => ({ chance, odds: supported({ ...air.modifier, roll }) })));
   return {
     ...odds,
     ...(air === undefined ? {} : { air }),
@@ -80,20 +80,28 @@ export function oddsForValues(scenario: Scenario, state: GameState, context: Bat
   return battleOdds(scenario.d20, attack, defence, modifiers);
 }
 
+/** One way the air battle may end: its chance, and the battle's odds then. */
+interface WeighedOdds {
+  readonly chance: number;
+  readonly odds: BattleOdds;
+}
+
 /**
- * R11: the odds over the air battle: `supported` with chance `chance`, else `plain`. The chances
- * of each grade, the ground and the expected losses are weighed; the rest is `plain`'s.
+ * R11: the odds over the air battle's results. The chances of each grade, the ground and the
+ * expected losses are weighed; the rest is `plain`'s, the battle without Ground Support.
  */
-function weighOdds(plain: BattleOdds, supported: BattleOdds, chance: number): BattleOdds {
-  const mix = (a: number, b: number): number => a * (1 - chance) + b * chance;
+function weighOdds(plain: BattleOdds, results: readonly WeighedOdds[]): BattleOdds {
+  const possible = results.filter((result) => result.chance > 0);
+  const mix = (value: (odds: BattleOdds) => number): number => possible.reduce((sum, { chance, odds }) => sum + chance * value(odds), 0);
   const chances = new Map<GradeId, number>();
-  for (const [id, value] of plain.chances) chances.set(id, value * (1 - chance));
-  for (const [id, value] of supported.chances) chances.set(id, (chances.get(id) ?? 0) + value * chance);
+  for (const { chance, odds } of possible) {
+    for (const [id, value] of odds.chances) chances.set(id, (chances.get(id) ?? 0) + value * chance);
+  }
   const expected = {
-    attackerDemoralized: mix(plain.expected.attackerDemoralized, supported.expected.attackerDemoralized),
-    attackerLoss: mix(plain.expected.attackerLoss, supported.expected.attackerLoss),
-    defenderDemoralized: mix(plain.expected.defenderDemoralized, supported.expected.defenderDemoralized),
-    defenderLoss: mix(plain.expected.defenderLoss, supported.expected.defenderLoss)
+    attackerDemoralized: mix((odds) => odds.expected.attackerDemoralized),
+    attackerLoss: mix((odds) => odds.expected.attackerLoss),
+    defenderDemoralized: mix((odds) => odds.expected.defenderDemoralized),
+    defenderLoss: mix((odds) => odds.expected.defenderLoss)
   };
-  return { ...plain, chances, expected, gainChance: mix(plain.gainChance, supported.gainChance), takeChance: mix(plain.takeChance, supported.takeChance) };
+  return { ...plain, chances, expected, gainChance: mix((odds) => odds.gainChance), takeChance: mix((odds) => odds.takeChance) };
 }

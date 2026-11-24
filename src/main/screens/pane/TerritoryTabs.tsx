@@ -140,7 +140,7 @@ export function TerritoryTabs({ children, focusedSite, initialSite, tab, ...prop
               type="button"
             >
               {labels[entry]}
-              {count === undefined || count === 0 ? null : <>{" "}<span className="pane-tab-count">{count}</span></>}
+              {count === undefined || (count === 0 && entry !== "recruit") ? null : <>{count === 0 ? "" : " "}<span className="pane-tab-count" data-empty={count === 0}>{count === 0 ? null : count}</span></>}
             </button>
           );
         })}

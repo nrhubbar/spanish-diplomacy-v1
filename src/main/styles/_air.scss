@@ -142,7 +142,14 @@
   margin: 2px 0 6px 28px;
 }
 
-// D1: Disband on a unit's card, and its second step.
+// N10: what the general does to the dice, under his pill.
+.general-effect {
+  margin: 0 0 6px 28px;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+}
+
+// D1, N1: Disband's second step, and the card of a unit that goes home.
 .disband-controls {
   display: flex;
   flex-wrap: wrap;
@@ -164,6 +171,10 @@
     border-radius: 6px;
     background: rgb(168 50 20 / 8%);
   }
+}
+
+.air-missions .disband-controls {
+  flex: 1 0 100%;
 }
 
 .disband-button {

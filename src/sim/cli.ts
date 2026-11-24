@@ -7,18 +7,17 @@ import { availableParallelism } from "node:os";
 import { fileURLToPath } from "node:url";
 import { isMainThread, parentPort, Worker, workerData } from "node:worker_threads";
 import { scenarioSources } from "./engine";
-import type { GameLine } from "./game";
 import { runCli, type WorkerSetup } from "./main";
 import type { FromWorker, PoolWorker } from "./pool";
-import type { GameTask } from "./run";
+import type { GameTask, PlayedGame } from "./run";
 import { serveWorker } from "./worker";
 
-function spawn(setup: WorkerSetup): PoolWorker<GameTask, GameLine> {
+function spawn(setup: WorkerSetup): PoolWorker<GameTask, PlayedGame> {
   const worker = new Worker(fileURLToPath(import.meta.url), { workerData: setup });
   return {
     onError: (listener) => worker.on("error", listener),
     onExit: (listener) => worker.on("exit", listener),
-    onMessage: (listener) => worker.on("message", (message: FromWorker<GameLine>) => { listener(message); }),
+    onMessage: (listener) => worker.on("message", (message: FromWorker<PlayedGame>) => { listener(message); }),
     post: (message) => { worker.postMessage(message); },
     terminate: () => worker.terminate()
   };
@@ -40,5 +39,5 @@ if (isMainThread) {
     process.exitCode = 1;
   });
 } else if (parentPort !== null) {
-  serveWorker(workerData as WorkerSetup, scenarioSources(), parentPort);
+  serveWorker(workerData as WorkerSetup, scenarioSources(), parentPort, () => performance.now());
 }

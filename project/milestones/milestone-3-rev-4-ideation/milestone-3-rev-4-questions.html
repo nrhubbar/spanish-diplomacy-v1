@@ -1,0 +1,743 @@
+<title>Rev 4 Questions</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,500;8..60,700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a design-review dossier. Sticky index on the left (top bar on phones), one reading column, widgets and questions as set-off "cards on the table". */
+:root {
+  --bg: #e6dfcd;          /* table canvas, from the app's --canvas */
+  --paper: #fbf6ea;       /* reading sheet, the app's --paper */
+  --surface: #f4eddc;     /* widget card */
+  --surface-2: #ebe2cc;   /* inset rows, table heads */
+  --ink: #241d18;
+  --ink-soft: #5b4d40;
+  --line: #c9bba0;
+  --accent: #7d2f2a;      /* oxblood, the app's --accent */
+  --accent-ink: #fbf6ea;
+  --gold: #b8891a;
+  --route: #1f3550;
+  --good: #2f7d4f;
+  --bad: #9e2b2b;
+  --warn: #b5730f;
+  --rep: #b1493f;
+  --nic: #a3841f;
+  --sic: #665089;
+  --c1: #7a1f1a; --c2: #b5483c; --c3: #d99a6c; --c4: #cbbf9f; --c5: #7d9bb5; --c6: #3f6a90; --c7: #1f3550;
+  --serif: "Source Serif 4", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --shadow: 0 1px 0 rgb(36 29 24 / 8%), 0 6px 18px rgb(36 29 24 / 8%);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #17120e; --paper: #221a14; --surface: #2b221a; --surface-2: #352a20;
+    --ink: #efe5d2; --ink-soft: #c2b29b; --line: #4d3f31; --accent: #d9897e; --accent-ink: #1b1410;
+    --gold: #e0b54a; --route: #9cb7d6; --good: #6fc08f; --bad: #e07a72; --warn: #e5a54a;
+    --rep: #d9786d; --nic: #d9b84a; --sic: #a88fd1;
+    --c1: #e07a72; --c2: #c9665b; --c3: #b98a63; --c4: #6f6555; --c5: #5f86a8; --c6: #7fa6cc; --c7: #b5cfe8;
+    --shadow: 0 1px 0 rgb(0 0 0 / 30%), 0 6px 18px rgb(0 0 0 / 30%);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #17120e; --paper: #221a14; --surface: #2b221a; --surface-2: #352a20;
+  --ink: #efe5d2; --ink-soft: #c2b29b; --line: #4d3f31; --accent: #d9897e; --accent-ink: #1b1410;
+  --gold: #e0b54a; --route: #9cb7d6; --good: #6fc08f; --bad: #e07a72; --warn: #e5a54a;
+  --rep: #d9786d; --nic: #d9b84a; --sic: #a88fd1;
+  --c1: #e07a72; --c2: #c9665b; --c3: #b98a63; --c4: #6f6555; --c5: #5f86a8; --c6: #7fa6cc; --c7: #b5cfe8;
+  --shadow: 0 1px 0 rgb(0 0 0 / 30%), 0 6px 18px rgb(0 0 0 / 30%);
+  color-scheme: dark;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 72px; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 var(--sans); -webkit-font-smoothing: antialiased; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+a { color: var(--route); text-underline-offset: 2px; }
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+h1, h2, h3, h4 { font-family: var(--serif); line-height: 1.2; text-wrap: balance; margin: 0; }
+code, kbd { font-family: var(--mono); font-size: 0.86em; background: var(--surface-2); padding: 0.05em 0.3em; border-radius: 3px; }
+
+.shell { display: grid; grid-template-columns: 270px minmax(0, 1fr); gap: 28px; max-width: 1180px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 24px 64px; }
+.toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); align-self: start; max-height: calc(100vh - 32px); overflow: auto;
+  background: var(--paper); border: 1px solid var(--line); border-radius: 6px; padding: 14px 14px 16px; font-size: 0.86rem; }
+.toc h2 { font-size: 1rem; margin-bottom: 6px; }
+.toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; }
+.toc li.group { margin-top: 10px; font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-soft); font-weight: 600; }
+.toc a { display: flex; justify-content: space-between; gap: 8px; padding: 3px 6px; border-radius: 4px; text-decoration: none; color: var(--ink); }
+.toc a:hover { background: var(--surface-2); }
+.toc a.active { background: var(--surface-2); box-shadow: inset 2px 0 0 var(--accent); }
+.toc .count { font-family: var(--mono); font-size: 0.72rem; color: var(--ink-soft); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.answerbox { display: grid; gap: 8px; padding-bottom: 12px; margin-bottom: 10px; border-bottom: 1px solid var(--line); }
+.progress-text { font-family: var(--mono); font-size: 0.8rem; font-variant-numeric: tabular-nums; }
+.progress-track { height: 6px; background: var(--surface-2); border-radius: 3px; overflow: hidden; }
+.progress-fill { height: 100%; width: 0; background: var(--accent); transition: width 0.2s; }
+.btn { font: 600 0.86rem var(--sans); border: 1px solid var(--ink); background: var(--accent); color: var(--accent-ink); border-radius: 5px; padding: 8px 12px; cursor: pointer; min-height: 38px; }
+.btn.secondary { background: transparent; color: var(--ink); border-color: var(--line); font-weight: 500; }
+.btn-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.copy-status { font-size: 0.78rem; color: var(--good); min-height: 1.1em; }
+.copy-fallback { width: 100%; min-height: 140px; font: 0.75rem/1.4 var(--mono); }
+.mobile-bar { display: none; }
+
+main { min-width: 0; display: grid; gap: 22px; }
+.sheet { background: var(--paper); border: 1px solid var(--line); border-radius: 6px; padding: 28px clamp(16px, 4vw, 44px) 32px; box-shadow: var(--shadow); min-width: 0; }
+.sheet > * + * { margin-top: 0.9rem; }
+.masthead .eyebrow, .eyebrow { font: 600 0.72rem var(--sans); letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
+.masthead h1 { font-size: clamp(1.9rem, 4.5vw, 2.7rem); }
+.masthead .meta { font-family: var(--mono); font-size: 0.8rem; color: var(--ink-soft); display: flex; flex-wrap: wrap; gap: 6px 18px; }
+.group-head { padding: 6px 4px 0; }
+.group-head h2 { font-size: 1.05rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-soft); font-family: var(--sans); font-weight: 600; }
+.group-head p { color: var(--ink-soft); font-size: 0.92rem; max-width: 70ch; }
+.sheet h2 { font-size: clamp(1.4rem, 3vw, 1.8rem); }
+.sheet h2 .idea-no { font-family: var(--mono); font-size: 0.8em; color: var(--accent); margin-right: 0.4em; }
+.sheet h3 { font-size: 1.12rem; margin-top: 1.6rem; padding-top: 0.9rem; border-top: 1px solid var(--line); }
+.sheet h4 { font-size: 1rem; margin-top: 1.2rem; }
+.sheet p, .sheet li { max-width: 72ch; }
+.sheet ul, .sheet ol { padding-left: 1.25rem; }
+.sheet li + li { margin-top: 0.25rem; }
+.sheet blockquote { margin: 0; padding: 8px 14px; border-left: 3px solid var(--gold); background: var(--surface); font-family: var(--serif); font-style: italic; }
+.summary-line { font-family: var(--serif); font-size: 1.12rem; }
+.table-wrap, .w-scroll { overflow-x: auto; max-width: 100%; -webkit-overflow-scrolling: touch; }
+.sheet table, .w-table { border-collapse: collapse; width: 100%; font-size: 0.88rem; }
+.sheet th, .sheet td, .w-table th, .w-table td { border-bottom: 1px solid var(--line); padding: 6px 8px; text-align: left; vertical-align: top; }
+.sheet th, .w-table th { background: var(--surface-2); font-weight: 600; }
+.sheet td:first-child { min-width: 9rem; }
+.recommend { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--good); padding: 10px 14px; border-radius: 4px; }
+
+figure.mockup { margin: 1rem 0 0; }
+figure.mockup img { display: block; width: 100%; height: auto; border: 1px solid var(--line); border-radius: 4px; background: var(--surface-2); }
+figure.mockup figcaption { font-size: 0.8rem; color: var(--ink-soft); margin-top: 6px; }
+.missing { font-size: 0.85rem; color: var(--ink-soft); background: var(--surface-2); padding: 10px 12px; border-radius: 4px; border: 1px dashed var(--line); }
+
+/* Widgets */
+.widget { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 14px 16px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; font-size: 0.9rem; min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
+.widget > *, .w-row > *, .w-grid > * { min-width: 0; max-width: 100%; }
+.widget svg, .widget canvas { max-width: 100%; height: auto; }
+.widget h4, .widget h5 { margin: 0; font-family: var(--serif); }
+.w-row { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
+.w-label { font-weight: 600; font-size: 0.82rem; color: var(--ink-soft); }
+.w-out { font-family: var(--mono); font-weight: 500; background: var(--paper); border: 1px solid var(--line); border-radius: 4px; padding: 1px 7px; font-variant-numeric: tabular-nums; }
+.w-note { font-size: 0.78rem; color: var(--ink-soft); }
+.w-bar-track { background: var(--surface-2); border-radius: 3px; height: 14px; overflow: hidden; min-width: 60px; flex: 1; }
+.w-bar { height: 100%; background: var(--accent); min-width: 1px; }
+.w-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+.w-card { background: var(--paper); border: 1px solid var(--line); border-radius: 4px; padding: 8px 10px; min-width: 0; }
+.widget select, .widget input[type=number], .widget input[type=text] { font: inherit; color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 4px; padding: 4px 6px; min-height: 34px; max-width: 100%; }
+.widget input[type=range] { accent-color: var(--accent); max-width: 100%; }
+.widget button { font: 500 0.84rem var(--sans); color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 4px; padding: 5px 10px; cursor: pointer; min-height: 34px; }
+.widget button[aria-pressed="true"], .widget button.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.widget label { display: inline-flex; align-items: center; gap: 6px; }
+.widget-error { color: var(--bad); font-size: 0.85rem; }
+
+/* Questions */
+.questions { display: grid; gap: 12px; }
+.q { border: 1px solid var(--line); border-radius: 6px; background: var(--surface); padding: 12px 14px 14px; margin: 0; min-width: 0; }
+.q.answered { border-left: 4px solid var(--good); }
+.q legend { display: contents; }
+.q .q-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; margin-bottom: 8px; }
+.q .q-id { font-family: var(--mono); font-size: 0.74rem; background: var(--paper); border: 1px solid var(--line); border-radius: 3px; padding: 0 6px; color: var(--ink-soft); }
+.q .q-text { font-weight: 600; flex: 1 1 260px; }
+.q .q-ctx { font-size: 0.84rem; color: var(--ink-soft); margin: 0 0 8px; max-width: 72ch; }
+.q .opt > span { min-width: 0; overflow-wrap: anywhere; }
+.sheet h2 + .questions, .questions { margin-top: 1.4rem; }
+.q .q-multi { font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--route); border: 1px solid currentColor; border-radius: 3px; padding: 0 5px; }
+.q .opt { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; align-items: start; padding: 6px 8px; border-radius: 4px; cursor: pointer; }
+.q .opt:hover { background: var(--surface-2); }
+.q .opt input { margin-top: 4px; accent-color: var(--accent); width: 17px; height: 17px; }
+.q .opt .rec { color: var(--good); font-weight: 600; font-size: 0.82rem; margin-left: 4px; }
+.q .opt .why { grid-column: 2; font-size: 0.8rem; color: var(--ink-soft); }
+.q textarea { width: 100%; margin-top: 8px; min-height: 2.4rem; font: 0.86rem var(--sans); color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 4px; padding: 6px 8px; resize: vertical; }
+.q .notes-label { font-size: 0.76rem; color: var(--ink-soft); display: block; margin-top: 6px; }
+
+.sources ol { font-size: 0.82rem; overflow-wrap: anywhere; }
+.diagram { overflow-x: auto; }
+.diagram svg { display: block; min-width: 640px; width: 100%; height: auto; }
+.diagram svg text { fill: var(--ink); font-family: var(--sans); font-size: 12px; }
+.diagram .node { fill: var(--paper); stroke: var(--good); stroke-width: 1.2; }
+.diagram .node.later { fill: var(--surface-2); stroke: var(--ink-soft); stroke-dasharray: 4 3; }
+.diagram .edge { fill: none; stroke: var(--ink-soft); stroke-width: 1.4; }
+.diagram .arrowhead { fill: var(--ink-soft); }
+.diagram .band { fill: var(--surface-2); stroke: var(--line); }
+.diagram svg text.col { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; fill: var(--ink-soft); }
+.pill { display: inline-block; font: 600 0.72rem var(--sans); letter-spacing: 0.04em; padding: 1px 7px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface-2); }
+.pill.m3 { background: var(--good); color: var(--paper); border-color: var(--good); }
+.pill.later { background: var(--surface-2); }
+.pill.drop { color: var(--bad); border-color: var(--bad); }
+
+@media (max-width: 900px) {
+  html { scroll-padding-top: 64px; }
+  .shell { grid-template-columns: minmax(0, 1fr); gap: 16px; padding-block: 0 48px; }
+  .toc { position: static; max-height: none; display: none; }
+  .toc.open { display: block; position: fixed; inset: calc(env(safe-area-inset-top, 0px) + 56px) 0 0; z-index: 20; border-radius: 0; overflow: auto;
+    padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .mobile-bar { display: flex; position: sticky; top: env(safe-area-inset-top, 0px); z-index: 15; align-items: center; justify-content: space-between; gap: 10px;
+    background: var(--paper); border-bottom: 1px solid var(--line); margin: 0 calc(-1 * max(16px, env(safe-area-inset-left, 0px))); padding: 8px max(16px, env(safe-area-inset-right, 0px)) 8px max(16px, env(safe-area-inset-left, 0px)); }
+  .mobile-bar .progress-text { font-size: 0.75rem; }
+  .sheet { padding: 20px 16px 24px; }
+}
+</style>
+
+<div class="shell">
+  <div class="mobile-bar">
+    <button class="btn secondary" id="toc-toggle" type="button" aria-expanded="false" aria-controls="toc">Contents</button>
+    <span class="progress-text" data-progress-text>0 of 0 answered</span>
+    <button class="btn" type="button" data-copy>Copy my answers</button>
+  </div>
+  <nav class="toc" id="toc" aria-label="Contents">
+    <div class="answerbox">
+      <h2>Your answers</h2>
+      <span class="progress-text" data-progress-text>0 of 0 answered</span>
+      <div class="progress-track" aria-hidden="true"><div class="progress-fill" id="progress-fill"></div></div>
+      <div class="btn-row">
+        <button class="btn" type="button" data-copy>Copy my answers</button>
+        <button class="btn secondary" type="button" id="fill-rec">Use recommended for blanks</button>
+      </div>
+      <div class="btn-row">
+        <button class="btn secondary" type="button" id="clear-all">Clear all</button>
+        <button class="btn secondary" type="button" id="clear-confirm" hidden>Yes, clear every answer</button>
+      </div>
+      <div class="copy-status" id="copy-status" role="status" aria-live="polite"></div>
+      <div class="w-note" id="remote-status">Answers save in this browser. Use Copy my answers to send them to the team.</div>
+      <textarea class="copy-fallback" id="copy-fallback" hidden readonly aria-label="Your answers as Markdown"></textarea>
+    </div>
+    <h2>Contents</h2>
+    <ol>
+<li><a href="#found"><span>What I found in the code</span><span class="count"></span></a></li>
+<li><a href="#manpower"><span>Manpower (note 7)</span><span class="count" data-toc-idea="manpower"></span></a></li>
+<li><a href="#air"><span>The air battle (note 11)</span><span class="count" data-toc-idea="air"></span></a></li>
+<li><a href="#units"><span>Unit orders (notes 1, 6, 10)</span><span class="count" data-toc-idea="units"></span></a></li>
+<li><a href="#recruit"><span>The Recruit pane (note 2)</span><span class="count" data-toc-idea="recruit"></span></a></li>
+<li><a href="#odds"><span>Odds and numbers (notes 3, 5, 12)</span><span class="count" data-toc-idea="odds"></span></a></li>
+<li><a href="#plan"><span>How Rev 4 runs</span><span class="count" data-toc-idea="plan"></span></a></li>
+</ol>
+  </nav>
+  <main id="main">
+    <section class="sheet masthead-sheet" id="intro">
+<header class="masthead">
+<p class="eyebrow">Milestone 3 · Revision 4 · Playtest 3</p>
+<h1>Rev 4 Questions</h1>
+<p class="meta"><span>23 Nov 2026</span><span>Work has started on all 12 notes</span></p>
+</header>
+
+<p class="summary-line">Nothing here blocks the work. Each question has a default that's already being built, and each answer is a small change. The two that matter most are Manpower and the air table.</p>
+
+<p><strong>What the numbers are.</strong> Incomes, prices and starting armies come from the scenario, and battle chances from the game&#39;s own result table. Growth figures are arithmetic with no battles. No simulations were run.</p>
+
+</section>
+<section class="sheet" id="found">
+<h2>What I found in the code</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Your note</th>
+<th>Cause</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>2. Recruit page jostles</td>
+<td>This turn&#39;s orders join the training list, which sits above the unit rows, so each click pushes the rows down.</td>
+</tr>
+<tr>
+<td>4. General bonus missing</td>
+<td>The Invade pane lists ground units only, so a general can&#39;t be ticked and his bonus can&#39;t count.</td>
+</tr>
+<tr>
+<td>4. Air Support bonus missing</td>
+<td>The odds leave Ground Support out of the list whenever an enemy anti-air unit could contest it, and only mention it in a sentence below.</td>
+</tr>
+<tr>
+<td>3. Two versions of the logic</td>
+<td>The map chip and the Invade pane work out odds separately. The map chip doesn&#39;t know which road each unit takes. They&#39;re becoming one function. The stuck line is being reproduced in a browser before anything is changed.</td>
+</tr>
+<tr>
+<td>7. One militia, four trucks</td>
+<td><strong>No, they don&#39;t know how trucks work.</strong> Every idle truck joins the largest army leaving, even for a one-step attack that needs none.</td>
+</tr>
+<tr>
+<td>7. Security forces</td>
+<td>The computer counts defence as much as attack, and ignores upkeep when it compares prices. A security force costs four times an infantry regiment&#39;s upkeep.</td>
+</tr>
+<tr>
+<td>11. Air battle</td>
+<td>The unit text says only the best aircraft counts. The game adds them all up.</td>
+</tr>
+</tbody></table></div>
+<h2>Does artillery make sense? (note 8)</h2>
+<p><strong>Yes, and Ground Support more so. The computer just can&#39;t see it.</strong> The table shows your chance of taking a city held behind barricades after each purchase. The second and third columns also face one level of digging in.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>You add</th>
+<th>Funds</th>
+<th>Attack 12, defence 12</th>
+<th>Attack 20, defence 18, dug in</th>
+<th>Attack 24, defence 12, dug in</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Nothing</td>
+<td></td>
+<td>10%</td>
+<td>0%</td>
+<td>15%</td>
+</tr>
+<tr>
+<td>2 infantry</td>
+<td>10</td>
+<td>10%</td>
+<td>0%</td>
+<td>15%</td>
+</tr>
+<tr>
+<td>3 infantry</td>
+<td>15</td>
+<td>25%</td>
+<td>0%</td>
+<td>30%</td>
+</tr>
+<tr>
+<td><strong>2 artillery</strong></td>
+<td>12</td>
+<td><strong>20%</strong></td>
+<td><strong>10%</strong></td>
+<td><strong>25%</strong></td>
+</tr>
+<tr>
+<td>3 artillery</td>
+<td>18</td>
+<td>25%</td>
+<td>15%</td>
+<td>30%</td>
+</tr>
+<tr>
+<td><strong>1 bomber that wins the air</strong></td>
+<td>7</td>
+<td><strong>25%</strong></td>
+<td><strong>15%</strong></td>
+<td><strong>30%</strong></td>
+</tr>
+<tr>
+<td>2 security forces</td>
+<td>8</td>
+<td>10%</td>
+<td>0%</td>
+<td>15%</td>
+</tr>
+</tbody></table></div>
+<ul>
+<li><strong>Why infantry adds nothing:</strong> odds move in steps. More attack does nothing until it doubles the defence, and then it&#39;s worth 15 points at once. A gun or a bomber adds its points every time.</li>
+<li><strong>Guns are the reliable buy in big battles, infantry in small ones.</strong> Artillery needs no change to its numbers.</li>
+<li><strong>What I&#39;m changing in the computer player:</strong> it will value each unit by what it adds to the battles it would really fight, count upkeep, and count its generals and aircraft when it decides to attack. Today it ignores both.</li>
+<li><strong>What you may need to check:</strong> artillery needs Barracks and a Factory in the same territory, so few places can train it early.</li>
+</ul>
+
+</section>
+<section class="sheet" id="manpower">
+<h2>Manpower (note 7)</h2>
+<p>Manpower is far from short for two sides, and the South has none.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Opening turn</th>
+<th>Income</th>
+<th>Upkeep</th>
+<th>Left each turn</th>
+<th>Funds income</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Republic</td>
+<td>27</td>
+<td>12.8</td>
+<td><strong>+14.3</strong></td>
+<td>14.5</td>
+</tr>
+<tr>
+<td>North</td>
+<td>27</td>
+<td>5</td>
+<td><strong>+22</strong></td>
+<td>6</td>
+</tr>
+<tr>
+<td>South</td>
+<td>0</td>
+<td>2.3</td>
+<td><strong>−2.3</strong></td>
+<td>1</td>
+</tr>
+</tbody></table></div>
+<p>Each farm level gives 1 Manpower. This is when each side runs short if it spends its Funds on infantry, with no battle losses:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Each farm level gives</th>
+<th>Republic, left each turn</th>
+<th>Runs short</th>
+<th>North, left each turn</th>
+<th>Runs short</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1 (today)</td>
+<td>+14.3</td>
+<td>never</td>
+<td>+22</td>
+<td>never</td>
+</tr>
+<tr>
+<td>0.75</td>
+<td>+7.5</td>
+<td>turn 15</td>
+<td>+15.3</td>
+<td>never</td>
+</tr>
+<tr>
+<td><strong>0.6</strong></td>
+<td><strong>+3.5</strong></td>
+<td><strong>turn 7</strong></td>
+<td><strong>+11.2</strong></td>
+<td><strong>never</strong></td>
+</tr>
+<tr>
+<td>0.5</td>
+<td>+0.8</td>
+<td>turn 4</td>
+<td>+8.5</td>
+<td>never</td>
+</tr>
+</tbody></table></div>
+<ul>
+<li><strong>A cut on its own squeezes only the Republic.</strong> Losses and Replenish make it bite sooner than this table says.</li>
+<li><strong>The North is limited by Funds, not men.</strong> With 6 Funds it buys one regiment a turn and can&#39;t use more than about 3 Manpower. So the fix for its security forces is the computer player, whichever option you choose.</li>
+</ul>
+<div class="questions" data-idea="manpower"></div>
+</section>
+<section class="sheet" id="air">
+<h2>The air battle (note 11)</h2>
+<p>One d20 for both sides. Add your aircraft, take away the enemy&#39;s aircraft and anti-air, and read one table. High favours the attacker, low favours the defender.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Score</th>
+<th>Result</th>
+<th>Attacker&#39;s Ground Support</th>
+<th>Defender&#39;s Ground Support</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>3 or less</td>
+<td>Defender commands the air</td>
+<td>none</td>
+<td>all of it</td>
+</tr>
+<tr>
+<td>4 to 8</td>
+<td>Defender holds the edge</td>
+<td>half</td>
+<td>all of it</td>
+</tr>
+<tr>
+<td>9 to 12</td>
+<td>Contested sky</td>
+<td>half</td>
+<td>half</td>
+</tr>
+<tr>
+<td>13 to 17</td>
+<td>Attacker holds the edge</td>
+<td>all of it</td>
+<td>half</td>
+</tr>
+<tr>
+<td>18 or more</td>
+<td>Attacker commands the air</td>
+<td>all of it</td>
+<td>none</td>
+</tr>
+</tbody></table></div>
+<p>Halves round down. A bomber or fighter gives +3, and at most two count.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Who is in the air</th>
+<th>Today: wins, ties, loses</th>
+<th>Average Ground Support today</th>
+<th>With the table above</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>2 bombers against an anti-air battery</td>
+<td>43 / 5 / 52%</td>
+<td>+2.6</td>
+<td><strong>+3.5</strong></td>
+</tr>
+<tr>
+<td>1 bomber against an anti-air battery</td>
+<td>38 / 4 / 57%</td>
+<td>+1.2</td>
+<td><strong>+1.4</strong></td>
+</tr>
+<tr>
+<td>2 bombers against a patrolling fighter</td>
+<td>48 / 5 / 48%</td>
+<td>+2.9</td>
+<td><strong>+3.8</strong></td>
+</tr>
+<tr>
+<td>Fighter and bomber against a patrolling fighter</td>
+<td>52 / 5 / 43%</td>
+<td>+3.2</td>
+<td><strong>+4.1</strong></td>
+</tr>
+<tr>
+<td>2 bombers against a fighter and anti-air</td>
+<td>34 / 4 / 62%</td>
+<td>+2</td>
+<td><strong>+2.9</strong></td>
+</tr>
+</tbody></table></div>
+<p>Ties no longer exist, and being outmatched in the air takes your support down rather than away.</p>
+<div class="questions" data-idea="air"></div>
+</section>
+<section class="sheet" id="units">
+<h2>Unit orders (notes 1, 6, 10)</h2>
+<p>Disband joins Move, Entrench, Rest and Replenish for whatever units you&#39;ve ticked, with one confirm. On desktop a button sits right after the list: <strong>Order for 3 selected units</strong>. It opens the same menu the bar opens today.</p>
+<figure class="mockup" style="max-width:320px;border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--surface-2)">
+<p style="margin:0 0 6px"><strong>On a phone</strong></p>
+<p style="margin:0 0 4px">☑ 1st Regiment 4-6 · Entrenching</p>
+<p style="margin:0 0 4px">☑ 2nd Regiment 4-6 · Entrenching</p>
+<p style="margin:0 0 10px">☐ Durruti Column 2-5 · Moving</p>
+<p style="margin:0;border-top:1px solid var(--line);padding-top:10px"><span style="display:block;text-align:center;border:1px solid var(--accent);border-radius:8px;padding:12px;color:var(--accent);font-weight:600">Order for 2 selected units</span></p>
+<figcaption style="font-size:.84rem;color:var(--ink-soft);margin-top:8px">The button stays at the bottom of the sheet. Tapping it raises the menu with large rows: Move, Entrench, Replenish, Disband.</figcaption>
+</figure>
+
+<div class="questions" data-idea="units"></div>
+</section>
+<section class="sheet" id="recruit">
+<h2>The Recruit pane (note 2)</h2>
+<p>Adding a unit fills a slot instead of growing a list, so nothing moves.</p>
+<figure class="mockup" style="max-width:520px;border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--surface-2)">
+<p style="margin:0 0 8px"><strong>Recruit at Madrid</strong> · 4 orders this turn</p>
+<p style="margin:0 0 12px;display:flex;gap:8px;flex-wrap:wrap"><span style="border:1px solid var(--accent);border-radius:8px;padding:10px 14px">Infantry ×</span><span style="border:1px solid var(--accent);border-radius:8px;padding:10px 14px">Artillery ×</span><span style="border:1px dashed var(--line);border-radius:8px;padding:10px 14px;color:var(--ink-soft)">empty</span><span style="border:1px dashed var(--line);border-radius:8px;padding:10px 14px;color:var(--ink-soft)">empty</span></p>
+<p style="margin:0 0 4px"><strong>Can recruit now</strong></p>
+<p style="margin:0 0 4px;display:flex;justify-content:space-between;gap:8px"><span>Infantry regiment 4-6</span><span>5 Funds, 1k, 2 turns</span><span>− 1 +</span></p>
+<p style="margin:0 0 4px;display:flex;justify-content:space-between;gap:8px"><span>Militia column 2-5</span><span>3 Funds, 3k, 1 turn</span><span>− 0 +</span></p>
+<p style="margin:0 0 10px;color:var(--ink-soft)">Locked here · In training (2)</p>
+<p style="margin:0;border-top:1px solid var(--line);padding-top:8px;display:flex;justify-content:space-between;gap:8px"><span>This turn: 11 Funds, 2k</span><span>Left: 3.5 Funds, 8k</span></p>
+</figure>
+
+<div class="questions" data-idea="recruit"></div>
+</section>
+<section class="sheet" id="odds">
+<h2>Odds and numbers (notes 3, 5, 12)</h2>
+<p><strong>Select all</strong> ticks the strongest units first, uses trains while there&#39;s room and roads after that, adds your best general and the aircraft that count, and skips trucks no one needs. It never overfills a train.</p>
+<div class="questions" data-idea="odds"></div>
+</section>
+<section class="sheet" id="plan">
+<h2>How Rev 4 runs</h2>
+<p>Five streams are working now: Invade, air, unit orders, the Recruit pane and the computer player. I&#39;ll merge them, review each one, run the full check and send you a build to play. <code>main</code> and production stay as they are.</p>
+<div class="questions" data-idea="plan"></div>
+</section>
+
+  </main>
+</div>
+
+<script id="questions-data" type="application/json">[{"id":"R4-1","idea":"manpower","text":"How scarce should Manpower be?","context":"Data only. Nothing is changed until you answer.","options":[{"label":"A. 0.6 Manpower a farm level","rationale":"The Republic feels it by about turn 7. A new farm level then gives 0.6 for 3 Funds.","recommended":true},{"label":"B. 0.75","rationale":"Gentler: about turn 15."},{"label":"C. 0.5","rationale":"Hard: the Republic is short by turn 4 unless it disbands militia."},{"label":"D. 0.6, and double the upkeep of infantry, veterans and cavalry","rationale":"0.5, 0.5 and 0.6. Bites as armies grow, on both sides."},{"label":"E. Leave it","rationale":"Only the computer player changes."}],"groupTitle":"Manpower"},{"id":"R4-2","idea":"manpower","text":"What about the North's surplus?","context":"27 Manpower a turn and 6 Funds. Nothing it can afford uses that many men.","options":[{"label":"A. Leave it: Funds are its limit","rationale":"No new rule.","recommended":true},{"label":"B. Cut Castilla y León's farms from 16 levels to 8","rationale":"About 8 Manpower less. The map's grain country would look poorer than it was."},{"label":"C. Let a side sell Manpower for Funds","rationale":"New rule. 3 Manpower for 1 Fund would give the North up to 7 Funds a turn."}],"groupTitle":"Manpower"},{"id":"R4-3","idea":"air","text":"Which air table?","context":"Both are data. The five-row table is being built.","options":[{"label":"A. Five rows, as above","rationale":"Graded like your battles, and Ground Support is worth more on average.","recommended":true},{"label":"B. Three rows: defender wins up to 7, contested 8 to 13, attacker wins from 14","rationale":"Simple, and weaker for support: 2 bombers against anti-air average +1.8."},{"label":"C. Other numbers","rationale":"Write them in the note."}],"groupTitle":"The air battle"},{"id":"R4-4","idea":"air","text":"How is each side's air strength counted?","context":"The unit text and the game disagreed. Fighters add 2 and bombers 1.","options":[{"label":"A. Add every aircraft over the battle","rationale":"As the game does today.","recommended":true},{"label":"B. Only the best aircraft","rationale":"As the text said. Mass matters less."}],"groupTitle":"The air battle"},{"id":"R4-5","idea":"units","text":"Disband and orders on a phone?","context":"","options":[{"label":"A. A button at the bottom of the sheet that raises the menu","rationale":"As drawn.","recommended":true},{"label":"B. A bar of icons, one for each order","rationale":"One tap fewer, but less room for names."}],"groupTitle":"Unit orders"},{"id":"R4-6","idea":"units","text":"Which air missions get map picking?","context":"","options":[{"label":"A. All four: Ground Support, Patrol, Recon and Raid","rationale":"One way to choose a target. A raid then picks the place inside it.","recommended":true},{"label":"B. Ground Support only","rationale":"The others keep a list."}],"groupTitle":"Unit orders"},{"id":"R4-7","idea":"recruit","text":"Which layout for the Recruit pane?","context":"","options":[{"label":"A. Order slots on top, training at the bottom","rationale":"As drawn.","recommended":true},{"label":"B. Order slots in the footer beside the totals","rationale":"More room for rows, but slots sit far from the units."},{"label":"C. A separate Training tab","rationale":"Cleanest list, one more tap to see the queue."}],"groupTitle":"Recruit pane"},{"id":"R4-8","idea":"odds","text":"What may Select all take from a territory?","context":"","options":[{"label":"A. Everything that can go","rationale":"You asked for all, and unticking is one tap.","recommended":true},{"label":"B. Everything but one fighting unit on a victory objective","rationale":"Safer. Needs explaining when it skips a unit."},{"label":"C. Everything but one fighting unit in every territory","rationale":"Safest, and slowest to use."}],"groupTitle":"Odds and numbers"},{"id":"R4-9","idea":"odds","text":"Cancel the last attack on a territory: what happens to the aircraft?","context":"Aircraft flying Ground Support with nobody to support.","options":[{"label":"A. Their missions are cancelled too, and the pane says so","rationale":"No dashed line left on the map.","recommended":true},{"label":"B. They keep flying and the pane warns you","rationale":"For when you plan to send others."}],"groupTitle":"Odds and numbers"},{"id":"R4-10","idea":"odds","text":"How should small numbers show to the tenth?","context":"Upkeep of 0.05, 0.15 and 0.25 can't be exact at one decimal.","options":[{"label":"A. Round to the tenth; totals stay exact underneath","rationale":"0.25 shows 0.3. Rows may not add up by 0.1.","recommended":true},{"label":"B. Show Manpower below 1,000 as men","rationale":"250 men instead of 0.3k. Exact, and a little busier."}],"groupTitle":"Odds and numbers"},{"id":"R4-11","idea":"plan","text":"May I run games to check the computer player?","context":"You said no sims until you'd playtested.","options":[{"label":"A. A small batch of 10 after the merge","rationale":"Unit mix, trucks and game length, before and after.","recommended":true},{"label":"B. None until you've played Rev 4","rationale":""},{"label":"C. A full balance run","rationale":"Costs more tokens."}],"groupTitle":"How Rev 4 runs"},{"id":"R4-12","idea":"plan","text":"Token budget for Rev 4?","context":"You gave none. I'm aiming for 1.5M, reviews included.","options":[{"label":"A. 1.5M","rationale":"","recommended":true},{"label":"B. 1M","rationale":"Fewer reviews."},{"label":"C. 2M or more","rationale":"More review and polish."}],"groupTitle":"How Rev 4 runs"}]</script>
+<script>
+window.M3W = {};
+</script>
+<script>
+(function () {
+  "use strict";
+  var KEY = "m3r4-answers-v1";
+  var questions = [];
+  try { questions = JSON.parse(document.getElementById("questions-data").textContent); } catch (e) { questions = []; }
+  var byId = {};
+  questions.forEach(function (q) { byId[q.id] = q; });
+  var answers = {};
+  try { var raw = window.localStorage.getItem(KEY); if (raw) answers = JSON.parse(raw) || {}; } catch (e) { answers = {}; }
+  var remote = null, remoteTimer = null;
+  function remoteStatus(text) { var s = document.getElementById("remote-status"); if (s) s.textContent = text; }
+  function pushRemote() {
+    if (!remote) return;
+    clearTimeout(remoteTimer);
+    remoteTimer = setTimeout(function () {
+      var n = 0; questions.forEach(function (q) { if (isAnswered(q.id)) n += 1; });
+      remote.set({ answers: answers, answered: n, total: questions.length, updatedAt: new Date().toISOString() }).then(
+        function () { remoteStatus("Saved to this artifact for the team."); },
+        function (e) { if (e && (e.code === "invalid_argument" || e.code === "revoked" || e.code === "not_granted")) { remote = null; remoteStatus("Saved in this browser only. Use Copy my answers to send them."); } });
+    }, 1200);
+  }
+  function save() { try { window.localStorage.setItem(KEY, JSON.stringify(answers)); } catch (e) { /* storage unavailable: answers live in the page only */ } pushRemote(); }
+  function isAnswered(id) { var a = answers[id]; return !!(a && a.choices && a.choices.length); }
+
+  function el(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
+
+  function renderQuestion(q) {
+    var fs = el("fieldset", "q"); fs.id = q.id; fs.setAttribute("data-qid", q.id);
+    var lg = el("legend"); var head = el("div", "q-head");
+    head.appendChild(el("span", "q-id", q.id));
+    head.appendChild(el("span", "q-text", q.text));
+    if (q.multi) head.appendChild(el("span", "q-multi", "Choose all that apply"));
+    lg.appendChild(head); if (q.context) lg.appendChild(el("p", "q-ctx", q.context)); fs.appendChild(lg);
+    var type = q.multi ? "checkbox" : "radio";
+    (q.options || []).forEach(function (o, i) {
+      var lab = el("label", "opt");
+      var inp = document.createElement("input"); inp.type = type; inp.name = q.id; inp.value = String(i); inp.id = q.id + "-o" + i;
+      var txt = el("span"); txt.appendChild(document.createTextNode(o.label));
+      if (o.recommended) txt.appendChild(el("span", "rec", "(Recommended)"));
+      lab.appendChild(inp); lab.appendChild(txt);
+      if (o.rationale) lab.appendChild(el("span", "why", o.rationale));
+      fs.appendChild(lab);
+      inp.addEventListener("change", function () { readQuestion(fs, q); });
+    });
+    var nl = el("label", "notes-label", "Other / notes"); nl.htmlFor = q.id + "-notes";
+    var ta = document.createElement("textarea"); ta.id = q.id + "-notes"; ta.rows = 1; ta.placeholder = "Optional: another option, a condition, or a reason";
+    ta.addEventListener("input", function () { readQuestion(fs, q); });
+    fs.appendChild(nl); fs.appendChild(ta);
+    applyAnswer(fs, q);
+    return fs;
+  }
+  function applyAnswer(fs, q) {
+    var a = answers[q.id] || {};
+    var chosen = (a.choices || []).map(String);
+    Array.prototype.forEach.call(fs.querySelectorAll("input"), function (inp) { inp.checked = chosen.indexOf(inp.value) >= 0; });
+    var ta = fs.querySelector("textarea"); if (ta) ta.value = a.notes || "";
+    fs.classList.toggle("answered", isAnswered(q.id));
+  }
+  function readQuestion(fs, q) {
+    var choices = [];
+    Array.prototype.forEach.call(fs.querySelectorAll("input"), function (inp) { if (inp.checked) choices.push(Number(inp.value)); });
+    var notes = fs.querySelector("textarea").value;
+    if (!choices.length && !notes.trim()) delete answers[q.id]; else answers[q.id] = { choices: choices, notes: notes };
+    fs.classList.toggle("answered", isAnswered(q.id));
+    save(); updateProgress();
+  }
+
+  var groups = {};
+  questions.forEach(function (q) { var k = String(q.idea); (groups[k] = groups[k] || []).push(q); });
+  Array.prototype.forEach.call(document.querySelectorAll(".questions[data-idea]"), function (box) {
+    var list = groups[box.getAttribute("data-idea")] || [];
+    if (!list.length) { box.appendChild(el("p", "missing", "No questions were drafted for this item.")); return; }
+    list.forEach(function (q) { box.appendChild(renderQuestion(q)); });
+  });
+
+  function updateProgress() {
+    var n = 0; questions.forEach(function (q) { if (isAnswered(q.id)) n += 1; });
+    var label = n + " of " + questions.length + " answered";
+    Array.prototype.forEach.call(document.querySelectorAll("[data-progress-text]"), function (s) { s.textContent = label; });
+    var fill = document.getElementById("progress-fill"); if (fill) fill.style.width = (questions.length ? (100 * n / questions.length) : 0) + "%";
+    Array.prototype.forEach.call(document.querySelectorAll("[data-toc-idea]"), function (c) {
+      var list = [];
+      c.getAttribute("data-toc-idea").split(",").forEach(function (k) { list = list.concat(groups[k] || []); });
+      var m = 0; list.forEach(function (q) { if (isAnswered(q.id)) m += 1; });
+      c.textContent = list.length ? (m + "/" + list.length) : "";
+    });
+  }
+
+  function answersMarkdown() {
+    var lines = ["# Milestone 3 Rev 4 answers", ""];
+    var n = 0; questions.forEach(function (q) { if (isAnswered(q.id) || (answers[q.id] && answers[q.id].notes)) n += 1; });
+    lines.push("Answered " + n + " of " + questions.length + " questions. Copied " + new Date().toISOString().slice(0, 10) + ".", "");
+    var currentIdea = null;
+    questions.forEach(function (q) {
+      var a = answers[q.id]; if (!a) return;
+      if (q.idea !== currentIdea) { currentIdea = q.idea; lines.push("## " + (q.groupTitle || ("Idea " + q.idea)), ""); }
+      var picked = (a.choices || []).map(function (i) { var o = q.options[i]; return o ? o.label + (o.recommended ? " (Recommended)" : "") : "?"; });
+      lines.push("- **" + q.id + "** " + q.text);
+      lines.push("  - Answer: " + (picked.length ? picked.join("; ") : "(no option chosen)"));
+      if (a.notes && a.notes.trim()) lines.push("  - Notes: " + a.notes.trim().replace(/\s*\n\s*/g, " / "));
+    });
+    var blanks = questions.filter(function (q) { return !answers[q.id]; }).map(function (q) { return q.id; });
+    if (blanks.length) { lines.push("", "## Unanswered", "", blanks.join(", ")); }
+    return lines.join("\n") + "\n";
+  }
+  var status = document.getElementById("copy-status");
+  var fallback = document.getElementById("copy-fallback");
+  function showFallback(text) {
+    fallback.hidden = false; fallback.value = text; fallback.focus(); fallback.select();
+    status.textContent = "Copying is blocked here. The answers are selected below: copy them by hand.";
+  }
+  Array.prototype.forEach.call(document.querySelectorAll("[data-copy]"), function (b) {
+    b.addEventListener("click", function () {
+      var text = answersMarkdown();
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(function () { status.textContent = "Copied as Markdown. Paste it into the chat or the tasks doc."; fallback.hidden = true; },
+            function () { showFallback(text); });
+        } else { showFallback(text); }
+      } catch (e) { showFallback(text); }
+      if (window.matchMedia("(max-width: 900px)").matches) { document.getElementById("toc").classList.add("open"); document.getElementById("toc-toggle").setAttribute("aria-expanded", "true"); }
+    });
+  });
+  document.getElementById("fill-rec").addEventListener("click", function () {
+    var filled = 0;
+    questions.forEach(function (q) {
+      if (isAnswered(q.id)) return;
+      var picks = []; (q.options || []).forEach(function (o, i) { if (o.recommended && (q.multi || picks.length === 0)) picks.push(i); });
+      if (!picks.length) return;
+      var prev = answers[q.id] || { notes: "" };
+      answers[q.id] = { choices: picks, notes: prev.notes || "" }; filled += 1;
+    });
+    save();
+    Array.prototype.forEach.call(document.querySelectorAll("fieldset.q"), function (fs) { applyAnswer(fs, byId[fs.getAttribute("data-qid")]); });
+    updateProgress(); status.textContent = filled + " blank questions set to the recommended option. Review and change any you disagree with.";
+  });
+  var clearAll = document.getElementById("clear-all"), clearConfirm = document.getElementById("clear-confirm");
+  clearAll.addEventListener("click", function () { clearConfirm.hidden = !clearConfirm.hidden; });
+  clearConfirm.addEventListener("click", function () {
+    answers = {}; save(); clearConfirm.hidden = true;
+    Array.prototype.forEach.call(document.querySelectorAll("fieldset.q"), function (fs) { applyAnswer(fs, byId[fs.getAttribute("data-qid")]); });
+    updateProgress(); status.textContent = "All answers cleared.";
+  });
+  var toggle = document.getElementById("toc-toggle"), toc = document.getElementById("toc");
+  toggle.addEventListener("click", function () { var open = toc.classList.toggle("open"); toggle.setAttribute("aria-expanded", open ? "true" : "false"); });
+  Array.prototype.forEach.call(toc.querySelectorAll("ol a"), function (a) { a.addEventListener("click", function () { toc.classList.remove("open"); toggle.setAttribute("aria-expanded", "false"); }); });
+
+  // Widgets
+  Array.prototype.forEach.call(document.querySelectorAll(".widget[data-widget]"), function (w) {
+    var fn = window.M3W && window.M3W[w.getAttribute("data-widget")];
+    if (typeof fn !== "function") { w.appendChild(el("p", "widget-error", "This widget is not available.")); return; }
+    try { fn(w); } catch (e) { w.appendChild(el("p", "widget-error", "This widget failed to start: " + (e && e.message))); }
+  });
+
+  // Active section in the contents
+  var links = Array.prototype.slice.call(toc.querySelectorAll("ol a[href^='#']"));
+  if ("IntersectionObserver" in window) {
+    var map = {}; links.forEach(function (a) { map[a.getAttribute("href").slice(1)] = a; });
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) { if (en.isIntersecting && map[en.target.id]) { links.forEach(function (l) { l.classList.remove("active"); }); map[en.target.id].classList.add("active"); } });
+    }, { rootMargin: "-10% 0px -80% 0px" });
+    Object.keys(map).forEach(function (id) { var t = document.getElementById(id); if (t) io.observe(t); });
+  }
+  updateProgress();
+
+  // Optional: when this page runs as a claude.ai Artifact with storage, also keep answers there.
+  try {
+    if (window.claude && typeof window.claude.use === "function") {
+      Promise.all([window.claude.use("db"), window.claude.use("user")]).then(function (r) {
+        var db = r[0], user = r[1];
+        if (!db || !user) return null;
+        return user.id().then(function (uid) {
+          if (!uid) return null;
+          var ref; try { ref = db.doc("answers/" + uid); } catch (e) { return null; }
+          return ref.get().then(function (snap) {
+            remote = ref;
+            var d = snap.exists ? snap.data() : null;
+            if (d && d.answers && !Object.keys(answers).length) {
+              answers = d.answers;
+              try { window.localStorage.setItem(KEY, JSON.stringify(answers)); } catch (e) { /* ignore */ }
+              Array.prototype.forEach.call(document.querySelectorAll("fieldset.q"), function (fs) { applyAnswer(fs, byId[fs.getAttribute("data-qid")]); });
+              updateProgress();
+            }
+            remoteStatus("Answers save to this artifact for the team, and to this browser.");
+          });
+        });
+      }).catch(function () { /* no shared storage: browser only */ });
+    }
+  } catch (e) { /* no runtime */ }
+})();
+</script>

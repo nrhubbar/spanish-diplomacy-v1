@@ -66,7 +66,7 @@ describe("report lines carry the outcome's data (m3r1 contract follow-ups)", () 
     expect(line({ ...raid, buildingId: "airfield" as BuildingId, result: "building-hit" })).toMatch(/^Raid on Sevilla by Republican Government's .+: Airfield hit\.$/u);
     // Andaluc\u00eda is contested from turn 1, so it pays nobody and a raid there cuts nothing ($2, as raidIncomeDelta).
     expect(line({ ...raid, result: "income-cut" })).toMatch(/: no income to cut while Andaluc\u00eda is contested\.$/u);
-    expect(line({ ...raid, result: "income-cut", subTerritoryId: sub("navarra") })).toMatch(/^Raid on Navarra by .+: income cut by 2k Manpower next turn\.$/u);
+    expect(line({ ...raid, result: "income-cut", subTerritoryId: sub("navarra") })).toMatch(/^Raid on Navarra by .+: income cut by 1.2k Manpower next turn\.$/u);
     expect(describeSystemOutcome({ ...raid, result: "income-cut" }, { scenario })).toMatch(/: income cut next turn\.$/u);
     expect(line({ ...raid, aircraftLost: [unit("rep-breguet-bombers")], result: "air-eliminated" })).toMatch(/: the raider was shot down\.$/u);
     expect(line({ ...raid, aircraftLost: [unit("rep-ni52-fighters")], result: "nothing-hit" })).toMatch(/: nothing hit; 1 aircraft lost to fighters\.$/u);

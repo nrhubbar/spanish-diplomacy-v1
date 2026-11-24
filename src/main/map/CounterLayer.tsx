@@ -2,6 +2,7 @@ import { type JSX, useMemo } from "react";
 import { requireFaction, requireUnitDefinition } from "../engine/lookup";
 import type { GameState, Scenario, TerritoryId } from "../engine/types";
 import { armyFigures, counterLabel, groupFigures, groupLabel, groupOrdersDescription } from "../presentation/army";
+import { generalWords } from "../presentation/generals";
 import { territoryName } from "../presentation/text";
 import type { MapPackage, MapPoint } from "../scenarios/loader";
 import { territoryAnchor } from "./anchors";
@@ -158,6 +159,7 @@ export function CounterLayer({ game, layout, level, scenario, unitSymbols, view 
         const ordered = view.orderedUnitIds.has(unit.id);
         return (
           <UnitCounter
+            effect={generalWords(scenario, game.raised, unit.id)?.text}
             factionColor={requireFaction(scenario, unit.factionId).color}
             figures={figures}
             key={item.key}

@@ -14,6 +14,7 @@ import type { MapRect } from "../../main/scenarios/loader";
 import { RegistryContext } from "../../main/hooks";
 import { useDetailWanted } from "../../main/map/useDetailWanted";
 import { NotificationShelf } from "../../main/notifications/NotificationShelf";
+import { SettingsScreen } from "../../main/screens/SettingsScreen";
 import { setLevel, setMuted } from "../../main/state/audioSlice";
 import { beginPlanning, endTurn, exitGame, openSetup, setActorKind, startGame } from "../../main/state/gameSlice";
 import { type AppStore, createAppStore } from "../../main/state/store";
@@ -179,9 +180,13 @@ describe("sound controls", () => {
     expect(screen.getByRole("heading", { name: "Spanish Diplomacy" })).toBeVisible();
   });
 
-  it("is in the game's menu", async () => {
+  it("is in Settings and not in the game's menu, which leads there (N9)", async () => {
     render(<Provider store={testStore()}><MemoryRouter><GameMenu /></MemoryRouter></Provider>);
     await userEvent.click(screen.getByRole("button", { name: "Menu" }));
+    expect(screen.queryAllByRole("slider")).toEqual([]);
+    expect(screen.getByRole("button", { name: "Settings" })).toBeVisible();
+    cleanup();
+    render(<Provider store={testStore()}><RegistryContext value={testRegistry()}><MemoryRouter><SettingsScreen /></MemoryRouter></RegistryContext></Provider>);
     expect(within(screen.getByRole("region", { name: "Sound" })).getAllByRole("slider")).toHaveLength(3);
   });
 });

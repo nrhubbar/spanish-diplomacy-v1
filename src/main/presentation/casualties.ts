@@ -1,4 +1,5 @@
 import type { FactionId, GameState, Scenario } from "../engine/types";
+import { tenths } from "./numbers";
 
 const inFull = new Intl.NumberFormat("en-GB");
 
@@ -10,8 +11,7 @@ export function menInFull(men: number): string {
 /** A number of men in short, to one decimal: "950", "12.4k", "37k", "1.2M". */
 export function menInShort(men: number): string {
   if (men < 1000) return String(men);
-  const thousands = Math.round(men / 100) / 10;
-  return thousands < 1000 ? `${String(thousands)}k` : `${String(Math.round(men / 100_000) / 10)}M`;
+  return men < 999_950 ? `${tenths(men / 1000)}k` : `${tenths(men / 1_000_000)}M`;
 }
 
 export interface CasualtiesView {

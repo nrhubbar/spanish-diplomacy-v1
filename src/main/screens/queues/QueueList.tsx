@@ -3,8 +3,8 @@ import { EconomyIcon, projectIcon } from "../../components/economy/EconomyIcon";
 import type { Scenario } from "../../engine/types";
 import { glyphs } from "../../presentation/glyphs";
 import { useAppDispatch } from "../../hooks";
-import type { QueueCancel, QueueEntry } from "../../presentation/queues";
-import { cancelBuildOrder, changeRecruitQuantity } from "../../state/gameSlice";
+import type { QueueEntry } from "../../presentation/queues";
+import { cancelBuildOrder } from "../../state/gameSlice";
 
 interface QueueListProps {
   readonly entries: readonly QueueEntry[];
@@ -15,15 +15,8 @@ interface QueueListProps {
   readonly scenario: Scenario;
 }
 
-/** The action that takes back a planned item. */
-function cancelAction(cancel: QueueCancel) {
-  return cancel.kind === "build"
-    ? cancelBuildOrder(cancel.index)
-    : changeRecruitQuantity({ quantity: cancel.quantity, territoryId: cancel.territoryId, unitTypeId: cancel.unitTypeId });
-}
-
 /**
- * U9 (note 9): the one queue component. Active items come first, each with its bar and turns
+ * U9 (note 9): a build queue (units in training are `TrainingList`). Active items come first, each with its bar and turns
  * left; the items waiting behind them are numbered. Items ordered this turn can be cancelled.
  */
 export function QueueList({ entries, label, paused = false, scenario }: QueueListProps): JSX.Element {
@@ -38,13 +31,12 @@ export function QueueList({ entries, label, paused = false, scenario }: QueueLis
             <div className="queue-line">
               {active ? null : <span aria-hidden="true" className="queue-number">{entries.slice(0, at + 1).filter((other) => other.stage === "waiting").length}</span>}
               <span className="queue-name">
-                {entry.project === undefined ? <EconomyIcon name="flag" /> : <EconomyIcon name={projectIcon(scenario, entry.project)} />}
+                <EconomyIcon name={projectIcon(scenario, entry.project)} />
                 {active ? <strong>{entry.name}</strong> : entry.name}
-                {entry.owner === undefined ? null : <span className="queue-owner">{` (${entry.owner}, recon)`}</span>}
               </span>
               <span className="queue-status">{entry.status}</span>
               {cancel === undefined ? null : (
-                <button aria-label={`Cancel ${entry.name}`} className="text-button" onClick={() => dispatch(cancelAction(cancel))} type="button">Cancel</button>
+                <button aria-label={`Cancel ${entry.name}`} className="text-button" onClick={() => dispatch(cancelBuildOrder(cancel.index))} type="button">Cancel</button>
               )}
             </div>
             {active ? (

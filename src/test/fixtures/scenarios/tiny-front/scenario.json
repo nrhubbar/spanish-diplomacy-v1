@@ -44,7 +44,8 @@
         "computer": { "approachObjective": 1.5, "bouncedLastTurn": -4, "caution": 0.5, "demoralizedShare": 0.25, "enemyLoss": 0.5, "ownLoss": 0.75 },
         "offensive": { "reach": 3, "oddsTieBreak": 0.02, "staging": 2, "focus": 1, "stallStep": 1, "stallCap": 4 },
         "stakes": { "city": 2, "objective": 5, "territory": 4 },
-        "recruits": { "upkeepTurns": 1 },
+        "air": { "supportChance": 0.35 },
+        "recruits": { "delayDrag": 0.15, "fightersPerSupport": 3, "quickTakeChance": 0.35, "upkeepHorizon": 6, "upkeepTurns": 1 },
         "victoryAlarm": { "critical": 3, "perStep": 1.5, "riskFloor": 0.25, "spendSteps": 2, "steps": 3 },
         "withdraw": { "hopelessTakeChance": 0.5, "lastStandTakeChance": 0.75 }
       },
@@ -52,7 +53,8 @@
         "computer": { "approachObjective": 1.5, "bouncedLastTurn": -4, "caution": 0.5, "demoralizedShare": 0.25, "enemyLoss": 0.5, "ownLoss": 0.75 },
         "offensive": { "reach": 3, "oddsTieBreak": 0.02, "staging": 2, "focus": 1, "stallStep": 1, "stallCap": 4 },
         "stakes": { "city": 2, "objective": 5, "territory": 4 },
-        "recruits": { "upkeepTurns": 1 },
+        "air": { "supportChance": 0.35 },
+        "recruits": { "delayDrag": 0.15, "fightersPerSupport": 3, "quickTakeChance": 0.35, "upkeepHorizon": 6, "upkeepTurns": 1 },
         "victoryAlarm": { "critical": 3, "perStep": 1.5, "riskFloor": 0.25, "spendSteps": 2, "steps": 3 },
         "withdraw": { "hopelessTakeChance": 0.5, "lastStandTakeChance": 0.75 }
       }

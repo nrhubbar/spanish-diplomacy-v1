@@ -72,7 +72,7 @@ describe("a unit type's special effects in words (D7, note 4)", () => {
   });
 
   it("raid defence", () => {
-    expect(lines("anti-air-battery", { kind: "raid-defence", roll: -3 })).toEqual(["Enemy raids here roll 3 lower. When defending, +3 on your air battle roll."]);
+    expect(lines("anti-air-battery", { kind: "raid-defence", roll: -3 })).toEqual(["Enemy raids here roll 3 lower. When defending, +3 for your side in an air battle."]);
   });
 
   it("trains in contested ground", () => {
@@ -90,13 +90,13 @@ describe("a unit type's special effects in words (D7, note 4)", () => {
   it("battle support, with the scenario's limit when it has one", () => {
     const limited: Scenario = { ...scenario, air: { ...scenario.air!, supportMax: 2 } };
     const type = { ...withEffects("infantry-regiment", { kind: "battle-support", roll: 3 }) };
-    expect(unitEffectLines(limited, type)).toEqual(["+3 on the battle roll from Ground Support, unless the enemy wins the air. At most 2 aircraft count for each side."]);
+    expect(unitEffectLines(limited, type)).toEqual(["+3 on the battle roll from Ground Support. If an air battle is fought, it counts only when your side wins, and aircraft may be shot down. At most 2 aircraft count for each side."]);
     const unlimited: Scenario = { ...scenario, air: { ...scenario.air!, supportMax: undefined } };
-    expect(unitEffectLines(unlimited, type)).toEqual(["+3 on the battle roll from Ground Support, unless the enemy wins the air."]);
+    expect(unitEffectLines(unlimited, type)).toEqual(["+3 on the battle roll from Ground Support. If an air battle is fought, it counts only when your side wins, and aircraft may be shot down."]);
   });
 
   it("air battle", () => {
-    expect(lines("infantry-regiment", { kind: "air-battle", roll: 1 })).toEqual(["+1 on the air battle roll. Only the best aircraft counts for each side."]);
+    expect(lines("infantry-regiment", { kind: "air-battle", roll: 1 })).toEqual(["+1 for your side in an air battle. Every aircraft counts."]);
   });
 
   it("an aircraft's missions and range, and what a raid does", () => {

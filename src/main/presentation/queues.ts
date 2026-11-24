@@ -29,25 +29,32 @@ import { factionName, territoryName } from "./text";
  * and only this turn's Recruit orders wait to start.
  */
 
-/** How a queued item can be taken back this turn: a planned Build order, or one fewer Recruit order. */
-export type QueueCancel =
-  | { readonly index: number; readonly kind: "build" }
-  | { readonly kind: "recruit"; readonly quantity: number; readonly territoryId: TerritoryId; readonly unitTypeId: UnitTypeId };
-
-export interface QueueEntry {
-  readonly cancel?: QueueCancel;
+/** One row of a queue: what it is, how far it is, and when it is done. */
+interface QueueRow {
   /** Turns of progress so far, out of `total`. */
   readonly done: number;
   readonly key: string;
   readonly name: string;
-  /** Set for a build item, so the view can draw its icon. */
-  readonly project?: BuildProject;
   /** Active items are being worked on and show a bar; waiting items are numbered behind them. */
   readonly stage: "active" | "waiting";
   readonly status: string;
   readonly total: number;
-  /** Another faction's item, shown by recon. */
+}
+
+export interface QueueEntry extends QueueRow {
+  /** Set for a Build order planned this turn: its index in the plan, to cancel it. */
+  readonly cancel?: { readonly index: number };
+  /** So the view can draw its icon. */
+  readonly project: BuildProject;
+}
+
+export interface TrainingEntry extends QueueRow {
+  /** Set for a Recruit order given this turn: its place among the territory's, to take it back. */
+  readonly cancel?: { readonly at: number; readonly territoryId: TerritoryId };
+  readonly factionId: FactionId;
+  /** Another faction's unit, shown by recon. */
   readonly owner?: string;
+  readonly typeId: UnitTypeId;
 }
 
 const dot = ` ${glyphs.dot} `;
@@ -71,7 +78,7 @@ export function buildEntries(
       ? plan === undefined ? (paused ? `${turnsLeftText(left)} when it resumes` : turnsLeftText(left)) : `starts this turn${dot}${turnsLabel(total)}`
       : plan === undefined ? `then ${turnsLabel(total)}` : `ordered this turn${dot}${turnsLabel(total)}`;
     return [{
-      ...(plan === undefined ? {} : { cancel: { index: plan.index, kind: "build" as const } }),
+      ...(plan === undefined ? {} : { cancel: { index: plan.index } }),
       done: item.progress,
       key: `${String(at)}-${name}`,
       name,
@@ -101,44 +108,47 @@ export function trainingEntries(
   recruits: readonly RecruitOrder[],
   viewer: FactionId,
   onlyViewer: boolean
-): readonly QueueEntry[] {
+): readonly TrainingEntry[] {
   const training = state.training.filter((item) => item.territoryId === territoryId && (!onlyViewer || item.factionId === viewer));
   const ordered = recruits.filter((order) => order.territoryId === territoryId);
   return [
     ...training.map((item) => trainingEntry(scenario, item, viewer)),
-    ...ordered.map((order, at): QueueEntry => {
+    ...ordered.map((order, at): TrainingEntry => {
       const type = scenario.index.unitTypes.get(order.unitTypeId);
       const total = type?.recruit?.trainingTurns ?? 1;
-      const quantity = ordered.filter((other) => other.unitTypeId === order.unitTypeId).length;
       return {
-        cancel: { kind: "recruit", quantity: quantity - 1, territoryId, unitTypeId: order.unitTypeId },
+        cancel: { at, territoryId },
         done: 0,
+        factionId: order.factionId,
         key: `ordered-${String(at)}`,
-        name: type?.name ?? order.unitTypeId,
+        name: type?.name ?? "Unknown unit",
         stage: "waiting",
         status: `starts this turn${dot}${turnsLabel(total)}`,
-        total
+        total,
+        typeId: order.unitTypeId
       };
     })
   ];
 }
 
-function trainingEntry(scenario: Scenario, item: TrainingItem, viewer: FactionId): QueueEntry {
+function trainingEntry(scenario: Scenario, item: TrainingItem, viewer: FactionId): TrainingEntry {
   const total = scenario.index.unitTypes.get(item.typeId)?.recruit?.trainingTurns ?? item.turnsLeft;
   const left = turnsLeftText(item.turnsLeft);
   return {
     done: Math.max(0, total - item.turnsLeft),
+    factionId: item.factionId,
     key: item.unitId,
-    name: scenario.index.unitTypes.get(item.typeId)?.name ?? item.typeId,
+    name: scenario.index.unitTypes.get(item.typeId)?.name ?? "Unknown unit",
     ...(item.factionId === viewer ? {} : { owner: factionName(scenario, item.factionId) }),
     stage: "active",
     status: item.paused ? `${left} when it resumes` : left,
-    total
+    total,
+    typeId: item.typeId
   };
 }
 
 export interface RecruitmentGroup {
-  readonly entries: readonly QueueEntry[];
+  readonly entries: readonly TrainingEntry[];
   readonly name: string;
   /** Some unit here is paused: the territory is contested. */
   readonly paused: boolean;

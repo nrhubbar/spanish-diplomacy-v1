@@ -5,7 +5,8 @@ import { recruitSlots } from "../../engine/recruitment/rules";
 import { useAppDispatch } from "../../hooks";
 import { pushView } from "../../state/paneSlice";
 import type { PaneViewProps } from "../shell/views/types";
-import { PausedChip, QueueList } from "./QueueList";
+import { PausedChip } from "./QueueList";
+import { TrainingList } from "./TrainingList";
 
 /**
  * U9: Global Recruitment, opened from the top bar: every unit of the viewer's in training and
@@ -37,7 +38,7 @@ export function GlobalRecruitment({ scenario, session }: Omit<PaneViewProps, "vi
                   <button className="queue-group-name" onClick={() => dispatch(pushView({ kind: "recruit", territory: group.territoryId }))} type="button">{group.name}</button>
                   {group.paused ? <PausedChip /> : <span className="pane-hint">{`${countOf(slots, "Recruit order", "Recruit orders")} a turn`}</span>}
                 </header>
-                <QueueList entries={group.entries} label={`${group.name} training`} paused={group.paused} scenario={scenario} />
+                <TrainingList entries={group.entries} label={`${group.name} training`} paused={group.paused} scenario={scenario} />
                 {group.paused ? <p className="queue-paused-note">{`Training pauses while ${group.name} is contested; progress is kept.`}</p> : null}
               </li>
             );

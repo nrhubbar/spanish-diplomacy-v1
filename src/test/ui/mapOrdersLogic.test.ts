@@ -6,7 +6,7 @@ import { routesOfMoves } from "../../main/engine/movement/transit";
 import { linkBetween, passName } from "../../main/engine/network/links";
 import type { Reach } from "../../main/engine/network/reach";
 import { initialGameState } from "../../main/engine/resolution";
-import type { AirMissionOrder, GameState, RaisedUnitDefinition, TerritoryId, UnitId, UnitTypeId, WithdrawOrder } from "../../main/engine/types";
+import type { AirMissionOrder, GameState, MoveLeg, RaisedUnitDefinition, TerritoryId, UnitId, UnitTypeId, WithdrawOrder } from "../../main/engine/types";
 import { glows } from "../../main/map/view";
 import { modeChips, orderLegs } from "../../main/presentation/moveModes";
 import { defendersCount, groundOf, groupModes, type InvadeOdds, invadeOdds, modeLabel, muster, musterButton, type MusterCard, type MusterDraft, nameOf, reachingUnits, reinforceDefence, subName, supportBlocked, supportCount, typeNameOf } from "../../main/presentation/muster";
@@ -46,6 +46,14 @@ function holding(state: GameState, factionId: string, ...territoryIds: string[])
 }
 
 const support = (unitId: string, territoryId = castile): AirMissionOrder => ({ factionId: republic, kind: "air-mission", mission: { kind: "support", territoryId }, unitId: unit(unitId) });
+
+/** The legs of the ride the Invade pane offers a unit to Castile. */
+function railLegs(unitId: string): readonly MoveLeg[] {
+  const cards = muster(scenario, start, republic, castile, "invade", empty).groups.flatMap((group) => group.cards);
+  const chip = cards.find((card) => card.unitId === unit(unitId))?.modes.find((each) => each.mode === "rail");
+  if (chip?.ok !== true || chip.legs === undefined) throw new Error("fixture");
+  return chip.legs;
+}
 
 function session(draft: Partial<Draft> = {}, state: GameState = start): PlanningSession {
   return {
@@ -148,11 +156,10 @@ describe("U6: the Invade and Reinforce panes' units", () => {
 
   it("starts ticked what is ordered there, and names the order a tick replaces", () => {
     const rail = moveRoutes(scenario, start, republic, madrid, [unit("rep-covadonga-4")]).get(castile);
-    const motorLegs = [{ kind: "land" as const, to: territory("castilla-la-mancha") }, { kind: "land" as const, to: castile }];
     const draft = {
       airOrders: [support("rep-ni52-fighters"), { factionId: republic, kind: "air-mission" as const, mission: { kind: "raid" as const, subTerritoryId: "burgos" as never }, unitId: unit("rep-breguet-bombers") }],
       orders: [
-        { ...move("republic", "rep-wad-ras-1", "madrid", "castilla-y-leon"), legs: motorLegs },
+        { ...move("republic", "rep-wad-ras-1", "madrid", "castilla-y-leon"), legs: railLegs("rep-wad-ras-1") },
         move("republic", "rep-madrid-security", "madrid", "castilla-la-mancha"),
         { factionId: republic, from: madrid, kind: "withdraw", to: territory("valencia"), unitId: unit("rep-madrid-sierra-column") } satisfies WithdrawOrder,
         { factionId: republic, from: territory("catalunya"), kind: "withdraw", to: castile, unitId: unit("rep-durruti-column") } satisfies WithdrawOrder
@@ -160,7 +167,7 @@ describe("U6: the Invade and Reinforce panes' units", () => {
     };
     const view = muster(scenario, start, republic, castile, "invade", draft);
     const cards = view.groups.flatMap((group) => group.cards);
-    expect(cards.find((each) => each.unitId === unit("rep-wad-ras-1"))).toMatchObject({ defaultMode: "motor", ordered: true });
+    expect(cards.find((each) => each.unitId === unit("rep-wad-ras-1"))).toMatchObject({ defaultMode: "rail", ordered: true });
     expect(cards.find((each) => each.unitId === unit("rep-madrid-security"))?.otherOrder).toBe("Ordered to move to Castilla-La Mancha");
     expect(cards.find((each) => each.unitId === unit("rep-madrid-sierra-column"))?.otherOrder).toBe("Ordered to withdraw to Valencia");
     expect(cards.find((each) => each.unitId === unit("rep-covadonga-4"))?.defaultMode).toBe(rail?.mode);
@@ -209,7 +216,7 @@ describe("U6: the Invade and Reinforce panes' units", () => {
 });
 
 describe("U6: one line for the modes a group can't take", () => {
-  const cardWith = (name: string, modes: MusterCard["modes"]): MusterCard => ({ defaultMode: "rail", from: madrid, men: "1/1 men", modes, name, ordered: false, share: 1, unitId: unit(name), values: "1-1" });
+  const cardWith = (name: string, modes: MusterCard["modes"]): MusterCard => ({ carrier: false, chosen: "rail", companion: false, defaultMode: "rail", general: false, options: [], strength: 1, from: madrid, men: "1/1 men", modes, name, ordered: false, share: 1, unitId: unit(name), values: "1-1" });
   const rail = { mode: "rail" as const, ok: true as const };
   const noMarch = { mode: "march" as const, ok: false as const, reason: "Too far." };
   it("says what reaches it once, and names the units only when a reason isn't every unit's", () => {
@@ -255,12 +262,30 @@ describe("U6: the odds and the defence", () => {
     const guarded = raise(start, "aa-1", "north", "anti-air-battery", "castilla-y-leon");
     const odds = invadeOdds(scenario, guarded, republic, castile, [{ unitId: unit("rep-wad-ras-1") }], [unit("rep-ni52-fighters")], { orders: [move("republic", "rep-covadonga-4", "madrid", "castilla-y-leon")] });
     expect(odds).toMatchObject({ kind: "battle", odds: expect.stringMatching(/^≈ /), take: expect.stringMatching(/%$/) });
-    expect(odds.kind === "battle" && odds.air).toMatch(/^Air battle first: you win the air \d+% \(tie \d+%\), then Ground Support \+\d+\.$/);
+    // One fighter (+2) against AA of 3: the die less 1.
+    if (odds.kind !== "battle") throw new Error("Expected a battle.");
+    expect(odds.ledger.rows.at(-1)).toEqual({
+      details: {
+        lines: [
+          "Defender commands the air, 20%: the defenders' Ground Support; you lose one aircraft",
+          "Defender holds the edge, 25%: the defenders' Ground Support",
+          "Contested sky, 20%: no Ground Support",
+          "Attacker holds the edge, 25%: your Ground Support, +3",
+          "Attacker commands the air, 10%: your Ground Support, +3"
+        ],
+        summary: "The air battle's results"
+      },
+      label: "Ground Support, 1 aircraft",
+      note: "average; air battle first",
+      value: 1.1
+    });
+    expect(odds.airLoss).toBe("20% chance to lose an aircraft in the air battle.");
+    expect(odds.ledger.total).toBe(odds.ledger.rows.reduce((sum, row) => sum + row.value, 0));
     const open = invadeOdds(scenario, start, republic, castile, [{ unitId: unit("rep-wad-ras-1") }], [], { orders: [], airOrders: [support("rep-ni52-fighters")] });
-    expect(open.kind === "battle" && "air" in open).toBe(false);
     expect(open.kind === "battle" && open.ledger.rows).toContainEqual({ label: "Ground Support, 1 aircraft", value: 3 });
+    expect(open).not.toHaveProperty("airLoss");
     const plain = invadeOdds(scenario, start, republic, castile, [{ unitId: unit("rep-wad-ras-1") }], [], empty);
-    expect(plain.kind === "battle" && "air" in plain).toBe(false);
+    expect(plain.kind === "battle" && plain.ledger.rows.some((row) => row.label.startsWith("Ground Support"))).toBe(false);
   });
 
   it("names the pass when every attacker crosses one", () => {
@@ -447,7 +472,7 @@ describe("U6: ordering from the pane", () => {
       selectedTerritoryId: madrid,
       selectedUnitIds: [unit("rep-wad-ras-1")]
     });
-    const legs = [{ kind: "land" as const, to: territory("castilla-la-mancha") }, { kind: "land" as const, to: castile }];
+    const legs = railLegs("rep-wad-ras-1");
     const shown = ["rep-wad-ras-1", "rep-madrid-security", "rep-covadonga-4", "rep-breguet-bombers", "rep-ni52-fighters"].map(unit);
     const after = orderMuster(scenario, before, { kind: "invade", moves: [{ legs, unitId: unit("rep-wad-ras-1") }, { unitId: unit("rep-madrid-security") }], shown, support: [unit("rep-ni52-fighters")], target: castile });
     expect(after.draft.orders.map((order) => [order.unitId, order.to, "legs" in order ? order.legs.length : undefined])).toEqual([
@@ -487,7 +512,7 @@ describe("U6: the pane's picks as an order", () => {
   it("carries each ticked unit's chosen mode, or its default, and the ticked aircraft", () => {
     const view = muster(scenario, start, republic, castile, "invade", empty);
     const order = musterOrderFrom(view, {
-      modes: new Map([[unit("rep-wad-ras-1"), "motor"], [unit("rep-covadonga-4"), "sea"]]),
+      modes: new Map([[unit("rep-wad-ras-1"), "rail"], [unit("rep-covadonga-4"), "motor"]]),
       support: new Set([unit("rep-ni52-fighters")]),
       units: new Set([unit("rep-wad-ras-1"), unit("rep-covadonga-4"), unit("rep-madrid-security")])
     });

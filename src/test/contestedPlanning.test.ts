@@ -22,11 +22,11 @@ function planning(state: GameState, factionId = "republic"): PlanningSession {
 }
 
 describe("planning in contested ground (C1, Q-UX-14)", () => {
-  it("offers Attack and Withdraw, and Attack is the default order", () => {
+  it("offers Attack, Withdraw and Disband, and Attack is the default order", () => {
     const scenario = spain();
     const session = selectTerritory(planning(initialGameState(scenario)), territory("andalucia"));
-    expect(orderKindsFor(session, scenario)).toEqual(["attack", "withdraw"]);
-    expect(orderKindsFor(selectTerritory(session, territory("madrid")), scenario)).toEqual(["move", "entrench"]);
+    expect(orderKindsFor(session, scenario)).toEqual(["attack", "withdraw", "disband"]);
+    expect(orderKindsFor(selectTerritory(session, territory("madrid")), scenario)).toEqual(["move", "entrench", "disband"]);
     expect(orderOf(session, armyIn(session.game.state, "rep-vitoria-8"), scenario)).toBe("attack");
     expect(orderCounts(session, scenario).attack).toBeGreaterThan(0);
   });

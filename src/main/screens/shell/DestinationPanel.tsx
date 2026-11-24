@@ -24,7 +24,7 @@ export function DestinationPanel({ estimates, scenario, session }: DestinationPa
   const dispatch = useAppDispatch();
   const { draft } = session;
   const territoryId = draft.selectedTerritoryId;
-  if (draft.stage === undefined || territoryId === undefined) return null;
+  if (draft.stage?.step !== "choose-destination" || territoryId === undefined) return null;
   const { orderKind } = draft.stage;
   const callout = destinationCallout(scenario, orderKind, draft.selectedUnitIds.length, territoryId);
   return (

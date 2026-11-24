@@ -1,7 +1,6 @@
 import type { RandomSource } from "../engine/random";
-import type { FactionId, GameState, Order, PlayerSubmission, Scenario, UnitId } from "../engine/types";
+import type { FactionId, GameState, Order, PlayerSubmission, Scenario } from "../engine/types";
 import { viewFor } from "../engine/visibility";
-import { unitKindIn } from "../engine/air/pieces";
 import { planAirMissions } from "./orders/air-mission";
 import { planBuilds } from "./orders/build";
 import { planGeneralMoves } from "./orders/general";
@@ -20,24 +19,8 @@ export { legalMoves } from "./orders/move";
  * The planners in the order they run, one per order kind (H5). Each sees the orders the
  * earlier ones chose, so a later planner can avoid ordering a unit twice.
  */
-/**
- * AG-3, M1: the move planner moves ground units only, and its own generals follow them
- * (`orders/general.ts`). It plans on the board without aircraft (D17) and without its own
- * generals, but with enemy generals, so its estimates count their +1 and trait, and a territory
- * held by a general alone is defended ground, as the battles treat it.
- */
-const planGroundMoves: OrderPlanner<Order> = (context) => planMoves({ ...context, state: movePlanningView(context.scenario, context.state, context.factionId) });
-
-export function movePlanningView(scenario: Scenario, state: GameState, factionId: FactionId): GameState {
-  const units = Object.fromEntries(Object.entries(state.units).filter(([id, unit]) => {
-    const kind = unitKindIn(scenario, state.raised, id as UnitId);
-    return kind === "ground" || (kind === "general" && unit.factionId !== factionId);
-  }));
-  return Object.keys(units).length === Object.keys(state.units).length ? state : { ...state, units };
-}
-
 const planners: readonly OrderPlanner<Order>[] = [
-  planGroundMoves,
+  planMoves,
   planWithdrawals,
   planDisbands,
   planReplenishment,

@@ -16,6 +16,12 @@ export interface ReachNote {
 
 const modes = Object.entries(modeNames) as readonly (readonly [MoveMode, string])[];
 
+/** N6: why a territory is no target of the mission being chosen, as a note like Move's. */
+export function targetNote(scenario: Scenario, territoryId: TerritoryId, refusal: { readonly inRange: boolean; readonly reason: string } | undefined): ReachNote | undefined {
+  if (refusal === undefined) return undefined;
+  return { lines: [{ text: refusal.reason }], status: refusal.inRange ? "Not a target for this mission" : "Out of reach this turn", title: territoryName(scenario, territoryId) };
+}
+
 /** The note for `territoryId`, or undefined when the units can reach it (or it is their own). */
 export function reachNote(scenario: Scenario, territoryId: TerritoryId, reach: Reach | undefined): ReachNote | undefined {
   if (reach === undefined || reach.ok) return undefined;

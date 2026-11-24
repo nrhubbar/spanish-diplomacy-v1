@@ -1,8 +1,8 @@
 import { subTerritoryYield } from "../../engine/economy/income";
 import { holdsWhole } from "../../engine/partition/holders";
-import type { AirBattleOutcome, AirMissionOrder, AirTurnOutcome, RaidFlownOutcome, RaidOutcome } from "../../engine/types";
+import type { AirBattleAircraft, AirBattleOutcome, AirMissionOrder, AirTurnOutcome, RaidFlownOutcome, RaidOutcome } from "../../engine/types";
 import { amountText } from "../economy";
-import { factionLabel, type ReportLineContext, type ReportLines, subTerritoryLabel, territoryLabel, unitLabel } from "./lines";
+import { factionLabel, listNames, type ReportLineContext, type ReportLines, subTerritoryLabel, territoryLabel, unitLabel } from "./lines";
 
 /**
  * U2-U4, D7: the air outcomes as report sentences. Raids, interceptions, support, grounding and
@@ -47,17 +47,30 @@ function raidEffect(context: ReportLineContext, outcome: RaidFlownOutcome): stri
   }
 }
 
-/** R11: who won the air ("Army of the North wins the air"), or that a tie gives neither side its Ground Support. */
-function airWinner(context: ReportLineContext, { input, result }: Pick<AirBattleOutcome, "input" | "result">): string {
-  if (result.winner === "tie") return "a tie, so neither side's Ground Support applies";
-  return `${factionLabel(context.scenario, input[result.winner].factionId)} wins the air, and its Ground Support applies`;
+/** R11: what the air battle did: "; Army of the North gets Ground Support; Republican Government loses Fighter squadron No. 1". */
+function airResult({ scenario }: ReportLineContext, { aircraftLost, input, result: { row }, support }: AirBattleOutcome): string {
+  // A side can be several factions: each is named by its own aircraft.
+  const owners = (aircraft: readonly AirBattleAircraft[]): readonly string[] => [...new Set(aircraft.map(({ factionId }) => factionLabel(scenario, factionId)))];
+  const counted = row.support === "none" ? [] : input[row.support].aircraft.filter(({ unitId }) => support[row.support as "attacker" | "defender"].unitIds.includes(unitId));
+  const winner = counted.length === 0 ? "no Ground Support counts" : `${listNames(owners(counted))} gets Ground Support`;
+  const fates = (["attacker", "defender"] as const).flatMap((role) => {
+    const { aircraft } = input[role];
+    const lost = aircraft.filter(({ unitId }) => aircraftLost.includes(unitId));
+    const left = aircraft.filter(({ unitId }) => !aircraftLost.includes(unitId));
+    const away = row.support === "none" ? "return home" : "are driven off";
+    return [
+      ...lost.map((entry) => `${factionLabel(scenario, entry.factionId)} loses ${unitLabel(scenario, entry.unitId)}`),
+      ...(row.support === role ? [] : owners(left).map((name) => `${name}'s ${lost.some((entry) => factionLabel(scenario, entry.factionId) === name) ? "other " : ""}aircraft ${away}`))
+    ];
+  });
+  return [`; ${winner}`, ...fates].join("; ");
 }
 
 export const airLines: ReportLines<AirTurnOutcome> = {
   "air-battle": (outcome, context) => {
     const { attacker, defender } = outcome.input;
     const { scenario } = context;
-    return `Air battle over ${territoryLabel(scenario, outcome.territoryId)}: ${factionLabel(scenario, attacker.factionId)} ${String(outcome.result.attackerTotal)} against ${factionLabel(scenario, defender.factionId)} ${String(outcome.result.defenderTotal)}; ${airWinner(context, outcome)}.`;
+    return `Air battle over ${territoryLabel(scenario, outcome.territoryId)}, ${factionLabel(scenario, attacker.factionId)} against ${factionLabel(scenario, defender.factionId)}: ${outcome.result.row.name} (${String(outcome.result.score)})${airResult(context, outcome)}.`;
   },
   raid: (outcome, context) => {
     const { scenario } = context;
@@ -74,7 +87,7 @@ export const airLines: ReportLines<AirTurnOutcome> = {
   "air-support": (outcome, context) => {
     const where = territoryLabel(context.scenario, outcome.territoryId);
     if (outcome.battleIndex === undefined) return `${flier(context, outcome.order)} flew Ground Support over ${where}, but no battle was fought there.`;
-    // R11: only the side that has the air gets Ground Support, and at most two aircraft count.
+    // R11: only the side that wins the air battle gets Ground Support, and at most two aircraft count.
     return outcome.applied === false
       ? `${flier(context, outcome.order)} flew Ground Support for the battle for ${where}, but its support did not count.`
       : `${flier(context, outcome.order)} gave Ground Support in the battle for ${where}.`;

@@ -1,6 +1,11 @@
 import { type AttackEstimate, estimateAttack } from "../engine/combat";
-import type { AirMissionOrder, CombatModifier, FactionId, GameState, MoveOrder, SackOrder, Scenario, TerritoryId, UnitId } from "../engine/types";
+import { requireUnitState } from "../engine/lookup";
+import type { MoveRoute } from "../engine/movement/routes";
+import { routesOfMoves } from "../engine/movement/transit";
+import type { AirMissionOrder, CombatModifier, FactionId, GameState, MoveLeg, MoveOrder, SackOrder, Scenario, TerritoryId, UnitId } from "../engine/types";
 import { glyphs } from "./glyphs";
+import { orderLegs } from "./moveModes";
+import { signedTenths } from "./numbers";
 import { weatherModifierName } from "./weatherName";
 
 /**
@@ -12,10 +17,19 @@ import { weatherModifierName } from "./weatherName";
 export type DestinationEstimate = AttackEstimate;
 
 /**
+ * N3: the estimate of one planned attack: every given move into `target`, on the legs it carries,
+ * with these aircraft on Ground Support. The map's chips, This turn and the Invade pane all ask
+ * here, so the same attack shows the same odds everywhere.
+ */
+export function attackEstimate(scenario: Scenario, state: GameState, factionId: FactionId, target: TerritoryId, moves: readonly MoveOrder[], support: readonly UnitId[]): DestinationEstimate {
+  return estimateAttack(scenario, state, factionId, moves.map((move) => move.unitId), target, support, routesOfMoves(scenario, state, moves));
+}
+
+/**
  * A1: the odds at each destination count every army this faction would send there: the
- * selected armies plus the planned moves to that destination, each army once, and (R11) the
- * aircraft planned on Ground Support there. A selected army
- * that already has a planned order is counted once, where it is about to go.
+ * selected armies, by the route offered for it (`routes`), plus the planned moves to that
+ * destination, each army once, and (R11) the aircraft planned on Ground Support there. A selected
+ * army that already has a planned order is counted once, where it is about to go.
  */
 export function destinationEstimates(
   scenario: Scenario,
@@ -24,13 +38,19 @@ export function destinationEstimates(
   unitIds: readonly UnitId[],
   destinations: readonly TerritoryId[],
   plannedOrders: readonly MoveOrder[] = [],
-  airOrders: readonly (AirMissionOrder | SackOrder)[] = []
+  airOrders: readonly (AirMissionOrder | SackOrder)[] = [],
+  routes?: ReadonlyMap<TerritoryId, MoveRoute>
 ): ReadonlyMap<TerritoryId, DestinationEstimate> {
   const estimates = new Map<TerritoryId, DestinationEstimate>();
   if (unitIds.length === 0) return estimates;
+  const selected = new Set(unitIds);
   for (const territoryId of destinations) {
-    const attackers = new Set([...unitIds, ...plannedAttackers(plannedOrders, factionId, territoryId)]);
-    estimates.set(territoryId, estimateAttack(scenario, state, factionId, [...attackers], territoryId, plannedSupport(airOrders, factionId, territoryId)));
+    const route = routes?.get(territoryId);
+    const moves = [
+      ...unitIds.map((unitId) => moveTo(factionId, unitId, requireUnitState(state, unitId).territoryId, territoryId, route === undefined ? undefined : orderLegs(route))),
+      ...movesInto(plannedOrders, factionId, territoryId).filter((order) => !selected.has(order.unitId))
+    ];
+    estimates.set(territoryId, attackEstimate(scenario, state, factionId, territoryId, moves, plannedSupport(airOrders, factionId, territoryId)));
   }
   return estimates;
 }
@@ -49,9 +69,14 @@ export function plannedEstimates(
   const destinations = new Set(plannedOrders.filter((order) => order.factionId === factionId).map((order) => order.to));
   const estimates = new Map<TerritoryId, DestinationEstimate>();
   for (const territoryId of destinations) {
-    estimates.set(territoryId, estimateAttack(scenario, state, factionId, plannedAttackers(plannedOrders, factionId, territoryId), territoryId, plannedSupport(airOrders, factionId, territoryId)));
+    estimates.set(territoryId, attackEstimate(scenario, state, factionId, territoryId, movesInto(plannedOrders, factionId, territoryId), plannedSupport(airOrders, factionId, territoryId)));
   }
   return estimates;
+}
+
+/** A move order as planning gives it: no legs for a plain step (CT-6). */
+export function moveTo(factionId: FactionId, unitId: UnitId, from: TerritoryId, to: TerritoryId, legs?: readonly MoveLeg[]): MoveOrder {
+  return { factionId, from, kind: "move", ...(legs === undefined ? {} : { legs }), to, unitId };
 }
 
 /** R11: the faction's aircraft planned on Ground Support over `territoryId`, which the odds weigh by the air battle. */
@@ -59,11 +84,9 @@ export function plannedSupport(airOrders: readonly (AirMissionOrder | SackOrder)
   return airOrders.flatMap((order) => (order.kind === "air-mission" && order.factionId === factionId && order.mission.kind === "support" && order.mission.territoryId === territoryId ? [order.unitId] : []));
 }
 
-/** The armies of `factionId` with a planned move into `territoryId`. */
-function plannedAttackers(plannedOrders: readonly MoveOrder[], factionId: FactionId, territoryId: TerritoryId): readonly UnitId[] {
-  return plannedOrders
-    .filter((order) => order.factionId === factionId && order.to === territoryId)
-    .map((order) => order.unitId);
+/** The planned moves of `factionId` into `territoryId`. */
+export function movesInto(plannedOrders: readonly MoveOrder[], factionId: FactionId, territoryId: TerritoryId): readonly MoveOrder[] {
+  return plannedOrders.filter((order) => order.factionId === factionId && order.to === territoryId);
 }
 
 /** A chance as a whole percentage: 0.5 is "50%". */
@@ -114,10 +137,14 @@ export function oddsSummary(estimate: DestinationEstimate): OddsSummary {
 /** A2: the one sentence behind the odds' "i". */
 export const oddsCaveat = "The defender may reinforce, or another faction may attack too, so the real odds may differ.";
 
-/** Signed roll change as printed: "+1", "-2" (with a true minus sign), "0". */
+/** Signed roll change as printed, to a tenth (N5): "+1", "-2" (with a true minus sign), "0". */
 export function signed(value: number): string {
-  if (value > 0) return `+${String(value)}`;
-  return value < 0 ? `${glyphs.minus}${String(-value)}` : "0";
+  return value === 0 ? "0" : signedTenths(value);
+}
+
+/** A general's trait by its own name, read from the scenario when it is at hand. */
+function traitName(traitId: Extract<CombatModifier, { readonly kind: "trait" }>["traitId"], scenario?: Scenario): string {
+  return scenario?.generalTraits.find((trait) => trait.id === traitId)?.name ?? traitId.replace(/-/g, " ");
 }
 
 /**
@@ -139,7 +166,7 @@ export function modifierName(modifier: CombatModifier, scenario?: Scenario): str
     case "general":
       return "General";
     case "trait":
-      return `General's trait: ${modifier.traitId.replace(/-/g, " ")}`;
+      return `General's trait: ${traitName(modifier.traitId, scenario)}`;
     case "barricades":
       return "Barricades (city held)";
     case "unit-bonus":

@@ -3,11 +3,13 @@ import { initialGameState } from "../../main/engine/resolution";
 import type { BuildingId, Scenario, UnitTypeDefinition, UnitTypeId } from "../../main/engine/types";
 import {
   menShort,
+  recruitAddNote,
   recruitAddReason,
   recruitRequirements,
   recruitSiteName,
-  recruitsWithLabel,
+  recruitsWith,
   recruitTerms,
+  resourceCells,
   resourcesLabel,
   termsLine,
   turnsLabel
@@ -30,21 +32,21 @@ describe("the Recruit tab's words (X4, Q-UX-05)", () => {
     expect(recruitSiteName(noCapital, territory("atlantis"))).toBe("");
   });
 
-  it("names the capital's buildings and the tracks a type needs, or says there are none", () => {
+  it("names the capital's buildings and the tracks a type needs, if any", () => {
     const state = initialGameState(scenario);
-    const label = (id: string, standing: readonly BuildingId[]): string => recruitsWithLabel(scenario, state, faction("republic"), territory(id), standing);
-    expect(label("extremadura", [])).toBe("No buildings");
-    expect(label("extremadura", [building("barracks"), building("depot")])).toBe(`Barracks ${dot} Depot`);
-    expect(label("madrid", [building("barracks")])).toBe(`Barracks ${dot} Factory`);
+    const names = (id: string, standing: readonly BuildingId[]): readonly string[] => recruitsWith(scenario, state, faction("republic"), territory(id), standing).map(({ name }) => name);
+    expect(names("extremadura", [])).toEqual([]);
+    expect(names("extremadura", [building("barracks"), building("depot")])).toEqual(["Barracks", "Depot"]);
+    expect(names("madrid", [building("barracks")])).toEqual(["Barracks", "Factory"]);
   });
 
   it("gives a type's price, men and training time, in the row and in its tooltip", () => {
     const infantry = typeOf("infantry-regiment");
     const cost = resourcesLabel(scenario, infantry.recruit!.cost, ` ${dot} `);
     const terms = recruitTerms(scenario, infantry);
-    expect(terms).toHaveLength(4);
-    expect(termsLine(terms, "detail")).toBe(`${cost} ${dot} ${menShort(700)} ${dot} trains in ${turnsLabel(2)} ${dot} upkeep 0.25k Manpower a turn`);
-    expect(termsLine(terms, "meta")).toBe(`${cost} ${dot} ${menShort(700)} ${dot} ${turnsLabel(2)} ${dot} upkeep 0.25k Manpower`);
+    expect(terms.map(({ kind }) => kind)).toEqual(["cost", "men", "training", "upkeep"]);
+    expect(termsLine(terms, "detail")).toBe(`${cost} ${dot} ${menShort(700)} ${dot} trains in ${turnsLabel(2)} ${dot} upkeep 0.3k Manpower a turn`);
+    expect(termsLine(terms, "meta")).toBe(`${cost} ${dot} ${menShort(700)} ${dot} ${turnsLabel(2)} ${dot} upkeep 0.3k Manpower`);
     // A type the scenario does not recruit costs nothing and trains no one.
     const notRecruited = { ...infantry };
     delete (notRecruited as { recruit?: unknown }).recruit;
@@ -56,6 +58,18 @@ describe("the Recruit tab's words (X4, Q-UX-05)", () => {
   it("marks each building and track a type needs as there or not", () => {
     expect(recruitRequirements(scenario, initialGameState(scenario), faction("north"), territory("cantabria"), typeOf("artillery-group"))).toEqual([{ have: true, name: "Barracks" }, { have: false, name: "Factory" }]);
     expect(recruitRequirements(scenario, initialGameState(scenario), faction("north"), territory("la-rioja"), typeOf("militia-column"))).toEqual([]);
+  });
+
+  it("says the same reason in a few words, with the term it is about", () => {
+    expect(recruitAddNote(true, "Funds", "Short next turn.")).toEqual({ text: "No orders left" });
+    expect(recruitAddNote(false, "Funds", "Short next turn.")).toEqual({ term: "cost", text: "Not enough Funds" });
+    expect(recruitAddNote(false, "", "Short next turn.")).toEqual({ term: "upkeep", text: "Upkeep too high next turn" });
+    expect(recruitAddNote(false, "", undefined)).toBeUndefined();
+  });
+
+  it("gives every total the same resources", () => {
+    expect(resourceCells(scenario, { funds: 3 } as never).map((cell) => cell.text)).toEqual(["3"]);
+    expect(resourceCells(scenario, {}, true).map((cell) => cell.text)).toEqual(["0", "0k"]);
   });
 
   it("says why one more cannot be added: locks first, then the turn's orders, then the price", () => {

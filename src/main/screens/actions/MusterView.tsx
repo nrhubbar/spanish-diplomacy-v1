@@ -1,10 +1,11 @@
 import { type JSX, useMemo, useState } from "react";
 import type { Scenario, TerritoryId, UnitId } from "../../engine/types";
 import { useAppDispatch, useAppSelector } from "../../hooks";
-import { defendersCount, groupModes, muster, type MusterGroup, type MusterKind, musterButton, supportBlocked, supportCount } from "../../presentation/muster";
+import { defendersCount, groupModes, musterButton, type MusterGroup, type MusterKind, musterList, supportBlocked, supportCount } from "../../presentation/muster";
+import { allSelected, fitMuster, selectAll } from "../../presentation/musterFit";
 import { orderFromMuster } from "../../state/gameSlice";
-import { musterModeChosen, musterTicked, popView } from "../../state/paneSlice";
-import { airDraftOrders, musterOrderFrom, type MusterPicks, musterPicks, musterRefusal, type PlanningSession } from "../../state/planning";
+import { musterModeChosen, musterSelected, musterTicked, popView } from "../../state/paneSlice";
+import { airDraftOrders, musterOrderFrom, musterPicks, musterRefusal, type PlanningSession } from "../../state/planning";
 import { ActionIcon } from "./ActionIcon";
 import { DefenceBox, OddsBox } from "./MusterBoxes";
 import { DefenderCard, GroupModesNote, SupportRow, UnitCard } from "./MusterCards";
@@ -26,13 +27,17 @@ export function MusterView({ kind, scenario, session, target }: MusterViewProps)
   const dispatch = useAppDispatch();
   const { draft, factionId, game } = session;
   const choices = useAppSelector((state) => state.pane.muster);
-  const view = useMemo(
-    () => muster(scenario, game.state, factionId, target, kind, { airOrders: airDraftOrders(draft), orders: draft.orders }),
-    [draft, factionId, game.state, kind, scenario, target]
-  );
+  const planned = useMemo(() => ({ airOrders: airDraftOrders(draft), orders: draft.orders }), [draft]);
+  const list = useMemo(() => musterList(scenario, game.state, factionId, target, kind, planned), [factionId, game.state, kind, planned, scenario, target]);
   const [refused, setRefused] = useState<string | undefined>(undefined);
   const picks = useMemo(() => musterPicks(scenario, session, target, choices), [choices, scenario, session, target]);
-  const order = useMemo(() => musterOrderFrom(view, picks), [picks, view]);
+  // Note 12: the list as the units ticked leave it, trains and trucks counted.
+  const view = useMemo(() => fitMuster(scenario, game.state, factionId, list, picks, planned), [factionId, game.state, list, picks, planned, scenario]);
+  const order = useMemo(() => musterOrderFrom(view, view.picks), [view]);
+  const selects = (from?: TerritoryId) => ({
+    clears: allSelected(view, picks, from),
+    onSelect: (): void => { dispatch(musterSelected(selectAll(scenario, game.state, factionId, view, picks, planned, from))); }
+  });
   // The pane's ticks decide who goes there: the draft's other orders to the target don't count twice.
   const otherDraft = useMemo(
     () => ({ airOrders: airDraftOrders(draft).filter((each) => !(each.kind === "air-mission" && each.mission.kind === "support" && each.mission.territoryId === target)), orders: draft.orders.filter((each) => each.to !== target) }),
@@ -69,14 +74,17 @@ export function MusterView({ kind, scenario, session, target }: MusterViewProps)
       {kind === "invade"
         ? <OddsBox action={orderButton} draft={otherDraft} moves={order.moves} scenario={scenario} session={session} support={order.support} target={target} />
         : <DefenceBox action={orderButton} scenario={scenario} session={session} target={target} units={order.moves.map((move) => move.unitId)} />}
-      {view.groups.length === 0 ? <p className="pane-hint">None of your units can reach it this turn.</p> : null}
+      {view.groups.length === 0 ? <p className="pane-hint">None of your units can reach it this turn.</p> : (
+        <div className="muster-select-all"><SelectAll label="Select all" {...selects()} /></div>
+      )}
       {view.groups.map((group) => (
         <Group
           group={group}
           key={group.from}
           onMode={(unitId, mode) => { dispatch(musterModeChosen({ mode, unitId })); }}
           onTick={tick}
-          picks={picks}
+          selects={selects(group.from)}
+          ticked={view.picks.units}
         />
       ))}
       {view.here.length === 0 ? null : (
@@ -123,27 +131,42 @@ interface GroupProps {
   readonly group: MusterGroup;
   readonly onMode: (unitId: UnitId, mode: MusterGroup["cards"][number]["defaultMode"]) => void;
   readonly onTick: (unitId: UnitId, ticked: boolean) => void;
-  readonly picks: MusterPicks;
+  readonly selects: Selects;
+  readonly ticked: ReadonlySet<UnitId>;
+}
+
+interface Selects {
+  /** All it covers is ticked, so pressing it clears. */
+  readonly clears: boolean;
+  readonly onSelect: () => void;
+}
+
+/** Note 12: ticks every unit that can go, or clears them when all are ticked. */
+function SelectAll({ clears, label, onSelect }: Selects & { readonly label: string }): JSX.Element {
+  return <button className="text-button" onClick={onSelect} type="button">{clears ? label.replace("Select", "Clear") : label}</button>;
 }
 
 /** The units setting out from one territory. */
-function Group({ group, onMode, onTick, picks }: GroupProps): JSX.Element {
+function Group({ group, onMode, onTick, selects, ticked }: GroupProps): JSX.Element {
   const modes = groupModes(group.cards);
   return (
     <section aria-label={group.title} className="muster-group">
       <h3 className="muster-group-title">
         <span>{group.title}</span>
-        <span className="muster-group-count">{`${String(group.cards.filter((card) => picks.units.has(card.unitId)).length)} of ${String(group.cards.length)}`}</span>
+        <span className="muster-group-count">{`${String(group.cards.filter((card) => ticked.has(card.unitId)).length)} of ${String(group.cards.length)}`}</span>
       </h3>
+      <div className="muster-group-tools">
+        {group.trains.map((line) => <span className="muster-chip" key={line}>{line}</span>)}
+        <SelectAll label={`Select all ${group.title.replace("From", "from")}`} {...selects} />
+      </div>
       {modes === undefined ? null : <GroupModesNote modes={modes} />}
       {group.cards.map((card) => (
         <UnitCard
           card={card}
-          chosen={picks.modes.get(card.unitId) ?? card.defaultMode}
           key={card.unitId}
           onMode={(mode) => { onMode(card.unitId, mode); }}
-          onTick={() => { onTick(card.unitId, !picks.units.has(card.unitId)); }}
-          ticked={picks.units.has(card.unitId)}
+          onTick={() => { onTick(card.unitId, !ticked.has(card.unitId)); }}
+          ticked={ticked.has(card.unitId)}
         />
       ))}
     </section>

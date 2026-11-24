@@ -1,199 +1,407 @@
-// X4, X7 (m3r1-recruit-replenish): the Recruit tab, and units in training drawn dashed.
-.recruit-header {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 12px;
-  align-items: baseline;
-  justify-content: space-between;
+// X4, X7 (m3r1-recruit-replenish): the Recruit tab, and units in training drawn dashed. Its parts are
+// the app's own: the odds card's box and ledger, the Build list's rows, the Invade pane's fold-outs.
+.recruit-tab {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+  container: recruit-tab / inline-size;
+}
 
-  h4 {
-    margin: 0;
+.recruit-top .site-buildings {
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+}
+
+.muster-box.recruit-orders,
+.muster-box.recruit-basket {
+  border-left-color: var(--gold);
+}
+
+// The ledger's columns: the symbol, the name, one column for each resource, and Cancel.
+.order-line {
+  display: grid;
+  grid-template-columns: 1.65rem minmax(0, 1fr) auto 3rem;
+  gap: 0 0.3rem;
+  align-items: center;
+  min-height: 1.75rem;
+
+  .roll-ledger-value {
+    display: flex;
+    grid-column: 3;
+    padding-left: 0;
+  }
+
+  .recruit-cell {
+    justify-content: flex-end;
+    min-width: 2.6rem;
+  }
+
+  .text-button {
+    grid-column: 4;
+    grid-row: 1;
+    justify-self: end;
+    padding: 0;
+
+    // An empty line's button keeps the line's height, and the keyboard's place when it has it.
+    &[aria-disabled="true"],
+    &[aria-disabled="true"]:hover {
+      color: transparent;
+      text-decoration: none;
+      cursor: default;
+    }
+
+    &[aria-disabled="true"]:focus-visible {
+      color: rgb(36 29 24 / 45%);
+    }
   }
 }
 
-.recruit-buildings {
+.order-line-name {
+  grid-column: 2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.order-line[data-filled="false"] .order-line-name {
   color: var(--ink-soft);
-  font-size: 0.82rem;
+}
+
+.roll-ledger-total .order-line-name {
+  grid-column: 1 / 3;
+}
+
+// N2: the ledger's last lines, the turn's totals: once the ledger is scrolled away they stay in
+// sight at the top of the pane, as high whatever the amounts.
+.muster-box.recruit-basket {
+  position: sticky;
+  z-index: 2;
+  top: 0;
+  padding-block: 0.15rem;
+
+  .roll-ledger-total {
+    margin: 0;
+    padding: 0;
+    min-height: 1.5rem;
+  }
+}
+
+.muster-box.recruit-orders {
+  padding-bottom: 0;
+  border-bottom: 0;
+  border-radius: 8px 8px 0 0;
+
+  + .recruit-basket {
+    margin-top: -0.75rem;
+    border-top: 0;
+    border-radius: 0 0 8px 8px;
+  }
+}
+
+// What takes the keyboard's focus is scrolled clear of the totals.
+.map-pane-body:has(.pane-tab-panel:not([hidden]) > .recruit-tab) {
+  scroll-padding-top: 4.5rem;
+}
+
+// A phone's half-height sheet or a low screen leaves too little to scroll in: the totals then stay
+// with the ledger.
+.campaign-map[data-pane-layout="sheet"] .map-pane:not([data-stop="tall"]) {
+  .muster-box.recruit-basket {
+    position: static;
+  }
+
+  .map-pane-body:has(.recruit-tab) {
+    scroll-padding-top: 0;
+  }
+}
+
+@media (max-height: 30rem) {
+  .muster-box.recruit-basket {
+    position: static;
+  }
+
+  .map-pane-body:has(.pane-tab-panel:not([hidden]) > .recruit-tab) {
+    scroll-padding-top: 0;
+  }
 }
 
 .recruit-list {
   display: grid;
-  gap: 6px;
-  margin: 8px 0;
+  gap: 0.4rem;
+  margin: 0;
   padding: 0;
   list-style: none;
-  container: recruit-list / inline-size;
 }
 
 .recruit-row {
   position: relative;
-  display: grid;
-  grid-template-columns: 2.1rem minmax(0, 1fr) auto auto;
-  column-gap: 0.55rem;
-  align-items: center;
-  padding: 0.45rem 0.6rem;
-  border: 1px solid rgb(36 29 24 / 30%);
-  background: rgb(255 255 255 / 60%);
+  overflow-wrap: anywhere;
 
-  &[data-locked="true"] {
-    border-style: dashed;
-    color: var(--ink-soft);
-    background: rgb(255 255 255 / 30%);
-
-    .recruit-symbol {
-      filter: grayscale(1);
-      opacity: 0.5;
-    }
+  > div:first-child {
+    flex: 1;
+    min-width: 0;
   }
 
-  // Details on hover where a pointer can hover, and on focus of a locked row (tap on a phone).
+  strong.recruit-head {
+    flex-wrap: wrap;
+    justify-self: start;
+    gap: 0 0.4rem;
+  }
+
+  &[data-locked="true"] .recruit-symbol {
+    filter: grayscale(1);
+    opacity: 0.5;
+  }
+
+  &:focus > div > .recruit-details {
+    display: grid;
+  }
+
+  // Details from the name only, so none is drawn over a stepper in use.
   @media (hover: hover) {
-    &:hover .recruit-details {
+    .recruit-head:hover ~ .recruit-details {
       display: grid;
     }
   }
 
-  &[data-locked="true"]:focus .recruit-details {
-    display: grid;
+  // A term breaks between terms only. In red, not bolder: the line must not wrap anew.
+  [data-short] {
+    white-space: nowrap;
+  }
+
+  [data-short="true"] {
+    color: var(--accent);
   }
 }
 
 .recruit-symbol {
-  grid-row: span 2;
-  width: 2.1rem;
-  height: 1.4rem;
+  display: block;
+  flex: none;
+  width: 1.65rem;
+  height: 1.1rem;
 
   svg {
+    display: block;
     width: 100%;
     height: 100%;
   }
 }
 
-.recruit-name {
-  font-weight: 600;
-  overflow-wrap: anywhere;
-}
-
-.recruit-values {
-  font-weight: 700;
+.recruit-cell {
+  display: inline-flex;
+  gap: 0.15rem;
+  align-items: center;
+  white-space: nowrap;
   font-variant-numeric: tabular-nums;
-}
 
-.recruit-meta {
-  grid-column: 2 / span 2;
-  color: var(--ink-soft);
-  font-size: 0.82rem;
-  overflow-wrap: anywhere;
+  .economy-icon {
+    width: 0.85rem;
+    height: 0.85rem;
+  }
 }
 
 // D7 (note 4): what the type does beyond its values, closed until asked for.
 .recruit-effects {
-  grid-column: 2 / -1;
-  margin-top: 2px;
-  font-size: 0.82rem;
-  overflow-wrap: anywhere;
-
-  summary {
-    width: fit-content;
-    min-height: 24px;
-    padding: 2px 0;
-    color: #1f3a5f;
-    font-weight: 700;
-    cursor: pointer;
-  }
+  width: fit-content;
 
   ul {
-    margin: 2px 0 4px;
-    padding: 0.4rem 0.6rem 0.4rem 1.4rem;
-    border-left: 3px solid var(--gold);
-    color: var(--ink);
-    background: #fbeecb;
+    display: grid;
+    gap: 0.15rem;
+    margin: 0.2rem 0 0;
+    list-style: none;
   }
 }
 
-.recruit-lock {
-  color: #7a4a06;
+// The stepper, and under it the two lines every row keeps for why one more can't be added: the
+// row's own text is as high, so they take no room of their own.
+.recruit-action {
+  flex: none;
+  align-self: start;
+  width: 6.8rem;
 }
 
 .recruit-stepper {
-  display: inline-flex;
-  grid-row: 1 / span 2;
-  grid-column: 4;
-  gap: 4px;
+  display: flex;
   align-items: center;
-}
-
-// A narrow pane or large text: the stepper goes under the terms, as `ux-recruit-foldout` draws it.
-@container recruit-list (max-width: 20rem) {
-  .recruit-row {
-    grid-template-columns: 2.1rem minmax(0, 1fr) auto;
-  }
-
-  .recruit-stepper {
-    grid-row: auto;
-    grid-column: 2 / -1;
-    justify-self: start;
-    margin-top: 4px;
-  }
-}
-
-// Text at 200% in a 320 px pane: the symbol, which only repeats the name, gives up its column.
-@container recruit-list (max-width: 12rem) {
-  .recruit-row {
-    grid-template-columns: minmax(0, 1fr) auto;
-  }
-
-  .recruit-symbol {
-    display: none;
-  }
-
-  .recruit-meta,
-  .recruit-stepper,
-  .recruit-effects {
-    grid-column: 1 / -1;
-  }
+  justify-content: space-between;
 }
 
 .stepper-button {
-  width: 1.7rem;
-  min-height: 1.7rem;
+  width: 2.1rem;
   padding: 0;
-  border: 1px solid rgb(36 29 24 / 45%);
-  border-radius: 4px;
-  color: var(--ink);
-  background: #fff;
-  font-weight: 700;
 
-  &:hover:not(:disabled) {
+  &[aria-disabled="true"],
+  &[aria-disabled="true"]:hover {
     color: var(--ink);
-    background: #fff;
-  }
-
-  @media (hover: hover) {
-    &:hover:not(:disabled) {
-      background: var(--paper-deep);
-    }
-  }
-
-  &:disabled {
-    color: rgb(36 29 24 / 35%);
-    background: rgb(255 255 255 / 50%);
+    background: transparent;
+    cursor: not-allowed;
+    opacity: 0.35;
   }
 }
 
 .stepper-value {
-  min-width: 1.2rem;
+  min-width: 1.6rem;
+  font-weight: 700;
   text-align: center;
   font-variant-numeric: tabular-nums;
 }
 
+.recruit-note {
+  height: 2.6em;
+  overflow: hidden;
+  font-size: 0.78rem;
+  line-height: 1.3;
+  text-align: right;
+}
+
+.training-rows {
+  .queue-status {
+    margin-left: 0;
+  }
+
+  .queue-bar {
+    margin-top: 0.2rem;
+  }
+
+  &[data-paused="true"] .queue-bar span {
+    background: var(--ink-soft);
+  }
+}
+
+// A narrow pane or large text: the stepper goes under the text with its reason beside it, and an
+// order's cost under its name.
+@container recruit-tab (max-width: 19rem) {
+  .recruit-row:not([data-locked="true"]):has(.recruit-action) {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .recruit-action {
+    grid-template-columns: 6.8rem minmax(0, 1fr);
+    gap: 0.5rem;
+    align-items: center;
+    width: auto;
+  }
+
+  .recruit-note {
+    text-align: left;
+  }
+
+  .order-line {
+    grid-template-columns: 1.65rem minmax(0, 1fr) 3.2rem;
+    grid-template-rows: 1.75rem 1.4rem;
+
+    .roll-ledger-value {
+      grid-column: 2;
+      grid-row: 2;
+    }
+
+    .recruit-cell {
+      justify-content: flex-start;
+    }
+
+    .text-button {
+      grid-column: 3;
+    }
+  }
+
+  .roll-ledger-total {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: 1.5rem;
+
+    .order-line-name {
+      grid-column: 1;
+    }
+
+    .roll-ledger-value {
+      grid-row: 1;
+    }
+
+    .recruit-cell {
+      min-width: 2.4rem;
+    }
+  }
+}
+
+// Less than one line for a total: its amounts go under it, and the totals stay with the ledger.
+@container recruit-tab (max-width: 14rem) {
+  .recruit-tab .muster-box.recruit-basket {
+    position: static;
+  }
+
+  .roll-ledger-total {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto;
+
+    .roll-ledger-value {
+      grid-column: 1;
+      grid-row: 2;
+    }
+  }
+}
+
+// Text at 200% in a 320 px pane: the symbol, which only repeats the name, gives up its column, a
+// name may take two lines and Cancel has its own.
+@container recruit-tab (max-width: 12rem) {
+  .recruit-head .recruit-symbol,
+  .order-line .recruit-symbol {
+    display: none;
+  }
+
+  .recruit-action {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .recruit-stepper {
+    justify-content: flex-start;
+  }
+
+  .stepper-button {
+    width: 1.5rem;
+  }
+
+  .recruit-note {
+    height: 5.2em;
+  }
+
+  .recruit-row [data-short] {
+    white-space: normal;
+  }
+
+  .order-line {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: 2.6em auto auto;
+
+    > * {
+      grid-column: 1;
+    }
+
+    .roll-ledger-value {
+      grid-column: 1;
+      flex-wrap: wrap;
+      min-height: 1.4rem;
+    }
+
+    .text-button {
+      grid-column: 1;
+      grid-row: 3;
+      justify-self: start;
+    }
+  }
+
+  .order-line-name {
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+}
 // Hover and focus details (X4): what a type needs, and what it lacks.
 .recruit-details {
   position: absolute;
   z-index: 3;
   // Below the row: the pane's scroll area clips anything drawn outside it.
   top: calc(100% + 4px);
-  right: 0;
+  left: 0;
   display: none;
   gap: 2px;
   width: min(15rem, 100%);
@@ -205,18 +413,6 @@
   box-shadow: 0 4px 14px rgb(36 29 24 / 22%);
   font-size: 0.82rem;
   pointer-events: none;
-}
-
-.recruit-basket {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 12px;
-  justify-content: space-between;
-  margin: 0;
-  padding: 0.45rem 0.6rem;
-  border-top: 1px solid var(--rule);
-  font-weight: 600;
-  font-size: 0.86rem;
 }
 
 .training-list {

@@ -1,6 +1,6 @@
-import { type JSX, useId, useState } from "react";
+import { type JSX, useId } from "react";
 import { generalOf, isAllWeatherAirbaseFor, unitDefinitionIn, unitKindIn, unitTypeIn } from "../../engine/air/pieces";
-import { type AirMission, type AirMissionKind, type Scenario, type UnitId, type UnitState } from "../../engine/types";
+import { type AirMission, type Scenario, type UnitId, type UnitState } from "../../engine/types";
 import { WeatherChip } from "../../components/weather/WeatherChip";
 import { WeatherIcon } from "../../components/weather/WeatherIcon";
 import { useAppDispatch } from "../../hooks";
@@ -19,7 +19,7 @@ import {
   missionTitle
 } from "../../presentation/airPane";
 import { raidResultNames } from "../../presentation/systemText/air";
-import { clickMapUnit, closeAircraftPane, planAirMission, toggleSackOrder } from "../../state/gameSlice";
+import { chooseAirMission, clickMapUnit, closeAircraftPane, planAirMission, toggleSackOrder } from "../../state/gameSlice";
 import {
   type AirTarget,
   airTargets,
@@ -29,7 +29,7 @@ import {
   type PlanningSession,
   raidPreview
 } from "../../state/planning";
-import { DisbandControls } from "./DisbandControls";
+import { AircraftDisband } from "./DisbandControls";
 
 function sameMission(a: AirMission | undefined, b: AirMission): boolean {
   return a !== undefined && JSON.stringify(a) === JSON.stringify(b);
@@ -43,8 +43,8 @@ interface AirPaneProps {
 
 /**
  * U2 (Q-UX-10, `ux-air-a.webp`): the selected aircraft's pane. Its base, type and range, one
- * button per mission (missions its type cannot fly are greyed), the target list, and a card for
- * the chosen target: range, anti-air, enemy fighters in reach, and the raid's chances.
+ * button per mission (missions its type cannot fly are greyed), which starts choosing its target on
+ * the map (N6), and a card for the chosen target: range, anti-air, enemy fighters in reach, and the raid's chances.
  */
 export function AirPane({ scenario, session, unitId }: AirPaneProps): JSX.Element | null {
   const dispatch = useAppDispatch();
@@ -52,16 +52,15 @@ export function AirPane({ scenario, session, unitId }: AirPaneProps): JSX.Elemen
   const state = session.game.state;
   const unit = state.units[unitId];
   const planned = plannedMission(session.draft, unitId);
-  const [kind, setKind] = useState<AirMissionKind | undefined>(planned?.mission.kind);
   if (unit === undefined) return null;
   const type = unitTypeIn(scenario, state.raised, unitId);
   const name = unitDefinitionIn(scenario, state.raised, unitId)?.name ?? unitId;
   const allowed = allowedMissions(type);
   const base = scenario.index.territories.get(unit.territoryId)?.name ?? unit.territoryId;
   const paved = isAllWeatherAirbaseFor(scenario, state, unit.territoryId, unit.factionId);
-  const shown = kind ?? planned?.mission.kind;
-  const targets = shown === undefined ? [] : airTargets(scenario, state, unitId, shown);
-  const chosen = planned !== undefined && planned.mission.kind === shown ? targets.find((target) => sameMission(planned.mission, target.mission)) : undefined;
+  const { stage } = session.draft;
+  const shown = stage?.step === "choose-target" ? stage.mission : planned?.mission.kind;
+  const chosen = planned !== undefined && planned.mission.kind === shown ? airTargets(scenario, state, unitId, shown).find((target) => sameMission(planned.mission, target.mission)) : undefined;
   const others = Object.values(state.units).filter((other) => other.id !== unitId && other.factionId === unit.factionId && other.territoryId === unit.territoryId
     && unitKindIn(scenario, state.raised, other.id) === "air");
 
@@ -83,7 +82,7 @@ export function AirPane({ scenario, session, unitId }: AirPaneProps): JSX.Elemen
             className="air-mission-button"
             disabled={!allowed.includes(mission)}
             key={mission}
-            onClick={() => { setKind(mission); }}
+            onClick={() => dispatch(chooseAirMission({ mission, unitId }))}
             title={missionTitle(type, mission)}
             type="button"
           >
@@ -91,34 +90,18 @@ export function AirPane({ scenario, session, unitId }: AirPaneProps): JSX.Elemen
           </button>
         ))}
         <button
-          aria-pressed={shown === undefined && planned === undefined}
+          aria-pressed={shown === undefined}
           className="air-mission-button"
-          onClick={() => { setKind(undefined); dispatch(planAirMission({ unitId })); }}
+          onClick={() => dispatch(planAirMission({ unitId }))}
           type="button"
         >
           Stand down
         </button>
+        <AircraftDisband scenario={scenario} session={session} unit={unit} />
       </div>
-      {shown === undefined ? <p className="pane-hint">Choose a mission, then its target.</p> : (
+      {shown === undefined ? <p className="pane-hint">Choose a mission, then its target on the map.</p> : (
         <>
           <p className="pane-hint">{missionHints[shown]}</p>
-          {targets.length === 0 ? <p className="pane-hint">Nothing in range for this mission.</p> : (
-            <label className="air-target-picker">
-              <span>Target</span>
-              <select
-                onChange={(event) => {
-                  const target = targets[Number(event.target.value)];
-                  if (target !== undefined) dispatch(planAirMission({ mission: target.mission, unitId }));
-                }}
-                value={chosen === undefined ? "" : String(targets.indexOf(chosen))}
-              >
-                <option disabled value="">Choose a target</option>
-                {targets.map((target, index) => (
-                  <option key={JSON.stringify(target.mission)} value={String(index)}>{`${target.name} (${String(target.distance)} away)`}</option>
-                ))}
-              </select>
-            </label>
-          )}
           {chosen === undefined ? null : <TargetCard range={type?.air?.range ?? 0} scenario={scenario} session={session} target={chosen} unit={unit} />}
         </>
       )}
@@ -138,7 +121,6 @@ export function AirPane({ scenario, session, unitId }: AirPaneProps): JSX.Elemen
           </ul>
         </>
       )}
-      <DisbandControls scenario={scenario} session={session} unit={unit} />
       <button className="text-button" onClick={() => dispatch(closeAircraftPane())} type="button">{`Back to ${base}`}</button>
     </section>
   );

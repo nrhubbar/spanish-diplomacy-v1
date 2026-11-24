@@ -1,11 +1,18 @@
 import { isNeighbor, requireTerritory } from "../../engine/lookup";
 import { type StandingOrder, standingOrder } from "../../engine/orders";
-import { railShortageText } from "../../engine/movement/routes";
-import { isMoveOrder, type MoveOrder, type Scenario, type TerritoryId, type UnitId, type WithdrawOrder } from "../../engine/types";
+import { boardingRefusal, railShortageText } from "../../engine/movement/routes";
+import { judgePlannedMoves } from "../../engine/movement/transit";
+import { type AirMissionOrder, type GameState, isMoveOrder, type MoveOrder, type SackOrder, type Scenario, type TerritoryId, type UnitId, type WithdrawOrder } from "../../engine/types";
 import { validateMoveOrder } from "../../engine/validation";
 import { selectionFullTrains } from "../../presentation/movement";
+import { orderLegs } from "../../presentation/moveModes";
+import { heldBackRefusal } from "../../presentation/musterFit";
+import { moveTo } from "../../presentation/odds";
+import { listNames, territoryName } from "../../presentation/text";
 import type { Draft, OrderKind, PlannedOrder } from "../session";
+import { isAircraft, leaveTargets } from "./air";
 import { selectedWithdrawRoutes } from "./contested";
+import { disbandableSelection, planDisband } from "./disband";
 import { chooseReplenish, unitOrdersWithout } from "./recruitment";
 import { type PlanningSession, feedback, selectedDestinations, selectedRoutes, selectedUnits, selecting, selectionOf, withDraft } from "./selection";
 
@@ -23,6 +30,8 @@ export function chooseOrder(scenario: Scenario, session: PlanningSession, orderK
       return chooseMove(scenario, session);
     case "replenish":
       return chooseReplenish(scenario, session);
+    case "disband":
+      return chooseDisband(scenario, session);
     case "withdraw":
       return chooseWithdraw(scenario, session);
     case "attack":
@@ -32,6 +41,12 @@ export function chooseOrder(scenario: Scenario, session: PlanningSession, orderK
     case "rest":
       return chooseStanding(session, orderKind);
   }
+}
+
+/** N1: Disband for the selected units that can; a general or a unit going already stays as it is. Nothing is left selected (note 11). */
+function chooseDisband(scenario: Scenario, session: PlanningSession): PlanningSession {
+  const planned = planDisband(scenario, session, disbandableSelection(scenario, session));
+  return withDraft(planned, { ...planned.draft, selectedUnitIds: [] });
 }
 
 /** C1: Attack (Hold for demoralized armies) is the default in contested ground; choosing it drops planned withdrawals. */
@@ -70,8 +85,9 @@ function chooseMove(scenario: Scenario, session: PlanningSession): PlanningSessi
     : choosing;
 }
 
-/** Leaves the order or destination choice and keeps the armies selected. */
+/** Leaves the order, destination or target choice and keeps the armies, or the aircraft, selected. */
 export function cancelOrder(session: PlanningSession): PlanningSession {
+  if (session.draft.stage?.step === "choose-target") return leaveTargets(session);
   return withDraft(session, selectionOf(session.draft));
 }
 
@@ -94,25 +110,41 @@ export function chooseDestination(scenario: Scenario, session: PlanningSession, 
   }
   // CT-6: a plain land step keeps no legs; rail, sea and marches carry theirs (M4).
   const route = withdrawing ? undefined : selectedRoutes(scenario, session)?.get(territoryId);
-  const legs = route === undefined || route.shape === "step" ? undefined : route.legs;
-  const planned: PlannedOrder[] = session.draft.selectedUnitIds.map((unitId): MoveOrder | WithdrawOrder => (withdrawing ? {
-    factionId: session.factionId,
-    from: origin,
-    kind: "withdraw",
-    to: territoryId,
-    unitId
-  } : {
-    factionId: session.factionId,
-    from: origin,
-    kind: "move",
-    ...(legs === undefined ? {} : { legs }),
-    to: territoryId,
-    unitId
-  }));
+  const legs = route === undefined ? undefined : orderLegs(route);
   const replanned = new Set(session.draft.selectedUnitIds);
-  const orders = [...session.draft.orders.filter((order) => !replanned.has(order.unitId)), ...planned];
-  // A move replaces a stay order given earlier (U2).
-  return withDraft(session, { ...afterOrder(origin, orders), ...unitOrdersWithout(session.draft, replanned), ...stayWithout(session.draft, [...replanned]) });
+  const kept = session.draft.orders.filter((order) => !replanned.has(order.unitId));
+  if (withdrawing) {
+    const withdrawals = session.draft.selectedUnitIds.map((unitId): WithdrawOrder => ({ factionId: session.factionId, from: origin, kind: "withdraw", to: territoryId, unitId }));
+    return withDraft(session, draftWithMoves(session.draft, withdrawals, kept));
+  }
+  const moves = session.draft.selectedUnitIds.map((unitId) => moveTo(session.factionId, unitId, origin, territoryId, legs));
+  const refused = movesRefusal(scenario, session.game.state, moves, kept);
+  return refused === undefined ? withDraft(session, draftWithMoves(session.draft, moves, kept)) : feedback(session, refused);
+}
+
+/**
+ * N3: why these moves can't be given beside the orders kept, or undefined when they can: the
+ * engine's check of each order, then of their armies as the reveal will judge them (trains, trucks,
+ * landings, and an army with no unit that can fight). Move and the Invade and Reinforce panes both
+ * ask here, and give their orders with `draftWithMoves`.
+ */
+export function movesRefusal(scenario: Scenario, state: GameState, moves: readonly MoveOrder[], kept: readonly PlannedOrder[]): string | undefined {
+  for (const move of moves) {
+    const verdict = validateMoveOrder(scenario, state, move);
+    if (!verdict.ok) return verdict.reason;
+  }
+  const others = kept.filter(isMoveOrder);
+  const full = boardingRefusal(scenario, state, moves, others);
+  if (full !== undefined) return full;
+  const given = new Set(moves.map((move) => move.unitId));
+  const held = judgePlannedMoves(scenario, state, [...others, ...moves]).find(({ army, cause }) => cause !== undefined && army.orders.some((order) => given.has(order.unitId)));
+  return held?.cause === undefined ? undefined : heldBackRefusal(scenario, held.cause, held.army.orders[0].from, held.army.orders[0].to);
+}
+
+/** N3: the draft once these orders are given: they replace the units' Replenish, Disband and stay orders (U2), and nothing stays selected. */
+export function draftWithMoves(draft: Draft, given: readonly PlannedOrder[], kept: readonly PlannedOrder[]): Draft {
+  const ids = given.map((order) => order.unitId);
+  return { ...afterOrder(draft.selectedTerritoryId, [...kept, ...given]), ...unitOrdersWithout(draft, ids), ...stayWithout(draft, ids) };
 }
 
 /** Note 11: after an order the territory stays open and nothing is selected. */
@@ -141,6 +173,42 @@ export function removeOrder(session: PlanningSession, unitId: UnitId): PlanningS
     ...unitOrdersWithout(session.draft, [unitId]),
     ...stayWithout(session.draft, [unitId])
   });
+}
+
+/** The territories a draft's ground moves go to. */
+function groundTargets(scenario: Scenario, { draft, game }: PlanningSession): ReadonlySet<TerritoryId> {
+  return new Set(draft.orders.filter((order) => isMoveOrder(order) && !isAircraft(scenario, game.state, order.unitId)).map((order) => order.to));
+}
+
+/**
+ * N3: Ground Support goes with the attack it was planned for. When a change to the draft takes away
+ * the last ground move into a territory where none of the player's units stand, the Ground Support
+ * planned over it is cancelled too, and the feedback says so. Every change to the draft passes
+ * through here (`gameSlice`), so each way to cancel an order follows the same rule. Support planned
+ * on its own, with no move there before or after, stays.
+ */
+export function cancelIdleSupport(scenario: Scenario, before: PlanningSession, after: PlanningSession): PlanningSession {
+  const { factionId, game } = after;
+  const still = groundTargets(scenario, after);
+  const left = new Set([...groundTargets(scenario, before)].filter((to) => !still.has(to)
+    && !Object.values(game.state.units).some((unit) => unit.factionId === factionId && unit.territoryId === to && !isAircraft(scenario, game.state, unit.id))));
+  const planned = after.draft.airOrders ?? [];
+  // A flight ordered by this very change is the player's choice, whatever it supports.
+  const flying = new Set((before.draft.airOrders ?? []).flatMap((order) => (order.kind === "air-mission" && order.mission.kind === "support" ? [`${order.unitId}|${order.mission.territoryId}`] : [])));
+  const idleAt = (order: AirMissionOrder | SackOrder): TerritoryId | undefined =>
+    (order.kind === "air-mission" && order.mission.kind === "support" && left.has(order.mission.territoryId)
+      && flying.has(`${order.unitId}|${order.mission.territoryId}`) ? order.mission.territoryId : undefined);
+  const places = new Set(planned.flatMap((order) => idleAt(order) ?? []));
+  if (places.size === 0) return after;
+  const note = `Ground Support over ${listNames([...places].map((id) => territoryName(scenario, id)))} is cancelled too: none of your units go there now.`;
+  return {
+    ...after,
+    draft: {
+      ...after.draft,
+      airOrders: planned.filter((order) => idleAt(order) === undefined),
+      feedback: after.draft.feedback === undefined ? note : `${after.draft.feedback} ${note}`
+    }
+  };
 }
 
 /** Why the selected armies cannot move to `to`: full trains, no connection, or the engine's own reason. */

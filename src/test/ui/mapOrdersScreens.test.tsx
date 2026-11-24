@@ -185,9 +185,17 @@ describe("U6: the Invade pane", () => {
     await user.click(within(wadRas).getByRole("checkbox"));
     expect(within(invade).getByRole("status")).toHaveTextContent(/Attack\s*\d+/);
     expect(within(madrid).getByRole("heading")).toHaveTextContent("1 of");
-    const motor = within(wadRas).getByRole("button", { name: "Motor" });
-    await user.click(motor);
-    expect(motor).toHaveAttribute("aria-pressed", "true");
+    // With no trucks in Madrid, Motor is not offered: the reveal would hold the unit back.
+    expect(within(wadRas).queryByRole("button", { name: "Motor" })).toBeNull();
+    const rail = within(wadRas).getByRole("button", { name: "Rail" });
+    await user.click(rail);
+    expect(rail).toHaveAttribute("aria-pressed", "true");
+    // Note 12: Select all ticks every unit that can go; pressed again, it clears them.
+    await user.click(within(invade).getByRole("button", { name: "Select all" }));
+    expect(within(madrid).getAllByRole("checkbox").filter((box) => (box as HTMLInputElement).checked).length).toBeGreaterThan(1);
+    await user.click(within(invade).getByRole("button", { name: "Clear all" }));
+    expect(within(invade).getByRole("button", { name: /^Order 0 units to invade/ })).toBeDisabled();
+    await user.click(within(wadRas).getByRole("checkbox"));
     // Units that set out further away offer only the modes they can take; why not is one line for the group.
     const catalonia = within(invade).getByRole("region", { name: "From Cataluña" });
     const [far] = within(catalonia).getAllByRole("article");
@@ -363,6 +371,23 @@ describe("U6: Ground Support and the odds box, on the shipped scenario", () => {
     await user.click(screen.getByRole("button", { name: /^Order 1 unit and 2 aircraft to invade/ }));
     expect(dispatched).toHaveBeenCalledWith(expect.objectContaining({ payload: expect.objectContaining({ kind: "invade", support: expect.arrayContaining([unit("rep-ni52-fighters")]) }), type: "game/orderFromMuster" }));
     expect(dispatched).toHaveBeenCalledWith(expect.objectContaining({ type: "pane/popView" }));
+  });
+
+  it("states the chance to lose an aircraft, and folds out the air battle's results", () => {
+    const start = initialGameState(shipped);
+    const guarded: GameState = {
+      ...start,
+      raised: { ...start.raised, [unit("aa-1")]: { factionId: faction("north"), fullStrength: 300, id: unit("aa-1"), name: "Battery", type: "anti-air-battery" as never } },
+      units: { ...start.units, [unit("aa-1")]: { factionId: faction("north"), fatigue: 0, id: unit("aa-1"), morale: { demoralized: false, quietTurns: 0 }, strength: 300, territoryId: territory("castilla-y-leon") } }
+    };
+    const box = (state: GameState) => (
+      <Provider store={planningStore()}><OddsBox action={null} draft={{ orders: [] }} scenario={shipped} session={session({}, state)} support={[unit("rep-ni52-fighters")]} target={territory("castilla-y-leon")} moves={[{ unitId: unit("rep-wad-ras-1") }]} /></Provider>
+    );
+    const { rerender } = render(box(guarded));
+    expect(screen.getByRole("status")).toHaveTextContent("20% chance to lose an aircraft in the air battle.");
+    expect(screen.getByText("The air battle's results").closest("details")).toHaveTextContent("Defender commands the air, 20%: the defenders' Ground Support; you lose one aircraft");
+    rerender(box(start));
+    expect(screen.getByRole("status")).not.toHaveTextContent("lose an aircraft");
   });
 
   it("names the pass, warns of artillery alone, and shows a defence with no threat", () => {

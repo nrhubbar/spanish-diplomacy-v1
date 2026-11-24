@@ -1,6 +1,5 @@
 import { holdsWhole } from "../partition/holders";
 import { heldWholeByAnother, isAirbaseFor, territoriesWithin, unitDefinitionIn, unitKindIn, unitTypeIn } from "../air/pieces";
-import { airOverFoughtBattles } from "../air/groundSupport";
 import { airScratch } from "../air/scratch";
 import { compareIds, removeArmies, replaceArmies } from "../board";
 import { pick } from "../dice";
@@ -76,8 +75,8 @@ function fallbackTerritory(scenario: Scenario, state: Pick<GameState, "control" 
 
 /**
  * Step 9, after the dice module's morale part (AG-3, AG-8 to AG-10, D27):
- * 1. Aircraft come back to their bases. One whose territory is no longer an airbase of its
- *    faction rebases to the nearest airbase of its faction within range, or is lost (D27.2).
+ * 1. Aircraft come back to their bases, but for those shot down in an air battle (R11). One whose
+ *    territory is no longer an airbase of its faction rebases to the nearest airbase of its faction within range, or is lost (D27.2).
  * 2. Generals come back: a moving general arrives where his army arrived, else stays. When his
  *    army was destroyed or routed, or he stood alone in ground the enemy took, he rolls on the
  *    `general-death` stream; a survivor follows the retreat, or goes to the fallback territory.
@@ -98,14 +97,17 @@ export const commandChanges: Phase = (draft) => {
   let raised = draft.systems.raised;
 
   // R11: each air battle fought, then each Ground Support flight with the battle it joined and whether it counted.
-  const airOver = airOverFoughtBattles(draft);
-  for (const { air, battleIndex, territoryId } of airOver) {
-    if (air.result !== undefined) events.push({ battleIndex, input: air.input, kind: "air-battle", result: air.result, support: air.support, territoryId });
+  const fought = [...draft.front.battles, ...draft.standing];
+  const shotDown = new Set<UnitId>();
+  for (const { battle: { air, index }, site } of fought) {
+    if (air?.result === undefined) continue;
+    for (const id of air.aircraftLost) shotDown.add(id);
+    events.push({ aircraftLost: air.aircraftLost, battleIndex: index, input: air.input, kind: "air-battle", result: air.result, support: air.support, territoryId: site.territoryId });
   }
   for (const order of scratch.support) {
     if (order.mission.kind !== "support") continue;
     const territoryId = order.mission.territoryId;
-    const battle = [...draft.front.battles, ...draft.standing].find((pending) =>
+    const battle = fought.find((pending) =>
       pending.site.territoryId === territoryId
       && (pending.battle.engagement.attackerFactionId === order.factionId
         || pending.battle.engagement.defenders.some((combatant) => combatant.unit.factionId === order.factionId)));
@@ -113,12 +115,13 @@ export const commandChanges: Phase = (draft) => {
       events.push({ kind: "air-support", order, territoryId });
       continue;
     }
-    const support = airOver.find((entry) => entry.battleIndex === battle.battle.index)?.air.support;
+    const support = battle.battle.air?.support;
     const applied = support !== undefined && [...support.attacker.unitIds, ...support.defender.unitIds].includes(order.unitId);
     events.push({ applied, battleIndex: battle.battle.index, kind: "air-support", order, territoryId });
   }
 
-  const aside = Object.values(scratch.aside).sort((a, b) => compareIds(a.id, b.id));
+  // R11: an aircraft shot down in an air battle does not come back, like a raider lost at step 2.
+  const aside = Object.values(scratch.aside).filter((unit) => !shotDown.has(unit.id)).sort((a, b) => compareIds(a.id, b.id));
   const restored: UnitState[] = [];
   for (const unit of aside) {
     if (unitKindIn(scenario, start.raised, unit.id) !== "air") continue;

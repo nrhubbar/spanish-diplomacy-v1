@@ -1,18 +1,22 @@
 import { isGroundUnit, territoriesWithin, unitDefinitionIn, unitKindIn, unitTypeIn } from "../engine/air/pieces";
 import { validateAirMission } from "../engine/air/validation";
 import { compareIds } from "../engine/board";
-import { type AttackEstimate, estimateAttack } from "../engine/combat";
+import { estimateAttack } from "../engine/combat";
 import { landNeighbors } from "../engine/movement/network";
-import { routesOfMoves } from "../engine/movement/transit";
+import { bestGeneral } from "../engine/generals/command";
 import { moveRoutes, type MoveRoute } from "../engine/movement/routes";
+import { judgePlannedMoves } from "../engine/movement/transit";
 import type { MoveMode } from "../engine/network/reach";
 import { pocketOfArmy } from "../engine/partition/pockets";
-import type { AirMissionOrder, FactionId, GameState, MoveLeg, MoveOrder, SackOrder, Scenario, TerritoryId, SubTerritoryId, UnitId, UnitState, WithdrawOrder } from "../engine/types";
+import { type AirMissionOrder, type FactionId, type GameState, isMoveOrder, type MoveLeg, type MoveOrder, type SackOrder, type Scenario, type TerritoryId, type SubTerritoryId, type UnitId, type UnitState, type WithdrawOrder } from "../engine/types";
+import { canFight, isTruckType } from "../engine/units/fighting";
 import { armyFigures, figuresWorks, menLabel, strengthShare, valuesLabel } from "./army";
+import { generalWords } from "./generals";
 import { glyphs } from "./glyphs";
-import { type ModeChip, modeChips, modeNames } from "./moveModes";
-import { chanceTone, type OddsTone, percent, plannedSupport, signed } from "./odds";
-import { type RollLedgerData, rollLedger } from "./rollLedger";
+import { type ModeChip, modeNames, type ModeOption, modeOptions } from "./moveModes";
+import { fitMuster } from "./musterFit";
+import { attackEstimate, chanceTone, movesInto, moveTo, type OddsTone, percent, plannedSupport, signed } from "./odds";
+import { type RollLedgerData, rollLedger, withPlannedAir } from "./rollLedger";
 import { factionName, listNames, territoryName } from "./text";
 
 /**
@@ -42,8 +46,33 @@ export interface UnitFigures {
   readonly values: string;
 }
 
+/** What the pane has ticked: units with their chosen modes, and aircraft. */
+export interface MusterPicks {
+  readonly modes: ReadonlyMap<UnitId, MoveMode>;
+  /** Units unticked by hand, which nothing else takes along. */
+  readonly off?: ReadonlySet<UnitId>;
+  readonly support: ReadonlySet<UnitId>;
+  /** In the order they were ticked: earlier ones keep their train places. */
+  readonly units: ReadonlySet<UnitId>;
+}
+
 /** The card of a unit that can go. Its `dugIn` works are given up by leaving (R8). */
 export interface MusterCard extends UnitFigures {
+  /** Why it can't be ticked now: no mode has room for it, or no army goes its way. */
+  readonly blocked?: string;
+  /** It carries units by Motor and can't fight (a truck). */
+  readonly carrier: boolean;
+  /** The mode it goes by, or would go by when ticked. */
+  readonly chosen: MoveMode;
+  /** It can't go there alone: it goes with a unit that can fight, the same way. */
+  readonly companion: boolean;
+  readonly general: boolean;
+  /** N10: what a general does to the battle roll, in the words his unit card uses. */
+  readonly note?: string;
+  /** Every mode it could take, with all its ways there. */
+  readonly options: readonly ModeOption[];
+  /** What it adds: attack (Invade) or defence (Reinforce); a general, his change to the roll. */
+  readonly strength: number;
   /** The mode its card starts on: the one it is ordered by already, else the one the game offers. */
   readonly defaultMode: MoveMode;
   readonly from: TerritoryId;
@@ -58,6 +87,8 @@ export interface MusterGroup {
   readonly cards: readonly MusterCard[];
   readonly from: TerritoryId;
   readonly title: string;
+  /** The places used on the trains its units could board: "Rail: 3 of 4 places". */
+  readonly trains: readonly string[];
 }
 
 /** A unit of the side already in the target: it stays where it stands. */
@@ -98,6 +129,8 @@ export interface Muster {
   readonly groups: readonly MusterGroup[];
   readonly here: readonly HereCard[];
   readonly kind: MusterKind;
+  /** The units that go as the pane stands: those ticked that can, and the trucks they need. */
+  readonly picks: MusterPicks;
   readonly subtitle: string;
   readonly support: readonly SupportCard[];
   /** The most aircraft whose Ground Support counts (the scenario's cap); absent means no cap. */
@@ -160,18 +193,88 @@ function legsOfOrder(order: MoveOrder | WithdrawOrder): MoveOrder["legs"] {
   return order.kind === "move" ? order.legs : undefined;
 }
 
-function card(scenario: Scenario, state: GameState, factionId: FactionId, target: TerritoryId, draft: MusterDraft, unit: UnitState, route: MoveRoute): MusterCard {
-  const modes = modeChips(scenario, state, factionId, unit.id, route, movesElsewhere(draft, target).filter((order) => order.unitId !== unit.id));
+/** A unit's own cards for the list, and what sort of unit it is. */
+interface Listed {
+  readonly companion: boolean;
+  readonly route: MoveRoute;
+  readonly unit: UnitState;
+}
+
+/**
+ * Every unit of the side that could go to `target`, with the route the game offers it. Room on
+ * trains is judged later, as units are ticked (`fitMuster`). A unit on foot may reach it with the
+ * transport in its territory, as Move lets it. Units that can't fight (generals, trucks, anti-air)
+ * and don't reach it on their own are listed where a unit that can fight sets out, to go with it.
+ */
+function listedUnits(scenario: Scenario, state: GameState, factionId: FactionId, target: TerritoryId, draft: MusterDraft): readonly Listed[] {
+  const planned = movesElsewhere(draft, target).filter((order) => !(order.legs ?? []).some((leg) => leg.kind === "rail"));
+  const units = Object.values(state.units)
+    .filter((unit) => unit.factionId === factionId && unit.territoryId !== target && unitKindIn(scenario, state.raised, unit.id) !== "air")
+    .sort((a, b) => compareIds(a.id, b.id));
+  const routeOf = (from: TerritoryId, unitIds: readonly UnitId[]): MoveRoute | undefined => moveRoutes(scenario, state, factionId, from, unitIds, planned).get(target);
+  const carriersIn = (from: TerritoryId): readonly UnitId[] => units.filter((each) => each.territoryId === from && isCarrier(scenario, state, each.id)).map((each) => each.id);
+  const leads = units.flatMap((unit): Listed[] => {
+    const carriers = canFight(scenario, state.raised, unit.id) ? carriersIn(unit.territoryId) : [];
+    const route = routeOf(unit.territoryId, [unit.id]) ?? (carriers.length === 0 ? undefined : routeOf(unit.territoryId, [unit.id, ...carriers]));
+    return route === undefined ? [] : [{ companion: false, route, unit }];
+  });
+  const alone = new Set(leads.map(({ unit }) => unit.id));
+  const companions = units.filter((unit) => !alone.has(unit.id) && !canFight(scenario, state.raised, unit.id) && !unit.morale.demoralized).flatMap((unit): Listed[] => {
+    const lead = leads.find((each) => each.unit.territoryId === unit.territoryId && canFight(scenario, state.raised, each.unit.id));
+    return lead === undefined ? [] : [{ companion: true, route: lead.route, unit }];
+  });
+  return [...leads, ...companions];
+}
+
+function isCarrier(scenario: Scenario, state: Pick<GameState, "raised">, unitId: UnitId): boolean {
+  const type = unitTypeIn(scenario, state.raised, unitId);
+  return type !== undefined && isTruckType(type);
+}
+
+/** The modes a listed unit could take. A companion's are its own ways along the offered route's modes; Motor only where the transport there could carry it. */
+function optionsFor(scenario: Scenario, state: GameState, factionId: FactionId, { companion, route, unit }: Listed): readonly ModeOption[] {
+  const options = modeOptions(scenario, state, factionId, unit.id, route);
+  if (companion) return options;
+  const carriers = Object.values(state.units)
+    .filter((each) => each.factionId === factionId && each.territoryId === unit.territoryId && each.id !== unit.id && isCarrier(scenario, state, each.id))
+    .map((each) => each.id);
+  return options.map((option) => {
+    if (option.mode !== "motor") return option;
+    const ways = option.ways.filter((legs) => {
+      const orders = [unit.id, ...carriers].map((id) => moveTo(factionId, id, unit.territoryId, route.to, legs));
+      return judgePlannedMoves(scenario, state, orders).every(({ cause }) => cause?.reason !== "allowance");
+    });
+    return { ...option, reason: option.ways.length > 0 ? "Motor needs trucks for every unit on foot, or cavalry, and dry roads." : option.reason, ways };
+  });
+}
+
+function card(scenario: Scenario, state: GameState, factionId: FactionId, target: TerritoryId, kind: MusterKind, draft: MusterDraft, listed: Listed): MusterCard {
+  const { companion, route, unit } = listed;
+  const options = optionsFor(scenario, state, factionId, listed);
   const order = draft.orders.find((each) => each.unitId === unit.id && each.to === target);
-  const orderedMode = order === undefined ? undefined : modes.find((chip) => chip.ok && legsKey(chip.legs) === legsKey(legsOfOrder(order)))?.mode;
+  const orderedKey = order === undefined ? undefined : legsKey(legsOfOrder(order));
+  const orderedMode = options.find((option) => option.ways.some((way) => legsKey(way) === orderedKey))?.mode;
   const otherOrder = otherOrderOf(scenario, draft, unit.id, target);
+  const role = kind === "invade" ? "attack" : "defence";
+  const words = generalWords(scenario, state.raised, unit.id);
+  const commander = bestGeneral(scenario, state.raised, [unit.id], role);
+  const roll = commander === undefined ? 0 : commander.bonus + commander.traitRoll;
+  const figures = armyFigures(scenario, state, unit);
   return {
     ...unitFigures(scenario, state, unit),
+    carrier: isCarrier(scenario, state, unit.id),
+    chosen: orderedMode ?? route.mode,
+    companion,
     defaultMode: orderedMode ?? route.mode,
     from: unit.territoryId,
-    modes,
+    general: commander !== undefined,
+    // The way it is ordered by leads its mode, so the card shows that very order.
+    modes: [],
+    ...(words === undefined ? {} : { note: `General ${glyphs.dot} ${words.effect}` }),
+    options: options.map((option) => ({ ...option, ways: [...option.ways].sort((a, b) => Number(legsKey(b) === orderedKey) - Number(legsKey(a) === orderedKey)) })),
     ...(otherOrder === undefined ? {} : { otherOrder }),
-    ordered: order !== undefined
+    ordered: order !== undefined,
+    strength: commander === undefined ? figures[role] : roll
   };
 }
 
@@ -225,9 +328,10 @@ export interface GroupModes {
 export function groupModes(cards: readonly MusterCard[]): GroupModes | undefined {
   const blocked = new Map<MoveMode, Map<string, string[]>>();
   const open = new Set<MoveMode>();
-  for (const { modes, name } of cards) {
-    for (const chip of modes) {
-      if (chip.ok) {
+  for (const { companion, modes, name } of cards) {
+    for (const chip of companion ? [] : modes) {
+      // A mode full for now (trains, trucks) is there; its own card says why it can't be taken.
+      if (chip.ok || chip.full === true) {
         open.add(chip.mode);
         continue;
       }
@@ -242,7 +346,7 @@ export function groupModes(cards: readonly MusterCard[]): GroupModes | undefined
     ...(open.size === 1 && only !== undefined ? { only: `Only ${modeLabel(only)} reaches it.` } : {}),
     question: `Why not ${[...blocked.keys()].map(modeLabel).join(" or ")}?`,
     reasons: [...blocked].flatMap(([mode, reasons]) => [...reasons].map(([reason, names]) =>
-      `${modeLabel(mode)}: ${reason}${names.length === cards.length ? "" : ` (${listNames(names)})`}`))
+      `${modeLabel(mode)}: ${reason}${names.length === cards.filter((each) => !each.companion).length ? "" : ` (${listNames(names)})`}`))
   };
 }
 
@@ -295,13 +399,19 @@ function supportCards(scenario: Scenario, state: GameState, factionId: FactionId
     });
 }
 
-/** U6: the Invade or Reinforce pane's units for `target`. */
-export function muster(scenario: Scenario, state: GameState, factionId: FactionId, target: TerritoryId, kind: MusterKind, draft: MusterDraft): Muster {
+/** U6: the Invade or Reinforce pane for `target`, as the units ticked (by default those ordered there) leave it. */
+export function muster(scenario: Scenario, state: GameState, factionId: FactionId, target: TerritoryId, kind: MusterKind, draft: MusterDraft, picks?: MusterPicks): Muster {
+  const list = musterList(scenario, state, factionId, target, kind, draft);
+  return fitMuster(scenario, state, factionId, list, picks ?? list.picks, draft);
+}
+
+/** The pane's units before any is ticked; `fitMuster` fits it to the units ticked. */
+export function musterList(scenario: Scenario, state: GameState, factionId: FactionId, target: TerritoryId, kind: MusterKind, draft: MusterDraft): Muster {
   const ground = groundOf(state, factionId, target);
-  const reaching = reachingUnits(scenario, state, factionId, target, draft);
   const groups = new Map<TerritoryId, MusterCard[]>();
-  for (const { route, unit } of reaching) {
-    const made = card(scenario, state, factionId, target, draft, unit, route);
+  for (const listed of listedUnits(scenario, state, factionId, target, draft)) {
+    const { unit } = listed;
+    const made = card(scenario, state, factionId, target, kind, draft, listed);
     const cards = groups.get(unit.territoryId);
     if (cards === undefined) groups.set(unit.territoryId, [made]);
     else cards.push(made);
@@ -312,9 +422,14 @@ export function muster(scenario: Scenario, state: GameState, factionId: FactionI
   const reach = sources.length === 0 ? "out of reach of your units this turn" : `reachable from ${String(sources.length)} of yours`;
   return {
     defenders: kind === "invade" ? defendersOf(scenario, state, factionId, target) : { cards: [], defence: 0 },
-    groups: [...groups].map(([from, cards]) => ({ cards, from, title: `From ${territoryName(scenario, from)}` })),
+    groups: [...groups].map(([from, cards]) => ({ cards, from, title: `From ${territoryName(scenario, from)}`, trains: [] })),
     here: hereCards(scenario, state, factionId, target, ground),
     kind,
+    picks: {
+      modes: new Map(),
+      support: new Set(plannedSupport(draft.airOrders ?? [], factionId, target)),
+      units: new Set(draft.orders.filter((order) => order.to === target).map((order) => order.unitId))
+    },
     subtitle: `${ground === "friendly" ? "Yours" : owner} ${glyphs.dot} ${reach}`,
     support: kind === "invade" ? supportCards(scenario, state, factionId, target, draft) : [],
     ...(scenario.air?.supportMax === undefined ? {} : { supportMax: scenario.air.supportMax }),
@@ -341,13 +456,21 @@ export function modeLabel(mode: MoveMode): string {
 /** What no estimate can know before the fight. */
 export const notKnownYet = "Not known yet: the die, their moves, and whether their aircraft fly.";
 
+/** The pane's moves as the orders they give; a unit that is gone gives none. */
+export function moveOrders(state: Pick<GameState, "units">, factionId: FactionId, target: TerritoryId, moves: readonly MusterMove[]): readonly MoveOrder[] {
+  return moves.flatMap(({ legs, unitId }): MoveOrder[] => {
+    const from = state.units[unitId]?.territoryId;
+    return from === undefined ? [] : [moveTo(factionId, unitId, from, target, legs)];
+  });
+}
+
 /** U6: the Invade pane's odds box. */
 export type InvadeOdds =
   | { readonly kind: "none"; readonly text: string }
   | { readonly kind: "unopposed"; readonly text: string }
   | {
-      /** R11: the air battle that decides whether Ground Support counts, while it is not known. */
-      readonly air?: string;
+      /** "15% chance to lose an aircraft in the air battle.", when there is one. */
+      readonly airLoss?: string;
       readonly attack: number;
       readonly defence: number;
       readonly defenders: string;
@@ -360,47 +483,42 @@ export type InvadeOdds =
       readonly warning?: string;
     };
 
+/** Why a move into the target meets no battle: nobody is there, the player's own units fight there already, or it is the player's own ground. */
+function noBattleText(kind: "reinforcement" | "unopposed", state: GameState, factionId: FactionId, target: TerritoryId): string {
+  if (kind === "unopposed") return "Unopposed: no other side's units are there.";
+  const standing = Object.values(state.units).some((unit) => unit.factionId === factionId && unit.territoryId === target);
+  return standing ? "Your units already there fight for the ground; these join them." : "Your own ground: these units reinforce it.";
+}
+
 /**
  * U6: the odds of the ticked units (and every other unit of the side already ordered there)
  * attacking `target`, with the ticked aircraft on Ground Support: the engine's estimate, which
- * includes the air battle (R11). Passes (R6) and landings are judged on the way each unit is to
+ * weighs the air battle (R11); its Ground Support is a row of the ledger. Passes (R6) and landings are judged on the way each unit is to
  * travel. Ticked units arrive together.
  */
 export function invadeOdds(scenario: Scenario, state: GameState, factionId: FactionId, target: TerritoryId, moves: readonly MusterMove[], support: readonly UnitId[], draft: MusterDraft): InvadeOdds {
   const ticked = new Set(moves.map((move) => move.unitId));
   const orders: readonly MoveOrder[] = [
-    ...moves.flatMap(({ legs, unitId }): MoveOrder[] => {
-      const from = state.units[unitId]?.territoryId;
-      return from === undefined ? [] : [{ factionId, from, kind: "move", ...(legs === undefined ? {} : { legs }), to: target, unitId }];
-    }),
-    ...draft.orders.filter((order): order is MoveOrder => order.kind === "move" && order.factionId === factionId && order.to === target && !ticked.has(order.unitId))
+    ...moveOrders(state, factionId, target, moves),
+    ...movesInto(draft.orders.filter(isMoveOrder), factionId, target).filter((order) => !ticked.has(order.unitId))
   ];
-  const attackers = orders.map((order) => order.unitId);
-  if (attackers.length === 0) return { kind: "none", text: "Tick the units to send, and the odds show here." };
-  const estimate = estimateAttack(scenario, state, factionId, attackers, target, [...new Set([...support, ...plannedSupport(draft.airOrders ?? [], factionId, target)])], routesOfMoves(scenario, state, orders));
-  if (estimate.kind !== "battle") return { kind: "unopposed", text: "Unopposed: no other side's units are there." };
-  const air = airLine(estimate);
+  if (orders.length === 0) return { kind: "none", text: "Tick the units to send, and the odds show here." };
+  const estimate = attackEstimate(scenario, state, factionId, target, orders, [...new Set([...support, ...plannedSupport(draft.airOrders ?? [], factionId, target)])]);
+  if (estimate.kind !== "battle") return { kind: "unopposed", text: noBattleText(estimate.kind, state, factionId, target) };
+  const lossChance = estimate.air?.lossChance ?? 0;
   const warning = "cannotAttack" in estimate && estimate.cannotAttack ? "Artillery alone turns back without a battle." : undefined;
   return {
-    ...(air === undefined ? {} : { air }),
     attack: estimate.attacker.value,
     defence: estimate.defender.value,
     defenders: unitCount(defendingUnits(scenario, state, factionId, target).length),
     kind: "battle",
-    ledger: rollLedger(scenario, estimate.modifiers),
+    ledger: withPlannedAir(scenario, rollLedger(scenario, estimate.modifiers), estimate.air),
+    ...(lossChance === 0 ? {} : { airLoss: `${percent(lossChance)} chance to lose an aircraft in the air battle.` }),
     odds: `${glyphs.approx} ${estimate.oddsLabel}`,
     take: percent(estimate.takeChance),
     tone: chanceTone(estimate.takeChance),
     ...(warning === undefined ? {} : { warning })
   };
-}
-
-/** R11: the air battle as one sentence, when Ground Support is planned and contested; uncontested, it is in the ledger. */
-function airLine(estimate: Extract<AttackEstimate, { readonly kind: "battle" }>): string | undefined {
-  const { air } = estimate;
-  if (air?.odds === undefined || air.chance === 1) return undefined;
-  const bonus = signed(air.modifier.roll);
-  return `Air battle first: you win the air ${percent(air.odds.attackerWins)} (tie ${percent(air.odds.tie)}), then Ground Support ${bonus}.`;
 }
 
 /** U6: the Reinforce pane's defence box. */

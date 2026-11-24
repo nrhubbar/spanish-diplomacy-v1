@@ -4,11 +4,11 @@ import { reachFor } from "../../engine/network/reach";
 import { isMoveOrder, type Scenario, type TerritoryId } from "../../engine/types";
 import type { MapView, PointerInput } from "../../map/view";
 import { quickActions, type QuickActionKind, type QuickActionMenu as Menu } from "../../presentation/quickActions";
-import { reachNote } from "../../presentation/reachNote";
+import { reachNote, targetNote } from "../../presentation/reachNote";
 import type { MapPoint } from "../../scenarios/loader";
 import { cancelOrderStage } from "../../state/gameSlice";
 import { type PaneView, pushView } from "../../state/paneSlice";
-import { airDraftOrders, type PlanningSession } from "../../state/planning";
+import { airDraftOrders, type PlanningSession, targetRefusal } from "../../state/planning";
 import { QuickActionMenu } from "./QuickActionMenu";
 import { ReachHoverCard, ReachModal } from "./ReachCard";
 
@@ -28,7 +28,7 @@ export function quickActionView(kind: QuickActionKind, territoryId: TerritoryId)
 }
 
 export interface MapActions {
-  /** The map's right-click, long-press and hover callbacks (hover only while a Move is being given). */
+  /** The map's right-click, long-press and hover callbacks (hover only while a Move's destination or a mission's target is chosen). */
   readonly handlers: Pick<MapView, "onTerritoryHover" | "onTerritoryMenu">;
   /** U7: a tap while giving a Move; on a phone, an unreachable territory's reasons open in a card. */
   readonly onTap: (territoryId: TerritoryId, input?: PointerInput) => void;
@@ -37,20 +37,26 @@ export interface MapActions {
 }
 
 /**
- * U5, U7 on the planning map: the quick-action menu (right-click or long-press), and while a Move
- * is being given, why a territory is out of reach (on hover, or in a card when tapped on a phone).
+ * U5, U7 on the planning map: the quick-action menu (right-click or long-press), and while a
+ * Move or a mission chooses where to, why a territory is out of reach (on hover, or in a card when tapped on a phone).
  */
 export function useMapActions(scenario: Scenario, session: PlanningSession, dispatch: (action: UnknownAction) => unknown): MapActions {
   const { draft, factionId, game } = session;
   const [menu, setMenu] = useState<{ readonly at: MapPoint; readonly input: PointerInput; readonly menu: Menu } | undefined>(undefined);
   const [hover, setHover] = useState<{ readonly at: MapPoint; readonly territoryId: TerritoryId } | undefined>(undefined);
   const [tapped, setTapped] = useState<TerritoryId | undefined>(undefined);
-  const moving = draft.stage?.orderKind === "move" && draft.selectedUnitIds.length > 0;
+  const moving = draft.stage?.step === "choose-destination" && draft.stage.orderKind === "move" && draft.selectedUnitIds.length > 0;
+  const targeting = draft.stage?.step === "choose-target";
+  // Both choices say why a territory is not one to choose (U7, N6).
+  const explaining = moving || targeting;
   const reach = useMemo(
     () => (moving ? reachFor(scenario, game.state, factionId, draft.selectedUnitIds, draft.orders.filter(isMoveOrder)) : undefined),
     [draft.orders, draft.selectedUnitIds, factionId, game.state, moving, scenario]
   );
-  const noteFor = useCallback((territoryId: TerritoryId) => reachNote(scenario, territoryId, reach?.get(territoryId)), [reach, scenario]);
+  const noteFor = useCallback(
+    (territoryId: TerritoryId) => (targeting ? targetNote(scenario, territoryId, targetRefusal(scenario, session, territoryId)) : reachNote(scenario, territoryId, reach?.get(territoryId))),
+    [reach, scenario, session, targeting]
+  );
 
   const onTerritoryMenu = useCallback((territoryId: TerritoryId, at: MapPoint, input: PointerInput) => {
     setHover(undefined);
@@ -70,8 +76,8 @@ export function useMapActions(scenario: Scenario, session: PlanningSession, disp
     setMenu(undefined);
   }, [dispatch, draft.stage]);
 
-  const hoverNote = moving && hover !== undefined ? noteFor(hover.territoryId) : undefined;
-  const tappedNote = moving && tapped !== undefined ? noteFor(tapped) : undefined;
+  const hoverNote = explaining && hover !== undefined ? noteFor(hover.territoryId) : undefined;
+  const tappedNote = explaining && tapped !== undefined ? noteFor(tapped) : undefined;
   const overlay = menu !== undefined
     ? <QuickActionMenu at={menu.at} input={menu.input} menu={menu.menu} onChoose={(kind) => { choose(kind, menu.menu.territoryId); }} onClose={closeMenu} />
     : tappedNote !== undefined
@@ -79,7 +85,7 @@ export function useMapActions(scenario: Scenario, session: PlanningSession, disp
       : hoverNote !== undefined && hover !== undefined
         ? <ReachHoverCard at={hover.at} note={hoverNote} />
         : null;
-  const handlers = useMemo(() => (moving ? { onTerritoryHover, onTerritoryMenu } : { onTerritoryMenu }), [moving, onTerritoryHover, onTerritoryMenu]);
+  const handlers = useMemo(() => (explaining ? { onTerritoryHover, onTerritoryMenu } : { onTerritoryMenu }), [explaining, onTerritoryHover, onTerritoryMenu]);
   return {
     handlers,
     onTap,

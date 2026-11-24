@@ -53,7 +53,14 @@
           "objective": 5,
           "territory": 4
         },
+        "air": {
+          "supportChance": 0.35
+        },
         "recruits": {
+          "delayDrag": 0.15,
+          "fightersPerSupport": 3,
+          "quickTakeChance": 0.35,
+          "upkeepHorizon": 6,
           "upkeepTurns": 2
         },
         "victoryAlarm": {
@@ -98,7 +105,14 @@
           "objective": 5,
           "territory": 4
         },
+        "air": {
+          "supportChance": 0.35
+        },
         "recruits": {
+          "delayDrag": 0.15,
+          "fightersPerSupport": 3,
+          "quickTakeChance": 0.35,
+          "upkeepHorizon": 6,
           "upkeepTurns": 2
         },
         "victoryAlarm": {
@@ -143,7 +157,14 @@
           "objective": 5,
           "territory": 4
         },
+        "air": {
+          "supportChance": 0.35
+        },
         "recruits": {
+          "delayDrag": 0.15,
+          "fightersPerSupport": 3,
+          "quickTakeChance": 0.35,
+          "upkeepHorizon": 6,
           "upkeepTurns": 2
         },
         "victoryAlarm": {
@@ -167,7 +188,7 @@
         }
       }
     },
-    "note": "Design note. The weights are the Revision 7 computer player's constants (computerWeights, offensiveWeights, stakeWeights and victoryAlarm), moved into data unchanged, one profile per faction so a harness variant can change one side (E7, H4). The Build budget (EB-15) is economy-builds' starting value: builds spend at most 60 percent of what Recruit orders leave, at most 3 orders a turn, one new item per sub-territory with an empty queue; a design note for the harness to tune (H7). Design note (D23, D24, m3r1-ai-fixes): victoryAlarm.critical raises, by 1 + 3, the stake of a territory whose change of hands alone would decide the game: ground a rival in reach would win by taking, whoever holds it, and ground the faction itself would win by taking. perStep 1.5 over 3 steps gives the ground of a leader one step short the same x4, so striking the leader is weighed as much as guarding, and two steps short x2.5. riskFloor 0.25: attacking the leader, own losses and the danger at home count 1 / (1 + alarm), never under a quarter. spendSteps 2: at two steps or fewer, nothing is held back for builds and one-turn units come first where they can reach the leader. recruits.upkeepTurns 2: Recruit orders leave two turns of upkeep in stock where income does not cover it. withdraw.hopelessTakeChance 0.5: the computer player gives up contested ground when the standing battle is at least even odds to take it whole this turn, by the engine's own odds. withdraw.lastStandTakeChance 0.75: its seat, last objective or a victory-critical territory is given up only when it would be lost whole at least three times in four. Starting values, not tuned."
+    "note": "Design note. The weights are the Revision 7 computer player's constants (computerWeights, offensiveWeights, stakeWeights and victoryAlarm), moved into data unchanged, one profile per faction so a harness variant can change one side (E7, H4). The Build budget (EB-15) is economy-builds' starting value: builds spend at most 60 percent of what Recruit orders leave, at most 3 orders a turn, one new item per sub-territory with an empty queue; a design note for the harness to tune (H7). Design note (D23, D24, m3r1-ai-fixes): victoryAlarm.critical raises, by 1 + 3, the stake of a territory whose change of hands alone would decide the game: ground a rival in reach would win by taking, whoever holds it, and ground the faction itself would win by taking. perStep 1.5 over 3 steps gives the ground of a leader one step short the same x4, so striking the leader is weighed as much as guarding, and two steps short x2.5. riskFloor 0.25: attacking the leader, own losses and the danger at home count 1 / (1 + alarm), never under a quarter. spendSteps 2: at two steps or fewer, nothing is held back for builds and one-turn units come first at sites the leader would likely take. recruits.upkeepTurns 2: Recruit orders leave two turns of upkeep in stock where income does not cover it. recruits.upkeepHorizon 6: a recruit's price counts six turns of its upkeep, and each resource as a share of what six turns of income less upkeep would leave in stock. recruits.delayDrag 0.15: each turn of training or marching before a unit can fight lowers its worth. recruits.fightersPerSupport 3: at most one gun to three units that fight. recruits.quickTakeChance 0.35: while a rival is near victory, units that train in one turn come first only at a site it can reach and would take at about two to one or better. It replaces the rule that they came first wherever the rival could be met, which bought mostly security forces. withdraw.hopelessTakeChance 0.5: the computer player gives up contested ground when the standing battle is at least even odds to take it whole this turn, by the engine's own odds. withdraw.lastStandTakeChance 0.75: its seat, last objective or a victory-critical territory is given up only when it would be lost whole at least three times in four. Starting values, not tuned."
   },
   "unitTypes": [
     {
@@ -583,7 +604,7 @@
           "airfield"
         ]
       },
-      "note": "U2, U3. R10, R11: flies Patrol or Ground Support; +3 on Ground Support when its side wins the air, and +2 a fighter in the air battle (closeout, Air). Values from the owner's Rev 3 unit table (D2)."
+      "note": "U2, U3. R10, R11: flies Patrol or Ground Support; +3 on Ground Support, less what the air battle takes, and +2 a fighter in the air battle (closeout, Air). Values from the owner's Rev 3 unit table (D2)."
     },
     {
       "id": "bomber-squadron",
@@ -631,7 +652,7 @@
           "airfield"
         ]
       },
-      "note": "U2, U3, R11: +3 on Ground Support when its side wins the air, and +1 a bomber in the air battle (closeout, Air). Values from the owner's Rev 3 unit table (D2)."
+      "note": "U2, U3, R11: +3 on Ground Support, less what the air battle takes, and +1 a bomber in the air battle (closeout, Air). Values from the owner's Rev 3 unit table (D2)."
     },
     {
       "id": "general",
@@ -3277,7 +3298,7 @@
       "terrain": "open",
       "startHolder": "north",
       "development": {
-        "farms": 2
+        "farms": 1
       },
       "buildings": [
         "barracks",
@@ -3312,7 +3333,7 @@
       "terrain": "open",
       "startHolder": "north",
       "development": {
-        "farms": 3,
+        "farms": 2,
         "factory": 1
       },
       "buildings": [
@@ -3345,7 +3366,7 @@
       "terrain": "open",
       "startHolder": "north",
       "development": {
-        "farms": 2,
+        "farms": 1,
         "mines": 2
       },
       "buildings": [
@@ -3407,7 +3428,7 @@
       "terrain": "open",
       "startHolder": "north",
       "development": {
-        "farms": 2
+        "farms": 1
       },
       "buildings": [],
       "buildable": [
@@ -3436,7 +3457,7 @@
       "terrain": "open",
       "startHolder": "north",
       "development": {
-        "farms": 2
+        "farms": 1
       },
       "buildings": [],
       "buildable": [
@@ -3465,9 +3486,7 @@
       "territoryId": "castilla-y-leon",
       "terrain": "mountain",
       "startHolder": "north",
-      "development": {
-        "farms": 1
-      },
+      "development": {},
       "buildings": [],
       "buildable": [
         "depot",
@@ -3494,9 +3513,7 @@
       "territoryId": "castilla-y-leon",
       "terrain": "open",
       "startHolder": "north",
-      "development": {
-        "farms": 1
-      },
+      "development": {},
       "buildings": [],
       "buildable": [
         "depot",
@@ -3523,9 +3540,7 @@
       "territoryId": "castilla-y-leon",
       "terrain": "open",
       "startHolder": "north",
-      "development": {
-        "farms": 1
-      },
+      "development": {},
       "buildings": [],
       "buildable": [
         "depot",
@@ -7567,7 +7582,7 @@
       "id": "farms",
       "name": "Farms",
       "resource": "manpower",
-      "yieldPerLevel": 1,
+      "yieldPerLevel": 0.6,
       "maxLevel": 3,
       "upgrade": {
         "cost": {
@@ -7575,7 +7590,7 @@
         },
         "turns": 2
       },
-      "note": "$3, Q-ECON-1: food folds into Manpower; one Manpower is about 1,000 men. Price and time from the owner's Rev 3 building table (D4)."
+      "note": "$3, Q-ECON-1: food folds into Manpower; one Manpower is about 1,000 men. Price and time from the owner's Rev 3 building table (D4). 0.6 a level is the owner's Rev 4 answer (R4-1), so that Manpower is scarce. Castilla y León keeps 8 of its 16 levels (R4-2), in the Tierra de Campos first, because the North had more Manpower than its Funds could use."
     },
     {
       "id": "mines",
@@ -8508,6 +8523,53 @@
     "note": "T1: half-month turns from Late July 1936 (Q-MR-31)."
   },
   "air": {
+    "battleTable": [
+      {
+        "name": "Defender commands the air",
+        "support": "defender",
+        "aircraftLost": {
+          "attacker": 1,
+          "defender": 0
+        },
+        "upTo": 3
+      },
+      {
+        "name": "Defender holds the edge",
+        "support": "defender",
+        "aircraftLost": {
+          "attacker": 0,
+          "defender": 0
+        },
+        "upTo": 8
+      },
+      {
+        "name": "Contested sky",
+        "support": "none",
+        "aircraftLost": {
+          "attacker": 0,
+          "defender": 0
+        },
+        "upTo": 12
+      },
+      {
+        "name": "Attacker holds the edge",
+        "support": "attacker",
+        "aircraftLost": {
+          "attacker": 0,
+          "defender": 0
+        },
+        "upTo": 17
+      },
+      {
+        "name": "Attacker commands the air",
+        "support": "attacker",
+        "aircraftLost": {
+          "attacker": 0,
+          "defender": 1
+        },
+        "upTo": 20
+      }
+    ],
     "raidTable": [
       {
         "outcome": "air-eliminated",
@@ -8530,7 +8592,7 @@
     "reconTurns": 1,
     "supportMax": 2,
     "generalDeathRoll": 4,
-    "note": "U3, U4 and declog D7. The raid table is the owner's Rev 3 one (D5): 1-3 the raiders are lost, 4-7 nothing, 8-14 income cut, 15-20 a building hit. R11: supportMax 2, at most two aircraft count for Ground Support on one side (closeout, Air). R10: Rain grounds aircraft like Mud and Snow; a paved airfield still flies. generalDeathRoll 4 (a 1 in 5 chance that a general dies when his army is destroyed or routed) is a design note for the harness to tune (U5, Q-MR-28)."
+    "note": "U3, U4 and declog D7. The raid table is the owner's Rev 3 one (D5): 1-3 the raiders are lost, 4-7 nothing, 8-14 income cut, 15-20 a building hit. R11: supportMax 2, at most two aircraft count for Ground Support on one side (closeout, Air); battleTable is the Milestone 3 Rev 4 table (N11, P1): one d20 for both sides, the attacker's air rolls less the defender's and its anti-air; Ground Support goes to one side or nobody, and commanding the air shoots down one enemy aircraft. R10: Rain grounds aircraft like Mud and Snow; a paved airfield still flies. generalDeathRoll 4 (a 1 in 5 chance that a general dies when his army is destroyed or routed) is a design note for the harness to tune (U5, Q-MR-28)."
   },
   "generals": {
     "traits": [

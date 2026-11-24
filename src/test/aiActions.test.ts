@@ -1,4 +1,6 @@
+import { requireAiProfile } from "../main/engine/lookup";
 import { describe, expect, it } from "vitest";
+import { generateComputerSubmission } from "../main/ai/computerPlayer";
 import { planAirMissions } from "../main/ai/orders/air-mission";
 import { afterLinkWork, linkWorkCandidate, linkWorkGain } from "../main/ai/orders/linkWorks";
 import { legalMoves, withRoutes } from "../main/ai/orders/move";
@@ -10,7 +12,7 @@ import { linkBetween, linkKey, linkModifiers, linksOf, railOn, territoryOfSub } 
 import { seededRandom } from "../main/engine/random";
 import { raisedUnitId } from "../main/engine/recruitment/rules";
 import { initialGameState } from "../main/engine/resolution";
-import type { FactionId, GameState, LinkModifier, LinkWork, Order, Resources, Scenario } from "../main/engine/types";
+import { type FactionId, type GameState, isMoveOrder, type LinkModifier, type LinkWork, type MoveOrder, type Order, type Resources, type Scenario } from "../main/engine/types";
 import { holdWhole } from "./air/holdWhole";
 import { faction, move, spainWithAir, territory, unit, withUnits } from "./support";
 import { pinned } from "./pinned";
@@ -65,13 +67,30 @@ describe("March, Motor and the foot rule (R5)", () => {
     expect(legalMoves(noRail, roadless, regiment).some((order) => order.to === territory("castilla-la-mancha"))).toBe(true);
   });
 
-  it("sends trucks only with an army whose route they may take", () => {
+  it("sends trucks with no single step, not even four with a lone militia column", () => {
     const planned = [move("republic", "rep-wad-ras-1", "madrid", "castilla-la-mancha")];
-    const routed = withRoutes(noRail, roadless, republic, planned);
-    expect(routed.map((order) => order.unitId)).toEqual([unit("rep-wad-ras-1")]);
-    // With a road, the trucks go along.
+    expect(withRoutes(noRail, roadless, republic, planned)).toEqual(planned);
+    // With a road, the step still needs no trucks.
     const road = relink(roadless, "madrid", "castilla-la-mancha", [{ kind: "road", level: "track" }]);
-    expect(withRoutes(noRail, road, republic, planned).map((order) => order.unitId)).toContain(truckId);
+    expect(withRoutes(noRail, road, republic, planned)).toEqual(planned);
+    const four = [1, 2, 3, 4].reduce((state, serial) => raise(state, "republic", "truck-column", "madrid", serial), withUnits(scenario, [["rep-madrid-sierra-column", "republic", "madrid"], ["north-zamora-29", "north", "castilla-y-leon"]]));
+    const lone = [move("republic", "rep-madrid-sierra-column", "madrid", "castilla-y-leon")];
+    expect(withRoutes(scenario, four, republic, lone)).toEqual(lone);
+    expect(generateComputerSubmission(scenario, four, republic, seededRandom(1)).orders.filter((order) => isMoveOrder(order) && order.unitId.includes("truck"))).toEqual([]);
+  });
+
+  it("sends only as many trucks as the army's foot needs, to the largest army first", () => {
+    const foot = ["rep-wad-ras-1", "rep-covadonga-4", "rep-madrid-sierra-column"];
+    const held = [1, 2, 3].reduce((state, serial) => raise(state, "republic", "truck-column", "madrid", serial), republicBut(withUnits(scenario, foot.map((id) => [id, "republic", "madrid"] as const))));
+    const march = (id: string, to: string): MoveOrder => ({ ...move("republic", id, "madrid", to), legs: [{ kind: "land", to: territory("castilla-la-mancha") }, { kind: "land", to: territory(to) }] });
+    const trucksTo = (orders: readonly MoveOrder[], to: string) => withRoutes(noRail, held, republic, orders).filter((order) => order.to === to && order.unitId.includes("truck")).length;
+    expect([1, 2, 3].map((count) => trucksTo(foot.slice(0, count).map((id) => march(id, "valencia")), "valencia"))).toEqual([1, 1, 2]);
+    const split = [march("rep-wad-ras-1", "extremadura"), march("rep-covadonga-4", "valencia"), march("rep-madrid-sierra-column", "valencia")];
+    expect([trucksTo(split, "valencia"), trucksTo(split, "extremadura")]).toEqual([1, 1]);
+    // One truck left: the largest army gets it, the other is cut to its first step.
+    const two = withRoutes(noRail, { ...held, units: Object.fromEntries(Object.entries(held.units).filter(([id]) => !id.endsWith("_2") && !id.endsWith("_3"))) }, republic, split);
+    expect(two.filter((order) => order.to === "valencia")).toHaveLength(3);
+    expect(two.find((order) => order.unitId === unit("rep-wad-ras-1"))?.to).toBe("castilla-la-mancha");
   });
 
   it("checks the planned moves as the game routes them, dropping or cutting those it can't", () => {
@@ -106,6 +125,21 @@ describe("March, Motor and the foot rule (R5)", () => {
     const tracks: GameState = { ...held, builtLinks: Object.fromEntries(scenario.links.map((link) => [linkKey(link.a, link.b), [{ kind: "road", level: "track" }] as const])) };
     expect(trucks(tracks)).toEqual([]);
   });
+
+  it("recruits a truck only for two foot at the site that nothing there carries", () => {
+    const board = (types: readonly string[], training: GameState["training"] = []): GameState => {
+      const held = republicBut(withUnits(scenario, [["north-argel-27", "north", "valencia"]]), { valencia: "north" });
+      const stood = types.reduce((state, type, index) => raise(state, "republic", type, "madrid", index + 1), held);
+      return { ...stood, training, treasuries: { ...stood.treasuries, [republic]: { funds: 6, manpower: 50 } as Resources } };
+    };
+    const trucks = (state: GameState) => planRecruits(context(state)).filter((order) => order.unitTypeId === "truck-column" && order.territoryId === "madrid").length;
+    const trainee = (typeId: string): GameState["training"] => [{ factionId: republic, paid: {}, paused: false, territoryId: territory("madrid"), turnsLeft: 2, typeId: typeId as never, unitId: unit("trainee") }];
+    const foot = "infantry-regiment";
+    expect(trucks(board([foot, foot]))).toBe(1);
+    expect([board([foot]), board([foot, "cavalry-regiment"]), board([foot, foot, "truck-column"]), board([foot, foot, "tank-company"])].map(trucks)).toEqual([0, 0, 0, 0]);
+    expect(trucks(board([foot, foot, foot, foot, "truck-column"]))).toBe(1);
+    expect([trucks(board([foot], trainee(foot))), trucks(board([foot, foot], trainee("truck-column")))]).toEqual([1, 0]);
+  });
 });
 
 describe("Ground Support and Patrol (R10, R11)", () => {
@@ -127,11 +161,47 @@ describe("Ground Support and Patrol (R10, R11)", () => {
     expect(supporting(planAirMissions(context(empty, republic, attack)))).toEqual([]);
   });
 
-  it("keeps its aircraft off a battle whose air it would likely lose to the defenders' anti-air", () => {
-    const guarded = raise(start, "north", "anti-air-battery", "castilla-y-leon");
-    const orders = planAirMissions(context(guarded, republic, attack));
-    expect(supporting(orders)).toEqual([]);
-    expect(orders.find((order) => order.unitId === "rep-ni52-fighters")?.mission.kind).toBe("patrol");
+  const guarded = raise(start, "north", "anti-air-battery", "castilla-y-leon");
+  /** The scenario with the Republic's `air.supportChance`, and the cap on Ground Support. */
+  const daring = (supportChance: number, supportMax = scenario.air?.supportMax): Scenario => {
+    const { ai, air } = scenario;
+    if (air === undefined) throw new Error("Spain has air rules");
+    return { ...scenario, ai: { ...ai, profiles: { ...ai.profiles, [republic]: { ...requireAiProfile(scenario, republic), air: { supportChance } } } }, air: { ...air, supportMax } };
+  };
+
+  it("flies over the defenders' anti-air only while its support applies with the profile's chance", () => {
+    const orders = (supportChance: number, supportMax?: number) => planAirMissions(context(guarded, republic, attack, daring(supportChance, supportMax)));
+    // Against AA of 3 the attacker wins the air with a bomber (+1) on 6 faces of 20, a fighter (+2) on 7, and the two on 8.
+    expect(requireAiProfile(scenario, republic).air.supportChance).toBe(0.35);
+    expect(supporting(orders(0.35, 1))).toEqual([unit("rep-ni52-fighters")]);
+    expect(supporting(orders(0.36, 1))).toEqual([]);
+    expect(supporting(orders(0.41))).toEqual([]);
+    expect(orders(0.41).find((order) => order.unitId === "rep-ni52-fighters")?.mission.kind).toBe("patrol");
+  });
+
+  it("sends the aircraft that only pay together", () => {
+    // Neither alone reaches 8 faces of 20; the pair does. The bomber comes first in id order, and alone it would not fly.
+    for (const chance of [0.35, 0.4]) expect(supporting(planAirMissions(context(guarded, republic, attack, daring(chance)))).sort()).toEqual([unit("rep-breguet-bombers"), unit("rep-ni52-fighters")]);
+  });
+
+  it("sends the combination that adds most on average, and the rest on other missions", () => {
+    // Two fighters win the air on 9 faces of 20, a fighter and a bomber on 8; each way adds 6 then.
+    const two = raise(guarded, "republic", "fighter-squadron", "madrid");
+    const orders = planAirMissions(context(two, republic, attack, daring(0.35)));
+    expect(supporting(orders).sort()).toEqual(["r_republic_fighter-squadron_1", "rep-ni52-fighters"].map(unit));
+    expect(orders.find((order) => order.unitId === "rep-breguet-bombers")?.mission.kind).toBe("raid");
+  });
+
+  it("sends no aircraft that adds nothing: it could only be lost", () => {
+    const unitTypes = new Map([...scenario.index.unitTypes].map(([id, type]) => [id, id === "bomber-squadron" ? { ...type, effects: [] } : type]));
+    const bare: Scenario = { ...scenario, index: { ...scenario.index, unitTypes } };
+    expect(supporting(planAirMissions(context(start, republic, attack, bare)))).toEqual([unit("rep-ni52-fighters")]);
+  });
+
+  it("backs the biggest attack first, and the next with what is left", () => {
+    const both = [...attack, move("republic", "rep-madrid-security", "madrid", "andalucia")];
+    const targets = planAirMissions(context(start, republic, both, daring(0.35, 1))).flatMap(({ mission, unitId }) => (mission.kind === "support" ? [[unitId, mission.territoryId]] : []));
+    expect(targets).toEqual([["rep-breguet-bombers", "castilla-y-leon"], ["rep-ni52-fighters", "andalucia"]]);
   });
 
   it("patrols threatened ground, and its base when nothing is", () => {

@@ -72,7 +72,7 @@ describe("the Recruit tab and the Replenish order (X4, X7)", () => {
     expect(screen.getByText("Recruit at Barcelona")).toBeTruthy();
     expect(screen.getAllByText(/Not raised by the Republican Government/u).length).toBeGreaterThan(0);
     await user.click(screen.getByRole("button", { name: "One more Militia column" }));
-    expect(screen.getByText(/This turn: 3 Funds, 3k Manpower/u)).toBeTruthy();
+    expect(screen.getByText(/All recruiting and replenishing this turn: 3 Funds, 3k Manpower/u)).toBeTruthy();
     const session = store.getState().game.session;
     expect(session.phase === "planning" ? session.draft.recruits?.length : 0).toBe(1);
   });

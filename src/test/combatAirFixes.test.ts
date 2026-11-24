@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { holdWhole } from "./air/holdWhole";
-import { movePlanningView } from "../main/ai/computerPlayer";
+import { movePlanningView } from "../main/ai/planningView";
 import { raidIncomeDelta } from "../main/engine/air/hooks";
 import { estimateAttack } from "../main/engine/combat";
 import { applyGradeSide } from "../main/engine/d20/grades";
@@ -199,7 +199,7 @@ describe("B2, D27.4: the top of the fatigue track", () => {
 describe("B3: a raid cut falls on the faction raided", () => {
   it("cuts the raided faction only while it holds the ground, never the raider who took it", () => {
     const cut: GameState = { ...opening, raidCuts: [{ factionId: faction("north"), subTerritoryId: "valladolid" as SubTerritoryId, turnNumber: 1 }] };
-    expect(raidIncomeDelta({ factionId: faction("north"), income: {}, scenario, state: cut })).toEqual({ funds: -1.5, manpower: -3 });
+    expect(raidIncomeDelta({ factionId: faction("north"), income: {}, scenario, state: cut })).toEqual({ funds: -1.5, manpower: -1.2 });
     const taken = holdWhole(scenario, cut, territory("castilla-y-leon"), faction("republic"));
     expect(raidIncomeDelta({ factionId: faction("republic"), income: {}, scenario, state: taken })).toEqual({});
     expect(raidIncomeDelta({ factionId: faction("north"), income: {}, scenario, state: taken })).toEqual({});

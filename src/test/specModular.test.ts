@@ -182,6 +182,7 @@ describe("m3-modular loader rules", () => {
     ["L3 unknown source behind a block", (s: Json) => { block(s, "d20")["sources"] = [{ sourceId: "rumour" }]; }, "d20.sources: unknown source \"rumour\" (L3)"],
     ["L3 unknown source behind a catalogue entry", (s: Json) => { list(s["buildings"])[0]!["sources"] = [{ sourceId: "rumour" }]; }, "buildings[0].sources: unknown source"],
     ["L3 unknown source behind the AI profiles", (s: Json) => { block(s, "ai")["sources"] = [{ sourceId: "rumour" }]; }, "ai.sources: unknown source"],
+    ["L25 air battle table short of 20", (s: Json) => { list(block(s, "air")["battleTable"]).pop(); }, "air.battleTable: rows must rise and end at 20 (L25)"],
     ["L25 raid table short of 20", (s: Json) => { list(block(s, "air")["raidTable"]).pop(); }, "air.raidTable: bands must rise and end at 20 (L25)"]
   ])("rejects %s", (_name, mutate, expected) => {
     expect(issuesFor(mutate)).toContain(expected);

@@ -47,7 +47,7 @@ export interface InterceptionOutcome {
 
 /** R11: an aircraft flew Ground Support; the battle names the bonus as an `air-support` modifier. */
 export interface SupportFlownOutcome {
-  /** R11: with `battleIndex`, whether its side's Ground Support applied (false: the enemy won the air, or a tie). */
+  /** R11: with `battleIndex`, whether it counted for its side (false: its side did not win the air battle, or others took the places). */
   readonly applied?: boolean;
   /** Index of the battle supported, or absent when no battle was fought there. */
   readonly battleIndex?: number;
@@ -82,7 +82,7 @@ export interface AircraftLostOutcome {
 
 /** R11: one aircraft over a battle, with its numbers from its type's effects. */
 export interface AirBattleAircraft {
-  /** What it adds to its side's air battle roll (the `air-battle` effect: 2 a fighter, 1 a bomber in Spain). */
+  /** What it adds for its side in the air battle (the `air-battle` effect: 2 a fighter, 1 a bomber in Spain). */
   readonly airRoll: number;
   readonly factionId: FactionId;
   readonly mission: "patrol" | "support";
@@ -94,7 +94,7 @@ export interface AirBattleAircraft {
 /** R11: one side of an air battle: the aircraft over the battle on Ground Support or Patrol. */
 export interface AirBattleSide {
   readonly aircraft: readonly AirBattleAircraft[];
-  /** Anti-air the side adds as a plus (the best `raid-defence` there, negated); only the defender has it. */
+  /** Anti-air the side counts with, as a plus (the best `raid-defence` there, negated); only the defender has it. */
   readonly antiAir: number;
   readonly factionId: FactionId;
 }
@@ -107,22 +107,27 @@ export interface AirBattleInput {
   readonly supportMax?: number;
 }
 
-/** R11: each side's d20, from the `air-battle` roll stream. */
-export interface AirBattleRolls {
-  readonly attacker: number;
-  readonly defender: number;
+/** R11: one row of the air battle table (the scenario's `air.battleTable`): the scores up to `upTo`, higher better for the attacker. */
+export interface AirBattleRow {
+  /** How many aircraft over the battle each side loses, at most as many as it has there. */
+  readonly aircraftLost: { readonly attacker: number; readonly defender: number };
+  readonly name: string;
+  /** Whose Ground Support applies. The winner's counts in full, the other side's not at all. */
+  readonly support: "attacker" | "defender" | "none";
+  readonly upTo: number;
 }
 
-/** R11: the air battle's totals (d20 + each aircraft's air roll, plus the defender's AA) and who won the air. */
+/** R11: an air battle's one d20 (from the `air-battle` roll stream), what both sides' aircraft and the defender's AA made of it, and the row it read. */
 export interface AirBattleResult {
-  readonly attackerTotal: number;
-  readonly defenderTotal: number;
-  readonly rolls: AirBattleRolls;
-  /** The side whose Ground Support applies; `tie` means neither side's does. Nobody loses aircraft. */
-  readonly winner: "attacker" | "defender" | "tie";
+  readonly die: number;
+  /** The attacker's air rolls less the defender's and its AA. */
+  readonly modifier: number;
+  readonly row: AirBattleRow;
+  /** The die and the modifier, kept within 0 to 20. */
+  readonly score: number;
 }
 
-/** R11: the Ground Support that counted for each side: the aircraft and the roll they add (0 when none). */
+/** R11: the Ground Support that counted for each side: the aircraft and the roll they add (0, and none, when nothing counted). */
 export interface GroundSupportApplied {
   readonly attacker: { readonly roll: number; readonly unitIds: readonly UnitId[] };
   readonly defender: { readonly roll: number; readonly unitIds: readonly UnitId[] };
@@ -130,12 +135,14 @@ export interface GroundSupportApplied {
 
 /** R11: an air battle was fought over a battle before it (`air/groundSupport.ts`). */
 export interface AirBattleOutcome {
+  /** The aircraft shot down, the attacker's first. They left the board there and then, as a lost raider does. */
+  readonly aircraftLost: readonly UnitId[];
   /** Index of the battle the air battle was fought over. */
   readonly battleIndex: number;
   readonly input: AirBattleInput;
   readonly kind: "air-battle";
   readonly result: AirBattleResult;
-  /** What the winner's Ground Support added; both 0 on a tie. */
+  /** What each side's Ground Support added. */
   readonly support: GroundSupportApplied;
   readonly territoryId: TerritoryId;
 }

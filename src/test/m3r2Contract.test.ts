@@ -7,7 +7,8 @@ import { isPass, linkBetween, linkKey, linkModifiers } from "../main/engine/netw
 import { reachFor } from "../main/engine/network/reach";
 import { arrivalPocket, pocketOfArmy, pocketsOf } from "../main/engine/partition/pockets";
 import { initialGameState } from "../main/engine/resolution";
-import type { AirBattleInput, BuildProject, SubTerritoryId, TurnOutcome } from "../main/engine/types";
+import { unitName } from "../main/presentation/text";
+import type { AirBattleAircraft, AirBattleInput, BuildProject, SubTerritoryId, TurnOutcome } from "../main/engine/types";
 import { outcomesFor } from "../main/engine/visibility";
 import { projectIcon } from "../main/components/economy/EconomyIcon";
 import { projectBaseName, projectEffectText, projectName } from "../main/presentation/economy";
@@ -89,10 +90,10 @@ describe("air battle (air/airBattle.ts)", () => {
     defender: { aircraft: [{ airRoll: 2, factionId: faction("republic"), mission: "patrol", supportRoll: 0, unitId: unit("fighter") }], antiAir: 1, factionId: faction("republic") }
   };
 
-  it("adds each aircraft's air roll and the defender's AA to the d20s, and its odds agree", () => {
-    expect(airBattle(input, { attacker: 12, defender: 3 })).toEqual({ attackerTotal: 13, defenderTotal: 6, rolls: { attacker: 12, defender: 3 }, winner: "attacker" });
-    const odds = airBattleOdds(input);
-    expect(odds.attackerWins + odds.defenderWins + odds.tie).toBeCloseTo(1);
+  it("scores one d20 with both sides' air rolls and the defender's AA, and its odds agree", () => {
+    const table = scenario.air!.battleTable;
+    expect(airBattle(table, input, 12)).toEqual({ die: 12, modifier: -2, row: table[2], score: 10 });
+    expect(airBattleOdds(table, input).reduce((sum, { chance }) => sum + chance, 0)).toBeCloseTo(1);
   });
 });
 
@@ -128,12 +129,13 @@ describe("link works (R7; the rules are in networkEngine.test.ts)", () => {
 });
 
 describe("the new report events (R1, R2, R11)", () => {
-  const battle: TurnOutcome = {
+  const battle: Extract<TurnOutcome, { readonly kind: "air-battle" }> = {
+    aircraftLost: [],
     battleIndex: 0,
     input: { attacker: { aircraft: [], antiAir: 0, factionId: faction("north") }, defender: { aircraft: [], antiAir: 2, factionId: faction("republic") } },
     kind: "air-battle",
-    result: { attackerTotal: 12, defenderTotal: 9, rolls: { attacker: 11, defender: 5 }, winner: "attacker" },
-    support: { attacker: { roll: 3, unitIds: [] }, defender: { roll: 0, unitIds: [] } },
+    result: { die: 11, modifier: -2, row: { aircraftLost: { attacker: 0, defender: 0 }, name: "Contested sky", support: "none", upTo: 12 }, score: 9 },
+    support: { attacker: { roll: 0, unitIds: [] }, defender: { roll: 0, unitIds: [] } },
     territoryId: territory("madrid")
   };
   const cut: TurnOutcome = { factionId: faction("republic"), kind: "pocket-cut", subTerritoryIds: [sub("malaga")], territoryId: territory("andalucia"), unitIds: [unit("rep-wad-ras-1")] };
@@ -141,11 +143,28 @@ describe("the new report events (R1, R2, R11)", () => {
   const context = { scenario };
 
   it("reads them as plain sentences", () => {
-    expect(airLines["air-battle"](battle as never, context)).toBe(
-      "Air battle over Madrid: Northern Insurgent Command 12 against Republican Government 9; Northern Insurgent Command wins the air, and its Ground Support applies."
+    const start = "Air battle over Madrid, Northern Insurgent Command against Republican Government";
+    expect(airLines["air-battle"](battle, context)).toBe(`${start}: Contested sky (9); no Ground Support counts.`);
+    const plane = (id: string, factionId: string): AirBattleAircraft => ({ airRoll: 1, factionId: faction(factionId), mission: "support", supportRoll: 3, unitId: unit(id) });
+    const bomber = plane("r_north_bomber-squadron_1", "north");
+    const fighter = plane("r_republic_fighter-squadron_1", "republic");
+    const fought = {
+      ...battle,
+      input: { attacker: { ...battle.input.attacker, aircraft: [bomber, plane("r_north_bomber-squadron_2", "north")] }, defender: { ...battle.input.defender, aircraft: [fighter] } }
+    };
+    const none = { roll: 0, unitIds: [] };
+    expect(airLines["air-battle"](fought, context)).toBe(
+      `${start}: Contested sky (9); no Ground Support counts; Northern Insurgent Command's aircraft return home; Republican Government's aircraft return home.`
     );
-    const tie = { ...battle, result: { attackerTotal: 9, defenderTotal: 9, rolls: { attacker: 8, defender: 6 }, winner: "tie" } };
-    expect(airLines["air-battle"](tie as never, context)).toMatch(/a tie, so neither side's Ground Support applies\.$/u);
+    const row = { aircraftLost: { attacker: 1, defender: 0 }, name: "Defender commands the air", support: "defender", upTo: 3 } as const;
+    expect(airLines["air-battle"]({ ...fought, aircraftLost: [bomber.unitId], result: { ...fought.result, row, score: 2 }, support: { attacker: none, defender: { roll: 3, unitIds: [fighter.unitId] } } }, context)).toBe(
+      `${start}: Defender commands the air (2); Republican Government gets Ground Support; Northern Insurgent Command loses ${unitName(scenario, bomber.unitId)}; Northern Insurgent Command's other aircraft are driven off.`
+    );
+    // The winner may have no Ground Support to give, and a side with no aircraft left has none to drive off.
+    const swept = { ...row, aircraftLost: { attacker: 0, defender: 1 }, name: "Attacker commands the air", support: "attacker" } as const;
+    expect(airLines["air-battle"]({ ...fought, aircraftLost: [fighter.unitId], result: { ...fought.result, row: swept, score: 19 } }, context)).toBe(
+      `${start}: Attacker commands the air (19); no Ground Support counts; Republican Government loses ${unitName(scenario, fighter.unitId)}.`
+    );
     expect(contestedLines["pocket-cut"](cut as never, context)).toBe("Republican Government: 1 army is cut off in Andalucía, in a pocket of Málaga.");
     expect(contestedLines["pocket-cut"]({ ...cut, unitIds: [unit("a"), unit("b")] }, context)).toMatch(/: 2 armies are cut off/u);
     expect(contestedLines["territory-flipped"](flipped as never, context)).toBe("Northern Insurgent Command now holds all of País Vasco: no other side has ground armies there.");

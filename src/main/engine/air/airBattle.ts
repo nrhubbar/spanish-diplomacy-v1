@@ -1,47 +1,43 @@
-import type { AirBattleInput, AirBattleResult, AirBattleRolls, AirBattleSide, GroundSupportApplied } from "../types";
+import { compareIds } from "../board";
+import { scoreFor } from "../d20/odds";
+import { d20Faces } from "../d20/rules";
+import type { AirBattleAircraft, AirBattleInput, AirBattleResult, AirBattleRow, AirBattleSide, GroundSupportApplied, UnitId } from "../types";
 
 /**
  * R11: the air battle fought before a battle when both sides have aircraft over it (Ground
- * Support or Patrol), or the attacker's Ground Support faces the defender's AA. Each side rolls
- * d20 plus each of its aircraft's air roll (the `air-battle` effect: 2 a fighter, 1 a bomber in
- * Spain), and the defender adds its AA; the higher total wins the air and only its Ground Support
- * applies; a tie means neither side's does. Nobody loses aircraft, and recon takes no part. The
- * rolls come from the `air-battle` stream. Pure and roll-free: the caller rolls.
+ * Support or Patrol), or the attacker's Ground Support faces the defender's AA. One d20 decides it
+ * for both: the die, plus the air roll of each of the attacker's aircraft (the `air-battle`
+ * effect: 2 a fighter, 1 a bomber in Spain), less the defender's aircraft and AA, kept within 0 to
+ * 20, read on the scenario's `air.battleTable`. The row gives Ground Support to one side, or to
+ * nobody, and says how many aircraft each side loses. Recon takes no part. The die comes from the
+ * `air-battle` stream. Pure and roll-free: the caller rolls.
  */
-export type { AirBattleAircraft, AirBattleInput, AirBattleResult, AirBattleRolls, AirBattleSide, GroundSupportApplied } from "../types";
+export type { AirBattleAircraft, AirBattleInput, AirBattleResult, AirBattleRow, AirBattleSide, GroundSupportApplied } from "../types";
 
-/** The chances, 0 to 1 and summing to 1, of each air battle result. */
-export interface AirBattleOdds {
-  readonly attackerWins: number;
-  readonly defenderWins: number;
-  readonly tie: number;
+/** One row of the air battle table and its chance, 0 to 1; the rows' chances sum to 1. */
+export interface AirBattleChance {
+  readonly chance: number;
+  readonly row: AirBattleRow;
 }
 
-/** A side's total for a die: the die, its aircraft's air rolls and its AA. */
-function sideTotal(side: AirBattleSide, die: number): number {
-  return side.aircraft.reduce((sum, aircraft) => sum + aircraft.airRoll, die + side.antiAir);
+/** What a side counts with in the air battle: its aircraft's air rolls and its AA. */
+function sideStrength(side: AirBattleSide): number {
+  return side.aircraft.reduce((sum, aircraft) => sum + aircraft.airRoll, side.antiAir);
 }
 
-/** R11: the air battle's totals and who won the air. */
-export function airBattle(input: AirBattleInput, rolls: AirBattleRolls): AirBattleResult {
-  const attackerTotal = sideTotal(input.attacker, rolls.attacker);
-  const defenderTotal = sideTotal(input.defender, rolls.defender);
-  const winner = attackerTotal > defenderTotal ? "attacker" : defenderTotal > attackerTotal ? "defender" : "tie";
-  return { attackerTotal, defenderTotal, rolls, winner };
+/** R11: the air battle for a die: the score of both sides together, and the table's row. */
+export function airBattle(table: readonly AirBattleRow[], input: AirBattleInput, die: number): AirBattleResult {
+  const modifier = sideStrength(input.attacker) - sideStrength(input.defender);
+  const score = scoreFor(die, modifier);
+  const row = table.find((candidate) => score <= candidate.upTo);
+  if (row === undefined) throw new Error(`Invariant violated: no air battle row for score ${String(score)}.`);
+  return { die, modifier, row, score };
 }
 
-/** The odds of `airBattle` over every pair of d20 rolls, so the estimate always matches the rule. */
-export function airBattleOdds(input: AirBattleInput): AirBattleOdds {
-  const counts = { attacker: 0, defender: 0, tie: 0 };
-  for (let attacker = 1; attacker <= 20; attacker += 1) {
-    for (let defender = 1; defender <= 20; defender += 1) counts[airBattle(input, { attacker, defender }).winner] += 1;
-  }
-  return { attackerWins: counts.attacker / 400, defenderWins: counts.defender / 400, tie: counts.tie / 400 };
-}
-
-/** A side's aircraft on Ground Support. */
-function supporting(side: AirBattleSide): AirBattleSide["aircraft"] {
-  return side.aircraft.filter((aircraft) => aircraft.mission === "support");
+/** The chance of every row of the table over the d20's faces, so the estimate always matches the rule. */
+export function airBattleOdds(table: readonly AirBattleRow[], input: AirBattleInput): readonly AirBattleChance[] {
+  const rows = d20Faces.map((die) => airBattle(table, input, die).row);
+  return table.map((row) => ({ chance: rows.filter((hit) => hit === row).length / d20Faces.length, row }));
 }
 
 /**
@@ -50,29 +46,42 @@ function supporting(side: AirBattleSide): AirBattleSide["aircraft"] {
  */
 export function airBattleFought(input: AirBattleInput): boolean {
   const attacking = input.attacker.aircraft.length > 0;
-  return (attacking && input.defender.aircraft.length > 0) || (supporting(input.attacker).length > 0 && input.defender.antiAir > 0);
+  const supporting = input.attacker.aircraft.some((aircraft) => aircraft.mission === "support");
+  return (attacking && input.defender.aircraft.length > 0) || (supporting && input.defender.antiAir > 0);
+}
+
+/** The aircraft a side loses: the weakest in the air first, then the greatest Ground Support, then in id order. */
+function sideLost(side: AirBattleSide, count: number): readonly UnitId[] {
+  return [...side.aircraft]
+    .sort((a, b) => a.airRoll - b.airRoll || b.supportRoll - a.supportRoll || compareIds(a.unitId, b.unitId))
+    .slice(0, count)
+    .map((aircraft) => aircraft.unitId);
+}
+
+/** R11: the aircraft an air battle's row shoots down, the attacker's first. */
+export function aircraftLost(input: AirBattleInput, row: AirBattleRow): readonly UnitId[] {
+  return [...sideLost(input.attacker, row.aircraftLost.attacker), ...sideLost(input.defender, row.aircraftLost.defender)];
 }
 
 /**
- * R10, R11: the Ground Support a side adds when it applies: its aircraft on Ground Support, best
- * first (then in id order), at most `supportMax` of them, each adding its `battle-support` roll.
+ * R10, R11: the Ground Support a side adds: its aircraft on Ground Support, best first (then in id
+ * order), at most `supportMax` of them, each adding its `battle-support` roll.
  */
-function sideSupport(side: AirBattleSide, supportMax: number | undefined, applies: boolean): GroundSupportApplied["attacker"] {
-  if (!applies) return { roll: 0, unitIds: [] };
-  const best = [...supporting(side)]
-    .filter((aircraft) => aircraft.supportRoll > 0)
-    .sort((a, b) => b.supportRoll - a.supportRoll || (a.unitId < b.unitId ? -1 : a.unitId > b.unitId ? 1 : 0))
+function sideSupport(aircraft: readonly AirBattleAircraft[], supportMax: number | undefined): GroundSupportApplied["attacker"] {
+  const best = aircraft
+    .filter((entry) => entry.mission === "support" && entry.supportRoll > 0)
+    .sort((a, b) => b.supportRoll - a.supportRoll || compareIds(a.unitId, b.unitId))
     .slice(0, supportMax ?? Number.POSITIVE_INFINITY);
-  return { roll: best.reduce((sum, aircraft) => sum + aircraft.supportRoll, 0), unitIds: best.map((aircraft) => aircraft.unitId) };
+  return { roll: best.reduce((sum, entry) => sum + entry.supportRoll, 0), unitIds: best.map((entry) => entry.unitId) };
 }
 
 /**
- * R11: the Ground Support each side gets, given who won the air: only the winner's, none on a tie,
- * and, with no air battle (`undefined`), every side's that flew.
+ * R11: the Ground Support each side gets. After an air battle (`row`), only the side its row names
+ * gets any, from the aircraft it still has; with no air battle (`undefined`), both sides do.
  */
-export function groundSupport(input: AirBattleInput, winner: AirBattleResult["winner"] | undefined): GroundSupportApplied {
-  return {
-    attacker: sideSupport(input.attacker, input.supportMax, winner === undefined || winner === "attacker"),
-    defender: sideSupport(input.defender, input.supportMax, winner === undefined || winner === "defender")
-  };
+export function groundSupport(input: AirBattleInput, row: AirBattleRow | undefined): GroundSupportApplied {
+  const lost = row === undefined ? [] : aircraftLost(input, row);
+  const counting = (side: "attacker" | "defender"): readonly AirBattleAircraft[] =>
+    (row === undefined || row.support === side ? input[side].aircraft.filter((aircraft) => !lost.includes(aircraft.unitId)) : []);
+  return { attacker: sideSupport(counting("attacker"), input.supportMax), defender: sideSupport(counting("defender"), input.supportMax) };
 }

@@ -1,0 +1,161 @@
+{
+  "cells": [
+    {
+      "id": "baseline",
+      "metrics": {
+        "battles": {
+          "byColumn": {
+            "1": {
+              "battles": 2,
+              "results": {
+                "driven-out": 1,
+                "stalemate": 1
+              },
+              "share": 1
+            }
+          },
+          "byTurn": [
+            1,
+            0
+          ],
+          "perTurn": 0.6667,
+          "total": 2
+        },
+        "decided": 2,
+        "decidedRate": {
+          "high": 1,
+          "low": 0.3424,
+          "value": 1
+        },
+        "firstTurn": {
+          "red": {
+            "meanOrders": 1,
+            "topRoutes": [
+              {
+                "games": 2,
+                "route": "westfold>lowlands",
+                "share": 1
+              }
+            ]
+          },
+          "blue": {
+            "meanOrders": 1,
+            "topRoutes": [
+              {
+                "games": 2,
+                "route": "harbor>highlands",
+                "share": 1
+              }
+            ]
+          }
+        },
+        "freezeRate": {
+          "high": 0.6576,
+          "low": 0,
+          "value": 0
+        },
+        "freezes": 0,
+        "games": 2,
+        "length": {
+          "decided": {
+            "max": 2,
+            "mean": 1.5,
+            "median": 1.5,
+            "min": 1,
+            "p10": 1.1,
+            "p25": 1.25,
+            "p75": 1.75,
+            "p90": 1.9
+          },
+          "histogram": [
+            {
+              "from": 1,
+              "games": 2,
+              "to": 3
+            }
+          ]
+        },
+        "losses": {
+          "red": {
+            "men": 30,
+            "menPerGame": 15,
+            "units": 0,
+            "unitsPerGame": 0
+          },
+          "blue": {
+            "men": 40,
+            "menPerGame": 20,
+            "units": 0,
+            "unitsPerGame": 0
+          }
+        },
+        "sanity": {
+          "abandonments": 0,
+          "earlyWinRate": {
+            "high": 1,
+            "low": 0.3424,
+            "value": 1
+          },
+          "earlyWins": 2,
+          "longestQuiet": {
+            "max": 0,
+            "mean": 0,
+            "median": 0,
+            "min": 0,
+            "p10": 0,
+            "p25": 0,
+            "p75": 0,
+            "p90": 0
+          },
+          "objectiveChecks": 1
+        },
+        "sharedVictories": 0,
+        "stalled": 0,
+        "stalledRate": {
+          "high": 0.6576,
+          "low": 0,
+          "value": 0
+        },
+        "wins": {
+          "red": {
+            "shareOfDecided": {
+              "high": 1,
+              "low": 0.3424,
+              "value": 1
+            },
+            "shareOfGames": {
+              "high": 1,
+              "low": 0.3424,
+              "value": 1
+            },
+            "wins": 2
+          },
+          "blue": {
+            "shareOfDecided": {
+              "high": 0.6576,
+              "low": 0,
+              "value": 0
+            },
+            "shareOfGames": {
+              "high": 0.6576,
+              "low": 0,
+              "value": 0
+            },
+            "wins": 0
+          }
+        }
+      },
+      "variant": "baseline"
+    }
+  ],
+  "comparisons": [],
+  "factions": [
+    "red",
+    "blue"
+  ],
+  "format": "spanish-diplomacy-sim/1",
+  "games": 2,
+  "scenarioId": "tiny-front",
+  "seeds": "1-2",
+  "turnLimit": 3
+}

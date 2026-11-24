@@ -88,6 +88,15 @@ export const calendarSchema = z.strictObject({
 export const raidOutcomeSchema = z.enum(["air-eliminated", "nothing-hit", "income-cut", "building-hit"]);
 
 export const airSchema = z.strictObject({
+  battleTable: z
+    .array(z.strictObject({
+      aircraftLost: z.strictObject({ attacker: wholeSchema, defender: wholeSchema }).meta({ description: "How many aircraft over the battle each side loses, at most as many as it has there." }),
+      name: textSchema,
+      support: z.enum(["attacker", "defender", "none"]).meta({ description: "Whose Ground Support applies; the other side's does not." }),
+      upTo: z.number().int().min(0).max(20)
+    }))
+    .min(1)
+    .meta({ description: "R11: what an air battle's score (0 to 20, higher better for the attacker) gives: whose Ground Support applies, and the aircraft each side loses." }),
   raidTable: z.array(z.strictObject({ outcome: raidOutcomeSchema, upTo: z.number().int().min(1).max(20) })).min(1),
   interceptRoll: signedRoll.negative(),
   reconTurns: positiveWholeSchema,
@@ -133,8 +142,15 @@ export const aiSchema = z
             stallStep: weight,
             stallCap: wholeSchema
           }),
+          air: z.strictObject({
+            supportChance: shareSchema.meta({ description: "R11: the least chance that an attack's Ground Support applies after the air battle, for aircraft to fly it." })
+          }),
           stakes: z.strictObject({ city: weight, objective: weight, territory: weight }),
           recruits: z.strictObject({
+            delayDrag: weight.meta({ description: "How much each turn until a unit can fight lowers its worth: it is divided by one plus this for each turn." }),
+            fightersPerSupport: positiveWholeSchema.meta({ description: "Own units that can fight for each support unit (cannot-attack-alone), at least." }),
+            quickTakeChance: shareSchema.meta({ description: "At this chance or more that a rival near victory takes a site, units that train in one turn come first there." }),
+            upkeepHorizon: positiveWholeSchema.meta({ description: "Turns of upkeep counted in a unit's price, and of income and upkeep in what the faction can spend on recruits." }),
             upkeepTurns: positiveWholeSchema.meta({ description: "Turns of upkeep the Recruit orders leave in stock, at today's income, for what the unit types' upkeep takes." })
           }),
           victoryAlarm: z.strictObject({

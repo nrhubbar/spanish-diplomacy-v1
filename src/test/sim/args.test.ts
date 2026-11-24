@@ -15,6 +15,13 @@ describe("sim arguments", () => {
     expect(defaultTurnLimit).toBe(66);
   });
 
+  it("reads what to record, and which finished run to report again", () => {
+    expect(parseArgs(["--record", "inventory"]).record).toBe("inventory");
+    expect(parseArgs(["--report=build/sim/r"]).report).toBe("build/sim/r");
+    expect(() => parseArgs(["--record", "all"])).toThrow(UsageError);
+    expect(usage).toContain("--record inventory");
+  });
+
   it("reads every option, in either --flag value or --flag=value form", () => {
     const options = parseArgs([
       "--games", "3", "--first-seed=10", "--turns", "12", "--variant", "a.json", "--variant=b.json",

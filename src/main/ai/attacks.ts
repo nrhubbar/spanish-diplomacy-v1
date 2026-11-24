@@ -39,8 +39,11 @@ export interface AttackContext {
   readonly weights: AttackWeights;
 }
 
+/** P4: the share of a territory's prize that taking part of it is worth. */
+export const partialGround = 0.5;
+
 /** Expected value lost by each side, in combat-value points, from the result distribution (M16). */
-export function expectedLosses(odds: BattleOdds, demoralizedShare: number): { readonly attacker: number; readonly defender: number } {
+export function expectedLosses(odds: Pick<BattleOdds, "attack" | "defence" | "expected">, demoralizedShare: number): { readonly attacker: number; readonly defender: number } {
   // D2: each grade costs a share of men and demoralizes a share of value.
   const { attack, defence, expected } = odds;
   return {
@@ -134,9 +137,9 @@ function scoreAttack(context: AttackContext, target: TerritoryId, armies: readon
 function battleScore(context: AttackContext, target: TerritoryId, odds: BattleOdds): number {
   const { assessment, weights } = context;
   const losses = expectedLosses(odds, weights.demoralizedShare);
-  // P4: a partial grade takes some of the territory; count it at half the prize, or in full where
+  // P4: a partial grade takes some of the territory; count it at `partialGround` of the prize, or in full where
   // any ground at all takes the territory off the count of a rival near victory.
-  const partial = (odds.gainChance - odds.takeChance) * (assessment.spoils(target) ? 1 : 0.5);
+  const partial = (odds.gainChance - odds.takeChance) * (assessment.spoils(target) ? 1 : partialGround);
   return (odds.takeChance + partial) * context.prize(target)
     + weights.enemyLoss * losses.defender
     - weights.ownLoss * assessment.risk(target) * losses.attacker;

@@ -1,3 +1,4 @@
+import type { RecordKind } from "./game";
 import { defaultTurnLimit } from "./run";
 
 export const defaultGames = 200;
@@ -6,6 +7,10 @@ export const defaultOutDir = "build/sim";
 export interface CliOptions {
   readonly help: boolean;
   readonly outDir: string;
+  /** What each game records beyond its outcome; absent, nothing more. */
+  readonly record?: RecordKind;
+  /** A finished run's folder whose tables to write again; no game is played. */
+  readonly report?: string;
   /** The run folder's name; the CLI picks a time-stamped one when absent. */
   readonly run?: string;
   /** Absent: the only shipped scenario (`defaultScenarioId`). */
@@ -29,6 +34,9 @@ export const usage = `Usage: npm run sim -- [options]
   --workers N        worker threads (default: one per core, less one)
   --run NAME         run folder name under the output folder (default: a time stamp)
   --out DIR          output folder (default ${defaultOutDir})
+  --record inventory also record what every side had, turn by turn, how long games
+                     take, and the report tables
+  --report DIR       write the report tables of a finished --record run again; plays nothing
   --help             show this help
 `;
 
@@ -70,6 +78,8 @@ export function parseArgs(argv: readonly string[]): CliOptions {
   let run: string | undefined;
   let outDir = defaultOutDir;
   let help = false;
+  let record: RecordKind | undefined;
+  let report: string | undefined;
   const variantFiles: string[] = [];
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -94,6 +104,13 @@ export function parseArgs(argv: readonly string[]): CliOptions {
       case "--variant": variantFiles.push(value()); break;
       case "--scenario": scenarioId = value(); break;
       case "--workers": workers = positiveInteger(flag, value()); break;
+      case "--report": report = value(); break;
+      case "--record": {
+        const kind = value();
+        if (kind !== "inventory") throw new UsageError(`--record: "${kind}" is not something to record; use inventory.`);
+        record = kind;
+        break;
+      }
       case "--out": outDir = value(); break;
       case "--run": {
         const name = value();
@@ -107,6 +124,8 @@ export function parseArgs(argv: readonly string[]): CliOptions {
   return {
     help,
     outDir,
+    ...(record === undefined ? {} : { record }),
+    ...(report === undefined ? {} : { report }),
     ...(run === undefined ? {} : { run }),
     ...(scenarioId === undefined ? {} : { scenarioId }),
     seeds: seeds ?? Array.from({ length: games }, (_, offset) => firstSeed + offset),

@@ -19,7 +19,13 @@ export const modeNames: Readonly<Record<MoveMode, string>> = { march: "March", m
 /** One mode on a card: the legs its order carries (none for a plain step), or why it can't be used. */
 export type ModeChip =
   | { readonly legs?: readonly MoveLeg[]; readonly mode: MoveMode; readonly ok: true }
-  | { readonly mode: MoveMode; readonly ok: false; readonly reason: string };
+  | {
+      /** The way is there, but the units ticked or ordered leave it no room (trains, trucks, ports) or no army to go with. */
+      readonly full?: boolean;
+      readonly mode: MoveMode;
+      readonly ok: false;
+      readonly reason: string;
+    };
 
 /** The legs an order carries for a route: none for a plain step (CT-6), as Move planning does. */
 export function orderLegs(route: Pick<MoveRoute, "legs" | "shape">): readonly MoveLeg[] | undefined {
@@ -53,6 +59,42 @@ function noRouteReason(scenario: Scenario, mode: LandMode): string {
   return reasons[mode];
 }
 
+/** One mode of travel to a target: every leg list the engine's own order check takes (none for a plain step), or why there is none. */
+export interface ModeOption {
+  readonly mode: MoveMode;
+  readonly reason: string;
+  readonly ways: readonly (readonly MoveLeg[] | undefined)[];
+}
+
+function wayKey(legs: readonly MoveLeg[] | undefined): string {
+  return (legs ?? []).map((leg) => `${leg.kind}:${leg.to}`).join(">");
+}
+
+/**
+ * Every mode a unit could take from `from` to `to`, its ways most direct first, with `offered`
+ * (the route the game offers) first of its mode. Room on trains, in ports and in trucks is the
+ * army's and is not judged here.
+ */
+export function modeOptions(scenario: Scenario, state: GameState, factionId: FactionId, unitId: UnitId, offered: MoveRoute): readonly ModeOption[] {
+  const { from, to } = offered;
+  const option = (mode: LandMode): ModeOption => {
+    let reason: string | undefined;
+    const ways = candidates(scenario, mode, from, to).flatMap((each): (readonly MoveLeg[] | undefined)[] => {
+      // A plain step carries no legs (CT-6).
+      const legs = mode === "march" ? undefined : each;
+      const verdict = validateMoveOrder(scenario, state, { factionId, from, kind: "move", ...(legs === undefined ? {} : { legs }), to, unitId });
+      if (verdict.ok) return [legs];
+      reason ??= verdict.reason;
+      return [];
+    });
+    if (mode !== offered.mode) return { mode, reason: reason ?? noRouteReason(scenario, mode), ways };
+    const first = orderLegs(offered);
+    return { mode, reason: "", ways: [first, ...ways.filter((legs) => wayKey(legs) !== wayKey(first))] };
+  };
+  const land = cardModes.map(option);
+  return offered.mode === "sea" ? [...land, { mode: "sea", reason: "", ways: [orderLegs(offered)] }] : land;
+}
+
 /**
  * U6: every mode on a unit's card for one target. `offered` is the route the game offers it
  * (`moveRoutes`); it is always available. Each other land mode is available when one of its leg
@@ -61,21 +103,14 @@ function noRouteReason(scenario: Scenario, mode: LandMode): string {
  */
 export function modeChips(scenario: Scenario, state: GameState, factionId: FactionId, unitId: UnitId, offered: MoveRoute, others: readonly MoveOrder[] = []): readonly ModeChip[] {
   const { from, to } = offered;
-  const legs = orderLegs(offered);
-  const chosen = (mode: MoveMode): ModeChip => ({ ...(legs === undefined ? {} : { legs }), mode, ok: true });
-  const other = (mode: LandMode): ModeChip => {
-    let reason: string | undefined;
-    for (const each of candidates(scenario, mode, from, to)) {
-      // A plain step carries no legs (CT-6).
-      const carried = mode === "march" ? {} : { legs: each };
-      const order: MoveOrder = { factionId, from, kind: "move", ...carried, to, unitId };
-      const verdict = validateMoveOrder(scenario, state, order);
-      const refused = verdict.ok ? boardingRefusal(scenario, state, [order], others) : verdict.reason;
+  return modeOptions(scenario, state, factionId, unitId, offered).map(({ mode, reason, ways }): ModeChip => {
+    let full: string | undefined;
+    for (const legs of ways) {
+      const carried = legs === undefined ? {} : { legs };
+      const refused = mode === offered.mode ? undefined : boardingRefusal(scenario, state, [{ factionId, from, kind: "move", ...carried, to, unitId }], others);
       if (refused === undefined) return { ...carried, mode, ok: true };
-      reason ??= refused;
+      full ??= refused;
     }
-    return { mode, ok: false, reason: reason ?? noRouteReason(scenario, mode) };
-  };
-  const land = cardModes.map((mode) => (mode === offered.mode ? chosen(mode) : other(mode)));
-  return offered.mode === "sea" ? [...land, chosen("sea")] : land;
+    return { mode, ok: false, reason: full ?? reason };
+  });
 }

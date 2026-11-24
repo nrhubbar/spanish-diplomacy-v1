@@ -180,6 +180,21 @@
                 ],
                 "additionalProperties": false
               },
+              "air": {
+                "type": "object",
+                "properties": {
+                  "supportChance": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1,
+                    "description": "R11: the least chance that an attack's Ground Support applies after the air battle, for aircraft to fly it."
+                  }
+                },
+                "required": [
+                  "supportChance"
+                ],
+                "additionalProperties": false
+              },
               "stakes": {
                 "type": "object",
                 "properties": {
@@ -203,6 +218,28 @@
               "recruits": {
                 "type": "object",
                 "properties": {
+                  "delayDrag": {
+                    "type": "number",
+                    "description": "How much each turn until a unit can fight lowers its worth: it is divided by one plus this for each turn."
+                  },
+                  "fightersPerSupport": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 9007199254740991,
+                    "description": "Own units that can fight for each support unit (cannot-attack-alone), at least."
+                  },
+                  "quickTakeChance": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1,
+                    "description": "At this chance or more that a rival near victory takes a site, units that train in one turn come first there."
+                  },
+                  "upkeepHorizon": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 9007199254740991,
+                    "description": "Turns of upkeep counted in a unit's price, and of income and upkeep in what the faction can spend on recruits."
+                  },
                   "upkeepTurns": {
                     "type": "integer",
                     "exclusiveMinimum": 0,
@@ -211,6 +248,10 @@
                   }
                 },
                 "required": [
+                  "delayDrag",
+                  "fightersPerSupport",
+                  "quickTakeChance",
+                  "upkeepHorizon",
                   "upkeepTurns"
                 ],
                 "additionalProperties": false
@@ -326,6 +367,7 @@
             "required": [
               "computer",
               "offensive",
+              "air",
               "stakes",
               "recruits",
               "victoryAlarm",
@@ -3414,6 +3456,62 @@
     "air": {
       "type": "object",
       "properties": {
+        "battleTable": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "aircraftLost": {
+                "type": "object",
+                "properties": {
+                  "attacker": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "defender": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "attacker",
+                  "defender"
+                ],
+                "additionalProperties": false,
+                "description": "How many aircraft over the battle each side loses, at most as many as it has there."
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "support": {
+                "type": "string",
+                "enum": [
+                  "attacker",
+                  "defender",
+                  "none"
+                ],
+                "description": "Whose Ground Support applies; the other side's does not."
+              },
+              "upTo": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 20
+              }
+            },
+            "required": [
+              "aircraftLost",
+              "name",
+              "support",
+              "upTo"
+            ],
+            "additionalProperties": false
+          },
+          "description": "R11: what an air battle's score (0 to 20, higher better for the attacker) gives: whose Ground Support applies, and the aircraft each side loses."
+        },
         "raidTable": {
           "minItems": 1,
           "type": "array",
@@ -3494,6 +3592,7 @@
         }
       },
       "required": [
+        "battleTable",
         "raidTable",
         "interceptRoll",
         "reconTurns"

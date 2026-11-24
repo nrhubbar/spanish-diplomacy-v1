@@ -13,6 +13,8 @@ import { WorksBadge } from "./WorksBadge";
 export interface UnitCounterProps {
   /** Set on an aircraft's card: whether its base's weather keeps it on the ground. */
   readonly air?: { readonly grounded: boolean };
+  /** Set on a general: his name, trait and die effect, shown on hover and focus in place of the name (N10). */
+  readonly effect?: string | undefined;
   readonly factionColor: string;
   readonly figures: ArmyFigures;
   /** Accessible name: the army, its faction, its figures in words, and its order state. */
@@ -41,7 +43,7 @@ export interface UnitCounterProps {
  * bottom right, a planned order top right. Every badge is decorative; the accessible name says
  * it in words.
  */
-export function UnitCounter({ air, designation, factionColor, figures, label, metrics, name, onSelect, ordered, position, selected, symbol, ticked, unit, worksMax }: UnitCounterProps): JSX.Element {
+export function UnitCounter({ air, designation, effect, factionColor, figures, label, metrics, name, onSelect, ordered, position, selected, symbol, ticked, unit, worksMax }: UnitCounterProps): JSX.Element {
   const style = cssVariables(
     { "--faction-color": factionColor, "--strength-share": strengthShare(figures).toFixed(3) },
     { height: metrics.height, left: position.x, top: position.y, width: metrics.width }
@@ -62,11 +64,12 @@ export function UnitCounter({ air, designation, factionColor, figures, label, me
       }}
       style={style}
       tabIndex={onSelect === undefined ? -1 : 0}
-      title={name}
+      title={effect === undefined ? name : undefined}
       type="button"
     >
       {/* The name comes from this text, not aria-label, so it never mismatches the printed figures. */}
-      <span className="visually-hidden">{label}</span>
+      <span className="visually-hidden">{effect === undefined ? label : `${label}. ${effect}`}</span>
+      {effect === undefined ? null : <span aria-hidden="true" className="unit-counter-tip">{effect}</span>}
       <span aria-hidden="true" className="unit-counter-head">
         <span className="unit-counter-symbol" dangerouslySetInnerHTML={{ __html: symbol }} />
         <span className="unit-counter-designation">{designation ?? unitDesignation(name)}</span>

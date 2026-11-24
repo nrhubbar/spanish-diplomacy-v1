@@ -3,13 +3,12 @@ import { useNavigate } from "react-router";
 import { useAppDispatch } from "../../hooks";
 import { exitGame } from "../../state/gameSlice";
 import { paths } from "../../state/routing";
-import { SoundControls } from "../SoundControls";
 import { ShellIcon } from "./ShellIcon";
 
 /**
- * U1 (Q-R2-15): the hamburger menu at the end of the top bar, in place of "Exit game": sound, Settings,
- * Save (not built yet, so disabled) and Exit Game, which asks first. Escape or a click outside
- * closes it.
+ * U1 (Q-R2-15): the hamburger menu at the end of the top bar, in place of "Exit game": Settings
+ * (with the sound levels, N9), Save (not built yet, so disabled) and Exit Game, which asks first.
+ * Escape or a click outside closes it.
  */
 export function GameMenu(): JSX.Element {
   const dispatch = useAppDispatch();
@@ -47,7 +46,7 @@ export function GameMenu(): JSX.Element {
         <ShellIcon name="menu" />
       </button>
       {open ? (
-        <div aria-label="Game menu" className="game-menu-list" id={menuId} role="group">
+        <div aria-label="Game menu" className="game-menu-list" data-own-escape="true" id={menuId} role="group">
           {confirming ? (
             <div className="exit-confirm" role="group" aria-label="Leave this game?">
               <span>Leave this game?</span>
@@ -56,11 +55,6 @@ export function GameMenu(): JSX.Element {
             </div>
           ) : (
             <>
-              <section aria-labelledby={`${menuId}-sound`} className="game-menu-sound">
-                <h2 id={`${menuId}-sound`}>Sound</h2>
-                <SoundControls />
-              </section>
-              <hr />
               <SettingsItem />
               <button aria-describedby={`${menuId}-later`} className="game-menu-item" disabled type="button">
                 <ShellIcon name="save" />

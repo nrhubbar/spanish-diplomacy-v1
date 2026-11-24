@@ -52,6 +52,11 @@ export function transportOf(scenario: Scenario, state: GameState, unitIds: reado
   return { allMobile: counted > 0 && mobile === counted, capacity, needing, transports };
 }
 
+/** M1: the units one unit carries by Motor; 0 for a unit that is not transport. */
+export function carrierCapacity(scenario: Scenario, state: GameState, unitId: UnitId): number {
+  return transportOf(scenario, state, [unitId]).capacity;
+}
+
 /** M1: the transport bonus when the army's transport carries every unit that needs it (an all-cavalry army needs none). */
 export function truckBonus(scenario: Scenario, state: GameState, unitIds: readonly UnitId[]): number {
   const transport = transportOf(scenario, state, unitIds);

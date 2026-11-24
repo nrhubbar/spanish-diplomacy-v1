@@ -1,0 +1,5 @@
+sim: tiny-front, seeds 1-2, turn limit 3, 2 games -> OUT
+freeze: no winner by the turn limit. stalled: 5 or more quiet turns in a row (Revision 7's S2).
+baseline: 2 games, decided 100.0% [34.2%, 100.0%], freezes 0.0% [0.0%, 65.8%], stalled 0.0% [0.0%, 65.8%], median length 1.5
+  wins of decided: red 100.0% [34.2%, 100.0%], blue 0.0% [0.0%, 65.8%]
+  battles per turn 0.6667, abandonments 0, early wins 2

@@ -1,3 +1,4 @@
+import { type AirOverBattle, airOverHookedBattle } from "../air/groundSupport";
 import type { Armies, Combatant } from "../board";
 import { pick } from "../dice";
 import type { TurnScratch } from "../phases/draft";
@@ -28,6 +29,8 @@ export interface Engagement {
 
 /** A battle once its die is rolled: the sides, the odds, the score, the grade, and each side's casualties. */
 export interface FoughtBattle {
+  /** R11: the air over it, as its roll counted it; absent on the road (D27.5) and with no aircraft over it. */
+  readonly air?: AirOverBattle;
   readonly attacker: BattleSide;
   readonly attackerCasualties: Casualties;
   readonly defender: BattleSide;
@@ -79,7 +82,9 @@ export function fight(scenario: Scenario, input: BattleInput, armies: Armies, en
   const odds = battleOdds(rules, attacker.value, defender.value, modifiers);
   const score = scoreFor(die, odds.rollModifier);
   const grade = gradeAt(rules, odds.column, score);
+  const air = airOver(scenario, input, engagement, index);
   return {
+    ...(air === undefined ? {} : { air }),
     attacker,
     attackerCasualties: applyGradeSide(scenario, start, grade.attacker, attacker, armies, rules.breakUpShare),
     defender,
@@ -92,6 +97,14 @@ export function fight(scenario: Scenario, input: BattleInput, armies: Armies, en
     odds,
     score
   };
+}
+
+/** R11: the air over a battle, with the same input and die the combat hook gave its roll. */
+function airOver(scenario: Scenario, { scratch, start }: BattleInput, { context, defenders }: Engagement, index: number): AirOverBattle | undefined {
+  const { territoryId } = context;
+  if (scratch?.air === undefined || territoryId === undefined) return undefined;
+  const defenderUnitIds = defenders.map((combatant) => combatant.unit.id);
+  return airOverHookedBattle({ ...context, battleIndex: index, defenderUnitIds, scenario, state: start, territoryId }, scratch.air);
 }
 
 /** C14, D8: the full record of one battle. */

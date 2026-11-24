@@ -11,6 +11,7 @@ import {
   territoryIdsOf,
   type TurnOutcome
 } from "./engine";
+import { createInventory, type Inventory } from "./inventory";
 
 /** A game won before this turn is an early win (S1). */
 export const earlyWinTurn = 4;
@@ -35,6 +36,8 @@ export interface GameLine {
   readonly abandonments: number;
   /** Turn-1 orders per faction, as `from>to` routes in submission order. */
   readonly firstTurnRoutes: Readonly<Record<string, readonly string[]>>;
+  /** What every side had on the map and queued, turn by turn. Only with `--record inventory`. */
+  readonly inventory?: Inventory;
   readonly losses: Readonly<Record<string, FactionLosses>>;
   /** S3 checks made: turns on which a faction held an objective, summed over factions. Never 0 in a real game. */
   readonly objectiveChecks: number;
@@ -50,8 +53,12 @@ export interface GameLine {
   readonly winners: readonly string[];
 }
 
+/** What a game may record beyond its outcome. */
+export type RecordKind = "inventory";
+
 /** What a game is played under. */
 export interface GameSetup {
+  readonly record?: RecordKind;
   readonly scenario: Scenario;
   readonly turnLimit: number;
   readonly variant: string;
@@ -108,6 +115,7 @@ export function playGame(setup: GameSetup, seed: number): GameLine {
   const factionIds = scenario.factions.map((faction) => faction.id as string);
   const objectives = objectivesOf(scenario);
   const territories = territoryIdsOf(scenario);
+  const inventory = setup.record === undefined ? undefined : createInventory(scenario);
   const battles: Record<string, Record<string, number>> = {};
   const battlesByTurn: number[] = [];
   const losses = Object.fromEntries(factionIds.map((id) => [id, { men: 0, units: 0 }]));
@@ -126,6 +134,8 @@ export function playGame(setup: GameSetup, seed: number): GameLine {
     const was = piecesOf(before);
     const now = piecesOf(after);
     assertInTerritories([...was, ...now], territories);
+    if (turn === 1) inventory?.open(before);
+    inventory?.turn(result);
 
     let fought = 0;
     for (const outcome of result.outcomes) {
@@ -190,6 +200,7 @@ export function playGame(setup: GameSetup, seed: number): GameLine {
     battlesByTurn,
     end: winners.length > 0 ? "decided" : "freeze",
     firstTurnRoutes,
+    ...(inventory === undefined ? {} : { inventory: inventory.read() }),
     longestQuiet,
     losses,
     objectiveChecks,

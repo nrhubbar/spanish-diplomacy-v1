@@ -65,9 +65,75 @@ export function selectAircraft(session: PlanningSession, unitId: UnitId): Planni
 
 /** Closes the aircraft's missions and returns to its territory. */
 export function closeAircraft(session: PlanningSession): PlanningSession {
-  const draft: Draft = { ...session.draft };
+  const draft: Draft = { ...leaveTargets(session).draft };
   delete (draft as { selectedAircraftId?: UnitId }).selectedAircraftId;
   return { ...session, draft };
+}
+
+/** N6: leaves the choice of a mission's target, and what was said about it; the aircraft stays selected. */
+export function leaveTargets(session: PlanningSession): PlanningSession {
+  const draft: Draft = { ...session.draft };
+  delete (draft as { feedback?: string }).feedback;
+  delete (draft as { stage?: unknown }).stage;
+  return { ...session, draft };
+}
+
+/** N6: choosing a mission starts choosing its target on the map, unless nothing in range is one. */
+export function chooseMission(scenario: Scenario, session: PlanningSession, unitId: UnitId, mission: AirMissionKind): PlanningSession {
+  const open = leaveTargets(selectAircraft(session, unitId));
+  const stage = { mission, step: "choose-target" } as const;
+  const none = airTargets(scenario, open.game.state, unitId, mission).length === 0;
+  return { ...open, draft: { ...open.draft, ...(none ? { feedback: "Nothing in range for this mission." } : { stage }) } };
+}
+
+/** N6: the targets being chosen from, when a mission is choosing one. */
+export function stageTargets(scenario: Scenario, session: PlanningSession): readonly AirTarget[] {
+  const { selectedAircraftId, stage } = session.draft;
+  return stage?.step === "choose-target" && selectedAircraftId !== undefined ? airTargets(scenario, session.game.state, selectedAircraftId, stage.mission) : [];
+}
+
+/** N6: the territories a mission may fly to, nearest first; a raid may have several targets in each. */
+export function targetTerritories(scenario: Scenario, session: PlanningSession): readonly TerritoryId[] {
+  return [...new Set(stageTargets(scenario, session).map((target) => target.territoryId))];
+}
+
+/** N6: why a territory is no target of the mission being chosen; undefined when it is one, or none is being chosen. */
+export function targetRefusal(scenario: Scenario, session: PlanningSession, territoryId: TerritoryId): { readonly inRange: boolean; readonly reason: string } | undefined {
+  const { draft: { selectedAircraftId: unitId, stage }, factionId, game: { state } } = session;
+  const unit = unitId === undefined ? undefined : state.units[unitId];
+  if (stage?.step !== "choose-target" || unit === undefined || targetTerritories(scenario, session).includes(territoryId)) return undefined;
+  const range = unitTypeIn(scenario, state.raised, unit.id)?.air?.range ?? 0;
+  if (!territoriesWithin(scenario, unit.territoryId, range).has(territoryId)) {
+    const flies = `flies up to ${range === 1 ? "1 territory" : `${String(range)} territories`} from its airfield.`;
+    return { inRange: false, reason: `Out of range: it ${flies}` };
+  }
+  const [first] = scenario.index.subTerritoriesByTerritory.get(territoryId) ?? [];
+  const kind = stage.mission;
+  const mission: AirMission | undefined = kind !== "raid" ? { kind, territoryId } : first === undefined ? undefined : { kind, subTerritoryId: first.id };
+  const validation = mission === undefined ? undefined : validateAirMission(scenario, state, { factionId, kind: "air-mission", mission, unitId: unit.id });
+  return { inRange: true, reason: validation?.ok === false ? validation.reason : "Nothing to hit there." };
+}
+
+/** N6: a click on a territory while a mission chooses its target plans it; a raid with several targets there asks which sub-territory. */
+export function chooseTarget(scenario: Scenario, session: PlanningSession, territoryId: TerritoryId): PlanningSession {
+  const { selectedAircraftId: unitId, stage } = session.draft;
+  if (stage?.step !== "choose-target" || unitId === undefined) return session;
+  const there = stageTargets(scenario, session).filter((target) => target.territoryId === territoryId);
+  const [only] = there;
+  if (only === undefined) {
+    const refusal = targetRefusal(scenario, session, territoryId);
+    return refusal === undefined ? session : { ...session, draft: { ...session.draft, feedback: refusal.reason } };
+  }
+  if (there.length === 1) return setAirMission(scenario, session, unitId, only.mission);
+  const open = leaveTargets(session);
+  return { ...open, draft: { ...open.draft, stage: { ...stage, territoryId } } };
+}
+
+/** N6: a click on a sub-territory while a raid chooses its target plans it there; any other click leaves the choice as it was. */
+export function chooseTargetSite(scenario: Scenario, session: PlanningSession, subTerritoryId: SubTerritoryId): PlanningSession {
+  const { selectedAircraftId: unitId } = session.draft;
+  const target = stageTargets(scenario, session).find(({ mission }) => mission.kind === "raid" && mission.subTerritoryId === subTerritoryId);
+  return target === undefined || unitId === undefined ? session : setAirMission(scenario, session, unitId, target.mission);
 }
 
 function withAirOrders(session: PlanningSession, airOrders: readonly AirDraftOrder[], feedback?: string): PlanningSession {
@@ -77,11 +143,12 @@ function withAirOrders(session: PlanningSession, airOrders: readonly AirDraftOrd
 /** U2: plans (or with no mission, stands down) an aircraft's one mission this turn. */
 export function setAirMission(scenario: Scenario, session: PlanningSession, unitId: UnitId, mission: AirMission | undefined): PlanningSession {
   const others = (session.draft.airOrders ?? []).filter((order) => order.unitId !== unitId);
-  if (mission === undefined) return withAirOrders(session, others);
+  if (mission === undefined) return withAirOrders(leaveTargets(session), others);
   const order: AirMissionOrder = { factionId: session.factionId, kind: "air-mission", mission, unitId };
   const validation = validateAirMission(scenario, session.game.state, order);
   if (!validation.ok) return { ...session, draft: { ...session.draft, feedback: validation.reason } };
-  return withAirOrders({ ...session, draft: { ...session.draft, ...unitOrdersWithout(session.draft, [unitId]) } }, [...others, order]);
+  const open = leaveTargets(session);
+  return withAirOrders({ ...open, draft: { ...open.draft, ...unitOrdersWithout(session.draft, [unitId]) } }, [...others, order]);
 }
 
 /** U5: Sack is a free order; it replaces the general's move, and choosing it again withdraws it. */

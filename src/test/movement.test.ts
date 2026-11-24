@@ -307,7 +307,7 @@ describe("movement: the computer player (H5)", () => {
       order("red", "red-guard", "westfold", [rail("highlands")]),
       order("red", "red-second", "westfold", [rail("highlands"), land("harbor")])
     ]);
-    expect(routed.map((planned) => `${planned.unitId}>${planned.to}>${String(planned.legs?.length ?? 0)}`)).toEqual(["red-guard>highlands>0", "red-lorry>highlands>0", "red-second>harbor>2"]);
+    expect(routed.map((planned) => `${planned.unitId}>${planned.to}>${String(planned.legs?.length ?? 0)}`)).toEqual(["red-guard>highlands>0", "red-second>harbor>2"]);
   });
 });
 

@@ -1,5 +1,5 @@
 import { loadScenario, type PackageSources, type Scenario } from "./engine";
-import { type GameLine, playGame } from "./game";
+import { type GameLine, playGame, type RecordKind } from "./game";
 import { applyPatch, type PatchOperation } from "./patch";
 import { type Comparison, compare, type RunMetrics, summarize } from "./summary";
 
@@ -16,6 +16,8 @@ export interface Variant {
 
 /** Everything a run is asked to do. */
 export interface RunPlan {
+  /** What each game records beyond its outcome; absent, nothing more. */
+  readonly record?: RecordKind;
   readonly scenarioId: string;
   readonly seeds: readonly number[];
   readonly turnLimit: number;
@@ -50,8 +52,17 @@ export function cellScenario(sources: readonly PackageSources[], plan: RunPlan, 
   return loadScenario(sources, plan.scenarioId, patch.length === 0 ? undefined : (document) => applyPatch(document, patch));
 }
 
-/** Plays tasks, loading each cell's scenario once. Shared by worker threads and the smoke test. */
-export function createTaskRunner(sources: readonly PackageSources[], plan: RunPlan): (task: GameTask) => GameLine {
+/** A game as a worker thread posts it back: its line, and what is never part of the line. */
+export interface PlayedGame {
+  readonly line: GameLine;
+  /** Wall-clock time to play it, without loading the scenario. */
+  readonly milliseconds: number;
+  /** The worker thread that played it, 1 first. */
+  readonly worker: number;
+}
+
+/** Plays tasks and times them, loading each cell's scenario once, outside the time. */
+export function createTimedRunner(sources: readonly PackageSources[], plan: RunPlan, clock: () => number): (task: GameTask) => Omit<PlayedGame, "worker"> {
   const cells = cellsOf(plan);
   const scenarios = new Map<number, Scenario>();
   return (task) => {
@@ -62,8 +73,16 @@ export function createTaskRunner(sources: readonly PackageSources[], plan: RunPl
       scenario = cellScenario(sources, plan, cell);
       scenarios.set(task.cell, scenario);
     }
-    return playGame({ scenario, turnLimit: plan.turnLimit, variant: cell.variant.name }, task.seed);
+    const began = clock();
+    const line = playGame({ scenario, turnLimit: plan.turnLimit, variant: cell.variant.name, ...(plan.record === undefined ? {} : { record: plan.record }) }, task.seed);
+    return { line, milliseconds: Math.round(clock() - began) };
   };
+}
+
+/** Plays tasks without timing them: the smoke test's path. */
+export function createTaskRunner(sources: readonly PackageSources[], plan: RunPlan): (task: GameTask) => GameLine {
+  const run = createTimedRunner(sources, plan, () => 0);
+  return (task) => run(task).line;
 }
 
 /** Writes seed lists compactly: `1-200`, or `1-5,9`. */
@@ -131,10 +150,10 @@ export function buildSummary(plan: RunPlan, factionIds: readonly string[], lines
   };
 }
 
-/** Sorts game lines into `games.jsonl` order: cell order, then seed. */
-export function orderLines(plan: RunPlan, lines: readonly GameLine[]): readonly GameLine[] {
+/** Sorts game lines (or anything else there is one of per game) into `games.jsonl` order: cell order, then seed. */
+export function orderLines<Line extends Pick<GameLine, "seed" | "variant">>(plan: RunPlan, lines: readonly Line[]): readonly Line[] {
   const order = new Map(cellsOf(plan).map((cell, index) => [cell.id, index]));
-  const rank = (line: GameLine) => order.get(line.variant) ?? order.size;
+  const rank = (line: Line) => order.get(line.variant) ?? order.size;
   return [...lines].sort((a, b) => rank(a) - rank(b) || a.seed - b.seed);
 }
 

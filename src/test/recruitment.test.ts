@@ -180,7 +180,7 @@ describe("Recruit orders through the turn (R4, R6, R7)", () => {
     expect(refunds[0]!.reason).toMatch(/before training began/u);
     expect(result.finalState.training).toEqual([]);
     const income = ofKind(result.outcomes, "income").find((outcome) => outcome.factionId === republic)!.paid;
-    expect(result.finalState.treasuries[republic]).toEqual(addResources(paid, income));
+    expect(result.finalState.treasuries[republic]).toEqual(whole(addResources(paid, income)));
   });
 });
 

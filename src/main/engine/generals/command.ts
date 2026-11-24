@@ -11,11 +11,13 @@ export interface Commander {
   readonly unitId: UnitId;
 }
 
-function commandBonus(scenario: Scenario, raised: GameState["raised"], unitId: UnitId): number {
+/** D4: what a general's type adds to the d20 of the army he is in. */
+export function commandBonus(scenario: Scenario, raised: GameState["raised"], unitId: UnitId): number {
   return (unitTypeIn(scenario, raised, unitId)?.effects ?? []).reduce((sum, effect) => sum + (effect.kind === "command-bonus" ? effect.roll : 0), 0);
 }
 
-function traitRollFor(scenario: Scenario, general: GeneralDefinition, role: CombatRole): number {
+/** D5: what a general's trait adds to the d20 when his army takes `role`. */
+export function traitRollFor(scenario: Scenario, general: Pick<GeneralDefinition, "traitId">, role: CombatRole): number {
   const trait = scenario.generalTraits.find((candidate) => candidate.id === general.traitId);
   return (trait?.effects ?? []).reduce((sum, effect) => sum + (effect.kind === "roll-modifier" && effect.role === role ? effect.roll : 0), 0);
 }

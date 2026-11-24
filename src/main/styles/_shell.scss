@@ -347,6 +347,103 @@
   }
 }
 
+// N1: the same orders as large rows, each with its description, opened by the button after the units.
+.selection-bar-actions[data-rows="true"] {
+  grid-template-columns: 1fr;
+
+  .selection-bar-choice {
+    grid-template-columns: minmax(7rem, 9rem) 1fr;
+    gap: 0.6rem;
+    align-items: center;
+  }
+
+  .selection-bar-action {
+    min-height: 48px;
+  }
+}
+
+.selection-bar-description {
+  color: var(--ink-soft);
+  font-size: 0.84rem;
+}
+
+.order-button-place {
+  position: relative;
+  margin-top: 0.5rem;
+}
+
+.order-button {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--ink);
+  border-radius: 6px;
+  background: var(--paper);
+  color: var(--ink);
+  font: 700 0.92rem var(--sans);
+
+  &[aria-expanded="true"] {
+    border-radius: 6px 6px 0 0;
+  }
+
+  &[aria-disabled="true"],
+  &[aria-disabled="true"]:hover {
+    border-style: dashed;
+    background: transparent;
+    color: var(--ink-soft);
+    cursor: not-allowed;
+  }
+}
+
+.order-menu {
+  padding: 0.6rem;
+  border: 1px solid var(--ink);
+  border-top: 0;
+  border-radius: 0 0 6px 6px;
+  background: var(--paper);
+}
+
+.order-menu-title {
+  display: none;
+  margin: 0 0 0.5rem;
+  font: 700 1rem var(--sans);
+}
+
+// On a phone the button stays at the bottom of the sheet, above the bar, and the menu is a sheet of its own.
+.map-pane[data-layout="sheet"] {
+  .order-button-place {
+    position: sticky;
+    z-index: 2;
+    bottom: 0;
+  }
+
+  .order-button[aria-disabled="true"],
+  .order-button[aria-disabled="true"]:hover {
+    background: var(--paper);
+  }
+
+  .order-menu {
+    position: fixed;
+    z-index: 5;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    max-height: 100%;
+    padding: 0.9rem 1rem max(0.9rem, env(safe-area-inset-bottom));
+    border-top: 1px solid var(--ink);
+    border-radius: 12px 12px 0 0;
+    box-shadow: 0 -6px 24px rgb(36 29 24 / 30%);
+    overflow-y: auto;
+  }
+
+  .order-menu-title {
+    display: block;
+  }
+
+  .order-menu .selection-bar-action {
+    min-height: 52px;
+  }
+}
+
 // U3: This turn.
 .this-turn-head {
   display: flex;

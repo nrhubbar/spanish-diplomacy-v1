@@ -56,7 +56,7 @@ const start = initialGameState(scenario);
 const raid: AirMissionOrder = { factionId: republic, kind: "air-mission", mission: { kind: "raid", subTerritoryId: sub("burgos") }, unitId: bomber };
 
 describe("the air pane (U2, M11, `ux-air-a`)", () => {
-  it("shows the base, the base's weather and one mission a turn, with greyed missions the type cannot fly", async () => {
+  it("shows the base, the base's weather and one mission a turn, with greyed missions the type cannot fly", () => {
     const state = weatherEverywhere(start, flying!.id);
     withStore(<AirPane scenario={scenario} session={session(state)} unitId={bomber} />);
     expect(screen.getByRole("heading", { name: "Breguet XIX Light Bombers" })).toBeVisible();
@@ -64,13 +64,14 @@ describe("the air pane (U2, M11, `ux-air-a`)", () => {
     expect(screen.getByText("1 mission a turn")).toBeVisible();
     expect(screen.getByTitle(flying!.name)).toBeVisible();
     expect(screen.getByRole("button", { name: "Patrol" })).toBeDisabled();
-    expect(screen.getByText("Choose a mission, then its target.")).toBeVisible();
-    await userEvent.click(screen.getByRole("button", { name: "Raid" }));
+    expect(screen.getByText("Choose a mission, then its target on the map.")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Stand down" })).toHaveAttribute("aria-pressed", "true");
+    cleanup();
+    const raiding = session(state);
+    withStore(<AirPane scenario={scenario} session={{ ...raiding, draft: { ...raiding.draft, stage: { mission: "raid", step: "choose-target" } } }} unitId={bomber} />);
     // m14: sub-territory, not province.
     expect(screen.getByText(/A raid on one sub-territory rolls/u)).toBeVisible();
-    expect(screen.getByRole("combobox")).toBeVisible();
-    await userEvent.click(screen.getByRole("button", { name: "Stand down" }));
-    expect(screen.getByRole("button", { name: "Stand down" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Stand down" })).toHaveAttribute("aria-pressed", "false");
   });
 
   it("fills the target card for a planned raid: range, base weather that flies, anti-air and keyed chances", () => {
@@ -147,17 +148,23 @@ describe("the air pane's targets and cards (U2, U3)", () => {
     expect(screen.queryByRole("list", { name: "Raid chances before interception" })).toBeNull();
   });
 
-  it("plans the target picked from the list, and shows the planner's feedback", async () => {
-    const planning = session(start);
+  it("starts choosing the mission's target on the map, and shows the planner's feedback", async () => {
+    const planning = session(start, [raid]);
     const store = createAppStore({ preloadedState: { game: { session: planning } }, registry: shippedRegistry() });
-    render(<Provider store={store}><AirPane scenario={scenario} session={{ ...planning, draft: { ...planning.draft, feedback: "The target is out of range." } }} unitId={bomber} /></Provider>);
+    const pane = (shown: PlanningSession) => <Provider store={store}><AirPane scenario={scenario} session={shown} unitId={bomber} /></Provider>;
+    const { rerender } = render(pane({ ...planning, draft: { ...planning.draft, feedback: "The target is out of range." } }));
     expect(screen.getByRole("status")).toHaveTextContent("The target is out of range.");
-    await userEvent.click(screen.getByRole("button", { name: "Raid" }));
-    const picker = screen.getByRole("combobox");
-    const burgos = within(picker).getAllByRole("option").find((option) => option.textContent.startsWith("Burgos"))!;
-    await userEvent.selectOptions(picker, burgos);
+    expect(screen.queryByRole("combobox")).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: "Ground Support" }));
     const after = store.getState().game.session;
-    expect(after.phase === "planning" ? after.draft.airOrders : undefined).toEqual([raid]);
+    if (after.phase !== "planning") throw new Error("Expected planning.");
+    expect(after.draft).toMatchObject({ airOrders: [raid], stage: { mission: "support", step: "choose-target" } });
+    rerender(pane(after));
+    expect(screen.getByRole("button", { name: "Ground Support" })).toHaveAttribute("aria-pressed", "true");
+    expect(document.querySelector(".air-target-card")).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: "Stand down" }));
+    const stood = store.getState().game.session;
+    expect(stood.phase === "planning" ? stood.draft : undefined).toMatchObject({ airOrders: [] });
   });
 
   it("says when nothing is in range: an aircraft without an airfield it holds cannot fly", async () => {
@@ -166,10 +173,11 @@ describe("the air pane's targets and cards (U2, U3)", () => {
       ...start,
       subTerritories: Object.fromEntries(Object.entries(start.subTerritories).map(([id, site]) => [id, madridSubs.has(id as SubTerritoryId) ? { ...site, buildings: [] } : site]))
     };
-    withStore(<AirPane scenario={scenario} session={session(unpaved)} unitId={bomber} />);
+    const store = createAppStore({ preloadedState: { game: { session: session(unpaved) } }, registry: shippedRegistry() });
+    render(<Provider store={store}><AirPane scenario={scenario} session={session(unpaved)} unitId={bomber} /></Provider>);
     await userEvent.click(screen.getByRole("button", { name: "Ground Support" }));
-    expect(screen.getByText("Nothing in range for this mission.")).toBeVisible();
-    expect(screen.queryByRole("combobox")).toBeNull();
+    const after = store.getState().game.session;
+    expect(after.phase === "planning" ? after.draft.feedback : undefined).toBe("Nothing in range for this mission.");
   });
 
   it("lists the other aircraft at the base with their planned missions, and none for a lone flight", () => {

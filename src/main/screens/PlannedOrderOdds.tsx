@@ -1,7 +1,7 @@
 import { type JSX, useMemo } from "react";
 import { isMoveOrder, type Scenario, type TerritoryId } from "../engine/types";
 import { type DestinationEstimate, oddsSummary, plannedEstimates } from "../presentation/odds";
-import type { PlanningSession } from "../state/planning";
+import { airDraftOrders, type PlanningSession } from "../state/planning";
 import { OddsInfo } from "./OddsInfo";
 
 interface PlannedOddsProps {
@@ -11,7 +11,7 @@ interface PlannedOddsProps {
 
 function usePlannedEstimates({ scenario, session }: PlannedOddsProps): ReadonlyMap<TerritoryId, DestinationEstimate> {
   const { draft, factionId, game } = session;
-  return useMemo(() => plannedEstimates(scenario, game.state, factionId, draft.orders.filter(isMoveOrder), draft.airOrders), [draft.airOrders, draft.orders, factionId, game.state, scenario]);
+  return useMemo(() => plannedEstimates(scenario, game.state, factionId, draft.orders.filter(isMoveOrder), airDraftOrders(draft)), [draft, factionId, game.state, scenario]);
 }
 
 /**

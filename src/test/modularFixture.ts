@@ -122,7 +122,7 @@ export function modularScenario(): Json {
       zones: [{ id: "plains", name: "Plains", coastal: true, tables: { summer: [{ outcome: "clear", upTo: 20 }], winter: [{ outcome: "clear", upTo: 10 }, { outcome: "mud", upTo: 16 }, { outcome: "snow", upTo: 20 }] } }]
     },
     calendar: { start: { year: 1936, month: 7, half: "late" }, turnsPerYear: 24 },
-    air: { raidTable: [{ outcome: "air-eliminated", upTo: 2 }, { outcome: "nothing-hit", upTo: 10 }, { outcome: "income-cut", upTo: 17 }, { outcome: "building-hit", upTo: 20 }], interceptRoll: -2, reconTurns: 1 },
+    air: { battleTable: [{ aircraftLost: { attacker: 1, defender: 0 }, name: "Lost", support: "defender", upTo: 9 }, { aircraftLost: { attacker: 0, defender: 0 }, name: "Even", support: "none", upTo: 11 }, { aircraftLost: { attacker: 0, defender: 1 }, name: "Won", support: "attacker", upTo: 20 }], raidTable: [{ outcome: "air-eliminated", upTo: 2 }, { outcome: "nothing-hit", upTo: 10 }, { outcome: "income-cut", upTo: 17 }, { outcome: "building-hit", upTo: 20 }], interceptRoll: -2, reconTurns: 1 },
     generals: {
       traits: [{ id: "bold", name: "Bold", effects: [{ "@type": "roll-modifier", "@data": { role: "attack", roll: 1 } }] }, { id: "timid", name: "Timid", effects: [{ "@type": "no-rally" }] }],
       roster: ["red-1", "red-2", "red-3", "blue-1", "blue-2", "blue-3"].map((id) => ({ id, name: id, factionId: id.split("-")[0], trait: id.endsWith("1") ? "bold" : "timid", sources: [{ sourceId: "fixture" }] }))

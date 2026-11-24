@@ -25,7 +25,7 @@ function effectLine(scenario: Scenario, type: UnitTypeDefinition, effect: UnitEf
     case "mobile":
       return `Needs no transport: an army of only ${armOf(type)} moves ${further}, and rough ground does not slow it.`;
     case "raid-defence":
-      return `Enemy raids here roll ${String(Math.abs(effect.roll))} lower. When defending, +${String(Math.abs(effect.roll))} on your air battle roll.`;
+      return `Enemy raids here roll ${String(Math.abs(effect.roll))} lower. When defending, +${String(Math.abs(effect.roll))} for your side in an air battle.`;
     case "trains-in-contested":
       return "Keeps training even while the territory is contested.";
     case "command-bonus":
@@ -34,11 +34,11 @@ function effectLine(scenario: Scenario, type: UnitTypeDefinition, effect: UnitEf
       return "Restores the morale of the army it is in.";
     case "battle-support": {
       const most = scenario.air?.supportMax;
-      const support = `+${String(effect.roll)} on the battle roll from ${missionNames.support}, unless the enemy wins the air.`;
+      const support = `+${String(effect.roll)} on the battle roll from ${missionNames.support}. If an air battle is fought, it counts only when your side wins, and aircraft may be shot down.`;
       return most === undefined ? support : `${support} At most ${String(most)} aircraft count for each side.`;
     }
     case "air-battle":
-      return `+${String(effect.roll)} on the air battle roll. Only the best aircraft counts for each side.`;
+      return `+${String(effect.roll)} for your side in an air battle. Every aircraft counts.`;
   }
 }
 

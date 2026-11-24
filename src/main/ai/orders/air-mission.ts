@@ -3,8 +3,8 @@ import { isAirbaseFor, onGroundBoard, territoriesWithin, unitTypeIn } from "../.
 import { compareIds } from "../../engine/board";
 import { subTerritoriesOf } from "../../engine/economy/holdings";
 import { hookedGrounded } from "../../engine/hooks";
-import { neighborsOf } from "../../engine/lookup";
-import type { AirMission, AirMissionOrder, FactionId, GameState, Scenario, SubTerritoryId, TerritoryId, UnitId, UnitState } from "../../engine/types";
+import { neighborsOf, requireAiProfile } from "../../engine/lookup";
+import type { AirMission, AirMissionOrder, FactionId, GameState, Scenario, SubTerritoryId, TerritoryId, UnitId, UnitState, UnitTypeId } from "../../engine/types";
 import { validateAirMission } from "../../engine/air/validation";
 import type { OrderPlanner, PlanningContext } from "./planner";
 
@@ -33,12 +33,6 @@ function antiAir(scenario: Scenario, state: GameState, territoryId: TerritoryId,
   }
   return best;
 }
-
-/**
- * Design note for the harness to tune (H7): the least chance of winning the air battle (R11,
- * `airBattleOdds` through `plannedAir`) for which an aircraft flies Ground Support over an attack.
- */
-const supportWorth = 0.5;
 
 /** D7, R11: the faction's planned attacks on defended ground it does not hold: the units going, by destination. */
 function plannedAttacks(context: PlanningContext): ReadonlyMap<TerritoryId, readonly UnitId[]> {
@@ -70,10 +64,10 @@ function best<Item>(items: readonly Item[], score: (item: Item) => number, key: 
  * H5: one mission for each aircraft that can fly (at an airbase, not grounded). Ties break by id,
  * never by the move planner's random source (CT-36).
  * - Ground Support (fighters and bombers, R10, R11): over the biggest attack the move planner
- *   chose in range on defended ground, at most the scenario's `air.supportMax` aircraft on one
- *   battle, and only while the planned flights would win the air battle against the defenders'
- *   AA at least `supportWorth` of the time. An unopposed move needs none. A support-only type
- *   defends a threatened own territory instead.
+ *   chose in range on defended ground, by the combination of free aircraft (at most the scenario's
+ *   `air.supportMax`) that adds most on average, and only while its support applies, after the air
+ *   battle against the defenders' AA, with at least the profile's `air.supportChance`. An unopposed
+ *   move needs none. A support-only type defends a threatened own territory instead.
  * - Bombers otherwise raid the richest enemy sub-territory in range, avoiding anti-air.
  * - Fighters otherwise patrol the own territory in reach most threatened: in reach of an enemy
  *   bomber (Patrol still intercepts raids) by what a raid would hit, plus the enemy units next
@@ -92,41 +86,71 @@ export const planAirMissions: OrderPlanner<AirMissionOrder> = (context) => {
   const attacks = plannedAttacks(context);
   const enemyBombers = Object.values(state.units).filter((unit) => unit.factionId !== factionId
     && (unitTypeIn(scenario, state.raised, unit.id)?.air?.missions.includes("raid") ?? false));
-  const supported = new Map<TerritoryId, readonly UnitId[]>();
-  for (const unit of aircraft) {
+  const ready = aircraft.flatMap((unit): readonly FreeAircraft[] => {
     const type = unitTypeIn(scenario, state.raised, unit.id);
-    if (type?.air === undefined || !isAirbaseFor(scenario, state, unit.territoryId, factionId)) continue;
-    if (hookedGrounded({ scenario, state, territoryId: unit.territoryId, unitId: unit.id })) continue;
-    const reach = [...territoriesWithin(scenario, unit.territoryId, type.air.range).keys()];
-    const mission = chooseMission(context, unit, type.air.missions, reach, attacks, supported, enemyBombers);
+    if (type?.air === undefined || !isAirbaseFor(scenario, state, unit.territoryId, factionId)) return [];
+    if (hookedGrounded({ scenario, state, territoryId: unit.territoryId, unitId: unit.id })) return [];
+    return [{ missions: type.air.missions, reach: [...territoriesWithin(scenario, unit.territoryId, type.air.range).keys()], typeId: type.id, unit }];
+  });
+  const support = planSupport(context, ready, attacks);
+  const supported = new Set<TerritoryId>(support.values());
+  for (const { missions, reach, unit } of ready) {
+    const mission = chooseMission(context, unit, missions, reach, support.get(unit.id), supported, enemyBombers);
     if (mission === undefined) continue;
     const order: AirMissionOrder = { factionId, kind: "air-mission", mission, unitId: unit.id };
     if (!validateAirMission(scenario, state, order).ok) continue;
-    if (mission.kind === "support") supported.set(mission.territoryId, [...(supported.get(mission.territoryId) ?? []), unit.id]);
+    if (mission.kind === "support") supported.add(mission.territoryId);
     orders.push(order);
   }
   return orders;
 };
 
-/** R11: the planned attack in reach this aircraft's Ground Support is worth most to, by its size; undefined when none pays. */
-function supportedAttack(
-  { factionId, scenario, state }: PlanningContext,
-  unit: UnitState,
-  reach: readonly TerritoryId[],
-  attacks: ReadonlyMap<TerritoryId, readonly UnitId[]>,
-  supported: ReadonlyMap<TerritoryId, readonly UnitId[]>
-): TerritoryId | undefined {
+/** An aircraft that can fly a mission this turn. */
+interface FreeAircraft {
+  readonly missions: readonly AirMission["kind"][];
+  readonly reach: readonly TerritoryId[];
+  readonly typeId: UnitTypeId;
+  readonly unit: UnitState;
+}
+
+/**
+ * Every way to send at most `cap` of these aircraft. Aircraft of one type count alike, so only
+ * how many of each type go matters, and the first of them in id order go.
+ */
+function combinations(aircraft: readonly FreeAircraft[], cap: number): readonly (readonly UnitId[])[] {
+  const byType = new Map<UnitTypeId, UnitId[]>();
+  for (const { typeId, unit } of aircraft) byType.set(typeId, [...(byType.get(typeId) ?? []), unit.id]);
+  let ways: readonly (readonly UnitId[])[] = [[]];
+  for (const ids of byType.values()) {
+    ways = ways.flatMap((way) => Array.from({ length: Math.min(ids.length, cap - way.length) + 1 }, (_, count) => [...way, ...ids.slice(0, count)]));
+  }
+  return ways.filter((way) => way.length > 0);
+}
+
+/**
+ * R11: the Ground Support each planned attack gets, the biggest attack first: the combination of
+ * free aircraft in reach that adds most to its roll on average, of those whose support applies
+ * with the profile's chance.
+ */
+function planSupport({ factionId, scenario, state }: PlanningContext, ready: readonly FreeAircraft[], attacks: ReadonlyMap<TerritoryId, readonly UnitId[]>): ReadonlyMap<UnitId, TerritoryId> {
   const cap = scenario.air?.supportMax ?? Number.POSITIVE_INFINITY;
-  const options = reach.flatMap((territoryId) => {
-    const going = attacks.get(territoryId)?.length ?? 0;
-    const flying = supported.get(territoryId) ?? [];
+  const least = requireAiProfile(scenario, factionId).air.supportChance;
+  const flying = new Map<UnitId, TerritoryId>();
+  const targets = [...attacks].sort(([a, going], [b, others]) => others.length - going.length || compareIds(a, b));
+  for (const [territoryId] of targets) {
     const defenders = defendersIn(scenario, state, territoryId, factionId);
-    if (going === 0 || flying.length >= cap || defenders.length === 0) return [];
+    if (defenders.length === 0) continue;
     const setting = { attackerFactionId: factionId, defenderFactionIds: [...new Set(defenders.map((other) => other.factionId))], defenderUnitIds: defenders.map((other) => other.id), territoryId };
-    const air = plannedAir(scenario, state, setting, [...flying, unit.id]);
-    return air !== undefined && air.chance >= supportWorth ? [{ going, territoryId }] : [];
-  });
-  return best(options, (option) => option.going, (option) => option.territoryId)?.territoryId;
+    const free = ready.filter(({ missions, reach, unit }) => missions.includes("support") && reach.includes(territoryId) && !flying.has(unit.id));
+    const options = combinations(free, cap).flatMap((ids) => {
+      const air = plannedAir(scenario, state, setting, ids);
+      return air !== undefined && air.supportChance >= least ? [{ average: air.average, ids }] : [];
+    });
+    // Of those that add as much, the fewest go: every aircraft sent is one that can be lost.
+    const chosen = best(options, (option) => option.average, (option) => `${String(option.ids.length)}|${option.ids.join()}`);
+    for (const id of chosen?.ids ?? []) flying.set(id, territoryId);
+  }
+  return flying;
 }
 
 function chooseMission(
@@ -134,13 +158,13 @@ function chooseMission(
   unit: UnitState,
   missions: readonly AirMission["kind"][],
   reach: readonly TerritoryId[],
-  attacks: ReadonlyMap<TerritoryId, readonly UnitId[]>,
-  supported: ReadonlyMap<TerritoryId, readonly UnitId[]>,
+  attack: TerritoryId | undefined,
+  supported: ReadonlySet<TerritoryId>,
   enemyBombers: readonly UnitState[]
 ): AirMission | undefined {
   const { factionId, scenario, state } = context;
   if (missions.includes("support")) {
-    const target = supportedAttack(context, unit, reach, attacks, supported)
+    const target = attack
       ?? (missions.includes("raid") || missions.includes("patrol") ? undefined : best(reach.filter((id) => threatened(context, id) && !supported.has(id)), (id) => hostileIn(state, id, factionId), (id) => id));
     if (target !== undefined) return { kind: "support", territoryId: target };
   }

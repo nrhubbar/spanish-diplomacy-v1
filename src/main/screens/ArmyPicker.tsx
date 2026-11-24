@@ -3,6 +3,7 @@ import { requireFaction, requireUnitDefinition, requireUnitType } from "../engin
 import type { Scenario, UnitState } from "../engine/types";
 import { useAppDispatch } from "../hooks";
 import { armyFigures, demoralizedRule, orderStatus } from "../presentation/army";
+import { generalWords } from "../presentation/generals";
 import { glyphs } from "../presentation/glyphs";
 import { selectAllAvailableUnits, toggleUnitSelection } from "../state/gameSlice";
 import { orderOf, type PlanningSession } from "../state/planning";
@@ -10,7 +11,8 @@ import { replenishDetail } from "../presentation/recruitment";
 import { territoryName } from "../presentation/text";
 import { ArmyLine } from "./ArmyLine";
 import { GeneralControls } from "./pane/AirPane";
-import { DisbandControls } from "./pane/DisbandControls";
+import { DisbandPlanned } from "./pane/DisbandControls";
+import { OrderButton } from "./shell/OrderButton";
 
 interface ArmyPickerProps {
   readonly own: readonly UnitState[];
@@ -18,7 +20,7 @@ interface ArmyPickerProps {
   readonly session: PlanningSession;
 }
 
-/** The player's armies in the selected territory, each with its figures. Their orders are given from the selection bar (U4). */
+/** The player's armies in the selected territory, each with its figures. Their orders are given from the selection bar (U4) or the button after the list (N1). */
 export function ArmyPicker({ own, scenario, session }: ArmyPickerProps): JSX.Element {
   const dispatch = useAppDispatch();
   const headingId = useId();
@@ -39,6 +41,7 @@ export function ArmyPicker({ own, scenario, session }: ArmyPickerProps): JSX.Ele
         {own.map((unit) => {
           const definition = requireUnitDefinition(scenario, unit.id);
           const move = moves.get(unit.id);
+          const general = generalWords(scenario, game.state.raised, unit.id);
           const kind = orderOf(session, unit, scenario);
           const order = move !== undefined
             ? `${move.kind === "withdraw" ? "Withdrawing" : "Moving"} to ${territoryName(scenario, move.to)}`
@@ -46,11 +49,13 @@ export function ArmyPicker({ own, scenario, session }: ArmyPickerProps): JSX.Ele
           return (
             <li key={unit.id}>
               <button
+                aria-describedby={general === undefined ? undefined : `${headingId}-${unit.id}`}
                 aria-pressed={draft.selectedUnitIds.includes(unit.id)}
                 className="formation-button"
                 data-ordered={move !== undefined}
                 disabled={choosingDestination}
                 onClick={() => dispatch(toggleUnitSelection(unit.id))}
+                title={general?.text}
                 type="button"
               >
                 <span aria-hidden="true" className="formation-check" />
@@ -64,12 +69,14 @@ export function ArmyPicker({ own, scenario, session }: ArmyPickerProps): JSX.Ele
                   : null}
                 <ArmyLine factionColor={requireFaction(scenario, unit.factionId).color} figures={armyFigures(scenario, game.state, unit)} />
               </button>
-              <DisbandControls scenario={scenario} session={session} unit={unit} />
+              <DisbandPlanned scenario={scenario} session={session} unit={unit} />
               <GeneralControls scenario={scenario} session={session} unit={unit} />
+              {general === undefined ? null : <p className="general-effect" id={`${headingId}-${unit.id}`}>{general.effect}</p>}
             </li>
           );
         })}
       </ul>
+      {choosingDestination ? null : <OrderButton scenario={scenario} session={session} />}
       {shakenSelected ? <p className="pane-note" data-tone="demoralized">{demoralizedRule(scenario)}</p> : null}
       {choosingDestination || (available.length === 0 && selectedCount === 0) ? null : (
         // Always enabled: disabling the control just used would drop keyboard focus.

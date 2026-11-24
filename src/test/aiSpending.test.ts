@@ -5,13 +5,18 @@ import { planDisbands } from "../main/ai/orders/disband";
 import { planRecruits } from "../main/ai/orders/recruit";
 import { planReplenishment } from "../main/ai/orders/replenish";
 import { balanceLeft, starves } from "../main/ai/orders/spending";
-import { columnsPerRoll, nextRollBonus, siteBattles, worthOf } from "../main/ai/unitWorth";
+import { assess } from "../main/ai/assessment";
+import { movePlanningView } from "../main/ai/planningView";
+import { marginalGain, nextRollBonus, priceOf, recruitBoard, recruitSupply, siteBattles, smoothOdds, worthOf } from "../main/ai/unitWorth";
+import { battleOdds } from "../main/engine/d20/odds";
+import { upkeepProblem } from "../main/engine/economy/upkeep";
+import { requireAiProfile } from "../main/engine/lookup";
 import { projectedHoldings, upkeepShortfall } from "../main/engine/economy/upkeep";
 import { seededRandom } from "../main/engine/random";
 import { initialGameState, resolveTurn } from "../main/engine/resolution";
 import { type GameState, isMoveOrder, type Order, type RecruitOrder, type Resources, type Scenario, type UnitTypeDefinition } from "../main/engine/types";
-import { heldWhole, oneShortOwners, type Placement } from "./aiBoards";
-import { armyIn, battlesOf, faction, spain, territory, tiny, unit, withUnits, withoutUpkeep } from "./support";
+import { demoralize, heldWhole, oneShortOwners, type Placement } from "./aiBoards";
+import { armyIn, battlesOf, faction, spain, territory, unit, withUnits, withoutUpkeep } from "./support";
 
 const scenario = spain();
 const start = initialGameState(scenario);
@@ -27,14 +32,24 @@ describe("spending against a leader (D6)", () => {
   const far = { ...oneShortOwners, catalunya: "north", extremadura: "north", murcia: "north", valencia: "south" };
   const board = (owners: Readonly<Record<string, string>>) => funded(heldWhole(scenario, owners, units), north, 24, 24);
 
-  it("holds nothing back for builds at two steps or fewer, and buys one-turn units where they can meet it", () => {
+  it("holds nothing back for builds at two steps or fewer", () => {
     const calm = planRecruits(context(board(far), north));
     const left = balanceLeft(context(board(far), north, calm));
     expect(left["funds" as never]).toBeGreaterThanOrEqual(buildReserve(context(board(far), north), { funds: 24, manpower: 24 } as never)["funds" as never]!);
     const hurried = planRecruits(context(board({ ...oneShortOwners, extremadura: "south" }), north));
     expect(balanceLeft(context(board(far), north, hurried))["funds" as never]).toBeLessThan(left["funds" as never]!);
     expect(hurried.length).toBeGreaterThan(0);
-    for (const order of hurried) expect(scenario.index.unitTypes.get(order.unitTypeId)?.recruit?.trainingTurns).toBe(1);
+  });
+
+  it("buys units that train in one turn first only where the leader would likely take the site", () => {
+    const owners = { ...oneShortOwners, extremadura: "south" };
+    const attackers: Placement = ["rep-vitoria-8", "rep-sevilla-34", "rep-castilla-3", "rep-otumba-9", "rep-wad-ras-1"].map((id) => [id, "republic", "asturias"] as const);
+    const trained = (placement: Placement) => planRecruits(context(funded(heldWhole(scenario, owners, placement), north, 200, 60), north))
+      .filter((order) => order.territoryId === "galicia")
+      .map((order) => scenario.index.unitTypes.get(order.unitTypeId)?.recruit?.trainingTurns);
+    // Five regiments against one: a quick defender first. One militia column against it: whatever is worth most.
+    expect(trained([...units, ...attackers])[0]).toBe(1);
+    expect(trained(units)[0]).toBeGreaterThan(1);
   });
 
   it("buys by worth at a site the leader is nowhere near", () => {
@@ -45,12 +60,16 @@ describe("spending against a leader (D6)", () => {
 });
 
 describe("mixed armies (D6)", () => {
-  it("reads a roll point's worth from the odds table: three to a column in Spain", () => {
-    expect(columnsPerRoll(scenario.d20)).toBeGreaterThan(0.25);
-    expect(columnsPerRoll(scenario.d20)).toBeLessThan(0.45);
-    expect(columnsPerRoll(tiny().d20)).toBeGreaterThan(0);
-    // A table whose columns are all alike is worth nothing to climb.
-    expect(columnsPerRoll({ ...scenario.d20, table: scenario.d20.table.map(() => scenario.d20.table[0]!) })).toBe(0);
+  it("reads the odds table, smoothed between its steps", () => {
+    const at = (attack: number, defence: number, roll = 0) => battleOdds(scenario.d20, attack, defence, [{ kind: "odds-overflow", roll }]).takeChance;
+    for (const [attack, defence] of [[1, 1], [2, 1], [6, 1], [1, 3]] as const) expect(smoothOdds(scenario.d20, attack / defence, 0).takeChance).toBeCloseTo(at(attack, defence));
+    const between = smoothOdds(scenario.d20, 4 / 3, 2);
+    expect(between.takeChance).toBeCloseTo(at(1, 1, 2) + (at(2, 1, 2) - at(1, 1, 2)) / 3);
+    expect(between.gainChance).toBeGreaterThan(between.takeChance);
+    expect(between.expected.defenderLoss).toBeGreaterThan(smoothOdds(scenario.d20, 1, 2).expected.defenderLoss);
+    // Beyond the table's ends nothing more changes.
+    expect(smoothOdds(scenario.d20, 100, 0).takeChance).toBe(smoothOdds(scenario.d20, 6, 0).takeChance);
+    expect(smoothOdds(scenario.d20, 0.001, 0).expected).toEqual(smoothOdds(scenario.d20, 1 / 16, 0).expected);
   });
 
   it("counts what one more gun, tank or squadron adds, until the effect's most", () => {
@@ -62,28 +81,120 @@ describe("mixed armies (D6)", () => {
     expect(nextRollBonus(scenario, typeOf("bomber-squadron"), cap)).toBe(0);
     expect(nextRollBonus(uncapped, typeOf("bomber-squadron"), 9)).toBe(3);
     expect(nextRollBonus(scenario, typeOf("infantry-regiment"), 0)).toBe(0);
+    // Guns and Ground Support help an attack, not a defence.
+    expect(["artillery-group", "bomber-squadron"].map((id) => nextRollBonus(scenario, typeOf(id), 0, "defence"))).toEqual([0, 0]);
   });
 
-  it("values guns where a strong stack must be broken, and not where nothing stands", () => {
-    const own: Placement = [["rep-vitoria-8", "republic", "madrid"], ["rep-sevilla-34", "republic", "madrid"], ["rep-castilla-3", "republic", "madrid"], ["rep-otumba-9", "republic", "madrid"], ["rep-wad-ras-1", "republic", "madrid"]];
-    const stack: Placement = [["north-san-marcial-22", "north", "castilla-y-leon"], ["north-san-quintin-25", "north", "castilla-y-leon"], ["north-zamora-29", "north", "castilla-y-leon"], ["north-america-23", "north", "castilla-y-leon"]];
-    const perRoll = columnsPerRoll(scenario.d20);
-    const balance = { funds: 60, manpower: 20 } as Resources;
-    const at = (state: GameState, ordered: readonly RecruitOrder[] = []) => siteBattles(scenario, state, republic, territory("madrid"), ordered, perRoll);
-    const strong = withUnits(scenario, [...own, ...stack]);
-    const quiet = withUnits(scenario, own);
-    const gun = typeOf("artillery-group");
-    expect(at(quiet).rollPoint).toBe(0);
-    expect(at(strong).rollPoint).toBeGreaterThan(0);
-    expect(worthOf(scenario, gun, balance, at(strong))).toBeGreaterThan(worthOf(scenario, typeOf("infantry-regiment"), balance, at(strong)));
-    expect(worthOf(scenario, gun, balance, at(quiet))).toBeLessThan(worthOf(scenario, typeOf("infantry-regiment"), balance, at(quiet)));
-    // The fourth gun adds nothing to the roll; ordered and training ones count.
-    const guns = ["a", "b", "c"].map((): RecruitOrder => ({ factionId: republic, kind: "recruit", territoryId: territory("madrid"), unitTypeId: gun.id }));
-    expect(at(strong, guns).count(gun)).toBe(3);
-    expect(worthOf(scenario, gun, balance, at(strong, guns))).toBeLessThan(worthOf(scenario, gun, balance, at(strong)));
-    expect(at({ ...strong, training: [{ factionId: republic, paid: {}, paused: false, territoryId: territory("madrid"), turnsLeft: 2, typeId: gun.id, unitId: unit("new-gun") }] }).count(gun)).toBe(1);
-    expect(at(strong).count(typeOf("bomber-squadron"))).toBe(0);
-    expect(worthOf(scenario, typeOf("general"), balance, at(strong))).toBe(0);
+  const own: Placement = [["rep-vitoria-8", "republic", "madrid"], ["rep-sevilla-34", "republic", "madrid"], ["rep-castilla-3", "republic", "madrid"]];
+  const stack: Placement = [["north-san-marcial-22", "north", "castilla-y-leon"], ["north-san-quintin-25", "north", "castilla-y-leon"]];
+  const boardOf = (state: GameState, factionId = republic) => recruitBoard(scenario, state, assess(scenario, movePlanningView(scenario, state, factionId), factionId));
+  const site = (placement: Placement, ordered: readonly RecruitOrder[] = [], at = "madrid") => {
+    const board = boardOf(withUnits(scenario, placement));
+    const near = siteBattles(board, territory(at), ordered);
+    return {
+      gain: (id: string) => marginalGain(board, typeOf(id), near),
+      near,
+      worth: (id: string, supply: Resources = { funds: 127, manpower: 95 } as Resources) => worthOf(board, typeOf(id), supply, near)
+    };
+  };
+  const ordered = (id: string, count: number): readonly RecruitOrder[] => Array.from({ length: count }, () => ({ factionId: republic, kind: "recruit", territoryId: territory("madrid"), unitTypeId: typeOf(id).id }));
+
+  it("values each kind of unit by what one more changes in an even battle", () => {
+    const { gain, near, worth } = site([...own, ...stack]);
+    expect(near.battles.map(({ distance, enemy, own: value, role }) => ({ distance, enemy, role, value }))).toEqual([
+      { distance: 1, enemy: 12, role: "attack", value: 12 },
+      { distance: 0, enemy: 8, role: "defence", value: 18 }
+    ]);
+    // Two guns to three regiments: a gun is worth more to the attack than a regiment's own attack, and any is worth more than a security force.
+    expect(gain("artillery-group")).toBeGreaterThan(gain("infantry-regiment"));
+    for (const id of ["infantry-regiment", "artillery-group", "tank-company", "colonial-veterans"]) expect(worth(id), id).toBeGreaterThan(2 * worth("security-forces"));
+    expect(worth("security-forces")).toBeGreaterThan(worth("militia-column"));
+    expect(worth("cavalry-regiment")).toBeGreaterThan(worth("security-forces"));
+    expect(Math.max(worth("bomber-squadron"), worth("fighter-squadron"))).toBeGreaterThan(worth("artillery-group"));
+    expect(gain("infantry-regiment")).toBeGreaterThan(gain("cavalry-regiment"));
+    // Anti-air only ever adds its own defence, and trucks, recon and generals nothing to a battle.
+    expect(gain("anti-air-battery")).toBeLessThan(gain("security-forces"));
+    expect(["truck-column", "recon-flight", "general"].map((id) => worth(id))).toEqual([0, 0, 0]);
+  });
+
+  it("counts a bonus until its most, over units ordered and in training too", () => {
+    expect(site([...own, ...stack], ordered("artillery-group", 3)).gain("artillery-group")).toBeLessThan(site([...own, ...stack], ordered("artillery-group", 2)).gain("artillery-group") / 2);
+    // Two squadrons of any kind fill a battle's Ground Support.
+    const flown = site([...own, ...stack], [...ordered("bomber-squadron", 1), ...ordered("fighter-squadron", 1)]);
+    expect(flown.near.count(typeOf("bomber-squadron"))).toBe(2);
+    expect(flown.gain("bomber-squadron")).toBe(0);
+    const state: GameState = { ...withUnits(scenario, [...own, ...stack]), training: [{ factionId: republic, paid: {}, paused: false, territoryId: territory("madrid"), turnsLeft: 2, typeId: typeOf("artillery-group").id, unitId: unit("new-gun") }] };
+    expect(siteBattles(boardOf(state), territory("madrid"), []).count(typeOf("artillery-group"))).toBe(1);
+  });
+
+  it("counts defence only where enemies stand next door, attack only where it can strike", () => {
+    // An undefended site beside a stack: any defender first, and one that trains in a turn gains most, for more upkeep.
+    const empty = site(stack);
+    expect(empty.gain("security-forces")).toBeGreaterThan(empty.gain("infantry-regiment"));
+    expect(empty.worth("infantry-regiment")).toBeGreaterThan(empty.worth("security-forces"));
+    // With Manpower to burn, its upkeep weighs little, and the quick defender is the best buy.
+    expect(empty.worth("security-forces", { funds: 20, manpower: 2000 } as Resources)).toBeGreaterThan(empty.worth("infantry-regiment", { funds: 20, manpower: 2000 } as Resources));
+    // A demoralized enemy stands there but attacks nobody this turn.
+    const shaken = boardOf(demoralize(withUnits(scenario, stack), stack.map(([id]) => id)));
+    expect(siteBattles(shaken, territory("madrid"), []).battles.filter((battle) => battle.role === "defence").every((battle) => battle.enemy === 0)).toBe(true);
+    expect(siteBattles(shaken, territory("madrid"), []).battles.some((battle) => battle.role === "attack" && battle.enemy > 0)).toBe(true);
+    // Only what stands there by the next turn defends a site about to fall.
+    const slow = siteBattles(boardOf(withUnits(scenario, stack)), territory("madrid"), [...ordered("infantry-regiment", 1), ...ordered("security-forces", 1)]);
+    expect([slow.defence, slow.ready]).toEqual([12, 6]);
+    // A gun alone attacks nothing: with no unit to lead it, only its defence counts.
+    const rear = site([["north-zamora-29", "north", "galicia"], ["rep-vitoria-8", "republic", "murcia"]], [], "valencia");
+    expect(rear.near.battles.every((battle) => battle.role === "attack")).toBe(true);
+    expect(rear.gain("infantry-regiment")).toBeGreaterThan(0);
+    const unled = site([["north-zamora-29", "north", "galicia"]], [], "valencia");
+    expect(unled.gain("artillery-group")).toBe(0);
+    expect(unled.gain("infantry-regiment")).toBeGreaterThan(0);
+    // Beyond its range an aircraft supports nothing; the cavalry's pace counts over a distance.
+    expect(site([["north-zamora-29", "north", "galicia"], ["rep-vitoria-8", "republic", "islas-baleares"]], [], "islas-baleares").gain("fighter-squadron")).toBe(0);
+    expect(rear.gain("cavalry-regiment") / 3).toBeGreaterThan(rear.gain("infantry-regiment") / 4);
+    // With nobody to fight, nothing is worth training.
+    expect(site(own).worth("infantry-regiment")).toBe(0);
+  });
+
+  it("prices upkeep over the horizon, and a scarce resource dearly", () => {
+    const supply = { funds: 100, manpower: 100 } as Resources;
+    expect(priceOf(typeOf("security-forces"), supply, 6)).toBeCloseTo(0.04 + 0.07);
+    expect(priceOf(typeOf("infantry-regiment"), supply, 6)).toBeCloseTo(0.05 + 0.025);
+    expect(priceOf(typeOf("infantry-regiment"), {}, 6)).toBeCloseTo(7.5);
+    // The opening: the North's Manpower still outruns its upkeep, near as plentiful as its Funds; the South's runs out and is worth its weight.
+    const opening = (factionId: typeof north) => recruitSupply(scenario, start, boardOf(start, factionId).assessment, []);
+    expect(opening(south)["manpower" as never]).toBe(1);
+    expect(opening(north)["manpower" as never]).toBeCloseTo(48.4);
+    expect(opening(north)["funds" as never]).toBeCloseTo(51);
+  });
+
+  it("buys guns at a Barracks and Factory site that faces a city stack, and foot before security on the opening board", () => {
+    const city: Placement = [...own, ...["rep-otumba-9", "rep-wad-ras-1"].map((id) => [id, "republic", "madrid"] as const), ...["north-san-marcial-22", "north-san-quintin-25", "north-zamora-29", "north-america-23"].map((id) => [id, "north", "castilla-y-leon"] as const)];
+    const state = funded(withUnits(scenario, city), republic, 60, 60);
+    const madrid = planRecruits(context(state)).filter((order) => order.territoryId === "madrid");
+    expect(ids(madrid)).toContain("artillery-group");
+    for (const factionId of [republic, north]) {
+      const opening = ids(planRecruits(context(start, factionId)));
+      expect(opening).toContain("infantry-regiment");
+      expect(opening).not.toContain("security-forces");
+    }
+  });
+
+  it("prices what is left as a turn's orders pile up", () => {
+    const rich = funded(start, republic, 200, 60);
+    const board = boardOf(rich);
+    const orders = planRecruits(context(rich));
+    const last = orders.map((order) => `${order.territoryId} ${order.unitTypeId}`).lastIndexOf("madrid artillery-group");
+    const before = orders.slice(0, last);
+    const near = siteBattles(board, territory("madrid"), before);
+    const left = (taken: readonly RecruitOrder[]): Resources => recruitSupply(scenario, rich, board.assessment, taken);
+    const worth = (id: string, taken: readonly RecruitOrder[]) => worthOf(board, typeOf(id), left(taken), near);
+    for (const id of ["funds", "manpower"]) expect(left(before)[id as never]).toBeLessThan(left([])[id as never] ?? 0);
+    // The tanks and foot taken before it make a tank dearer than a gun, which the stock the turn began with would not.
+    expect(worth("tank-company", [])).toBeGreaterThan(worth("artillery-group", []));
+    expect(worth("tank-company", before)).toBeLessThan(worth("artillery-group", before));
+    // A tank could have been taken instead: one trains in Madrid already, and the stock covers another.
+    expect(ids(before.filter((order) => order.territoryId === "madrid"))).toContain("tank-company");
+    expect(upkeepProblem(scenario, rich, republic, [...before, ...ordered("tank-company", 1)])).toBeUndefined();
   });
 
   it("builds combined arms within the support ratio, and counts what is in training", () => {
@@ -92,10 +203,10 @@ describe("mixed armies (D6)", () => {
     const guns = orders.filter((order) => order.unitTypeId === ("artillery-group" as never));
     const fighters = Object.values(start.units).filter((entry) => entry.factionId === republic).length + orders.length;
     expect(guns.length).toBeGreaterThan(0);
-    expect(guns.length * 4).toBeLessThanOrEqual(fighters);
+    expect(guns.length * requireAiProfile(scenario, republic).recruits.fightersPerSupport).toBeLessThanOrEqual(fighters);
     expect(new Set(ids(orders)).size).toBeGreaterThan(2);
     expect(orders).toEqual(planRecruits(context(rich)));
-    const training = Array.from({ length: 12 }, (_, index) => ({ factionId: republic, paid: {}, paused: false, territoryId: territory("madrid"), turnsLeft: 2, typeId: typeOf("artillery-group").id, unitId: unit(`gun-${String(index)}`) }));
+    const training = Array.from({ length: 16 }, (_, index) => ({ factionId: republic, paid: {}, paused: false, territoryId: territory("madrid"), turnsLeft: 2, typeId: typeOf("artillery-group").id, unitId: unit(`gun-${String(index)}`) }));
     expect(ids(planRecruits(context({ ...rich, training })))).not.toContain("artillery-group");
   });
 });

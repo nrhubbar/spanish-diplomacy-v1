@@ -1,0 +1,47 @@
+[
+{"id":"R4-1","idea":"manpower","text":"How scarce should Manpower be?","context":"Data only. Nothing is changed until you answer.","options":[
+{"label":"A. 0.6 Manpower a farm level","rationale":"The Republic feels it by about turn 7. A new farm level then gives 0.6 for 3 Funds.","recommended":true},
+{"label":"B. 0.75","rationale":"Gentler: about turn 15."},
+{"label":"C. 0.5","rationale":"Hard: the Republic is short by turn 4 unless it disbands militia."},
+{"label":"D. 0.6, and double the upkeep of infantry, veterans and cavalry","rationale":"0.5, 0.5 and 0.6. Bites as armies grow, on both sides."},
+{"label":"E. Leave it","rationale":"Only the computer player changes."}]},
+{"id":"R4-2","idea":"manpower","text":"What about the North's surplus?","context":"27 Manpower a turn and 6 Funds. Nothing it can afford uses that many men.","options":[
+{"label":"A. Leave it: Funds are its limit","rationale":"No new rule.","recommended":true},
+{"label":"B. Cut Castilla y León's farms from 16 levels to 8","rationale":"About 8 Manpower less. The map's grain country would look poorer than it was."},
+{"label":"C. Let a side sell Manpower for Funds","rationale":"New rule. 3 Manpower for 1 Fund would give the North up to 7 Funds a turn."}]},
+{"id":"R4-3","idea":"air","text":"Which air table?","context":"Both are data. The five-row table is being built.","options":[
+{"label":"A. Five rows, as above","rationale":"Graded like your battles, and Ground Support is worth more on average.","recommended":true},
+{"label":"B. Three rows: defender wins up to 7, contested 8 to 13, attacker wins from 14","rationale":"Simple, and weaker for support: 2 bombers against anti-air average +1.8."},
+{"label":"C. Other numbers","rationale":"Write them in the note."}]},
+{"id":"R4-4","idea":"air","text":"How is each side's air strength counted?","context":"The unit text and the game disagreed. Fighters add 2 and bombers 1.","options":[
+{"label":"A. Add every aircraft over the battle","rationale":"As the game does today.","recommended":true},
+{"label":"B. Only the best aircraft","rationale":"As the text said. Mass matters less."}]},
+{"id":"R4-5","idea":"units","text":"Disband and orders on a phone?","context":"","options":[
+{"label":"A. A button at the bottom of the sheet that raises the menu","rationale":"As drawn.","recommended":true},
+{"label":"B. A bar of icons, one for each order","rationale":"One tap fewer, but less room for names."}]},
+{"id":"R4-6","idea":"units","text":"Which air missions get map picking?","context":"","options":[
+{"label":"A. All four: Ground Support, Patrol, Recon and Raid","rationale":"One way to choose a target. A raid then picks the place inside it.","recommended":true},
+{"label":"B. Ground Support only","rationale":"The others keep a list."}]},
+{"id":"R4-7","idea":"recruit","text":"Which layout for the Recruit pane?","context":"","options":[
+{"label":"A. Order slots on top, training at the bottom","rationale":"As drawn.","recommended":true},
+{"label":"B. Order slots in the footer beside the totals","rationale":"More room for rows, but slots sit far from the units."},
+{"label":"C. A separate Training tab","rationale":"Cleanest list, one more tap to see the queue."}]},
+{"id":"R4-8","idea":"odds","text":"What may Select all take from a territory?","context":"","options":[
+{"label":"A. Everything that can go","rationale":"You asked for all, and unticking is one tap.","recommended":true},
+{"label":"B. Everything but one fighting unit on a victory objective","rationale":"Safer. Needs explaining when it skips a unit."},
+{"label":"C. Everything but one fighting unit in every territory","rationale":"Safest, and slowest to use."}]},
+{"id":"R4-9","idea":"odds","text":"Cancel the last attack on a territory: what happens to the aircraft?","context":"Aircraft flying Ground Support with nobody to support.","options":[
+{"label":"A. Their missions are cancelled too, and the pane says so","rationale":"No dashed line left on the map.","recommended":true},
+{"label":"B. They keep flying and the pane warns you","rationale":"For when you plan to send others."}]},
+{"id":"R4-10","idea":"odds","text":"How should small numbers show to the tenth?","context":"Upkeep of 0.05, 0.15 and 0.25 can't be exact at one decimal.","options":[
+{"label":"A. Round to the tenth; totals stay exact underneath","rationale":"0.25 shows 0.3. Rows may not add up by 0.1.","recommended":true},
+{"label":"B. Show Manpower below 1,000 as men","rationale":"250 men instead of 0.3k. Exact, and a little busier."}]},
+{"id":"R4-11","idea":"plan","text":"May I run games to check the computer player?","context":"You said no sims until you'd playtested.","options":[
+{"label":"A. A small batch of 10 after the merge","rationale":"Unit mix, trucks and game length, before and after.","recommended":true},
+{"label":"B. None until you've played Rev 4","rationale":""},
+{"label":"C. A full balance run","rationale":"Costs more tokens."}]},
+{"id":"R4-12","idea":"plan","text":"Token budget for Rev 4?","context":"You gave none. I'm aiming for 1.5M, reviews included.","options":[
+{"label":"A. 1.5M","rationale":"","recommended":true},
+{"label":"B. 1M","rationale":"Fewer reviews."},
+{"label":"C. 2M or more","rationale":"More review and polish."}]}
+]

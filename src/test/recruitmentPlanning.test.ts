@@ -16,6 +16,7 @@ import {
   recruitQuantity,
   selectTerritory,
   setRecruitQuantity,
+  takeBackRecruit,
   type PlanningSession
 } from "../main/state/planning";
 import { emptyDraft } from "../main/state/session";
@@ -47,6 +48,21 @@ describe("the Recruit basket (X4)", () => {
     expect(balanceAfterBasket(scenario, session)).toEqual({ funds: 26, manpower: 5 });
     session = setRecruitQuantity(scenario, session, catalunya, type("infantry-regiment"), 0);
     expect(draftOrders(session.draft)).toHaveLength(1);
+  });
+
+  it("keeps every other order's place, and takes one back by its place", () => {
+    const ordered = (session: PlanningSession) => (session.draft.recruits ?? []).map((order) => order.unitTypeId);
+    let session = setRecruitQuantity(scenario, planning(), catalunya, type("infantry-regiment"), 1);
+    session = setRecruitQuantity(scenario, session, catalunya, type("militia-column"), 1);
+    session = setRecruitQuantity(scenario, session, catalunya, type("infantry-regiment"), 2);
+    expect(ordered(session)).toEqual(["infantry-regiment", "militia-column", "infantry-regiment"]);
+    expect(ordered(setRecruitQuantity(scenario, session, catalunya, type("infantry-regiment"), 1))).toEqual(["infantry-regiment", "militia-column"]);
+    expect(ordered(takeBackRecruit(session, catalunya, 0))).toEqual(["militia-column", "infantry-regiment"]);
+    const refused = setRecruitQuantity(scenario, session, catalunya, type("colonial-veterans"), 1);
+    expect(refused.draft.feedback).toBeDefined();
+    expect(takeBackRecruit(refused, catalunya, 1).draft.feedback).toBeUndefined();
+    expect(takeBackRecruit(session, catalunya, 3)).toBe(session);
+    expect(takeBackRecruit(planning(), catalunya, 0).draft.recruits).toBeUndefined();
   });
 
   it("refuses locked types and sites with the engine's reason, and keeps the basket across selection", () => {

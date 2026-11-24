@@ -2,17 +2,21 @@
  * The harness's only door into the game. Every import from `src/main/**` lives here, so a
  * change to the engine, the computer player or the scenario folder is repointed in one file.
  */
-import { unitKindIn } from "../main/engine/air/pieces";
+import { unitKindIn, unitTypeIn } from "../main/engine/air/pieces";
+import { holdings, inPoints } from "../main/engine/carry";
+import { incomeFor } from "../main/engine/economy/income";
+import { upkeepBill, upkeepLines } from "../main/engine/economy/upkeep";
 import { initialGameState } from "../main/engine/resolution";
 import { canFight } from "../main/engine/units/fighting";
-import type { FactionId, Scenario, ScenarioId, TurnOutcome, TurnResolutionResult, UnitId } from "../main/engine/types";
+import type { BuildProject, FactionId, GameState, Order, Resources, Scenario, ScenarioId, TurnOutcome, TurnResolutionResult, UnitId } from "../main/engine/types";
 import { isMoveOrder } from "../main/engine/types/orders";
+import { linkWorks } from "../main/engine/types/state";
 import { builtInSources } from "../main/scenarios/builtInSources";
 import { createScenarioRegistry, normalizeSourcePath, type PackageSources } from "../main/scenarios/registry";
 import { advance, nextTurn } from "../main/state/coordinator";
 import type { GameRecord, Session } from "../main/state/session";
 
-export type { FactionId, PackageSources, Scenario, TurnOutcome, TurnResolutionResult, UnitId };
+export type { FactionId, GameState, Order, PackageSources, Resources, Scenario, TurnOutcome, TurnResolutionResult, UnitId };
 
 /**
  * Where scenario packages come from. The app's own glob of shipped packages, so a moved
@@ -135,4 +139,53 @@ export function orderRoute(order: TurnResolutionResult["submittedOrders"][number
 /** A battle's result as a stable key: its grade. */
 export function battleResultKey(outcome: Extract<TurnOutcome, { kind: "battle" }>): string {
   return outcome.grade;
+}
+
+/** The id of a unit's type, whether it came with the scenario, was raised in play or is a replacement general. */
+export function unitTypeIdOf(scenario: Scenario, state: GameState, unitId: UnitId): string {
+  const type = unitTypeIn(scenario, state.raised, unitId);
+  if (type === undefined) throw new Error(`Unit "${unitId}" has no type; re-check the harness's inventory reading.`);
+  return type.id;
+}
+
+/** What a build project makes, as a key that no other project shares: `building:barracks`, `link:new-rail`. */
+export function projectKey(project: BuildProject): string {
+  switch (project.kind) {
+    case "building": return `building:${project.buildingId}`;
+    case "development": return `development:${project.developmentId}`;
+    case "improvement": return `improvement:${project.improvement}`;
+    case "link": return `link:${project.work}`;
+  }
+}
+
+/** Everything that can stand in a sub-territory, in scenario order, as project keys. */
+export function siteKeys(scenario: Scenario): readonly string[] {
+  return [
+    ...scenario.buildings.map((building) => projectKey({ buildingId: building.id, kind: "building" })),
+    ...scenario.development.map((track) => projectKey({ developmentId: track.id, kind: "development" })),
+    ...(["port", "rail"] as const).map((improvement) => projectKey({ improvement, kind: "improvement" }))
+  ];
+}
+
+/** The works a link may take, as project keys. They stand on a link, which no side holds. */
+export function linkKeys(): readonly string[] {
+  return linkWorks.map((work) => `link:${work}`);
+}
+
+/** What a faction really has, in points: its whole points less its carry. */
+export function heldPoints(state: GameState, factionId: FactionId): Resources {
+  return inPoints(holdings(state, factionId));
+}
+
+/** The income a board pays a faction, before and after raid cuts, by the engine's own function. */
+export function boardIncome(scenario: Scenario, state: GameState, factionId: FactionId): { readonly gross: Resources; readonly paid: Resources } {
+  return incomeFor(scenario, state, factionId);
+}
+
+/**
+ * The upkeep of the units standing on a board, in points, by the engine's own function. Training
+ * is left out: `upkeepLines` also counts what will finish next turn, which is next turn's bill.
+ */
+export function boardUpkeep(scenario: Scenario, state: GameState, factionId: FactionId): Resources {
+  return inPoints(upkeepBill(upkeepLines(scenario, { ...state, training: [] }, factionId, [])));
 }

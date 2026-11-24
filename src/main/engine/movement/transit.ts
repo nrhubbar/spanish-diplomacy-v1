@@ -29,7 +29,7 @@ export interface MovementScratch {
   readonly submitted: ReadonlyMap<UnitId, MoveOrder>;
 }
 
-interface Army {
+export interface Army {
   readonly key: string;
   readonly orders: readonly [MoveOrder, ...MoveOrder[]];
 }
@@ -47,7 +47,7 @@ export function armiesOf(scenarioKey: (order: MoveOrder) => string, orders: read
 }
 
 /** The route an army's orders take from the start-of-turn state, as checked at reveal. */
-function armyRoute(scenario: Scenario, state: GameState, orders: readonly [MoveOrder, ...MoveOrder[]]): RouteCheck {
+export function armyRoute(scenario: Scenario, state: GameState, orders: readonly [MoveOrder, ...MoveOrder[]]): RouteCheck {
   const [first] = orders;
   const unitIds = orders.map((order) => order.unitId);
   const { allMobile } = transportOf(scenario, state, unitIds);
@@ -68,6 +68,66 @@ export function routesOfMoves(scenario: Scenario, state: GameState, moves: reado
   return routes;
 }
 
+/** One army as step 1 finds it: its route, and why it can't go, if it can't. */
+export interface JudgedArmy {
+  readonly army: Army;
+  readonly cause?: HeldBackCause;
+  readonly check: RouteCheck;
+}
+
+/**
+ * The armies of these moves, judged in the order their first unit was ordered, so each takes the
+ * trains, landings and lanes the earlier ones leave. `advancing` names the units whose move is not
+ * a reinforcement. `describe` works out an army's route (a planning screen may remember them).
+ */
+export function judgeArmies(
+  scenario: Scenario,
+  state: GameState,
+  orders: readonly MoveOrder[],
+  advancing: ReadonlySet<UnitId>,
+  describe: (orders: Army["orders"]) => RouteCheck = (army) => armyRoute(scenario, state, army)
+): readonly JudgedArmy[] {
+  const departures = new Map<SubTerritoryId, number>();
+  const landings = new Map<string, number>();
+  const lanes = new Map<string, number>();
+  return armiesOf((order) => armyKey(scenario, order), orders).map((army) => {
+    const [first] = army.orders;
+    const unitIds = army.orders.map((order) => order.unitId);
+    const check = describe(army.orders);
+    const places = railPlaces(scenario, state, unitIds);
+    const cause = ((): HeldBackCause | undefined => {
+      if (!check.ok) return { reason: "allowance" };
+      const { route } = check;
+      if (unitIds.some((unitId) => advancing.has(unitId)) && !hasFighter(scenario, state.raised, unitIds)) return { reason: "cannot-fight" };
+      if (!fitsAllowance(route.cost, route.steps, armyAllowance(scenario, state, first.factionId, first.from, unitIds))) return { reason: "allowance" };
+      const claims = routeClaims(route);
+      const rail = railShortage(scenario, state, { places, route }, { departures });
+      if (rail !== undefined) return { rail, reason: "rail-full" };
+      // A port lands only its holder's armies, so landings count per port (M5).
+      const landingKey = claims.landing;
+      if (landingKey !== undefined && (landings.get(landingKey) ?? 0) >= portLandings(scenario, route.sea?.level ?? 0)) return { reason: "port-landings" };
+      const laneKey = claims.amphibious === undefined ? undefined : `${first.factionId}|${claims.amphibious}`;
+      if (laneKey !== undefined && (lanes.get(laneKey) ?? 0) >= 1) return { reason: "amphibious-lane" };
+      if (claims.departure !== undefined) departures.set(claims.departure, (departures.get(claims.departure) ?? 0) + places);
+      if (landingKey !== undefined) landings.set(landingKey, (landings.get(landingKey) ?? 0) + 1);
+      if (laneKey !== undefined) lanes.set(laneKey, (lanes.get(laneKey) ?? 0) + 1);
+      return undefined;
+    })();
+    return { army, check, ...(cause === undefined ? {} : { cause }) };
+  });
+}
+
+/**
+ * Planned moves judged as step 1 will judge them, from the board as it stands: for the planning
+ * screens, so an order is refused when it is given and not at the reveal. Armies are checked only
+ * under `allowance`; elsewhere every move stands on its own.
+ */
+export function judgePlannedMoves(scenario: Scenario, state: GameState, orders: readonly MoveOrder[], describe?: (orders: Army["orders"]) => RouteCheck): readonly JudgedArmy[] {
+  if (scenario.rules.movement !== "allowance") return [];
+  const advancing = new Set(classifyMoves(scenario, state, state.units, orders).advances.map((order) => order.unitId));
+  return judgeArmies(scenario, state, orders, advancing, describe);
+}
+
 /**
  * Step 1, the `allowance` module's part (M1, M3, M5). Each order's legs were checked on their
  * own; here the moves are grouped into armies (W4) and checked as armies: the route must fit the
@@ -82,34 +142,11 @@ export const checkArmies: Phase = (draft) => {
   const { scenario, start } = draft.input;
   const held: MoveHeldBackOutcome[] = [];
   const routes = new Map<UnitId, MoveRoute>();
-  const departures = new Map<SubTerritoryId, number>();
-  const landings = new Map<string, number>();
-  const lanes = new Map<string, number>();
   const heldUnits = new Set<UnitId>();
   const advancing = new Set(classifyMoves(scenario, start, draft.armies, draft.orders.valid).advances.map((order) => order.unitId));
-  for (const army of armiesOf((order) => armyKey(scenario, order), draft.orders.valid)) {
+  for (const { army, cause, check } of judgeArmies(scenario, start, draft.orders.valid, advancing)) {
     const [first] = army.orders;
     const unitIds = army.orders.map((order) => order.unitId);
-    const check = armyRoute(scenario, start, army.orders);
-    const places = railPlaces(scenario, start, unitIds);
-    const cause = ((): HeldBackCause | undefined => {
-      if (!check.ok) return { reason: "allowance" };
-      const { route } = check;
-      if (unitIds.some((unitId) => advancing.has(unitId)) && !hasFighter(scenario, start.raised, unitIds)) return { reason: "cannot-fight" };
-      if (!fitsAllowance(route.cost, route.steps, armyAllowance(scenario, start, first.factionId, first.from, unitIds))) return { reason: "allowance" };
-      const claims = routeClaims(route);
-      const rail = railShortage(scenario, start, { places, route }, { departures });
-      if (rail !== undefined) return { rail, reason: "rail-full" };
-      // A port lands only its holder's armies, so landings count per port (M5).
-      const landingKey = claims.landing;
-      if (landingKey !== undefined && (landings.get(landingKey) ?? 0) >= portLandings(scenario, route.sea?.level ?? 0)) return { reason: "port-landings" };
-      const laneKey = claims.amphibious === undefined ? undefined : `${first.factionId}|${claims.amphibious}`;
-      if (laneKey !== undefined && (lanes.get(laneKey) ?? 0) >= 1) return { reason: "amphibious-lane" };
-      if (claims.departure !== undefined) departures.set(claims.departure, (departures.get(claims.departure) ?? 0) + places);
-      if (landingKey !== undefined) landings.set(landingKey, (landings.get(landingKey) ?? 0) + 1);
-      if (laneKey !== undefined) lanes.set(laneKey, (lanes.get(laneKey) ?? 0) + 1);
-      return undefined;
-    })();
     if (cause === undefined && check.ok) {
       for (const unitId of unitIds) routes.set(unitId, check.route);
     } else {

@@ -117,6 +117,9 @@ export const paneSlice = createSlice({
   reducers: {
     musterModeChosen: (state, { payload }: PayloadAction<{ readonly mode: MoveMode; readonly unitId: UnitId }>) =>
       ({ ...state, muster: { ...state.muster, modes: { ...state.muster.modes, [payload.unitId]: payload.mode } } }),
+    /** Select all: many ticks and modes in one go. */
+    musterSelected: (state, { payload }: PayloadAction<MusterChoices>) =>
+      ({ ...state, muster: { modes: { ...state.muster.modes, ...payload.modes }, ticks: { ...state.muster.ticks, ...payload.ticks } } }),
     musterTicked: (state, { payload }: PayloadAction<{ readonly ticked: boolean; readonly unitId: UnitId }>) =>
       ({ ...state, muster: { ...state.muster, ticks: { ...state.muster.ticks, [payload.unitId]: payload.ticked } } }),
     /** Opens a view on top of This turn, as the top bar's buttons do. */
@@ -127,4 +130,4 @@ export const paneSlice = createSlice({
   }
 });
 
-export const { musterModeChosen, musterTicked, openView, popView, pushView, resetPane } = paneSlice.actions;
+export const { musterModeChosen, musterSelected, musterTicked, openView, popView, pushView, resetPane } = paneSlice.actions;

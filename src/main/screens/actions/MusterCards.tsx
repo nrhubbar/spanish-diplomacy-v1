@@ -37,28 +37,34 @@ function FiguresCard({ card, children, dugInNote, head, ticked = false }: Figure
 
 interface UnitCardProps {
   readonly card: MusterCard;
-  readonly chosen: MoveMode;
   readonly onMode: (mode: MoveMode) => void;
   readonly onTick: () => void;
   readonly ticked: boolean;
 }
 
-/** A unit that can go: a tick box, and one chip per way it can travel. */
-export function UnitCard({ card, chosen, onMode, onTick, ticked }: UnitCardProps): JSX.Element {
+/**
+ * A unit that can go: a tick box, and one chip per way it can travel. A way with no room for it
+ * beside the units ticked keeps its chip, refused with the reason; with no way left, the tick box
+ * is refused too.
+ */
+export function UnitCard({ card, onMode, onTick, ticked }: UnitCardProps): JSX.Element {
+  const refused = card.modes.flatMap((chip) => (!chip.ok && chip.full === true ? [chip] : []));
   return (
     <FiguresCard
       card={card}
       dugInNote="Leaving gives up its works."
       head={(
         <>
-          <label className="muster-card-head">
-            <input checked={ticked} onChange={onTick} type="checkbox" />
+          <label className="muster-card-head" title={card.blocked}>
+            <input checked={ticked} disabled={card.blocked !== undefined && !ticked} onChange={onTick} type="checkbox" />
             <span className="muster-card-name">{card.name}</span>
           </label>
           <div aria-label="Move mode" className="muster-modes" role="group">
-            {card.modes.filter((chip) => chip.ok).map((chip) => (
+            {card.modes.filter((chip) => chip.ok || chip.full === true).map((chip) => (
               <button
-                aria-pressed={chip.mode === chosen}
+                aria-pressed={chip.ok && chip.mode === card.chosen}
+                disabled={!chip.ok}
+                title={chip.ok ? undefined : chip.reason}
                 className="muster-chip muster-mode"
                 data-mode={chip.mode}
                 key={chip.mode}
@@ -74,6 +80,10 @@ export function UnitCard({ card, chosen, onMode, onTick, ticked }: UnitCardProps
       )}
       ticked={ticked}
     >
+      {card.note === undefined ? null : <p className="muster-note">{card.note}</p>}
+      {card.blocked === undefined
+        ? refused.map((chip) => <p className="muster-note muster-refused" key={chip.mode}>{`${modeLabel(chip.mode)}: ${chip.reason}`}</p>)
+        : <p className="muster-note muster-refused">{card.blocked}</p>}
       {card.otherOrder === undefined ? null : <p className="muster-note muster-replaces">{`${card.otherOrder}. Ticking this replaces it.`}</p>}
     </FiguresCard>
   );

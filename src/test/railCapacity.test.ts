@@ -170,7 +170,13 @@ describe("the Invade and Reinforce panes", () => {
     const swapped = order([pair[0] as UnitId, lastOne], ordered);
     expect(swapped.moves.map((each) => each.unitId)).toEqual(expect.arrayContaining([pair[0], lastOne]));
     expect(orderMuster(scenario, ordered, swapped).draft.orders.map((each) => each.unitId).sort()).toEqual([pair[0] as UnitId, lastOne].sort());
-    expect(musterRefusal(scenario, ordered, order(regiments, ordered))).toContain("only 2 places left");
+    // With both places at Madrid taken, the third marches next door and boards there, so the order is never refused.
+    const full = muster(scenario, ordered.game.state, republic, valencia, "reinforce", { orders: ordered.draft.orders }, picks(regiments));
+    expect([...full.picks.units]).toEqual(regiments);
+    const given = musterOrderFrom(full, full.picks);
+    expect(given.moves.filter((each) => each.legs?.[0]?.kind === "land")).toHaveLength(1);
+    expect(full.groups.find((group) => group.from === madrid)?.trains[0]).toBe("Rail: 2 of 2 places");
+    expect(musterRefusal(scenario, ordered, given)).toBeUndefined();
   });
 
   it("takes the trains other orders fill off a card, and says why", () => {
@@ -197,8 +203,8 @@ describe("the computer player's trains", () => {
   it("never lets trucks take a fighting unit's place", () => {
     const routed = withRoutes(scenario, trucked, republic, pair.map((id) => ride(id)));
     expect(routed.map((each) => each.unitId).sort()).toEqual([...pair].sort());
-    // With a place to spare, one truck rides along.
-    expect(withRoutes(scenario, trucked, republic, [ride(pair[0] as UnitId)]).map((each) => each.unitId)).toEqual([pair[0], truck]);
+    // Even with a place to spare: trucks only go with a Motor march.
+    expect(withRoutes(scenario, trucked, republic, [ride(pair[0] as UnitId)]).map((each) => each.unitId)).toEqual([pair[0]]);
   });
 
   it("keeps the ride its transport would crowd off the train", () => {

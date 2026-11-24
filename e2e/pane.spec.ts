@@ -82,6 +82,23 @@ test("Invade shows unit cards at once, with the order button in the odds card", 
   expect(await page.locator(".map-pane-body").evaluate((body) => body.scrollWidth <= body.clientWidth)).toBe(true);
 });
 
+test("cancelling an invasion takes its Ground Support line off the map too", async ({ isMobile, page }) => {
+  test.skip(isMobile, "The same orders, given on a wide screen.");
+  await plan(page);
+  await invade(page, "castilla-y-leon");
+  const pane = page.getByRole("region", { name: "Invade" });
+  await pane.getByRole("checkbox", { name: "Covadonga Infantry Regiment No. 4" }).check();
+  await pane.getByRole("region", { name: "Ground Support" }).getByRole("checkbox").first().check();
+  await pane.getByRole("button", { name: "Order 1 unit and 1 aircraft to invade" }).click();
+  await expect(page.locator(".map-route-planned")).toHaveCount(1);
+  await expect(page.locator(".air-mission-line")).toHaveCount(1);
+  // This turn: the move's own Cancel.
+  await page.locator(".map-pane").getByRole("button", { name: /^Cancel/ }).first().click();
+  await expect(page.locator(".map-route-planned")).toHaveCount(0);
+  await expect(page.locator(".air-mission-line")).toHaveCount(0);
+  await expect(page.locator(".map-pane")).toContainText("Ground Support over Castilla y León is cancelled too: none of your units go there now.");
+});
+
 test("the phone's sheet opens tall for Invade and stops where it is dragged", async ({ isMobile, page }) => {
   test.skip(!isMobile, "The sheet is for phones.");
   await plan(page);
@@ -111,7 +128,7 @@ test("the casualty chip is beside the faction's name and opens the split", async
   expect(await fits(page)).toBe(true);
 });
 
-test("a rail order too big for the trains is refused whole, with the places left", async ({ page }) => {
+test("the pane counts the trains while units are ticked, and never orders more than they take", async ({ page }) => {
   // Madrid opens with four units and six train places, so this game's stations and yards board half as many.
   await page.route(/\/spanish-civil-war-1936\/scenario\.json/, async (route) => {
     const response = await route.fetch();
@@ -125,14 +142,15 @@ test("a rail order too big for the trains is refused whole, with the places left
   await page.getByRole("menuitem", { name: /^Reinforce/ }).click();
   const pane = page.getByRole("region", { exact: true, name: "Reinforce" });
   const madrid = pane.getByRole("region", { name: "From Madrid" });
-  const boxes = await madrid.getByRole("checkbox").all();
-  expect(boxes).toHaveLength(4);
-  for (const box of boxes) await box.check();
-  await pane.getByRole("button", { name: /^Order 4 units to reinforce/ }).click();
-  await expect(pane.getByRole("alert")).toHaveText("Rail has only 3 places left at Madrid this turn, and 4 units would board.");
-  // Three fit, and go.
-  await boxes[3]?.uncheck();
-  await pane.getByRole("button", { name: /^Order 3 units to reinforce/ }).click();
+  await expect(madrid).toContainText("Rail: 0 of 3 places");
+  await madrid.getByRole("button", { name: "Select all from Madrid" }).click();
+  await expect(madrid).toContainText("Rail: 3 of 3 places");
+  await expect(pane.getByRole("alert")).toHaveCount(0);
+  // Pressed again, it clears them; nothing stays ticked.
+  await madrid.getByRole("button", { name: "Clear all from Madrid" }).click();
+  await expect(madrid).toContainText("Rail: 0 of 3 places");
+  await madrid.getByRole("button", { name: "Select all from Madrid" }).click();
+  await pane.getByRole("button", { name: /^Order \d+ units to reinforce/ }).click();
   await expect(pane).toBeHidden();
   await expect(page.locator(".map-pane")).not.toContainText("places left at Madrid");
 });

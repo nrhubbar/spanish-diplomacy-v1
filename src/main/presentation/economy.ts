@@ -1,7 +1,7 @@
 import { currentLevel, maxLevel, projectCost, queuedLevel, sameProject } from "../engine/economy/catalogue";
-import { toThousandth } from "../engine/resources";
 import type { BuildingEffect, BuildProject, DevelopmentEffect, LinkWork, RecruitRequirement, ResourceId, Resources, Scenario, SubTerritoryState } from "../engine/types";
 import { glyphs } from "./glyphs";
+import { signedTenths, tenths } from "./numbers";
 
 /**
  * Words for the economy ($1-$5): amounts, projects and building effects. Resources are named
@@ -14,14 +14,14 @@ function displayOf(scenario: Scenario, resourceId: ResourceId) {
   return scenario.resources.find((resource) => resource.id === resourceId)?.display;
 }
 
-/** EB-12: an amount of one resource as the header shows it: "18k" for Manpower, "42" for Funds. */
+/** EB-12, N5: an amount of one resource as the header shows it, to a tenth: "18k" for Manpower, "1.5" for Funds. */
 export function resourceAmount(scenario: Scenario, resourceId: ResourceId, value: number): string {
-  return `${String(toThousandth(value))}${displayOf(scenario, resourceId)?.suffix ?? ""}`;
+  return `${tenths(value)}${displayOf(scenario, resourceId)?.suffix ?? ""}`;
 }
 
 /** EB-12: an amount with its sign, using a true minus: "+9k", "\u22123", "+0". */
 export function signedResourceAmount(scenario: Scenario, resourceId: ResourceId, value: number): string {
-  return value < 0 ? `${glyphs.minus}${resourceAmount(scenario, resourceId, -value)}` : `+${resourceAmount(scenario, resourceId, value)}`;
+  return `${signedTenths(value)}${displayOf(scenario, resourceId)?.suffix ?? ""}`;
 }
 
 /** EB-12: an amount in full, points times the display unit: "18,000" for 18 Manpower, "42" for Funds. */
@@ -46,11 +46,6 @@ export function signedAmountText(scenario: Scenario, amount: Resources): string 
     return value === 0 ? [] : [`${signedResourceAmount(scenario, resource.id, value)} ${resource.name}`];
   });
   return parts.length === 0 ? "nothing" : parts.join(separator);
-}
-
-/** A whole number with its sign, using a true minus: "+14", "\u22123", "+0". */
-export function signed(value: number): string {
-  return value < 0 ? `${glyphs.minus}${String(-value)}` : `+${String(value)}`;
 }
 
 /** R7: the link works as the build lists name them. */

@@ -36,26 +36,6 @@
   }
 }
 
-.game-menu-sound {
-  width: min(20rem, calc(100vw - 2.5rem));
-  padding: 0.4rem 0.6rem 0.2rem;
-
-  h2 {
-    margin: 0 0 0.3rem;
-    font-size: 1rem;
-  }
-
-  // The menu is narrow: each name sits above its slider.
-  .sound-row {
-    grid-template-columns: minmax(6rem, 1fr) 3.2rem auto;
-    gap: 0 0.5rem;
-
-    label {
-      grid-column: 1 / -1;
-    }
-  }
-}
-
 @media (max-width: 520px) {
   .settings-section .sound-row {
     grid-template-columns: minmax(6rem, 1fr) 3.2rem auto;

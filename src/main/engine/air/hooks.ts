@@ -6,7 +6,8 @@ import { airOverHookedBattle, supportModifiersOf } from "./groundSupport";
 
 /**
  * R10, R11: Ground Support over the battle's territory, after the air battle when one is fought
- * (`groundSupport.ts`). Only the side that has the air gets it: +3 an aircraft, at most two.
+ * (`groundSupport.ts`): only the side that wins it gets any. The report reads the same air from
+ * the battle (`FoughtBattle.air`).
  * The flights are known only while the turn resolves (the air scratch); planning estimates add
  * planned Ground Support themselves (`combat/estimate.ts`).
  */

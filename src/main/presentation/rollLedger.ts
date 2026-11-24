@@ -1,10 +1,16 @@
+import type { PlannedAir, PlannedAirResult } from "../engine/air/groundSupport";
 import type { CombatModifier, GeneralId, Scenario } from "../engine/types";
+import { aircraftCount } from "./battleAir";
 import { glyphs } from "./glyphs";
-import { modifierName } from "./odds";
+import { modifierName, percent, signed } from "./odds";
 
 /** One line of a roll ledger: what changes the attacker's die, and by how much. */
 export interface RollLedgerRow {
+  /** What the value is made of, as a fold-out under the label. */
+  readonly details?: { readonly lines: readonly string[]; readonly summary: string };
   readonly label: string;
+  /** Beside the label, smaller: what kind of number the value is. */
+  readonly note?: string;
   readonly value: number;
 }
 
@@ -46,6 +52,34 @@ export function effectName(modifier: CombatModifier, scenario: Scenario): string
     default:
       return modifierName(modifier, scenario);
   }
+}
+
+/** To tenths, as the ledgers print averages. */
+function toTenth(value: number): number {
+  return Math.round(value * 10) / 10;
+}
+
+/** "Defender commands the air, 15%: the defenders' Ground Support; you lose one aircraft". */
+function airResultLine({ aircraftLost, chance, name, roll, support }: PlannedAirResult): string {
+  const gives = roll > 0 ? `your Ground Support, ${signed(roll)}` : support === "defender" ? "the defenders' Ground Support" : "no Ground Support";
+  const loses = aircraftLost === 0 ? "" : `; you lose ${aircraftCount(aircraftLost)}`;
+  return `${name}, ${percent(chance)}: ${gives}${loses}`;
+}
+
+/**
+ * R11: the ledger with planned Ground Support that an air battle decides: its average to tenths,
+ * and the table's results with their chances folded out. Unopposed support is among the battle's
+ * modifiers already, so the ledger stays as it is.
+ */
+export function withPlannedAir(scenario: Scenario, ledger: RollLedgerData, air: PlannedAir | undefined): RollLedgerData {
+  if (air?.results === undefined) return ledger;
+  const row: RollLedgerRow = {
+    details: { lines: air.results.map(airResultLine), summary: "The air battle's results" },
+    label: effectName(air.modifier, scenario),
+    note: "average; air battle first",
+    value: toTenth(air.average)
+  };
+  return { rows: [...ledger.rows, row], total: toTenth(ledger.total + row.value) };
 }
 
 /** Every effect on the attacker's roll as one ledger, without those that change nothing. Plus helps the attacker, whoever reads it. */

@@ -1,8 +1,9 @@
+import type { PlannedAir } from "../../main/engine/air/groundSupport";
 import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { RollLedger } from "../../main/components/RollLedger";
 import type { CombatModifier } from "../../main/engine/types";
-import { effectName, rollLedger } from "../../main/presentation/rollLedger";
+import { effectName, rollLedger, withPlannedAir } from "../../main/presentation/rollLedger";
 import { faction, spain, unit } from "../support";
 
 afterEach(cleanup);
@@ -34,6 +35,33 @@ describe("the roll ledger", () => {
       rows: [{ label: "Barricades (city held)", value: -1 }, { label: "Odds beyond 6:1", value: 3 }],
       total: 2
     });
+  });
+
+  it("adds planned Ground Support that an air battle decides as its average to tenths, with the results", () => {
+    const ledger = { rows: [{ label: "Barricades", value: -1 }], total: -1 };
+    const air = {
+      average: 3.75,
+      modifier: { factionId: north, kind: "air-support", role: "attack", roll: 6, unitIds: [unit("a"), unit("b")] },
+      results: [
+        { aircraftLost: 1, chance: 0.15, name: "Defender commands the air", roll: 0, support: "defender" },
+        { aircraftLost: 2, chance: 0.2, name: "Contested sky", roll: 0, support: "none" },
+        { aircraftLost: 0, chance: 0.65, name: "Attacker holds the edge", roll: 6, support: "attacker" }
+      ]
+    } as unknown as PlannedAir;
+    const shown = withPlannedAir(scenario, ledger, air);
+    expect(shown.rows[1]).toMatchObject({ label: "Ground Support, 2 aircraft", note: "average; air battle first", value: 3.8 });
+    expect(shown.total).toBe(2.8);
+    expect(withPlannedAir(scenario, ledger, undefined)).toBe(ledger);
+    expect(shown.rows[1]?.details?.lines).toEqual([
+      "Defender commands the air, 15%: the defenders' Ground Support; you lose one aircraft",
+      "Contested sky, 20%: no Ground Support; you lose 2 aircraft",
+      "Attacker holds the edge, 65%: your Ground Support, +6"
+    ]);
+    const unopposed: PlannedAir = { average: 6, input: air.input, lossChance: 0, modifier: air.modifier, supportChance: 1 };
+    expect(withPlannedAir(scenario, ledger, unopposed)).toBe(ledger);
+    render(<RollLedger {...shown} />);
+    expect(screen.getByText("(average; air battle first)")).toBeVisible();
+    expect(screen.getByText("The air battle's results").closest("details")).toHaveTextContent("Defender commands the air, 15%: the defenders' Ground Support");
   });
 
   it("shows plus in green and minus in red, the total last, and says when nothing changes the roll", () => {

@@ -1,12 +1,11 @@
-import { factionsOf } from "../board";
+import { d20Faces } from "../d20/rules";
 import { pick } from "../dice";
 import { type CombatHookContext, hookedGrounded } from "../hooks";
-import type { TurnDraft } from "../phases/draft";
 import type {
   AirBattleAircraft,
   AirBattleInput,
   AirBattleResult,
-  AirBattleRolls,
+  AirBattleRow,
   AirMissionOrder,
   CombatModifier,
   FactionId,
@@ -16,15 +15,16 @@ import type {
   TerritoryId,
   UnitId
 } from "../types";
-import { airBattle, airBattleFought, type AirBattleOdds, airBattleOdds, groundSupport } from "./airBattle";
+import { aircraftLost, airBattle, airBattleFought, airBattleOdds, groundSupport } from "./airBattle";
 import { unitTypeIn } from "./pieces";
-import { type AirScratch, airScratch } from "./scratch";
+import type { AirScratch } from "./scratch";
 
 /**
  * R10, R11: who gets Ground Support in a battle. The aircraft over the battle (Ground Support or
  * Patrol over its territory) and the defenders' AA make the air battle's input; the air battle,
- * when one is fought, picks the one side whose Ground Support applies. Resolution reads the
- * turn's flights from the air scratch; planning estimates pass the planned flights.
+ * when one is fought, gives Ground Support to one side or nobody, and may cost either side
+ * aircraft. Resolution reads the turn's flights from the air scratch; planning estimates pass the
+ * planned flights.
  */
 
 /** An aircraft's numbers in the air battle and on Ground Support, from its type's effects. */
@@ -82,31 +82,41 @@ export function airBattleInput(scenario: Scenario, state: Pick<GameState, "raise
   };
 }
 
-/** R11: the air over one battle: the input, the air battle when one is fought, and the Ground Support that applies. */
+/** R11: the air over one battle: the input, the air battle when one is fought, the aircraft it cost, and the Ground Support each side gets. */
 export interface AirOverBattle {
+  readonly aircraftLost: readonly UnitId[];
   readonly input: AirBattleInput;
   readonly result?: AirBattleResult;
   readonly support: GroundSupportApplied;
 }
 
-/**
- * R11: settles the air over a battle. With no aircraft over it, there is nothing to settle. When
- * an air battle is fought, `roll` gives its two d20s; otherwise every side's Ground Support applies.
- */
-export function airOverBattle(input: AirBattleInput, roll: () => AirBattleRolls): AirOverBattle | undefined {
-  if (input.attacker.aircraft.length === 0 && input.defender.aircraft.length === 0) return undefined;
-  if (!airBattleFought(input)) return { input, support: groundSupport(input, undefined) };
-  const result = airBattle(input, roll());
-  return { input, result, support: groundSupport(input, result.winner) };
+/** R11: the scenario's air battle table, when an air battle is fought over a battle; else undefined. */
+function foughtOn(scenario: Scenario, input: AirBattleInput): readonly AirBattleRow[] | undefined {
+  return airBattleFought(input) ? scenario.air?.battleTable : undefined;
 }
 
-/** R11: a battle's two air battle d20s, from the `air-battle` stream of its index: the attacker's first. */
-export function airBattleRolls(scratch: AirScratch, battleIndex: number): AirBattleRolls {
+/**
+ * R11: settles the air over a battle. With no aircraft over it, there is nothing to settle. When
+ * an air battle is fought, `roll` gives its one d20; otherwise every side's Ground Support applies.
+ */
+export function airOverBattle(scenario: Scenario, input: AirBattleInput, roll: () => number): AirOverBattle | undefined {
+  if (input.attacker.aircraft.length === 0 && input.defender.aircraft.length === 0) return undefined;
+  const table = foughtOn(scenario, input);
+  if (table === undefined) return { aircraftLost: [], input, support: groundSupport(input, undefined) };
+  const result = airBattle(table, input, roll());
+  return { aircraftLost: aircraftLost(input, result.row), input, result, support: groundSupport(input, result.row) };
+}
+
+/** R11: the turn's flights after a battle: the aircraft its air battle shot down are in no later one. */
+export function flightsAfter(scratch: AirScratch, air: AirOverBattle): AirScratch {
+  const flies = (order: AirMissionOrder): boolean => !air.aircraftLost.includes(order.unitId);
+  return { ...scratch, patrols: scratch.patrols.filter(flies), support: scratch.support.filter(flies) };
+}
+
+/** R11: a battle's air battle d20, from the `air-battle` stream of its index. */
+export function airBattleDie(scratch: AirScratch, battleIndex: number): number {
   const streams = scratch.streams;
-  if (streams === undefined) return { attacker: 1, defender: 1 };
-  const stream = streams("air-battle", battleIndex);
-  const attacker = pick(stream, 20);
-  return { attacker, defender: pick(stream, 20) };
+  return streams === undefined ? 1 : pick(streams("air-battle", battleIndex), 20);
 }
 
 /** The defending units a hook context names, or else the defenders' units in the territory at the start of the turn. */
@@ -121,7 +131,7 @@ function defenderUnitsOf(context: CombatHookContext): readonly UnitId[] {
 export function airOverHookedBattle(context: CombatHookContext, scratch: AirScratch): AirOverBattle | undefined {
   const setting: AirBattleSetting = { ...context, defenderUnitIds: defenderUnitsOf(context) };
   const input = airBattleInput(context.scenario, context.state, setting, [...scratch.support, ...scratch.patrols]);
-  return airOverBattle(input, () => airBattleRolls(scratch, context.battleIndex ?? 0));
+  return airOverBattle(context.scenario, input, () => airBattleDie(scratch, context.battleIndex ?? 0));
 }
 
 /** R11: Ground Support that applies, as the battle's `air-support` modifiers, the attacker's first, each named for its first aircraft's faction. */
@@ -135,48 +145,38 @@ export function supportModifiersOf(air: AirOverBattle | undefined): readonly Com
   });
 }
 
-/** R11: the air over one battle the turn fought, for the report. */
-export interface AirOverFoughtBattle {
-  readonly air: AirOverBattle;
-  readonly battleIndex: number;
-  readonly territoryId: TerritoryId;
-}
-
-/**
- * R11: the air over every battle of the turn that had aircraft over it, as the battle hooks
- * settled it: the same input and the same `air-battle` stream, so the report matches the roll.
- * Meetings on the road have no air (D27.5).
- */
-export function airOverFoughtBattles(draft: TurnDraft): readonly AirOverFoughtBattle[] {
-  const scratch = airScratch(draft);
-  const { scenario, start } = draft.input;
-  return [...draft.front.battles, ...draft.standing].flatMap(({ battle, site }): AirOverFoughtBattle[] => {
-    const { attackerFactionId, defenders } = battle.engagement;
-    const defenderFactionIds = factionsOf(defenders.map((combatant) => combatant.unit));
-    const air = airOverHookedBattle({
-      attackerFactionId,
-      battleIndex: battle.index,
-      defenderFactionIds,
-      defenderUnitIds: defenders.map((combatant) => combatant.unit.id),
-      diggingIn: false,
-      scenario,
-      state: start,
-      territoryId: site.territoryId
-    }, scratch);
-    return air === undefined ? [] : [{ air, battleIndex: battle.index, territoryId: site.territoryId }];
-  });
-}
-
-/** R11 for planning: an attack's planned Ground Support, and the chance that it applies. */
-export interface PlannedAir {
-  /** The chance the support applies: the attacker's chance to win the air, or 1 when nothing opposes it. */
+/** R11 for planning: what one row of the air battle table would do for the attack, and its chance. */
+export interface PlannedAirResult {
+  /** The planned aircraft it would cost. */
+  readonly aircraftLost: number;
   readonly chance: number;
+  readonly name: string;
+  /** What the attack's Ground Support would add: all of it, or 0. */
+  readonly roll: number;
+  /** Whose Ground Support would apply. */
+  readonly support: AirBattleRow["support"];
+}
+
+/** R11 for planning: an attack's planned Ground Support, and what the air battle is likely to make of it. */
+export interface PlannedAir {
+  /** The roll the support adds on average over the air battle; all of it when nothing opposes it. */
+  readonly average: number;
   /** The air battle as the planner can see it: its own Ground Support against the defenders' AA. */
   readonly input: AirBattleInput;
-  /** The support, when it applies, as the battle's `air-support` modifier. */
+  /** The chance that the air battle costs the attack aircraft, 0 to 1; 0 when nothing opposes it. */
+  readonly lossChance: number;
+  /** All of the support, as the battle's `air-support` modifier. */
   readonly modifier: CombatModifier;
-  /** The air battle's exact odds when one would be fought; absent when the support goes unopposed. */
-  readonly odds?: AirBattleOdds;
+  /** Every row of the table in its order, when an air battle would be fought; absent when the support goes unopposed. */
+  readonly results?: readonly PlannedAirResult[];
+  /** The chance that the support applies, 0 to 1; 1 when nothing opposes it. */
+  readonly supportChance: number;
+}
+
+/** The chance of the results a test picks, added up in the d20's faces, so that seven of them read as exactly 0.35. */
+function chanceOf(results: readonly PlannedAirResult[], test: (result: PlannedAirResult) => boolean): number {
+  const faces = d20Faces.length;
+  return results.filter(test).reduce((sum, result) => sum + Math.round(result.chance * faces), 0) / faces;
 }
 
 /**
@@ -194,10 +194,25 @@ export function plannedAir(scenario: Scenario, state: GameState, setting: AirBat
     .filter(flies)
     .map((unitId): AirMissionOrder => ({ factionId: setting.attackerFactionId, kind: "air-mission", mission: { kind: "support", territoryId: setting.territoryId }, unitId }));
   const input = airBattleInput(scenario, state, setting, flights);
-  const support = groundSupport(input, "attacker").attacker;
-  if (support.roll === 0) return undefined;
-  const modifier: CombatModifier = { factionId: setting.attackerFactionId, kind: "air-support", role: "attack", roll: support.roll, unitIds: support.unitIds };
-  if (!airBattleFought(input)) return { chance: 1, input, modifier };
-  const odds = airBattleOdds(input);
-  return { chance: odds.attackerWins, input, modifier, odds };
+  const { roll, unitIds } = groundSupport(input, undefined).attacker;
+  if (roll === 0) return undefined;
+  const modifier: CombatModifier = { factionId: setting.attackerFactionId, kind: "air-support", role: "attack", roll, unitIds };
+  const table = foughtOn(scenario, input);
+  if (table === undefined) return { average: roll, input, lossChance: 0, modifier, supportChance: 1 };
+  const results = airBattleOdds(table, input).map(({ chance, row }): PlannedAirResult => ({
+    aircraftLost: aircraftLost(input, row).length,
+    chance,
+    name: row.name,
+    roll: groundSupport(input, row).attacker.roll,
+    support: row.support
+  }));
+  const average = results.reduce((sum, result) => sum + Math.round(result.chance * d20Faces.length) * result.roll, 0) / d20Faces.length;
+  return {
+    average,
+    input,
+    lossChance: chanceOf(results, (result) => result.aircraftLost > 0),
+    modifier,
+    results,
+    supportChance: chanceOf(results, (result) => result.roll > 0)
+  };
 }

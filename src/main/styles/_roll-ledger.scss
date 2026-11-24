@@ -1,4 +1,5 @@
-// The effects on a battle's roll: one line each, the signed number on the right, the total last.
+// A ledger: one line each, the number on the right, the total last. A table for the effects on a
+// battle's roll; a list of lines where a line has a control or must reflow.
 
 .roll-ledger {
   width: 100%;
@@ -27,12 +28,41 @@
     font-weight: 700;
   }
 
+  .roll-ledger-line {
+    padding: 0.18rem 0;
+    border-bottom: 1px solid var(--paper-deep);
+  }
+
+  .roll-ledger-total {
+    border-bottom: 0;
+    font-weight: 700;
+  }
+
   .roll-ledger-value {
     padding-left: 0.75rem;
     font-weight: 700;
     font-variant-numeric: tabular-nums;
     text-align: right;
     white-space: nowrap;
+  }
+
+  .roll-ledger-note {
+    font-size: 0.85em;
+    font-weight: 400;
+  }
+
+  .roll-ledger-details {
+    font-size: 0.85em;
+    font-weight: 400;
+
+    summary {
+      cursor: pointer;
+    }
+
+    ul {
+      margin: 4px 0 0;
+      padding-left: 16px;
+    }
   }
 
   tbody .roll-ledger-value[data-tone="plus"] {
@@ -42,4 +72,15 @@
   tbody .roll-ledger-value[data-tone="minus"] {
     color: var(--disband);
   }
+}
+
+.roll-ledger-title {
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+ol.roll-ledger {
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }

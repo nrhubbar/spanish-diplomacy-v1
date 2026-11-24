@@ -1,5 +1,6 @@
 import type { StandingOrder } from "../engine/orders";
 import type {
+  AirMissionKind,
   ActorKind,
   BuildOrder,
   DisbandOrder,
@@ -52,10 +53,7 @@ export interface GameRecord {
  * Entrench when healthy and Rest when demoralized (O5). In contested ground (C1) the choice is
  * Attack, the derived default (Hold for a demoralized army, C4), or a submitted Withdraw.
  */
-export type OrderKind = MoveOrder["kind"] | WithdrawOrder["kind"] | ReplenishOrder["kind"] | StandingOrder | "attack" | "hold";
-
-/** What a unit does this turn: an order of the selection bar, or Disband, which is given on the unit's card (D1). */
-export type UnitOrderKind = OrderKind | DisbandOrder["kind"];
+export type OrderKind = MoveOrder["kind"] | WithdrawOrder["kind"] | ReplenishOrder["kind"] | DisbandOrder["kind"] | StandingOrder | "attack" | "hold";
 
 /** The orders a player plans with a destination for armies: moves and withdrawals (C1). */
 export type PlannedOrder = MoveOrder | WithdrawOrder;
@@ -64,7 +62,10 @@ export type PlannedOrder = MoveOrder | WithdrawOrder;
  * Where the player is in giving an order to the selected armies: choosing the target of a Move
  * or Withdraw (U4: the selection bar offers the order types directly). Absent otherwise.
  */
-export type OrderStage = { readonly orderKind: PlannedOrder["kind"]; readonly step: "choose-destination" };
+export type OrderStage =
+  | { readonly orderKind: PlannedOrder["kind"]; readonly step: "choose-destination" }
+  /** N6: the selected aircraft's mission, choosing its target on the map; `territoryId` is the territory whose sub-territory a raid is choosing. */
+  | { readonly mission: AirMissionKind; readonly step: "choose-target"; readonly territoryId?: TerritoryId };
 
 /** The current local player's private working set. */
 export interface Draft {

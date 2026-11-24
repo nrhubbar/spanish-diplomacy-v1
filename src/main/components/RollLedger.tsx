@@ -22,7 +22,16 @@ export function RollLedger({ rows, title = "Effects on the roll:", total, totalL
           ? <tr><td colSpan={2}>Nothing changes the roll.</td></tr>
           : rows.map((row, index) => (
             <tr key={`${row.label}-${String(index)}`}>
-              <th scope="row">{row.label}</th>
+              <th scope="row">
+                {row.label}
+                {row.note === undefined ? null : <span className="roll-ledger-note">{` (${row.note})`}</span>}
+                {row.details === undefined ? null : (
+                  <details className="roll-ledger-details">
+                    <summary>{row.details.summary}</summary>
+                    <ul>{row.details.lines.map((line) => <li key={line}>{line}</li>)}</ul>
+                  </details>
+                )}
+              </th>
               <td className="roll-ledger-value" data-tone={tone(row.value)}>{signed(row.value)}</td>
             </tr>
           ))}

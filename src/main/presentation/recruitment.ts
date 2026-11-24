@@ -1,7 +1,11 @@
+import { unitTypeIn } from "../engine/air/pieces";
+import { sumResources } from "../engine/economy/resources";
 import { capitalOf, meetsRequirement, priceReplenishments, replenishQuote, requirementName } from "../engine/recruitment/rules";
-import type { BuildingId, FactionId, GameState, Resources, Scenario, TerritoryId, TrainingItem, UnitState, UnitTypeDefinition, UpkeepRules } from "../engine/types";
+import type { BuildingDefinition, BuildingId, DevelopmentDefinition, FactionId, GameState, ResourceId, Resources, Scenario, TerritoryId, TrainingItem, UnitId, UnitState, UnitTypeDefinition, UpkeepRules } from "../engine/types";
 import { amountText, resourceAmount } from "./economy";
 import { glyphs } from "./glyphs";
+import { tenths } from "./numbers";
+import { unitName } from "./text";
 
 /** Player-facing wording for recruiting and replenishing (X4, X7). */
 
@@ -19,8 +23,7 @@ export function shortfallLabel(scenario: Scenario, balance: Resources, price: Re
 /** Men in thousands above a thousand, as in the header: "2.5k men", "700 men". */
 export function menShort(men: number): string {
   if (men < 1000) return `${String(men)} men`;
-  const thousands = Math.round(men / 100) / 10;
-  return `${String(thousands)}k men`;
+  return `${tenths(men / 1000)}k men`;
 }
 
 export function turnsLabel(turns: number): string {
@@ -65,17 +68,34 @@ export function recruitSiteName(scenario: Scenario, territoryId: TerritoryId): s
   return capital === undefined ? scenario.index.territories.get(territoryId)?.name ?? "" : scenario.index.subTerritories.get(capital)?.name ?? "";
 }
 
-/** X4, D3: what a faction recruits with there, by name: the buildings in the capital, then the development tracks some type needs. */
-export function recruitsWithLabel(scenario: Scenario, state: Pick<GameState, "subTerritories">, factionId: FactionId, territoryId: TerritoryId, standing: readonly BuildingId[]): string {
-  const needed = scenario.unitTypes.flatMap((type) => type.recruit?.requires ?? []).filter((requirement) => requirement.kind === "development");
-  const tracks = needed.filter((requirement) => meetsRequirement(scenario, state, factionId, territoryId, requirement)).map((requirement) => requirementName(scenario, requirement));
-  const names = [...standing.map((id) => scenario.index.buildings.get(id)?.name ?? id), ...new Set(tracks)];
-  return names.length === 0 ? "No buildings" : names.join(` ${glyphs.dot} `);
+/** What a territory recruits with: a building in its capital (by its definition, when the scenario has it), or a development track some type needs. */
+export interface RecruitsWith {
+  readonly building?: BuildingDefinition | undefined;
+  readonly name: string;
+  readonly track?: DevelopmentDefinition | undefined;
 }
+
+/** X4, D3: what a faction recruits with there: the buildings in the capital, then the development tracks some type needs. */
+export function recruitsWith(scenario: Scenario, state: Pick<GameState, "subTerritories">, factionId: FactionId, territoryId: TerritoryId, standing: readonly BuildingId[]): readonly RecruitsWith[] {
+  const met = scenario.unitTypes
+    .flatMap((type) => type.recruit?.requires ?? [])
+    .flatMap((requirement) => (requirement.kind === "development" && meetsRequirement(scenario, state, factionId, territoryId, requirement) ? [requirement.developmentId] : []));
+  return [
+    ...standing.map((id) => {
+      const building = scenario.index.buildings.get(id);
+      return { building, name: building?.name ?? id };
+    }),
+    ...scenario.development.flatMap((track) => (met.includes(track.id) ? [{ name: track.name, track }] : []))
+  ];
+}
+
+/** What a term of raising a type tells: its price, its men, its training time or its upkeep. */
+export type TermKind = "cost" | "men" | "training" | "upkeep";
 
 /** X4: one term of raising a type, as the row's meta line and its tooltip print it. */
 export interface RecruitTerm {
   readonly detail: string;
+  readonly kind: TermKind;
   readonly meta: string;
 }
 
@@ -86,8 +106,8 @@ export function recruitTerms(scenario: Scenario, type: UnitTypeDefinition): read
   const turns = turnsLabel(type.recruit?.trainingTurns ?? 0);
   const upkeep = upkeepLabel(scenario, type);
   return [
-    { detail: cost, meta: cost }, { detail: men, meta: men }, { detail: `trains in ${turns}`, meta: turns },
-    ...(upkeep === undefined ? [] : [{ detail: `upkeep ${upkeep} a turn`, meta: `upkeep ${upkeep}` }])
+    { detail: cost, kind: "cost", meta: cost }, { detail: men, kind: "men", meta: men }, { detail: `trains in ${turns}`, kind: "training", meta: turns },
+    ...(upkeep === undefined ? [] : [{ detail: `upkeep ${upkeep} a turn`, kind: "upkeep" as const, meta: `upkeep ${upkeep}` }])
   ];
 }
 
@@ -96,10 +116,21 @@ function upkeepLabel(scenario: Scenario, type: Pick<UnitTypeDefinition, "upkeep"
   return scenario.upkeep === undefined || Object.keys(type.upkeep).length === 0 ? undefined : resourcesLabel(scenario, type.upkeep, " and ");
 }
 
-/** D1: what disbanding a unit of a type saves: "Saves 0.25k Manpower a turn". */
-export function disbandSaving(scenario: Scenario, type: Pick<UnitTypeDefinition, "upkeep">): string {
-  const upkeep = upkeepLabel(scenario, type);
+/** D1, N1: what disbanding units of these types saves together: "Saves 3.3k Manpower a turn". */
+export function disbandSaving(scenario: Scenario, types: readonly Pick<UnitTypeDefinition, "upkeep">[]): string {
+  const upkeep = upkeepLabel(scenario, { upkeep: sumResources(...types.map((type) => type.upkeep)) });
   return upkeep === undefined ? "Costs no upkeep" : `Saves ${upkeep} a turn`;
+}
+
+/** N1: the second step of Disband: "Disband Madrid Sierra Columns? Saves 1.5k Manpower a turn." Up to two units are named, more are counted. */
+export function disbandQuestion(scenario: Scenario, state: Pick<GameState, "raised">, unitIds: readonly UnitId[]): string {
+  const types = unitIds.flatMap((unitId) => unitTypeIn(scenario, state.raised, unitId) ?? []);
+  return `Disband ${unitsNamed(scenario, unitIds)}? ${disbandSaving(scenario, types)}${unitIds.length > 1 ? " together" : ""}.`;
+}
+
+/** Up to two units by name, "Puerto Column and Sierra Column"; more as "3 units". */
+export function unitsNamed(scenario: Scenario, unitIds: readonly UnitId[]): string {
+  return unitIds.length > 2 ? `${String(unitIds.length)} units` : unitIds.map((unitId) => unitName(scenario, unitId)).join(" and ");
 }
 
 /** D1: the shortage warning: its heading, and what follows from it. */
@@ -116,6 +147,28 @@ export function shortageWarning(scenario: Scenario, rules: UpkeepRules, short: R
 /** X4: the terms on one line: "5 Funds \u00b7 1k Manpower \u00b7 700 men \u00b7 2 turns". */
 export function termsLine(terms: readonly RecruitTerm[], form: keyof RecruitTerm): string {
   return terms.map((term) => term[form]).join(` ${glyphs.dot} `);
+}
+
+/** One amount of a resource, for a row of icons: the number, and the resource it counts. */
+export interface ResourceCell {
+  readonly id: ResourceId;
+  readonly name: string;
+  readonly text: string;
+}
+
+/** An amount as one cell per resource, in scenario order. With `every`, resources it has none of are cells too. */
+export function resourceCells(scenario: Scenario, amount: Resources, every = false): readonly ResourceCell[] {
+  return scenario.resources.flatMap(({ id, name }) => {
+    const value = amount[id] ?? 0;
+    return value === 0 && !every ? [] : [{ id, name, text: resourceAmount(scenario, id, value) }];
+  });
+}
+
+/** The same reason in a few words, for the lines every row keeps for it, and the term it is about. */
+export function recruitAddNote(slotsFull: boolean, shortfall: string, upkeep: string | undefined): { readonly term?: TermKind; readonly text: string } | undefined {
+  if (slotsFull) return { text: "No orders left" };
+  if (shortfall !== "") return { term: "cost", text: `Not enough ${shortfall}` };
+  return upkeep === undefined ? undefined : { term: "upkeep", text: "Upkeep too high next turn" };
 }
 
 /** X4: the buildings and development a type needs in a territory, each marked whether the faction has it. */

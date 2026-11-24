@@ -1,5 +1,6 @@
 import type { FactionId, GeneralId, GradeId, SeasonId, TraitId, WeatherId, WeatherZoneId } from "../ids";
 import type { TraitEffect, WeatherEffect } from "./effects";
+import type { AirBattleRow } from "./outcomes/air";
 import type { FactionModifier, SourceCitation } from "./scenario";
 
 /** D2: how hard a grade hits one side. `lossPercent` 100 destroys the side. */
@@ -109,6 +110,8 @@ export interface AirRules {
    * (0 when absent: generals never die). Generals have no rule area of their own (CT-4).
    */
   readonly generalDeathRoll?: number | undefined;
+  /** R11: the air battle's table by score (0 to 20), best for the defender first, ending at 20. */
+  readonly battleTable: readonly AirBattleRow[];
   /** U3: each enemy fighter intercepting a raid takes this (negative) from its roll. */
   readonly interceptRoll: number;
   /** U3: the d20 raid table, best for the defender first, ending at 20. */
@@ -180,7 +183,19 @@ export interface AiProfile {
     readonly stallStep: number;
     readonly staging: number;
   };
+  readonly air: {
+    /** R11: the least chance that an attack's Ground Support applies after the air battle, for aircraft to fly it. */
+    readonly supportChance: number;
+  };
   readonly recruits: {
+    /** How much each turn until a unit can fight lowers its worth: it is divided by one plus this for each turn. */
+    readonly delayDrag: number;
+    /** Own units that can fight for each support unit (`cannot-attack-alone`), at least. */
+    readonly fightersPerSupport: number;
+    /** At this chance or more that a rival near victory takes a site, units that train in one turn come first there. */
+    readonly quickTakeChance: number;
+    /** Turns of upkeep counted in a unit's price, and of income and upkeep in what the faction can spend. */
+    readonly upkeepHorizon: number;
     /** Turns of upkeep, at today's income, that Recruit orders leave in stock. */
     readonly upkeepTurns: number;
   };

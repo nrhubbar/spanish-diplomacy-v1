@@ -9,6 +9,7 @@ import { orderKindsFor, type PlanningSession } from "./selection";
 /** Player-facing name and one-line explanation for each order type. */
 export const orderLabels: Readonly<Record<OrderKind, { readonly description: string; readonly label: string }>> = {
   attack: { description: "Default here. Fight for the territory where you stand.", label: "Attack" },
+  disband: { description: "Send home at the end of the turn. Nothing comes back, and the upkeep is saved.", label: "Disband" },
   entrench: { description: "Stay and dig in. Only healthy units entrench.", label: "Entrench" },
   hold: { description: "Default for demoralized units here: hold and defend.", label: "Hold" },
   move: { description: "March to a neighboring territory.", label: "Move" },
@@ -67,6 +68,11 @@ function contestedDescriptions(scenario: Scenario, session: PlanningSession): Pa
 
 function orList(names: readonly string[]): string {
   return names.length < 2 ? names.join("") : `${names.slice(0, -1).join(", ")} or ${String(names.at(-1))}`;
+}
+
+/** N1: the button after the unit list: "Order for 3 selected units", or what to do first. */
+export function orderButtonLabel(count: number): string {
+  return count === 0 ? "Select units first" : `Order for ${String(count)} selected ${count === 1 ? "unit" : "units"}`;
 }
 
 /** "3 units selected". */

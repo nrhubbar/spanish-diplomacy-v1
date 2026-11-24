@@ -1,10 +1,11 @@
 import { createAction, createReducer } from "@reduxjs/toolkit";
 import { initialGameState } from "../engine/resolution";
-import type { ActorKind, AirMission, BuildOrder, FactionId, Scenario, ScenarioId, SubTerritoryId, TerritoryId, UnitId, UnitTypeId } from "../engine/types";
+import type { ActorKind, AirMission, AirMissionKind, BuildOrder, FactionId, Scenario, ScenarioId, SubTerritoryId, TerritoryId, UnitId, UnitTypeId } from "../engine/types";
 import type { ScenarioRegistry } from "../scenarios/registry";
 import { advance, nextTurn } from "./coordinator";
 import {
   cancelBuild,
+  cancelIdleSupport,
   cancelOrder,
   chooseOrder,
   clearSelection,
@@ -19,7 +20,10 @@ import {
   removeOrder,
   selectAllAvailable,
   setAirMission,
+  chooseMission,
+  chooseTargetSite,
   setRecruitQuantity,
+  takeBackRecruit,
   toggleSack,
   toggleUnit,
   type PlanningSession,
@@ -57,6 +61,10 @@ export const clearUnitSelection = createAction("game/clearUnitSelection");
 export const chooseOrderKind = createAction<OrderKind>("game/chooseOrderKind");
 /** D1: sends one unit home at the end of the turn; cleared with `removePlannedOrder`. */
 export const disbandUnit = createAction<UnitId>("game/disbandUnit");
+/** N6: an aircraft's mission starts choosing its target on the map. */
+export const chooseAirMission = createAction<{ readonly mission: AirMissionKind; readonly unitId: UnitId }>("game/chooseAirMission");
+/** N6: the sub-territory under a click, or named in the list, while a raid chooses its target. */
+export const chooseRaidSite = createAction<SubTerritoryId>("game/chooseRaidSite");
 export const cancelOrderStage = createAction("game/cancelOrderStage");
 export const removePlannedOrder = createAction<UnitId>("game/removePlannedOrder");
 export const endTurn = createAction("game/endTurn");
@@ -66,6 +74,8 @@ export const orderFromMuster = createAction<MusterOrder>("game/orderFromMuster")
 export const focusSubTerritory = createAction<SubTerritoryId | undefined>("game/focusSubTerritory");
 /** X4: how many units of a type the draft recruits at a territory (m3r1-recruit-replenish). */
 export const changeRecruitQuantity = createAction<{ readonly quantity: number; readonly territoryId: TerritoryId; readonly unitTypeId: UnitTypeId }>("game/changeRecruitQuantity");
+/** Takes back one of a territory's Recruit orders, by its place among them. */
+export const cancelRecruitOrder = createAction<{ readonly at: number; readonly territoryId: TerritoryId }>("game/cancelRecruitOrder");
 export const startNextTurn = createAction("game/startNextTurn");
 /** U2: plan an aircraft's mission, or with none stand it down (m3r1-air-generals). */
 export const planAirMission = createAction<{ readonly mission?: AirMission; readonly unitId: UnitId }>("game/planAirMission");
@@ -89,8 +99,12 @@ function setupFor(scenario: Scenario): Session {
  */
 export function createGameReducer(dependencies: GameReducerDependencies) {
   const scenarioOf = (id: ScenarioId): Scenario => dependencies.registry.require(id).scenario;
-  const inPlanning = (session: Session, transition: (scenario: Scenario, planning: PlanningSession) => Session): Session =>
-    session.phase === "planning" ? transition(scenarioOf(session.game.scenarioId), session) : session;
+  const inPlanning = (session: Session, transition: (scenario: Scenario, planning: PlanningSession) => Session): Session => {
+    if (session.phase !== "planning") return session;
+    const scenario = scenarioOf(session.game.scenarioId);
+    const after = transition(scenario, session);
+    return after.phase === "planning" ? cancelIdleSupport(scenario, session, after) : after;
+  };
   const set = (session: Session): GameState => ({ session });
   const initialState: GameState = { session: { phase: "idle" } };
 
@@ -160,17 +174,23 @@ export function createGameReducer(dependencies: GameReducerDependencies) {
       .addCase(orderFromMuster, (state, { payload }) =>
         set(inPlanning(state.session, (scenario, planning) => orderMuster(scenario, planning, payload))))
       .addCase(disbandUnit, (state, { payload }) =>
-        set(inPlanning(state.session, (scenario, planning) => planDisband(scenario, planning, payload))))
+        set(inPlanning(state.session, (scenario, planning) => planDisband(scenario, planning, [payload]))))
       .addCase(removePlannedOrder, (state, { payload }) =>
         set(inPlanning(state.session, (_scenario, planning) => removeOrder(planning, payload))))
       .addCase(planAirMission, (state, { payload }) =>
         set(inPlanning(state.session, (scenario, planning) => setAirMission(scenario, planning, payload.unitId, payload.mission))))
+      .addCase(chooseAirMission, (state, { payload }) =>
+        set(inPlanning(state.session, (scenario, planning) => chooseMission(scenario, planning, payload.unitId, payload.mission))))
+      .addCase(chooseRaidSite, (state, { payload }) =>
+        set(inPlanning(state.session, (scenario, planning) => chooseTargetSite(scenario, planning, payload))))
       .addCase(closeAircraftPane, (state) =>
         set(inPlanning(state.session, (_scenario, planning) => closeAircraft(planning))))
       .addCase(toggleSackOrder, (state, { payload }) =>
         set(inPlanning(state.session, (scenario, planning) => toggleSack(scenario, planning, payload))))
       .addCase(changeRecruitQuantity, (state, { payload }) =>
         set(inPlanning(state.session, (scenario, planning) => setRecruitQuantity(scenario, planning, payload.territoryId, payload.unitTypeId, payload.quantity))))
+      .addCase(cancelRecruitOrder, (state, { payload }) =>
+        set(inPlanning(state.session, (_scenario, planning) => takeBackRecruit(planning, payload.territoryId, payload.at))))
       .addCase(endTurn, (state) =>
         set(inPlanning(state.session, (scenario, planning) => submitDraft(scenario, planning))))
       .addCase(timeRanOut, (state) =>

@@ -11,7 +11,6 @@ import {
   projectTerms,
   resourceAmount,
   resourceAmountInFull,
-  signed,
   signedAmountText,
   signedResourceAmount,
   turnsLeftText
@@ -50,9 +49,6 @@ describe("resource amounts (EB-12)", () => {
     expect(amountText(scenario, {})).toBe("nothing");
     expect(signedAmountText(scenario, res({ funds: 6, manpower: -1 }))).toBe(`+6 Funds ${dot} ${minus}1k Manpower`);
     expect(signedAmountText(scenario, res({ manpower: 0 }))).toBe("nothing");
-    expect(signed(14)).toBe("+14");
-    expect(signed(-3)).toBe(`${minus}3`);
-    expect(signed(0)).toBe("+0");
   });
 });
 
@@ -96,7 +92,7 @@ describe("projects in words ($3-$5)", () => {
   });
 
   it("says what finishing a project gives", () => {
-    expect(projectEffectText(scenario, development("farms"))).toBe("+1k Manpower a turn");
+    expect(projectEffectText(scenario, development("farms"))).toBe("+0.6k Manpower a turn");
     expect(projectEffectText(scenario, development("mines"))).toBe("+1 Funds a turn");
     expect(projectEffectText(scenario, development("orchards"))).toBeUndefined();
     expect(projectEffectText(scenario, rail)).toBe("longer rail moves");
@@ -111,13 +107,13 @@ describe("projects in words ($3-$5)", () => {
 
   it("names a development track's resource by id when the scenario lacks it", () => {
     const odd: Scenario = { ...scenario, index: { ...scenario.index, development: new Map([...scenario.index.development].map(([id, track]) => [id, id === "farms" ? { ...track, resource: "grain" as ResourceId } : track])) } };
-    expect(projectEffectText(odd, development("farms"))).toBe("+1 grain a turn");
+    expect(projectEffectText(odd, development("farms"))).toBe("+0.6 grain a turn");
     // A building with no effects that unlocks nothing says nothing.
     expect(projectEffectText({ ...scenario, unitTypes: [] }, building("barracks"))).toBeUndefined();
   });
 
   it("writes a queue option's terms", () => {
-    expect(projectTerms(scenario, development("farms"))).toBe(`6 Funds ${dot} 3 turns ${dot} +1k Manpower a turn`);
+    expect(projectTerms(scenario, development("farms"))).toBe(`6 Funds ${dot} 3 turns ${dot} +0.6k Manpower a turn`);
     expect(projectTerms(scenario, building("mystery"))).toBe("");
     const quick: Scenario = { ...scenario, index: { ...scenario.index, development: new Map([...scenario.index.development].map(([id, track]) => [id, { ...track, upgrade: { ...track.upgrade, turns: 1 } }])) } };
     expect(projectTerms(quick, development("mines"))).toBe(`8 Funds ${dot} 1 turn ${dot} +1 Funds a turn`);

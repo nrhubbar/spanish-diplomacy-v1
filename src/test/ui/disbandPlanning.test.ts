@@ -5,10 +5,11 @@ import { initialGameState } from "../../main/engine/resolution";
 import type { GameState, ResourceId, Scenario, TerritoryId, TrainingItem, UnitId, UnitState, UnitTypeId } from "../../main/engine/types";
 import { ledgersFor } from "../../main/presentation/ledger";
 import { disbandSaving, shortageWarning } from "../../main/presentation/recruitment";
+import { unitName } from "../../main/presentation/text";
 import { groupThisTurn, thisTurnEntries } from "../../main/presentation/thisTurn";
 import {
-  armiesWithoutOrders, availableUnitIds, canDisband, chooseOrder, chooseReplenish, draftOrders, isDisbandPlanned, orderCounts, orderMuster, orderOf,
-  planDisband, plannedShortfall, type PlanningSession, recruitUpkeepProblem, removeOrder, replenishPlan, setAirMission, setRecruitQuantity, unitOrdersWithout
+  armiesWithoutOrders, availableUnitIds, canDisband, chooseOrder, chooseReplenish, draftOrders, isDisbandPlanned, orderCounts, orderKindsFor, orderMuster, orderOf,
+  disbandableSelection, planDisband, plannedShortfall, type PlanningSession, recruitUpkeepProblem, removeOrder, replenishPlan, setAirMission, setRecruitQuantity, unitOrdersWithout
 } from "../../main/state/planning";
 import { type Draft, emptyDraft } from "../../main/state/session";
 import { submitOnTimeout } from "../../main/state/timeout";
@@ -48,9 +49,35 @@ describe("planning a Disband (D1)", () => {
     expect(canDisband(scenario, session, plane)).toBe(true);
     const general = Object.values(initial.units).find((unit) => kindOf(unit) === "general")!;
     expect(canDisband(scenario, session, general)).toBe(false);
-    const refused = planDisband(scenario, planning(initial, emptyDraft), Object.values(initial.units).find((unit) => unit.factionId !== republic)!.id);
+    const refused = planDisband(scenario, planning(initial, emptyDraft), [Object.values(initial.units).find((unit) => unit.factionId !== republic)!.id]);
     expect(refused.draft.disbands).toBeUndefined();
     expect(refused.draft.feedback).toBe("Selected unit belongs to another player.");
+  });
+
+  it("is an order for the whole selection, offered last while one of them is not going yet (N1)", () => {
+    const general = Object.values(initial.units).find((unit) => unit.factionId === republic && kindOf(unit) === "general")!;
+    const select = (...units: readonly UnitState[]): PlanningSession => planning(undefined, { ...emptyDraft, selectedTerritoryId: madrid, selectedUnitIds: units.map(({ id }) => id) });
+    expect(orderKindsFor(select(first, second), scenario).at(-1)).toBe("disband");
+    expect(orderKindsFor(select(general), scenario)).not.toContain("disband");
+    // Selecting a territory selects its general too: he stays, and only he.
+    expect(orderKindsFor(select(first, general), scenario)).toContain("disband");
+    expect(disbandableSelection(scenario, select(first, general))).toEqual([first.id]);
+    const withGeneral = chooseOrder(scenario, select(first, general), "disband");
+    expect(withGeneral.draft.disbands?.map(({ unitId }) => unitId)).toEqual([first.id]);
+    expect(withGeneral.draft.selectedUnitIds).toEqual([]);
+    expect(orderKindsFor(select(first, second))).not.toContain("disband");
+    const ordered = chooseOrder(scenario, select(first, second), "disband");
+    expect(ordered.draft.disbands?.map(({ unitId }) => unitId)).toEqual([first.id, second.id]);
+    expect(ordered.draft.selectedUnitIds).toEqual([]);
+    expect(ordered.draft.feedback).toBe(`${unitName(scenario, first.id)} and ${unitName(scenario, second.id)} will disband at the end of the turn.`);
+    const again = { ...ordered, draft: { ...ordered.draft, selectedUnitIds: [first.id] } };
+    expect(orderKindsFor(again, scenario)).not.toContain("disband");
+    expect(orderKindsFor({ ...again, draft: { ...again.draft, selectedUnitIds: [first.id, inMadrid[2]!.id] } }, scenario)).toContain("disband");
+    // Taken back one by one, and refused as a whole when one of them can't.
+    expect(removeOrder(ordered, first.id).draft.disbands?.map(({ unitId }) => unitId)).toEqual([second.id]);
+    const refused = planDisband(scenario, select(first, general), [first.id, general.id]);
+    expect(refused.draft.disbands).toBeUndefined();
+    expect(refused.draft.feedback).toBe("General units cannot disband.");
   });
 
   it("replaces the unit's other order, leaves the selection and closes a destination choice", () => {
@@ -59,7 +86,7 @@ describe("planning a Disband (D1)", () => {
       orders: [{ factionId: republic, from: madrid, kind: "move", to: "valencia" as TerritoryId, unitId: first.id }],
       replenishments: [{ factionId: republic, kind: "replenish", unitId: first.id }]
     });
-    const { draft } = planDisband(scenario, session, first.id);
+    const { draft } = planDisband(scenario, session, [first.id]);
     expect(draft.orders).toEqual([]);
     expect(draft.replenishments).toEqual([]);
     expect(draft.orderedToStay).toEqual([second.id]);
@@ -72,7 +99,7 @@ describe("planning a Disband (D1)", () => {
   });
 
   it("counts as the unit's order, and clearing it brings back the standing order", () => {
-    const session = planDisband(scenario, planning(), first.id);
+    const session = planDisband(scenario, planning(), [first.id]);
     expect(orderOf(session, first, scenario)).toBe("disband");
     expect(orderCounts(session, scenario).disband).toBe(1);
     expect(availableUnitIds(session, madrid, [], undefined, scenario)).not.toContain(first.id);
@@ -86,7 +113,7 @@ describe("planning a Disband (D1)", () => {
   });
 
   it("gives way to any other order the unit takes", () => {
-    const ordered = planDisband(scenario, planDisband(scenario, planning(), first.id), plane.id);
+    const ordered = planDisband(scenario, planDisband(scenario, planning(), [first.id]), [plane.id]);
     const selected: PlanningSession = { ...ordered, draft: { ...ordered.draft, selectedTerritoryId: madrid, selectedUnitIds: [first.id] } };
     expect(chooseOrder(scenario, selected, "entrench").draft.disbands).toEqual([{ factionId: republic, kind: "disband", unitId: plane.id }]);
     expect(chooseOrder(scenario, selected, "attack").draft.disbands).toHaveLength(1);
@@ -101,13 +128,13 @@ describe("planning a Disband (D1)", () => {
     expect(mission).toBeDefined();
     const flying = setAirMission(scenario, ordered, plane.id, { kind: mission, territoryId: plane.territoryId } as never);
     expect(isDisbandPlanned(flying.draft, plane.id)).toBe(flying.draft.airOrders === undefined || flying.draft.airOrders.length === 0);
-    const grounded = planDisband(scenario, { ...ordered, draft: { ...emptyDraft, airOrders: [{ factionId: republic, kind: "air-mission", mission: { kind: "patrol", territoryId: madrid }, unitId: plane.id }] } }, plane.id);
+    const grounded = planDisband(scenario, { ...ordered, draft: { ...emptyDraft, airOrders: [{ factionId: republic, kind: "air-mission", mission: { kind: "patrol", territoryId: madrid }, unitId: plane.id }] } }, [plane.id]);
     expect(grounded.draft.airOrders).toEqual([]);
     expect(unitOrdersWithout(emptyDraft, [first.id])).toEqual({});
   });
 
   it("is submitted at End Turn and when time runs out", () => {
-    const session = planDisband(scenario, planning(), first.id);
+    const session = planDisband(scenario, planning(), [first.id]);
     expect(draftOrders(session.draft)).toEqual([{ factionId: republic, kind: "disband", unitId: first.id }]);
     const after = submitOnTimeout(scenario, { ...session, game: { ...session.game, assignments: Object.fromEntries(scenario.factions.map(({ id }) => [id, "local-human"])) } as never });
     expect("game" in after ? after.game.locked[republic]?.orders : undefined).toEqual([{ factionId: republic, kind: "disband", unitId: first.id }]);
@@ -124,7 +151,7 @@ describe("upkeep refusals while planning (D1)", () => {
     const refused = setRecruitQuantity(scenario, session, madrid, militiaType, 1);
     expect(refused.draft.recruits).toBeUndefined();
     expect(refused.draft.feedback).toBe(reason);
-    const roomy = planDisband(scenario, session, inMadrid.find((unit) => (scenario.index.unitTypes.get(typeIdOf(unit) as UnitTypeId)!.upkeep[manpower] ?? 0) >= 0.25)!.id);
+    const roomy = planDisband(scenario, session, [inMadrid.find((unit) => (scenario.index.unitTypes.get(typeIdOf(unit) as UnitTypeId)!.upkeep[manpower] ?? 0) >= 0.25)!.id]);
     const accepted = setRecruitQuantity(scenario, roomy, madrid, militiaType, 1);
     expect(accepted.draft.recruits).toHaveLength(1);
     // Taking one away is never refused, even while short.
@@ -153,7 +180,7 @@ describe("upkeep refusals while planning (D1)", () => {
     expect(short).toEqual({ [manpower]: 4.65 });
     expect(shortageWarning(scenario, scenario.upkeep!, short)).toEqual({
       body: "Recruiting and Replenish are off. If you change nothing, up to 10% of each unit's men leave (never below half of it). Disband units to save their upkeep.",
-      heading: "Manpower will be 4.65k short next turn"
+      heading: "Manpower will be 4.7k short next turn"
     });
     expect(shortageWarning(scenario, { maxLossShare: 0.2, minStrengthShare: 0.4 }, short)?.body).toContain("up to 20% of each unit's men leave (never below 40% of it)");
     expect(shortageWarning(scenario, scenario.upkeep!, {})).toBeUndefined();
@@ -161,9 +188,9 @@ describe("upkeep refusals while planning (D1)", () => {
   });
 
   it("says what a Disband saves", () => {
-    expect(disbandSaving(scenario, scenario.index.unitTypes.get(militiaType)!)).toBe("Saves 1.5k Manpower a turn");
-    expect(disbandSaving(scenario, { upkeep: {} })).toBe("Costs no upkeep");
-    expect(disbandSaving(noUpkeep, scenario.index.unitTypes.get(militiaType)!)).toBe("Costs no upkeep");
+    expect(disbandSaving(scenario, [scenario.index.unitTypes.get(militiaType)!])).toBe("Saves 1.5k Manpower a turn");
+    expect(disbandSaving(scenario, [{ upkeep: {} }])).toBe("Costs no upkeep");
+    expect(disbandSaving(noUpkeep, [scenario.index.unitTypes.get(militiaType)!])).toBe("Costs no upkeep");
   });
 });
 

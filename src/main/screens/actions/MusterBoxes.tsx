@@ -43,11 +43,11 @@ export function OddsBox({ action, draft, moves, scenario, session, support, targ
           <div><dt>Take it</dt><dd data-tone={odds.tone}>{odds.take}</dd></div>
           <div><dt>Defenders</dt><dd>{odds.defenders}</dd></div>
         </dl>
+        {odds.airLoss === undefined ? null : <p className="muster-box-line">{odds.airLoss}</p>}
         {odds.warning === undefined ? null : <p className="muster-box-line muster-warning">{odds.warning}</p>}
       </div>
       <OddsInfo label="About these odds"><span>Approximate</span></OddsInfo>
       <RollLedger {...odds.ledger} totalLabel="Total known now" />
-      {odds.air === undefined ? null : <p className="muster-box-line">{odds.air}</p>}
       <p className="muster-note">{notKnownYet}</p>
       {action}
     </div>

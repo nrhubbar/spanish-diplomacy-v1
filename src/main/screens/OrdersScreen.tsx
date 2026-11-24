@@ -1,18 +1,17 @@
 import { type JSX, useMemo } from "react";
 import { requireFaction } from "../engine/lookup";
-import { isMoveOrder, type Scenario } from "../engine/types";
+import type { Scenario } from "../engine/types";
 import { GameHeader } from "../components/GameHeader";
 import { EndTurnButton } from "../components/header/EndTurnButton";
 import { TurnNav } from "../components/header/TurnNav";
 import { useAppDispatch, useAppSelector, useRegistry, useSessionIn } from "../hooks";
 import type { MapView } from "../map/view";
 import { glyphs } from "../presentation/glyphs";
-import { destinationEstimates } from "../presentation/odds";
 import { queueCounts } from "../presentation/thisTurn";
 import { turnLabel } from "../presentation/turn";
 import { cancelOrderStage } from "../state/gameSlice";
 import { opensTall, popView, topView, viewKey } from "../state/paneSlice";
-import { oddsDestinations, type PlanningSession, planningMapView, selectedDestinations, tickedOnMap } from "../state/planning";
+import { type PlanningSession, planningMapView, selectedDestinations, selectedEstimates, tickedOnMap } from "../state/planning";
 import { selectSubmissionStatus } from "../state/selectors";
 import { useMapActions } from "./actions/useMapActions";
 import { MapScreenFrame } from "./MapScreenFrame";
@@ -23,6 +22,8 @@ import { focusWhenShown } from "./shell/focus";
 import { paneViewTitle } from "./shell/paneTitles";
 import { PaneViewBody } from "./shell/PaneViewBody";
 import { hasSelectionBar, SelectionBar } from "./shell/SelectionBar";
+import { TargetPanel } from "./shell/TargetPanel";
+import { useEscape } from "./shell/useEscape";
 
 export function OrdersScreen(): JSX.Element {
   const session = useSessionIn("planning");
@@ -41,10 +42,12 @@ function Orders({ scenario, session }: { readonly scenario: Scenario; readonly s
   const previous = stack.at(-2);
   const destinations = useMemo(() => selectedDestinations(scenario, session), [scenario, session]);
   const estimates = useMemo(
-    () => destinationEstimates(scenario, game.state, factionId, draft.selectedUnitIds, oddsDestinations(draft, destinations), draft.orders.filter(isMoveOrder), draft.airOrders),
-    [destinations, draft, factionId, game.state, scenario]
+    () => selectedEstimates(scenario, session, destinations),
+    [destinations, scenario, session]
   );
-  const choosing = draft.stage?.step === "choose-destination";
+  // N6: once a raid's territory is chosen, the pane lists its sub-territories, so the phone's sheet opens on them.
+  const choosing = draft.stage !== undefined && (draft.stage.step === "choose-destination" || draft.stage.territoryId === undefined);
+  useEscape(draft.stage !== undefined, () => dispatch(cancelOrderStage()));
   const actions = useMapActions(scenario, session, dispatch);
   const { handlers: actionHandlers, onTap } = actions;
   const view = useMemo<MapView>(() => {
@@ -96,6 +99,7 @@ function Orders({ scenario, session }: { readonly scenario: Scenario; readonly s
         body: (
           <>
             <DestinationPanel estimates={estimates} scenario={scenario} session={session} />
+            <TargetPanel scenario={scenario} session={session} />
             <PaneViewBody scenario={scenario} session={session} view={shown} />
           </>
         ),

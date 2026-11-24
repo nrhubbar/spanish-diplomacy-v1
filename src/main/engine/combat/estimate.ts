@@ -21,7 +21,7 @@ export type AttackEstimate =
  * strength and morale, the territory's works, and the scenario's faction modifiers. It does
  * not judge whether the order is legal (a demoralized army cannot attack, M23); validation does.
  * R11: `support` names the faction's aircraft planned on Ground Support over the target; their
- * support counts with the chance it wins the air battle against the defenders' AA.
+ * support counts as the air battle against the defenders' AA may leave it.
  * `plannedRoutes` names the way each attacker takes, where it is already chosen.
  */
 export function estimateAttack(

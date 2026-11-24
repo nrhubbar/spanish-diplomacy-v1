@@ -53,7 +53,7 @@ describe("one carry in thousandths per faction and resource", () => {
     expect(subtractResources({ [manpower]: 0.3 }, { [manpower]: 0.1 })).toEqual({ [manpower]: 0.2 });
     const scenario = spainWithAir();
     expect(signedResourceAmount(scenario, funds, 0.1 + 0.2)).toBe("+0.3");
-    expect(signedResourceAmount(scenario, funds, -15.65)).toBe("−15.65");
+    expect(signedResourceAmount(scenario, funds, -15.65)).toBe("\u221215.7");
   });
 
   it("a development track may yield thousandths, no finer", () => {

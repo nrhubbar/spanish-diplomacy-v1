@@ -1,8 +1,9 @@
 import { isMoveOrder, type MoveOrder, type Scenario, type SubTerritoryId, type TerritoryId, type UnitId } from "../../engine/types";
 import type { MapView } from "../../map/view";
-import type { DestinationEstimate } from "../../presentation/odds";
+import { type DestinationEstimate, destinationEstimates } from "../../presentation/odds";
 import type { Draft } from "../session";
-import { orderOf, type PlanningSession } from "./selection";
+import { airDraftOrders } from "./air";
+import { orderOf, type PlanningSession, selectedRoutes } from "./selection";
 
 /** What the planning map shows; the screen adds the click handlers. */
 export type PlanningMapView = Omit<MapView, "onSelectNothing" | "onSelectSubTerritory" | "onSelectTerritory" | "onSelectUnit">;
@@ -27,7 +28,7 @@ export function planningMapView(
     ...(draft.focusedSubTerritoryId === undefined ? {} : { focusedSubTerritoryId: draft.focusedSubTerritoryId }),
     orderedUnitIds: new Set(draft.orders.map((order) => order.unitId)),
     outcomes: [],
-    plannedAirMissions: (draft.airOrders ?? []).filter((order) => order.kind === "air-mission"),
+    plannedAirMissions: airDraftOrders(draft).filter((order) => order.kind === "air-mission"),
     plannedOrders: draft.orders.map((order): MoveOrder => (isMoveOrder(order) ? order : { ...order, kind: "move" })),
     ...(draft.selectedAircraftId === undefined ? {} : { selectedAircraftId: draft.selectedAircraftId }),
     selectedUnitIds: new Set(draft.selectedUnitIds),
@@ -48,7 +49,14 @@ export function focusesOnClick(scenario: Scenario, draft: Draft, subTerritoryId:
   return draft.stage === undefined && territoryId !== undefined && territoryId === draft.selectedTerritoryId;
 }
 
-/** C1: a Withdraw goes to ground the faction holds, so its destinations carry no odds. */
+/** C1: a Withdraw goes to ground the faction holds, so its destinations carry no odds; nor do a mission's targets. */
 export function oddsDestinations(draft: Draft, destinations: readonly TerritoryId[]): readonly TerritoryId[] {
-  return draft.stage?.step === "choose-destination" && draft.stage.orderKind === "withdraw" ? [] : destinations;
+  const { stage } = draft;
+  return stage?.step === "choose-target" || stage?.orderKind === "withdraw" ? [] : destinations;
+}
+
+/** N3: the odds at each destination being chosen, by the route each would be given. */
+export function selectedEstimates(scenario: Scenario, session: PlanningSession, destinations: readonly TerritoryId[]): ReadonlyMap<TerritoryId, DestinationEstimate> {
+  const { draft, factionId, game } = session;
+  return destinationEstimates(scenario, game.state, factionId, draft.selectedUnitIds, oddsDestinations(draft, destinations), draft.orders.filter(isMoveOrder), airDraftOrders(draft), selectedRoutes(scenario, session));
 }

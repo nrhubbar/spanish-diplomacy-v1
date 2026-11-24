@@ -54,7 +54,7 @@ describe("Global Recruitment (U9)", () => {
     expect(summary.textContent).toMatch(/^2 in training1 ready next turn1 ordered this turn.+ committed$/u);
     const catalunya = screen.getByRole("list", { name: "Cataluña training" });
     expect(within(catalunya).getAllByRole("listitem").map((row) => row.querySelector(".queue-status")?.textContent)).toEqual(["1 turn left", "starts this turn · 1 turn"]);
-    expect(within(catalunya).getAllByRole("listitem")[1]?.querySelector(".queue-number")?.textContent).toBe("1");
+    expect(within(catalunya).getAllByRole("progressbar")).toHaveLength(1);
     const paused = screen.getByRole("list", { name: "País Vasco training" }).closest("li.queue-group")!;
     expect(within(paused as HTMLElement).getByText("Paused · contested")).toBeTruthy();
     expect(paused.textContent).toContain("progress is kept");
@@ -64,6 +64,16 @@ describe("Global Recruitment (U9)", () => {
     rerender();
     await user.click(screen.getByRole("button", { name: "Cataluña" }));
     expect(store.getState().pane.stack.at(-1)).toEqual({ kind: "recruit", territory: territory("catalunya") });
+  });
+
+  it("tells two orders of a kind apart, and cancels the one asked for", async () => {
+    const order = (typeId: string) => ({ factionId: republic, kind: "recruit" as const, territoryId: territory("catalunya"), unitTypeId: typeId as UnitTypeId });
+    const draft: Draft = { ...emptyDraft, recruits: [order("militia-column"), order("infantry-regiment"), order("militia-column")] };
+    const { store, user } = show({ kind: "recruitment" }, start, draft);
+    expect(screen.getByRole("button", { name: "Cancel Militia column, order 1 of 2" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Cancel Infantry regiment" })).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "Cancel Militia column, order 2 of 2" }));
+    expect(draftOf(store).recruits?.map((each) => each.unitTypeId)).toEqual(["militia-column", "infantry-regiment"]);
   });
 
   it("says when nothing is training", () => {

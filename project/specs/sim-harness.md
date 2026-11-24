@@ -22,6 +22,8 @@ npm run sim -- --games 1000 --variant src/sim/variants/digging-in-cap-2.json --r
 | `--workers N` | cores less one | Worker threads. The results do not depend on it. |
 | `--run NAME` | a UTC time stamp | The run folder's name. |
 | `--out DIR` | `build/sim` | The output folder. |
+| `--record inventory` | | Also record what every side had and queued on each turn, how long games take, and the report tables (see Recording). Without it, nothing below changes. |
+| `--report DIR` | | Write a finished `--record` run's `report.json` and CSV tables again from its files. Plays nothing. |
 
 The exit code is 0 when the run is done, 2 for bad arguments, variant files or scenario data (reported before any game is played), and 1 for a failure during play. A game that throws, or a worker thread that exits with a game unfinished, stops the whole run with that error; the run never waits on a lost thread.
 
@@ -40,7 +42,7 @@ A run plays one cell per variant: the baseline first, then each variant in the o
 
 ## Outputs
 
-Each run writes `build/sim/<run>/` with:
+Each run writes `build/sim/<run>/` with (a run with `--record` writes more, see Recording):
 - `games.jsonl`: one JSON object per game, in cell order, with seeds ascending within each cell;
 - `summary.json`: the metrics for each cell, plus the comparisons.
 
@@ -67,6 +69,40 @@ The console prints a few ASCII lines per cell and per comparison. There is no HT
 Top level: `format` (`spanish-diplomacy-sim/1`), `scenarioId`, `seeds` (as ranges), `turnLimit`, `games`, `factions`, `cells[]` and `comparisons[]`. Each cell has `id`, `variant`, `variantDescription` (if any) and `metrics`.
 
 Every interval is `{ value, low, high }`, rounded to 4 decimal places. It is `null` when there is nothing to measure, for example a share of decided games when no game was decided.
+
+## Recording (`--record inventory`)
+
+For tuning the economy. Each line of `games.jsonl` gains `inventory` (between `firstTurnRoutes` and `longestQuiet`), deterministic like the rest of the line; `summary.json` does not change. A second file, `timings.jsonl`, holds everything that differs from run to run.
+
+`inventory.columns` lists, in scenario order, `unitTypes`, `projects` (`building:`, `development:`, `improvement:` and `link:` keys), `sites` (the projects that stand in a sub-territory, without links), `resources` and `counts`. `inventory.sides[faction][measure]` is one row per turn, turn 0 (the opening board) first, with one number per column. The measures, and the columns each has, are in `measureColumns` (`src/sim/inventory.ts`):
+
+| Measure | Columns | Meaning |
+|---|---|---|
+| `units` | `unitTypes` | Units on the map at the end of the turn, of every kind: ground, air and generals. |
+| `training`, `paused` | `unitTypes` | Units in training at the end of the turn, split by whether it is paused (C8). A unit is in one of them. |
+| `recruitsOrdered`, `recruitsRefused` | `unitTypes` | Recruit orders given this turn, and those of them not paid for and started. |
+| `standing` | `sites` | What stands in the sub-territories the side holds: buildings (a count; an upgraded building is listed as its own building too, as the state lists it), development levels and port and rail levels (added up). |
+| `buildsUnderWay`, `buildsWaiting` | `projects` | Queue items, for the side that paid for them: with a turn of progress or more (an item paused by a contested territory included), and not started yet. |
+| `buildsOrdered`, `buildsRefused` | `projects` | Build orders given this turn, and those of them not paid for and queued. |
+| `held` | `resources` | Points held, to thousandths: the treasury less the carry. The header's whole number is its floor. |
+| `income`, `upkeep`, `unpaid` | `resources` | What the engine paid (after raid cuts) and charged this turn, and what the side could not pay. At turn 0, what the opening board pays and costs. |
+| `counts` | `counts` | Territories held whole, contested territories the side has a part of, sub-territories held, replacement generals on their way. |
+
+Stocks (`units`, `training`, `paused`, `standing`, `buildsUnderWay`, `buildsWaiting`, `held`, `counts`) are read from the state at the end of the turn; flows (the orders, `income`, `upkeep`, `unpaid`) happen during it. Never add orders to stocks: an accepted order is already in training or in a queue at the end of the turn (or, when a unit trains in one turn, on the map). Income and upkeep come from the turn's outcomes and not from the engine's forecast of the board at its end, because by then the turn's raid cuts are over and `upkeepLines` is next turn's bill; a test checks both against the engine. The record throws on a unit, building or project it has no column for, rather than dropping it.
+
+`timings.jsonl`: one line per game (`kind: "game"`, `variant`, `seed`, `turns`, `milliseconds`, `worker`), in `games.jsonl` order, then one `kind: "run"` line (`games`, `workers`, `cores`, `totalMilliseconds` wall clock, `gameMilliseconds` added up over workers, and a `note` on contention). A game's time leaves out loading the scenario.
+
+`report.json` and the CSVs are built from the files above. Per-turn means are over the games still running on that turn, and the `games` column says how many that is, so late turns rest on few games. `report.json` has, for each cell: outcomes (wins, lengths, freezes, stalls, early wins, victory conditions), `running`, `sides[faction].perTurn`, `.final` (stocks at each game's end) and `.totals` (flows over each game from turn 1), and `milliseconds`.
+
+| File | One row per | Columns |
+|---|---|---|
+| `units.csv` | variant, side, turn, unit type | `games`, `onMap`, `training`, `paused`, `ordered`, `refused` (means) |
+| `buildings.csv` | variant, side, turn, project | `games`, `standing` (blank for link works), `underWay`, `waiting`, `ordered`, `refused` (means) |
+| `economy.csv` | variant, side, turn, resource | `games`, `held`, `income`, `upkeep`, `unpaid` (means) |
+| `land.csv` | variant, side, turn, count | `games`, `mean` |
+| `finals.csv` | game and side | `seed`, `end`, `turns`, `winners`, `victory`, `won` (the win credit), each stock at the game's end as `measure:column`, each flow's total as `total-measure:column` |
+| `games.csv` | game | `seed`, `end`, `turns`, `winners`, `victory`, `earlyWin`, `stalled`, `longestQuiet`, `battles` |
+| `timings.csv` | game | `seed`, `turns`, `milliseconds`, `millisecondsPerTurn`, `worker` |
 
 ## Metrics (H3)
 
@@ -142,6 +178,8 @@ Everything the harness reads from the game goes through `src/sim/engine.ts`. Mos
 | `playGame` | `result.victory` (`factionIds`, `condition`) | winners and the decided or freeze end |
 | `territoryControlKey` (`engine.ts`) | `state.control[territoryId]` | quiet turns (S2) |
 | `objectivesOf` (`engine.ts`) | `faction.objectiveTerritoryIds` | S3 |
+| `unitTypeIdOf`, `projectKey`, `siteKeys`, `linkKeys`, `heldPoints` (`engine.ts`) | unit types, build projects, sub-territory and link works, holdings | `inventory` |
+| `accountOf`, `ordersOf` (`inventory.ts`) | outcomes `income`, `upkeep`, `training-started`, `build-queued`; `submittedOrders` | `inventory` flows |
 | `defaultScenarioId`, `loadScenario`, `playComputerGame` | the registry and the submission coordinator | loading and playing |
 
 ## Targets (H7)

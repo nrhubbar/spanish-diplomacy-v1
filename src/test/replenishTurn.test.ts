@@ -109,6 +109,6 @@ describe("a capital that falls with purchases in it (M4, $5, U3)", () => {
     expect(northIncome.cut).toEqual({});
     // The books balance: what the Republic paid at reveal all came back but the forfeited head.
     const republicIncome = ofKindAll(result.outcomes, "income").find((outcome) => outcome.factionId === republic)!.paid as Record<string, number>;
-    expect(result.finalState.treasuries[republic]).toEqual({ funds: Math.floor(20 + 6 + (republicIncome["funds"] ?? 0)), manpower: 10 + (republicIncome["manpower"] ?? 0) });
+    expect(result.finalState.treasuries[republic]).toEqual({ funds: Math.floor(20 + 6 + (republicIncome["funds"] ?? 0)), manpower: Math.floor(10 + (republicIncome["manpower"] ?? 0)) });
   });
 });

@@ -22,7 +22,7 @@
   max-width: 100%;
   min-height: 34px;
   margin-bottom: -1px;
-  padding: 4px 12px;
+  padding: 4px 8px;
   border: 1px solid transparent;
   border-bottom: 0;
   border-radius: 6px 6px 0 0;
@@ -63,6 +63,15 @@
   font-size: 0.78rem;
   font-variant-numeric: tabular-nums;
   text-align: center;
+
+  // Recruit's keeps its place at none, so the first order doesn't wrap the tabs and move the pane.
+  &[data-empty="true"] {
+    visibility: hidden;
+
+    &::before {
+      content: "0";
+    }
+  }
 }
 
 // M2 (`ux-phone-pane-a`): on the phone sheet the tabs come first, at the top of the scroll

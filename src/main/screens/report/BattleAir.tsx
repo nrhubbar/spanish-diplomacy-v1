@@ -1,8 +1,7 @@
 import type { JSX } from "react";
-import { requireFaction } from "../../engine/lookup";
+import { RollLedger } from "../../components/RollLedger";
 import type { AirBattleOutcome, Scenario } from "../../engine/types";
-import { type AirSideView, airBattleView, airRollLabel } from "../../presentation/battleAir";
-import { cssVariables } from "../../presentation/style";
+import { airBattleView } from "../../presentation/battleAir";
 
 interface BattleAirProps {
   readonly air: AirBattleOutcome;
@@ -10,41 +9,43 @@ interface BattleAirProps {
 }
 
 /**
- * U10, R11: an engagement's air battle on the battle card, above its ground battle: both sides'
- * aircraft and AA, both rolls, who won the air and the Ground Support that applied.
+ * U10, R11: an engagement's air battle on the battle card, above its ground battle and drawn like
+ * it: one die, everything that changed it, the score, the table with the row it hit, who got
+ * Ground Support, who was driven off and who was lost.
  */
 export function BattleAir({ air, scenario }: BattleAirProps): JSX.Element {
   const view = airBattleView(scenario, air);
   return (
     <section aria-label="Air battle" className="battle-air">
       <p className="battle-air-heading">Air battle</p>
-      <div className="battle-sides">
-        <AirSide scenario={scenario} side={view.attacker} />
-        <AirSide scenario={scenario} side={view.defender} />
+      <div className="battle-roll battle-roll-d20">
+        <p className="battle-die">
+          <span className="visually-hidden">{`Die roll ${String(view.die)}`}</span>
+          <span aria-hidden="true" className="d20-face">{String(view.die)}</span>
+        </p>
+        <RollLedger rows={view.ledger.rows} total={view.ledger.total} />
+        <p className="battle-outcome">
+          {"Outcome: "}
+          <span className="battle-outcome-score">{String(view.score)}</span>
+          {view.clamp === undefined ? null : <span className="battle-outcome-clamp">{` (${view.clamp})`}</span>}
+        </p>
+        <table className="battle-bands">
+          <caption className="visually-hidden">What each score in the air gives</caption>
+          <thead className="visually-hidden">
+            <tr><th scope="col">Score</th><th scope="col">Result</th><th scope="col">Effect</th></tr>
+          </thead>
+          <tbody>
+            {view.bands.map((band) => (
+              <tr aria-current={band.hit ? "true" : undefined} className={band.hit ? "battle-band battle-band-hit" : "battle-band"} key={band.range}>
+                <td className="battle-band-range">{band.range}</td>
+                <th className="battle-band-grade" scope="row">{band.name}</th>
+                <td className="battle-band-effect">{band.effect}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
-      <p className="battle-air-result">{view.result}</p>
-      <p className="battle-air-note">Only one side ever gets Ground Support. A tie in the air means neither does.</p>
+      {view.results.map((result) => <p className="battle-air-result" key={result}>{result}</p>)}
     </section>
-  );
-}
-
-function AirSide({ scenario, side }: { readonly scenario: Scenario; readonly side: AirSideView }): JSX.Element {
-  return (
-    <div className="battle-side battle-air-side" data-wins={side.wins} style={cssVariables({ "--faction-color": requireFaction(scenario, side.factionId).color })}>
-      <p className="battle-side-head">
-        <span className="battle-side-faction">{side.faction}</span>
-        {side.wins ? <span className="battle-air-wins">Wins the air</span> : null}
-      </p>
-      <ul className="battle-armies">
-        {side.none === undefined ? null : <li className="battle-air-none">{side.none}</li>}
-        {side.lines.map((line, index) => (
-          <li key={index}>
-            <span>{line.label}</span>
-            <span className="battle-army-value">{airRollLabel(line.roll)}</span>
-          </li>
-        ))}
-      </ul>
-      <p className="battle-air-total">{side.sum}</p>
-    </div>
   );
 }

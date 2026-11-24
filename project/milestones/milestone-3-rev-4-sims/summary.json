@@ -1,0 +1,468 @@
+{
+  "cells": [
+    {
+      "id": "baseline",
+      "metrics": {
+        "battles": {
+          "byColumn": {
+            "0": {
+              "battles": 3671,
+              "results": {
+                "attack-checked": 492,
+                "attacker-destroyed": 1388,
+                "attacker-repulsed": 534,
+                "bloody-stalemate": 474,
+                "costly-victory": 23,
+                "defender-gives-ground": 291,
+                "defender-pushed-back": 106,
+                "stalemate": 363
+              },
+              "share": 0.362
+            },
+            "1": {
+              "battles": 2295,
+              "results": {
+                "attack-checked": 304,
+                "attacker-destroyed": 405,
+                "bloody-stalemate": 343,
+                "costly-victory": 185,
+                "defender-driven-out": 131,
+                "defender-gives-ground": 302,
+                "defender-pushed-back": 260,
+                "stalemate": 365
+              },
+              "share": 0.2263
+            },
+            "2": {
+              "battles": 1213,
+              "results": {
+                "attack-checked": 275,
+                "bloody-stalemate": 154,
+                "costly-victory": 133,
+                "defender-driven-out": 91,
+                "defender-gives-ground": 163,
+                "defender-pushed-back": 178,
+                "defender-routed": 38,
+                "stalemate": 181
+              },
+              "share": 0.1196
+            },
+            "3": {
+              "battles": 824,
+              "results": {
+                "bloody-stalemate": 197,
+                "costly-victory": 108,
+                "defender-broken": 29,
+                "defender-driven-out": 83,
+                "defender-gives-ground": 128,
+                "defender-pushed-back": 116,
+                "defender-routed": 56,
+                "stalemate": 107
+              },
+              "share": 0.0812
+            },
+            "4": {
+              "battles": 356,
+              "results": {
+                "costly-victory": 52,
+                "defender-broken": 28,
+                "defender-destroyed": 16,
+                "defender-driven-out": 38,
+                "defender-gives-ground": 58,
+                "defender-pushed-back": 42,
+                "defender-routed": 43,
+                "stalemate": 79
+              },
+              "share": 0.0351
+            },
+            "5": {
+              "battles": 370,
+              "results": {
+                "costly-victory": 61,
+                "defender-broken": 30,
+                "defender-destroyed": 33,
+                "defender-driven-out": 64,
+                "defender-gives-ground": 95,
+                "defender-pushed-back": 53,
+                "defender-routed": 34
+              },
+              "share": 0.0365
+            },
+            "6": {
+              "battles": 1413,
+              "results": {
+                "costly-victory": 68,
+                "defender-broken": 136,
+                "defender-destroyed": 879,
+                "defender-driven-out": 117,
+                "defender-pushed-back": 109,
+                "defender-routed": 104
+              },
+              "share": 0.1393
+            }
+          },
+          "byTurn": [
+            6,
+            3.97,
+            3.08,
+            2.7486,
+            2.6121,
+            2.5759,
+            2.549,
+            2.6,
+            2.6414,
+            2.6131,
+            2.6489,
+            2.8033,
+            2.713,
+            2.8938,
+            3.0865,
+            2.9149,
+            3.1412,
+            3.075,
+            3.027,
+            3.2424,
+            3.0167,
+            3.3273,
+            3.1154,
+            3.2391,
+            3.125,
+            3.0882,
+            3.1034,
+            3.2692,
+            3.65,
+            3.2222,
+            3.1875,
+            3.5,
+            3.4286,
+            2.7692,
+            2.5,
+            3.3636,
+            3.0909,
+            2.9091,
+            3.9091,
+            2.8182,
+            3.75,
+            4,
+            2.8571,
+            3.4286,
+            3.6667,
+            3.2,
+            3.5,
+            3.25,
+            1,
+            2,
+            2.5,
+            5
+          ],
+          "perTurn": 3.1331,
+          "total": 10142
+        },
+        "decided": 200,
+        "decidedRate": {
+          "high": 1,
+          "low": 0.9812,
+          "value": 1
+        },
+        "firstTurn": {
+          "republic": {
+            "meanOrders": 17,
+            "topRoutes": [
+              {
+                "games": 200,
+                "route": "air-mission",
+                "share": 1
+              },
+              {
+                "games": 200,
+                "route": "build",
+                "share": 1
+              },
+              {
+                "games": 200,
+                "route": "cantabria>pais-vasco",
+                "share": 1
+              },
+              {
+                "games": 200,
+                "route": "madrid>andalucia",
+                "share": 1
+              },
+              {
+                "games": 200,
+                "route": "madrid>murcia",
+                "share": 1
+              },
+              {
+                "games": 200,
+                "route": "recruit",
+                "share": 1
+              },
+              {
+                "games": 173,
+                "route": "catalunya>castilla-la-mancha",
+                "share": 0.865
+              },
+              {
+                "games": 173,
+                "route": "murcia>extremadura",
+                "share": 0.865
+              },
+              {
+                "games": 171,
+                "route": "catalunya>aragon",
+                "share": 0.855
+              },
+              {
+                "games": 171,
+                "route": "valencia>castilla-la-mancha",
+                "share": 0.855
+              }
+            ]
+          },
+          "north": {
+            "meanOrders": 8,
+            "topRoutes": [
+              {
+                "games": 200,
+                "route": "air-mission",
+                "share": 1
+              },
+              {
+                "games": 200,
+                "route": "build",
+                "share": 1
+              },
+              {
+                "games": 200,
+                "route": "navarra>pais-vasco",
+                "share": 1
+              },
+              {
+                "games": 200,
+                "route": "recruit",
+                "share": 1
+              },
+              {
+                "games": 107,
+                "route": "galicia>asturias",
+                "share": 0.535
+              },
+              {
+                "games": 98,
+                "route": "navarra>asturias",
+                "share": 0.49
+              },
+              {
+                "games": 93,
+                "route": "galicia>pais-vasco",
+                "share": 0.465
+              }
+            ]
+          },
+          "south": {
+            "meanOrders": 8,
+            "topRoutes": [
+              {
+                "games": 200,
+                "route": "air-mission",
+                "share": 1
+              },
+              {
+                "games": 200,
+                "route": "build",
+                "share": 1
+              },
+              {
+                "games": 200,
+                "route": "ceuta>andalucia",
+                "share": 1
+              },
+              {
+                "games": 200,
+                "route": "melilla>andalucia",
+                "share": 1
+              }
+            ]
+          }
+        },
+        "freezeRate": {
+          "high": 0.0188,
+          "low": 0,
+          "value": 0
+        },
+        "freezes": 0,
+        "games": 200,
+        "length": {
+          "decided": {
+            "max": 52,
+            "mean": 16.185,
+            "median": 15,
+            "min": 3,
+            "p10": 4,
+            "p25": 7.75,
+            "p75": 23,
+            "p90": 28.1
+          },
+          "histogram": [
+            {
+              "from": 1,
+              "games": 47,
+              "to": 6
+            },
+            {
+              "from": 7,
+              "games": 38,
+              "to": 12
+            },
+            {
+              "from": 13,
+              "games": 41,
+              "to": 18
+            },
+            {
+              "from": 19,
+              "games": 34,
+              "to": 24
+            },
+            {
+              "from": 25,
+              "games": 24,
+              "to": 30
+            },
+            {
+              "from": 31,
+              "games": 5,
+              "to": 36
+            },
+            {
+              "from": 37,
+              "games": 4,
+              "to": 42
+            },
+            {
+              "from": 43,
+              "games": 5,
+              "to": 48
+            },
+            {
+              "from": 49,
+              "games": 2,
+              "to": 54
+            },
+            {
+              "from": 55,
+              "games": 0,
+              "to": 60
+            },
+            {
+              "from": 61,
+              "games": 0,
+              "to": 66
+            }
+          ]
+        },
+        "losses": {
+          "republic": {
+            "men": 10151848,
+            "menPerGame": 50759.24,
+            "units": 5529,
+            "unitsPerGame": 27.645
+          },
+          "north": {
+            "men": 7531829,
+            "menPerGame": 37659.145,
+            "units": 4800,
+            "unitsPerGame": 24
+          },
+          "south": {
+            "men": 7443562,
+            "menPerGame": 37217.81,
+            "units": 3338,
+            "unitsPerGame": 16.69
+          }
+        },
+        "sanity": {
+          "abandonments": 0,
+          "earlyWinRate": {
+            "high": 0.1319,
+            "low": 0.0537,
+            "value": 0.085
+          },
+          "earlyWins": 17,
+          "longestQuiet": {
+            "max": 4,
+            "mean": 1.03,
+            "median": 1,
+            "min": 0,
+            "p10": 0,
+            "p25": 0,
+            "p75": 2,
+            "p90": 2
+          },
+          "objectiveChecks": 9509
+        },
+        "sharedVictories": 0,
+        "stalled": 0,
+        "stalledRate": {
+          "high": 0.0188,
+          "low": 0,
+          "value": 0
+        },
+        "wins": {
+          "republic": {
+            "shareOfDecided": {
+              "high": 0.5043,
+              "low": 0.3682,
+              "value": 0.435
+            },
+            "shareOfGames": {
+              "high": 0.5043,
+              "low": 0.3682,
+              "value": 0.435
+            },
+            "wins": 87
+          },
+          "north": {
+            "shareOfDecided": {
+              "high": 0.4388,
+              "low": 0.3061,
+              "value": 0.37
+            },
+            "shareOfGames": {
+              "high": 0.4388,
+              "low": 0.3061,
+              "value": 0.37
+            },
+            "wins": 74
+          },
+          "south": {
+            "shareOfDecided": {
+              "high": 0.2554,
+              "low": 0.1461,
+              "value": 0.195
+            },
+            "shareOfGames": {
+              "high": 0.2554,
+              "low": 0.1461,
+              "value": 0.195
+            },
+            "wins": 39
+          }
+        }
+      },
+      "variant": "baseline"
+    }
+  ],
+  "comparisons": [],
+  "factions": [
+    "republic",
+    "north",
+    "south"
+  ],
+  "format": "spanish-diplomacy-sim/1",
+  "games": 200,
+  "scenarioId": "spanish-civil-war-1936",
+  "seeds": "1-200",
+  "turnLimit": 66
+}

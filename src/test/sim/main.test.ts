@@ -1,83 +1,17 @@
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { fixtureSources } from "../fixtures/scenarios/fixtureSources";
 import { defaultScenarioId, scenarioSources } from "../../sim/engine";
 import type { GameLine } from "../../sim/game";
-import { type CliIo, planOf, readVariants, runCli, type WorkerSetup } from "../../sim/main";
+import { planOf, readVariants, runCli } from "../../sim/main";
 import { parseArgs } from "../../sim/args";
 import { formatSummary, runStamp } from "../../sim/output";
-import type { FromWorker, PoolWorker, ToWorker } from "../../sim/pool";
-import type { GameTask, Summary } from "../../sim/run";
+import type { FromWorker, ToWorker } from "../../sim/pool";
+import type { GameTask, PlayedGame, Summary } from "../../sim/run";
 import { serveWorker } from "../../sim/worker";
+import { clearTempOut, cliIo as io, cliSources as sources, finished, tempOut } from "./cliFixture";
 
-const sources = [...scenarioSources(), fixtureSources];
-const folders: string[] = [];
-afterEach(() => {
-  for (const folder of folders.splice(0)) rmSync(folder, { force: true, recursive: true });
-});
-
-/** Seeds in the order the stand-in workers finished them. */
-const finished: number[] = [];
-/** Replies waiting to be released, all at once and highest seed first. */
-const held: { readonly deliver: () => void; readonly seed: number }[] = [];
-
-function release(): void {
-  for (const reply of held.splice(0).sort((a, b) => b.seed - a.seed)) {
-    finished.push(reply.seed);
-    reply.deliver();
-  }
-}
-
-/**
- * A worker thread stood in by the real worker code on this thread, over an in-memory port.
- * Replies posted in the same tick are held and released highest seed first, so with several
- * workers the games finish out of order, deterministically.
- */
-function inProcessWorker(setup: WorkerSetup): PoolWorker<GameTask, GameLine> {
-  let toWorker: (message: ToWorker<GameTask>) => void = () => undefined;
-  let toPool: (message: FromWorker<GameLine>) => void = () => undefined;
-  serveWorker(setup, sources, {
-    on: (_event, listener) => { toWorker = listener; },
-    postMessage: (message) => {
-      if (held.length === 0) setTimeout(release, 0);
-      held.push({ deliver: () => { toPool(message); }, seed: message.kind === "result" ? message.result.seed : 0 });
-    }
-  });
-  return {
-    onError: () => undefined,
-    onExit: () => undefined,
-    onMessage: (listener) => { toPool = listener; },
-    post: (message) => { toWorker(message); },
-    terminate: () => Promise.resolve(0)
-  };
-}
-
-function io(files: Readonly<Record<string, string>> = {}) {
-  const out: string[] = [];
-  const err: string[] = [];
-  const value: CliIo = {
-    cores: 3,
-    now: () => new Date("2026-11-19T14:05:09Z"),
-    readText: (path) => {
-      const text = files[path];
-      if (text === undefined) throw new Error(`ENOENT: ${path}`);
-      return text;
-    },
-    sources,
-    spawn: inProcessWorker,
-    stderr: (text) => err.push(text),
-    stdout: (text) => out.push(text)
-  };
-  return { err, io: value, out };
-}
-
-const tempOut = (): string => {
-  const folder = mkdtempSync(join(tmpdir(), "sim-test-"));
-  folders.push(folder);
-  return folder;
-};
+afterEach(clearTempOut);
 
 describe("sim command line", () => {
   it("runs games across workers and writes summary.json and games.jsonl", async () => {
@@ -130,10 +64,10 @@ describe("sim command line", () => {
   });
 
   it("reports a game that fails on a worker thread instead of losing it", () => {
-    const posted: FromWorker<GameLine>[] = [];
+    const posted: FromWorker<PlayedGame>[] = [];
     let send: (message: ToWorker<GameTask>) => void = () => undefined;
     const plan = { scenarioId: "tiny-front", seeds: [1], turnLimit: 2, variants: [] };
-    serveWorker({ plan }, sources, { on: (_event, listener) => { send = listener; }, postMessage: (message) => posted.push(message) });
+    serveWorker({ plan, worker: 1 }, sources, { on: (_event, listener) => { send = listener; }, postMessage: (message) => posted.push(message) }, () => 0);
     send({ kind: "task", task: { cell: 5, seed: 9 } });
     send({ kind: "task", task: { cell: 0, seed: 1 } });
     expect(posted[0]).toEqual({ kind: "failed", message: "seed 9: Unknown cell 5." });

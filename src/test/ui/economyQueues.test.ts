@@ -46,7 +46,7 @@ describe("build queue rows (U9)", () => {
       ["waiting", "Depot", "ordered this turn \u00b7 2 turns"]
     ]);
     expect(rows[0]).toMatchObject({ done: 1, total: 3 });
-    expect(rows[2]?.cancel).toEqual({ index: 3, kind: "build" });
+    expect(rows[2]?.cancel).toEqual({ index: 3 });
     expect(rows[0]?.cancel).toBeUndefined();
   });
 
@@ -81,13 +81,14 @@ describe("training rows (U9)", () => {
       ["waiting", "starts this turn \u00b7 1 turn", undefined]
     ]);
     expect(rows[0]).toMatchObject({ done: 1, name: "Infantry regiment", total: 2 });
-    expect(rows[3]?.cancel).toEqual({ kind: "recruit", quantity: 1, territoryId: territory("catalunya"), unitTypeId: typeId("militia-column") });
+    expect(rows.slice(3).map((row) => row.cancel)).toEqual([{ at: 0, territoryId: territory("catalunya") }, { at: 1, territoryId: territory("catalunya") }]);
+    expect(rows.map((row) => [row.factionId, row.typeId])[2]).toEqual([north, "militia-column"]);
     expect(trainingEntries(scenario, state, territory("catalunya"), [], republic, true)).toHaveLength(2);
   });
 
-  it("names an unknown type by its id", () => {
+  it("names an unknown type plainly, never by its id", () => {
     const rows = trainingEntries(scenario, { training: [training("madrid", "zeppelin", 3)] }, territory("madrid"), [recruit("madrid", "zeppelin")], republic, true);
-    expect(rows.map((row) => [row.name, row.total, row.done])).toEqual([["zeppelin", 3, 0], ["zeppelin", 1, 0]]);
+    expect(rows.map((row) => [row.name, row.total, row.done])).toEqual([["Unknown unit", 3, 0], ["Unknown unit", 1, 0]]);
   });
 
   it("groups Global Recruitment by territory and counts what the top bar counts", () => {

@@ -1,7 +1,7 @@
 import type { UnknownAction } from "@reduxjs/toolkit";
 import type { Scenario, TerritoryId, UnitState } from "../../engine/types";
 import type { MapView } from "../../map/view";
-import { clickMapTerritory, clickMapUnit, focusSubTerritory } from "../../state/gameSlice";
+import { chooseRaidSite, clickMapTerritory, clickMapUnit, focusSubTerritory } from "../../state/gameSlice";
 import { pushView, viewForMapClick } from "../../state/paneSlice";
 import { focusesOnClick } from "../../state/planning";
 import type { Draft } from "../../state/session";
@@ -9,7 +9,8 @@ import type { Draft } from "../../state/session";
 /**
  * The planning map's clicks (U3): a territory or a counter selects as before and, outside a
  * destination choice, opens Territory Info for its place; a second click inside the selected
- * territory focuses the sub-territory under it (X3).
+ * territory focuses the sub-territory under it (X3). While a raid chooses its target, a click
+ * zoomed in names the sub-territory too (N6).
  */
 export function planningMapHandlers(dispatch: (action: UnknownAction) => unknown, scenario: Scenario, draft: Draft): Required<Pick<MapView, "onSelectSubTerritory" | "onSelectTerritory" | "onSelectUnit">> {
   const open = (territoryId: TerritoryId): void => {
@@ -18,7 +19,8 @@ export function planningMapHandlers(dispatch: (action: UnknownAction) => unknown
   };
   return {
     onSelectSubTerritory: (subTerritoryId) => {
-      if (focusesOnClick(scenario, draft, subTerritoryId)) dispatch(focusSubTerritory(subTerritoryId));
+      if (draft.stage?.step === "choose-target") dispatch(chooseRaidSite(subTerritoryId));
+      else if (focusesOnClick(scenario, draft, subTerritoryId)) dispatch(focusSubTerritory(subTerritoryId));
     },
     onSelectTerritory: (territoryId) => {
       dispatch(clickMapTerritory(territoryId));

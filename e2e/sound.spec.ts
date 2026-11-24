@@ -29,3 +29,16 @@ test("sound levels are kept in the browser, and Credits name the music", async (
   await expect(page.getByRole("button", { name: "Credits" })).toBeVisible();
   expect(music).toEqual([]);
 });
+
+test("the game's menu has no sound levels, and Settings is one click away", async ({ page }) => {
+  await page.goto("./");
+  await page.getByRole("button", { name: "Create Game" }).click();
+  await page.getByRole("button", { name: "Start Campaign" }).click();
+  await page.getByRole("button", { exact: true, name: "Menu" }).click();
+  await expect(page.getByRole("group", { name: "Game menu" })).toBeVisible();
+  await expect(page.getByRole("slider")).toHaveCount(0);
+  await page.getByRole("button", { exact: true, name: "Settings" }).click();
+  await expect(page.getByRole("slider")).toHaveCount(3);
+  await page.getByRole("button", { name: "Back" }).click();
+  await expect(page.getByRole("button", { exact: true, name: "Menu" })).toBeVisible();
+});

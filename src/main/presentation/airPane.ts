@@ -1,7 +1,8 @@
+import { unitDefinitionIn } from "../engine/air/pieces";
 import { hookedGrounded } from "../engine/hooks";
 import { requireFaction, requireUnitDefinition, requireUnitType } from "../engine/lookup";
 import { weatherEffectsIn, weatherIn, zoneOf } from "../engine/weather";
-import type { AirMissionKind, AirMissionOrder, GameState, GeneralDefinition, GeneralTrait, Scenario, UnitState, UnitTypeDefinition, WeatherOutcome } from "../engine/types";
+import type { AirMissionKind, AirMissionOrder, GameState, GeneralDefinition, GeneralTrait, Scenario, TerritoryId, UnitId, UnitState, UnitTypeDefinition, WeatherOutcome } from "../engine/types";
 import { type ArmyFigures, armyFigures, figuresDescription, type GroupFigures, groupFigures, groupLabel } from "./army";
 import { glyphs } from "./glyphs";
 import { territoryName } from "./text";
@@ -87,6 +88,13 @@ export interface AircraftCounterText {
   readonly planned: AirMissionOrder | undefined;
   readonly symbolKey: string;
   readonly tag: string;
+}
+
+/** N6: what to do while a mission chooses its target: the territory, then, for a raid, the sub-territory. */
+export function missionCallout(scenario: Scenario, state: GameState, unitId: UnitId, mission: AirMissionKind, territoryId: TerritoryId | undefined): string {
+  const name = unitDefinitionIn(scenario, state.raised, unitId)?.name ?? "Aircraft";
+  const choose = territoryId === undefined ? "Choose a highlighted territory on the map." : `Choose what to raid in ${territoryName(scenario, territoryId)}.`;
+  return `${name}: ${missionNames[mission]}. ${choose}`;
 }
 
 export function aircraftCounterText(scenario: Scenario, state: GameState, unit: UnitState, plannedAirMissions: readonly AirMissionOrder[] | undefined): AircraftCounterText {
