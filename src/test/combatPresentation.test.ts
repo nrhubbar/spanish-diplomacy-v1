@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { initialGameState } from "../main/engine/resolution";
-import { battleResults, type D6BattleOutcome, type GameState, type MoveOrder, type Scenario } from "../main/engine/types";
+import { type BattleOutcome, battleResults, type GameState, type GradeId, type MoveOrder, type Scenario } from "../main/engine/types";
 import { legendEntries } from "../main/map/MapLegend";
 import { placeOddsPlaques } from "../main/map/DestinationOddsLayer";
 import { battleRoutes, groupRoutes } from "../main/map/routes";
@@ -16,7 +16,7 @@ import {
   valuesLabel
 } from "../main/presentation/army";
 import { affectedFaction, attackLeft, battleKind, changedHands, claimants, decisiveBattle, groupBattles, groupTerritory, sideFactions, sideLosses } from "../main/presentation/battle";
-import { battleSummary, cardFlavor, columnLabel, flavorSeed, flavorValues, formatMen, lostArmies, occupationLine, rawRow, sentenceCase } from "../main/presentation/battleText";
+import { battleSummary, cardFlavor, columnLabel, flavorSeed, flavorValues, formatMen, lostArmies, occupationLine, sentenceCase } from "../main/presentation/battleText";
 import { ruleNote } from "../main/presentation/battleRules";
 import {
   chanceTone,
@@ -35,7 +35,6 @@ import { outcomeLine } from "../main/presentation/outcomeText";
 import { territoryName } from "../main/presentation/text";
 import {
   army,
-  battle,
   contestedEntry,
   madridRepulsed,
   roadMeeting,
@@ -52,7 +51,7 @@ function shaken(state: GameState, id: string, change: Partial<GameState["units"]
   return { ...state, units: { ...state.units, [current.id]: { ...current, morale: { demoralized: true, quietTurns: 0 }, ...change } } };
 }
 
-function group(outcomes: readonly D6BattleOutcome[]) {
+function group(outcomes: readonly BattleOutcome[]) {
   const [first] = groupBattles(outcomes);
   if (first === undefined) throw new Error("no group");
   return first;
@@ -71,9 +70,9 @@ describe("army figures (C4, C5, C6)", () => {
     const half = shaken({ ...state, fortification: { [territory("madrid")]: { factionId: faction("republic"), level: 2 } } }, "rep-covadonga-4", { strength: 370 });
     const figures = armyFigures(scenario, half, armyIn(half, "rep-covadonga-4"));
     expect(figures).toMatchObject({ attack: 1, defence: 2, dugIn: 2, reduced: true, strength: 370 });
-    expect(figuresDescription(figures)).toBe("attack 1, defence 2 (full 4-6), 370 of 550 men, demoralized, cannot attack, dug in level 2 (+2)");
+    expect(figuresDescription(figures)).toBe("attack 1, defence 2 (full 4-6), 370 of 550 men, demoralized, cannot attack, dug in level 2 (+4)");
     expect(counterLabel(scenario, figures, armyIn(half, "rep-covadonga-4"), "rest"))
-      .toBe("Covadonga Infantry Regiment No. 4, Republican Government, attack 1, defence 2 (full 4-6), 370 of 550 men, demoralized, cannot attack, dug in level 2 (+2), resting");
+      .toBe("Covadonga Infantry Regiment No. 4, Republican Government, attack 1, defence 2 (full 4-6), 370 of 550 men, demoralized, cannot attack, dug in level 2 (+4), resting");
     expect(counterLabel(scenario, full, armyIn(state, "rep-wad-ras-1"), undefined)).toBe("Wad-Ras Infantry Regiment No. 1, Republican Government, attack 4, defence 6, 550 of 550 men");
     expect(groupOrdersDescription(["entrench", "move", "rest", "move"])).toBe("2 moving, 1 entrenching, 1 resting");
     expect(groupOrdersDescription([])).toBe("");
@@ -173,7 +172,7 @@ describe("destination odds (C15)", () => {
       ]);
       expect([...planned.keys()]).toEqual([harbor]);
       const estimate = planned.get(harbor);
-      expect(estimate?.kind === "battle" && oddsSummary(estimate)).toMatchObject({ chip: "\u2248 2:1 \u00b7 33%", label: "Approx. 2:1 \u00b7 33%", sentence: "Approximately 2:1, 33 percent to take it." });
+      expect(estimate?.kind === "battle" && oddsSummary(estimate)).toMatchObject({ chip: "\u2248 2:1 \u00b7 35%", label: "Approx. 2:1 \u00b7 35%", sentence: "Approximately 2:1, 35 percent to take it." });
       expect(plannedEstimates(scenario, state, faction("red"), []).size).toBe(0);
     });
   });
@@ -230,7 +229,7 @@ describe("battle reports (C14)", () => {
   it("leads a card with the battle that decided the place", () => {
     expect(decisiveBattle(group(threeSidedAssault)).battle.attackerFactionId).toBe("south");
     const held = threeSidedAssault.map((entry) => ({ ...entry, site: madridRepulsed.site }));
-    expect(decisiveBattle(group(held)).battle).toMatchObject({ result: "defender-exchange" });
+    expect(decisiveBattle(group(held)).battle).toMatchObject({ grade: "costly-victory" });
   });
 
   it("measures sides, losses, and who a result fell on", () => {
@@ -240,8 +239,7 @@ describe("battle reports (C14)", () => {
     expect([sideLosses(south, south.attacker), sideLosses(south, south.defender)]).toEqual([450, 550]);
     expect([affectedFaction(north), affectedFaction(south), affectedFaction(standingBattle)]).toEqual(["north", "republic", "north"]);
     expect(lostArmies(surrenderAfterBattle)).toEqual(["rep-sevilla-34"]);
-    expect([formatMen(1240), columnLabel(0), columnLabel(3), rawRow(north), north.row]).toEqual(["1,240", "below 1:1", "3:1", 2, 2]);
-    expect(rawRow(battle({ ...madridRepulsed, attacker: madridRepulsed.attacker, attackerFactionId: "north", defender: madridRepulsed.defender, die: 1, modifiers: [{ kind: "dug-in", level: 3, roll: -3 }], site: madridRepulsed.site }))).toBe(-2);
+    expect([formatMen(1240), columnLabel(0), columnLabel(3), north.score]).toEqual(["1,240", "below 1:1", "3:1", 3]);
   });
 
   it("says who holds the place", () => {
@@ -259,7 +257,7 @@ describe("battle reports (C14)", () => {
     const scenario = spain();
     for (const result of battleResults) {
       for (const base of [madridRepulsed, roadMeeting]) {
-        const line = sentenceCase(outcomeLine(result, flavorValues(scenario, { ...base, result }), flavorSeed(7, 1, 3)));
+        const line = sentenceCase(outcomeLine(result, flavorValues(scenario, base), flavorSeed(7, 1, 3)));
         expect(line).not.toMatch(/\{|\}/);
         expect(line.charAt(0)).toBe(line.charAt(0).toUpperCase());
       }
@@ -292,14 +290,14 @@ describe("rule notes (section 1.6, C9, M27)", () => {
     expect(note?.steps[0]).toBe("The Northern Insurgent Command and the Southern Insurgent Command attacked Castilla-La Mancha at once. Each fought the defenders separately, all from the same starting values, so the order did not matter.");
     expect(note?.steps[2]).toBe("Only the Southern Insurgent Command succeeded, so it claimed Castilla-La Mancha alone.");
 
-    const failed = threeSidedAssault.map((entry) => ({ ...entry, result: "attacker-demoralized" as const, site: madridRepulsed.site }));
+    const failed = threeSidedAssault.map((entry) => ({ ...entry, grade: "attacker-repulsed" as GradeId, ground: 0 as const, site: madridRepulsed.site }));
     expect(ruleNote(scenario, state, group(failed))?.steps[2]).toBe("No attack succeeded, so the defenders held Madrid.");
   });
 
   it("names the claimants' remaining attack and the winner, or the tie", () => {
     const [north, south] = threeSidedAssault;
     if (north === undefined || south === undefined) throw new Error("fixture");
-    const both = [{ ...north, result: "defender-demoralized" as const }, south];
+    const both = [{ ...north, grade: "defender-driven-out" as GradeId, ground: "all" as const }, south];
     expect(claimants(group(both))).toHaveLength(2);
     expect(attackLeft(scenario, state, south)).toBe(8);
     const gone = { ...state, units: Object.fromEntries(Object.entries(state.units).filter(([id]) => id !== "south-granada-6")) };
@@ -342,7 +340,7 @@ describe("battle routes and legend", () => {
 
   it("replaces a fought move's bounce with the battle and draws arriving reinforcements", () => {
     const bounced = { cause: { holdingFactionIds: [faction("republic")], kind: "held" as const }, kind: "bounced-move" as const, order: move("north", "north-san-marcial-22", "castilla-y-leon", "madrid") };
-    const routes = groupRoutes([], [bounced, madridRepulsed, { kind: "reinforcement-arrived", order: move("republic", "rep-otumba-9", "valencia", "castilla-la-mancha") }]);
+    const routes = groupRoutes([], [bounced, madridRepulsed, { kind: "reinforcement-arrived", order: move("republic", "rep-otumba-9", "valencia", "castilla-la-mancha") }], spain());
     expect(routes.map((route) => [route.kind, route.from, route.to, route.count, route.battle?.result])).toEqual([
       ["moved", "valencia", "castilla-la-mancha", 1, undefined],
       ["battle", "castilla-y-leon", "madrid", 2, "attacker-attrition"]
@@ -370,19 +368,19 @@ describe("dispatch lines that agree with the headline", () => {
   const leftEmpty = { ...madridRepulsed, site: { kind: "assault" as const, occupation: { kind: "left-empty" as const }, territoryId: territory("madrid") } };
 
   it("never says a place left empty was taken or held", () => {
-    for (const result of battleResults) {
+    for (const grade of scenario.d20.grades) {
       for (const seed of [0, 1, 2, 3, 4, 5]) {
-        const line = cardFlavor(scenario, { ...leftEmpty, result }, seed);
+        const line = cardFlavor(scenario, { ...leftEmpty, grade: grade.id }, seed);
         expect(line).not.toMatch(/\b(took|taken|occupied|now hold|held every road|changed hands|overrun|fallen)\b/i);
         expect(line).not.toMatch(/[{}]/);
       }
     }
-    expect(cardFlavor(scenario, { ...leftEmpty, result: "defender-exchange" }, 3)).toBe(
+    expect(cardFlavor(scenario, { ...leftEmpty, grade: "costly-victory" as GradeId }, 3)).toBe(
       "Madrid was left empty. The attackers who broke in were too evenly matched for any of them to hold it."
     );
   });
 
   it("uses the ordinary line everywhere else", () => {
-    expect(cardFlavor(scenario, madridRepulsed, 4)).toBe(outcomeLine(madridRepulsed.result, flavorValues(scenario, madridRepulsed), 4));
+    expect(cardFlavor(scenario, madridRepulsed, 4)).toBe(outcomeLine("attacker-attrition", flavorValues(scenario, madridRepulsed), 4));
   });
 });

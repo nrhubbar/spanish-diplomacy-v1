@@ -4,7 +4,7 @@ import { plural, type ReportLines, territoryLabel, unitLabel } from "./lines";
 /** C4-C7, U5: the morale outcomes as report sentences. Owners: m3r1-d20-combat (fatigue) and m3r1-air-generals (rally). Both are public. */
 
 /** C6: one unit's fatigue, in a sentence; `unit` is its name. */
-export function fatigueSentence(outcome: FatigueOutcome, unit: string): string {
+function fatigueSentence(outcome: FatigueOutcome, unit: string): string {
   if (outcome.fatigue === 0) return `${unit} rested and is no longer fatigued.`;
   if (outcome.demoralized) return `${unit} attacked until exhausted (fatigue ${String(outcome.fatigue)}) and is demoralized.`;
   return `${unit} is tiring from the attack (fatigue ${String(outcome.fatigue)}).`;

@@ -1,11 +1,11 @@
-import type { ModularScenarioDocument } from "../schema/scenarioSchema";
+import type { ScenarioDocument } from "../schema/scenarioSchema";
 import { idSet, type Issues } from "./issues";
 import { checkBuildable, checkLinks } from "./linkChecks";
 
-type SubTerritoryDocument = ModularScenarioDocument["subTerritories"][number];
+type SubTerritoryDocument = ScenarioDocument["subTerritories"][number];
 
 /** Rules L16, L18, L19, L28 and L29: sub-territories, their data, borders and links, and connection entries. */
-export function checkSubTerritories(document: ModularScenarioDocument, issues: Issues): void {
+export function checkSubTerritories(document: ScenarioDocument, issues: Issues): void {
   const subTerritories = new Map(document.subTerritories.map((sub) => [sub.id, sub]));
   const factions = idSet(document.factions);
   const territories = idSet(document.territories);
@@ -17,7 +17,6 @@ export function checkSubTerritories(document: ModularScenarioDocument, issues: I
     issues.ref(`${path}.territoryId`, sub.territoryId, territories, "territory");
     issues.ref(`${path}.startHolder`, sub.startHolder, factions, "faction");
     sub.sources.forEach((source) => { issues.ref(`${path}.sources`, source.sourceId, sources, "source"); });
-    if (sub.sources.length === 0 && sub.note === undefined) issues.add(`${path}: "${sub.id}" needs sources or a note (L18)`);
   });
 
   const capitals = new Set<string>();
@@ -53,7 +52,7 @@ export function checkSubTerritories(document: ModularScenarioDocument, issues: I
 
 /** L18: development, buildings and improvement levels fit the catalogues. */
 function checkSiteData(
-  document: ModularScenarioDocument,
+  document: ScenarioDocument,
   sub: SubTerritoryDocument,
   path: string,
   site: { readonly capital: boolean; readonly city: boolean },
@@ -86,7 +85,7 @@ function checkSiteData(
 }
 
 /** L19: borders join two known sub-territories once; connection entries lie on their own side. */
-function checkBorders(document: ModularScenarioDocument, subTerritories: ReadonlyMap<string, SubTerritoryDocument>, issues: Issues): void {
+function checkBorders(document: ScenarioDocument, subTerritories: ReadonlyMap<string, SubTerritoryDocument>, issues: Issues): void {
   const seen = new Set<string>();
   document.subTerritoryBorders.forEach(([a, b], index) => {
     const path = `subTerritoryBorders[${index}]`;

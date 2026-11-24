@@ -1,7 +1,9 @@
-import { type JSX, useEffect, useRef, useState } from "react";
+import { type JSX, useEffect, useReducer, useRef, useState } from "react";
 import type { MapRect } from "../scenarios/loader";
 import type { TerrainLayerAsset } from "../scenarios/registry";
-import { terrainFrustum, terrainRenderingConfig, terrainRenderMetrics } from "./terrainRendering";
+import { detailProgress, imageFading, isClear, isDetail, nextRelief, picturesToLoad, type Relief, reliefRefined, startRelief } from "./reliefSequence";
+import { fadeOpacity, terrainFrustum, terrainRenderingConfig, terrainRenderMetrics } from "./terrainRendering";
+import { layersToShow, useDetailWanted } from "./useDetailWanted";
 
 export type TerrainRenderer = "image-fallback" | "webgl";
 
@@ -15,31 +17,54 @@ interface TerrainLayerProps {
 
 interface TerrainScene {
   readonly dispose: () => void;
+  /** Loads and shows a picture; asked again, it does nothing. */
+  readonly load: (layer: number) => void;
   readonly render: (visible: MapRect) => void;
 }
+
+function firstRelief(pictures: number): Relief {
+  return startRelief(pictures, typeof window.WebGLRenderingContext === "undefined" ? "images" : "webgl");
+}
+
+const detailFade = `opacity ${String(terrainRenderingConfig.detailFadeMs)}ms`;
 
 /**
  * Relief terrain. The relief is baked into the layer images (lighting, tint, and the coastline
  * mask all come from the map build), so WebGL only draws each layer as an unlit, mipmapped
  * quad through an orthographic camera that matches the map camera exactly. The same images,
  * placed with CSS, are the loading state and the fallback when WebGL is unavailable. WebGL is
- * live once the first (coarsest) layer is drawn; finer layers sharpen it as they arrive.
+ * live once the first (coarsest) layer is drawn; finer layers sharpen it as they arrive. The last
+ * and largest of several loads only when it is wanted (`useDetailWanted`), and fades in;
+ * `reliefSequence.ts` decides which picture's turn it is. Other pictures start all of it again.
  */
-export function TerrainLayer({ layers, onFallback, place, visible }: TerrainLayerProps): JSX.Element {
+export function TerrainLayer(props: TerrainLayerProps): JSX.Element {
+  return <ReliefPictures key={JSON.stringify(props.layers)} {...props} />;
+}
+
+function ReliefPictures({ layers: given, onFallback, place, visible }: TerrainLayerProps): JSX.Element {
+  // The key changes with the pictures, so the first list is this relief's for good.
+  const [layers] = useState(given);
   const surfaceRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<TerrainScene | undefined>(undefined);
   const visibleRef = useRef(visible);
   const fallbackRef = useRef(onFallback);
-  const [renderer, setRenderer] = useState<TerrainRenderer>("image-fallback");
   // While WebGL loads, only the small first layer is placed as an image; every layer is placed
   // once the images are the renderer (no WebGL, a lost context, or failed textures).
-  const [imagesOnly, setImagesOnly] = useState(() => typeof window.WebGLRenderingContext === "undefined");
-  // True once every relief layer is drawn (tests and captures wait for it).
-  const [refined, setRefined] = useState(false);
+  const [relief, dispatch] = useReducer(nextRelief, layers.length, firstRelief);
+  const detailWanted = useDetailWanted(layers, visible);
+  const renderer: TerrainRenderer = relief.renderer === "webgl" && relief.stages[0] === "shown" ? "webgl" : "image-fallback";
+  const fading = imageFading(relief);
+  const imageLayers = relief.renderer === "images" ? layersToShow(layers, detailWanted) : layers.slice(0, 1);
 
   useEffect(() => {
     fallbackRef.current = onFallback;
   }, [onFallback]);
+
+  useEffect(() => {
+    if (!fading) return undefined;
+    const faded = window.setTimeout(() => { dispatch({ by: "images", kind: "faded", layer: layers.length - 1 }); }, terrainRenderingConfig.detailFadeMs);
+    return () => { window.clearTimeout(faded); };
+  }, [fading, layers]);
 
   /* v8 ignore start -- WebGL lifecycle; covered by the e2e "terrain renders" and "fallback" stories */
   useEffect(() => {
@@ -56,7 +81,7 @@ export function TerrainLayer({ layers, onFallback, place, visible }: TerrainLaye
         // No MSAA: the scene is axis-aligned textured quads, so it would only cost memory.
         gl = new THREE.WebGLRenderer({ alpha: true, antialias: false, powerPreference: "high-performance" });
       } catch {
-        setImagesOnly(true);
+        dispatch({ kind: "images-only" });
         fallbackRef.current("WebGL is unavailable on this device.");
         return;
       }
@@ -69,10 +94,9 @@ export function TerrainLayer({ layers, onFallback, place, visible }: TerrainLaye
       const scene = new THREE.Scene();
       const camera = new THREE.OrthographicCamera(0, 1, 0, -1, -10, 10);
       camera.position.set(0, 0, 5);
-      const manager = new THREE.LoadingManager();
       // Decoded off the main thread, already flipped and unpremultiplied, so a frame only uploads
       // pixels instead of decoding a multi-megapixel image synchronously.
-      const loader = new THREE.ImageBitmapLoader(manager).setOptions({ imageOrientation: "flipY", premultiplyAlpha: "none" });
+      const loader = new THREE.ImageBitmapLoader().setOptions({ imageOrientation: "flipY", premultiplyAlpha: "none" });
       const meshes = layers.map((layer, order) => {
         const texture = new THREE.Texture();
         texture.colorSpace = THREE.SRGBColorSpace;
@@ -111,7 +135,24 @@ export function TerrainLayer({ layers, onFallback, place, visible }: TerrainLaye
           gl.render(scene, camera);
         });
       };
-      const show = (layer: (typeof meshes)[number], then?: () => void): void => {
+      const fadeIn = (layer: (typeof meshes)[number], then: () => void): void => {
+        const from = performance.now();
+        const step = (now: number): void => {
+          if (disposed) return;
+          layer.material.opacity = fadeOpacity(now - from);
+          draw(visibleRef.current);
+          if (layer.material.opacity < 1) requestAnimationFrame(step);
+          else then();
+        };
+        layer.material.opacity = 0;
+        requestAnimationFrame(step);
+      };
+      const requested = new Set<number>();
+      const load = (index: number): void => {
+        const layer = meshes[index];
+        if (layer === undefined || requested.has(index)) return;
+        requested.add(index);
+        const detail = isDetail(meshes.length, index);
         loader.load(layer.url, (bitmap) => {
           if (disposed) {
             bitmap.close();
@@ -120,39 +161,28 @@ export function TerrainLayer({ layers, onFallback, place, visible }: TerrainLaye
           layer.texture.image = bitmap;
           layer.texture.needsUpdate = true;
           layer.mesh.visible = true;
-          then?.();
+          dispatch({ by: "webgl", kind: "arrived", layer: index });
+          if (detail) fadeIn(layer, () => { dispatch({ by: "webgl", kind: "faded", layer: index }); });
+          if (index === 0) {
+            ready = true;
+            refine = window.setTimeout(() => { dispatch({ kind: "settled" }); }, terrainRenderingConfig.refineDelayMs);
+          }
           draw(visibleRef.current);
+        }, undefined, () => {
+          // Leaving the map aborts pending loads; that is not a failure worth reporting.
+          if (disposed) return;
+          if (detail) {
+            dispatch({ by: "webgl", kind: "failed", layer: index });
+            return;
+          }
+          dispatch({ kind: "images-only" });
+          fallbackRef.current("Terrain textures could not be loaded.");
         });
       };
-      // Progressive: the small first layer makes the relief live; the large layers follow once the
-      // map has settled, one per load, so their uploads never land on the first interactions.
-      const [first, ...finer] = meshes;
-      if (first !== undefined) {
-        show(first, () => {
-          ready = true;
-          setRenderer("webgl");
-          let pending = finer.length;
-          if (pending === 0) setRefined(true);
-          refine = window.setTimeout(() => {
-            for (const layer of finer) {
-              show(layer, () => {
-                pending -= 1;
-                if (pending === 0) setRefined(true);
-              });
-            }
-          }, terrainRenderingConfig.refineDelayMs);
-        });
-      }
-      manager.onError = () => {
-        // Leaving the map aborts pending loads; that is not a failure worth reporting.
-        if (disposed) return;
-        setImagesOnly(true);
-        fallbackRef.current("Terrain textures could not be loaded.");
-      };
+      load(0);
       const lost = (event: Event): void => {
         event.preventDefault();
-        setRenderer("image-fallback");
-        setImagesOnly(true);
+        dispatch({ kind: "images-only" });
         fallbackRef.current("The 3D terrain was interrupted; showing the flat map.");
       };
       gl.domElement.addEventListener("webglcontextlost", lost);
@@ -176,6 +206,7 @@ export function TerrainLayer({ layers, onFallback, place, visible }: TerrainLaye
           gl.dispose();
           gl.domElement.remove();
         },
+        load,
         render: draw
       };
     }); };
@@ -193,15 +224,27 @@ export function TerrainLayer({ layers, onFallback, place, visible }: TerrainLaye
     visibleRef.current = visible;
     sceneRef.current?.render(visible);
   }, [visible]);
+
+  useEffect(() => {
+    if (relief.renderer === "webgl") for (const layer of picturesToLoad(relief, detailWanted)) sceneRef.current?.load(layer);
+  }, [detailWanted, relief]);
   /* v8 ignore stop */
 
   return (
-    <div className="terrain-layer" data-refined={refined} data-renderer={renderer} ref={surfaceRef}>
+    <div className="terrain-layer" data-detail={detailProgress(relief, detailWanted)} data-refined={reliefRefined(relief, detailWanted)} data-renderer={renderer} ref={surfaceRef}>
       <div aria-hidden="true" className="terrain-fallback">
-        {(imagesOnly ? layers : layers.slice(0, 1)).map((layer) => {
+        {imageLayers.map((layer, index) => {
           const rect = place(layer.bounds);
           return (
-            <img alt="" className="terrain-image" key={layer.url} src={layer.url} style={{ height: rect.height, left: rect.x, top: rect.y, width: rect.width }} />
+            <img
+              alt=""
+              className="terrain-image"
+              key={layer.url}
+              onError={() => { dispatch({ by: "images", kind: "failed", layer: index }); }}
+              onLoad={() => { dispatch({ by: "images", kind: "arrived", layer: index }); }}
+              src={layer.url}
+              style={{ height: rect.height, left: rect.x, opacity: isClear(relief, index) ? 0 : 1, top: rect.y, transition: detailFade, width: rect.width }}
+            />
           );
         })}
       </div>

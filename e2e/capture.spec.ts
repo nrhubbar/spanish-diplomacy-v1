@@ -45,6 +45,7 @@ test("@capture walks every screen", async ({ page }) => {
   for (let step = 0; step < 2; step += 1) await page.getByRole("button", { name: "Zoom in" }).click();
   await capture(page, "06-operational-zoom");
   for (let step = 0; step < 3; step += 1) await page.getByRole("button", { name: "Zoom in" }).click();
+  await expect(page.locator(".terrain-layer")).toHaveAttribute("data-detail", "shown", { timeout: 15000 });
   await capture(page, "07-detail-zoom");
   await page.getByRole("button", { name: /reset map view/i }).click();
   const hide = page.getByRole("button", { name: /Hide (orders|briefing)/ });
@@ -368,7 +369,7 @@ test("@capture economy: resource chips, Build tab and the focused build list", a
   await capture(page, "21d-resource-detail");
 });
 
-test("@capture sub-territories and contested ground", async ({ isMobile, page }) => {
+test("@capture sub-territories and contested ground", async ({ page }) => {
   await page.goto("./");
   await page.getByRole("button", { name: "Create Game" }).click();
   await page.getByRole("button", { name: "Start Campaign" }).click();
@@ -384,16 +385,6 @@ test("@capture sub-territories and contested ground", async ({ isMobile, page })
   await page.getByRole("button", { name: /Cancel withdrawal|Cancel/ }).first().click();
   for (let step = 0; step < 3; step += 1) await page.getByRole("button", { name: "Zoom in" }).click();
   await capture(page, "22d-contested-zoom");
-  await page.getByRole("button", { name: /^M\u00e1laga, held by/ }).click();
-  await expect(page.locator(".sub-territory-focus")).toBeVisible();
-  await capture(page, "22e-sub-territory-focus");
-  // X3: zoomed in, a click inside the selected territory focuses the pane on the sub-territory there.
-  // On a phone the sheet covers Jaen at this zoom; the pane's list (above) is the phone's way in.
-  if (isMobile) return;
-  await page.locator(".sub-territory-back").click();
-  const jaen = await page.locator('.sub-territory-wash [data-sub-territory-id="jaen"] path').first().boundingBox();
-  if (jaen !== null) await page.mouse.click(jaen.x + jaen.width / 2, jaen.y + jaen.height / 2);
-  await expect(page.locator(".sub-territory-focus h3")).toHaveText(/Ja\u00e9n/);
 });
 
 test("@capture air missions and generals", async ({ page }) => {

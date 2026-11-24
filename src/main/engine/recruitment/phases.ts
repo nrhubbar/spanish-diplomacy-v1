@@ -1,3 +1,5 @@
+import { carryOf, withCarry } from "../carry";
+import { upkeepProblem } from "../economy/upkeep";
 import { adjustTreasury, canAfford, subtractResources, treasuryOf } from "../resources";
 import { draftState, type Phase, type TurnDraft } from "../phases/draft";
 import type {
@@ -13,7 +15,8 @@ import type {
   UnitId,
   UnitState
 } from "../types";
-import { capitalOf, carryOf, chargeReplenish, isContested, nextRaisedSerial, raisedDefinition, raisedUnitId, recruitSlots, replenishQuote, trainingUnitId, uncharge } from "./rules";
+import { validDisbands } from "./disband";
+import { capitalOf, chargeReplenish, nextRaisedSerial, raisedDefinition, raisedUnitId, recruitSlots, replenishQuote, trainingUnitId, trainsOn, uncharge } from "./rules";
 
 /** A Replenish order paid at step 1, settled at step 9. */
 export interface PaidReplenishment {
@@ -30,6 +33,11 @@ declare module "../phases/draft" {
     /** The recruitment area's turn-only data: Replenish orders paid at reveal, settled at step 9. */
     readonly recruitment?: { readonly replenishing: readonly PaidReplenishment[] };
   }
+}
+
+/** The carries as a state holds them: no field while nobody has one. */
+function carried(carries: GameState["carry"]): Pick<GameState, "carry"> {
+  return carries === undefined ? {} : { carry: carries };
 }
 
 const notEnough = "Not enough Funds or Manpower when the orders were revealed.";
@@ -55,10 +63,15 @@ export const payForRecruits: Phase = (draft) => {
   const { scenario, start } = draft.input;
   let treasuries = draft.systems.treasuries;
   let training = draft.systems.training;
-  let carries = draft.systems.replenishCarry ?? {};
+  let { carry: carries } = draft.systems;
   const events: RecruitmentTurnOutcome[] = [];
   const replenishing: PaidReplenishment[] = [];
   const used = new Map<string, number>();
+  // D1: each order is refused if it leaves next turn's stock below zero, after this side's Disband orders and what it was already granted.
+  const before = draftState(draft);
+  const granted: Order[] = [...validDisbands(draft)];
+  const upkeepReason = (order: RecruitOrder | ReplenishOrder): string | undefined =>
+    upkeepProblem(scenario, before, order.factionId, [...granted.filter((other) => other.factionId === order.factionId), order]);
 
   for (const order of orders) {
     const balance = treasuryOf({ treasuries }, order.factionId);
@@ -80,6 +93,12 @@ export const payForRecruits: Phase = (draft) => {
         refund(notEnough);
         continue;
       }
+      const short = upkeepReason(order);
+      if (short !== undefined) {
+        refund(short);
+        continue;
+      }
+      granted.push(order);
       used.set(slotKey, count + 1);
       treasuries = adjustTreasury(treasuries, order.factionId, subtractResources({}, recruit.cost));
       const unitId = trainingUnitId(training, order.factionId, order.unitTypeId, order.territoryId);
@@ -91,13 +110,19 @@ export const payForRecruits: Phase = (draft) => {
       const quote = unit === undefined ? undefined : replenishQuote(scenario, start, unit);
       if (unit === undefined || quote === undefined) continue;
       // B2: priced against the carry so far this reveal, not the start of the turn's.
-      const charge = chargeReplenish(carryOf({ replenishCarry: carries }, order.factionId), quote.owed);
+      const charge = chargeReplenish(carryOf(carried(carries), order.factionId), quote.owed);
       if (!canAfford(balance, charge.paid)) {
         events.push({ kind: "replenish-cancelled", order, reason: notEnough, refund: {} });
         continue;
       }
+      const short = upkeepReason(order);
+      if (short !== undefined) {
+        events.push({ kind: "replenish-cancelled", order, reason: short, refund: {} });
+        continue;
+      }
+      granted.push(order);
       treasuries = adjustTreasury(treasuries, order.factionId, subtractResources({}, charge.paid));
-      carries = { ...carries, [order.factionId]: charge.carry };
+      carries = withCarry(carries, order.factionId, charge.carry).carry;
       replenishing.push({ men: quote.men, order, owed: quote.owed, paid: charge.paid, territoryId: unit.territoryId });
     }
   }
@@ -105,7 +130,7 @@ export const payForRecruits: Phase = (draft) => {
     ...draft,
     events: [...draft.events, ...events],
     scratch: { ...draft.scratch, recruitment: { replenishing } },
-    systems: { ...draft.systems, training, treasuries, ...(Object.keys(carries).length === 0 ? {} : { replenishCarry: carries }) }
+    systems: { ...draft.systems, training, treasuries, ...carried(carries) }
   };
 };
 
@@ -129,7 +154,7 @@ export const replenish: Phase = (draft) => {
   const { scenario } = draft.input;
   const fought = unitsInBattle(draft);
   let treasuries = draft.systems.treasuries;
-  let carries = draft.systems.replenishCarry ?? {};
+  let { carry: carries } = draft.systems;
   const armies: Record<UnitId, UnitState> = { ...draft.armies };
   const events: RecruitmentTurnOutcome[] = [];
   for (const entry of paid) {
@@ -139,7 +164,7 @@ export const replenish: Phase = (draft) => {
       : fought.has(unit.id) ? "The unit fought a battle." : unit.territoryId === entry.territoryId ? undefined : "The unit fell back.";
     if (unit === undefined || reason !== undefined) {
       treasuries = adjustTreasury(treasuries, entry.order.factionId, entry.paid);
-      carries = { ...carries, [entry.order.factionId]: uncharge(carryOf({ replenishCarry: carries }, entry.order.factionId), entry.owed, entry.paid) };
+      carries = withCarry(carries, entry.order.factionId, uncharge(carryOf(carried(carries), entry.order.factionId), entry.owed, entry.paid)).carry;
       events.push({ kind: "replenish-cancelled", order: entry.order, reason: reason ?? "", refund: entry.paid });
       continue;
     }
@@ -150,13 +175,8 @@ export const replenish: Phase = (draft) => {
     const recovered = draft.input.start.units[unit.id]?.morale.demoralized ?? unit.morale.demoralized;
     events.push({ kind: "replenish-applied", men, order: entry.order, paid: entry.paid, recovered });
   }
-  return { ...draft, armies, events: [...draft.events, ...events], systems: { ...draft.systems, treasuries, ...(Object.keys(carries).length === 0 ? {} : { replenishCarry: carries }) } };
+  return { ...draft, armies, events: [...draft.events, ...events], systems: { ...draft.systems, treasuries, ...carried(carries) } };
 };
-
-/** C8: the unit type trains on in contested ground (militia). */
-function trainsInContested(draft: TurnDraft, item: TrainingItem): boolean {
-  return draft.input.scenario.index.unitTypes.get(item.typeId)?.effects.some((effect) => effect.kind === "trains-in-contested") ?? false;
-}
 
 /** The faction no longer holds the capital where the unit trains (or the territory, without sub-territories). */
 function trainingLost(draft: TurnDraft, state: GameState, item: TrainingItem): boolean {
@@ -193,7 +213,7 @@ export const advanceTraining: Phase = (draft) => {
         : { factionId: item.factionId, kind: "training-refunded", reason: "The capital fell before training began.", refund: item.paid, territoryId: item.territoryId, typeId: item.typeId });
       continue;
     }
-    if (isContested(scenario, state, item.territoryId) && !trainsInContested(draft, item)) {
+    if (!trainsOn(scenario, state, item)) {
       if (!item.paused) events.push({ factionId: item.factionId, kind: "training-paused", territoryId: item.territoryId, unitId: item.unitId });
       training.push({ ...item, paused: true });
       continue;

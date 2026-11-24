@@ -1,3 +1,4 @@
+import { disbandUnits, validateDisbandOrder } from "../recruitment/disband";
 import { type OrderValidationContext, unavailableOrderReason } from "../hooks";
 import type { RuleModule } from "../modules";
 import type { ValidationResult } from "../types";
@@ -22,11 +23,12 @@ export const recruitmentModules: readonly RuleModule[] = [
     blocks: ["subTerritories", "resources", "buildings", "recruitment"],
     hooks: {
       validateOrder: {
+        disband: ({ order, scenario, state }) => whenSelected(scenario) ?? validateDisbandOrder(scenario, state, order),
         recruit: ({ order, scenario, state }) => whenSelected(scenario) ?? validateRecruitOrder(scenario, state, order),
         replenish: ({ order, scenario, state }) => whenSelected(scenario) ?? validateReplenishOrder(scenario, state, order)
       }
     },
     id: "buildings",
-    steps: { morale: replenish, reveal: payForRecruits, training: advanceTraining }
+    steps: { morale: replenish, reveal: payForRecruits, training: (draft) => advanceTraining(disbandUnits(draft)) }
   }
 ];

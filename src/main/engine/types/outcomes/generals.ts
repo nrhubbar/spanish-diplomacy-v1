@@ -1,5 +1,5 @@
 import type { FactionId, GeneralId, TerritoryId, UnitId } from "../../ids";
-import type { MoveOrder, SackOrder } from "../orders";
+import type { SackOrder } from "../orders";
 
 /** Generals' outcomes (U5, D7), owned by `m3r1-air-generals` (phases 1 and 9). */
 
@@ -36,17 +36,9 @@ export interface ReplacementArrivedOutcome {
   readonly unitId: UnitId;
 }
 
-/** U5 (AG-4): a general's move. He goes where his army arrives; otherwise he stays where he was. */
-export interface GeneralMovedOutcome {
-  readonly arrived: boolean;
-  readonly kind: "general-moved";
-  readonly order: MoveOrder;
-}
-
 /** Every outcome of this area. Adding a kind here is all the union needs. */
 export type GeneralsTurnOutcome =
   | GeneralDiedOutcome
   | GeneralSackedOutcome
   | ReplacementDueOutcome
-  | ReplacementArrivedOutcome
-  | GeneralMovedOutcome;
+  | ReplacementArrivedOutcome;

@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { projectCost, siteRefusal } from "../main/engine/economy/catalogue";
 import { advanceQueues } from "../main/engine/economy/queues";
 import { movementCombatModifiers, passModifiers } from "../main/engine/movement/hooks";
-import { railDepartures, railLinks, railReach } from "../main/engine/movement/network";
+import { railCapacity, railLinks, railPlaces, railReach } from "../main/engine/movement/network";
 import { describeRoute, hasRoom, moveRoutes, usageOf, validateRoute } from "../main/engine/movement/routes";
 import { orderLine, pathPoints } from "../main/engine/network/lines";
 import { afterWork, hasLinks, linkBetween, linkKey, linkModifiers, railOn, railRank, roadOn, roadRank, stationCap, workMisfit } from "../main/engine/network/links";
@@ -13,9 +13,10 @@ import { initialGameState } from "../main/engine/resolution";
 import type { BuildProject, CombatModifier, GameState, LinkModifier, MoveLeg, MoveOrder, Scenario, SubTerritoryId } from "../main/engine/types";
 import { validateMoveOrder } from "../main/engine/validation";
 import { modifierName } from "../main/presentation/odds";
-import { faction, onD6Dice, play, spainD20, spainM2, territory, unit, withUnits } from "./support";
+import { faction, play, spainWithAir, spainM2, territory, unit, withUnits } from "./support";
+import { pinned } from "./pinned";
 
-const scenario = spainD20();
+const scenario = pinned(spainWithAir());
 const start = initialGameState(scenario);
 const sub = (id: string): SubTerritoryId => id as SubTerritoryId;
 const land = (to: string): MoveLeg => ({ kind: "land", to: territory(to) });
@@ -86,12 +87,17 @@ describe("links as they stand (network/links.ts)", () => {
     const none: readonly LinkModifier[] = [];
     const single: readonly LinkModifier[] = [{ kind: "road", level: "track" }, { kind: "rail", level: "single" }];
     const main: readonly LinkModifier[] = [{ kind: "road", level: "main" }, { kind: "rail", level: "main" }];
-    expect(afterWork(none, "new-rail")).toEqual([{ kind: "rail", level: "single" }]);
-    expect(afterWork(none, "road-upgrade")).toEqual([{ kind: "road", level: "track" }]);
-    expect(afterWork(single, "road-upgrade")).toEqual([{ kind: "rail", level: "single" }, { kind: "road", level: "main" }]);
-    expect(afterWork(single, "rail-upgrade")).toEqual([{ kind: "road", level: "track" }, { kind: "rail", level: "main" }]);
-    expect([workMisfit(single, "new-rail"), workMisfit(none, "rail-upgrade"), workMisfit(main, "rail-upgrade"), workMisfit(main, "road-upgrade"), workMisfit(none, "new-rail")])
-      .toEqual(["There is a railway here already.", "Needs a railway first.", "This is a main line already.", "This is a main road already.", undefined]);
+    const tracksServe = { label: "Road", motorLevel: "track", motorRange: 2 } as const;
+    const mainOnly = { ...tracksServe, motorLevel: "main" } as const;
+    expect(afterWork(none, "new-rail", undefined)).toEqual([{ kind: "rail", level: "single" }]);
+    expect(afterWork(none, "road-upgrade", tracksServe)).toEqual([{ kind: "road", level: "track" }]);
+    expect(afterWork(single, "road-upgrade", mainOnly)).toEqual([{ kind: "rail", level: "single" }, { kind: "road", level: "main" }]);
+    expect(afterWork(single, "rail-upgrade", undefined)).toEqual([{ kind: "road", level: "track" }, { kind: "rail", level: "main" }]);
+    expect([workMisfit(single, "new-rail", undefined), workMisfit(none, "rail-upgrade", undefined), workMisfit(main, "rail-upgrade", undefined), workMisfit(main, "road-upgrade", undefined), workMisfit(none, "new-rail", undefined)])
+      .toEqual(["There is a railway here already.", "Needs a railway first.", "This is a main line already.", "Trucks can use this road already.", undefined]);
+    // Where every road takes trucks, a better one gives nothing, so only a link with no road takes the work.
+    expect(workMisfit(single, "road-upgrade", tracksServe)).toBe("Trucks can use this road already.");
+    expect(workMisfit(single, "road-upgrade", mainOnly)).toBeUndefined();
   });
 });
 
@@ -179,16 +185,17 @@ describe("routes without links or road rules", () => {
 });
 
 describe("route capacity (M3, M5)", () => {
-  it("skips a ride once the capital's departures are taken by other planned moves", () => {
-    const departures = railDepartures(scenario, start, sub("madrid"));
-    // Each planned army rides somewhere else, so each takes a departure (W4: one army per route).
-    const ends = [...railReach(scenario, start, faction("republic"), territory("madrid")).keys()].filter((end) => end !== territory("catalunya"));
-    const others = ["rep-covadonga-4", "rep-madrid-security", "rep-madrid-sierra-column"].slice(0, departures);
-    const planned = others.map((id, index) => order("republic", id, "madrid", [{ kind: "rail", to: ends[index] ?? territory("valencia") }]));
-    expect(departures).toBeLessThanOrEqual(Math.min(others.length, ends.length));
-    expect(moveRoutes(scenario, start, faction("republic"), territory("madrid"), [unit("rep-wad-ras-1")]).get(territory("catalunya"))?.shape).toBe("rail");
+  it("skips a ride once the capital's train places are taken by other planned moves (D5)", () => {
+    // Madrid's station is level 2 and has a rail yard.
+    expect(railCapacity(scenario, start, sub("madrid"))).toBe(6);
+    // Six units of one army, all bound for Valencia, take six places.
+    const others = scenario.units.filter((each) => each.factionId === faction("republic") && each.id !== unit("rep-wad-ras-1") && railPlaces(scenario, start, [each.id]) === 1).slice(0, 6).map((each) => each.id);
+    const madrid: GameState = { ...start, units: { ...start.units, ...withUnits(scenario, others.map((id) => [id, "republic", "madrid"] as const)).units } };
+    const planned = others.map((id) => order("republic", id, "madrid", [{ kind: "rail", to: territory("valencia") }]));
+    expect(planned).toHaveLength(6);
+    expect(moveRoutes(scenario, madrid, faction("republic"), territory("madrid"), [unit("rep-wad-ras-1")]).get(territory("catalunya"))?.shape).toBe("rail");
     // Madrid's trains are full, so the army steps into Castilla-La Mancha and boards at Toledo.
-    expect(moveRoutes(scenario, start, faction("republic"), territory("madrid"), [unit("rep-wad-ras-1")], planned).get(territory("catalunya"))?.shape).toBe("step-rail");
+    expect(moveRoutes(scenario, madrid, faction("republic"), territory("madrid"), [unit("rep-wad-ras-1")], planned).get(territory("catalunya"))?.shape).toBe("step-rail");
   });
 
   it("counts port landings and amphibious lanes, an army already counted going free", () => {
@@ -196,13 +203,13 @@ describe("route capacity (M3, M5)", () => {
     const check = describeRoute(scenario, valencia, faction("republic"), territory("valencia"), [sea("islas-baleares")]);
     if (!check.ok) throw new Error(check.reason);
     const route = check.route;
-    const landed = usageOf([{ army: "first", route }]);
+    const landed = usageOf([{ army: "first", places: 1, route }]);
     const amphibious = { ...route, sea: { departure: sub("valencia"), kind: "amphibious" as const } };
-    const assaulted = usageOf([{ army: "first", route: amphibious }]);
-    expect(route.sea?.kind === "port" ? hasRoom(scenario, valencia, route, "second", landed) : false).toBe(false);
-    expect(hasRoom(scenario, valencia, route, "first", landed)).toBe(true);
-    expect(hasRoom(scenario, valencia, amphibious, "second", assaulted)).toBe(false);
-    expect(hasRoom(scenario, valencia, amphibious, "first", assaulted)).toBe(true);
+    const assaulted = usageOf([{ army: "first", places: 1, route: amphibious }]);
+    expect(route.sea?.kind === "port" ? hasRoom(scenario, valencia, { army: "second", places: 1, route }, landed) : false).toBe(false);
+    expect(hasRoom(scenario, valencia, { army: "first", places: 1, route }, landed)).toBe(true);
+    expect(hasRoom(scenario, valencia, { army: "second", places: 1, route: amphibious }, assaulted)).toBe(false);
+    expect(hasRoom(scenario, valencia, { army: "first", places: 1, route: amphibious }, assaulted)).toBe(true);
   });
 });
 
@@ -311,10 +318,9 @@ describe("passes in battle (R6)", () => {
     expect(passModifiers(noUnits as Omit<ReturnType<typeof context>, "attackerUnitIds">)).toEqual([]);
   });
 
-  it("keeps the bonus without flanking rules, and leaves it out under the d6 table", () => {
+  it("keeps the bonus without flanking rules, and has none without pass rules", () => {
     const noFlank: Scenario = { ...scenario, linkModifiers: { ...scenario.linkModifiers, pass: { ...scenario.linkModifiers.pass!, lostToFlanking: false } } };
     expect(passModifiers(context(["rep-asturian-militia", "rep-santander-column"], asturias, noFlank))).toHaveLength(1);
-    expect(passModifiers(context(["rep-asturian-militia"], asturias, onD6Dice(scenario)))).toEqual([]);
     const noPass: Scenario = { ...scenario, linkModifiers: { ...scenario.linkModifiers, pass: undefined as never } };
     expect(passModifiers(context(["rep-asturian-militia"], asturias, noPass))).toEqual([]);
   });
@@ -357,7 +363,7 @@ describe("link works (R7)", () => {
     const cuenca = start.subTerritories[sub("cuenca")];
     if (cuenca === undefined) throw new Error("fixture");
     const queued: GameState = { ...start, subTerritories: { ...start.subTerritories, [sub("cuenca")]: { ...cuenca, queue: [{ factionId: republic, paid: {}, progress: 0, project: work("new-rail", "valencia", "cuenca") }] } } };
-    expect(siteRefusal(scenario, queued, republic, sub("valencia"), work("road-upgrade", "cuenca", "valencia"))).toBe("This is a main road already.");
+    expect(siteRefusal(scenario, queued, republic, sub("valencia"), work("road-upgrade", "cuenca", "valencia"))).toBe("Trucks can use this road already.");
     // One work at a time on a link, at either end.
     expect(siteRefusal(scenario, queued, republic, sub("valencia"), work("new-rail", "cuenca", "valencia"))).toBe("Another work on this link is in the queue.");
   });

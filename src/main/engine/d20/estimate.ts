@@ -2,14 +2,14 @@ import { type PlannedAir, plannedAir } from "../air/groundSupport";
 import { unitKindIn } from "../air/pieces";
 import type { BattleContext } from "../combat/odds";
 import { requireUnitState } from "../lookup";
+import type { MoveRoute } from "../movement/routes";
 import type { BattleSide, CombatModifier, FactionId, GameState, GradeId, Scenario, TerritoryId, UnitId } from "../types";
 import { cannotAttackAlone } from "./front";
-import { gradedModifiers, gradedSide } from "./modifiers";
-import { type GradedOdds, gradedOdds } from "./odds";
-import { requireD20 } from "./rules";
+import { battleModifiers, fightingSide } from "./modifiers";
+import { type BattleOdds, battleOdds } from "./odds";
 
 /** C15 on the d20: what an attack into a defended territory would meet. */
-export type GradedEstimate = GradedOdds & {
+export type BattleEstimate = BattleOdds & {
   /**
    * R11: the planned Ground Support and the chance it applies. The chances above are then
    * weighed over the air battle; `modifiers` and `rollModifier` leave the support out unless
@@ -29,34 +29,37 @@ export type GradedEstimate = GradedOdds & {
  * from the start-of-turn state: works, faction modifiers, barricades, generals, unit bonuses,
  * fatigue and the hooks (weather, amphibious). R11: `support` names the faction's aircraft
  * planned on Ground Support there; their support counts with the chance it wins the air battle
- * against the defenders' AA.
+ * against the defenders' AA. `plannedRoutes` names the way each attacker takes, where it is already
+ * chosen, so passes and landings are judged on it; the others' is inferred from where they stand.
  */
-export function estimateGradedBattle(
+export function estimateBattle(
   scenario: Scenario,
   state: GameState,
   factionId: FactionId,
   unitIds: readonly UnitId[],
   target: TerritoryId,
-  support: readonly UnitId[] = []
-): GradedEstimate {
+  support: readonly UnitId[] = [],
+  plannedRoutes?: ReadonlyMap<UnitId, MoveRoute>
+): BattleEstimate {
   // D17 (m3r1-air-generals): aircraft are not ground combatants.
   const fights = (id: UnitId): boolean => unitKindIn(scenario, state.raised, id) !== "air";
   const attackers = unitIds.filter(fights).map((id) => requireUnitState(state, id));
   const present = Object.values(state.units).filter((unit) => unit.territoryId === target && unit.factionId !== factionId && fights(unit.id));
-  const attacker = gradedSide(scenario, state, attackers.map((unit) => ({ from: unit.territoryId, unit })), "attack");
-  const defender = gradedSide(scenario, state, present.map((unit) => ({ from: target, unit })), "defence");
+  const attacker = fightingSide(scenario, state, attackers.map((unit) => ({ from: unit.territoryId, unit })), "attack");
+  const defender = fightingSide(scenario, state, present.map((unit) => ({ from: target, unit })), "defence");
   const defenderFactionIds = [...new Set(present.map((unit) => unit.factionId))];
-  const modifiers = gradedModifiers(scenario, state, state.weather, {
+  const modifiers = battleModifiers(scenario, state, state.weather, {
     attackerFactionId: factionId,
     defenderFactionIds,
     diggingIn: true,
+    ...(plannedRoutes === undefined ? {} : { plannedRoutes }),
     territoryId: target
   }, { role: "attack", side: attacker, units: attackers }, { role: "defence", side: defender, units: present });
-  const rules = requireD20(scenario);
-  const plain = gradedOdds(rules, attacker.value, defender.value, modifiers);
+  const rules = scenario.d20;
+  const plain = battleOdds(rules, attacker.value, defender.value, modifiers);
   const air = plannedAir(scenario, state, { attackerFactionId: factionId, defenderFactionIds, defenderUnitIds: present.map((unit) => unit.id), territoryId: target }, support);
-  const supported = (extra: CombatModifier): GradedOdds => gradedOdds(rules, attacker.value, defender.value, [...modifiers, extra]);
-  const odds = air === undefined ? plain : air.chance === 1 ? supported(air.modifier) : weighGraded(plain, supported(air.modifier), air.chance);
+  const supported = (extra: CombatModifier): BattleOdds => battleOdds(rules, attacker.value, defender.value, [...modifiers, extra]);
+  const odds = air === undefined ? plain : air.chance === 1 ? supported(air.modifier) : weighOdds(plain, supported(air.modifier), air.chance);
   return {
     ...odds,
     ...(air === undefined ? {} : { air }),
@@ -71,17 +74,17 @@ export function estimateGradedBattle(
  * The d20 odds for bare side values, for the computer player's quick threat checks: only the
  * situational modifiers (works, faction modifiers, barricades, hooks) count, since no units are named.
  */
-export function gradedOddsForValues(scenario: Scenario, state: GameState, context: BattleContext, attack: number, defence: number): GradedOdds {
+export function oddsForValues(scenario: Scenario, state: GameState, context: BattleContext, attack: number, defence: number): BattleOdds {
   const empty = { armies: [], value: 0 };
-  const modifiers = gradedModifiers(scenario, state, state.weather, context, { role: "attack", side: empty, units: [] }, { role: "defence", side: empty, units: [] });
-  return gradedOdds(requireD20(scenario), attack, defence, modifiers);
+  const modifiers = battleModifiers(scenario, state, state.weather, context, { role: "attack", side: empty, units: [] }, { role: "defence", side: empty, units: [] });
+  return battleOdds(scenario.d20, attack, defence, modifiers);
 }
 
 /**
  * R11: the odds over the air battle: `supported` with chance `chance`, else `plain`. The chances
  * of each grade, the ground and the expected losses are weighed; the rest is `plain`'s.
  */
-export function weighGraded(plain: GradedOdds, supported: GradedOdds, chance: number): GradedOdds {
+function weighOdds(plain: BattleOdds, supported: BattleOdds, chance: number): BattleOdds {
   const mix = (a: number, b: number): number => a * (1 - chance) + b * chance;
   const chances = new Map<GradeId, number>();
   for (const [id, value] of plain.chances) chances.set(id, value * (1 - chance));

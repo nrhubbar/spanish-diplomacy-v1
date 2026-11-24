@@ -373,6 +373,7 @@ test("draws the relief coastline exactly under the region coastline at full zoom
   const hide = page.getByRole("button", { name: /Hide (this turn|briefing)/ });
   if (await hide.isVisible()) await hide.click();
   await zoomFullyOn(page, "Valencia");
+  await expect(page.locator(".terrain-layer")).toHaveAttribute("data-detail", "shown", { timeout: 15000 });
   // Leave only the relief visible; the vector layer keeps its geometry for the measurements.
   await page.addStyleTag({ content: ".map-vector, .counter-layer, .map-pane, .map-legend, .map-controls, .map-layers-toolbar, .map-layers-menu { visibility: hidden !important; }" });
   await page.waitForTimeout(200);
@@ -437,6 +438,27 @@ test("keeps operational counter text legible (V5)", async ({ page }) => {
   for (let step = 0; step < 2; step += 1) await page.getByRole("button", { name: "Zoom in" }).click();
   const size = await page.locator(".unit-counter-designation").first().evaluate((element) => Number.parseFloat(getComputedStyle(element).fontSize));
   expect(size).toBeGreaterThanOrEqual(11);
+});
+
+test("keeps the relief it has when the detailed picture cannot be loaded", async ({ page }) => {
+  await page.route(/iberia-relief-detail[^?]*\.webp$/, (route) => route.abort());
+  await openSetup(page);
+  await page.getByRole("button", { name: "Start Campaign" }).click();
+  const terrain = page.locator(".terrain-layer");
+  await expect(terrain).toHaveAttribute("data-refined", "true", { timeout: 15000 });
+  await zoomFullyOn(page, "Valencia");
+  await expect(terrain).toHaveAttribute("data-detail", "failed", { timeout: 15000 });
+  await expect(terrain).toHaveAttribute("data-refined", "true");
+  await expect(terrain).toHaveAttribute("data-renderer", "webgl");
+  await expect(page.getByText(/could not be loaded/)).toHaveCount(0);
+});
+
+test("is refined without the detailed picture where the browser saves data", async ({ page }) => {
+  await page.addInitScript(() => { Object.defineProperty(navigator, "connection", { value: { saveData: true } }); });
+  await openSetup(page);
+  await page.getByRole("button", { name: "Start Campaign" }).click();
+  await expect(page.locator(".terrain-layer")).toHaveAttribute("data-refined", "true", { timeout: 15000 });
+  await expect(page.locator(".terrain-layer")).toHaveAttribute("data-detail", "waiting");
 });
 
 test("reports missing terrain textures and keeps the game playable", async ({ page }) => {

@@ -9,12 +9,22 @@ import { ReinforceView } from "./views/ReinforceView";
 import { TerritoryView } from "./views/TerritoryView";
 import { ThisTurnView } from "./views/ThisTurnView";
 import type { PaneViewProps } from "./views/types";
+import { ShortageWarning } from "../pane/ShortageWarning";
 
 /**
  * U3: the body of the view on top of the pane stack. The views of later work (Invade,
  * Reinforce, Build, Recruit, Recruitment, Building) each live in their own file under `views/`.
  */
 export function PaneViewBody(props: PaneViewProps): JSX.Element {
+  return (
+    <>
+      <ShortageWarning scenario={props.scenario} session={props.session} />
+      <ViewOnTop {...props} />
+    </>
+  );
+}
+
+function ViewOnTop(props: PaneViewProps): JSX.Element {
   const { view } = props;
   switch (view.kind) {
     case "thisTurn":

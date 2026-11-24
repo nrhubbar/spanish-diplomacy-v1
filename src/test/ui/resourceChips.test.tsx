@@ -35,9 +35,9 @@ describe("the resource chips (X1, EB-12)", () => {
 
   it("shows each resource's balance and next turn's income through its display scale", () => {
     renderChips(start);
-    const funds = screen.getByRole("button", { name: /^Funds 40 \+\d+ ?next turn$/u });
+    const funds = screen.getByRole("button", { name: /^Funds 40 \+[\d.]+ ?next turn$/u });
     expect(funds).toHaveAttribute("aria-expanded", "false");
-    expect(screen.getByRole("button", { name: /^Manpower 10k \+\d+k ?next turn$/u })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /^Manpower 10k \+[\d.]+k ?next turn$/u })).toBeTruthy();
     expect(screen.queryByRole("region")).toBeNull();
   });
 
@@ -54,10 +54,10 @@ describe("the resource chips (X1, EB-12)", () => {
     expect(rows.at(-1)?.textContent).toBe(`Next turn${String(next)}`);
     expect(within(table).getByRole("rowheader", { name: /^Builds under way/u }).textContent).toBe("Builds under way none");
     expect(within(table).getByRole("rowheader", { name: /^Replenish/u }).textContent).toBe("Replenish none planned");
-    expect(within(table).getByRole("rowheader", { name: /^Upkeep/u }).textContent).toBe("Upkeep none in this scenario");
+    expect(within(table).getByRole("rowheader", { name: /^Upkeep/u }).textContent).toBe("Upkeep none");
     // A contested territory's loss is on its own row, which pays nothing.
     const contested = rows.find((row) => row.getAttribute("data-contested") === "true");
-    expect(contested?.querySelector(".ledger-loss")?.textContent).toMatch(/^ \u2212\d+ contested$/u);
+    expect(contested?.querySelector(".ledger-loss")?.textContent).toMatch(/^ \u2212[\d.]+ contested$/u);
     expect(contested?.querySelector(".ledger-value")?.textContent).toBe("+0");
     expect(detail.textContent).toContain("You hold 40.");
     expect(detail.textContent).not.toContain("This turn's Build and Recruit orders spend");
@@ -79,7 +79,7 @@ describe("the resource chips (X1, EB-12)", () => {
 
   it("takes this turn's Replenish orders off next turn, so the total still matches the chip", async () => {
     const worn = Object.values(start.units).find((unit) => unit.factionId === republic && unit.territoryId === territory("madrid"))!;
-    const state: GameState = { ...start, units: { ...start.units, [worn.id]: { ...worn, strength: Math.round(worn.strength / 2) } } };
+    const state: GameState = { ...start, units: { ...start.units, [worn.id]: { ...worn, strength: 1 } } };
     const plain = renderChips(state);
     const before = Number(plain.container.querySelector(".resource-income")?.textContent.replace("+", ""));
     cleanup();

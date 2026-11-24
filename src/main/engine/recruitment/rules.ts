@@ -1,5 +1,6 @@
 import { isContested } from "../partition/holders";
 import { hookedRecruitRequirements, hookedReplenishBonus } from "../hooks";
+import { carryOf, carryScale } from "../carry";
 import { addResources, canAfford, subtractResources } from "../resources";
 import type {
   BuildingId,
@@ -7,6 +8,7 @@ import type {
   GameState,
   RaisedUnitDefinition,
   RecruitOrder,
+  RecruitRequirement,
   ReplenishOrder,
   ResourceId,
   Resources,
@@ -45,7 +47,13 @@ export function holdsTerritory(scenario: Scenario, state: Pick<GameState, "contr
 
 const territoryLabel = (scenario: Scenario, territoryId: TerritoryId): string => scenario.index.territories.get(territoryId)?.name ?? territoryId;
 const subLabel = (scenario: Scenario, id: SubTerritoryId): string => scenario.index.subTerritories.get(id)?.name ?? id;
-const buildingLabel = (scenario: Scenario, id: BuildingId): string => scenario.index.buildings.get(id)?.name ?? id;
+
+/** R3: the building's or the track's name. */
+export function requirementName(scenario: Scenario, requirement: RecruitRequirement): string {
+  return requirement.kind === "building"
+    ? scenario.index.buildings.get(requirement.buildingId)?.name ?? requirement.buildingId
+    : scenario.index.development.get(requirement.developmentId)?.name ?? requirement.developmentId;
+}
 
 /** R2, C1, C8: why the faction cannot recruit in this territory at all, or undefined when it can. */
 export function recruitSiteProblem(scenario: Scenario, state: GameState, factionId: FactionId, territoryId: TerritoryId): string | undefined {
@@ -62,44 +70,63 @@ export function capitalBuildings(scenario: Scenario, state: Pick<GameState, "sub
   return capital === undefined ? [] : state.subTerritories[capital]?.buildings ?? [];
 }
 
+/**
+ * R3: whether the territory meets one requirement of a type for this recruiter: a building in its
+ * capital, or level 1 or more of a track in any of its sub-territories the recruiter holds.
+ */
+export function meetsRequirement(scenario: Scenario, state: Pick<GameState, "subTerritories">, factionId: FactionId, territoryId: TerritoryId, requirement: RecruitRequirement): boolean {
+  if (requirement.kind === "building") return capitalBuildings(scenario, state, territoryId).includes(requirement.buildingId);
+  return (scenario.index.subTerritoriesByTerritory.get(territoryId) ?? []).some((sub) => {
+    const site = state.subTerritories[sub.id];
+    return site?.holder === factionId && (site.development[requirement.developmentId] ?? 0) > 0;
+  });
+}
+
 /** What locks one unit type, in words: one reason per missing condition. */
 export interface TypeLock {
-  /** R3: buildings the capital lacks, in the type's order. */
-  readonly missingBuildings: readonly BuildingId[];
+  /** R3: the requirements the territory lacks, in the type's order. */
+  readonly missing: readonly RecruitRequirement[];
   readonly reasons: readonly string[];
 }
 
 /**
  * R2, R3: why the faction cannot recruit this type here, besides the site itself. Faction limits
- * and the capital's buildings are read from the state (buildings are captured intact, $5); other
+ * and what the territory has are read from the state (both are captured intact, $5); other
  * areas add their reasons through the `recruitRequirements` hook.
  */
 export function typeLock(scenario: Scenario, state: GameState, factionId: FactionId, territoryId: TerritoryId, type: UnitTypeDefinition): TypeLock {
   const recruit = type.recruit;
-  if (recruit === undefined) return { missingBuildings: [], reasons: [`${type.name} cannot be recruited.`] };
+  if (recruit === undefined) return { missing: [], reasons: [`${type.name} cannot be recruited.`] };
   const reasons: string[] = [];
   if (recruit.factionIds !== undefined && !recruit.factionIds.includes(factionId)) {
     reasons.push(`Not raised by the ${scenario.index.factions.get(factionId)?.name ?? factionId}.`);
   }
-  const standing = new Set(capitalBuildings(scenario, state, territoryId));
-  const missingBuildings = recruit.requires.filter((id) => !standing.has(id));
+  const missing = recruit.requires.filter((requirement) => !meetsRequirement(scenario, state, factionId, territoryId, requirement));
   const capital = capitalOf(scenario, territoryId);
-  if (missingBuildings.length > 0) {
-    const where = capital === undefined ? territoryLabel(scenario, territoryId) : subLabel(scenario, capital);
-    reasons.push(`Needs ${listWords(missingBuildings.map((id) => `a ${buildingLabel(scenario, id)}`))} in ${where}.`);
-  }
+  if (missing.length > 0) reasons.push(`Needs ${missingWords(scenario, territoryId, missing)}.`);
   if (capital !== undefined) {
     reasons.push(...hookedRecruitRequirements({ factionId, scenario, state, subTerritoryId: capital, territoryId, unitTypeId: type.id }));
   }
-  return { missingBuildings, reasons };
+  return { missing, reasons };
 }
 
-/** D7: Recruit orders the territory may take this turn: the scenario's number plus its capital's `recruit-slots` buildings. */
+/** R3: "a Barracks in Valladolid and a Factory in Castilla y Leon": buildings belong in the capital, tracks anywhere in the territory. */
+function missingWords(scenario: Scenario, territoryId: TerritoryId, missing: readonly RecruitRequirement[]): string {
+  const capital = capitalOf(scenario, territoryId);
+  const places = { building: capital === undefined ? territoryLabel(scenario, territoryId) : subLabel(scenario, capital), development: territoryLabel(scenario, territoryId) };
+  return (["building", "development"] as const).flatMap((kind) => {
+    const names = missing.filter((requirement) => requirement.kind === kind).map((requirement) => `a ${requirementName(scenario, requirement)}`);
+    return names.length === 0 ? [] : [`${listWords(names)} in ${places[kind]}`];
+  }).join(" and ");
+}
+
+/** D7: Recruit orders the territory may take this turn: the scenario's number plus `recruit-slots` for every level in its sub-territories. */
 export function recruitSlots(scenario: Scenario, state: Pick<GameState, "subTerritories">, territoryId: TerritoryId): number {
   const base = scenario.recruitment?.maxPerTerritory ?? 0;
-  return capitalBuildings(scenario, state, territoryId).reduce((sum, id) => {
-    const effects = scenario.index.buildings.get(id)?.effects ?? [];
-    return sum + effects.reduce((extra, effect) => extra + (effect.kind === "recruit-slots" ? effect.extra : 0), 0);
+  const sites = (scenario.index.subTerritoriesByTerritory.get(territoryId) ?? []).flatMap((sub) => state.subTerritories[sub.id] ?? []);
+  return scenario.development.reduce((total, track) => {
+    const levels = sites.reduce((sum, site) => sum + (site.development[track.id] ?? 0), 0);
+    return total + levels * track.effects.reduce((sum, effect) => sum + effect.extra, 0);
   }, base);
 }
 
@@ -133,6 +160,12 @@ const raisedSeparator = "_";
  */
 export function raisedUnitId(factionId: FactionId, typeId: UnitTypeId, serial: number): UnitId {
   return [raisedPrefix, factionId, typeId, String(serial)].join(raisedSeparator) as UnitId;
+}
+
+/** R4, C8: whether a unit in training gains a turn here: not in contested ground, unless its type trains on there (militia). */
+export function trainsOn(scenario: Scenario, state: GameState, item: TrainingItem): boolean {
+  return !isContested(scenario, state, item.territoryId)
+    || (scenario.index.unitTypes.get(item.typeId)?.effects.some((effect) => effect.kind === "trains-in-contested") ?? false);
 }
 
 /** The next serial for a faction's type: one past every serial already raised. */
@@ -212,16 +245,13 @@ export function raisedOrder(scenario: Scenario, id: UnitId): number | undefined 
 
 // R5: Replenish. ----------------------------------------------------------------------------
 
-/**
- * B2, D28.3: Replenish prices are kept in thousandths of a point, and each faction carries the
- * thousandths it owes from earlier orders (`GameState.replenishCarry`). One Manpower point is
- * 1,000 men, coarser than most units, so rounding each order up would charge a whole point for
- * a few men. Instead an order adds what it owes to the carry and pays the whole points the carry
- * now holds; the rest waits for the next order. Over several orders a faction pays the true
- * price to within one point, and every thousandth is accounted for: the whole points paid times
- * `carryScale`, plus the change in the carry, equal what the orders owed.
+/*
+ * B2, D28.3: Replenish prices are kept in thousandths of a point. One Manpower point is 1,000
+ * men, coarser than most units, so rounding each order up would charge a whole point for a few
+ * men. Instead an order adds what it owes to the faction's carry (`engine/carry.ts`) and pays
+ * the whole points the carry now owes; the rest waits. Over several orders a faction pays the
+ * true price to within one point, and every thousandth is accounted for.
  */
-export const carryScale = 1000;
 
 /** R5: what a Replenish order would do for a unit now. */
 export interface ReplenishQuote {
@@ -238,21 +268,16 @@ export interface ReplenishQuote {
 }
 
 /** The type and full strength of any unit in play, raised or from the scenario. */
-function unitBasics(scenario: Scenario, state: Pick<GameState, "raised">, unitId: UnitId): { readonly fullStrength: number; readonly type: UnitTypeDefinition } | undefined {
+export function unitBasics(scenario: Scenario, state: Pick<GameState, "raised">, unitId: UnitId): { readonly fullStrength: number; readonly type: UnitTypeDefinition } | undefined {
   const definition = state.raised[unitId] ?? scenario.index.units.get(unitId) ?? raisedDefinition(scenario, unitId);
   const type = definition === undefined ? undefined : scenario.index.unitTypes.get(definition.type);
   return definition === undefined || type === undefined ? undefined : { fullStrength: definition.fullStrength, type };
 }
 
-/** The faction's Replenish carry, in thousandths of a point (empty: nothing owed). */
-export function carryOf(state: Pick<GameState, "replenishCarry">, factionId: FactionId): Resources {
-  return state.replenishCarry?.[factionId] ?? {};
-}
-
 /**
  * B2: one Replenish order paid against a carry: the whole points the carry and the order's debt
- * now hold, and what is left owed. The carry may go below zero (a credit) when an order paid
- * this turn is cancelled; then nothing is charged until the debt passes it.
+ * now owe, and what is left owed. While the carry is a credit, nothing is
+ * charged until the debt passes it.
  */
 export function chargeReplenish(carry: Resources, owed: Resources): { readonly carry: Resources; readonly paid: Resources } {
   const paid: Record<ResourceId, number> = {};

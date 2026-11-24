@@ -16,7 +16,11 @@ export interface Plan {
    * (D23), with none of the own armies standing there now. Planned arrivals do not count for
    * this: a move in can still fail (a bounce, a battle on the way, a full railhead), so the last
    * army on the ground never leaves it. A critical territory may be left empty only to attack
-   * `target` when every hostile army that threatens it stands there: the attack meets that threat.
+   * `target` when every hostile army that threatens it stands there (the attack meets that threat),
+   * or when a rival that would win by taking it holds ground there: staying put cannot stop a
+   * leader who needs any one of several territories, and a foothold takes one off its count. One
+   * foothold makes up for one territory lost, so a plan opens one critical territory so, no more.
+   * When a rival needs two territories, the second of a deciding pair to be left empty is critical too.
    */
   readonly exposure: (departures: readonly UnitState[], target?: TerritoryId) => number | undefined;
   /** What one more army in a territory is worth: its stake times the fall in its danger. */
@@ -24,6 +28,8 @@ export interface Plan {
   /** Whether the army still has no order. */
   readonly isFree: (unit: UnitState) => boolean;
   readonly orders: () => readonly MoveOrder[];
+  /** Whether a planned attack leaves a critical territory open to strike its leader (`exposure`). */
+  readonly opensCritical: () => boolean;
 }
 
 /**
@@ -38,6 +44,7 @@ export function createPlan(assessment: Assessment, own: readonly UnitState[], ho
   const staying = new Map<TerritoryId, number>();
   const ordered = new Set<UnitId>();
   const orders: MoveOrder[] = [];
+  let opened = false;
   for (const unit of own) {
     add(defence, unit.territoryId, assessment.defenceOf(unit));
     add(count, unit.territoryId, 1);
@@ -51,17 +58,24 @@ export function createPlan(assessment: Assessment, own: readonly UnitState[], ho
       leaving.set(unit.territoryId, { armies: before.armies + (holds(unit) ? 1 : 0), value: before.value + assessment.defenceOf(unit) });
     }
     let cost = 0;
+    let opening = opened;
     for (const [origin, { armies, value }] of leaving) {
       const remaining = (staying.get(origin) ?? 0) - armies;
       if (remaining <= 0 && assessment.isObjective(origin)) return undefined;
-      // D23: critical ground is never emptied, except by an attack on the one place its threat
-      // stands, which meets the threat.
-      if (remaining <= 0 && assessment.isCritical(origin) && !onlyThreatFrom(origin, target)) return undefined;
+      // D23: critical ground is emptied only by an attack that meets its threat or strikes its leader.
+      if (remaining <= 0 && decides(origin, leaving) && !onlyThreatFrom(origin, target)) {
+        if (opening || target === undefined || !assessment.strikesThreat(origin, target)) return undefined;
+        opening = true;
+      }
       const standing = defence.get(origin) ?? 0;
       cost += assessment.stake(origin) * (assessment.danger(origin, standing - value) - assessment.danger(origin, standing));
     }
     return cost;
   };
+
+  /** Whether leaving the territory empty could lose the game: on its own, or with another left empty by these departures or before them. */
+  const decides = (origin: TerritoryId, leaving: ReadonlyMap<TerritoryId, { readonly armies: number }>): boolean => assessment.isCritical(origin)
+    || assessment.criticalWith(origin).some((other) => (staying.get(other) ?? 0) - (leaving.get(other)?.armies ?? 0) <= 0);
 
   const onlyThreatFrom = (origin: TerritoryId, target: TerritoryId | undefined): boolean =>
     target !== undefined && [...assessment.threatOrigins(origin)].every((territoryId) => territoryId === target);
@@ -78,6 +92,7 @@ export function createPlan(assessment: Assessment, own: readonly UnitState[], ho
     add(defence, unit.territoryId, -assessment.defenceOf(unit));
     add(count, unit.territoryId, -1);
     if (holds(unit)) add(staying, unit.territoryId, -1);
+    opened ||= (staying.get(unit.territoryId) ?? 0) <= 0 && decides(unit.territoryId, new Map()) && !onlyThreatFrom(unit.territoryId, to);
     if (arrives) {
       add(defence, to, assessment.defenceOf(unit));
       add(count, to, 1);
@@ -89,6 +104,7 @@ export function createPlan(assessment: Assessment, own: readonly UnitState[], ho
     commit,
     exposure,
     isFree: (unit) => !ordered.has(unit.id),
+    opensCritical: () => opened,
     orders: () => orders,
     reinforcementGain
   };

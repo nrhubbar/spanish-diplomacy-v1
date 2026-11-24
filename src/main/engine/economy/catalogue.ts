@@ -153,7 +153,7 @@ function linkRefusal(scenario: Scenario, state: EconomyState, factionId: Faction
   if (links === undefined || other === undefined) return "Those sub-territories don't border each other.";
   if (state.subTerritories[otherId]?.holder !== factionId) return `${other.name} is not yours.`;
   if (isContested(scenario, state.subTerritories, other.territoryId)) return "Contested: building waits until the territory is held whole.";
-  const now = workMisfit(links.current, project.work);
+  const now = workMisfit(links.current, project.work, scenario.linkModifiers.road);
   if (now !== undefined) return now;
   // One work at a time on a link, so a later one never finishes before the one it needs.
   return links.queued ? "Another work on this link is in the queue." : undefined;
@@ -164,7 +164,7 @@ function resourceName(scenario: Scenario, id: string): string {
 }
 
 /** "Needs 4 more Funds", for a cost the balance cannot cover. */
-export function shortfallReason(scenario: Scenario, balance: Resources, cost: Resources): string {
+function shortfallReason(scenario: Scenario, balance: Resources, cost: Resources): string {
   const missing = Object.entries(shortfall(balance, cost)).map(([id, value]) => `${String(value)} more ${resourceName(scenario, id)}`);
   return `Needs ${missing.join(" and ")}.`;
 }

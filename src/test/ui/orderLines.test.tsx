@@ -67,7 +67,7 @@ describe("U8: order lines follow the links they use", () => {
     const ride = railOrder();
     const battle = groupRoutes([], [
       { kind: "bounced-move", order: ride } as never,
-      { attacker: { armies: [{ factionId: republic, from: madrid, unitId: ride.unitId }] }, defender: { armies: [] }, dice: "d6", kind: "battle", result: "attacker-demoralized", site: { kind: "assault", territoryId: territory("catalunya") } } as never
+      { attacker: { armies: [{ factionId: republic, from: madrid, unitId: ride.unitId }] }, defender: { armies: [] }, demoralizedUnitIds: [], grade: "attacker-repulsed", ground: 0, kind: "battle", losses: [], site: { kind: "assault", territoryId: territory("catalunya") } } as never
     ], scenario, start);
     expect(battle.find((group) => group.kind === "battle")?.line.length).toBeGreaterThan(2);
   });

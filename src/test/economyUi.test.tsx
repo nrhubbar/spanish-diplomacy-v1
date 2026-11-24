@@ -12,6 +12,7 @@ import { cancelBuildOrder, clickMapTerritory, endTurn, focusSubTerritory, queueB
 import { plannedBuilds, type PlanningSession } from "../main/state/planning";
 import { emptyDraft } from "../main/state/session";
 import { faction, spain, spainId, territory, testRegistry, testStore } from "./support";
+import { unfortified } from "./pinned";
 
 afterEach(cleanup);
 
@@ -19,7 +20,7 @@ const barcelona = "barcelona" as SubTerritoryId;
 const fortify = (factionId = "republic"): BuildOrder => ({ factionId: faction(factionId), kind: "build", project: { buildingId: "fortifications" as never, kind: "building" }, subTerritoryId: barcelona });
 
 /** A Spain game with the Republic planning and the other two factions run by the computer. */
-function planning(state: GameState = initialGameState(spain())) {
+function planning(state: GameState = unfortified(initialGameState(spain()))) {
   const game = { assignments: { [faction("republic")]: "local-human" as const, [faction("north")]: "computer" as const, [faction("south")]: "computer" as const }, history: [], locked: {}, scenarioId: spainId, seed: 1, state };
   return testStore({ game: { session: { draft: emptyDraft, factionId: faction("republic"), game, phase: "planning" } } });
 }
@@ -68,7 +69,7 @@ describe("the Buildings tab and its opening cards (X3, X7, U9)", () => {
     const card = screen.getByRole("article", { name: "Barcelona" });
     expect(within(card).queryByRole("list", { name: "Buildings" })).toBeNull();
     await userEvent.click(within(card).getByRole("button", { expanded: false }));
-    expect(within(card).getByRole("img", { name: "Industry level 3 of 3" })).toBeInTheDocument();
+    expect(within(card).getByRole("img", { name: "Factory level 2 of 3" })).toBeInTheDocument();
     expect(within(card).getByRole("list", { name: "Buildings" })).toHaveTextContent("Barracks");
     expect(session(store).draft.focusedSubTerritoryId).toBe(barcelona);
   });
@@ -104,11 +105,11 @@ describe("the Funds and Manpower chips (X1, $6)", () => {
     const scenario = spain();
     const state = viewFor(scenario, initialGameState(scenario), faction("republic"));
     render(<Provider store={store}><RegistryContext value={testRegistry()}><GameHeader kicker="Turn 1" slots={{ scenario, state, viewer: faction("republic") }} title="Republic" /></RegistryContext></Provider>);
-    const funds = screen.getByRole("button", { name: /^Funds 40 \+14 ?next turn$/ });
+    const funds = screen.getByRole("button", { name: /^Funds 40 \+14\.5 ?next turn$/ });
     // EB-12: Manpower reads through its display scale, as in the approved capture ("Manpower 18k").
-    const manpower = screen.getByRole("button", { name: /^Manpower 10k \+27k ?next turn$/ });
+    const manpower = screen.getByRole("button", { name: /^Manpower 10k \+14\.25k ?next turn$/ });
     await userEvent.click(manpower);
-    expect(screen.getByRole("region", { name: "Manpower detail" })).toHaveTextContent("Manpower: 10k now \u00b7 +27k next turn");
+    expect(screen.getByRole("region", { name: "Manpower detail" })).toHaveTextContent("Manpower: 10k now \u00b7 +14.25k next turn");
     expect(screen.getByRole("region", { name: "Manpower detail" })).toHaveTextContent("You hold 10k (10,000).");
     await userEvent.click(funds);
     expect(funds).toHaveAttribute("aria-expanded", "true");

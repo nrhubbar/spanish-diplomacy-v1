@@ -4,7 +4,7 @@ import { describeRoute, moveRoutes } from "../main/engine/movement/routes";
 import { initialGameState, resolveTurn } from "../main/engine/resolution";
 import type { GameState, MoveLeg, MoveOrder, SubTerritoryId } from "../main/engine/types";
 import { validateMoveOrder } from "../main/engine/validation";
-import { faction, move, spainD20, territory, unit, withUnits } from "./support";
+import { faction, move, spainWithAir, territory, unit, withUnits } from "./support";
 
 /**
  * Make-it-right regressions for the map and movement review on shipped Spain: M-1 (rail rides
@@ -30,7 +30,7 @@ const routed = (factionId: string, unitId: string, from: string, legs: readonly 
 });
 
 describe("rail rides past enemy armies (M-1, M2, Q-MR-16)", () => {
-  const scenario = spainD20();
+  const scenario = spainWithAir();
 
   it("does not run a train through contested ground where an enemy army stands", () => {
     const start = initialGameState(scenario);
@@ -66,7 +66,7 @@ describe("rail rides past enemy armies (M-1, M2, Q-MR-16)", () => {
 });
 
 describe("each sea lane names its ports (M-10, M5, Q-CITY-7)", () => {
-  const scenario = spainD20();
+  const scenario = spainWithAir();
   const toIslands: readonly MoveLeg[] = [{ kind: "sea", to: territory("islas-baleares") }];
   const base = withUnits(scenario, [["rep-durruti-column", "republic", "catalunya"]]);
 
@@ -93,16 +93,16 @@ describe("each sea lane names its ports (M-10, M5, Q-CITY-7)", () => {
 });
 
 describe("the computer player recruits trucks (M-5, M1, H5)", () => {
-  it("adds a truck column where a Factory and a Depot allow it, while its trucks carry too few", async () => {
+  it("adds a truck column where a Depot allows it, while its trucks carry too few", async () => {
     const { planRecruits } = await import("../main/ai/orders/recruit");
     const { seededRandom } = await import("../main/engine/random");
-    const scenario = spainD20();
+    const scenario = spainWithAir();
     const start = initialGameState(scenario);
     const plan = (state: GameState) => planRecruits({ factionId: faction("republic"), memory: {}, planned: [], random: seededRandom(1), scenario, state });
     const trucks = (state: GameState) => plan(state).filter((order) => order.unitTypeId === "truck-column");
     expect(trucks(start)).toHaveLength(1);
-    // The North has no capital with both a Factory and a Depot at the start.
-    expect(planRecruits({ factionId: faction("north"), memory: {}, planned: [], random: seededRandom(1), scenario, state: start }).some((order) => order.unitTypeId === "truck-column")).toBe(false);
+    // A Depot is enough, so the North trains them too.
+    expect(planRecruits({ factionId: faction("north"), memory: {}, planned: [], random: seededRandom(1), scenario, state: start }).some((order) => order.unitTypeId === "truck-column")).toBe(true);
     // Enough trucks already: one for every two Republican units.
     const republicans = Object.values(start.units).filter((entry) => entry.factionId === "republic");
     const { raisedDefinition, raisedUnitId } = await import("../main/engine/recruitment/rules");
@@ -115,7 +115,7 @@ describe("the computer player recruits trucks (M-5, M1, H5)", () => {
 });
 
 describe("capacity and route failures (M-8, M3, M5)", () => {
-  const scenario = spainD20();
+  const scenario = spainWithAir();
   const sea = (to: string): MoveLeg => ({ kind: "sea", to: territory(to) });
   // The Republic holds all of the islands, and Mallorca's port is down to level 1: one landing a turn.
   const islands = (): GameState => {
@@ -162,7 +162,7 @@ describe("capacity and route failures (M-8, M3, M5)", () => {
 describe("sea lanes that name no ports, and the held-back line (M5, D27.1)", () => {
   it("sails from and lands in the faction's best port when a lane has no entry pair", async () => {
     const { departurePort, landingAt } = await import("../main/engine/movement/network");
-    const base = spainD20();
+    const base = spainWithAir();
     const scenario = { ...base, connections: base.connections.map((connection) => (connection.kind === "sea" ? { between: connection.between, kind: connection.kind } : connection)) };
     const state = initialGameState(scenario);
     expect(departurePort(scenario, state, faction("republic"), territory("catalunya"), territory("islas-baleares"))).toEqual({ level: 2, subTerritoryId: "barcelona" });
@@ -172,7 +172,7 @@ describe("sea lanes that name no ports, and the held-back line (M5, D27.1)", () 
 
   it("says why an army with no unit that can fight stayed", async () => {
     const { movementLines } = await import("../main/presentation/systemText/movement");
-    const scenario = spainD20();
+    const scenario = spainWithAir();
     const line = movementLines["move-held-back"]({ factionId: faction("north"), from: territory("castilla-y-leon"), kind: "move-held-back", reason: "cannot-fight", to: territory("castilla-la-mancha"), unitIds: [unit("north-general-mola")] }, { scenario });
     expect(line).toContain("with no unit that can fight, it cannot enter Castilla-La Mancha on its own");
   });

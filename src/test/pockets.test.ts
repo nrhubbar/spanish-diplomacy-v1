@@ -10,7 +10,7 @@ import { seededRandom } from "../main/engine/random";
 import { initialGameState, resolveTurn } from "../main/engine/resolution";
 import { retreatDestination, settleDepartures } from "../main/engine/retreat";
 import type { BattleOutcome, GameState, Scenario, SubTerritoryId, UnitState, WithdrawOrder } from "../main/engine/types";
-import { faction, spainD20, territory, unit, withUnits } from "./support";
+import { faction, spainWithAir, territory, unit, withUnits } from "./support";
 
 /**
  * R1 pockets, R2 control flip, and the owner's Revision 2 notes 1 and 14 (from `m3r2-probe`'s
@@ -44,7 +44,7 @@ function anchored(state: GameState, id: string, at: string): GameState {
 const withdrawal = (to: string, id = "rep-vitoria-8"): WithdrawOrder => ({ factionId: faction("republic"), from: territory("andalucia"), kind: "withdraw", to: territory(to), unitId: unit(id) });
 
 describe("pockets (R1)", () => {
-  const scenario = spainD20();
+  const scenario = spainWithAir();
   const start = initialGameState(scenario);
 
   it("splits a side's ground in contested Andalucía into connected pockets", () => {
@@ -101,7 +101,7 @@ describe("pockets (R1)", () => {
 });
 
 describe("note 1: the Málaga regiment is cut off by land (R1, R3)", () => {
-  const scenario = spainD20();
+  const scenario = spainWithAir();
   const state = initialGameState(scenario);
 
   it("offers no land way out of Andalucía, only the sea lane to Murcia", () => {
@@ -123,7 +123,7 @@ describe("note 1: the Málaga regiment is cut off by land (R1, R3)", () => {
 });
 
 describe("note 14: one side alone in a territory holds it uncontested (R2)", () => {
-  const scenario = spainD20();
+  const scenario = spainWithAir();
   const state = withUnits(scenario, [
     ["south-granada-6", "south", "andalucia"], ["south-lepanto-5", "south", "andalucia"],
     ["rep-vitoria-8", "republic", "andalucia"]
@@ -143,7 +143,7 @@ describe("note 14: one side alone in a territory holds it uncontested (R2)", () 
     for (let value = 0; value < 1 && found === undefined; value += 0.01) {
       const result = resolveTurn(scenario, state, [], 1, () => () => value);
       const battle = result.outcomes.find((outcome): outcome is BattleOutcome => outcome.kind === "battle" && "territoryId" in outcome.site && outcome.site.territoryId === "andalucia");
-      if (battle !== undefined && battle.dice === "d20" && battle.grade === "attacker-destroyed") found = result;
+      if (battle !== undefined && battle.grade === "attacker-destroyed") found = result;
     }
     expect(found).toBeDefined();
     if (found === undefined) return;
@@ -179,7 +179,7 @@ describe("note 14: one side alone in a territory holds it uncontested (R2)", () 
 });
 
 describe("armies in their pockets through the turn (R1)", () => {
-  const scenario = spainD20();
+  const scenario = spainWithAir();
   const start = initialGameState(scenario);
   const regiment = start.units[unit("rep-vitoria-8")] as UnitState;
 

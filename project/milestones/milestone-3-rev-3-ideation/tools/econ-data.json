@@ -1,0 +1,1899 @@
+{
+ "merged": {
+  "republic": {
+   "start": {
+    "funds": 14.5,
+    "manpower": 27
+   },
+   "settled": {
+    "funds": 19.5,
+    "manpower": 28
+   },
+   "sites": 1,
+   "sitesNow": 1
+  },
+  "north": {
+   "start": {
+    "funds": 6,
+    "manpower": 27
+   },
+   "settled": {
+    "funds": 8.5,
+    "manpower": 31
+   },
+   "sites": 4,
+   "sitesNow": 3
+  },
+  "south": {
+   "start": {
+    "funds": 1,
+    "manpower": 0
+   },
+   "settled": {
+    "funds": 12.5,
+    "manpower": 16
+   },
+   "sites": 2,
+   "sitesNow": 0
+  }
+ },
+ "source": "src/scenarios/spanish-civil-war-1936/scenario.json",
+ "victory": {
+  "territoryShare": 0.51,
+  "cityShare": 0.75,
+  "territories": 18,
+  "cities": 25
+ },
+ "alarm": {
+  "critical": 3,
+  "perStep": 0.5,
+  "steps": 4
+ },
+ "aiBuilds": {
+  "spendShare": 0.6,
+  "reserveShare": 0.3,
+  "developmentProjects": 1,
+  "developmentShare": 0.5,
+  "maxOrdersPerTurn": 3,
+  "itemsPerEmptyQueue": 1
+ },
+ "recruitment": {
+  "maxPerTerritory": 2,
+  "replenishCostShare": 0.5,
+  "replenishShare": 0.5
+ },
+ "d20": {
+  "worksPerTurn": 2,
+  "worksMax": 6,
+  "barricades": 1,
+  "belowOneToOnePenalty": 3,
+  "popularResistance": 3,
+  "table": [
+   [
+    0,
+    0,
+    2,
+    2,
+    2,
+    3,
+    3,
+    3,
+    4,
+    4,
+    4,
+    5,
+    5,
+    5,
+    6,
+    6,
+    6,
+    7,
+    7,
+    7,
+    8
+   ],
+   [
+    0,
+    0,
+    3,
+    3,
+    3,
+    4,
+    4,
+    4,
+    5,
+    5,
+    5,
+    6,
+    6,
+    6,
+    7,
+    7,
+    7,
+    8,
+    8,
+    8,
+    9
+   ],
+   [
+    3,
+    3,
+    4,
+    4,
+    4,
+    5,
+    5,
+    5,
+    6,
+    6,
+    6,
+    7,
+    7,
+    7,
+    8,
+    8,
+    8,
+    9,
+    9,
+    9,
+    10
+   ],
+   [
+    4,
+    4,
+    5,
+    5,
+    5,
+    6,
+    6,
+    6,
+    7,
+    7,
+    7,
+    8,
+    8,
+    8,
+    9,
+    9,
+    9,
+    10,
+    10,
+    10,
+    11
+   ],
+   [
+    5,
+    5,
+    6,
+    6,
+    6,
+    7,
+    7,
+    7,
+    8,
+    8,
+    8,
+    9,
+    9,
+    9,
+    10,
+    10,
+    10,
+    11,
+    11,
+    11,
+    12
+   ],
+   [
+    6,
+    6,
+    7,
+    7,
+    7,
+    8,
+    8,
+    8,
+    9,
+    9,
+    9,
+    10,
+    10,
+    10,
+    11,
+    11,
+    11,
+    12,
+    12,
+    12,
+    12
+   ],
+   [
+    7,
+    7,
+    8,
+    8,
+    8,
+    9,
+    9,
+    9,
+    10,
+    10,
+    10,
+    11,
+    11,
+    11,
+    12,
+    12,
+    12,
+    12,
+    12,
+    12,
+    12
+   ]
+  ],
+  "grades": [
+   {
+    "name": "Attacker destroyed",
+    "take": false,
+    "gain": false,
+    "attackerLoss": 100,
+    "defenderLoss": 0
+   },
+   {
+    "name": "Attacker routed",
+    "take": false,
+    "gain": false,
+    "attackerLoss": 35,
+    "defenderLoss": 0
+   },
+   {
+    "name": "Attacker repulsed",
+    "take": false,
+    "gain": false,
+    "attackerLoss": 20,
+    "defenderLoss": 0
+   },
+   {
+    "name": "Attack checked",
+    "take": false,
+    "gain": false,
+    "attackerLoss": 10,
+    "defenderLoss": 0
+   },
+   {
+    "name": "Bloody stalemate",
+    "take": false,
+    "gain": false,
+    "attackerLoss": 20,
+    "defenderLoss": 20
+   },
+   {
+    "name": "Stalemate",
+    "take": false,
+    "gain": false,
+    "attackerLoss": 10,
+    "defenderLoss": 10
+   },
+   {
+    "name": "Defender gives ground",
+    "take": false,
+    "gain": true,
+    "attackerLoss": 10,
+    "defenderLoss": 10
+   },
+   {
+    "name": "Defender pushed back",
+    "take": false,
+    "gain": true,
+    "attackerLoss": 10,
+    "defenderLoss": 20
+   },
+   {
+    "name": "Costly victory",
+    "take": true,
+    "gain": true,
+    "attackerLoss": 35,
+    "defenderLoss": 35
+   },
+   {
+    "name": "Defender driven out",
+    "take": true,
+    "gain": true,
+    "attackerLoss": 10,
+    "defenderLoss": 20
+   },
+   {
+    "name": "Defender routed",
+    "take": true,
+    "gain": true,
+    "attackerLoss": 10,
+    "defenderLoss": 35
+   },
+   {
+    "name": "Defender broken",
+    "take": true,
+    "gain": true,
+    "attackerLoss": 0,
+    "defenderLoss": 35
+   },
+   {
+    "name": "Defender destroyed",
+    "take": true,
+    "gain": true,
+    "attackerLoss": 10,
+    "defenderLoss": 100
+   }
+  ]
+ },
+ "development": [
+  {
+   "id": "farms",
+   "yieldPerLevel": 1,
+   "maxLevel": 3
+  },
+  {
+   "id": "mines",
+   "yieldPerLevel": 1,
+   "maxLevel": 3
+  },
+  {
+   "id": "industry",
+   "yieldPerLevel": 1,
+   "maxLevel": 3
+  }
+ ],
+ "territories": [
+  {
+   "id": "galicia",
+   "name": "Galicia",
+   "holders": {
+    "north": 4
+   },
+   "contested": false,
+   "holder": "north",
+   "settledHolder": "north",
+   "yield": {
+    "funds": 1,
+    "manpower": 7
+   },
+   "levels": {
+    "farms": 7,
+    "industry": 1
+   },
+   "capitalHolder": "north",
+   "capitalBuildings": [
+    "barracks",
+    "depot",
+    "airfield"
+   ],
+   "slots": 2,
+   "cities": 1
+  },
+  {
+   "id": "asturias",
+   "name": "Asturias",
+   "holders": {
+    "north": 1,
+    "republic": 1
+   },
+   "contested": true,
+   "holder": null,
+   "settledHolder": null,
+   "yield": {
+    "funds": 7,
+    "manpower": 1
+   },
+   "levels": {
+    "mines": 4,
+    "industry": 3,
+    "farms": 1
+   },
+   "capitalHolder": "north",
+   "capitalBuildings": [
+    "barracks",
+    "factory"
+   ],
+   "slots": 3,
+   "cities": 2
+  },
+  {
+   "id": "cantabria",
+   "name": "Cantabria",
+   "holders": {
+    "republic": 1
+   },
+   "contested": false,
+   "holder": "republic",
+   "settledHolder": "republic",
+   "yield": {
+    "funds": 2,
+    "manpower": 1
+   },
+   "levels": {
+    "farms": 1,
+    "mines": 1,
+    "industry": 1
+   },
+   "capitalHolder": "republic",
+   "capitalBuildings": [
+    "barracks"
+   ],
+   "slots": 2,
+   "cities": 1
+  },
+  {
+   "id": "pais-vasco",
+   "name": "País Vasco",
+   "holders": {
+    "republic": 2,
+    "north": 1
+   },
+   "contested": true,
+   "holder": null,
+   "settledHolder": "republic",
+   "yield": {
+    "funds": 6,
+    "manpower": 1
+   },
+   "levels": {
+    "mines": 2,
+    "industry": 4,
+    "farms": 1
+   },
+   "capitalHolder": "republic",
+   "capitalBuildings": [
+    "barracks",
+    "factory",
+    "depot"
+   ],
+   "slots": 3,
+   "cities": 2
+  },
+  {
+   "id": "navarra",
+   "name": "Navarra",
+   "holders": {
+    "north": 1
+   },
+   "contested": false,
+   "holder": "north",
+   "settledHolder": "north",
+   "yield": {
+    "funds": 0,
+    "manpower": 2
+   },
+   "levels": {
+    "farms": 2
+   },
+   "capitalHolder": "north",
+   "capitalBuildings": [
+    "barracks",
+    "depot"
+   ],
+   "slots": 2,
+   "cities": 1
+  },
+  {
+   "id": "la-rioja",
+   "name": "La Rioja",
+   "holders": {
+    "north": 1
+   },
+   "contested": false,
+   "holder": "north",
+   "settledHolder": "north",
+   "yield": {
+    "funds": 0,
+    "manpower": 2
+   },
+   "levels": {
+    "farms": 2
+   },
+   "capitalHolder": "north",
+   "capitalBuildings": [],
+   "slots": 2,
+   "cities": 0
+  },
+  {
+   "id": "aragon",
+   "name": "Aragón",
+   "holders": {
+    "north": 2,
+    "republic": 1
+   },
+   "contested": true,
+   "holder": null,
+   "settledHolder": "north",
+   "yield": {
+    "funds": 2,
+    "manpower": 4
+   },
+   "levels": {
+    "farms": 4,
+    "industry": 1,
+    "mines": 1
+   },
+   "capitalHolder": "north",
+   "capitalBuildings": [
+    "barracks",
+    "depot",
+    "airfield",
+    "rail-yard"
+   ],
+   "slots": 2,
+   "cities": 2
+  },
+  {
+   "id": "madrid",
+   "name": "Madrid",
+   "holders": {
+    "republic": 3
+   },
+   "contested": false,
+   "holder": "republic",
+   "settledHolder": "republic",
+   "yield": {
+    "funds": 2,
+    "manpower": 2
+   },
+   "levels": {
+    "farms": 2,
+    "industry": 2
+   },
+   "capitalHolder": "republic",
+   "capitalBuildings": [
+    "barracks",
+    "depot",
+    "factory",
+    "hospital",
+    "airfield",
+    "rail-yard"
+   ],
+   "slots": 3,
+   "cities": 1
+  },
+  {
+   "id": "castilla-y-leon",
+   "name": "Castilla y León",
+   "holders": {
+    "north": 9
+   },
+   "contested": false,
+   "holder": "north",
+   "settledHolder": "north",
+   "yield": {
+    "funds": 4,
+    "manpower": 16
+   },
+   "levels": {
+    "farms": 16,
+    "industry": 1,
+    "mines": 3
+   },
+   "capitalHolder": "north",
+   "capitalBuildings": [
+    "barracks",
+    "depot",
+    "rail-yard"
+   ],
+   "slots": 2,
+   "cities": 3
+  },
+  {
+   "id": "castilla-la-mancha",
+   "name": "Castilla-La Mancha",
+   "holders": {
+    "republic": 5
+   },
+   "contested": false,
+   "holder": "republic",
+   "settledHolder": "republic",
+   "yield": {
+    "funds": 2,
+    "manpower": 9
+   },
+   "levels": {
+    "farms": 9,
+    "mines": 2
+   },
+   "capitalHolder": "republic",
+   "capitalBuildings": [
+    "barracks",
+    "factory",
+    "rail-yard"
+   ],
+   "slots": 3,
+   "cities": 2
+  },
+  {
+   "id": "extremadura",
+   "name": "Extremadura",
+   "holders": {
+    "republic": 1,
+    "north": 1
+   },
+   "contested": true,
+   "holder": null,
+   "settledHolder": null,
+   "yield": {
+    "funds": 0,
+    "manpower": 5
+   },
+   "levels": {
+    "farms": 5
+   },
+   "capitalHolder": "republic",
+   "capitalBuildings": [
+    "barracks"
+   ],
+   "slots": 2,
+   "cities": 1
+  },
+  {
+   "id": "catalunya",
+   "name": "Cataluña",
+   "holders": {
+    "republic": 4
+   },
+   "contested": false,
+   "holder": "republic",
+   "settledHolder": "republic",
+   "yield": {
+    "funds": 3,
+    "manpower": 6
+   },
+   "levels": {
+    "farms": 6,
+    "industry": 3
+   },
+   "capitalHolder": "republic",
+   "capitalBuildings": [
+    "barracks",
+    "depot",
+    "factory",
+    "hospital",
+    "airfield",
+    "rail-yard"
+   ],
+   "slots": 3,
+   "cities": 1
+  },
+  {
+   "id": "valencia",
+   "name": "Valencia",
+   "holders": {
+    "republic": 3
+   },
+   "contested": false,
+   "holder": "republic",
+   "settledHolder": "republic",
+   "yield": {
+    "funds": 3,
+    "manpower": 7
+   },
+   "levels": {
+    "farms": 7,
+    "industry": 3
+   },
+   "capitalHolder": "republic",
+   "capitalBuildings": [
+    "barracks",
+    "depot",
+    "factory",
+    "airfield",
+    "rail-yard"
+   ],
+   "slots": 3,
+   "cities": 2
+  },
+  {
+   "id": "islas-baleares",
+   "name": "Islas Baleares",
+   "holders": {
+    "south": 2,
+    "republic": 1
+   },
+   "contested": true,
+   "holder": null,
+   "settledHolder": "south",
+   "yield": {
+    "funds": 0,
+    "manpower": 1
+   },
+   "levels": {
+    "farms": 1
+   },
+   "capitalHolder": "south",
+   "capitalBuildings": [
+    "barracks",
+    "airfield"
+   ],
+   "slots": 2,
+   "cities": 0
+  },
+  {
+   "id": "andalucia",
+   "name": "Andalucía",
+   "holders": {
+    "south": 5,
+    "republic": 3
+   },
+   "contested": true,
+   "holder": null,
+   "settledHolder": "south",
+   "yield": {
+    "funds": 10,
+    "manpower": 15
+   },
+   "levels": {
+    "farms": 15,
+    "industry": 3,
+    "mines": 7
+   },
+   "capitalHolder": "south",
+   "capitalBuildings": [
+    "barracks",
+    "depot",
+    "airfield",
+    "rail-yard"
+   ],
+   "slots": 2,
+   "cities": 5
+  },
+  {
+   "id": "murcia",
+   "name": "Murcia",
+   "holders": {
+    "republic": 1
+   },
+   "contested": false,
+   "holder": "republic",
+   "settledHolder": "republic",
+   "yield": {
+    "funds": 2,
+    "manpower": 2
+   },
+   "levels": {
+    "farms": 2,
+    "mines": 1,
+    "industry": 1
+   },
+   "capitalHolder": "republic",
+   "capitalBuildings": [
+    "barracks",
+    "factory"
+   ],
+   "slots": 3,
+   "cities": 1
+  },
+  {
+   "id": "ceuta",
+   "name": "Ceuta",
+   "holders": {
+    "south": 1
+   },
+   "contested": false,
+   "holder": "south",
+   "settledHolder": "south",
+   "yield": {
+    "funds": 0,
+    "manpower": 0
+   },
+   "levels": {},
+   "capitalHolder": "south",
+   "capitalBuildings": [
+    "barracks"
+   ],
+   "slots": 2,
+   "cities": 0
+  },
+  {
+   "id": "melilla",
+   "name": "Melilla",
+   "holders": {
+    "south": 1
+   },
+   "contested": false,
+   "holder": "south",
+   "settledHolder": "south",
+   "yield": {
+    "funds": 1,
+    "manpower": 0
+   },
+   "levels": {
+    "mines": 1
+   },
+   "capitalHolder": "south",
+   "capitalBuildings": [
+    "barracks",
+    "airfield"
+   ],
+   "slots": 2,
+   "cities": 0
+  }
+ ],
+ "factions": [
+  {
+   "id": "republic",
+   "name": "Republican Government",
+   "abbreviation": "REP",
+   "stock": {
+    "funds": 40,
+    "manpower": 10
+   },
+   "income": {
+    "funds": 14,
+    "manpower": 27
+   },
+   "incomeSettled": {
+    "funds": 20,
+    "manpower": 28
+   },
+   "territories": [
+    "cantabria",
+    "madrid",
+    "castilla-la-mancha",
+    "catalunya",
+    "valencia",
+    "murcia"
+   ],
+   "cities": 13,
+   "slots": 17,
+   "slotsWithBarracks": 17,
+   "army": {
+    "infantry-regiment": {
+     "count": 9,
+     "men": 6285
+    },
+    "security-forces": {
+     "count": 3,
+     "men": 8600
+    },
+    "militia-column": {
+     "count": 5,
+     "men": 25500
+    },
+    "fighter-squadron": {
+     "count": 1,
+     "men": 100
+    },
+    "bomber-squadron": {
+     "count": 1,
+     "men": 100
+    },
+    "recon-flight": {
+     "count": 1,
+     "men": 100
+    }
+   },
+   "men": 40685,
+   "upgrades": {
+    "farms": 15,
+    "mines": 17,
+    "industry": 7
+   },
+   "industryLevels": 10,
+   "industryLevelsSettled": 14
+  },
+  {
+   "id": "north",
+   "name": "Northern Insurgent Command",
+   "abbreviation": "NIC",
+   "stock": {
+    "funds": 15,
+    "manpower": 10
+   },
+   "income": {
+    "funds": 5,
+    "manpower": 27
+   },
+   "incomeSettled": {
+    "funds": 7,
+    "manpower": 31
+   },
+   "territories": [
+    "galicia",
+    "navarra",
+    "la-rioja",
+    "castilla-y-leon"
+   ],
+   "cities": 8,
+   "slots": 8,
+   "slotsWithBarracks": 6,
+   "army": {
+    "infantry-regiment": {
+     "count": 10,
+     "men": 6130
+    },
+    "security-forces": {
+     "count": 1,
+     "men": 1870
+    },
+    "militia-column": {
+     "count": 1,
+     "men": 5000
+    },
+    "recon-flight": {
+     "count": 1,
+     "men": 100
+    }
+   },
+   "men": 13100,
+   "upgrades": {
+    "farms": 14,
+    "mines": 15,
+    "industry": 5
+   },
+   "industryLevels": 2,
+   "industryLevelsSettled": 3
+  },
+  {
+   "id": "south",
+   "name": "Southern Insurgent Command",
+   "abbreviation": "SIC",
+   "stock": {
+    "funds": 15,
+    "manpower": 5
+   },
+   "income": {
+    "funds": 1,
+    "manpower": 0
+   },
+   "incomeSettled": {
+    "funds": 11,
+    "manpower": 16
+   },
+   "territories": [
+    "ceuta",
+    "melilla"
+   ],
+   "cities": 4,
+   "slots": 4,
+   "slotsWithBarracks": 4,
+   "army": {
+    "infantry-regiment": {
+     "count": 4,
+     "men": 2749
+    },
+    "colonial-veterans": {
+     "count": 5,
+     "men": 14593
+    },
+    "bomber-squadron": {
+     "count": 1,
+     "men": 100
+    }
+   },
+   "men": 17442,
+   "upgrades": {
+    "farms": 2,
+    "mines": 2,
+    "industry": 0
+   },
+   "industryLevels": 0,
+   "industryLevelsSettled": 3
+  }
+ ],
+ "units": [
+  {
+   "id": "infantry-regiment",
+   "name": "Infantry regiment",
+   "kind": "ground",
+   "foot": true,
+   "attack": 4,
+   "defence": 6,
+   "funds": 6,
+   "manpower": 1,
+   "establishment": 700,
+   "train": 2,
+   "requires": [
+    "barracks"
+   ],
+   "factionIds": null,
+   "abilities": []
+  },
+  {
+   "id": "militia-column",
+   "name": "Militia column",
+   "kind": "ground",
+   "foot": true,
+   "attack": 3,
+   "defence": 4,
+   "funds": 2,
+   "manpower": 3,
+   "establishment": 2500,
+   "train": 1,
+   "requires": [],
+   "factionIds": null,
+   "abilities": [
+    "trains-in-contested"
+   ]
+  },
+  {
+   "id": "colonial-veterans",
+   "name": "Colonial veterans",
+   "kind": "ground",
+   "foot": true,
+   "attack": 6,
+   "defence": 5,
+   "funds": 8,
+   "manpower": 2,
+   "establishment": 1800,
+   "train": 2,
+   "requires": [
+    "barracks"
+   ],
+   "factionIds": [
+    "north",
+    "south"
+   ],
+   "abilities": []
+  },
+  {
+   "id": "security-forces",
+   "name": "Security forces",
+   "kind": "ground",
+   "foot": true,
+   "attack": 3,
+   "defence": 5,
+   "funds": 6,
+   "manpower": 2,
+   "establishment": 2000,
+   "train": 2,
+   "requires": [
+    "barracks"
+   ],
+   "factionIds": null,
+   "abilities": []
+  },
+  {
+   "id": "artillery-group",
+   "name": "Artillery group",
+   "kind": "ground",
+   "foot": false,
+   "attack": 3,
+   "defence": 3,
+   "funds": 8,
+   "manpower": 1,
+   "establishment": 600,
+   "train": 3,
+   "requires": [
+    "barracks",
+    "factory"
+   ],
+   "factionIds": null,
+   "abilities": [
+    "roll-bonus-per-points",
+    "cannot-attack-alone"
+   ]
+  },
+  {
+   "id": "cavalry-regiment",
+   "name": "Cavalry regiment",
+   "kind": "ground",
+   "foot": true,
+   "attack": 3,
+   "defence": 3,
+   "funds": 6,
+   "manpower": 1,
+   "establishment": 600,
+   "train": 2,
+   "requires": [
+    "barracks"
+   ],
+   "factionIds": null,
+   "abilities": [
+    "mobile"
+   ]
+  },
+  {
+   "id": "tank-company",
+   "name": "Tank company",
+   "kind": "ground",
+   "foot": false,
+   "attack": 3,
+   "defence": 2,
+   "funds": 12,
+   "manpower": 1,
+   "establishment": 300,
+   "train": 4,
+   "requires": [
+    "factory",
+    "depot"
+   ],
+   "factionIds": null,
+   "abilities": [
+    "roll-bonus-per-points"
+   ]
+  },
+  {
+   "id": "truck-column",
+   "name": "Truck column",
+   "kind": "ground",
+   "foot": false,
+   "attack": 0,
+   "defence": 0,
+   "funds": 5,
+   "manpower": 1,
+   "establishment": 200,
+   "train": 2,
+   "requires": [
+    "factory",
+    "depot"
+   ],
+   "factionIds": null,
+   "abilities": [
+    "transport"
+   ]
+  },
+  {
+   "id": "anti-air-battery",
+   "name": "Anti-air battery",
+   "kind": "ground",
+   "foot": false,
+   "attack": 0,
+   "defence": 1,
+   "funds": 7,
+   "manpower": 1,
+   "establishment": 300,
+   "train": 2,
+   "requires": [
+    "factory"
+   ],
+   "factionIds": null,
+   "abilities": [
+    "raid-defence"
+   ]
+  },
+  {
+   "id": "recon-flight",
+   "name": "Reconnaissance flight",
+   "kind": "air",
+   "foot": false,
+   "attack": 0,
+   "defence": 1,
+   "funds": 8,
+   "manpower": 1,
+   "establishment": 100,
+   "train": 3,
+   "requires": [
+    "airfield",
+    "factory"
+   ],
+   "factionIds": null,
+   "abilities": [
+    "mission:recon"
+   ]
+  },
+  {
+   "id": "fighter-squadron",
+   "name": "Fighter squadron",
+   "kind": "air",
+   "foot": false,
+   "attack": 0,
+   "defence": 1,
+   "funds": 10,
+   "manpower": 1,
+   "establishment": 100,
+   "train": 3,
+   "requires": [
+    "airfield",
+    "factory"
+   ],
+   "factionIds": null,
+   "abilities": [
+    "battle-support",
+    "air-battle",
+    "mission:patrol",
+    "mission:support"
+   ]
+  },
+  {
+   "id": "bomber-squadron",
+   "name": "Bomber squadron",
+   "kind": "air",
+   "foot": false,
+   "attack": 0,
+   "defence": 1,
+   "funds": 12,
+   "manpower": 1,
+   "establishment": 100,
+   "train": 3,
+   "requires": [
+    "airfield",
+    "factory"
+   ],
+   "factionIds": null,
+   "abilities": [
+    "battle-support",
+    "air-battle",
+    "mission:raid",
+    "mission:support"
+   ]
+  }
+ ],
+ "projects": [
+  {
+   "id": "farms",
+   "name": "Farms",
+   "group": "development",
+   "funds": 6,
+   "manpower": 0,
+   "turns": 3,
+   "resource": "manpower",
+   "yield": 1,
+   "cityOnly": false
+  },
+  {
+   "id": "mines",
+   "name": "Mines",
+   "group": "development",
+   "funds": 8,
+   "manpower": 0,
+   "turns": 3,
+   "resource": "funds",
+   "yield": 1,
+   "cityOnly": false
+  },
+  {
+   "id": "industry",
+   "name": "Industry",
+   "group": "development",
+   "funds": 10,
+   "manpower": 0,
+   "turns": 4,
+   "resource": "funds",
+   "yield": 1,
+   "cityOnly": true
+  },
+  {
+   "id": "barracks",
+   "name": "Barracks",
+   "group": "building",
+   "funds": 6,
+   "manpower": 0,
+   "turns": 2,
+   "effect": "unlocks units",
+   "unlocks": [
+    "Infantry regiment",
+    "Colonial veterans",
+    "Security forces",
+    "Artillery group",
+    "Cavalry regiment"
+   ]
+  },
+  {
+   "id": "factory",
+   "name": "Factory",
+   "group": "building",
+   "funds": 12,
+   "manpower": 6,
+   "turns": 4,
+   "effect": "+1 recruit a turn",
+   "unlocks": [
+    "Artillery group",
+    "Tank company",
+    "Truck column",
+    "Anti-air battery",
+    "Reconnaissance flight",
+    "Fighter squadron",
+    "Bomber squadron"
+   ]
+  },
+  {
+   "id": "depot",
+   "name": "Depot",
+   "group": "building",
+   "funds": 8,
+   "manpower": 0,
+   "turns": 2,
+   "effect": "Replenish costs 25% less funds",
+   "unlocks": [
+    "Tank company",
+    "Truck column"
+   ]
+  },
+  {
+   "id": "fortifications",
+   "name": "Fortifications",
+   "group": "building",
+   "funds": 6,
+   "manpower": 0,
+   "turns": 2,
+   "effect": "1 off the attacker's roll",
+   "unlocks": []
+  },
+  {
+   "id": "hospital",
+   "name": "Hospital",
+   "group": "building",
+   "funds": 6,
+   "manpower": 0,
+   "turns": 2,
+   "effect": "Replenish cap +25%",
+   "unlocks": []
+  },
+  {
+   "id": "airfield",
+   "name": "Airfield",
+   "group": "building",
+   "funds": 8,
+   "manpower": 0,
+   "turns": 3,
+   "effect": "aircraft can base here",
+   "unlocks": [
+    "Reconnaissance flight",
+    "Fighter squadron",
+    "Bomber squadron"
+   ]
+  },
+  {
+   "id": "paved-airfield",
+   "name": "Paved airfield",
+   "group": "building",
+   "funds": 6,
+   "manpower": 0,
+   "turns": 2,
+   "effect": "flies in mud and snow",
+   "unlocks": []
+  },
+  {
+   "id": "rail-yard",
+   "name": "Rail yard",
+   "group": "building",
+   "funds": 8,
+   "manpower": 0,
+   "turns": 3,
+   "effect": "+1 army by rail a turn",
+   "unlocks": []
+  },
+  {
+   "id": "rail",
+   "name": "Rail repair",
+   "group": "improvement",
+   "funds": 6,
+   "manpower": 0,
+   "turns": 3,
+   "effect": "+1 station level"
+  },
+  {
+   "id": "port",
+   "name": "Port",
+   "group": "improvement",
+   "funds": 8,
+   "manpower": 0,
+   "turns": 3,
+   "effect": "+1 port level"
+  },
+  {
+   "id": "new-rail",
+   "name": "New rail line",
+   "group": "link",
+   "funds": 24,
+   "manpower": 0,
+   "turns": 8,
+   "effect": "one link"
+  },
+  {
+   "id": "rail-upgrade",
+   "name": "Rail upgrade",
+   "group": "link",
+   "funds": 10,
+   "manpower": 0,
+   "turns": 4,
+   "effect": "one link"
+  },
+  {
+   "id": "road-upgrade",
+   "name": "Road upgrade",
+   "group": "link",
+   "funds": 6,
+   "manpower": 0,
+   "turns": 2,
+   "effect": "one link"
+  }
+ ],
+ "gameLength": {
+  "ownerMax": 10,
+  "medianLow": 12,
+  "medianHigh": 15
+ },
+ "upkeepPresets": [
+  {
+   "id": "none",
+   "name": "No upkeep (today)",
+   "kind": "none",
+   "rate": 0,
+   "free": 0
+  },
+  {
+   "id": "flat",
+   "name": "Flat: 1 per ground unit",
+   "kind": "flat",
+   "rate": 1,
+   "free": 0
+  },
+  {
+   "id": "men",
+   "name": "By men actually under arms",
+   "kind": "men",
+   "rate": 0.5,
+   "free": 0
+  },
+  {
+   "id": "share",
+   "name": "By full size of the unit type, first 6 free (recommended)",
+   "kind": "share",
+   "rate": 0.5,
+   "free": 6
+  },
+  {
+   "id": "split",
+   "name": "Manpower by size, Funds for machines",
+   "kind": "split",
+   "rate": 0.5,
+   "free": 6,
+   "machineFunds": 0.5
+  },
+  {
+   "id": "softcap",
+   "name": "Supply limit: 3 units per whole territory, then 1 each",
+   "kind": "softcap",
+   "rate": 1,
+   "perTerritory": 3,
+   "free": 0
+  }
+ ],
+ "proposals": {
+  "measured": {
+   "name": "Moderate",
+   "note": "Numbers only, plus one upkeep rule. Recommended.",
+   "upkeep": {
+    "share": 0.5,
+    "free": 6,
+    "machineFunds": 0,
+    "lossCap": 0.1,
+    "floor": 0.5
+   },
+   "barricades": 2,
+   "popularResistance": 0,
+   "alarm": {
+    "critical": 3,
+    "perStep": 1.5,
+    "steps": 3
+   },
+   "units": {
+    "infantry-regiment": {
+     "funds": 5
+    },
+    "militia-column": {
+     "funds": 3,
+     "attack": 2
+    },
+    "colonial-veterans": {
+     "funds": 7
+    },
+    "security-forces": {
+     "funds": 4,
+     "manpower": 1,
+     "establishment": 1000,
+     "train": 1
+    },
+    "artillery-group": {
+     "funds": 7,
+     "train": 2
+    },
+    "cavalry-regiment": {
+     "funds": 4
+    },
+    "tank-company": {
+     "funds": 10,
+     "attack": 5,
+     "defence": 3,
+     "train": 3
+    },
+    "truck-column": {
+     "funds": 4
+    },
+    "anti-air-battery": {
+     "funds": 5
+    },
+    "recon-flight": {
+     "funds": 5,
+     "train": 2
+    },
+    "fighter-squadron": {
+     "funds": 8
+    },
+    "bomber-squadron": {
+     "funds": 10
+    }
+   },
+   "projects": {
+    "farms": {
+     "funds": 3,
+     "turns": 2
+    },
+    "mines": {
+     "funds": 5,
+     "turns": 2
+    },
+    "industry": {
+     "funds": 6,
+     "turns": 2
+    },
+    "barracks": {
+     "funds": 5
+    },
+    "factory": {
+     "funds": 10,
+     "manpower": 4,
+     "turns": 3
+    },
+    "depot": {
+     "funds": 6
+    },
+    "hospital": {
+     "funds": 5
+    },
+    "airfield": {
+     "funds": 6,
+     "turns": 2
+    },
+    "paved-airfield": {
+     "funds": 4
+    },
+    "rail-yard": {
+     "funds": 6,
+     "turns": 2
+    },
+    "port": {
+     "funds": 6,
+     "turns": 2
+    },
+    "fortifications": {
+     "funds": 3,
+     "manpower": 2,
+     "effect": "2 off the attacker's roll"
+    },
+    "rail": {
+     "funds": 3,
+     "manpower": 1,
+     "turns": 2
+    },
+    "road-upgrade": {
+     "funds": 3,
+     "manpower": 2
+    },
+    "rail-upgrade": {
+     "funds": 5,
+     "manpower": 3,
+     "turns": 3
+    },
+    "new-rail": {
+     "funds": 10,
+     "manpower": 6,
+     "turns": 5
+    }
+   }
+  },
+  "owner": {
+   "name": "Your table",
+   "note": "The owner's unit table, its upkeep per unit, and Moderate's building prices.",
+   "upkeep": {
+    "share": 0,
+    "free": 0,
+    "machineFunds": 0,
+    "lossCap": 0.1,
+    "floor": 0.5
+   },
+   "barricades": 2,
+   "popularResistance": 0,
+   "alarm": {
+    "critical": 3,
+    "perStep": 1.5,
+    "steps": 3
+   },
+   "units": {
+    "infantry-regiment": {
+     "funds": 5,
+     "manpower": 1,
+     "upkeepM": 0.25,
+     "attack": 4,
+     "defence": 6,
+     "train": 2
+    },
+    "militia-column": {
+     "funds": 3,
+     "manpower": 3,
+     "upkeepM": 1.5,
+     "attack": 2,
+     "defence": 5,
+     "train": 1
+    },
+    "colonial-veterans": {
+     "funds": 7,
+     "manpower": 2,
+     "upkeepM": 0.25,
+     "attack": 6,
+     "defence": 6,
+     "train": 2
+    },
+    "security-forces": {
+     "funds": 5,
+     "manpower": 1,
+     "upkeepM": 0.75,
+     "attack": 2,
+     "defence": 6,
+     "train": 1
+    },
+    "artillery-group": {
+     "funds": 6,
+     "manpower": 1,
+     "upkeepM": 0.1,
+     "attack": 2,
+     "defence": 3,
+     "train": 2
+    },
+    "cavalry-regiment": {
+     "funds": 4,
+     "manpower": 1,
+     "upkeepM": 0.3,
+     "attack": 3,
+     "defence": 3,
+     "train": 2
+    },
+    "tank-company": {
+     "funds": 8,
+     "manpower": 1,
+     "upkeepM": 0.15,
+     "attack": 5,
+     "defence": 3,
+     "train": 3
+    },
+    "truck-column": {
+     "funds": 3,
+     "manpower": 1,
+     "upkeepM": 0.1,
+     "attack": 0,
+     "defence": 0,
+     "train": 1
+    },
+    "anti-air-battery": {
+     "funds": 5,
+     "manpower": 1,
+     "upkeepM": 0.15,
+     "attack": 0,
+     "defence": 1,
+     "train": 2
+    },
+    "recon-flight": {
+     "funds": 5,
+     "manpower": 1,
+     "upkeepM": 0.05,
+     "attack": 0,
+     "defence": 1,
+     "train": 2
+    },
+    "fighter-squadron": {
+     "funds": 6,
+     "manpower": 1,
+     "upkeepM": 0.05,
+     "attack": 0,
+     "defence": 1,
+     "train": 3
+    },
+    "bomber-squadron": {
+     "funds": 7,
+     "manpower": 1,
+     "upkeepM": 0.05,
+     "attack": 0,
+     "defence": 1,
+     "train": 3
+    }
+   },
+   "projects": {
+    "farms": {
+     "funds": 3,
+     "turns": 2
+    },
+    "mines": {
+     "funds": 5,
+     "turns": 2
+    },
+    "industry": {
+     "funds": 6,
+     "turns": 2
+    },
+    "barracks": {
+     "funds": 5
+    },
+    "factory": {
+     "funds": 10,
+     "manpower": 4,
+     "turns": 3
+    },
+    "depot": {
+     "funds": 6
+    },
+    "hospital": {
+     "funds": 5
+    },
+    "airfield": {
+     "funds": 6,
+     "turns": 2
+    },
+    "paved-airfield": {
+     "funds": 4
+    },
+    "rail-yard": {
+     "funds": 6,
+     "turns": 2
+    },
+    "port": {
+     "funds": 6,
+     "turns": 2
+    },
+    "fortifications": {
+     "funds": 3,
+     "manpower": 2,
+     "effect": "2 off the attacker's roll"
+    },
+    "rail": {
+     "funds": 3,
+     "manpower": 1,
+     "turns": 2
+    },
+    "road-upgrade": {
+     "funds": 3,
+     "manpower": 2
+    },
+    "rail-upgrade": {
+     "funds": 5,
+     "manpower": 3,
+     "turns": 3
+    },
+    "new-rail": {
+     "funds": 10,
+     "manpower": 6,
+     "turns": 5
+    }
+   }
+  },
+  "bold": {
+   "name": "Bold",
+   "note": "Moderate, with double the upkeep rate and a Funds upkeep for machines, so Manpower runs short for everyone.",
+   "upkeep": {
+    "share": 1,
+    "free": 12,
+    "machineFunds": 0.5,
+    "lossCap": 0.1,
+    "floor": 0.5
+   },
+   "barricades": 2,
+   "popularResistance": 0,
+   "alarm": {
+    "critical": 3,
+    "perStep": 1.5,
+    "steps": 3
+   },
+   "units": {
+    "infantry-regiment": {
+     "funds": 5
+    },
+    "militia-column": {
+     "funds": 3,
+     "attack": 2
+    },
+    "colonial-veterans": {
+     "funds": 7
+    },
+    "security-forces": {
+     "funds": 4,
+     "manpower": 1,
+     "establishment": 1000,
+     "train": 1
+    },
+    "artillery-group": {
+     "funds": 6,
+     "train": 2
+    },
+    "cavalry-regiment": {
+     "funds": 4
+    },
+    "tank-company": {
+     "funds": 10,
+     "attack": 5,
+     "defence": 3,
+     "train": 3
+    },
+    "truck-column": {
+     "funds": 4
+    },
+    "anti-air-battery": {
+     "funds": 5
+    },
+    "recon-flight": {
+     "funds": 5,
+     "train": 2
+    },
+    "fighter-squadron": {
+     "funds": 8,
+     "train": 2
+    },
+    "bomber-squadron": {
+     "funds": 10,
+     "train": 2
+    }
+   },
+   "projects": {
+    "farms": {
+     "funds": 3,
+     "turns": 2
+    },
+    "mines": {
+     "funds": 5,
+     "turns": 2
+    },
+    "industry": {
+     "funds": 6,
+     "turns": 2
+    },
+    "barracks": {
+     "funds": 5,
+     "turns": 1
+    },
+    "factory": {
+     "funds": 10,
+     "manpower": 4,
+     "turns": 3
+    },
+    "depot": {
+     "funds": 6
+    },
+    "hospital": {
+     "funds": 5
+    },
+    "airfield": {
+     "funds": 6,
+     "turns": 2
+    },
+    "paved-airfield": {
+     "funds": 4
+    },
+    "rail-yard": {
+     "funds": 6,
+     "turns": 2
+    },
+    "port": {
+     "funds": 6,
+     "turns": 2
+    },
+    "fortifications": {
+     "funds": 3,
+     "manpower": 2,
+     "effect": "2 off the attacker's roll"
+    },
+    "rail": {
+     "funds": 3,
+     "manpower": 1,
+     "turns": 2
+    },
+    "road-upgrade": {
+     "funds": 3,
+     "manpower": 2
+    },
+    "rail-upgrade": {
+     "funds": 5,
+     "manpower": 3,
+     "turns": 3
+    },
+    "new-rail": {
+     "funds": 10,
+     "manpower": 6,
+     "turns": 5
+    }
+   }
+  }
+ }
+}

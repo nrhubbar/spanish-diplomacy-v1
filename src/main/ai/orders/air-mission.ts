@@ -84,8 +84,10 @@ export const planAirMissions: OrderPlanner<AirMissionOrder> = (context) => {
   const { factionId, scenario, state } = context;
   if (scenario.air === undefined || scenario.rules.air === "none") return [];
   const orders: AirMissionOrder[] = [];
+  // D1: an aircraft to be disbanded flies nothing.
+  const ordered = new Set<UnitId>(context.planned.flatMap((order) => ("unitId" in order ? [order.unitId] : [])));
   const aircraft = Object.values(state.units)
-    .filter((unit) => unit.factionId === factionId && unitTypeIn(scenario, state.raised, unit.id)?.air !== undefined)
+    .filter((unit) => unit.factionId === factionId && !ordered.has(unit.id) && unitTypeIn(scenario, state.raised, unit.id)?.air !== undefined)
     .sort((a, b) => compareIds(a.id, b.id));
   const attacks = plannedAttacks(context);
   const enemyBombers = Object.values(state.units).filter((unit) => unit.factionId !== factionId

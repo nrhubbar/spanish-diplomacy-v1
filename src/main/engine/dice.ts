@@ -1,4 +1,3 @@
-import { dieFaces } from "./combat";
 import { deriveSeed, type RandomSource, seededRandom } from "./random";
 
 /**
@@ -47,11 +46,6 @@ export function seededRollStreams(seed: number, turnNumber: number): RollStreams
 /** The turn's battle streams: `deriveSeed(game seed, battleStreamTag, turn, battle index)`. */
 export function seededBattleDice(seed: number, turnNumber: number): BattleDice {
   return (battleIndex) => rollStream(seed, "battle", turnNumber, battleIndex);
-}
-
-/** A face of the six-sided battle die. */
-export function rollDie(random: RandomSource): number {
-  return pick(random, dieFaces.length);
 }
 
 /** A whole number from 1 to `count`, each equally likely. */

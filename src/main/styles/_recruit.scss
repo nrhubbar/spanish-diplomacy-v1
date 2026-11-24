@@ -22,12 +22,13 @@
   margin: 8px 0;
   padding: 0;
   list-style: none;
+  container: recruit-list / inline-size;
 }
 
 .recruit-row {
   position: relative;
   display: grid;
-  grid-template-columns: 2.1rem 1fr auto auto;
+  grid-template-columns: 2.1rem minmax(0, 1fr) auto auto;
   column-gap: 0.55rem;
   align-items: center;
   padding: 0.45rem 0.6rem;
@@ -70,6 +71,7 @@
 
 .recruit-name {
   font-weight: 600;
+  overflow-wrap: anywhere;
 }
 
 .recruit-values {
@@ -81,6 +83,32 @@
   grid-column: 2 / span 2;
   color: var(--ink-soft);
   font-size: 0.82rem;
+  overflow-wrap: anywhere;
+}
+
+// D7 (note 4): what the type does beyond its values, closed until asked for.
+.recruit-effects {
+  grid-column: 2 / -1;
+  margin-top: 2px;
+  font-size: 0.82rem;
+  overflow-wrap: anywhere;
+
+  summary {
+    width: fit-content;
+    min-height: 24px;
+    padding: 2px 0;
+    color: #1f3a5f;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  ul {
+    margin: 2px 0 4px;
+    padding: 0.4rem 0.6rem 0.4rem 1.4rem;
+    border-left: 3px solid var(--gold);
+    color: var(--ink);
+    background: #fbeecb;
+  }
 }
 
 .recruit-lock {
@@ -93,6 +121,37 @@
   grid-column: 4;
   gap: 4px;
   align-items: center;
+}
+
+// A narrow pane or large text: the stepper goes under the terms, as `ux-recruit-foldout` draws it.
+@container recruit-list (max-width: 20rem) {
+  .recruit-row {
+    grid-template-columns: 2.1rem minmax(0, 1fr) auto;
+  }
+
+  .recruit-stepper {
+    grid-row: auto;
+    grid-column: 2 / -1;
+    justify-self: start;
+    margin-top: 4px;
+  }
+}
+
+// Text at 200% in a 320 px pane: the symbol, which only repeats the name, gives up its column.
+@container recruit-list (max-width: 12rem) {
+  .recruit-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .recruit-symbol {
+    display: none;
+  }
+
+  .recruit-meta,
+  .recruit-stepper,
+  .recruit-effects {
+    grid-column: 1 / -1;
+  }
 }
 
 .stepper-button {
@@ -137,7 +196,7 @@
   right: 0;
   display: none;
   gap: 2px;
-  width: 15rem;
+  width: min(15rem, 100%);
   padding: 0.5rem 0.65rem;
   border: 1px solid var(--rule);
   border-radius: 6px;
@@ -165,19 +224,6 @@
 
   h4 {
     margin: 0 0 6px;
-  }
-}
-
-.training-unit {
-  display: grid;
-  margin-bottom: 6px;
-  padding: 0.45rem 0.6rem;
-  border: 1.5px dashed rgb(36 29 24 / 45%);
-  color: var(--ink-soft);
-  background: rgb(255 255 255 / 25%);
-
-  &[data-paused="true"] {
-    border-color: #9e6b2b;
   }
 }
 

@@ -1,20 +1,19 @@
 import { describe, expect, it } from "vitest";
 import { initialGameState } from "../../main/engine/resolution";
-import type { D20BattleOutcome, GameState, GradeId, SubTerritoryId, TurnOutcome } from "../../main/engine/types";
+import type { BattleOutcome, GameState, GradeId, SubTerritoryId, TurnOutcome } from "../../main/engine/types";
 import { affectedFaction, attackSucceeded, changedHands, claimants, decisiveBattle, groupBattles, groupTerritory, siteKey } from "../../main/presentation/battle";
 import { chooseDestination, chooseOrder, type PlanningSession } from "../../main/state/planning";
 import type { Draft } from "../../main/state/session";
 import { army, loss, madridRepulsed, roadMeeting, side } from "../battleFixtures";
 import { armyIn, faction, spain, spainId, territory, unit } from "../support";
 
-function d20(overrides: Partial<D20BattleOutcome> = {}): D20BattleOutcome {
+function d20(overrides: Partial<BattleOutcome> = {}): BattleOutcome {
   return {
     attacker: side(army("north-san-quintin-25", "north", "castilla-y-leon", 8)),
     attackerFactionId: faction("north"),
     column: 2,
     defender: side(army("rep-wad-ras-1", "republic", "madrid", 4)),
     demoralizedUnitIds: [],
-    dice: "d20",
     die: 12,
     grade: "stalemate" as GradeId,
     ground: 0,

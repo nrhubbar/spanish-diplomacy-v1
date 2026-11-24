@@ -14,6 +14,8 @@ export interface PathSurrenderOutcome {
   readonly factionId: FactionId;
   readonly from: TerritoryId;
   readonly kind: "path-surrender";
+  /** The unit's men when it surrendered. */
+  readonly men: number;
   readonly unitId: UnitId;
 }
 

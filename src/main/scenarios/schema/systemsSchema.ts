@@ -13,7 +13,7 @@ const lossPercentSchema = z
   .meta({ description: "Share of each army's men lost, in percent: 0, the 10, 20 and 35 steps, or 100 (destroyed)." });
 const demoralizedSchema = z.enum(["none", "half", "all"]);
 
-export const gradeSchema = z.strictObject({
+const gradeSchema = z.strictObject({
   id: slugSchema,
   name: textSchema,
   attacker: z.strictObject({ lossPercent: lossPercentSchema, demoralized: demoralizedSchema }),
@@ -42,10 +42,10 @@ export const d20Schema = z
     }),
     fatigue: z.strictObject({ fatiguedLevel: positiveWholeSchema, demoralizedLevel: positiveWholeSchema }),
     breakUpShare: shareSchema.meta({ description: "D6: a unit below this share of its full strength is destroyed." }),
-    factionModifiers: z.array(factionModifierSchema).default([]),
+    factionModifiers: z.array(factionModifierSchema).default([]).meta({ description: "Named roll modifiers for particular factions." }),
     ...basisShape
   })
-  .meta({ description: "The d20 battle rules (the d20-graded dice module)." });
+  .meta({ description: "The d20 battle rules." });
 
 const monthSchema = z.number().int().min(1).max(12);
 
@@ -104,7 +104,7 @@ export const traitEffectSchema = z.discriminatedUnion("@type", [
 export const generalsSchema = z.strictObject({
   traits: z.array(z.strictObject({ id: slugSchema, name: textSchema, effects: z.array(traitEffectSchema).min(1) })),
   roster: z
-    .array(z.strictObject({ id: slugSchema, name: textSchema, factionId: slugSchema, trait: slugSchema, sources: z.array(citationSchema).min(1) }))
+    .array(z.strictObject({ id: slugSchema, name: textSchema, factionId: slugSchema, trait: slugSchema, sources: z.array(citationSchema).default([]) }))
     .meta({ description: "U5: each faction's commanders in roster order, 3 to 5 per faction (L21)." }),
   ...basisShape
 });
@@ -134,7 +134,16 @@ export const aiSchema = z
             stallCap: wholeSchema
           }),
           stakes: z.strictObject({ city: weight, objective: weight, territory: weight }),
-          victoryAlarm: z.strictObject({ critical: weight, perStep: weight, steps: wholeSchema }),
+          recruits: z.strictObject({
+            upkeepTurns: positiveWholeSchema.meta({ description: "Turns of upkeep the Recruit orders leave in stock, at today's income, for what the unit types' upkeep takes." })
+          }),
+          victoryAlarm: z.strictObject({
+            critical: weight,
+            perStep: weight,
+            riskFloor: shareSchema.meta({ description: "The least share of own losses and of the danger at home that count when attacking a rival near victory." }),
+            spendSteps: wholeSchema.meta({ description: "At this many steps or fewer short of victory, a rival makes the faction spend without a Build reserve, and on the quickest units where they can reach it." }),
+            steps: wholeSchema
+          }),
           withdraw: z.strictObject({ hopelessTakeChance: shareSchema, lastStandTakeChance: shareSchema }),
           builds: z
             .strictObject({

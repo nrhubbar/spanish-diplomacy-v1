@@ -25,7 +25,7 @@ npm run sim -- --games 1000 --variant src/sim/variants/digging-in-cap-2.json --r
 
 The exit code is 0 when the run is done, 2 for bad arguments, variant files or scenario data (reported before any game is played), and 1 for a failure during play. A game that throws, or a worker thread that exits with a game unfinished, stops the whole run with that error; the run never waits on a lost thread.
 
-Standard sizes (H2): `npm test` runs a 10-game smoke run (`src/test/sim/smoke.test.ts`). Runs of 200 and 1000 games are on demand.
+Standard sizes (H2): `npm run test:unit` runs a 10-game smoke run (`src/test/sim/smoke.test.ts`). Runs of 200 and 1000 games are on demand.
 
 ## How a game is played
 

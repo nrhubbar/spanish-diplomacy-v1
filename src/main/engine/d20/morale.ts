@@ -1,17 +1,17 @@
-import { freshlyDemoralized } from "../battleResults";
+import { freshlyDemoralized } from "./grades";
 import { type Armies, replaceArmies } from "../board";
 import type { Phase, TurnDraft } from "../phases/draft";
 import type { FactionId, FatigueOutcome, RecoveredOutcome, Scenario, TerritoryId, UnitId, UnitState } from "../types";
 import { isContested, isPartitioned } from "../partition/holders";
 import { digIn, notEntrenching } from "../works";
-import { isGeneralUnit, requireD20, unitRank } from "./rules";
+import { isGeneralUnit, unitRank } from "./rules";
 
 /**
  * W6, C1: territories contested at the end of the turn. With a partition module, the
  * sub-territory holders say so (`isContested`, after step 8); without one, control shows it as
  * contested, or armies of several factions share it.
  */
-export function contestedAtEnd(scenario: Scenario, draft: TurnDraft): ReadonlySet<TerritoryId> {
+function contestedAtEnd(scenario: Scenario, draft: TurnDraft): ReadonlySet<TerritoryId> {
   // W6 (m3r1-sub-territories): with the provinces partition, contested ground is the holders' (step 8 has run).
   if (isPartitioned(scenario)) {
     const state = { control: draft.control.control, subTerritories: draft.systems.subTerritories };
@@ -49,7 +49,7 @@ export function attackedThisTurn(draft: TurnDraft): ReadonlySet<UnitId> {
 }
 
 /**
- * Step 9 for `d20-graded` (C4-C7, M22, M23):
+ * Step 9 (C4-C7, M22, M23):
  * - Fatigue (C6): +1 for a unit that attacked, up to the demoralizing level, which demoralizes
  *   it; a unit already at that level that attacks is demoralized again (D27.4). Generals never
  *   tire (DC-5). A quiet turn in uncontested ground (no move order, no retreat, no attack) resets
@@ -61,9 +61,9 @@ export function attackedThisTurn(draft: TurnDraft): ReadonlySet<UnitId> {
  * - Digging in (M22, R8): works grow a pip a turn up to three (`combat.diggingIn`), never in
  *   contested ground (C1), and as the `canDigIn` hooks allow (T4).
  */
-export const updateGradedMorale: Phase = (draft) => {
+export const updateMorale: Phase = (draft) => {
   const { scenario, start } = draft.input;
-  const rules = requireD20(scenario);
+  const rules = scenario.d20;
   const rank = unitRank(scenario);
   const moved = new Set(draft.orders.origins.keys());
   const retreated = new Set(draft.settled.flatMap((entry) => (entry.kind === "retreated" ? [entry.leaving.unitId] : [])));

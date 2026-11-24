@@ -1,5 +1,4 @@
 import { airModules } from "./modules/air";
-import { diceModules } from "./modules/dice";
 import { economyModules } from "./modules/economy";
 import { movementModules } from "./modules/movement";
 import { partitionModules } from "./modules/partition";
@@ -25,7 +24,6 @@ export const scenarioBlocks = [
   "improvements",
   "recruitment",
   "movement",
-  "d20",
   "weather",
   "calendar",
   "air"
@@ -74,7 +72,6 @@ export interface ModuleRegistry {
 
 /** The engine's own modules, one file per area under `modules/`; each slice edits only its area's file. */
 const builtIns: readonly RuleModule[] = [
-  ...diceModules,
   ...economyModules,
   ...recruitmentModules,
   ...weatherModules,

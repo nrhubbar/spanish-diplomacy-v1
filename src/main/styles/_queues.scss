@@ -277,6 +277,30 @@ h4.site-card-head {
   white-space: nowrap;
 }
 
+.ledger-fold {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+
+  &::before {
+    content: "\25B8\00a0";
+  }
+
+  &[aria-expanded="true"]::before {
+    content: "\25BE\00a0";
+  }
+}
+
+.ledger tr[data-kind="line"] th {
+  padding-left: 18px;
+  font-weight: 400;
+}
+
+.resource-income[data-negative="true"],
 .ledger tr[data-kind="expense"] .ledger-value,
 .ledger tr[data-kind="raid"] .ledger-value {
   color: var(--accent);

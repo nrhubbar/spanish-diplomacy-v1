@@ -1,5 +1,4 @@
 import type { Armies } from "./board";
-import { usesD20 } from "./d20/rules";
 import { hookedCanDigIn } from "./hooks";
 import { standingOrder } from "./orders";
 import type { TurnDraft } from "./phases/draft";
@@ -27,7 +26,7 @@ export function notEntrenching(draft: TurnDraft): ReadonlySet<UnitId> {
  * still there at the end (M23, O3, Q-RECR-5). The
  * selected modules' `canDigIn` hooks may stop the works growing (T4: Snow).
  *
- * R8: the level is the works' pips (`combat.diggingIn`) under either dice; what a pip is worth
+ * R8: the level is the works' pips (`combat.diggingIn`); what a pip is worth
  * on the roll is `worksRoll`'s.
  */
 export function digIn(
@@ -59,7 +58,7 @@ export function digIn(
 }
 
 /** The faction that controls a territory and has an army in it, if any. */
-export function holderOf(control: GameState["control"], armies: Armies, territoryId: TerritoryId): FactionId | undefined {
+function holderOf(control: GameState["control"], armies: Armies, territoryId: TerritoryId): FactionId | undefined {
   const current = control[territoryId];
   if (current?.kind !== "controlled") {
     return undefined;
@@ -71,11 +70,9 @@ export function holderOf(control: GameState["control"], armies: Armies, territor
 
 /**
  * R8 (M22, D3): what works of `level` pips take off the attacker's roll, as a positive number.
- * On the d20 each pip is worth the d20 block's `worksPerTurn`, up to `worksMax` (2 a pip to 6 in
- * Spain); on the d6 table each pip is worth 1.
+ * Each pip is worth the d20 block's `worksPerTurn`, up to `worksMax` (2 a pip to 6 in Spain).
  */
 export function worksRoll(scenario: Scenario, level: number): number {
-  const d20 = scenario.d20;
-  if (d20 === undefined || !usesD20(scenario)) return level;
-  return Math.min(d20.modifiers.worksMax, level * d20.modifiers.worksPerTurn);
+  const { worksMax, worksPerTurn } = scenario.d20.modifiers;
+  return Math.min(worksMax, level * worksPerTurn);
 }

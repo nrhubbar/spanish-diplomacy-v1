@@ -4,6 +4,7 @@ import { planAirMissions } from "../main/ai/orders/air-mission";
 import { planBuilds } from "../main/ai/orders/build";
 import { linkWorkCandidate } from "../main/ai/orders/linkWorks";
 import type { PlanningContext } from "../main/ai/orders/planner";
+import { planDisbands } from "../main/ai/orders/disband";
 import { planReplenishment } from "../main/ai/orders/replenish";
 import { planSackings } from "../main/ai/orders/sack";
 import { planWithdrawals } from "../main/ai/orders/withdraw";
@@ -31,13 +32,14 @@ import {
 } from "../main/engine/types";
 import { holdWhole } from "./air/holdWhole";
 import { faction, move, spainWithAir, territory, unit, withUnits } from "./support";
+import { pinned } from "./pinned";
 
 // R12: the coverage guard. Every order kind, air mission, move mode and build project the engine
 // knows has a constructed board on which the computer player produces it. The records are keyed
 // by the engine's own types, so a new kind fails the typecheck until it has a case here, and the
 // runtime lists (`moveModes`, `linkWorks`) are compared with the cases too.
 
-const scenario = spainWithAir();
+const scenario = pinned(spainWithAir());
 const start = initialGameState(scenario);
 const republic = faction("republic");
 
@@ -103,6 +105,7 @@ function spread(others: Readonly<Record<string, string>> = {}): GameState {
 const orderCases: Record<Order["kind"], () => readonly Order[]> = {
   "air-mission": () => planAirMissions(context(start, republic)),
   build: () => planBuilds(context(start, republic)),
+  disband: () => planDisbands(context({ ...start, treasuries: { ...start.treasuries, [republic]: {} }, subTerritories: {} }, republic)),
   move: () => submission(start, republic),
   recruit: () => submission(start, republic),
   replenish: () => {
@@ -125,7 +128,8 @@ const orderCases: Record<Order["kind"], () => readonly Order[]> = {
     // Hopeless odds on ground that is neither the North's seat nor an objective.
     const state = withUnits(scenario, [
       ["north-argel-27", "north", "extremadura"],
-      ["rep-vitoria-8", "republic", "extremadura"], ["rep-sevilla-34", "republic", "extremadura"], ["rep-castilla-3", "republic", "extremadura"]
+      ["rep-vitoria-8", "republic", "extremadura"], ["rep-sevilla-34", "republic", "extremadura"], ["rep-castilla-3", "republic", "extremadura"],
+      ["rep-otumba-9", "republic", "extremadura"], ["rep-guadalajara-10", "republic", "extremadura"], ["rep-wad-ras-1", "republic", "extremadura"]
     ]);
     return planWithdrawals(context(state, faction("north")));
   }
@@ -179,7 +183,7 @@ const lavish: Scenario = (() => {
 
 const projectCases: Record<BuildProject["kind"], () => readonly BuildOrder[]> = {
   building: () => planBuilds(context(rich(start), republic)),
-  development: () => submission(start, republic).filter((order): order is BuildOrder => order.kind === "build"),
+  development: () => planBuilds(context(start, republic)),
   improvement: () => planBuilds(context(builtUp(republicBut(start)), republic, [], lavish)),
   // The North holds the north-west: rail upgrades bring the Republic's armies to that front.
   link: () => planBuilds(context(builtUp(spread({ "castilla-y-leon": "north", galicia: "north" })), republic, [], { ...onlyWork("rail-upgrade"), ai: lavish.ai }))

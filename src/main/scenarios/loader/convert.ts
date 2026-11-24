@@ -1,7 +1,7 @@
 import type { FactionId, FactionModifier, SourceCitation, SourceId } from "../../engine/types";
 import type { ScenarioDocument } from "../schema/scenarioSchema";
 
-type FactionModifierDocument = ScenarioDocument["combat"]["factionModifiers"][number];
+type FactionModifierDocument = ScenarioDocument["d20"]["factionModifiers"][number];
 
 export function citations(sources: readonly { readonly sourceId: string; readonly reference?: string | undefined }[]): SourceCitation[] {
   return sources.map((source) => ({ sourceId: source.sourceId as SourceId, ...(source.reference === undefined ? {} : { reference: source.reference }) }));

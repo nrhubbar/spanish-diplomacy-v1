@@ -70,7 +70,7 @@ describe("the territory pane's tabs and focus view (X3, U9)", () => {
     expect(units).toHaveFocus();
   });
 
-  it("keeps the Milestone 2 pane without tabs under m2-strength", () => {
+  it("keeps the Milestone 2 pane without tabs where no module adds one", () => {
     const store = planning(tiny(), tinyId, "red");
     store.dispatch(clickMapTerritory(territory("westfold")));
     renderPane(store, tiny());

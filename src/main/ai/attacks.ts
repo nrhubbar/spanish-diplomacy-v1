@@ -1,6 +1,5 @@
-import { estimateAttack, oddsForValues, type BattleOdds } from "../engine/combat";
-import { type GradedOdds, isGradedOdds } from "../engine/d20/odds";
-import { usesD20 } from "../engine/d20/rules";
+import { estimateAttack, oddsForValues } from "../engine/combat";
+import type { BattleOdds } from "../engine/d20/odds";
 import type { FactionId, GameState, Scenario, TerritoryId, UnitState } from "../engine/types";
 import type { Assessment } from "./assessment";
 import type { Plan } from "./plan";
@@ -41,24 +40,12 @@ export interface AttackContext {
 }
 
 /** Expected value lost by each side, in combat-value points, from the result distribution (M16). */
-export function expectedLosses(odds: BattleOdds | GradedOdds, demoralizedShare: number): { readonly attacker: number; readonly defender: number } {
-  if (isGradedOdds(odds)) {
-    // D2: each grade costs a share of men and demoralizes a share of value.
-    const { attack, defence, expected } = odds;
-    return {
-      attacker: attack * (expected.attackerLoss + expected.attackerDemoralized * demoralizedShare),
-      defender: defence * (expected.defenderLoss + expected.defenderDemoralized * demoralizedShare)
-    };
-  }
-  const { attack, chances, defence } = odds;
-  // Attrition costs the paying side the opposing side's value, never more than it has.
-  const attrition = Math.min(attack, defence);
+export function expectedLosses(odds: BattleOdds, demoralizedShare: number): { readonly attacker: number; readonly defender: number } {
+  // D2: each grade costs a share of men and demoralizes a share of value.
+  const { attack, defence, expected } = odds;
   return {
-    attacker: chances["attacker-eliminated"] * attack
-      + (chances["attacker-attrition"] + chances["defender-exchange"]) * attrition
-      + (chances["attacker-demoralized"] + chances["both-demoralized"]) * attack * demoralizedShare,
-    defender: (chances["defender-eliminated"] + chances["defender-exchange"]) * defence
-      + (chances["defender-demoralized"] + chances["both-demoralized"]) * defence * demoralizedShare
+    attacker: attack * (expected.attackerLoss + expected.attackerDemoralized * demoralizedShare),
+    defender: defence * (expected.defenderLoss + expected.defenderDemoralized * demoralizedShare)
   };
 }
 
@@ -122,12 +109,13 @@ export function bestAttackOn(
 function scoreAttack(context: AttackContext, target: TerritoryId, armies: readonly UnitState[], cost: number): number {
   const { factionId, scenario, state, weights } = context;
   const bias = armies.reduce((sum, unit) => sum + context.moveBias(unit, target), 0);
-  const home = weights.caution * cost;
+  const risk = context.assessment.risk(target);
+  const home = weights.caution * risk * cost;
   const estimate = estimateAttack(scenario, state, factionId, armies.map((unit) => unit.id), target);
   if (estimate.kind === "battle") {
     // D5: artillery alone would turn back; C6: attacking again tires, and at the top of the track demoralizes.
     if ("cannotAttack" in estimate && estimate.cannotAttack) return Number.NEGATIVE_INFINITY;
-    return battleScore(context, target, estimate) - fatigueCost(context, armies) - home + bias;
+    return battleScore(context, target, estimate) - risk * fatigueCost(context, armies) - home + bias;
   }
   const relief = context.assessment.relief(target);
   if (relief === undefined) return context.prize(target) - home + bias;
@@ -143,25 +131,25 @@ function scoreAttack(context: AttackContext, target: TerritoryId, armies: readon
 }
 
 /** Take chance times the prize, plus expected hostile losses, minus expected own losses. */
-function battleScore(context: AttackContext, target: TerritoryId, odds: BattleOdds | GradedOdds): number {
-  const { weights } = context;
+function battleScore(context: AttackContext, target: TerritoryId, odds: BattleOdds): number {
+  const { assessment, weights } = context;
   const losses = expectedLosses(odds, weights.demoralizedShare);
-  // P4: on the d20 a partial grade takes some of the territory; count it at half the prize.
-  const partial = isGradedOdds(odds) ? (odds.gainChance - odds.takeChance) / 2 : 0;
+  // P4: a partial grade takes some of the territory; count it at half the prize, or in full where
+  // any ground at all takes the territory off the count of a rival near victory.
+  const partial = (odds.gainChance - odds.takeChance) * (assessment.spoils(target) ? 1 : 0.5);
   return (odds.takeChance + partial) * context.prize(target)
     + weights.enemyLoss * losses.defender
-    - weights.ownLoss * losses.attacker;
+    - weights.ownLoss * assessment.risk(target) * losses.attacker;
 }
 
 /**
- * C6, H5: on the d20, each attacking unit gains fatigue. A unit that this attack would take to
+ * C6, H5: each attacking unit gains fatigue. A unit that this attack would take to
  * the demoralizing level is out of action until it rests (it cannot attack while demoralized,
  * and in contested ground only a general rallies it, C4), so it costs its whole attack value,
  * weighed as an own loss. The computer player rests worn units unless the prize is worth it.
  */
-export function fatigueCost(context: AttackContext, armies: readonly UnitState[]): number {
+function fatigueCost(context: AttackContext, armies: readonly UnitState[]): number {
   const { scenario, weights } = context;
-  if (!usesD20(scenario) || scenario.d20 === undefined) return 0;
   const { demoralizedLevel } = scenario.d20.fatigue;
   return armies
     .filter((unit) => unit.fatigue + 1 >= demoralizedLevel)

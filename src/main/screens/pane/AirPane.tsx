@@ -1,7 +1,6 @@
 import { type JSX, useId, useState } from "react";
 import { generalOf, isAllWeatherAirbaseFor, unitDefinitionIn, unitKindIn, unitTypeIn } from "../../engine/air/pieces";
 import { type AirMission, type AirMissionKind, type Scenario, type UnitId, type UnitState } from "../../engine/types";
-import { weatherEffectsIn, weatherIn, zoneOf } from "../../engine/weather";
 import { WeatherChip } from "../../components/weather/WeatherChip";
 import { WeatherIcon } from "../../components/weather/WeatherIcon";
 import { useAppDispatch } from "../../hooks";
@@ -11,8 +10,7 @@ import {
   aircraftMeta,
   allowedMissions,
   antiAirLabel,
-  baseWeatherHeading,
-  baseWeatherVerdict,
+  baseWeather,
   fightersLabel,
   generalPill,
   missionHints,
@@ -31,6 +29,7 @@ import {
   type PlanningSession,
   raidPreview
 } from "../../state/planning";
+import { DisbandControls } from "./DisbandControls";
 
 function sameMission(a: AirMission | undefined, b: AirMission): boolean {
   return a !== undefined && JSON.stringify(a) === JSON.stringify(b);
@@ -139,6 +138,7 @@ export function AirPane({ scenario, session, unitId }: AirPaneProps): JSX.Elemen
           </ul>
         </>
       )}
+      <DisbandControls scenario={scenario} session={session} unit={unit} />
       <button className="text-button" onClick={() => dispatch(closeAircraftPane())} type="button">{`Back to ${base}`}</button>
     </section>
   );
@@ -184,26 +184,18 @@ function TargetCard({ range, scenario, session, target, unit }: {
   );
 }
 
-/**
- * M11, T3, U2 (`ux-air-a`): the weather at the aircraft's base and whether it flies: aircraft are
- * grounded in Mud and Snow unless their airfield is paved.
- */
+/** M11, T3, U2 (`ux-air-a`): the weather at the aircraft's base and whether it flies. */
 function BaseWeather({ scenario, session, unit }: { readonly scenario: Scenario; readonly session: PlanningSession; readonly unit: UnitState }): JSX.Element | null {
-  const state = session.game.state;
-  const weather = weatherIn(scenario, state, unit.territoryId);
-  if (weather === undefined) return null;
-  const grounds = weatherEffectsIn(scenario, state, unit.territoryId, "grounds-aircraft").length > 0;
-  const paved = isAllWeatherAirbaseFor(scenario, state, unit.territoryId, unit.factionId);
-  const zone = zoneOf(scenario, unit.territoryId)?.name;
-  const verdict = baseWeatherVerdict(grounds, paved, weather.name);
+  const base = baseWeather(scenario, session.game.state, unit);
+  if (base === undefined) return null;
   return (
     <>
       <dt>
-        {baseWeatherHeading(zone)}
-        <WeatherIcon weatherId={weather.id} />
-        {` ${weather.name}`}
+        {base.heading}
+        <WeatherIcon weatherId={base.weather.id} />
+        {` ${base.weather.name}`}
       </dt>
-      <dd data-grounded={grounds && !paved}>{verdict}</dd>
+      <dd data-grounded={base.grounded}>{base.verdict}</dd>
     </>
   );
 }

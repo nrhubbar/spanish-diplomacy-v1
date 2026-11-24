@@ -1,14 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { initialGameState, resolveTurn } from "../main/engine/resolution";
-import { carryOf, carryScale, chargeReplenish, priceReplenishments, replenishQuote, uncharge } from "../main/engine/recruitment/rules";
+import { carryOf, carryScale, holdings } from "../main/engine/carry";
+import { chargeReplenish, priceReplenishments, replenishQuote, uncharge } from "../main/engine/recruitment/rules";
 import { viewFor } from "../main/engine/visibility";
 import { replenishDetail, replenishPriceLabel } from "../main/presentation/recruitment";
 import type { BuildingId, GameState, Resources, SubTerritoryId, TurnOutcome, UnitState } from "../main/engine/types";
-import { faction, spainD20, unit } from "./support";
+import { faction, spainWithAir, unit, withoutUpkeep } from "./support";
+import { pinned } from "./pinned";
 
 /** B2, D28.3: Replenish prices with a per-faction carry; D28.1: the Hospital and the Depot. */
 
-const scenario = spainD20();
+const scenario = withoutUpkeep(pinned(spainWithAir()));
 const republic = faction("republic");
 const north = faction("north");
 const regimentId = unit("rep-sevilla-34");
@@ -25,7 +27,7 @@ function short(missing: number, buildings: readonly string[] = [], carry?: Resou
     subTerritories: { ...base.subTerritories, [murcia]: { ...base.subTerritories[murcia]!, buildings: buildings as BuildingId[] } },
     treasuries: { ...base.treasuries, [republic]: amount(20, 10) },
     units: { [regimentId]: regiment },
-    ...(carry === undefined ? {} : { replenishCarry: { [republic]: carry } })
+    ...(carry === undefined ? {} : { carry: { [republic]: carry } })
   };
   return { state, unit: regiment };
 }
@@ -67,12 +69,14 @@ describe("Replenish prices carry their fractions (B2, D28.3)", () => {
     const applied = ofKind(result.outcomes, "replenish-applied")[0]!;
     const owed = replenishQuote(scenario, state, state.units[regimentId]!)!.owed;
     expect(applied.paid).toEqual(amount(2, 1));
-    const after = carryOf(result.finalState, republic);
-    for (const id of ["funds", "manpower"] as const) {
-      expect(of(applied.paid, id) * carryScale + of(after, id) - of(state.replenishCarry?.[republic], id)).toBe(of(owed, id));
-    }
     const income = ofKind(result.outcomes, "income").find((outcome) => outcome.factionId === republic)!.paid;
-    expect(result.finalState.treasuries[republic]).toEqual(amount(20 - 2 + of(income, "funds"), 10 - 1 + of(income, "manpower")));
+    const [before, after] = [holdings(state, republic), holdings(result.finalState, republic)];
+    for (const id of ["funds", "manpower"] as const) {
+      expect(of(after, id)).toBe(of(before, id) - of(owed, id) + of(income, id) * carryScale);
+      // Income settles the carry: the treasury is the whole part of what the faction has, and the rest waits in hand.
+      expect(of(result.finalState.treasuries[republic], id)).toBe(Math.floor(of(after, id) / carryScale));
+      expect(of(carryOf(result.finalState, republic), id)).toBeLessThanOrEqual(0);
+    }
   });
 
   it("prices several orders in turn, and an order the balance cannot cover leaves the carry alone", () => {
@@ -104,9 +108,9 @@ describe("Replenish prices carry their fractions (B2, D28.3)", () => {
 
   it("is the viewer's own: viewFor drops other factions' carries", () => {
     const { state } = short(100);
-    const carried: GameState = { ...state, replenishCarry: { [republic]: amount(5, 5), [north]: amount(7, 7) } };
-    expect(viewFor(scenario, carried, republic).replenishCarry).toEqual({ [republic]: amount(5, 5) });
-    expect(viewFor(scenario, carried, undefined).replenishCarry).toEqual({});
+    const carried: GameState = { ...state, carry: { [republic]: amount(5, 5), [north]: amount(7, 7) } };
+    expect(viewFor(scenario, carried, republic).carry).toEqual({ [republic]: amount(5, 5) });
+    expect(viewFor(scenario, carried, undefined).carry).toEqual({});
   });
 });
 

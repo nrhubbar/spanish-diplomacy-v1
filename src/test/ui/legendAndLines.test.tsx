@@ -2,7 +2,7 @@ import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { raisedUnitId } from "../../main/engine/recruitment/rules";
 import { initialGameState } from "../../main/engine/resolution";
-import type { D20BattleOutcome, GameState, GradeId, Scenario, SubTerritoryId, TurnOutcome, UnitTypeId } from "../../main/engine/types";
+import type { BattleOutcome, GameState, GradeId, Scenario, SubTerritoryId, TurnOutcome, UnitTypeId } from "../../main/engine/types";
 import { legendEntries, MapLegend } from "../../main/map/MapLegend";
 import { type MapView, staticMapView } from "../../main/map/view";
 import {
@@ -17,7 +17,7 @@ import {
   unitsLabel
 } from "../../main/presentation/systemText/lines";
 import { madridRepulsed } from "../battleFixtures";
-import { faction, move, spain, spainD20, territory, tiny, unit } from "../support";
+import { faction, move, spain, spainWithAir, territory, tiny, unit } from "../support";
 
 afterEach(cleanup);
 
@@ -49,7 +49,7 @@ describe("the map legend (V9)", () => {
     const outcomes = [
       { kind: "successful-move", order },
       { kind: "bounced-move", order },
-      { kind: "disbanded-move", order },
+      { kind: "disbanded-move", men: 500, order },
       madridRepulsed
     ] as unknown as readonly TurnOutcome[];
     const view: MapView = { ...staticMapView, destinationIds: [territory("castilla-la-mancha")], outcomes, plannedOrders: [order] };
@@ -70,15 +70,14 @@ describe("the map legend (V9)", () => {
   });
 
   it("keys a d20 battle by its grade's family", () => {
-    const d20 = spainD20();
-    const battle: D20BattleOutcome = {
+    const d20 = spainWithAir();
+    const battle: BattleOutcome = {
       ...madridRepulsed,
-      dice: "d20",
       die: 18,
       grade: "defender-destroyed" as GradeId,
       ground: "all",
       score: 20
-    } as unknown as D20BattleOutcome;
+    } as unknown as BattleOutcome;
     expect(legendEntries(d20, initialGameState(d20), { ...staticMapView, outcomes: [battle] })).toContain("defender-eliminated");
   });
 

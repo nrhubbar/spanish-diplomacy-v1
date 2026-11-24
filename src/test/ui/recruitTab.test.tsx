@@ -46,16 +46,23 @@ function withCapital(state: GameState, id: string, buildings: readonly string[])
   return { ...state, subTerritories: { ...state.subTerritories, [id]: { ...before, buildings: buildings as readonly BuildingId[] } } };
 }
 
+/** A state whose territory has no Factory, so two Recruit orders a turn and what needs one is locked. */
+function withoutFactory(state: GameState, id: string): GameState {
+  const before = state.subTerritories[id as SubTerritoryId];
+  if (before === undefined) throw new Error(id);
+  return { ...state, subTerritories: { ...state.subTerritories, [id]: { ...before, development: { ...before.development, factory: 0 } as GameState["subTerritories"][SubTerritoryId]["development"] } } };
+}
+
 describe("the Recruit tab (X4)", () => {
   const start = initialGameState(spain());
 
   it("heads the list with the capital and its buildings, and counts the orders left", () => {
     renderTab(session(start), territory("madrid"));
     expect(screen.getByRole("heading", { name: "Recruit at Madrid" })).toBeTruthy();
-    expect(screen.getByTitle("Buildings in the capital").textContent).toMatch(/^Barracks \u00b7 .*Factory/u);
+    expect(screen.getByTitle("What this territory recruits with").textContent).toMatch(/^Barracks \u00b7 .*Depot/u);
     expect(screen.getByText("0 of 3 Recruit orders here this turn")).toBeTruthy();
     const list = screen.getByRole("list", { name: "Recruit at Madrid" });
-    expect(within(list).getAllByRole("listitem").length).toBe(12);
+    expect(list.querySelectorAll(":scope > li").length).toBe(12);
     expect(screen.getByText(/^This turn: /u)).toBeTruthy();
     expect(screen.getByText(/^Left: 40 Funds, 10k? Manpower$/u)).toBeTruthy();
   });
@@ -66,13 +73,23 @@ describe("the Recruit tab (X4)", () => {
     expect(militia).toHaveAttribute("data-locked", "false");
     expect(militia).not.toHaveAttribute("tabindex");
     expect(within(militia).getByTitle("Attack-defence at full strength").textContent).toMatch(/^\d+-\d+$/u);
-    expect(militia.querySelector(".recruit-meta")?.textContent).toMatch(/^2 Funds \u00b7 3k? Manpower \u00b7 2.5k men \u00b7 1 turn$/u);
+    expect(militia.querySelector(".recruit-meta")?.textContent).toMatch(/^3 Funds \u00b7 3k? Manpower \u00b7 2.5k men \u00b7 1 turn \u00b7 upkeep 1.5k Manpower$/u);
     expect(within(militia).getByRole("tooltip").textContent).toContain("Needs no buildings.");
     expect(within(militia).getByRole("button", { name: "One fewer Militia column" })).toBeDisabled();
     expect(within(militia).getByRole("button", { name: "One more Militia column" })).toBeEnabled();
     const infantry = row("Infantry regiment");
-    expect(infantry.querySelector(".recruit-meta")?.textContent).toMatch(/700 men \u00b7 2 turns$/u);
+    expect(infantry.querySelector(".recruit-meta")?.textContent).toMatch(/700 men \u00b7 2 turns \u00b7 upkeep 0.25k Manpower$/u);
     expect(within(infantry).getByRole("tooltip").textContent).toContain("Needs: Barracks \u2713");
+  });
+
+  it("folds a type's special effects away until asked for, and gives a type without any no fold-out", () => {
+    renderTab(session(start), territory("madrid"));
+    const artillery = row("Artillery group");
+    const fold = artillery.querySelector("details")!;
+    expect(fold).not.toHaveAttribute("open");
+    expect(fold.querySelector("summary")?.textContent).toBe("Special effects of the Artillery group");
+    expect([...fold.querySelectorAll("li")].map((line) => line.textContent)).toEqual([expect.stringMatching(/artillery attack points/u), expect.stringMatching(/^Can't attack alone/u)]);
+    expect(row("Infantry regiment").querySelector("details")).toBeNull();
   });
 
   it("says why a type is locked, inline and in the details", () => {
@@ -87,7 +104,7 @@ describe("the Recruit tab (X4)", () => {
   });
 
   it("ticks the buildings a capital has and crosses the ones it lacks", () => {
-    renderTab(session(start), territory("cantabria"));
+    renderTab(session(withoutFactory(start, "cantabria")), territory("cantabria"));
     expect(screen.getByRole("heading", { name: "Recruit at Cantabria" })).toBeTruthy();
     const artillery = row("Artillery group");
     expect(artillery).toHaveAttribute("data-locked", "true");
@@ -96,12 +113,12 @@ describe("the Recruit tab (X4)", () => {
     expect(screen.getByText("0 of 2 Recruit orders here this turn")).toBeTruthy();
   });
 
-  it("names a capital with no buildings, and an unknown building by its id", () => {
+  it("names only the Factory where the capital has no buildings, and an unknown building by its id", () => {
     renderTab(session(withCapital(start, "cantabria", [])), territory("cantabria"));
-    expect(screen.getByTitle("Buildings in the capital").textContent).toBe("No buildings");
+    expect(screen.getByTitle("What this territory recruits with").textContent).toBe("Factory");
     cleanup();
     renderTab(session(withCapital(start, "cantabria", ["barracks", "secret-works"])), territory("cantabria"));
-    expect(screen.getByTitle("Buildings in the capital").textContent).toBe("Barracks \u00b7 secret-works");
+    expect(screen.getByTitle("What this territory recruits with").textContent).toBe("Barracks \u00b7 secret-works \u00b7 Factory");
   });
 
   it("locks every type with the site's problem where the faction cannot recruit", () => {
@@ -111,11 +128,11 @@ describe("the Recruit tab (X4)", () => {
     const militia = row("Militia column");
     expect(militia).toHaveAttribute("data-locked", "true");
     expect(militia.querySelector(".recruit-lock")?.textContent).toContain("You must hold Navarra to recruit there.");
-    expect(screen.queryAllByRole("group")).toHaveLength(0);
+    expect(screen.queryAllByRole("group", { name: /to recruit$/u })).toHaveLength(0);
   });
 
   it("disables adding once the territory's orders are used, and says so", () => {
-    const full = session(start, { ...emptyDraft, recruits: [recruit("cantabria", "militia-column"), recruit("cantabria", "militia-column")] });
+    const full = session(withoutFactory(start, "cantabria"), { ...emptyDraft, recruits: [recruit("cantabria", "militia-column"), recruit("cantabria", "militia-column")] });
     renderTab(full, territory("cantabria"));
     expect(screen.getByText("2 of 2 Recruit orders here this turn")).toBeTruthy();
     const militia = row("Militia column");
@@ -125,7 +142,7 @@ describe("the Recruit tab (X4)", () => {
     expect(more).toHaveAttribute("title", "No Recruit orders left here this turn.");
     expect(within(militia).getByRole("button", { name: "One fewer Militia column" })).toBeEnabled();
     expect(within(militia).getByRole("tooltip").textContent).toContain("No Recruit orders left here this turn.");
-    expect(screen.getByText(/^This turn: 4 Funds, 6k? Manpower$/u)).toBeTruthy();
+    expect(screen.getByText(/^This turn: 6 Funds, 6k? Manpower$/u)).toBeTruthy();
   });
 
   it("disables adding what the treasury cannot pay, naming the resource", () => {
@@ -164,6 +181,6 @@ describe("the Recruit tab (X4)", () => {
     };
     renderTab(session(start), territory("cantabria"), noCapital);
     expect(screen.getByRole("heading", { name: "Recruit at Cantabria" })).toBeTruthy();
-    expect(screen.getByTitle("Buildings in the capital").textContent).toBe("No buildings");
+    expect(screen.getByTitle("What this territory recruits with").textContent).toBe("Factory");
   });
 });

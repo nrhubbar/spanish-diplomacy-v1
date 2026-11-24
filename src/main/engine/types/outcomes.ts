@@ -36,7 +36,7 @@ export * from "./outcomes/moves";
 export * from "./outcomes/recruitment";
 export * from "./outcomes/weather";
 
-/** Outcomes of the Milestone 2 rules, the only ones `m2-strength` produces. */
+/** Outcomes of the Milestone 2 rules. */
 export type MilestoneTwoOutcome =
   | SuccessfulMoveOutcome
   | BouncedMoveOutcome

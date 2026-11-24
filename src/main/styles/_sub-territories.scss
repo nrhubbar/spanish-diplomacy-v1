@@ -68,10 +68,6 @@
 }
 
 // The focus view (X3, Q-UX-04) and the territory pane's sub-territory list.
-.sub-territory-back {
-  margin-bottom: 2px;
-}
-
 .capital-star {
   color: var(--gold);
   text-shadow: 0 0 1px var(--ink);
@@ -178,47 +174,4 @@
   height: 0.7rem;
   border: 1px solid rgb(36 29 24 / 55%);
   border-radius: 2px;
-}
-
-// Contested-ground orders (C1, Q-UX-14): Attack leads as the default; blocked kinds are greyed with the reason.
-.order-choice[data-order-kind="attack"] {
-  border-left: 4px solid var(--gold);
-  background: var(--gold-wash);
-}
-
-.order-choice[data-order-kind="attack"] .order-choice-icon,
-.order-choice[data-order-kind="hold"] .order-choice-icon {
-  border-top-style: solid;
-  border-top-color: var(--accent);
-}
-
-.order-choice[data-order-kind="withdraw"] .order-choice-icon {
-  transform: scaleX(-1);
-}
-
-.order-choice[data-blocked="true"] {
-  color: rgb(36 29 24 / 45%);
-  background: rgb(251 246 234 / 55%);
-  cursor: not-allowed;
-
-  &:hover {
-    border-color: rgb(36 29 24 / 35%);
-    background: rgb(251 246 234 / 55%);
-  }
-
-  // m9, X8: blocked orders keep their icon, greyed like their text.
-  .order-choice-icon {
-    opacity: 0.4;
-    filter: grayscale(1);
-  }
-
-  .order-choice-label {
-    font-family: var(--serif);
-    font-size: 1.02rem;
-    font-weight: 700;
-  }
-
-  .order-choice-description {
-    color: rgb(36 29 24 / 50%);
-  }
 }

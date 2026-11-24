@@ -4,29 +4,14 @@ import { planWithdrawals } from "../main/ai/orders/withdraw";
 import { createPlan } from "../main/ai/plan";
 import { generateComputerSubmission } from "../main/ai/computerPlayer";
 import { seededRandom } from "../main/engine/random";
-import { type GameState, isMoveOrder, type Scenario, type TerritoryControl } from "../main/engine/types";
+import { type GameState, isMoveOrder, type Scenario } from "../main/engine/types";
 import { victoryProgress } from "../main/engine/victory";
-import { armyValue } from "../main/engine/combat";
-import type { Placement } from "./aiBoards";
-import { armyIn, faction, spain, spainD20, territory, unit, withUnits } from "./support";
+import { armyValue, oddsForValues } from "../main/engine/combat";
+import { heldWhole, oneShortOwners, type Placement } from "./aiBoards";
+import { armyIn, faction, spain, spainWithAir, territory, unit, withUnits } from "./support";
+import { lightBarricades, pinned } from "./pinned";
 
 // D23 and D24: the computer player's defence of the ground that decides the game, and of its seat.
-
-/** The Republic one territory short of victory (9 of 10), each territory held whole by one side. */
-const owners: Readonly<Record<string, string>> = {
-  andalucia: "south", aragon: "north", cantabria: "republic", catalunya: "republic", ceuta: "south",
-  "castilla-la-mancha": "republic", "castilla-y-leon": "north", extremadura: "republic", galicia: "north",
-  "islas-baleares": "south", "la-rioja": "north", madrid: "republic", melilla: "south", murcia: "republic",
-  navarra: "north", "pais-vasco": "republic", asturias: "republic", valencia: "republic"
-};
-
-function oneShort(scenario: Scenario, units: readonly (readonly [string, string, string])[]): GameState {
-  const state = withUnits(scenario, units);
-  const control: Record<string, TerritoryControl> = {};
-  for (const [id, holder] of Object.entries(owners)) control[id] = { factionId: faction(holder), kind: "controlled" };
-  const subTerritories = Object.fromEntries(scenario.subTerritories.map((sub) => [sub.id, { ...state.subTerritories[sub.id], holder: faction(owners[sub.territoryId] ?? "north") }]));
-  return { ...state, control, subTerritories: subTerritories as GameState["subTerritories"] };
-}
 
 /** Own armies standing in the territory once the faction's orders are carried out. */
 const stillHeld = (scenario: Scenario, state: GameState, factionId: string, territoryId: string, seed: number): number => {
@@ -53,8 +38,8 @@ describe("victory defence (D23)", () => {
   ] as const;
 
   it("marks only ground a rival in reach would win by taking as critical", () => {
-    const scenario = spainD20();
-    const state = oneShort(scenario, units);
+    const scenario = pinned(spainWithAir());
+    const state = heldWhole(scenario, oneShortOwners, units);
     const republic = victoryProgress(scenario, state).find((entry) => entry.factionId === "republic");
     expect(republic && republic.territoryThreshold - republic.territoriesControlled).toBe(1);
     const north = assess(scenario, state, faction("north"));
@@ -65,11 +50,16 @@ describe("victory defence (D23)", () => {
     expect(south.stake(territory("ceuta"))).toBe(south.profile.stakes.territory);
   });
 
-  it("never empties a victory-critical territory, and garrisons one standing empty", () => {
-    for (const scenario of [spain(), spainD20()]) {
-      const state = oneShort(scenario, units);
+  it("empties a victory-critical territory only to strike the leader, and garrisons one standing empty", () => {
+    for (const scenario of [spain(), spainWithAir()]) {
+      const state = heldWhole(scenario, oneShortOwners, units);
       for (const seed of [1, 2, 3]) {
-        for (const id of ["galicia", "castilla-y-leon", "la-rioja"]) expect(stillHeld(scenario, state, "north", id, seed), `${id}, seed ${String(seed)}`).toBeGreaterThan(0);
+        expect(stillHeld(scenario, state, "north", "la-rioja", seed), `la-rioja, seed ${String(seed)}`).toBeGreaterThan(0);
+        const moves = generateComputerSubmission(scenario, state, faction("north"), seededRandom(seed)).orders.filter(isMoveOrder);
+        for (const id of ["galicia", "castilla-y-leon", "navarra"].filter((entry) => stillHeld(scenario, state, "north", entry, seed) === 0)) {
+          const struck = moves.filter((order) => order.from === id).map((order) => oneShortOwners[order.to]);
+          expect(struck, `${id}, seed ${String(seed)}`).toContain("republic");
+        }
       }
     }
   });
@@ -77,7 +67,7 @@ describe("victory defence (D23)", () => {
   it("keeps the last army on an objective even when another is planned to arrive (S3, seed 57)", () => {
     // A planned arrival can fail (a full railhead, a bounce), so it never frees the last army
     // standing on an objective to leave it.
-    const scenario = spainD20();
+    const scenario = pinned(spainWithAir());
     const state = withUnits(scenario, [["north-milan-32", "north", "asturias"], ["north-zamora-29", "north", "galicia"], ["rep-asturian-militia", "republic", "cantabria"]]);
     const own = Object.values(state.units).filter((entry) => entry.factionId === "north");
     const plan = createPlan(assess(scenario, state, faction("north")), own);
@@ -91,7 +81,7 @@ describe("victory defence (D23)", () => {
   it("counts a rail-borne threat (pressureOn reach)", () => {
     // Under `allowance` the Madrid guards can ride the rail beyond the next territory; under
     // one-step movement they threaten only Madrid's neighbours.
-    const scenario = spainD20();
+    const scenario = pinned(spainWithAir());
     const state = withUnits(scenario, [["rep-madrid-security", "republic", "madrid"], ["north-aragon-17", "north", "aragon"]]);
     const view = assess(scenario, state, faction("north"));
     const far = scenario.territories.map((entry) => entry.id).filter((id) => view.threatOrigins(id).has(territory("madrid")));
@@ -108,24 +98,26 @@ describe("withdrawals from the seat and the last objective (D24)", () => {
 
   it("does not abandon the seat while it can still be held", () => {
     // Granada No. 6 holds part of Andalucia, the South's seat and its only objective with units,
-    // against three Republican regiments: 12 to 6. The old 2:1 rule withdrew it.
-    const scenario = spain();
+    // against six Republican regiments: 24 to 6. The old 2:1 rule withdrew it.
+    const scenario = lightBarricades(pinned(spain()));
     const state = withUnits(scenario, [
       ["south-granada-6", "south", "andalucia"],
-      ["rep-vitoria-8", "republic", "andalucia"], ["rep-sevilla-34", "republic", "andalucia"], ["rep-castilla-3", "republic", "andalucia"]
+      ["rep-vitoria-8", "republic", "andalucia"], ["rep-sevilla-34", "republic", "andalucia"], ["rep-castilla-3", "republic", "andalucia"],
+      ["rep-otumba-9", "republic", "andalucia"], ["rep-guadalajara-10", "republic", "andalucia"], ["rep-wad-ras-1", "republic", "andalucia"]
     ]);
     expect(planWithdrawals(context(scenario, state, "south"))).toEqual([]);
     // The same odds on ordinary ground are hopeless, even odds of losing it whole: the North's
     // Caceres garrison, in Extremadura, which is neither its seat nor an objective.
     const elsewhere = withUnits(scenario, [
       ["north-argel-27", "north", "extremadura"],
-      ["rep-vitoria-8", "republic", "extremadura"], ["rep-sevilla-34", "republic", "extremadura"], ["rep-castilla-3", "republic", "extremadura"]
+      ["rep-vitoria-8", "republic", "extremadura"], ["rep-sevilla-34", "republic", "extremadura"], ["rep-castilla-3", "republic", "extremadura"],
+      ["rep-otumba-9", "republic", "extremadura"], ["rep-guadalajara-10", "republic", "extremadura"], ["rep-wad-ras-1", "republic", "extremadura"]
     ]);
     expect(planWithdrawals(context(scenario, elsewhere, "north")).map((order) => order.unitId)).toEqual([unit("north-argel-27")]);
   });
 
   it("on a hopeless seat, withdraws all but a rearguard, and a lone defender stays (R2, S3)", () => {
-    const scenario = spain();
+    const scenario = lightBarricades(pinned(spain()));
     const republicans: Placement = [
       ["rep-vitoria-8", "republic", "andalucia"], ["rep-sevilla-34", "republic", "andalucia"], ["rep-castilla-3", "republic", "andalucia"],
       ["rep-otumba-9", "republic", "andalucia"], ["rep-guadalajara-10", "republic", "andalucia"],
@@ -153,20 +145,28 @@ describe("withdrawals from the seat and the last objective (D24)", () => {
   it("never gives up two objectives at once: the second becomes the last stand", () => {
     // The North holds contested Pais Vasco and Aragon, its only objectives with units, and both
     // stands look hopeless by the ordinary rule (at least even odds of losing them whole).
-    const scenario = spain();
-    const state = withUnits(scenario, [
-      ["north-flandes-5", "north", "pais-vasco"], ["rep-basque-column", "republic", "pais-vasco"], ["rep-santander-column", "republic", "pais-vasco"],
+    const scenario = lightBarricades(pinned(spain()));
+    const full = withUnits(scenario, [
+      ["north-flandes-5", "north", "pais-vasco"], ["rep-santander-column", "republic", "pais-vasco"],
       ["rep-vitoria-8", "republic", "pais-vasco"], ["rep-sevilla-34", "republic", "pais-vasco"],
       ["north-aragon-17", "north", "aragon"], ["rep-durruti-column", "republic", "aragon"], ["rep-catalan-columns", "republic", "aragon"],
       ["rep-barcelona-security", "republic", "aragon"], ["rep-otumba-9", "republic", "aragon"]
     ]);
+    const halved = (id: string) => ({ ...armyIn(full, id), strength: armyIn(full, id).strength / 2 });
+    const state: GameState = { ...full, units: { ...full.units, [unit("north-flandes-5")]: halved("north-flandes-5"), [unit("north-aragon-17")]: halved("north-aragon-17") } };
+    const { hopelessTakeChance, lastStandTakeChance } = scenario.ai.profiles[faction("north")]!.withdraw;
+    for (const [id, attack] of [["pais-vasco", 12], ["aragon", 13]] as const) {
+      const { takeChance } = oddsForValues(scenario, state, { attackerFactionId: faction("republic"), defenderFactionIds: [faction("north")], diggingIn: false, territoryId: territory(id) }, attack, 3);
+      expect(takeChance).toBeGreaterThanOrEqual(hopelessTakeChance);
+      expect(takeChance).toBeLessThan(lastStandTakeChance);
+    }
     const orders = planWithdrawals(context(scenario, state, "north"));
     expect(orders.map((order) => order.from)).toHaveLength(1);
   });
 
   it("holds its last objective while it can, even when every unit there is demoralized", () => {
     // The North's only objective with units is Pais Vasco (not its seat), held by a shaken battalion.
-    const scenario = spain();
+    const scenario = lightBarricades(pinned(spain()));
     const base = withUnits(scenario, [["north-flandes-5", "north", "pais-vasco"], ["rep-basque-column", "republic", "pais-vasco"]]);
     const shaken = base.units[unit("north-flandes-5")];
     if (shaken === undefined) throw new Error("missing unit");

@@ -1,6 +1,6 @@
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import type { CombatModifier, D20BattleOutcome, GeneralId, GradeDefinition, GradeId, Scenario, SubTerritoryId, TraitId, UnitTypeId, WeatherId } from "../../main/engine/types";
+import type { CombatModifier, BattleOutcome, GeneralId, GradeDefinition, GradeId, SubTerritoryId, TraitId, UnitTypeId, WeatherId } from "../../main/engine/types";
 import {
   battleBands,
   battleTitle,
@@ -9,27 +9,23 @@ import {
   gradeOf,
   groundText,
   isBattle,
-  isD20Battle,
-  rawScore,
-  resultKeyOf,
-  termName
+  resultKeyOf
 } from "../../main/presentation/grades";
 import { chanceTone, modifierName, modifierPhrase, oddsSummary, percent, signed } from "../../main/presentation/odds";
-import { BattleGradedRoll } from "../../main/screens/report/BattleGradedRoll";
+import { BattleRoll } from "../../main/screens/report/BattleRoll";
 import { army, madridRepulsed, resistance, side } from "../battleFixtures";
-import { faction, spainD20, territory } from "../support";
+import { faction, spainWithAir, territory } from "../support";
 
 const minus = "\u2212";
 const dot = "\u00b7";
 
-function d20Battle(overrides: Partial<D20BattleOutcome> = {}): D20BattleOutcome {
+function d20Battle(overrides: Partial<BattleOutcome> = {}): BattleOutcome {
   return {
     attacker: side(army("north-san-quintin-25", "north", "castilla-y-leon", 8)),
     attackerFactionId: faction("north"),
     column: 2,
     defender: side(army("rep-wad-ras-1", "republic", "madrid", 4)),
     demoralizedUnitIds: [],
-    dice: "d20",
     die: 12,
     grade: "stalemate" as GradeId,
     ground: 0,
@@ -49,22 +45,13 @@ function grade(attacker: GradeDefinition["attacker"], defender: Partial<GradeDef
   return { attacker, defender: { demoralized: "none", lossPercent: 0, weakestDestroyed: false, ...defender }, ground, id: "test" as GradeId, name: "Test" };
 }
 
-/** The scenario with no d20 rules. */
-function withoutD20(scenario: Scenario): Scenario {
-  const copy = { ...scenario };
-  delete (copy as { d20?: unknown }).d20;
-  return copy;
-}
-
 const none = { demoralized: "none", lossPercent: 0 } as const;
 
 describe("d20 grades in words (D1, D2, D8)", () => {
-  const scenario = spainD20();
+  const scenario = spainWithAir();
 
-  it("tells d20 battles from d6 battles and other outcomes", () => {
-    expect(isD20Battle(d20Battle())).toBe(true);
-    expect(isD20Battle(madridRepulsed)).toBe(false);
-    expect(isD20Battle({ kind: "raid" })).toBe(false);
+  it("tells battles from other outcomes", () => {
+    expect(isBattle(d20Battle())).toBe(true);
     expect(isBattle(madridRepulsed)).toBe(true);
     expect(isBattle({ kind: "raid" })).toBe(false);
   });
@@ -72,10 +59,9 @@ describe("d20 grades in words (D1, D2, D8)", () => {
   it("finds the battle's grade in the catalogue, and nothing without one", () => {
     expect(gradeOf(scenario, d20Battle())?.name).toBe("Stalemate");
     expect(gradeOf(scenario, d20Battle({ grade: "no-such-grade" as GradeId }))).toBeUndefined();
-    expect(gradeOf(withoutD20(scenario), d20Battle())).toBeUndefined();
   });
 
-  it("draws every grade as the nearest d6 result", () => {
+  it("draws every grade as the nearest result family", () => {
     expect(gradeFamily(grade({ demoralized: "none", lossPercent: 10 }, { lossPercent: 100 }, "all"))).toBe("defender-eliminated");
     expect(gradeFamily(grade({ demoralized: "none", lossPercent: 35 }, { lossPercent: 35 }, "all"))).toBe("defender-exchange");
     expect(gradeFamily(grade({ demoralized: "none", lossPercent: 10 }, { lossPercent: 35 }, "all"))).toBe("defender-demoralized");
@@ -87,11 +73,11 @@ describe("d20 grades in words (D1, D2, D8)", () => {
     expect(gradeFamily(grade({ demoralized: "half", lossPercent: 20 }, none, 0))).toBe("attacker-demoralized");
   });
 
-  it("keys and titles a battle by its dice", () => {
-    expect(resultKeyOf(scenario, madridRepulsed)).toBe(madridRepulsed.result);
+  it("keys and titles a battle by its grade", () => {
+    expect(resultKeyOf(scenario, madridRepulsed)).toBe("attacker-attrition");
     expect(resultKeyOf(scenario, d20Battle({ grade: "defender-destroyed" as GradeId }))).toBe("defender-eliminated");
     expect(resultKeyOf(scenario, d20Battle({ grade: "no-such-grade" as GradeId }))).toBe("both-demoralized");
-    expect(battleTitle(scenario, madridRepulsed)).toEqual(expect.any(String));
+    expect(battleTitle(scenario, madridRepulsed)).toBe("Attack checked");
     expect(battleTitle(scenario, d20Battle({ grade: "costly-victory" as GradeId }))).toBe("Costly victory");
     expect(battleTitle(scenario, d20Battle({ grade: "no-such-grade" as GradeId }))).toBe("no-such-grade");
   });
@@ -123,20 +109,11 @@ describe("d20 grades in words (D1, D2, D8)", () => {
     expect(hit?.band.to).toBeGreaterThanOrEqual(12);
     expect(bands.every((band) => band.grade !== undefined)).toBe(true);
     for (const band of bands) expect(band.range).toBe(band.band.from === band.band.to ? String(band.band.from) : `${String(band.band.from)}\u2013${String(band.band.to)}`);
-    expect(battleBands(withoutD20(scenario), d20Battle())).toEqual([]);
-  });
-
-  it("names score-line terms and sums the unclamped score", () => {
-    expect(termName(resistance, scenario)).toBe("Popular resistance");
-    expect(termName({ kind: "dug-in", level: 2, roll: -2 }, scenario)).toBe("Dug in");
-    expect(termName({ kind: "barricades", roll: -2 }, scenario)).toBe("Barricades (city held)");
-    expect(rawScore(d20Battle({ die: 19, modifiers: [{ kind: "odds-overflow", roll: 4 }] }))).toBe(23);
-    expect(rawScore(d20Battle({ die: 3 }))).toBe(3);
   });
 });
 
 describe("modifier names and odds words (C15, A2, D5, D7)", () => {
-  const scenario = spainD20();
+  const scenario = spainWithAir();
   const general = "jose-miaja" as GeneralId;
 
   it("names every modifier kind", () => {
@@ -161,8 +138,6 @@ describe("modifier names and odds words (C15, A2, D5, D7)", () => {
     ];
     for (const [modifier, name] of cases) expect(modifierName(modifier, scenario)).toMatch(typeof name === "string" ? new RegExp(`^${name.replace(/[()+]/gu, "\\$&")}$`, "u") : name);
     expect(modifierName({ kind: "unit-bonus", points: 6, role: "attack", roll: 2, unitTypeId: "artillery-group" as UnitTypeId })).toBe("Supporting arms");
-    expect(termName({ kind: "unit-bonus", points: 6, role: "attack", roll: 2, unitTypeId: "artillery-group" as UnitTypeId }, scenario))
-      .toBe(scenario.index.unitTypes.get("artillery-group" as UnitTypeId)?.name);
   });
 
   it("phrases odds steps and the weather with their roll change", () => {
@@ -191,14 +166,16 @@ describe("modifier names and odds words (C15, A2, D5, D7)", () => {
 });
 
 describe("the d20 battle card's roll (D8)", () => {
-  const scenario = spainD20();
+  const scenario = spainWithAir();
 
   it("shows the odds, the die, every term, the score and the column's bands", () => {
     const battle = d20Battle({ die: 12, modifiers: [{ kind: "dug-in", level: 2, roll: -2 }, resistance], score: 9 });
-    const { container } = render(<BattleGradedRoll battle={battle} scenario={scenario} />);
+    const { container } = render(<BattleRoll battle={battle} scenario={scenario} />);
     expect(container.querySelector(".battle-odds")).toHaveTextContent(`2:1 odds ${dot} the 2:1 column of the d20 table`);
-    expect(container.querySelector(".battle-score-sum")).toHaveTextContent(`d20 12 ${dot} Dug in ${minus}2 ${dot} Popular resistance ${minus}1 = 9`);
-    expect(container.querySelector(".battle-score-clamp")).toBeNull();
+    expect(screen.getByText("Die roll 12")).toBeInTheDocument();
+    const ledger = screen.getByRole("table", { name: "Effects on the roll:" });
+    expect(within(ledger).getAllByRole("row").map((row) => row.textContent)).toEqual([`Dug in, level 2${minus}2`, `Popular resistance${minus}1`, `Total${minus}3`]);
+    expect(container.querySelector(".battle-outcome")).toHaveTextContent(/^Outcome: 9$/u);
     const table = screen.getByRole("table", { name: "What each score in the 2:1 column does" });
     const rows = within(table).getAllByRole("row").slice(1);
     expect(rows.length).toBe(battleBands(scenario, battle).length);
@@ -210,8 +187,8 @@ describe("the d20 battle card's roll (D8)", () => {
 
   it("says when the score was kept within 0 to 20, and reads the lowest column", () => {
     const battle = d20Battle({ column: 0, die: 2, modifiers: [{ halvings: 2, kind: "odds-halving", roll: -4 }], oddsLabel: "1:4", score: 0 });
-    const { container } = render(<BattleGradedRoll battle={battle} scenario={scenario} />);
-    expect(container.querySelector(".battle-score-clamp")).toHaveTextContent("(-2, kept within 0 to 20)");
+    const { container } = render(<BattleRoll battle={battle} scenario={scenario} />);
+    expect(container.querySelector(".battle-outcome")).toHaveTextContent(`Outcome: 0 (${minus}2, kept within 0 to 20)`);
     expect(container.querySelector(".battle-odds")).toHaveTextContent("the below 1:1 column");
   });
 });

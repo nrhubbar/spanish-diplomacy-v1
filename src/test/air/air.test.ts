@@ -89,7 +89,7 @@ describe("aircraft and their missions (U2)", () => {
     expect(raidResult(scenario, -4)).toBe("air-eliminated");
     expect(raidResult(scenario, 3)).toBe("air-eliminated");
     expect(raidResult(scenario, 4)).toBe("nothing-hit");
-    expect(raidResult(scenario, 16)).toBe("income-cut");
+    expect(raidResult(scenario, 14)).toBe("income-cut");
     expect(raidResult(scenario, 25)).toBe("building-hit");
   });
 });
@@ -150,8 +150,8 @@ describe("raids (U3)", () => {
 
   it("cuts the target's income for one turn through the incomeDelta hook", () => {
     const cut: GameState = { ...state, raidCuts: [{ factionId: faction("north"), subTerritoryId: "valladolid" as SubTerritoryId, turnNumber: 1 }] };
-    // Valladolid: farms 3 (Manpower) and industry 1 (Funds), and the North holds Castilla y Leon whole.
-    expect(raidIncomeDelta({ factionId: faction("north"), income: {}, scenario, state: cut })).toEqual({ funds: -1, manpower: -3 });
+    // Valladolid: farms 3 (Manpower) and Factory 1 (Funds), and the North holds Castilla y Leon whole.
+    expect(raidIncomeDelta({ factionId: faction("north"), income: {}, scenario, state: cut })).toEqual({ funds: -1.5, manpower: -3 });
     expect(raidIncomeDelta({ factionId: faction("republic"), income: {}, scenario, state: cut })).toEqual({});
     expect(raidIncomeDelta({ factionId: faction("north"), income: {}, scenario, state: { ...cut, turnNumber: 2 } })).toEqual({});
   });
@@ -218,7 +218,6 @@ describe("recon, support, grounding and rebasing (U2, U4, D7)", () => {
     const battle = result.outcomes.find((outcome) => outcome.kind === "battle");
     const defenders = battle?.defender.armies.map((army) => army.unitId) ?? [];
     expect(defenders).not.toContain("rep-breguet-bombers");
-    expect(defenders).not.toContain("rep-general-miaja");
     expect(defenders).toContain("rep-wad-ras-1");
   });
 

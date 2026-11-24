@@ -39,6 +39,8 @@ export interface MapView {
   readonly selectedAircraftId?: UnitId;
   readonly selectedTerritoryId?: TerritoryId;
   readonly selectedUnitIds: ReadonlySet<UnitId>;
+  /** U6: the units and aircraft ticked in the Invade or Reinforce pane; their counters glow like selected ones. */
+  readonly tickedUnitIds?: ReadonlySet<UnitId>;
   /** O1: the order of each of the planning player's armies, named on its counter. Absent elsewhere. */
   readonly unitOrders?: ReadonlyMap<UnitId, ArmyOrder>;
 }
@@ -51,6 +53,11 @@ export const staticMapView: MapView = {
   plannedOrders: [],
   selectedUnitIds: new Set()
 };
+
+/** The unit's counter glows: it is selected, or ticked in the Invade or Reinforce pane. */
+export function glows(view: Pick<MapView, "selectedUnitIds" | "tickedUnitIds">, unitId: UnitId): boolean {
+  return view.selectedUnitIds.has(unitId) || view.tickedUnitIds?.has(unitId) === true;
+}
 
 /** The territory the map outlines as chosen and opens into single armies: the selection or the focus. */
 export function highlightedTerritoryId(view: MapView): TerritoryId | undefined {

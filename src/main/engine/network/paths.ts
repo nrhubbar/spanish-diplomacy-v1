@@ -125,6 +125,6 @@ export function motorPath(scenario: Scenario, state: GameState, fromSubs: readon
   const overPass = searchMotor(scenario, state, fromSubs, territories, true);
   const pass = overPass?.map(({ link }) => passName(link)).find((name) => name !== undefined);
   return pass === undefined
-    ? { code: "no-road", ok: false, reason: "Motor needs a main road all the way." }
+    ? { code: "no-road", ok: false, reason: `Motor needs a ${scenario.linkModifiers.road?.motorLevel === "main" ? "main road" : "road"} all the way.` }
     : { code: "pass-blocks-motor", ok: false, reason: `Motor can't cross the ${pass} pass.` };
 }

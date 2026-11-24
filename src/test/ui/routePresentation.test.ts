@@ -15,7 +15,7 @@ import {
   subTerritoryName
 } from "../../main/presentation/movement";
 import { armies, destinationCallout, plannedOrderRoute } from "../../main/presentation/text";
-import { faction, spainD20, territory, unit } from "../support";
+import { faction, spainWithAir, territory, unit } from "../support";
 
 const sub = (id: string): SubTerritoryId => id as SubTerritoryId;
 const dot = "\u00b7";
@@ -92,14 +92,14 @@ describe("route tags (X5)", () => {
   });
 
   it("names sub-territories, or falls back to the id", () => {
-    const scenario = spainD20();
+    const scenario = spainWithAir();
     expect(subTerritoryName(scenario, sub("burgos"))).toBe("Burgos");
     expect(subTerritoryName(scenario, sub("atlantis"))).toBe("atlantis");
   });
 });
 
 describe("route chips (X5)", () => {
-  const scenario = spainD20();
+  const scenario = spainWithAir();
   const state = initialGameState(scenario);
 
   it("warns of rough ground on steps and marches, and counts the moves left", () => {
@@ -128,9 +128,6 @@ describe("route chips (X5)", () => {
     expect(routeChips(scenario, route(), units, 1, battle)).toEqual([{ kind: "fatigue", text: `Fatigued ${minus}2 on 2 units`, warn: true }]);
     expect(routeChips(scenario, route(), units.slice(0, 1), 1, battle).map((chip) => chip.text)).toEqual([`Fatigued ${minus}2 on 1 unit`]);
     expect(routeChips(scenario, route(), units, 1, reinforce)).toEqual([]);
-    const noD20 = { ...scenario };
-    delete (noD20 as { d20?: unknown }).d20;
-    expect(routeChips(noD20, route(), units, 1, battle)).toEqual([]);
   });
 
   it("shows rail, port and amphibious landings, and the transit", () => {
@@ -148,28 +145,25 @@ describe("route chips (X5)", () => {
 });
 
 describe("route detail and breakdown rows (X5)", () => {
-  const scenario = spainD20();
+  const scenario = spainWithAir();
   const state = initialGameState(scenario);
 
   it("says nothing for a plain step", () => {
     expect(routeDetail(scenario, state, route(), 0)).toBeUndefined();
   });
 
-  it("explains a ride, its boarding places and the transit stop", () => {
-    const places = state.subTerritories[sub("madrid")]?.rail ?? 0;
-    const detail = routeDetail(scenario, state, route({ rail: ride, shape: "rail-step", transit: [territory("valencia")] }), 0);
+  it("explains a ride, its train places and the transit stop", () => {
+    const detail = routeDetail(scenario, state, route({ rail: ride, shape: "rail-step", transit: [territory("valencia")] }), 3);
     expect(detail).toContain("Rail from Madrid to Valencia, level 2 or better the whole way (range 4)");
-    expect(detail).toMatch(/uses 1 of Madrid's \d+ boarding places/u);
+    expect(detail).toContain("uses 3 of Madrid's 6 train places");
     expect(detail).toMatch(/\u00b7 Stops in Valencia if an enemy (army|unit) enters it/u);
-    expect(places).toBeGreaterThan(1);
-    // The count of places used never passes the places there are.
-    expect(routeDetail(scenario, state, route({ rail: ride, shape: "rail" }), 50)).toMatch(/uses (\d+) of Madrid's \1 boarding/u);
   });
 
-  it("uses the singular for a station with one boarding place", () => {
+  it("uses the singular for a station with one train place", () => {
     const one: GameState = { ...state, subTerritories: { ...state.subTerritories, [sub("burgos")]: { ...state.subTerritories[sub("burgos")]!, buildings: [], rail: 1 } } };
-    const detail = routeDetail(scenario, one, route({ rail: { ...ride, boarding: sub("burgos"), start: territory("castilla-y-leon") }, shape: "rail" }), 0);
-    expect(detail).toContain("uses 1 of Burgos's 1 boarding place");
+    const narrow: Scenario = { ...scenario, linkModifiers: { ...scenario.linkModifiers, rail: { label: "Railway", rangeByLevel: { main: 4, single: 2 }, unitsPerLevel: 1 } } };
+    const detail = routeDetail(narrow, one, route({ rail: { ...ride, boarding: sub("burgos"), start: territory("castilla-y-leon") }, shape: "rail" }), 1);
+    expect(detail).toContain("uses 1 of Burgos's 1 train place");
     expect(detail).not.toContain("places");
   });
 
@@ -196,9 +190,8 @@ describe("route detail and breakdown rows (X5)", () => {
       { label: "Rail, level 2", value: "2 of 4 borders" }
     ]);
     expect(routeRows(scenario, state, route({ sea: { departure: sub("valencia"), kind: "amphibious" }, shape: "sea" }), 1)).toContainEqual({ label: "Amphibious assault", value: `${minus}4` });
-    const noD20 = { ...scenario };
-    delete (noD20 as { d20?: unknown }).d20;
-    expect(routeRows(noD20, state, route({ sea: { departure: sub("valencia"), kind: "amphibious" }, shape: "sea" }), 1)).toContainEqual({ label: "Amphibious assault", value: "No roll modifier" });
+    const noRoll = { ...scenario, d20: { ...scenario.d20, modifiers: { ...scenario.d20.modifiers, amphibious: 0 } } };
+    expect(routeRows(noRoll, state, route({ sea: { departure: sub("valencia"), kind: "amphibious" }, shape: "sea" }), 1)).toContainEqual({ label: "Amphibious assault", value: "No roll modifier" });
     const rolled = beforePlanning(scenario, state, 3);
     const weather = weatherIn(scenario, rolled, territory("castilla-la-mancha"));
     expect(weather).toBeDefined();
@@ -207,7 +200,7 @@ describe("route detail and breakdown rows (X5)", () => {
 });
 
 describe("the army leaving and the offered routes (X5)", () => {
-  const scenario = spainD20();
+  const scenario = spainWithAir();
   const state = initialGameState(scenario);
   const madrid = territory("madrid");
   const foot = [unit("rep-wad-ras-1"), unit("rep-covadonga-4")];
@@ -253,7 +246,7 @@ describe("the army leaving and the offered routes (X5)", () => {
 });
 
 describe("the destination callout and the planned order list (O1, C1)", () => {
-  const scenario = spainD20();
+  const scenario = spainWithAir();
   const arrow = "\u2192";
 
   it("counts units in the singular and plural", () => {

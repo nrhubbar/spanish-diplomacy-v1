@@ -83,14 +83,6 @@ export function isAllWeatherAirbaseFor(scenario: Scenario, state: Pick<GameState
     state.subTerritories[sub.id]?.holder === factionId && hasBuildingEffect(scenario, state, sub.id, ["all-weather-airbase"]));
 }
 
-/** Units of the given kind, in id order. */
-export function unitsOfKind(scenario: Scenario, state: Pick<GameState, "raised" | "units">, kind: UnitKind): readonly UnitId[] {
-  return Object.keys(state.units)
-    .map((id) => id as UnitId)
-    .filter((id) => unitKindIn(scenario, state.raised, id) === kind)
-    .sort();
-}
-
 /** AG-3: the state with only its ground units, as the ground rules and their estimates see the board. */
 export function groundView<State extends Pick<GameState, "raised" | "units">>(scenario: Scenario, state: State): State {
   const units = Object.fromEntries(Object.entries(state.units).filter(([id]) => isGroundUnit(scenario, state.raised, id as UnitId)));
@@ -98,22 +90,12 @@ export function groundView<State extends Pick<GameState, "raised" | "units">>(sc
 }
 
 /**
- * CT-21, AG-2: under the d6 table generals are set aside from the ground steps, so they add no
- * point to a side, and this module gives their +1 and trait. The d20 module fights them as units of
- * value 0 and emits their modifiers itself (DC-16).
- */
-export function generalsSetAside(scenario: Scenario): boolean {
-  return scenario.rules.dice === "d6-table";
-}
-
-/**
  * D17, AG-17: whether a unit stands on the board through the ground steps (3 to 8), where it
- * holds ground, defends and counts for reinforcement (M11): never an aircraft, and a general
- * only under the d20 (under the d6 table generals are set aside with the aircraft).
+ * holds ground, defends and counts for reinforcement (M11): never an aircraft.
  */
 export function onGroundBoard(scenario: Scenario, raised: GameState["raised"], id: UnitId): boolean {
   const kind = unitKindIn(scenario, raised, id);
-  return kind === "ground" || (kind === "general" && !generalsSetAside(scenario));
+  return kind === "ground" || kind === "general";
 }
 
 /** D17, W6: another faction holds the whole territory (`holdsWhole`, from the partition's holders). */

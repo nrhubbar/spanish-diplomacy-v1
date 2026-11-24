@@ -85,12 +85,12 @@ describe("turn report battle cards (C14)", () => {
     const card = document.querySelector('.battle-card[data-sides="3"]');
     if (!(card instanceof HTMLElement)) throw new Error("no three-sided card");
     const scope = within(card);
-    expect(scope.getByText("Exchange")).toBeVisible();
-    expect(scope.getByText(/attack: Attacker demoralized$/)).toBeVisible();
-    expect(scope.getAllByRole("rowheader", { name: "Dug in level 1 (+1)" })).toHaveLength(2);
-    expect(scope.getAllByRole("rowheader", { name: "Popular resistance +1" })).toHaveLength(2);
+    expect(card.querySelector(".battle-title")).toHaveTextContent(/^Costly victory$/);
+    expect(scope.getByText(/attack: Attacker repulsed$/)).toBeVisible();
+    expect(scope.getAllByRole("rowheader", { name: "Dug in, level 1" })).toHaveLength(2);
+    expect(scope.getAllByRole("rowheader", { name: "Popular resistance" })).toHaveLength(2);
     expect(scope.getByRole("rowheader", { name: "Odds below 1:1 (1 halving)" })).toBeVisible();
-    expect(scope.getAllByRole("table", { name: "Die roll and modifiers" })).toHaveLength(2);
+    expect(scope.getAllByRole("table", { name: "Effects on the roll:" })).toHaveLength(2);
     expect(scope.getByText("Wad-Ras Infantry Regiment No. 1 was destroyed, losing 550 men.")).toBeVisible();
     expect(card.querySelector(".battle-flavor")?.textContent).toMatch(/\S/);
     const rule = scope.getByText("How a battle with several attackers is decided");
@@ -111,7 +111,7 @@ describe("turn report battle cards (C14)", () => {
   it("lists statuses and draws battle medallions on the map", async () => {
     const outcomes: readonly TurnOutcome[] = [
       ...spainShowcaseOutcomes(),
-      { capturedByFactionId: faction("north"), cause: { holdingFactionIds: [faction("north")], kind: "held" }, kind: "disbanded-move", order: move("republic", "rep-catalan-columns", "catalunya", "aragon") }
+      { capturedByFactionId: faction("north"), cause: { holdingFactionIds: [faction("north")], kind: "held" }, kind: "disbanded-move", men: 500, order: move("republic", "rep-catalan-columns", "catalunya", "aragon") }
     ];
     renderSession(resolution(outcomes), "/resolution");
     await screen.findByRole("application", { name: /map/ });
@@ -147,7 +147,7 @@ describe("planning with strength and morale (C5, C6, C15)", () => {
     expect(document.querySelector('[data-unit-id="rep-durruti-column"] .unit-counter-designation')?.textContent).toBe("DURR");
     expect(counter.querySelector(".unit-counter-designation")?.textContent).toBe("C4");
     expect(counter).toHaveAccessibleName(
-      "Covadonga Infantry Regiment No. 4, Republican Government, attack 1, defence 2 (full 4-6), 370 of 550 men, demoralized, cannot attack, dug in level 2 (+2), resting"
+      "Covadonga Infantry Regiment No. 4, Republican Government, attack 1, defence 2 (full 4-6), 370 of 550 men, demoralized, cannot attack, dug in level 2 (+4), resting"
     );
     expect(counter.querySelector(".unit-counter-current")?.textContent).toBe("1-2");
     expect(counter.querySelector(".unit-counter-full")?.textContent).toBe("4-6");
@@ -157,7 +157,7 @@ describe("planning with strength and morale (C5, C6, C15)", () => {
     await user.click(counter);
     const pane = document.querySelector<HTMLElement>(".map-pane")!;
     expect(within(pane).getByRole("button", { name: /Covadonga Infantry Regiment No. 4/ })).toHaveAccessibleName(
-      /370 of 550 men, demoralized, cannot attack, dug in level 2 \(\+2\)/
+      /370 of 550 men, demoralized, cannot attack, dug in level 2 \(\+4\)/
     );
     expect(within(pane).getByText(/Demoralized units fight at half their values and cannot attack/)).toBeVisible();
   });

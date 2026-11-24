@@ -13,12 +13,13 @@ import { initialGameState } from "../main/engine/resolution";
 import type { FactionId, GameState, LinkModifier, LinkWork, Order, Resources, Scenario } from "../main/engine/types";
 import { holdWhole } from "./air/holdWhole";
 import { faction, move, spainWithAir, territory, unit, withUnits } from "./support";
+import { pinned } from "./pinned";
 
 // R12: the computer player's new choices, case by case: March for a foot unit where trucks
 // can't follow, trucks only where Motor pays, Ground Support weighed by the air battle, Patrol
 // over threatened ground, and link works only where they open a route.
 
-const scenario = spainWithAir();
+const scenario = pinned(spainWithAir());
 const start = initialGameState(scenario);
 const republic = faction("republic");
 

@@ -5,8 +5,8 @@ import type { PackageSources } from "./registry";
 /**
  * Every shipped scenario package, loaded eagerly: for tests and the headless harness, which
  * need a registry synchronously. The app loads the same packages lazily (`lazySources.ts`).
- * Adding a folder with `scenario.json` and `map.json` under `src/scenarios/` (see
- * `src/scenarios/MANIFEST.md`) adds a scenario; no code changes are required.
+ * Adding a folder with `scenario.json` and `map.json` under `src/scenarios/` adds a scenario; no
+ * code changes are required.
  */
 export const builtInSources: PackageSources = {
   ...builtInAssetSources,

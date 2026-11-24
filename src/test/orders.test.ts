@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { initialGameState, resolveTurn } from "../main/engine/resolution";
-import { isD6Battle, isMoveOrder, isUnitOrder, type Order, type SystemOutcome, type TurnOutcome, type UnitTypeId } from "../main/engine/types";
+import { isMoveOrder, isUnitOrder, type Order, type SystemOutcome, type TurnOutcome, type UnitTypeId } from "../main/engine/types";
 import { unavailableOrderReason, validateSubmission } from "../main/engine/validation";
 import { describeSystemOutcome, isSystemOutcome } from "../main/presentation/systemText";
 import { describeOutcome } from "../main/presentation/text";
@@ -63,10 +63,8 @@ describe("outcomes of the Milestone 3 systems", () => {
     expect(describeSystemOutcome(income, { scenario: tiny() })).toBe("Red League's income from territories held whole: nothing.");
   });
 
-  it("tells d20 battles apart from d6 ones, and heads them with their grade (D8)", () => {
-    const d20 = { attacker: { armies: [], value: 0 }, defender: { armies: [], value: 0 }, dice: "d20", grade: "stalemate", kind: "battle", site: { kind: "assault", occupation: { kind: "held" }, territoryId: territory("harbor") } } as unknown as TurnOutcome;
-    expect(isD6Battle(d20)).toBe(false);
-    // tiny-front has no grade catalogue, so the grade id stands in for its name.
-    expect(describeOutcome(tiny(), d20)).toBe("Battle for Harbor: stalemate.");
+  it("heads a battle with its grade (D8)", () => {
+    const d20 = { attacker: { armies: [], value: 0 }, defender: { armies: [], value: 0 }, grade: "stalemate", kind: "battle", site: { kind: "assault", occupation: { kind: "held" }, territoryId: territory("harbor") } } as unknown as TurnOutcome;
+    expect(describeOutcome(tiny(), d20)).toBe("Battle for Harbor: Stalemate.");
   });
 });

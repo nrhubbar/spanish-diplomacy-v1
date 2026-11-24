@@ -1,164 +1,95 @@
 import { type JSX, useMemo } from "react";
-import { territoriesWithin, unitKindIn, unitTypeIn } from "../../engine/air/pieces";
-import { compareIds } from "../../engine/board";
+import { territoriesWithin, unitTypeIn } from "../../engine/air/pieces";
 import type { AirMission, GameState, Scenario, UnitId, UnitState } from "../../engine/types";
-import { aircraftCounterText } from "../../presentation/airPane";
-import { glyphs } from "../../presentation/glyphs";
-import { cssVariables } from "../../presentation/style";
+import { aircraftCounterText, aircraftGroupText } from "../../presentation/airPane";
 import { missionTerritoryId } from "../../state/planning/air";
-import type { MapPackage, MapPoint, ScenarioPackage } from "../../scenarios/loader";
-import { intersects, type ScreenRect } from "../placement";
+import type { MapPackage, MapPoint } from "../../scenarios/loader";
 import { mapTerritory } from "../anchors";
+import { itemUnits } from "../counterItems";
+import { GroupCounter } from "../GroupCounter";
+import type { AirLayout } from "../pieceLayout";
 import { markupForSymbols } from "../symbols";
+import { UnitCounter } from "../UnitCounter";
+import { glows } from "../view";
 import type { MapLayerProps } from "./slots";
 
-/** U2: the board without its aircraft, for the army counters; the air layer draws aircraft. */
-export function withoutAircraft(scenario: Scenario, game: GameState): GameState {
-  const units = Object.fromEntries(Object.entries(game.units).filter(([id]) => unitKindIn(scenario, game.raised, id as UnitId) !== "air"));
-  return Object.keys(units).length === Object.keys(game.units).length ? game : { ...game, units };
-}
-
-/** Where an airbase is drawn: the city of the faction's airfield sub-territory there, else the territory's label. */
-function basePoint(scenario: Scenario, map: MapPackage, game: GameState, unit: UnitState): MapPoint {
-  for (const sub of scenario.index.subTerritoriesByTerritory.get(unit.territoryId) ?? []) {
-    if (game.subTerritories[sub.id]?.holder !== unit.factionId) continue;
-    const airbase = (game.subTerritories[sub.id]?.buildings ?? []).some((id) =>
-      scenario.index.buildings.get(id)?.effects.some((effect) => effect.kind === "airbase" || effect.kind === "all-weather-airbase") ?? false);
-    const city = sub.cityIds.map((id) => map.cities.get(id)).find((point) => point !== undefined);
-    if (airbase && city !== undefined) return city;
-  }
-  return mapTerritory(map, unit.territoryId).label;
-}
-
-/** U2, `ux-air-a`: a 3:2 NATO frame, at least 24 px tall for a touch target (WCAG 2.5.8). */
-export const airCounterWidth = 36;
-export const airCounterHeight = 24;
-/** The mission tag ("FTR", "BOMB") hangs under the counter. */
-const tagHeight = 12;
-const gap = 3;
-/** How far a squadron sits from its airfield's city dot. */
-const lift = 8;
-
-/** Where one aircraft counter is drawn, in screen pixels. */
-export interface AirPlacement {
-  readonly base: { readonly x: number; readonly y: number };
-  readonly position: { readonly x: number; readonly y: number };
-  readonly unit: UnitState;
-}
-
-/** The aircraft on the board, in a stable order. */
-function aircraftOf(scenario: Scenario, game: GameState): readonly UnitState[] {
-  return Object.values(game.units)
-    .filter((unit) => unitKindIn(scenario, game.raised, unit.id) === "air")
-    .sort((a, b) => compareIds(a.territoryId, b.territoryId) || compareIds(a.factionId, b.factionId) || compareIds(a.id, b.id));
-}
-
-/**
- * B1, M3: places each faction's squadrons at an airfield as one row, beside the airfield's city
- * and clear of the names and controls in `obstacles` and of earlier rows. The rows' rectangles
- * (tags included) are returned so the army counters can be laid out around them.
- */
-export function placeAircraft(
-  { map, scenario }: ScenarioPackage,
-  game: GameState,
-  toScreen: MapLayerProps["toScreen"],
-  obstacles: readonly ScreenRect[],
-  /** Where the army stacks will go: kept clear when a spot allows, never at a name's expense. */
-  preferClear: readonly ScreenRect[] = []
-): { readonly placements: readonly AirPlacement[]; readonly rects: readonly ScreenRect[] } {
-  const rows = new Map<string, { readonly base: { readonly x: number; readonly y: number }; readonly units: UnitState[] }>();
-  for (const unit of aircraftOf(scenario, game)) {
-    const key = `${unit.territoryId}|${unit.factionId}`;
-    const row = rows.get(key) ?? { base: toScreen(basePoint(scenario, map, game, unit)), units: [] };
-    row.units.push(unit);
-    rows.set(key, row);
-  }
-  const placements: AirPlacement[] = [];
-  const rects: ScreenRect[] = [];
-  for (const { base, units } of rows.values()) {
-    const width = units.length * airCounterWidth + (units.length - 1) * gap;
-    const height = airCounterHeight + tagHeight;
-    const above: ScreenRect = { height, width, x: base.x - width / 2, y: base.y - lift - height };
-    const candidates: readonly ScreenRect[] = [
-      above,
-      { height, width, x: base.x - width - lift, y: base.y - lift - height },
-      { height, width, x: base.x + lift, y: base.y - lift - height },
-      { height, width, x: base.x - width - lift, y: base.y - height / 2 },
-      { height, width, x: base.x - width / 2, y: base.y + lift + 4 },
-      { height, width, x: base.x - width - lift, y: base.y + lift }
-    ];
-    const clear = (avoid: readonly ScreenRect[]) => candidates.find((candidate) => ![...avoid, ...rects].some((other) => intersects(candidate, other)));
-    const rect = clear([...obstacles, ...preferClear]) ?? clear(obstacles) ?? above;
-    rects.push(rect);
-    units.forEach((unit, index) => {
-      placements.push({ base, position: { x: rect.x + index * (airCounterWidth + gap), y: rect.y }, unit });
-    });
-  }
-  return { placements, rects };
-}
-
-/** The NATO symbol as the counter itself: the faction's fill and frame, with light wings to read on it. */
-function airSymbol(markup: string): string {
-  return markup.replaceAll("fill:#000000", "fill:#fffaf0").replaceAll("stroke:#000000;stroke-width:24", "stroke:#fffaf0;stroke-width:28");
-}
-
 interface AirLayerProps extends MapLayerProps {
-  /** From `placeAircraft`, computed before the army counters so both avoid each other. */
-  readonly placements: readonly AirPlacement[];
+  /** From `layoutPieces`, so aircraft and armies avoid each other. */
+  readonly layout: AirLayout;
 }
 
 /**
- * Map layer (U2, Q-UX-10): aircraft counters at their airfields with the NATO APP-6A fixed-wing
- * symbol, selected like units. The selected aircraft shows its range ring (the farthest territory
- * it reaches), and every planned mission a dashed line from base to target.
+ * Map layer (U2, D7): aircraft at their airfields, on the army counters' own cards, with the role
+ * in the short name's place, selected like units. The selected aircraft shows its range ring (the
+ * farthest territory it reaches), and every planned mission a dashed line from base to target.
  */
-export function AirLayer({ game, placements, scenarioPackage, toScreen, unitSymbols, view }: AirLayerProps): JSX.Element | null {
+export function AirLayer({ game, layout, level, scenarioPackage, toScreen, unitSymbols, view }: AirLayerProps): JSX.Element | null {
   const { map, scenario } = scenarioPackage;
   const symbols = useMemo(() => markupForSymbols(scenario, unitSymbols), [scenario, unitSymbols]);
+  const { metrics, placements } = layout;
   if (placements.length === 0) return null;
-  const counters = placements;
-  const selected = counters.find((entry) => entry.unit.id === view.selectedAircraftId);
-  const ring = selected === undefined ? undefined : rangeRing(scenario, map, game, selected.unit, selected.base, toScreen);
+  const placementOf = (id: UnitId | undefined) => placements.find(({ item }) => itemUnits(item).some((unit) => unit.id === id));
+  const selected = view.selectedAircraftId === undefined ? undefined : game.units[view.selectedAircraftId];
+  const selectedBase = placementOf(selected?.id)?.base;
+  const ring = selected === undefined || selectedBase === undefined ? undefined : rangeRing(scenario, map, game, selected, selectedBase, toScreen);
   const lines = (view.plannedAirMissions ?? []).flatMap((order) => {
-    const from = counters.find((entry) => entry.unit.id === order.unitId);
+    const from = placementOf(order.unitId);
     const target = missionTerritoryId(scenario, order.mission);
     if (from === undefined || target === undefined) return [];
     const to = toScreen(missionPoint(map, order.mission) ?? mapTerritory(map, target).label);
-    return [{ from: { x: from.position.x + airCounterWidth / 2, y: from.position.y + airCounterHeight / 2 }, id: order.unitId, kind: order.mission.kind, to }];
+    return [{ from: { x: from.position.x + metrics.width / 2, y: from.position.y + metrics.height / 2 }, id: order.unitId, kind: order.mission.kind, to }];
   });
+  const worksMax = scenario.combat.diggingIn.max;
+  const onSelectTerritory = view.onSelectTerritory;
 
   return (
-    <div className="air-layer">
+    <div className="counter-layer air-layer" data-level={level}>
       <svg aria-hidden="true" className="air-layer-lines">
         {ring === undefined ? null : <circle className="air-range-ring" cx={ring.x} cy={ring.y} r={ring.r} />}
         {lines.map((line) => (
           <line className="air-mission-line" data-mission={line.kind} key={line.id} x1={line.from.x} x2={line.to.x} y1={line.from.y} y2={line.to.y} />
         ))}
       </svg>
-      {counters.map(({ position, unit }) => {
-        const { color, label, name, planned, symbolKey, tag } = aircraftCounterText(scenario, game.raised, unit, view.plannedAirMissions);
+      {placements.map(({ item, position }) => {
+        if (item.kind === "group") {
+          const group = aircraftGroupText(scenario, game, item.units, view.plannedAirMissions);
+          return (
+            <GroupCounter
+              air={{ grounded: group.grounded }}
+              factionColor={group.color}
+              figures={group.figures}
+              key={item.key}
+              label={group.label}
+              metrics={metrics}
+              onSelect={onSelectTerritory === undefined ? undefined : () => { onSelectTerritory(item.territoryId); }}
+              ordered={group.ordered}
+              position={position}
+              selected={item.units.some((unit) => glows(view, unit.id))}
+              worksMax={worksMax}
+            />
+          );
+        }
+        const { unit } = item;
+        const aircraft = aircraftCounterText(scenario, game, unit, view.plannedAirMissions);
         return (
-          <button
-            aria-pressed={view.onSelectUnit === undefined ? undefined : view.selectedAircraftId === unit.id}
-            className="air-counter"
-            data-planned={planned !== undefined}
-            data-selected={view.selectedAircraftId === unit.id}
-            data-unit-id={unit.id}
-            key={unit.id}
-            onClick={(event) => {
-              event.stopPropagation();
-              view.onSelectUnit?.(unit);
-            }}
-            style={cssVariables({ "--faction-color": color }, { height: airCounterHeight, left: position.x, top: position.y, width: airCounterWidth })}
-            tabIndex={view.onSelectUnit === undefined ? -1 : 0}
-            title={name}
-            type="button"
-          >
-            <span className="visually-hidden">{label}</span>
-            <span aria-hidden="true" className="air-counter-symbol" dangerouslySetInnerHTML={{ __html: airSymbol(symbols.get(symbolKey) ?? "") }} />
-            <span aria-hidden="true" className="air-counter-tag">{tag}</span>
-            {planned === undefined ? null : <span aria-hidden="true" className="air-counter-badge">{glyphs.check}</span>}
-          </button>
+          <UnitCounter
+            air={{ grounded: aircraft.grounded }}
+            designation={aircraft.tag}
+            factionColor={aircraft.color}
+            figures={aircraft.figures}
+            key={item.key}
+            label={aircraft.label}
+            metrics={metrics}
+            name={aircraft.name}
+            onSelect={view.onSelectUnit}
+            ordered={aircraft.planned !== undefined}
+            position={position}
+            selected={view.selectedAircraftId === unit.id}
+            symbol={symbols.get(aircraft.symbolKey) ?? ""}
+            ticked={view.tickedUnitIds?.has(unit.id) === true}
+            unit={unit}
+            worksMax={worksMax}
+          />
         );
       })}
     </div>

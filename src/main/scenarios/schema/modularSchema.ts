@@ -9,22 +9,23 @@ import {
   textSchema,
   unitTypeShape,
   wholeSchema,
+  positiveThousandthsSchema,
   positiveWholeSchema
 } from "./coreSchema.ts";
 
 /**
- * Milestone 3 systems of the `m3-modular` ruleset: rule modules, unit types, effects,
+ * Milestone 3 systems: rule modules, unit types, effects,
  * sub-territories and the economy catalogues. The literal lists below must equal their copies
  * in `engine/types` (a unit test checks).
  */
 
-export const ruleAreaNames = ["dice", "economy", "recruitment", "weather", "movement", "partition", "air"] as const;
+export const ruleAreaNames = ["economy", "recruitment", "weather", "movement", "partition", "air"] as const;
 
 export const rulesSchema = z
   .strictObject(Object.fromEntries(ruleAreaNames.map((area) => [area, slugSchema])) as Record<(typeof ruleAreaNames)[number], typeof slugSchema>)
   .meta({ description: "One named rule module per area. Built-in modules are listed in scenario-package.md; a scenario plugin may register more (L14)." });
 
-export const unitOrderKindSchema = z.enum(["move", "withdraw", "replenish", "air-mission", "sack"]);
+export const unitOrderKindSchema = z.enum(["move", "withdraw", "replenish", "disband", "air-mission", "sack"]);
 export const unitKindSchema = z.enum(["ground", "air", "general"]);
 export const unitSymbolSchema = z.enum([
   "infantry",
@@ -63,13 +64,16 @@ export const unitEffectSchema = z.discriminatedUnion("@type", [
 ]);
 
 export const buildingEffectSchema = z.discriminatedUnion("@type", [
-  typedEntry("recruit-slots", { extra: positiveWholeSchema }),
   typedEntry("replenish-cap", { share: shareSchema }),
   typedEntry("replenish-discount", { resource: slugSchema, share: shareSchema }),
-  typedEntry("rail-departures", { extra: positiveWholeSchema }),
+  typedEntry("rail-capacity", { units: positiveWholeSchema.meta({ description: "M3, D5: more units that may board at the capital by rail per turn." }) }),
   markerEntry("airbase"),
   markerEntry("all-weather-airbase"),
   typedEntry("defence-roll", { roll: positiveWholeSchema })
+]);
+
+const developmentEffectSchema = z.discriminatedUnion("@type", [
+  typedEntry("recruit-slots", { extra: positiveWholeSchema.meta({ description: "More Recruit orders a turn in the territory, for each level." }) })
 ]);
 
 const buildCostShape = {
@@ -91,11 +95,12 @@ export const modularUnitTypeSchema = z.strictObject({
       cost: resourcesSchema,
       establishment: positiveWholeSchema.meta({ description: "Men in a newly trained unit: its full strength." }),
       trainingTurns: positiveWholeSchema,
-      requires: z.array(slugSchema).default([]).meta({ description: "Buildings the capital sub-territory needs (R3)." }),
+      requires: z.array(slugSchema).default([]).meta({ description: "R3: building ids the capital sub-territory needs, and development track ids the territory needs at level 1 or more in any sub-territory the recruiter holds." }),
       factionIds: z.array(slugSchema).min(1).optional().meta({ description: "Factions that may recruit the type. Absent means all." })
     })
     .optional()
     .meta({ description: "How the type is recruited. Absent means it cannot be recruited." }),
+  upkeep: z.record(slugSchema, positiveThousandthsSchema).default({}).meta({ description: "Points of each resource a unit of this type costs every turn, to thousandths, at any strength. Absent means none." }),
   air: z
     .strictObject({ range: positiveWholeSchema, missions: z.array(airMissionSchema).min(1) })
     .optional()
@@ -122,11 +127,11 @@ export const subTerritoryBordersSchema = z
   .array(z.tuple([slugSchema, slugSchema]))
   .meta({ description: "Undirected sub-territory adjacency, inside and across territories. Generated from the map geometry." });
 
-export const roadLevelSchema = z.enum(["track", "main"]);
-export const railLevelSchema = z.enum(["single", "main"]);
+const roadLevelSchema = z.enum(["track", "main"]);
+const railLevelSchema = z.enum(["single", "main"]);
 
 /** D2: what a link has, as typed entries. No `road` entry means no road; no `rail` entry, no railway. */
-export const linkModifierSchema = z.discriminatedUnion("@type", [
+const linkModifierSchema = z.discriminatedUnion("@type", [
   typedEntry("road", { level: roadLevelSchema.meta({ description: "track: an unmetalled road; main: a main road trucks can use." }) }),
   typedEntry("rail", { level: railLevelSchema.meta({ description: "single: a single-track or secondary line; main: a trunk line." }) }),
   typedEntry("pass", { name: textSchema.meta({ description: "The pass's name, shown to players." }) })
@@ -152,7 +157,8 @@ export const linkModifierRuleSchema = z.discriminatedUnion("@type", [
     label: textSchema,
     rangeByLevel: z
       .strictObject({ single: positiveWholeSchema, main: positiveWholeSchema })
-      .meta({ description: "R5: rail range in territories, by the weakest rail level on the route." })
+      .meta({ description: "R5: rail range in territories, by the weakest rail level on the route." }),
+    unitsPerLevel: positiveWholeSchema.meta({ description: "D5: units that may board at a station per turn, for each of its levels." })
   }),
   typedEntry("pass", {
     label: textSchema,
@@ -174,9 +180,10 @@ export const developmentSchema = z.strictObject({
   id: slugSchema,
   name: textSchema,
   resource: slugSchema,
-  yieldPerLevel: positiveWholeSchema,
+  yieldPerLevel: positiveThousandthsSchema.meta({ description: "Points a turn for each level, to thousandths." }),
   maxLevel: positiveWholeSchema,
   cityOnly: z.boolean().default(false),
+  effects: z.array(developmentEffectSchema).default([]).meta({ description: "What each level does beyond its yield." }),
   upgrade: z.strictObject(buildCostShape),
   ...basisShape
 });
@@ -205,6 +212,12 @@ export const recruitmentSchema = z.strictObject({
   maxPerTerritory: positiveWholeSchema,
   replenishCostShare: shareSchema.meta({ description: "Replenish price per value point, as a share of the Recruit price per point." }),
   replenishShare: shareSchema.meta({ description: "Most men a Replenish order restores per turn, as a share of establishment." }),
+  ...basisShape
+});
+
+export const upkeepSchema = z.strictObject({
+  maxLossShare: shareSchema.meta({ description: "When upkeep cannot be paid: most men a unit loses in a turn, as a share of full strength." }),
+  minStrengthShare: shareSchema.meta({ description: "When upkeep cannot be paid: no unit falls below this share of full strength." }),
   ...basisShape
 });
 

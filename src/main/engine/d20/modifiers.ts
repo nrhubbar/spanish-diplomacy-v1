@@ -1,26 +1,29 @@
 import { hookedCombatModifiers } from "../hooks";
 import { worksRoll } from "../works";
 import { citiesIn } from "../lookup";
+import type { MoveRoute } from "../movement/routes";
 import type { TurnScratch } from "../phases/draft";
-import type { BattleSide, CombatModifier, CombatRole, D20Rules, FactionId, GameState, Scenario, TerritoryId, UnitState, UnitTypeId, WeatherState } from "../types";
+import type { BattleSide, CombatModifier, CombatRole, D20Rules, FactionId, GameState, Scenario, TerritoryId, UnitId, UnitState, UnitTypeId, WeatherState } from "../types";
 import { bestGeneral, commanderModifiers } from "../generals/command";
-import { gradedValue, isGeneralUnit, requireD20, typeOf, weatherIn } from "./rules";
+import { definitionOf, fightingValue, isGeneralUnit, typeOf, weatherIn } from "./rules";
 
 /** One side as it fights: its values, and its units' states (for fatigue and generals). */
-export interface GradedSide {
+export interface FightingSide {
   readonly role: CombatRole;
   readonly side: BattleSide;
   readonly units: readonly UnitState[];
 }
 
 /** Where and how a d20 battle is fought, for the modifiers that depend on the situation. */
-export interface GradedContext {
+export interface ModifierContext {
   readonly attackerFactionId: FactionId;
   /** R11: the battle's index while the turn resolves, for its air battle's rolls. */
   readonly battleIndex?: number;
   readonly defenderFactionIds: readonly FactionId[];
   /** Whether the territory's works count (M22): assaults only. */
   readonly diggingIn: boolean;
+  /** A planning estimate's attackers whose way there is already chosen, passed on to the hooks. */
+  readonly plannedRoutes?: ReadonlyMap<UnitId, MoveRoute>;
   /**
    * The battle territory. Absent for a head-on meeting on the road (M20), which takes only the
    * armies' own modifiers (generals, unit bonuses and fatigue) and the weather (D27.5).
@@ -41,15 +44,15 @@ export interface GradedContext {
  * - The armies' own, always: the best general per side and his trait (D4, U6, declog D5),
  *   unit-type bonuses such as artillery and tanks (D5), and fatigue (C6, declog D6).
  */
-export function gradedModifiers(
+export function battleModifiers(
   scenario: Scenario,
   state: GameState,
   weather: WeatherState | undefined,
-  context: GradedContext,
-  attacker: GradedSide,
-  defender: GradedSide
+  context: ModifierContext,
+  attacker: FightingSide,
+  defender: FightingSide
 ): readonly CombatModifier[] {
-  const rules = requireD20(scenario);
+  const rules = scenario.d20;
   const { territoryId } = context;
   const situational: CombatModifier[] = [];
   if (territoryId !== undefined) {
@@ -88,6 +91,7 @@ export function gradedModifiers(
     defenderFactionIds: context.defenderFactionIds,
     defenderUnitIds: defender.units.map((unit) => unit.id),
     diggingIn: context.diggingIn,
+    ...(context.plannedRoutes === undefined ? {} : { plannedRoutes: context.plannedRoutes }),
     ...(context.scratch === undefined ? {} : { scratch: context.scratch }),
     scenario,
     state,
@@ -109,7 +113,7 @@ const sign = (role: CombatRole): number => (role === "attack" ? 1 : -1);
  * rally uses too (`bestGeneral`, M5): the greatest command bonus plus his trait's roll for the
  * side's role, then roster order. His trait applies with him.
  */
-function generalModifiers(scenario: Scenario, state: GameState, side: GradedSide): readonly CombatModifier[] {
+function generalModifiers(scenario: Scenario, state: GameState, side: FightingSide): readonly CombatModifier[] {
   const best = bestGeneral(scenario, state.raised, side.units.map((unit) => unit.id), side.role);
   return commanderModifiers(best, best === undefined ? undefined : side.units.find((unit) => unit.id === best.unitId)?.factionId, side.role);
 }
@@ -118,7 +122,7 @@ function generalModifiers(scenario: Scenario, state: GameState, side: GradedSide
  * D5: each unit type with a per-points bonus for the side's role: +bonus per `per` points of
  * that type's value on the side, at most `max`, none in the listed weather. Counted per side.
  */
-function unitBonuses(scenario: Scenario, state: GameState, side: GradedSide, weatherId: string | undefined): readonly CombatModifier[] {
+function unitBonuses(scenario: Scenario, state: GameState, side: FightingSide, weatherId: string | undefined): readonly CombatModifier[] {
   const points = new Map<UnitTypeId, number>();
   for (const army of side.side.armies) {
     const type = typeOf(scenario, state.raised, army.unitId);
@@ -136,7 +140,7 @@ function unitBonuses(scenario: Scenario, state: GameState, side: GradedSide, wea
 }
 
 /** C6, declog D6: a side is Fatigued when its fatigued units carry at least half of its value. */
-function fatigueModifier(rules: D20Rules, side: GradedSide): readonly CombatModifier[] {
+function fatigueModifier(rules: D20Rules, side: FightingSide): readonly CombatModifier[] {
   if (rules.modifiers.fatigued === 0 || side.side.value <= 0) return [];
   const fatigued = new Set(side.units.filter((unit) => unit.fatigue >= rules.fatigue.fatiguedLevel).map((unit) => unit.id));
   const carried = side.side.armies.reduce((sum, army) => sum + (fatigued.has(army.unitId) ? army.value : 0), 0);
@@ -146,12 +150,15 @@ function fatigueModifier(rules: D20Rules, side: GradedSide): readonly CombatModi
 }
 
 /** M12 on the d20: one side's values, each unit fighting from where it came. Generals count 0. */
-export function gradedSide(scenario: Scenario, state: Pick<GameState, "raised">, combatants: readonly { readonly from: TerritoryId; readonly unit: UnitState }[], role: CombatRole): BattleSide {
+export function fightingSide(scenario: Scenario, state: Pick<GameState, "raised">, combatants: readonly { readonly from: TerritoryId; readonly unit: UnitState }[], role: CombatRole): BattleSide {
   const armies = combatants.map(({ from, unit }) => ({
+    demoralized: unit.morale.demoralized,
     factionId: unit.factionId,
     from,
+    fullMen: definitionOf(scenario, state.raised, unit.id).fullStrength,
+    men: unit.strength,
     unitId: unit.id,
-    value: isGeneralUnit(scenario, state.raised, unit.id) ? 0 : gradedValue(scenario, state.raised, unit, role)
+    value: isGeneralUnit(scenario, state.raised, unit.id) ? 0 : fightingValue(scenario, state.raised, unit, role)
   }));
   return { armies, value: armies.reduce((sum, army) => sum + army.value, 0) };
 }

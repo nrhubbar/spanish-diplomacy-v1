@@ -55,6 +55,7 @@ export function systemOutcomePlaces(scenario: Scenario, state: GameState, outcom
     case "build-queued":
       return parentOf(scenario, outcome.order.subTerritoryId);
     case "income":
+    case "upkeep":
     case "weather-rolled":
     case "time-ran-out":
       return [];

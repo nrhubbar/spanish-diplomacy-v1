@@ -223,12 +223,13 @@ describe("component edge cases", () => {
 
   it("renders a sheet pane with focus content and without a footer", async () => {
     const onToggle = vi.fn();
-    render(<MapPane content={{ body: <p>Body</p>, sheetFocus: <span>Pick one</span>, title: "Orders" }} layout="sheet" onToggle={onToggle} open={false} />);
+    const sizing = { mapWidth: 1000, onStop: vi.fn(), onWidth: vi.fn(), stop: "bar" as const, width: 300 };
+    render(<MapPane content={{ body: <p>Body</p>, sheetFocus: <span>Pick one</span>, title: "Orders" }} layout="sheet" {...sizing} onToggle={onToggle} open={false} />);
     expect(screen.getByRole("status")).toHaveTextContent("Pick one");
     await userEvent.setup().click(screen.getByRole("button", { name: "Orders" }));
     expect(onToggle).toHaveBeenCalled();
     cleanup();
-    render(<MapPane content={{ body: <p>Body</p>, title: "Orders" }} layout="side" onToggle={onToggle} open />);
+    render(<MapPane content={{ body: <p>Body</p>, title: "Orders" }} layout="side" {...sizing} onToggle={onToggle} open />);
     expect(screen.getByText("Body")).toBeVisible();
   });
 

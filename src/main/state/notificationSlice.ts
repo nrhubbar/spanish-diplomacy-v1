@@ -1,9 +1,16 @@
-import { createSlice, nanoid, type PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, nanoid, type PayloadAction, type UnknownAction } from "@reduxjs/toolkit";
 import type { RootState } from "./store";
 
 export type NotificationTone = "error" | "info" | "warning";
 
+/** A button on a notification: what it says, and the action it dispatches. */
+export interface NotificationAction {
+  readonly label: string;
+  readonly run: UnknownAction;
+}
+
 export interface AppNotification {
+  readonly action?: NotificationAction;
   readonly id: string;
   readonly message: string;
   readonly tone: NotificationTone;
@@ -18,6 +25,7 @@ const initialState: NotificationState = {
 };
 
 interface NotificationPayload {
+  readonly action?: NotificationAction;
   readonly message: string;
   readonly tone: NotificationTone;
 }
@@ -30,8 +38,9 @@ const notificationSlice = createSlice({
       reducer: (state, action: PayloadAction<AppNotification>) => {
         state.notifications.push(action.payload);
       },
-      prepare: ({ message, tone }: NotificationPayload) => ({
+      prepare: ({ action, message, tone }: NotificationPayload) => ({
         payload: {
+          ...(action === undefined ? {} : { action }),
           id: nanoid(),
           message,
           tone
@@ -55,10 +64,6 @@ export function addErrorNotification(message: string): ReturnType<typeof addNoti
 
 export function addInfoNotification(message: string): ReturnType<typeof addNotification> {
   return addNotification({ message, tone: "info" });
-}
-
-export function addWarningNotification(message: string): ReturnType<typeof addNotification> {
-  return addNotification({ message, tone: "warning" });
 }
 
 export function selectNotifications(state: RootState): readonly AppNotification[] {

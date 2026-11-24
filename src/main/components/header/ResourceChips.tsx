@@ -3,7 +3,6 @@ import { amountOf } from "../../engine/economy/resources";
 import type { ResourceId } from "../../engine/types";
 import { useSession } from "../../hooks";
 import { isInGame } from "../../state/session";
-import { replenishmentCost } from "../../state/planning/recruitment";
 import { resourceAmount, resourceAmountInFull, signedResourceAmount } from "../../presentation/economy";
 import { glyphs } from "../../presentation/glyphs";
 import { ledgersFor } from "../../presentation/ledger";
@@ -23,6 +22,7 @@ function Chips({ scenario, state, viewer }: HeaderSlotProps): JSX.Element | null
   // player selects (`visibleSession`), so next turn's income is not recomputed on each click.
   const session = useSession();
   const record = isInGame(session) ? session.game.state : undefined;
+  const disbands = session.phase === "planning" ? session.draft.disbands : undefined;
   const builds = session.phase === "planning" ? session.draft.builds : undefined;
   const recruits = session.phase === "planning" ? session.draft.recruits : undefined;
   const replenishments = session.phase === "planning" ? session.draft.replenishments : undefined;
@@ -31,14 +31,13 @@ function Chips({ scenario, state, viewer }: HeaderSlotProps): JSX.Element | null
   const id = useId();
   const ledgers = useMemo(() => {
     if (viewer === undefined || scenario.rules.economy === "none" || state.treasuries[viewer] === undefined) return undefined;
-    const replenishing = replenishments ?? [];
     return ledgersFor(scenario, { ...source, treasuries: state.treasuries }, viewer, {
       builds: builds ?? [],
       recruits: recruits ?? [],
-      replenish: replenishmentCost(scenario, state, viewer, replenishing),
-      replenishCount: replenishing.length
+      disbands: disbands ?? [],
+      replenishments: replenishments ?? []
     });
-  }, [builds, recruits, replenishments, scenario, source, state, viewer]);
+  }, [builds, disbands, recruits, replenishments, scenario, source, state, viewer]);
   if (ledgers === undefined) return null;
   const others = scenario.factions.filter((faction) => faction.id !== viewer);
 
@@ -63,7 +62,7 @@ function Chips({ scenario, state, viewer }: HeaderSlotProps): JSX.Element | null
               <EconomyIcon name={resourceIcon(scenario, resource.id)} />
               <span className="resource-name">{resource.name}</span>{" "}
               <span className="resource-balance">{shown(ledger.now)}</span>{" "}
-              <span className="resource-income">{next}</span>
+              <span className="resource-income" data-negative={ledger.total < 0}>{next}</span>
               <span className="visually-hidden"> next turn</span>
             </button>
             {expanded ? (

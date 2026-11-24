@@ -1,12 +1,16 @@
 import { validateAirMission } from "../../engine/air/validation";
-import type { AirMissionOrder, FactionId, GameState, MoveLeg, MoveOrder, Scenario, TerritoryId, UnitId } from "../../engine/types";
+import { boardingRefusal } from "../../engine/movement/routes";
+import { type AirMissionOrder, type FactionId, type GameState, isMoveOrder, type MoveOrder, type Scenario, type TerritoryId, type UnitId } from "../../engine/types";
 import { validateMoveOrder } from "../../engine/validation";
 import type { MoveMode } from "../../engine/network/reach";
-import type { Muster, MusterKind } from "../../presentation/muster";
+import { type Muster, muster, type MusterKind, type MusterMove } from "../../presentation/muster";
+import { plannedSupport } from "../../presentation/odds";
 import { territoryName } from "../../presentation/text";
+import type { MusterChoices, PaneView } from "../paneSlice";
 import type { Draft, PlannedOrder } from "../session";
+import { airDraftOrders, isAircraft } from "./air";
 import { afterOrder, stayWithout } from "./orders";
-import { replenishWithout } from "./recruitment";
+import { unitOrdersWithout } from "./recruitment";
 import { type PlanningSession, withDraft } from "./selection";
 
 /**
@@ -17,7 +21,7 @@ import { type PlanningSession, withDraft } from "./selection";
 export interface MusterOrder {
   readonly kind: MusterKind;
   /** Each unit with its legs; none for a plain step (CT-6). */
-  readonly moves: readonly { readonly legs?: readonly MoveLeg[]; readonly unitId: UnitId }[];
+  readonly moves: readonly MusterMove[];
   /** Units and aircraft the pane listed: only their orders to the target may be cleared. */
   readonly shown: readonly UnitId[];
   readonly support: readonly UnitId[];
@@ -39,12 +43,25 @@ function flightsOf(factionId: FactionId, order: MusterOrder): readonly AirMissio
   return order.support.map((unitId) => ({ factionId, kind: "air-mission", mission: { kind: "support", territoryId: order.target }, unitId }));
 }
 
-/** U6: the engine's first refusal of the pane's moves and missions, or undefined when it takes them all. */
-export function musterRefusal(scenario: Scenario, state: GameState, factionId: FactionId, order: MusterOrder): string | undefined {
-  for (const move of movesOf(state, factionId, order)) {
+/** The draft's orders the pane's order keeps: those of units it neither sends nor clears. */
+function keptOrders(draft: Draft, moving: ReadonlySet<UnitId>, order: MusterOrder): readonly PlannedOrder[] {
+  const shown = new Set(order.shown);
+  return draft.orders.filter((each) => !moving.has(each.unitId) && !(shown.has(each.unitId) && each.kind === "move" && each.to === order.target));
+}
+
+/**
+ * U6: the engine's first refusal of the pane's moves and missions, or undefined when it takes
+ * them all. The moves board their trains together or not at all, beside the orders kept (D5).
+ */
+export function musterRefusal(scenario: Scenario, { draft, factionId, game }: PlanningSession, order: MusterOrder): string | undefined {
+  const { state } = game;
+  const moves = movesOf(state, factionId, order);
+  for (const move of moves) {
     const verdict = validateMoveOrder(scenario, state, move);
     if (!verdict.ok) return verdict.reason;
   }
+  const full = boardingRefusal(scenario, state, moves, keptOrders(draft, new Set(moves.map((move) => move.unitId)), order).filter(isMoveOrder));
+  if (full !== undefined) return full;
   for (const flight of flightsOf(factionId, order)) {
     const verdict = validateAirMission(scenario, state, flight);
     if (!verdict.ok) return verdict.reason;
@@ -60,14 +77,14 @@ export function musterRefusal(scenario: Scenario, state: GameState, factionId: F
  */
 export function orderMuster(scenario: Scenario, session: PlanningSession, order: MusterOrder): PlanningSession {
   const { factionId, game } = session;
-  const refusal = musterRefusal(scenario, game.state, factionId, order);
+  const refusal = musterRefusal(scenario, session, order);
   if (refusal !== undefined) return withDraft(session, { ...session.draft, feedback: refusal });
   const moves = movesOf(game.state, factionId, order);
   const flights = flightsOf(factionId, order);
   const moving = new Set(moves.map((move) => move.unitId));
   const flying = new Set(flights.map((flight) => flight.unitId));
   const shown = new Set(order.shown);
-  const kept: PlannedOrder[] = session.draft.orders.filter((each) => !moving.has(each.unitId) && !(shown.has(each.unitId) && each.kind === "move" && each.to === order.target));
+  const kept = keptOrders(session.draft, moving, order);
   const airOrders = (session.draft.airOrders ?? []).filter((each) => !flying.has(each.unitId)
     && !(shown.has(each.unitId) && each.kind === "air-mission" && each.mission.kind === "support" && each.mission.territoryId === order.target));
   const name = territoryName(scenario, order.target);
@@ -77,7 +94,7 @@ export function orderMuster(scenario: Scenario, session: PlanningSession, order:
     ...afterOrder(session.draft.selectedTerritoryId, [...kept, ...moves]),
     airOrders: [...airOrders, ...flights],
     feedback,
-    ...replenishWithout(session.draft, moving),
+    ...unitOrdersWithout(session.draft, [...moving, ...flying]),
     ...stayWithout(session.draft, [...moving])
   };
   return withDraft(session, draft);
@@ -90,9 +107,37 @@ export interface MusterPicks {
   readonly units: ReadonlySet<UnitId>;
 }
 
+/**
+ * U6: what the pane has ticked: the units already ordered to the target and the aircraft already
+ * on Ground Support over it, as the player has since changed them.
+ */
+export function musterPicks(scenario: Scenario, { draft, factionId, game }: PlanningSession, target: TerritoryId, { modes, ticks }: MusterChoices): MusterPicks {
+  const ticked = (Object.entries(ticks) as [UnitId, boolean][]).flatMap(([id, on]) => (on ? [id] : []));
+  const flies = (id: UnitId): boolean => isAircraft(scenario, game.state, id);
+  const now = (ordered: readonly UnitId[], added: readonly UnitId[]): ReadonlySet<UnitId> =>
+    new Set([...ordered.filter((id) => ticks[id] !== false), ...added]);
+  return {
+    modes: new Map(Object.entries(modes) as [UnitId, MoveMode][]),
+    support: now(plannedSupport(airDraftOrders(draft), factionId, target), ticked.filter(flies)),
+    units: now(draft.orders.filter((order) => order.to === target).map((order) => order.unitId), ticked.filter((id) => !flies(id)))
+  };
+}
+
+/**
+ * The units and aircraft the Invade or Reinforce pane would order now, for the map to mark; none
+ * in another view. A tick on a unit the pane no longer lists orders nothing, so it marks nothing.
+ */
+export function tickedOnMap(scenario: Scenario, session: PlanningSession, view: PaneView, choices: MusterChoices): ReadonlySet<UnitId> {
+  if (view.kind !== "invade" && view.kind !== "reinforce") return new Set();
+  const { draft, factionId, game } = session;
+  const listed = muster(scenario, game.state, factionId, view.target, view.kind, { airOrders: airDraftOrders(draft), orders: draft.orders });
+  const { moves, support } = musterOrderFrom(listed, musterPicks(scenario, session, view.target, choices));
+  return new Set([...moves.map((move) => move.unitId), ...support]);
+}
+
 /** U6: the pane's picks as the order to give: each ticked unit with the legs of its chosen mode. */
 export function musterOrderFrom(view: Muster, picks: MusterPicks): MusterOrder {
-  const moves = view.groups.flatMap((group) => group.cards).filter((card) => picks.units.has(card.unitId)).map((card) => {
+  const moves: readonly MusterMove[] = view.groups.flatMap((group) => group.cards).filter((card) => picks.units.has(card.unitId)).map((card) => {
     // A chosen mode the card can't take falls back to the card's default, which it always can.
     const okIn = (mode: MoveMode | undefined) => card.modes.find((each) => each.ok && each.mode === mode);
     const chip = okIn(picks.modes.get(card.unitId)) ?? okIn(card.defaultMode);

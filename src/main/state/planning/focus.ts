@@ -4,9 +4,8 @@ import type { PlanningSession } from "./selection";
 
 /**
  * X3: zooming in and clicking a sub-territory focuses the pane on it, inside its territory;
- * "back" returns to the territory. Selecting anything else drops the focus. The pane's focus
- * view is `screens/pane/SubTerritoryFocus.tsx`; TODO(m3r1-sub-territories): the map layer's
- * click dispatches `focusSubTerritory`.
+ * "back" returns to the territory. Selecting anything else drops the focus. The map
+ * layer's click dispatches `focusSubTerritory`.
  */
 export function focusOn(scenario: Scenario, session: PlanningSession, subTerritoryId: SubTerritoryId): PlanningSession {
   const sub = scenario.index.subTerritories.get(subTerritoryId);

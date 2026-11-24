@@ -3,6 +3,8 @@ import { createRoot } from "react-dom/client";
 import { Provider } from "react-redux";
 import { HashRouter } from "react-router";
 import { App } from "./app";
+import { storedSound } from "./audio/stored";
+import { connectionHint } from "./connection";
 import { RegistryContext } from "./hooks";
 import type { PackageSources } from "./scenarios/registry";
 import { addErrorNotification } from "./state/notificationSlice";
@@ -20,11 +22,14 @@ async function bootstrap(): Promise<void> {
   // The packages, the loader and Zod load here, outside the initial chunk.
   const { loadBuiltInRegistry } = await import("./scenarios/lazySources");
   const registry = await loadBuiltInRegistry(...extraSources);
-  const store = createAppStore({ registry });
+  const store = createAppStore({ preloadedState: { audio: storedSound(() => window.localStorage, connectionHint()) }, registry });
   for (const problem of registry.problems) {
     console.error(problem);
     store.dispatch(addErrorNotification("A scenario package failed validation and is unavailable."));
   }
+
+  // Sound loads beside the first screen and never holds it up; without it the game is silent.
+  import("./audio/browser").then(({ startBrowserSound }) => { startBrowserSound(store, registry); }).catch(() => undefined);
 
   createRoot(root).render(
     <StrictMode>

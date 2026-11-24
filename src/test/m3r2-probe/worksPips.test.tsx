@@ -4,7 +4,7 @@ import { WorksBadge } from "../../main/map/WorksBadge";
 import { armyFigures, dugInLabel, figuresDugInLabel, figuresWorks } from "../../main/presentation/army";
 import { initialGameState } from "../../main/engine/resolution";
 import type { GameState, TerritoryId } from "../../main/engine/types";
-import { spainD20, unit } from "../support";
+import { spainWithAir, unit } from "../support";
 
 /**
  * m3r2-probe, note 12, as R8 settles it: the d20 works are stored as pips (1 to 3), and each pip
@@ -15,7 +15,7 @@ afterEach(cleanup);
 
 describe("note 12: the d20 works badge", () => {
   it("stores pips, so two quiet turns show two filled pips of three and 'Dug in level 2 (+4)'", () => {
-    const scenario = spainD20();
+    const scenario = spainWithAir();
     const start = initialGameState(scenario);
     const madrid = "madrid" as TerritoryId;
     const level = 2 * scenario.combat.diggingIn.perTurn;
@@ -33,7 +33,7 @@ describe("note 12: the d20 works badge", () => {
 
 describe("works in words (R8)", () => {
   it("labels the figures' works, reading a pip as 1 when the roll is unknown, and nothing without works", () => {
-    const scenario = spainD20();
+    const scenario = spainWithAir();
     const state = initialGameState(scenario);
     const figures = armyFigures(scenario, state, state.units[unit("rep-wad-ras-1")]!);
     expect(figuresWorks(figures)).toBeUndefined();

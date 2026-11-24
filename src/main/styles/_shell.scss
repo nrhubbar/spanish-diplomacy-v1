@@ -17,11 +17,12 @@
   stroke-linejoin: round;
 }
 
-// Date and readiness share the kicker's line.
+// Date and readiness share the kicker's line, or take two when the bar is short of room.
 .game-header-kicker-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.1rem 0.6rem;
   min-width: 0;
 
   .status-chips {
@@ -417,6 +418,20 @@
 // Phones: the top bar must never push the page wider than the screen. The readiness chips wrap,
 // and the turn views show their icons and counts only (their names stay as accessible labels).
 @media (width <= 640px) {
+  .game-screen {
+    max-width: 100vw;
+  }
+
+  .game-header-name,
+  .game-header-actions {
+    flex-wrap: wrap;
+    max-width: 100%;
+  }
+
+  .game-header .screen-kicker {
+    max-width: 100%;
+  }
+
   .game-header-kicker-row {
     flex-wrap: wrap;
 

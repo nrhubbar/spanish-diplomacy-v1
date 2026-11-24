@@ -1,5 +1,5 @@
-import { armyValue, isSuccessful } from "../engine/combat";
-import { type AirBattleOutcome, type BattleOutcome, battleResults, type BattleSide, type FactionId, type GameState, type Scenario, type TerritoryId, type TurnOutcome } from "../engine/types";
+import { type AirBattleOutcome, type BattleOutcome, type BattleSide, type FactionId, type GameState, type Scenario, type TerritoryId, type TurnOutcome } from "../engine/types";
+import { printedValue } from "./army";
 import { airBattleFor } from "./battleAir";
 import { isBattle } from "./grades";
 
@@ -117,32 +117,30 @@ export function affectedFaction(battle: BattleOutcome): FactionId {
   return battle.attackerFactionId;
 }
 
-/** Whether the result fell on the defenders: a defender result on the d6; ground taken, or the defenders hit harder, on the d20. */
+/** Whether the result fell on the defenders: ground taken, or the defenders hit harder. */
 function defenderSuffered(battle: BattleOutcome): boolean {
-  if (battle.dice === "d6") return battle.result.startsWith("defender-");
   if (battle.ground !== 0) return true;
   const defenders = new Set(battle.defender.armies.map((army) => army.unitId));
   const men = (defending: boolean) => battle.losses.filter((loss) => defenders.has(loss.unitId) === defending).reduce((sum, loss) => sum + loss.men, 0);
   return men(true) > men(false);
 }
 
-/** How well an attack went, for picking a card's lead: the d6 result's rank, or the d20 ground then score. */
+/** How well an attack went, for picking a card's lead: the ground taken, then the score. */
 function attackRank(battle: BattleOutcome): number {
-  if (battle.dice === "d6") return battleResults.indexOf(battle.result);
   const ground = battle.ground === "all" ? 3 : battle.ground;
   return ground * 100 + battle.score;
 }
 
-/** Whether an attack succeeded (M16, M18): a successful d6 result, or a d20 grade that took the whole territory. */
+/** Whether an attack succeeded (M16, M18): its grade took the whole territory. */
 export function attackSucceeded(battle: BattleOutcome): boolean {
-  return battle.dice === "d6" ? isSuccessful(battle.result) : battle.ground === "all";
+  return battle.ground === "all";
 }
 
 /** Attack value left to a claimant after its own losses (M18), from the turn's final state. */
 export function attackLeft(scenario: Scenario, finalState: GameState, battle: BattleOutcome): number {
   return battle.attacker.armies.reduce((sum, army) => {
     const unit = finalState.units[army.unitId];
-    return unit === undefined ? sum : sum + armyValue(scenario, unit, "attack");
+    return unit === undefined ? sum : sum + printedValue(scenario, unit, "attack");
   }, 0);
 }
 

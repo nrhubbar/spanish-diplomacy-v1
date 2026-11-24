@@ -1,4 +1,4 @@
-import type { PendingBattle } from "../battle";
+import type { PendingBattle } from "../d20/battle";
 import { onGroundBoard } from "../air/pieces";
 import { type Armies, armiesIn, placeAt, removeArmies, replaceArmies, requireArmy, unitOrder } from "../board";
 import { groundSides, loneSide } from "../control";
@@ -44,11 +44,9 @@ export interface GroundResult {
 }
 
 /**
- * P4: a battle's ground. A d20 battle states it (`ground`, from `m3r1-d20-combat`), and its
- * attacker gains it. With the d6 preset a taking result (the territory `taken`) counts as "all",
- * gained by the occupier. Only the defending factions lose ground.
+ * P4: a battle's ground. The battle states it (`ground`), and its attacker gains it. Only the defending factions lose ground.
  */
-export function groundOf(pending: PendingBattle): GroundResult | undefined {
+function groundOf(pending: PendingBattle): GroundResult | undefined {
   const { battle, site } = pending;
   const losers = new Set(battle.defender.armies.map((army) => army.factionId));
   const origins = [...new Set(battle.engagement.attackers.map((combatant) => combatant.from))];
@@ -261,7 +259,7 @@ function pathSurrenders(scenario: Scenario, start: GameState, armies: Armies, se
         && !armiesIn(armies, to).some((other) => other.factionId !== unit.factionId)
         && !hasPath(scenario, start, unit.factionId, from, to, [unit.id]);
     });
-    return blocked ? [{ factionId: unit.factionId, from, kind: "path-surrender", unitId: unit.id }] : [];
+    return blocked ? [{ factionId: unit.factionId, from, kind: "path-surrender", men: entry.men, unitId: unit.id }] : [];
   });
 }
 
@@ -277,7 +275,7 @@ function validWithdrawals(draft: TurnDraft): readonly WithdrawOrder[] {
  * stood). Each goes to its destination unless another faction's army now stands there; then it
  * falls back like a retreat (M21, with the path rule), or surrenders.
  */
-export function withdraw(scenario: Scenario, start: GameState, armies: Armies, orders: readonly WithdrawOrder[]): { readonly armies: Armies; readonly events: readonly ContestedTurnOutcome[] } {
+function withdraw(scenario: Scenario, start: GameState, armies: Armies, orders: readonly WithdrawOrder[]): { readonly armies: Armies; readonly events: readonly ContestedTurnOutcome[] } {
   const going = orders.filter((order) => armies[order.unitId]?.territoryId === order.from);
   const leavingIds = new Set<UnitId>(going.map((order) => order.unitId));
   const staying = Object.values(armies).filter((unit) => !leavingIds.has(unit.id));
@@ -290,7 +288,7 @@ export function withdraw(scenario: Scenario, start: GameState, armies: Armies, o
     const to = blocked ? retreatDestination(scenario, start, staying, unit.factionId, order.from, unit.id) : order.to;
     if (to === undefined) {
       surrendered.push(unit.id);
-      events.push({ factionId: unit.factionId, from: order.from, kind: "path-surrender", unitId: unit.id });
+      events.push({ factionId: unit.factionId, from: order.from, kind: "path-surrender", men: unit.strength, unitId: unit.id });
     } else {
       moved.push(placeAt(unit, to));
       events.push({ kind: "withdrew", order: to === order.to ? order : { ...order, to } });

@@ -7,7 +7,7 @@ import { retreatDestination, settleDepartures } from "../main/engine/retreat";
 import type { BattleOutcome, GameState, Scenario, SubTerritoryId, TurnResolutionResult, WithdrawOrder } from "../main/engine/types";
 import { validateMoveOrder } from "../main/engine/validation";
 import { isSeaRouteClosed } from "../main/engine/weather";
-import { faction, move, spainD20, territory, unit, withUnits } from "./support";
+import { faction, move, spainWithAir, territory, unit, withUnits } from "./support";
 
 /**
  * Make-it-right regressions for the map and movement review: B1 (a partial grade that takes a
@@ -30,7 +30,7 @@ function partialBattle(scenario: Scenario, state: GameState, submissions: Parame
 
 describe("a partial grade that takes the defender's last ground (B1, P5, Q-PART-6)", () => {
   it("makes the defender retreat from a standing battle (step 7)", () => {
-    const scenario = spainD20();
+    const scenario = spainWithAir();
     const state = initialGameState(scenario);
     const { battle, result } = partialBattle(scenario, state, [], "asturias");
     expect(battle.site.kind).toBe("standing");
@@ -46,7 +46,7 @@ describe("a partial grade that takes the defender's last ground (B1, P5, Q-PART-
   });
 
   it("makes the defender retreat from an assault (step 5)", () => {
-    const scenario = spainD20();
+    const scenario = spainWithAir();
     const state = withUnits(scenario, [
       ["north-san-marcial-22", "north", "castilla-y-leon"], ["north-san-quintin-25", "north", "castilla-y-leon"], ["north-argel-27", "north", "castilla-y-leon"],
       ["rep-castilla-3", "republic", "extremadura"]
@@ -63,7 +63,7 @@ describe("a partial grade that takes the defender's last ground (B1, P5, Q-PART-
 
 describe("only units that can fight take ground (B2, D27.1)", () => {
   it("holds back a lone general advancing into enemy ground, and does not let him take it", () => {
-    const scenario = spainD20();
+    const scenario = spainWithAir();
     const base = withUnits(scenario, [["north-general-mola", "north", "castilla-y-leon"], ["north-navarre-requetes", "north", "castilla-y-leon"]]);
     const order = move("north", "north-general-mola", "castilla-y-leon", "castilla-la-mancha");
     // Each order validates on its own (M9); the army is checked as an army at step 1.
@@ -75,7 +75,7 @@ describe("only units that can fight take ground (B2, D27.1)", () => {
   });
 
   it("lets a general advance with his army, which takes the ground", () => {
-    const scenario = spainD20();
+    const scenario = spainWithAir();
     const state = withUnits(scenario, [["north-general-mola", "north", "castilla-y-leon"], ["north-navarre-requetes", "north", "castilla-y-leon"]]);
     const orders = ["north-general-mola", "north-navarre-requetes"].map((id) => move("north", id, "castilla-y-leon", "castilla-la-mancha"));
     const result = resolveTurn(scenario, state, [{ factionId: faction("north"), orders }], 1);
@@ -83,7 +83,7 @@ describe("only units that can fight take ground (B2, D27.1)", () => {
   });
 
   it("does not let a lone general in contested ground sweep it", () => {
-    const scenario = spainD20();
+    const scenario = spainWithAir();
     // A general already in contested Extremadura, with no fighting unit of his side there.
     const state = withUnits(scenario, [["south-general-yague", "south", "extremadura"]]);
     const result = resolveTurn(scenario, state, [], 1);
@@ -92,7 +92,7 @@ describe("only units that can fight take ground (B2, D27.1)", () => {
   });
 
   it("lets a lone general reinforce his own side", () => {
-    const scenario = spainD20();
+    const scenario = spainWithAir();
     const state = withUnits(scenario, [["south-general-yague", "south", "ceuta"], ["south-granada-6", "south", "andalucia"]]);
     const order = { ...move("south", "south-general-yague", "ceuta", "andalucia"), legs: [{ kind: "sea" as const, to: territory("andalucia") }] };
     const result = resolveTurn(scenario, state, [{ factionId: faction("south"), orders: [order] }], 1);
@@ -118,7 +118,7 @@ function holders(state: GameState, changes: Readonly<Record<string, string>>): G
 }
 
 describe("Withdraw and retreats across the sea (B3, T4, M5, P6)", () => {
-  const scenario = spainD20();
+  const scenario = spainWithAir();
   const withdrawal = (from: string, to: string): WithdrawOrder => ({ factionId: faction("republic"), from: territory(from), kind: "withdraw", to: territory(to), unitId: unit("rep-castilla-3") });
   // The Republic holds Mallorca (the lane's port) and Menorca; the South holds Ibiza, so the islands are contested.
   const islands = holders(withUnits(scenario, [["rep-castilla-3", "republic", "islas-baleares"], ["rep-durruti-column", "republic", "catalunya"]]), { mallorca: "republic", menorca: "republic" });
@@ -156,7 +156,7 @@ describe("Withdraw and retreats across the sea (B3, T4, M5, P6)", () => {
 });
 
 describe("Withdraw refusals (M-7, C1, P6)", () => {
-  const scenario = spainD20();
+  const scenario = spainWithAir();
   const start = initialGameState(scenario);
   const order = (factionId: string, unitId: string, from: string, to: string): WithdrawOrder => ({ factionId: faction(factionId), from: territory(from), kind: "withdraw", to: territory(to), unitId: unit(unitId) });
 
@@ -206,7 +206,7 @@ describe("Withdraw refusals (M-7, C1, P6)", () => {
 });
 
 describe("partition helpers at their edges", () => {
-  const scenario = spainD20();
+  const scenario = spainWithAir();
   const start = initialGameState(scenario);
 
   it("does not let a lone general occupy, called directly (D27.1)", async () => {
@@ -233,7 +233,7 @@ describe("partition helpers at their edges", () => {
 
 describe("an enemy general alone in contested ground (B2, D27.1, M27)", () => {
   it("does not stop the ground changing: the standing battle fights him", () => {
-    const scenario = spainD20();
+    const scenario = spainWithAir();
     const state = withUnits(scenario, [["rep-castilla-3", "republic", "extremadura"], ["north-general-mola", "north", "extremadura"]]);
     const result = resolveTurn(scenario, state, [], 1, () => () => 0.9);
     expect(result.outcomes.some((outcome) => outcome.kind === "battle" && "territoryId" in outcome.site && outcome.site.territoryId === "extremadura")).toBe(true);

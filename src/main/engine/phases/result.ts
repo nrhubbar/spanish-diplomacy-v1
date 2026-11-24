@@ -1,5 +1,5 @@
-import { battleOutcome, type PendingBattle } from "../battle";
-import { gradedOutcome, isGradedBattle } from "../d20/battle";
+import { casualtiesAfter } from "../casualties";
+import { battleOutcome, type PendingBattle } from "../d20/battle";
 import { diffCities, diffControl } from "../control";
 import type { Settled } from "../retreat";
 import type {
@@ -38,19 +38,20 @@ export function turnResult(draft: TurnDraft): TurnResolutionResult {
     })
   ]);
   const { result: victory } = draft.victory;
+  const outcomes: readonly TurnOutcome[] = [
+    ...orders.valid.flatMap((order) => moveOutcomes.get(order.unitId) ?? []),
+    ...battles,
+    ...orders.invalid,
+    ...orders.rejected,
+    ...holdOutcomes(draft),
+    ...draft.recovered,
+    ...draft.events
+  ];
   return {
     cityChanges: diffCities(scenario, start.cityControl, draft.control.cityControl),
     controlChanges: diffControl(scenario, start.control, draft.control.control),
-    finalState: draftState(draft),
-    outcomes: [
-      ...orders.valid.flatMap((order) => moveOutcomes.get(order.unitId) ?? []),
-      ...battles,
-      ...orders.invalid,
-      ...orders.rejected,
-      ...holdOutcomes(draft),
-      ...draft.recovered,
-      ...draft.events
-    ],
+    finalState: { ...draftState(draft), ...casualtiesAfter(scenario, start, outcomes) },
+    outcomes,
     progress: draft.victory.progress,
     subTerritoryChanges: draft.subTerritoryChanges,
     submittedOrders: submissions.flatMap((submission) => submission.orders),
@@ -63,9 +64,11 @@ function withDepartures(pending: PendingBattle, settled: readonly Settled[]): Ba
   const mine = settled.filter((entry) => "battleIndex" in entry.leaving.report && entry.leaving.report.battleIndex === pending.battle.index);
   const retreats = mine.flatMap((entry): Retreat[] =>
     entry.kind === "retreated" ? [{ from: entry.leaving.from, to: entry.to, unitId: entry.leaving.unitId }] : []);
-  const surrenderedUnitIds = mine.flatMap((entry) => (entry.kind === "surrendered" ? [entry.leaving.unitId] : []));
-  const report = { ...pending.report, retreats, surrenderedUnitIds };
-  return isGradedBattle(pending.battle) ? gradedOutcome(pending.battle, pending.site, report) : battleOutcome(pending.battle, pending.site, report);
+  const surrendered = mine.flatMap((entry) => (entry.kind === "surrendered" ? [entry] : []));
+  const report = { ...pending.report, retreats, surrenderedUnitIds: surrendered.map((entry) => entry.leaving.unitId) };
+  const outcome = battleOutcome(pending.battle, pending.site, report);
+  if (surrendered.length === 0) return outcome;
+  return { ...outcome, surrenderedMen: Object.fromEntries(surrendered.map((entry) => [entry.leaving.unitId, entry.men])) };
 }
 
 /** M19, M21: an entry tie bounces without a battle; the move reports where its army ended. */
@@ -82,7 +85,7 @@ function standoffOutcome(entry: Settled): TurnOutcome | undefined {
     case "retreated":
       return { cause, kind: "bounced-move", order, retreatedTo: entry.to };
     case "surrendered":
-      return { capturedByFactionId: requireTaker(entry.takenBy), cause, kind: "disbanded-move", order };
+      return { capturedByFactionId: requireTaker(entry.takenBy), cause, kind: "disbanded-move", men: entry.men, order };
   }
 }
 

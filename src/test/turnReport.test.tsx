@@ -29,7 +29,7 @@ const republic = faction("republic");
 const south = faction("south");
 const sub = (id: string): SubTerritoryId => id as SubTerritoryId;
 const amount = (funds: number, manpower = 0): Resources => ({ ["funds" as ResourceId]: funds, ["manpower" as ResourceId]: manpower });
-const factory: BuildProject = { buildingId: "factory" as BuildingId, kind: "building" };
+const hospital: BuildProject = { buildingId: "hospital" as BuildingId, kind: "building" };
 const militia = raisedUnitId(republic, "militia-column" as UnitTypeId, 3);
 const covadonga = unit("rep-covadonga-4");
 
@@ -43,11 +43,11 @@ const milestoneTwoKinds: readonly MilestoneTwoOutcome["kind"][] = [
 
 const transit: SystemOutcome = { factionId: republic, from: territory("madrid"), kind: "move-transit", legs: [{ kind: "rail", to: territory("valencia") }], to: territory("valencia"), unitIds: [covadonga] };
 const intercepted: SystemOutcome = { byFactionIds: [south], factionId: republic, from: territory("madrid"), kind: "move-intercepted", stoppedAt: territory("castilla-la-mancha"), to: territory("andalucia"), unitIds: [covadonga] };
-const surrendered: SystemOutcome = { factionId: republic, from: territory("andalucia"), kind: "path-surrender", unitId: covadonga };
+const surrendered: SystemOutcome = { factionId: republic, from: territory("andalucia"), kind: "path-surrender", men: 500, unitId: covadonga };
 const tired: SystemOutcome = { demoralized: false, factionId: republic, fatigue: 1, kind: "fatigue", unitId: covadonga };
 const exhausted: SystemOutcome = { ...tired, demoralized: true, fatigue: 3 };
-const queued: SystemOutcome = { kind: "build-queued", order: { factionId: republic, kind: "build", project: factory, subTerritoryId: sub("girona") }, paid: amount(10), position: 0 };
-const completed: SystemOutcome = { factionId: republic, kind: "build-completed", project: factory, subTerritoryId: sub("girona") };
+const queued: SystemOutcome = { kind: "build-queued", order: { factionId: republic, kind: "build", project: hospital, subTerritoryId: sub("girona") }, paid: amount(10), position: 0 };
+const completed: SystemOutcome = { factionId: republic, kind: "build-completed", project: hospital, subTerritoryId: sub("girona") };
 const started: SystemOutcome = { kind: "training-started", order: { factionId: republic, kind: "recruit", territoryId: territory("catalunya"), unitTypeId: "militia-column" as UnitTypeId }, paid: amount(2, 3), turnsLeft: 1, unitId: militia };
 const paused: SystemOutcome = { factionId: republic, kind: "training-paused", territoryId: territory("catalunya"), unitId: militia };
 const income: SystemOutcome = { cut: amount(1), cutSubTerritoryIds: [sub("barcelona")], factionId: republic, kind: "income", paid: amount(14, 27) };
@@ -91,17 +91,17 @@ describe("the turn report's groups (D25, M10)", () => {
 
     render(<OutcomeSummary result={result([queued, completed])} scenario={scenario} viewer={republic} />);
     const lines = within(screen.getByText("Building (2)").closest("details")!).getAllByRole("listitem").map((item) => item.textContent);
-    expect(lines[0]).toMatch(/built a Factory at Girona/u);
-    expect(lines[1]).toMatch(/paid 10 Funds for Factory/u);
+    expect(lines[0]).toMatch(/built a Hospital at Girona/u);
+    expect(lines[1]).toMatch(/paid 10 Funds for Hospital/u);
   });
 
   it("sums routine build progress into one line once there are three", () => {
-    const progress = (id: string, done: number): SystemOutcome => ({ factionId: republic, kind: "build-progressed", progress: done, project: factory, subTerritoryId: sub(id), turns: 4 });
+    const progress = (id: string, done: number): SystemOutcome => ({ factionId: republic, kind: "build-progressed", progress: done, project: hospital, subTerritoryId: sub(id), turns: 4 });
     render(<OutcomeSummary result={result([completed, progress("girona", 1), progress("lleida", 2), progress("tarragona", 3)])} scenario={scenario} viewer={republic} />);
     const lines = within(screen.getByText("Building (4)").closest("details")!).getAllByRole("listitem").map((item) => item.textContent);
     expect(lines).toEqual([
-      "Republican Government built a Factory at Girona.",
-      "3 builds progressed: Factory at Girona, 1 of 4 turns done; Factory at Lleida, 2 of 4 turns done; Factory at Tarragona, 3 of 4 turns done."
+      "Republican Government built a Hospital at Girona.",
+      "3 builds progressed: Hospital at Girona, 1 of 4 turns done; Hospital at Lleida, 2 of 4 turns done; Hospital at Tarragona, 3 of 4 turns done."
     ]);
   });
 });
@@ -161,7 +161,7 @@ describe("focus notes for Milestone 3 outcomes (D25, F1)", () => {
     // Training comes before builds; within builds, the finished one before the queued one.
     expect(eventsAt(scenario, result([queued, completed, started]), territory("catalunya"))).toEqual([
       expect.stringMatching(/began training/u),
-      expect.stringMatching(/built a Factory/u),
+      expect.stringMatching(/built a Hospital/u),
       expect.stringMatching(/paid 10 Funds/u)
     ]);
   });

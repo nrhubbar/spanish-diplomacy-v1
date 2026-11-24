@@ -1,10 +1,10 @@
 import type { BattleDice } from "../main/engine/dice";
 import { initialGameState, resolveTurn } from "../main/engine/resolution";
 import {
-  type D6BattleOutcome,
-  isD6Battle,
+  type BattleOutcome,
   type CityId,
   type FactionId,
+  type FactionModifier,
   type GameState,
   type MoveOrder,
   type PlayerSubmission,
@@ -39,19 +39,6 @@ export function shippedRegistry(): ScenarioRegistry {
 }
 
 /**
- * Spain on the d6 preset's dice. The Milestone 2 rule and report tests were written against
- * Spain's map with the d6 table; they keep testing it (declog D3's intent), while Spain ships
- * with `d20-graded` (`spainD20`).
- */
-export function onD6Dice(scenario: Scenario): Scenario {
-  return {
-    ...scenario,
-    modules: scenario.modules.map((module) => (module.area === "dice" ? builtInModuleRegistry.require("dice", "d6-table") : module)),
-    rules: { ...scenario.rules, dice: "d6-table" }
-  };
-}
-
-/**
  * Spain without its starting aircraft and generals (m3r1-air-generals): the Milestone 2 rule,
  * report and UI tests count Spain's ground armies, so they keep the Milestone 2 board.
  */
@@ -61,48 +48,49 @@ export function groundForcesOnly(scenario: Scenario): Scenario {
   return { ...scenario, index: { ...scenario.index, units: new Map(units.map((unit) => [unit.id, unit])) }, units };
 }
 
-/** Registry with every shipped package plus test fixtures; Spain is pinned to the d6 table (`onD6Dice`) and its ground forces (`groundForcesOnly`). */
+/** Registry with every shipped package plus test fixtures; Spain has only its ground forces (`groundForcesOnly`). */
 export function testRegistry(): ScenarioRegistry {
   if (sharedRegistry === undefined) {
     const registry = shippedRegistry();
-    const pinned = { ...registry.require(spainId), scenario: groundForcesOnly(onD6Dice(registry.require(spainId).scenario)) };
+    const pinned = { ...registry.require(spainId), scenario: groundForcesOnly(registry.require(spainId).scenario) };
     sharedRegistry = { ...registry, list: () => registry.list(), loadAssets: (id) => registry.loadAssets(id), peekAssets: (id) => registry.peekAssets(id), require: (id) => (id === spainId ? pinned : registry.require(id)) };
   }
   return sharedRegistry;
 }
 
-/** Spain on the d6 table, for the Milestone 2 rule tests. */
+/** Spain with its ground forces only. */
 export function spain(): Scenario {
   return testRegistry().require(spainId).scenario;
 }
 
-/** Spain on the d6 table with its starting aircraft and generals (m3r1-air-generals tests). */
+/** Spain as shipped, with its starting aircraft and generals. */
 export function spainWithAir(): Scenario {
-  return onD6Dice(shippedRegistry().require(spainId).scenario);
+  return shippedRegistry().require(spainId).scenario;
 }
 
 let unpartitioned: Scenario | undefined;
 
+/** A faction modifier on the Spanish board for the M24 tests, whatever the shipped data holds. */
+const popularResistance: FactionModifier = { attack: 0, defence: 3, factionId: "republic" as FactionId, id: "popular-resistance", name: "Popular resistance", when: "holds-controlled-city" };
+
 /**
  * Spain with the `none` partition module: control follows armies (M6, M7) and nothing is
  * contested-ground only. For tests of the Milestone 2 rules (M6-M27) on the Spanish board,
- * which the `provinces` module replaces (P2-P7, C1).
+ * which the `provinces` module replaces (P2-P7, C1). It fights on the tiny front's plain d20 table
+ * (a die of 3n-1 reads row n), so these tests don't move with Spain's numbers.
  */
 export function spainM2(): Scenario {
   if (unpartitioned !== undefined) return unpartitioned;
   const scenario = spain();
   const none = builtInModuleRegistry.require("partition", "none");
+  const { d20 } = tiny();
   unpartitioned = {
     ...scenario,
+    d20: { ...d20, factionModifiers: [popularResistance] },
     modules: scenario.modules.map((module) => (module.area === "partition" ? none : module)),
     rules: { ...scenario.rules, partition: "none" }
   };
   return unpartitioned;
-}
-
-/** Spain as shipped, on the d20 (D1-D8). */
-export function spainD20(): Scenario {
-  return shippedRegistry().require(spainId).scenario;
 }
 
 export function tiny(): Scenario {
@@ -218,10 +206,10 @@ export function battlefield(
 }
 
 export const unitType = (id: string, attack: number, defence: number): UnitTypeDefinition =>
-  ({ attack, defence, effects: [], id: id as UnitTypeId, kind: "ground", name: id, orders: ["move"] });
+  ({ attack, defence, effects: [], id: id as UnitTypeId, kind: "ground", name: id, orders: ["move"], upkeep: {} });
 
 /**
- * Loaded dice: battle `i` rolls `faces[i]`. Draws after the die (standing-battle tie-breaks)
+ * Loaded d20s: battle `i` rolls `faces[i]`. Draws after the die (standing-battle tie-breaks)
  * return `rest[i]` when given, else 0, which picks the first tied faction.
  */
 export function loadedDice(faces: readonly number[], rest: readonly number[] = []): BattleDice {
@@ -231,7 +219,7 @@ export function loadedDice(faces: readonly number[], rest: readonly number[] = [
     let draws = 0;
     return () => {
       draws += 1;
-      return draws === 1 ? (face - 0.5) / 6 : rest[index] ?? 0;
+      return draws === 1 ? (face - 0.5) / 20 : rest[index] ?? 0;
     };
   };
 }
@@ -248,6 +236,11 @@ export function play(scenario: Scenario, state: GameState, orders: readonly Move
   return resolveTurn(scenario, state, submissionsOf(orders), 1, dice);
 }
 
-export function battlesOf(result: TurnResolutionResult): readonly D6BattleOutcome[] {
-  return result.outcomes.filter(isD6Battle);
+export function battlesOf(result: TurnResolutionResult): readonly BattleOutcome[] {
+  return result.outcomes.filter((outcome): outcome is BattleOutcome => outcome.kind === "battle");
+}
+
+/** A scenario whose units cost nothing a turn (D1), for tests that count what orders and income alone do to a treasury. */
+export function withoutUpkeep(scenario: Scenario): Scenario {
+  return { ...scenario, unitTypes: scenario.unitTypes.map((type) => ({ ...type, upkeep: {} })) };
 }

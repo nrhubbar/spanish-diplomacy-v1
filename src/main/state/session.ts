@@ -2,6 +2,7 @@ import type { StandingOrder } from "../engine/orders";
 import type {
   ActorKind,
   BuildOrder,
+  DisbandOrder,
   FactionId,
   GameState,
   AirMissionOrder,
@@ -53,6 +54,9 @@ export interface GameRecord {
  */
 export type OrderKind = MoveOrder["kind"] | WithdrawOrder["kind"] | ReplenishOrder["kind"] | StandingOrder | "attack" | "hold";
 
+/** What a unit does this turn: an order of the selection bar, or Disband, which is given on the unit's card (D1). */
+export type UnitOrderKind = OrderKind | DisbandOrder["kind"];
+
 /** The orders a player plans with a destination for armies: moves and withdrawals (C1). */
 export type PlannedOrder = MoveOrder | WithdrawOrder;
 
@@ -68,6 +72,8 @@ export interface Draft {
   readonly airOrders?: readonly (AirMissionOrder | SackOrder)[];
   /** $5: Build orders planned this turn (m3r1-economy-builds, `planning/builds.ts`). Carried through selection changes by `keepBasket`. */
   readonly builds?: readonly BuildOrder[];
+  /** D1: Disband orders, one per unit, never alongside another order of that unit. Carried through selection changes by `keepBasket`. */
+  readonly disbands?: readonly DisbandOrder[];
   readonly feedback?: string;
   /** X3: the sub-territory the pane is focused on, inside the selected territory. */
   readonly focusedSubTerritoryId?: SubTerritoryId;

@@ -1,12 +1,12 @@
 import type { ModuleRegistry, ScenarioBlock } from "../../engine/modules";
 import { ruleAreas } from "../../engine/types";
-import type { ModularScenarioDocument } from "../schema/scenarioSchema";
+import type { ScenarioDocument } from "../schema/scenarioSchema";
 import { idSet, type Issues } from "./issues";
 import { checkPartition } from "./partitionChecks";
 import { checkSubTerritories } from "./subTerritoryChecks";
 
-/** Rules L14-L17, L24, L26 and L27 for `m3-modular` packages. */
-export function checkModular(document: ModularScenarioDocument, issues: Issues, modules: ModuleRegistry): void {
+/** Rules L14-L17, L24, L26 and L27. */
+export function checkModular(document: ScenarioDocument, issues: Issues, modules: ModuleRegistry): void {
   for (const area of ruleAreas) {
     const moduleId = document.rules[area];
     if (!modules.known(area).has(moduleId)) {
@@ -20,6 +20,7 @@ export function checkModular(document: ModularScenarioDocument, issues: Issues, 
   for (const name of ["subTerritories", "resources", "development", "buildings"] as const) issues.unique(name, document[name]);
   checkSubTerritories(document, issues);
   checkPartition(document, issues);
+  checkCatalogueIds(document, issues);
   checkResources(document, issues);
   checkBuildBudgets(document, issues);
   checkUnitTypes(document, issues);
@@ -27,7 +28,7 @@ export function checkModular(document: ModularScenarioDocument, issues: Issues, 
 }
 
 /** L27: with an economy module, every computer player has a Build budget (EB-15). */
-function checkBuildBudgets(document: ModularScenarioDocument, issues: Issues): void {
+function checkBuildBudgets(document: ScenarioDocument, issues: Issues): void {
   if (document.rules.economy === "none") return;
   for (const [factionId, profile] of Object.entries(document.ai.profiles)) {
     if (profile.builds === undefined) issues.add(`ai.profiles.${factionId}: needs a builds budget with the economy module "${document.rules.economy}" (L27)`);
@@ -35,23 +36,31 @@ function checkBuildBudgets(document: ModularScenarioDocument, issues: Issues): v
 }
 
 /** L3: the sources every block and catalogue entry cites exist. */
-function checkBases(document: ModularScenarioDocument, issues: Issues): void {
+function checkBases(document: ScenarioDocument, issues: Issues): void {
   const sources = idSet(document.sources);
   for (const name of ["factions", "unitTypes", "development", "buildings"] as const) {
     document[name].forEach((entry, index) => { issues.cited(`${name}[${String(index)}]`, entry, sources); });
   }
-  for (const name of ["improvements", "recruitment", "movement", "d20", "weather", "calendar", "air", "generals"] as const) {
+  for (const name of ["improvements", "recruitment", "upkeep", "movement", "d20", "weather", "calendar", "air", "generals"] as const) {
     issues.cited(name, document[name], sources);
   }
 }
 
-function hasBlock(document: ModularScenarioDocument, block: ScenarioBlock): boolean {
+function hasBlock(document: ScenarioDocument, block: ScenarioBlock): boolean {
   const value = document[block];
   return Array.isArray(value) ? value.length > 0 : value !== undefined;
 }
 
+/** L2: a building and a development track never share an id, so a type's `requires` and a `buildable` list name one thing. */
+function checkCatalogueIds(document: ScenarioDocument, issues: Issues): void {
+  const buildings = idSet(document.buildings);
+  for (const track of document.development) {
+    if (buildings.has(track.id)) issues.add(`development: "${track.id}" is also a building id (L2)`);
+  }
+}
+
 /** L24: every amount names a known resource, and with resources every faction has a starting stock. */
-function checkResources(document: ModularScenarioDocument, issues: Issues): void {
+function checkResources(document: ScenarioDocument, issues: Issues): void {
   const resources = idSet(document.resources);
   const amounts = (path: string, record: Readonly<Record<string, number>>): void => {
     for (const id of Object.keys(record)) issues.ref(path, id, resources, "resource");
@@ -75,13 +84,15 @@ function checkResources(document: ModularScenarioDocument, issues: Issues): void
     amounts("improvements.port.cost", document.improvements.port.cost);
   }
   document.unitTypes.forEach((type, index) => {
+    amounts(`unitTypes[${index}].upkeep`, type.upkeep);
+    if (Object.keys(type.upkeep).length > 0 && document.upkeep === undefined) issues.add(`unitTypes[${index}].upkeep: needs the upkeep block`);
     if (type.recruit !== undefined) amounts(`unitTypes[${index}].recruit.cost`, type.recruit.cost);
   });
 }
 
 /** L17: air types carry their range and missions and nothing else does; references resolve. */
-function checkUnitTypes(document: ModularScenarioDocument, issues: Issues): void {
-  const buildings = idSet(document.buildings);
+function checkUnitTypes(document: ScenarioDocument, issues: Issues): void {
+  const catalogue = idSet([...document.buildings, ...document.development]);
   const factions = idSet(document.factions);
   const weather = idSet(document.weather?.outcomes ?? []);
   document.unitTypes.forEach((type, index) => {
@@ -89,7 +100,7 @@ function checkUnitTypes(document: ModularScenarioDocument, issues: Issues): void
     if ((type.kind === "air") !== (type.air !== undefined)) {
       issues.add(`${path}: "${type.id}" ${type.kind === "air" ? "needs" : "cannot have"} an air block (L17)`);
     }
-    type.recruit?.requires.forEach((id) => { issues.ref(`${path}.recruit.requires`, id, buildings, "building"); });
+    type.recruit?.requires.forEach((id) => { issues.ref(`${path}.recruit.requires`, id, catalogue, "building or development track"); });
     type.recruit?.factionIds?.forEach((id) => { issues.ref(`${path}.recruit.factionIds`, id, factions, "faction"); });
     type.effects.forEach((effect, effectIndex) => {
       if (effect.kind !== "roll-bonus-per-points") return;

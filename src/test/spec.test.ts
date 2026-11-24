@@ -36,7 +36,8 @@ function issuesFor(mutate: (scenario: Json, map: Json) => void): readonly string
 
 const list = (value: unknown): Json[] => value as Json[];
 const combat = (scenario: Json): Json => scenario["combat"] as Json;
-const modifier = (scenario: Json): Json => list(combat(scenario)["factionModifiers"])[0]!;
+const d20 = (scenario: Json): Json => scenario["d20"] as Json;
+const modifier = (scenario: Json): Json => list(d20(scenario)["factionModifiers"])[0]!;
 
 describe("published specification", () => {
   it("keeps the committed JSON Schemas in sync with the Zod sources (spec:check)", () => {
@@ -102,7 +103,7 @@ describe("loader rules", () => {
     ["L10 missing unit symbol", (_scenario: Json, map: Json) => { map["unitSymbols"] = {}; }, "unitSymbols"],
     ["L11 missing asset", (_scenario: Json, map: Json) => { (map["geometry"] as Json)["svg"] = "assets/maps/missing.svg"; }, "(L11)"],
     ["L1 unit type without values", (scenario: Json) => { delete list(scenario["unitTypes"])[0]!["attack"]; }, "unitTypes.0.attack"],
-    ["L1 zero unit type value", (scenario: Json) => { list(scenario["unitTypes"])[0]!["defence"] = 0; }, "unitTypes.0.defence"],
+    ["L1 negative unit type value", (scenario: Json) => { list(scenario["unitTypes"])[0]!["defence"] = -1; }, "unitTypes.0.defence"],
     ["L1 fractional unit type value", (scenario: Json) => { list(scenario["unitTypes"])[0]!["attack"] = 2.5; }, "unitTypes.0.attack"],
     ["L1 army without strength", (scenario: Json) => { delete list(scenario["units"])[0]!["strength"]; }, "units.0.strength"],
     ["L1 army without full strength", (scenario: Json) => { delete list(scenario["units"])[0]!["fullStrength"]; }, "units.0.fullStrength"],
@@ -110,18 +111,18 @@ describe("loader rules", () => {
     ["L1 lower-case designation", (scenario: Json) => { list(scenario["units"])[0]!["designation"] = "rr"; }, "units.0.designation"],
     ["L1 retired approximateStrength", (scenario: Json) => { list(scenario["units"])[0]!["approximateStrength"] = 500; }, "approximateStrength"],
     ["L1 missing combat block", (scenario: Json) => { delete scenario["combat"]; }, "combat"],
-    ["L1 table with six columns", (scenario: Json) => { list(combat(scenario)["table"]).pop(); }, "combat.table"],
-    ["L1 table column with six rows", (scenario: Json) => { (list(combat(scenario)["table"])[3] as unknown as string[]).pop(); }, "combat.table.3"],
-    ["L1 unknown result", (scenario: Json) => { (list(combat(scenario)["table"])[2] as unknown as string[])[4] = "attacker-routed"; }, "combat.table.2.4"],
-    ["L1 unknown below-1:1 rule", (scenario: Json) => { combat(scenario)["belowOneToOne"] = { "@type": "none", "@data": { rollPenalty: 1 } }; }, "combat.belowOneToOne.@type"],
+    ["L1 missing d20 block", (scenario: Json) => { delete scenario["d20"]; }, "d20"],
+    ["L1 table with six columns", (scenario: Json) => { list(d20(scenario)["table"]).pop(); }, "d20.table"],
+    ["L1 table column with twenty scores", (scenario: Json) => { (list(d20(scenario)["table"])[3] as unknown as string[]).pop(); }, "d20.table.3"],
+    ["L1 negative below-1:1 penalty", (scenario: Json) => { (d20(scenario)["modifiers"] as Json)["belowOneToOnePenalty"] = -1; }, "d20.modifiers.belowOneToOnePenalty"],
     ["L1 zero digging-in step", (scenario: Json) => { combat(scenario)["diggingIn"] = { max: 3, perTurn: 0 }; }, "combat.diggingIn.perTurn"],
     ["L1 demoralization factor above 1", (scenario: Json) => { combat(scenario)["demoralizationFactor"] = 1.5; }, "combat.demoralizationFactor"],
     ["L1 demoralization factor of 0", (scenario: Json) => { combat(scenario)["demoralizationFactor"] = 0; }, "combat.demoralizationFactor"],
-    ["L1 unknown modifier condition", (scenario: Json) => { modifier(scenario)["when"] = "always"; }, "combat.factionModifiers.0.when"],
-    ["L1 negative modifier", (scenario: Json) => { modifier(scenario)["defence"] = -1; }, "combat.factionModifiers.0.defence"],
-    ["L2 duplicate modifier ids", (scenario: Json) => { list(combat(scenario)["factionModifiers"]).push(clone(modifier(scenario))); }, "combat.factionModifiers: duplicate id \"harbor-batteries\" (L2)"],
+    ["L1 unknown modifier condition", (scenario: Json) => { modifier(scenario)["when"] = "always"; }, "d20.factionModifiers.0.when"],
+    ["L1 negative modifier", (scenario: Json) => { modifier(scenario)["defence"] = -1; }, "d20.factionModifiers.0.defence"],
+    ["L2 duplicate modifier ids", (scenario: Json) => { list(d20(scenario)["factionModifiers"]).push(clone(modifier(scenario))); }, "d20.factionModifiers: duplicate id \"harbor-batteries\" (L2)"],
     ["L3 army of an unknown type", (scenario: Json) => { list(scenario["units"])[0]!["type"] = "cavalry"; }, "unknown unit type \"cavalry\" (L3)"],
-    ["L3 modifier for an unknown faction", (scenario: Json) => { modifier(scenario)["factionId"] = "green"; }, "combat.factionModifiers[0].factionId: unknown faction \"green\" (L3)"],
+    ["L3 modifier for an unknown faction", (scenario: Json) => { modifier(scenario)["factionId"] = "green"; }, "d20.factionModifiers[0].factionId: unknown faction \"green\" (L3)"],
     ["L12 strength above full strength", (scenario: Json) => { list(scenario["units"])[0]!["strength"] = 501; }, "units[0].strength: 501 men exceeds fullStrength 500 (L12)"],
     ["L13 modifier without effect", (scenario: Json) => { modifier(scenario)["defence"] = 0; }, "(L13)"]
   ])("rejects %s", (_name, mutate, expected) => {

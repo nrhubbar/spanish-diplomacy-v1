@@ -1,8 +1,18 @@
-import { type Casualties, freshlyDemoralized } from "../battleResults";
 import type { Armies } from "../board";
-import type { ArmyLoss, BattleArmy, BattleSide, GameState, GradeSideEffect, Scenario, UnitId, UnitState } from "../types";
+import type { ArmyLoss, BattleArmy, BattleSide, GameState, GradeSideEffect, Morale, Scenario, UnitId, UnitState } from "../types";
 import { canFight } from "../units/fighting";
 import { definitionOf, isGeneralUnit, unitRank } from "./rules";
+
+/** What one side suffered. */
+export interface Casualties {
+  readonly demoralized: readonly UnitId[];
+  readonly losses: readonly ArmyLoss[];
+  /** The side's armies after the effect; destroyed armies are absent. */
+  readonly survivors: readonly UnitState[];
+}
+
+/** Demoralized with its recovery clock restarted (M23). */
+export const freshlyDemoralized: Morale = { demoralized: true, quietTurns: 0 };
 
 /**
  * D2, D6: what one grade does to one side.

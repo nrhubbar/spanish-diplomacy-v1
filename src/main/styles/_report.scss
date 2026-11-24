@@ -287,23 +287,6 @@ tr.battle-roll-total {
   border-top: 1.5px solid rgb(36 29 24 / 55%);
 }
 
-.die-face {
-  width: 1.15rem;
-  height: 1.15rem;
-  margin-right: 0.35rem;
-  vertical-align: -0.25rem;
-
-  rect {
-    fill: var(--paper);
-    stroke: var(--ink);
-    stroke-width: 0.7;
-  }
-
-  circle {
-    fill: var(--ink);
-  }
-}
-
 .battle-effects {
   display: grid;
   gap: 0.2rem;

@@ -1,4 +1,5 @@
 import { plannedSpend } from "../../engine/economy/catalogue";
+import { upkeepProblem } from "../../engine/economy/upkeep";
 import { isContested, priceReplenishments, recruitSiteProblem, recruitSlots, replenishProblem, typeLock } from "../../engine/recruitment/rules";
 import { addResources, subtractResources, treasuryOf } from "../../engine/resources";
 import type { FactionId, GameState, Order, RecruitOrder, ReplenishOrder, Resources, Scenario, TerritoryId, UnitId, UnitState, UnitTypeId } from "../../engine/types";
@@ -14,9 +15,9 @@ import { type PlanningSession, feedback, selectedUnits, selecting, withDraft } f
  * has at most one order, and a territory's basket never exceeds its D7 number of orders.
  */
 
-/** Every order the draft submits at End Turn: moves, then Recruit, Replenish and Build orders. */
+/** Every order the draft submits at End Turn: moves, then Disband, Replenish, Recruit and Build orders. */
 export function draftOrders(draft: Draft): readonly Order[] {
-  return [...draft.orders, ...(draft.replenishments ?? []), ...(draft.recruits ?? []), ...(draft.builds ?? [])];
+  return [...draft.orders, ...(draft.disbands ?? []), ...(draft.replenishments ?? []), ...(draft.recruits ?? []), ...(draft.builds ?? [])];
 }
 
 /** The draft's Recruit orders for one type at one territory. */
@@ -33,7 +34,7 @@ export function basketCost(scenario: Scenario, session: PlanningSession): Resour
 }
 
 /** B2: what these Replenish orders pay at reveal, priced in turn against the faction's carry. */
-export function replenishmentCost(scenario: Scenario, state: GameState, factionId: FactionId, orders: readonly ReplenishOrder[]): Resources {
+function replenishmentCost(scenario: Scenario, state: GameState, factionId: FactionId, orders: readonly ReplenishOrder[]): Resources {
   const units = orders.flatMap((order): UnitState[] => {
     const unit = state.units[order.unitId];
     return unit === undefined ? [] : [unit];
@@ -49,7 +50,8 @@ export function balanceAfterBasket(scenario: Scenario, session: PlanningSession)
 
 /**
  * Sets how many units of a type the draft recruits at a territory this turn. Refused, with
- * feedback, when the site or the type is locked, or the territory's D7 limit would be passed.
+ * feedback, when the site or the type is locked, the territory's D7 limit would be passed, or
+ * next turn's stock would not cover the upkeep (D1).
  */
 export function setRecruitQuantity(scenario: Scenario, session: PlanningSession, territoryId: TerritoryId, typeId: UnitTypeId, quantity: number): PlanningSession {
   const { state } = session.game;
@@ -70,8 +72,18 @@ export function setRecruitQuantity(scenario: Scenario, session: PlanningSession,
   const added: RecruitOrder[] = Array.from({ length: wanted }, () => ({ factionId: session.factionId, kind: "recruit", territoryId, unitTypeId: typeId }));
   const draft: Draft = { ...session.draft, recruits: [...kept, ...added] };
   delete (draft as { feedback?: string }).feedback;
-  return withDraft(session, draft);
+  const short = wanted > current ? upkeepProblem(scenario, state, session.factionId, draftOrders(draft)) : undefined;
+  return short === undefined ? withDraft(session, draft) : feedback(session, short);
 }
+
+/** D1: why one more unit of a type is refused for its price and upkeep, the draft's other orders counted, or undefined. */
+export function recruitUpkeepProblem(scenario: Scenario, session: PlanningSession, territoryId: TerritoryId, unitTypeId: UnitTypeId): string | undefined {
+  const { draft, factionId, game } = session;
+  return upkeepProblem(scenario, game.state, factionId, [...draftOrders(draft), { factionId, kind: "recruit", territoryId, unitTypeId }]);
+}
+
+/** D1: why a unit is left out whose Replenish next turn's stock cannot cover. */
+const upkeepSkip = "upkeep leaves too little next turn";
 
 /** U12: a selected unit the Replenish order leaves out, and why, in a few words. */
 export interface ReplenishSkip {
@@ -104,7 +116,8 @@ export function replenishSkipReason(scenario: Scenario, state: GameState, unit: 
 /**
  * U12: Replenish for the whole selection. Units that cannot replenish are skipped with their
  * reason, and so are those the balance left after the rest of the draft cannot pay for, priced
- * in turn against the carry (B2) after the draft's other Replenish orders.
+ * in turn against the carry (B2) after the draft's other Replenish orders, and those that would
+ * leave next turn's stock short of the upkeep (D1).
  */
 export function replenishPlan(scenario: Scenario, session: PlanningSession): ReplenishPlan {
   const { state } = session.game;
@@ -127,13 +140,25 @@ export function replenishPlan(scenario: Scenario, session: PlanningSession): Rep
   const paidFor = all.filter((entry) => entry.affordable).reduce<Resources>((sum, entry) => addResources(sum, entry.paid), {});
   const left = funded === undefined ? undefined : subtractResources(funded, paidFor);
   const short = shortfallNames(scenario, priced.filter((entry) => !entry.affordable).map((entry) => entry.paid), left);
-  const ready = eligible.filter((unit) => affordable.has(unit.id));
+  const covered = eligible.filter((unit) => affordable.has(unit.id));
+  const ready = withinUpkeep(scenario, session, covered, kept);
+  const granted = new Set(ready.map((unit) => unit.id));
   const skipped = units.flatMap((unit): ReplenishSkip[] => {
-    const reason = reasons.get(unit.id) ?? (affordable.has(unit.id) ? undefined : `not enough ${short}`);
+    const reason = reasons.get(unit.id) ?? (granted.has(unit.id) ? undefined : affordable.has(unit.id) ? upkeepSkip : `not enough ${short}`);
     return reason === undefined ? [] : [{ name: unitName(scenario, unit.id), reason, unitId: unit.id }];
   });
-  const cost = priced.filter((entry) => affordable.has(entry.unitId)).reduce<Resources>((sum, entry) => addResources(sum, entry.paid), {});
+  const cost = priced.filter((entry) => granted.has(entry.unitId)).reduce<Resources>((sum, entry) => addResources(sum, entry.paid), {});
   return { cost, ready, selected: units.length, skipped };
+}
+
+/** D1: the units, in turn, whose Replenish leaves next turn's stock covering the upkeep, after the draft's other orders. */
+function withinUpkeep(scenario: Scenario, { draft, factionId, game }: PlanningSession, units: readonly UnitState[], kept: readonly ReplenishOrder[]): readonly UnitState[] {
+  const others = draftOrders({ ...draft, ...unitOrdersWithout(draft, units.map((unit) => unit.id)), replenishments: kept });
+  return units.reduce<readonly UnitState[]>((ready, unit) => {
+    const next = [...ready, unit];
+    const orders = next.map(({ id }): ReplenishOrder => ({ factionId, kind: "replenish", unitId: id }));
+    return upkeepProblem(scenario, game.state, factionId, [...others, ...orders]) === undefined ? next : ready;
+  }, []);
 }
 
 /** The resources short for the orders left unpaid, against what the paid ones leave: "Funds", "Funds and Manpower". */
@@ -167,7 +192,8 @@ export function chooseReplenish(scenario: Scenario, session: PlanningSession): P
     // Nothing selected, none allowed (the first unit's reason, in full), or none the balance covers.
     const problems = selectedUnits(session).map((unit) => replenishProblem(scenario, session.game.state, unit));
     const allowed = problems.some((problem) => problem === undefined);
-    return feedback(session, problems.length === 0 ? "Select at least one unit first." : allowed ? "Not enough Funds or Manpower left to replenish." : String(problems[0]));
+    const unpaid = plan.skipped.some((skip) => skip.reason === upkeepSkip) ? `No selected unit can replenish. ${skippedText(plan.skipped)}` : "Not enough Funds or Manpower left to replenish.";
+    return feedback(session, problems.length === 0 ? "Select at least one unit first." : allowed ? unpaid : String(problems[0]));
   }
   const chosen = new Set(units.map((unit) => unit.id));
   const orders = session.draft.orders.filter((order) => !chosen.has(order.unitId));
@@ -180,7 +206,7 @@ export function chooseReplenish(scenario: Scenario, session: PlanningSession): P
   const base: Draft = territoryId === undefined ? { orders, selectedUnitIds: [] } : selecting(territoryId, [], orders);
   const who = units.length === 1 ? "1 unit" : `${String(units.length)} units`;
   const skips = skippedText(plan.skipped);
-  return withDraft(session, { ...keepBasket(session.draft), ...base, replenishments, feedback: `${who} will replenish.${skips === "" ? "" : ` ${skips}`}` });
+  return withDraft(session, { ...keepBasket(session.draft), ...base, ...unitOrdersWithout(session.draft, chosen), replenishments, feedback: `${who} will replenish.${skips === "" ? "" : ` ${skips}`}` });
 }
 
 /** U12: the selection bar's line for Replenish: what it brings and costs, and which units it skips. */
@@ -191,16 +217,20 @@ export function replenishSelectionDetail(scenario: Scenario, session: PlanningSe
   return plan.skipped.length === 0 ? detail : `Refills ${String(plan.ready.length)} of the ${String(plan.selected)} selected units: ${detail}. ${skippedText(plan.skipped)}`;
 }
 
-/** The draft's Replenish orders less those of these units (they were given another order). */
-export function replenishWithout(draft: Draft, unitIds: Iterable<string>): Pick<Draft, "replenishments"> {
+/** The draft's Replenish and Disband orders less those of these units (they were given another order). */
+export function unitOrdersWithout(draft: Draft, unitIds: Iterable<string>): Pick<Draft, "disbands" | "replenishments"> {
   const dropped = new Set(unitIds);
-  return draft.replenishments === undefined ? {} : { replenishments: draft.replenishments.filter((order) => !dropped.has(order.unitId)) };
+  return {
+    ...(draft.disbands === undefined ? {} : { disbands: draft.disbands.filter((order) => !dropped.has(order.unitId)) }),
+    ...(draft.replenishments === undefined ? {} : { replenishments: draft.replenishments.filter((order) => !dropped.has(order.unitId)) })
+  };
 }
 
-/** The draft's Recruit basket, Replenish and Build orders, to carry into a rebuilt draft. */
-export function keepBasket(draft: Draft): Pick<Draft, "builds" | "recruits" | "replenishments"> {
+/** The draft's Recruit basket, Replenish, Disband and Build orders, to carry into a rebuilt draft. */
+export function keepBasket(draft: Draft): Pick<Draft, "builds" | "disbands" | "recruits" | "replenishments"> {
   return {
     ...(draft.builds === undefined ? {} : { builds: draft.builds }),
+    ...(draft.disbands === undefined ? {} : { disbands: draft.disbands }),
     ...(draft.recruits === undefined ? {} : { recruits: draft.recruits }),
     ...(draft.replenishments === undefined ? {} : { replenishments: draft.replenishments })
   };

@@ -100,12 +100,12 @@ describe("link works (R7; the rules are in networkEngine.test.ts)", () => {
   it("keys, prices and levels them", () => {
     expect(projectKey(link("new-rail"))).toBe(projectKey(link("new-rail", "guadarrama", "madrid")));
     expect(projectKey(link("new-rail"))).not.toBe(projectKey(link("road-upgrade")));
-    expect(projectCost(scenario, link("new-rail"))).toEqual({ cost: { funds: 24 }, turns: 8 });
+    expect(projectCost(scenario, link("new-rail"))).toEqual({ cost: { funds: 10, manpower: 6 }, turns: 5 });
     expect(buildableId(link("rail-upgrade"))).toBeUndefined();
     const madrid = start.subTerritories[sub("madrid")];
     expect(madrid === undefined ? undefined : currentLevel(madrid, link("rail-upgrade"))).toBe(0);
     expect(maxLevel(scenario, link("rail-upgrade"))).toBe(0);
-    expect(siteRefusal(scenario, start, faction("republic"), sub("madrid"), link("road-upgrade"))).toBe("This is a main road already.");
+    expect(siteRefusal(scenario, start, faction("republic"), sub("madrid"), link("road-upgrade"))).toBe("Trucks can use this road already.");
   });
 
   it("leaves the site as it was when one finishes in its queue", () => {
@@ -120,7 +120,7 @@ describe("link works (R7; the rules are in networkEngine.test.ts)", () => {
   it("names them and their icons in plain words", () => {
     expect(projectBaseName(scenario, link("new-rail"))).toBe("New rail line");
     expect(projectName(scenario, start.subTerritories[sub("madrid")], link("rail-upgrade"))).toBe("Rail upgrade");
-    expect(projectEffectText(scenario, link("road-upgrade"))).toBe("a main road for trucks");
+    expect(projectEffectText(scenario, link("road-upgrade"))).toBe("a road trucks can use");
     expect(projectEffectText(scenario, link("new-rail"))).toBe("longer rail moves");
     expect(projectIcon(scenario, link("road-upgrade"))).toBe("flag");
     expect(projectIcon(scenario, link("rail-upgrade"))).toBe("rail");

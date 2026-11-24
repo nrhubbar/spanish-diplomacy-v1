@@ -33,7 +33,7 @@ export type SemanticLevel = "overview" | "operational" | "detail";
 
 export const cameraLimits = { maxZoom: 4, minZoom: 1, zoomStep: 0.25 } as const;
 
-export function fitScale(viewport: Viewport, bounds: CameraBounds): number {
+function fitScale(viewport: Viewport, bounds: CameraBounds): number {
   const usableWidth = Math.max(1, viewport.width - viewport.insetRight);
   const usableHeight = Math.max(1, viewport.height - viewport.insetBottom);
   return Math.max(0.0001, Math.min(usableWidth / bounds.focus.width, usableHeight / bounds.focus.height));

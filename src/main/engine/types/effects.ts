@@ -50,10 +50,9 @@ export type UnitEffect =
   | { readonly kind: "air-battle"; readonly roll: number };
 
 export const buildingEffectKinds = [
-  "recruit-slots",
   "replenish-cap",
   "replenish-discount",
-  "rail-departures",
+  "rail-capacity",
   "airbase",
   "all-weather-airbase",
   "defence-roll"
@@ -61,20 +60,25 @@ export const buildingEffectKinds = [
 
 /** What a building does beyond gating unit types ($4). */
 export type BuildingEffect =
-  /** D7 defaults: `extra` more Recruit orders a turn in the territory. */
-  | { readonly extra: number; readonly kind: "recruit-slots" }
   /** R5, D28.1 (Hospital): the per-turn Replenish cap rises by `share` of establishment. */
   | { readonly kind: "replenish-cap"; readonly share: number }
   /** R5, D28.1 (Depot): Replenish costs `share` less of `resource`. */
   | { readonly kind: "replenish-discount"; readonly resource: ResourceId; readonly share: number }
-  /** M3: `extra` more armies may leave the capital by rail per turn. */
-  | { readonly extra: number; readonly kind: "rail-departures" }
+  /** M3, D5: `units` more units may leave the capital by rail per turn. */
+  | { readonly kind: "rail-capacity"; readonly units: number }
   /** U2: aircraft may be based here. */
   | { readonly kind: "airbase" }
   /** U2: aircraft based here fly in every weather. */
   | { readonly kind: "all-weather-airbase" }
   /** The defender of the territory gains `roll` on the d20 while it holds this sub-territory. */
   | { readonly kind: "defence-roll"; readonly roll: number };
+
+export const developmentEffectKinds = ["recruit-slots"] as const;
+
+/** What each level of a development track does beyond its yield ($3). */
+export type DevelopmentEffect =
+  /** Every level gives its territory `extra` more Recruit orders a turn. */
+  { readonly extra: number; readonly kind: "recruit-slots" };
 
 export const weatherEffectKinds = ["blocks-digging-in", "grounds-aircraft", "movement-penalty", "frostbite", "closes-sea"] as const;
 

@@ -1,16 +1,15 @@
-import type { PendingBattle } from "../battle";
 import { type Armies, armiesIn, compareIds, factionsOf, removeArmies, replaceArmies } from "../board";
 import { type BattleDice, pick } from "../dice";
 import type { RandomSource } from "../random";
 import type { Leaving } from "../retreat";
 import type { CombatRole, FactionId, Occupation, Scenario, StandingTieBreak, TerritoryId, UnitState } from "../types";
-import { fightGraded, type GradedInput, rollD20 } from "./battle";
+import { type BattleInput, fight, type PendingBattle, rollD20 } from "./battle";
 import { cannotAttackAlone, standingHolder } from "./front";
 import { fightingSurvivors } from "./grades";
-import { gradedSide } from "./modifiers";
+import { fightingSide } from "./modifiers";
 
 /** The result of the d20 standing-battle step. */
-export interface GradedStanding {
+export interface StandingResolution {
   readonly armies: Armies;
   readonly battles: readonly PendingBattle[];
   readonly leaving: readonly Leaving[];
@@ -27,14 +26,14 @@ export interface GradedStanding {
  * The attacker stays whatever happens. A grade with ground "all" makes the defender retreat
  * (M21); a partial grade leaves both in place and its ground to the partition module (P4, P5).
  */
-export function resolveGradedStanding(
+export function resolveStanding(
   scenario: Scenario,
-  input: GradedInput,
+  input: BattleInput,
   armies: Armies,
   dice: BattleDice,
   firstIndex: number,
   foughtIn: ReadonlySet<TerritoryId>
-): GradedStanding {
+): StandingResolution {
   const { start } = input;
   const battles: PendingBattle[] = [];
   const leaving: Leaving[] = [];
@@ -59,7 +58,7 @@ export function resolveGradedStanding(
     const die = rollD20(random);
     const attacker = choose(random, candidates, "attack");
     const defender = holder !== undefined ? { factionId: holder } : choose(random, ranking.filter((entry) => entry.factionId !== attacker.factionId), "defence");
-    const battle = fightGraded(scenario, input, current, {
+    const battle = fight(scenario, input, current, {
       attackerFactionId: attacker.factionId,
       attackers: able(attacker.factionId).map((unit) => ({ from: territoryId, unit })),
       context: { attackerFactionId: attacker.factionId, defenderFactionIds: [defender.factionId], diggingIn: false, territoryId },
@@ -93,8 +92,8 @@ export function resolveGradedStanding(
   return { armies: current, battles, leaving };
 }
 
-function standingAttack(scenario: Scenario, input: GradedInput, units: readonly UnitState[], territoryId: TerritoryId): number {
-  return units.length === 0 ? 0 : gradedSide(scenario, input.start, units.map((unit) => ({ from: territoryId, unit })), "attack").value;
+function standingAttack(scenario: Scenario, input: BattleInput, units: readonly UnitState[], territoryId: TerritoryId): number {
+  return units.length === 0 ? 0 : fightingSide(scenario, input.start, units.map((unit) => ({ from: territoryId, unit })), "attack").value;
 }
 
 interface Choice {

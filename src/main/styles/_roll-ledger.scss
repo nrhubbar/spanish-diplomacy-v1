@@ -1,0 +1,45 @@
+// The effects on a battle's roll: one line each, the signed number on the right, the total last.
+
+.roll-ledger {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.84rem;
+
+  caption {
+    padding-bottom: 0.15rem;
+    font-weight: 700;
+    text-align: left;
+  }
+
+  th,
+  td {
+    padding: 0.18rem 0;
+    border-bottom: 1px solid var(--paper-deep);
+    font-weight: 400;
+    overflow-wrap: anywhere;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  tfoot th,
+  tfoot td {
+    border-bottom: 0;
+    font-weight: 700;
+  }
+
+  .roll-ledger-value {
+    padding-left: 0.75rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  tbody .roll-ledger-value[data-tone="plus"] {
+    color: var(--success);
+  }
+
+  tbody .roll-ledger-value[data-tone="minus"] {
+    color: var(--disband);
+  }
+}

@@ -1,0 +1,186 @@
+[
+  {
+    "id": "Q-R3-MUSIC-FILES",
+    "idea": "audio",
+    "text": "How should the music be delivered?",
+    "context": "One 16 MB file is downloaded whole within seconds by Firefox and Safari on a fast connection, even if the player leaves after a minute. Chrome takes about 6 MB.",
+    "options": [
+      {
+        "label": "Four files, one per track, with the fades built in",
+        "recommended": true,
+        "rationale": "A first listen costs 1.4 to 3.4 MB, a session can start on a different track, and no fading script is needed on iPhone. Needs a small change to the mix script."
+      },
+      {
+        "label": "One file, the mix as it is",
+        "recommended": false,
+        "rationale": "Simplest and exactly your mix, but 6 to 16 MB on a first listen and it always opens the same way."
+      },
+      {
+        "label": "Music only as a download the player asks for",
+        "recommended": false,
+        "rationale": "Cheapest, but most players would never hear it."
+      }
+    ]
+  },
+  {
+    "id": "Q-R3-MUSIC-QUALITY",
+    "idea": "audio",
+    "text": "Which quality should the music ship at?",
+    "context": "Sizes for all four tracks, measured: Opus 64 is 10.8 MB, Opus 96 is 16.3 MB. iPhones use a separate AAC copy (96 kbps, 16.2 MB).",
+    "options": [
+      {
+        "label": "Opus 64 and AAC 96, after you listen",
+        "recommended": true,
+        "rationale": "A third smaller. Best if you cannot tell the difference in headphones; please compare on Unraveling."
+      },
+      {
+        "label": "Opus 96 and AAC 96",
+        "recommended": false,
+        "rationale": "Closer to the usual guideline, 5.5 MB more in total."
+      },
+      {
+        "label": "Opus 96 and AAC 128",
+        "recommended": false,
+        "rationale": "Nearest to your current files, 16 to 21 MB."
+      }
+    ]
+  },
+  {
+    "id": "Q-R3-MUSIC-START",
+    "idea": "audio",
+    "text": "What should happen with sound on a first visit?",
+    "context": "Browsers do not allow sound before a click.",
+    "options": [
+      {
+        "label": "Music starts with the first campaign, at a modest level, with a notice and a mute button",
+        "recommended": true,
+        "rationale": "Players hear it, and one press stops it."
+      },
+      {
+        "label": "Everything starts off until the player turns it on",
+        "recommended": false,
+        "rationale": "Never annoys, but most players will not find it."
+      },
+      {
+        "label": "Effects on, music off",
+        "recommended": false,
+        "rationale": "A middle path that hides the music."
+      }
+    ]
+  },
+  {
+    "id": "Q-R3-SFX-SET",
+    "idea": "audio",
+    "text": "Which sounds should we make now?",
+    "context": "Fourteen candidates are in the audition board. Every licence was checked; none has been listened to by us.",
+    "options": [
+      {
+        "label": "Your eight, plus a soft refused tick and one distant-guns sound when the battle report opens",
+        "recommended": true,
+        "rationale": "Covers your list and gives the report some weight, about 0.1 MB in all."
+      },
+      {
+        "label": "Only your eight",
+        "recommended": false,
+        "rationale": "Fewest sounds to tire of."
+      },
+      {
+        "label": "Your eight plus victory, defeat and weather",
+        "recommended": false,
+        "rationale": "More atmosphere, and more to license and tune."
+      }
+    ]
+  },
+  {
+    "id": "Q-R3-SFX-RULES",
+    "idea": "audio",
+    "text": "How strict should the limits on repeated sounds be?",
+    "context": "Ten rail orders at once would be ten whistles and about 5 dB over the maximum, which crackles. Try both in the mix lab.",
+    "options": [
+      {
+        "label": "Strict: one sound per action, a special sound at most every four seconds, then a quiet tick",
+        "recommended": true,
+        "rationale": "Special sounds stay special. Four seconds is a starting value to tune by ear."
+      },
+      {
+        "label": "Looser: special sounds every second or so",
+        "recommended": false,
+        "rationale": "Livelier, and tires faster."
+      },
+      {
+        "label": "Special sounds only for the first order of each kind each turn",
+        "recommended": false,
+        "rationale": "Calmest, and the player may wonder why a later train is silent."
+      }
+    ]
+  },
+  {
+    "id": "Q-R3-HOTSEAT-SOUND",
+    "idea": "audio",
+    "text": "In games where two people share one device, should order sounds reveal what was ordered?",
+    "context": "A train whistle tells the other player that a rail move was made.",
+    "options": [
+      {
+        "label": "Use the same plain tick for every order when people share a device",
+        "recommended": true,
+        "rationale": "Keeps plans secret, with no cost in single-player."
+      },
+      {
+        "label": "Always play the special sounds",
+        "recommended": false,
+        "rationale": "Simplest, but leaks plans."
+      },
+      {
+        "label": "Let the players choose in Settings",
+        "recommended": false,
+        "rationale": "Fair, but one more option most will not see."
+      }
+    ]
+  },
+  {
+    "id": "Q-R3-MAP-IMAGE",
+    "idea": "bandwidth",
+    "text": "When should the detailed map picture load?",
+    "context": "It is 1.8 MB of the 3.1 MB a new player downloads, and it loads before anyone zooms in.",
+    "options": [
+      {
+        "label": "Only when the player zooms in, or when idle on a fast connection",
+        "recommended": true,
+        "rationale": "Cuts up to 59% for players who do not zoom. A zoom may be soft for a moment."
+      },
+      {
+        "label": "As now, at the start of the campaign",
+        "recommended": false,
+        "rationale": "Sharp at once, and the largest cost in the game."
+      },
+      {
+        "label": "On zoom, and re-encode it smaller",
+        "recommended": false,
+        "rationale": "A further 0.8 MB or so in all, but the map must be looked at and the visual tests refreshed."
+      }
+    ]
+  },
+  {
+    "id": "Q-R3-SIZE-GATE",
+    "idea": "bandwidth",
+    "text": "Should a download size limit stop a build?",
+    "context": "A limit exists and is already missed (159.4 kB against 155 kB for the first script), but nothing runs the check.",
+    "options": [
+      {
+        "label": "Yes, after moving the rules and computer player out of the first script, and cover audio and images too",
+        "recommended": true,
+        "rationale": "Keeps growth visible, and the limit stays where you set it."
+      },
+      {
+        "label": "Yes, from today, blocking",
+        "recommended": false,
+        "rationale": "Nothing else can merge until the miss is fixed."
+      },
+      {
+        "label": "Report only",
+        "recommended": false,
+        "rationale": "Easy, and easily ignored, as now."
+      }
+    ]
+  }
+]

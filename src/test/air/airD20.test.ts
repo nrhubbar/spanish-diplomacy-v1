@@ -4,7 +4,7 @@ import { unitOrder } from "../../main/engine/board";
 import { generalUnitDefinition } from "../../main/engine/generals/identity";
 import { initialGameState, resolveTurn } from "../../main/engine/resolution";
 import type { AirMissionOrder, GameState, Scenario, TurnOutcome, UnitState } from "../../main/engine/types";
-import { faction, move, spainD20, territory, unit } from "../support";
+import { faction, move, spainWithAir, territory, unit } from "../support";
 
 /** Air and generals under Spain as shipped, on the d20 (D17, DC-5, DC-16). */
 
@@ -22,7 +22,7 @@ function without(state: GameState, ...ids: readonly string[]): GameState {
 }
 
 describe("air and generals on the d20", () => {
-  const scenario = spainD20();
+  const scenario = spainWithAir();
   const state = initialGameState(scenario);
   const attack = ["north-san-marcial-22", "north-san-quintin-25"].map((id) => move("north", id, "castilla-y-leon", "madrid"));
 
@@ -59,7 +59,7 @@ describe("air and generals on the d20", () => {
 
 describe("a replacement general in the d20 battles (D7)", () => {
   it("fights, retreats and is ordered like any unit, without a scenario definition", () => {
-    const scenario = spainD20();
+    const scenario = spainWithAir();
     const opening = initialGameState(scenario);
     const rojo = generalUnitDefinition(scenario, unit("general-vicente-rojo"));
     if (rojo === undefined) throw new Error("no Rojo");

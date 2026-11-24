@@ -1,21 +1,24 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { alarmAt } from "../main/ai/alarm";
 import { assess } from "../main/ai/assessment";
 import { bouncedMoves, moveKey } from "../main/ai/memory";
 import { expectedLosses } from "../main/ai/attacks";
 import { generateComputerSubmission, legalMoves } from "../main/ai/computerPlayer";
-import { battleOdds, estimateAttack } from "../main/engine/combat";
+import { estimateAttack } from "../main/engine/combat";
+import { battleOdds } from "../main/engine/d20/odds";
 import { deriveSeed, seededRandom } from "../main/engine/random";
 import { initialGameState, resolveTurn } from "../main/engine/resolution";
 import { type GameState, isMoveOrder, type PlayerSubmission } from "../main/engine/types";
 import { validateSubmission } from "../main/engine/validation";
 import { board, demoralize, into, ordersOf, type Placement } from "./aiBoards";
 import { armyIn, faction, loadedDice, spainM2, territory, tiny, unit, withUnits } from "./support";
+import { pinned } from "./pinned";
 
 describe("computer player: orders (C18)", () => {
   afterEach(() => { vi.restoreAllMocks(); });
 
   it("submits valid, seed-deterministic orders for every faction", () => {
-    const scenario = spainM2();
+    const scenario = pinned(spainM2());
     const state = initialGameState(scenario);
     for (const entry of scenario.factions) {
       const first = generateComputerSubmission(scenario, state, entry.id, seededRandom(7));
@@ -26,7 +29,7 @@ describe("computer player: orders (C18)", () => {
   });
 
   it("replays a whole game identically from one seed and never uses Math.random", () => {
-    const scenario = spainM2();
+    const scenario = pinned(spainM2());
     const spy = vi.spyOn(Math, "random");
     const play = (seed: number): readonly (readonly PlayerSubmission[])[] => {
       let state = initialGameState(scenario);
@@ -51,13 +54,13 @@ describe("computer player: orders (C18)", () => {
   });
 
   it("keeps the last defender on a threatened objective (A1)", () => {
-    const scenario = spainM2();
+    const scenario = pinned(spainM2());
     const state = withUnits(scenario, [["rep-wad-ras-1", "republic", "madrid"], ["north-san-marcial-22", "north", "castilla-y-leon"]]);
     expect(ordersOf(scenario, state, "republic")).toEqual([]);
   });
 
   it("does not shuttle armies between objectives it already holds (A1)", () => {
-    const scenario = spainM2();
+    const scenario = pinned(spainM2());
     // The Milestone 2 start, before Alava and Caceres made Pais Vasco and Extremadura contested (P1).
     const start = initialGameState(scenario);
     const state = {
@@ -82,7 +85,7 @@ describe("computer player: orders (C18)", () => {
     if (blue === undefined) throw new Error("missing profile");
     const scenario = {
       ...base,
-      ai: { ...base.ai, profiles: { ...base.ai.profiles, [faction("blue")]: { ...blue, victoryAlarm: { critical: 0, perStep: 0, steps: 0 } } } },
+      ai: { ...base.ai, profiles: { ...base.ai.profiles, [faction("blue")]: { ...blue, victoryAlarm: { ...blue.victoryAlarm, critical: 0, perStep: 0, steps: 0 } } } },
       victory: { ...base.victory, territoryShare: 1 }
     };
     const state = withUnits(scenario, [["blue-marines", "blue", "harbor"], ["red-guard", "red", "westfold"]]);
@@ -116,7 +119,7 @@ describe("computer player: orders (C18)", () => {
 
 describe("computer player: attacks (C18)", () => {
   it("attacks where the odds are good, not where the defence is strong", () => {
-    const scenario = spainM2();
+    const scenario = pinned(spainM2());
     // From Andalucia, Ceuta holds one militia column and Melilla two regiments.
     const state = board(scenario, "south", ["ceuta", "melilla"], [
       ["south-legion", "south", "andalucia"],
@@ -136,7 +139,7 @@ describe("computer player: attacks (C18)", () => {
   });
 
   it("does not attack at hopeless odds", () => {
-    const scenario = spainM2();
+    const scenario = pinned(spainM2());
     const state = board(scenario, "north", ["madrid"], [
       ["north-argel-27", "north", "castilla-y-leon"],
       ["rep-wad-ras-1", "republic", "madrid"],
@@ -149,7 +152,7 @@ describe("computer player: attacks (C18)", () => {
   });
 
   it("combines armies from several origins when that improves the odds", () => {
-    const scenario = spainM2();
+    const scenario = pinned(spainM2());
     // Madrid borders only Castilla y Leon and Castilla-La Mancha; each holds two regiments.
     // One regiment against Madrid's militia column has poor odds; one from each does better.
     const state = board(scenario, "north", ["madrid"], [
@@ -170,19 +173,21 @@ describe("computer player: attacks (C18)", () => {
   });
 
   it("weighs the expected losses of every result", () => {
-    const odds = battleOdds(spainM2().combat, 12, 6, []);
-    // 2:1 with no modifiers: rolls 1-6 give AD, BD, BD, DD, DX, DE.
+    const odds = battleOdds(spainM2().d20, 12, 6, []);
+    // 2:1 with no modifiers: 1 face checks the attack, 3 repulse it, 6 are a stalemate, 3 drive the
+    // defender out, 3 are costly victories and 4 destroy the defender.
     const losses = expectedLosses(odds, 0.5);
-    expect(losses.attacker).toBeCloseTo((1 / 6) * 6 + (3 / 6) * 12 * 0.5);
-    expect(losses.defender).toBeCloseTo((2 / 6) * 6 + (3 / 6) * 6 * 0.5);
-    const hopeless = expectedLosses(battleOdds(spainM2().combat, 1, 8, []), 0);
-    expect(hopeless.attacker).toBeCloseTo((4 / 6) * 1 + (1 / 6) * 1);
+    expect(losses.attacker).toBeCloseTo(12 * ((1 * 0.2 + 6 * 0.1 + 3 * 0.2) / 20 + 0.5 * (3 * 0.5 + 6 * 0.5) / 20));
+    expect(losses.defender).toBeCloseTo(6 * ((6 * 0.1 + 3 + 4) / 20 + 0.5 * (6 * 0.5 + 3 * 0.5) / 20));
+    // 1:8 takes 9 off: 13 faces destroy the attack, 3 check it, 3 repulse it and 1 is a stalemate.
+    const hopeless = expectedLosses(battleOdds(spainM2().d20, 1, 8, []), 0);
+    expect(hopeless.attacker).toBeCloseTo((13 + 3 * 0.2 + 0.1) / 20);
   });
 });
 
 describe("computer player: defence and morale (C18, M23)", () => {
   it("reinforces a threatened territory it controls, and only when it is threatened", () => {
-    const scenario = spainM2();
+    const scenario = pinned(spainM2());
     const placement: Placement = [
       ["rep-sevilla-34", "republic", "castilla-la-mancha"],
       ["rep-otumba-9", "republic", "valencia"],
@@ -202,7 +207,7 @@ describe("computer player: defence and morale (C18, M23)", () => {
   });
 
   it("defends a threatened objective before taking a lesser free territory", () => {
-    const scenario = spainM2();
+    const scenario = pinned(spainM2());
     // Catalunya stands empty with a regiment next door in Aragon; the Balearics are empty and
     // free to take. Either needs an army from Valencia, and one of the two must stay there.
     const state = board(scenario, "republic", ["aragon", "islas-baleares"], [
@@ -216,7 +221,7 @@ describe("computer player: defence and morale (C18, M23)", () => {
   });
 
   it("never orders a demoralized army, and attacks with the others", () => {
-    const scenario = spainM2();
+    const scenario = pinned(spainM2());
     const placement: Placement = [
       ["north-san-marcial-22", "north", "castilla-y-leon"],
       ["north-san-quintin-25", "north", "castilla-y-leon"],
@@ -238,7 +243,7 @@ describe("computer player: defence and morale (C18, M23)", () => {
   });
 
   it("counts demoralized hostile armies only as able to walk into empty ground", () => {
-    const scenario = spainM2();
+    const scenario = pinned(spainM2());
     const state = demoralize(withUnits(scenario, [
       ["rep-wad-ras-1", "republic", "madrid"],
       ["north-san-marcial-22", "north", "castilla-y-leon"]
@@ -252,15 +257,16 @@ describe("computer player: defence and morale (C18, M23)", () => {
   });
 
   it("values territories by victory weight, cities, and objectives", () => {
-    const scenario = spainM2();
+    const scenario = pinned(spainM2());
     const view = assess(scenario, initialGameState(scenario), faction("south"));
-    const { computer: computerWeights, stakes: stakeWeights, victoryAlarm } = view.profile;
+    const { computer: computerWeights, stakes: stakeWeights } = view.profile;
     expect(view.stake(territory("andalucia"))).toBe(stakeWeights.territory + 5 * stakeWeights.city + stakeWeights.objective);
-    // The Republic starts four territories short of victory: no territory is critical (D23), so
-    // the South's own stakes stay plain, while the Republic's ground is raised by the alarm.
+    // The Republic starts three steps short of victory: no territory is critical (D23), and the
+    // alarm starts at two steps, so every stake is plain.
     expect(view.isCritical(territory("ceuta"))).toBe(false);
     expect(view.stake(territory("ceuta"))).toBe(stakeWeights.territory);
-    expect(view.stake(territory("murcia"))).toBe((stakeWeights.territory + stakeWeights.city) * (1 + victoryAlarm.perStep));
+    expect(view.stake(territory("murcia"))).toBe(stakeWeights.territory + stakeWeights.city);
+    expect(alarmAt(view.profile, 3)).toBe(0);
     expect(view.isObjective(territory("madrid"))).toBe(true);
     expect(computerWeights.ownLoss).toBeGreaterThan(computerWeights.enemyLoss);
   });

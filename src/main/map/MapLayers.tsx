@@ -1,11 +1,11 @@
 import type { GameState } from "../engine/types";
 import { territoryName } from "../presentation/text";
-import type { MapPackage, MapPoint, MapRect, ScenarioPackage } from "../scenarios/loader";
+import type { MapRect, ScenarioPackage } from "../scenarios/loader";
 import type { MapAssets } from "../scenarios/registry";
-import { CounterLayer, layoutCounters } from "./CounterLayer";
+import { CounterLayer } from "./CounterLayer";
 import { weatherIn } from "../engine/weather";
 import { DestinationOddsLayer } from "./DestinationOddsLayer";
-import { AirLayer, placeAircraft, withoutAircraft } from "./layers/AirLayer";
+import { AirLayer } from "./layers/AirLayer";
 import { BattleIconLayer, battleIconRects } from "./BattleIconLayer";
 import { battleMarkPoints } from "./RouteLayer";
 import { destinationTags, RailLayer } from "./layers/RailLayer";
@@ -15,6 +15,7 @@ import type { MapLayerProps } from "./layers/slots";
 import { SubTerritoryLayer, SubTerritoryWash } from "./layers/SubTerritoryLayer";
 import { mapControlObstacles } from "./MapControls";
 import type { PaneLayout } from "./MapPane";
+import { layoutPieces } from "./pieceLayout";
 import { TerrainLayer } from "./TerrainLayer";
 import { VectorLayer } from "./VectorLayer";
 import { mapTerritory, territoryAnchor } from "./anchors";
@@ -51,17 +52,12 @@ export function MapLayers({ assets, bounds, camera, game, geometry, layers, layo
   const landLabels = labelObstacles(scenarioPackage, level, toScreen, controls);
   const borders = showsSubTerritoryBorders(camera.zoom, layers);
   const expandedTerritoryId = highlightedTerritoryId(view);
-  // U2 (m3r1-air-generals): aircraft are drawn by the air layer at their airfields, not as army counters.
-  const groundGame = withoutAircraft(scenario, game);
-  // B1: aircraft are placed first, clear of the names, and the army counters are laid out around them.
-  const air = placeAircraft(scenarioPackage, game, toScreen, landLabels, stackSpots(groundGame, map, toScreen));
   const battleMarks = battleMarkPoints(view, scenario, (id) => territoryAnchor(map, id), 1 / scale, { game, subPoint: (id) => map.subTerritories?.entries.get(id)?.capital });
-  const counterLayout = layoutCounters(groundGame, map, camera.zoom, toScreen, [...landLabels, ...air.rects, ...battleIconRects(battleMarks, toScreen)], {
+  const { air, armies, armyRects: counters, groundGame } = layoutPieces(scenarioPackage, game, toScreen, {
     ...(expandedTerritoryId === undefined ? {} : { expandedTerritoryId }),
-    narrow: layout === "sheet"
-  });
-  const { height, width } = counterLayout.metrics;
-  const counters = [...counterLayout.positions.values()].map((position) => ({ ...position, height, width }));
+    narrow: layout === "sheet",
+    zoom: camera.zoom
+  }, [...landLabels, ...battleIconRects(battleMarks, toScreen)]);
   const layerProps: MapLayerProps = { game, level, scenarioPackage, toScreen, unitSymbols: assets.unitSymbols, view };
 
   return (
@@ -106,13 +102,13 @@ export function MapLayers({ assets, bounds, camera, game, geometry, layers, layo
       <SubTerritoryLayer {...layerProps} borders={borders} />
       <CounterLayer
         game={groundGame}
-        layout={counterLayout}
+        layout={armies}
         level={level}
         scenario={scenario}
         unitSymbols={assets.unitSymbols}
         view={view}
       />
-      <AirLayer {...layerProps} placements={air.placements} />
+      <AirLayer {...layerProps} layout={air} />
       <BattleIconLayer
         marks={battleMarks}
         onSelectTerritory={view.onSelectTerritory}
@@ -127,15 +123,6 @@ export function MapLayers({ assets, bounds, camera, game, geometry, layers, layo
       )}
     </>
   );
-}
-
-/** Where each territory's army stack is first placed: under its anchor, about one compact counter. */
-function stackSpots(game: GameState, map: MapPackage, toScreen: (point: MapPoint) => MapPoint): readonly ScreenRect[] {
-  const territories = new Set(Object.values(game.units).map((unit) => unit.territoryId));
-  return [...territories].map((id) => {
-    const anchor = toScreen(territoryAnchor(map, id));
-    return { height: 30, width: 56, x: anchor.x - 28, y: anchor.y };
-  });
 }
 
 /** Screen rectangles counters should avoid: visible labels and the fixed map controls (V4, V7, U13). */

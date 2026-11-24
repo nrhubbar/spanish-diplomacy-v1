@@ -1,8 +1,9 @@
+import { upkeepProblem } from "../../engine/economy/upkeep";
 import { compareIds } from "../../engine/board";
 import { requireUnitDefinition } from "../../engine/lookup";
 import { priceReplenishments, replenishProblem, replenishQuote } from "../../engine/recruitment/rules";
 import type { ReplenishOrder, UnitId } from "../../engine/types";
-import { balanceLeft } from "./spending";
+import { balanceLeft, starves } from "./spending";
 import type { OrderPlanner } from "./planner";
 
 /** Replenish only units missing at least this share of their men, or demoralized (design note: keeps small top-ups from eating the Recruit budget). */
@@ -30,5 +31,11 @@ export const planReplenishment: OrderPlanner<ReplenishOrder> = ({ factionId, mem
   // B2: priced in turn against the faction's carry, as reveal pays them; one it cannot afford is skipped.
   const balance = balanceLeft({ factionId, memory, planned, random, scenario, state });
   const priced = priceReplenishments(scenario, state, factionId, candidates.map((candidate) => candidate.unit), balance);
-  return priced.entries.filter((entry) => entry.affordable).map((entry): ReplenishOrder => ({ factionId, kind: "replenish", unitId: entry.unitId }));
+  // D1: never into a shortage.
+  return priced.entries.reduce<readonly ReplenishOrder[]>((orders, entry) => {
+    const order: ReplenishOrder = { factionId, kind: "replenish", unitId: entry.unitId };
+    const before = [...planned, ...orders];
+    return entry.affordable && upkeepProblem(scenario, state, factionId, [...before, order]) === undefined
+      && !starves({ factionId, scenario, state }, before, order) ? [...orders, order] : orders;
+  }, []);
 };

@@ -2,7 +2,6 @@ import { orderLine } from "../engine/network/lines";
 import type { BattleOutcome, BattleResult, FactionId, GameState, MoveLeg, MoveOrder, Scenario, SubTerritoryId, TerritoryId, TurnOutcome, UnitId } from "../engine/types";
 import { affectedFaction } from "../presentation/battle";
 import { battleTitle, isBattle, resultKeyOf } from "../presentation/grades";
-import { outcomeText } from "../presentation/outcomeText";
 import type { MapPoint } from "../scenarios/loader";
 
 export type RouteKind = "planned" | "moved" | "bounced" | "disbanded" | "battle";
@@ -10,9 +9,9 @@ export type RouteKind = "planned" | "moved" | "bounced" | "disbanded" | "battle"
 /** A battle fought at the end of a route: its result and the faction the result fell on. */
 export interface RouteBattle {
   readonly affectedFactionId: FactionId;
-  /** The result key its medallion draws: the d6 result, or the d20 grade's family. */
+  /** The result key its medallion draws: its grade's family. */
   readonly result: BattleResult;
-  /** D8: the result as players read it, named on hover: the d6 result's title or the d20 grade's name. */
+  /** D8: the result as players read it, named on hover: the grade's name. */
   readonly title: string;
 }
 
@@ -56,10 +55,9 @@ export function battleRoutes(battle: BattleOutcome, scenario?: Scenario): readon
   });
 }
 
-/** A battle's mark: its result key and title. Without the scenario, a d20 battle is named by its grade id. */
+/** A battle's mark: its result key and title. Without the scenario, a battle is named by its grade id. */
 export function routeBattle(battle: BattleOutcome, scenario?: Scenario): RouteBattle {
   const affectedFactionId = affectedFaction(battle);
-  if (battle.dice === "d6") return { affectedFactionId, result: battle.result, title: outcomeText[battle.result].title };
   return scenario === undefined
     ? { affectedFactionId, result: "both-demoralized", title: battle.grade }
     : { affectedFactionId, result: resultKeyOf(scenario, battle), title: battleTitle(scenario, battle) };

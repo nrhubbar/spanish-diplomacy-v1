@@ -15,10 +15,10 @@ const agreedIds = [
 describe("the Spanish Civil War package (spec v2, m3-modular)", () => {
   const scenario = spain();
 
-  it("selects the m3-modular modules, keeping the d6 table until its slice lands (CT-2)", () => {
+  it("selects the m3-modular modules", () => {
     expect(scenario.ruleset).toBe("m3-modular");
     expect(scenario.rules).toEqual({
-      air: "missions", dice: "d6-table", economy: "development", movement: "allowance", partition: "provinces", recruitment: "buildings", weather: "seasonal-zones"
+      air: "missions", economy: "development", movement: "allowance", partition: "provinces", recruitment: "buildings", weather: "seasonal-zones"
     });
   });
 
@@ -47,10 +47,10 @@ describe("the Spanish Civil War package (spec v2, m3-modular)", () => {
   });
 
   it("carries the full d20 catalogue and table, weather, calendar and air data (D1, D2, T1, T2, U3)", () => {
-    expect(scenario.d20?.grades).toHaveLength(13);
-    expect(scenario.d20?.table.map((column) => column.length)).toEqual([21, 21, 21, 21, 21, 21, 21]);
-    expect(scenario.d20?.table[4]?.[0]).not.toBe("attacker-destroyed");
-    expect(scenario.d20?.table[1]?.[1]).toBe("attacker-destroyed");
+    expect(scenario.d20.grades).toHaveLength(13);
+    expect(scenario.d20.table.map((column) => column.length)).toEqual([21, 21, 21, 21, 21, 21, 21]);
+    expect(scenario.d20.table[4]?.[0]).not.toBe("attacker-destroyed");
+    expect(scenario.d20.table[1]?.[1]).toBe("attacker-destroyed");
     expect(scenario.weather?.zones.map((zone) => zone.id)).toEqual(["cantabrian", "meseta", "mediterranean", "south"]);
     expect(scenario.calendar?.start).toEqual({ half: "late", month: 7, year: 1936 });
     expect(scenario.air?.raidTable.map((band) => band.outcome)).toEqual(["air-eliminated", "nothing-hit", "income-cut", "building-hit"]);

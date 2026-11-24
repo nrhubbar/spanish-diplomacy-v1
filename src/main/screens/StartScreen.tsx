@@ -19,6 +19,7 @@ export function StartScreen(): JSX.Element {
       <div className="action-row">
         <button onClick={() => { dispatch(openSetup()); }} type="button">Create Game</button>
         <button className="secondary-button" onClick={() => { void navigate(paths.settings); }} type="button">Settings</button>
+        <button className="secondary-button" onClick={() => { void navigate(paths.credits); }} type="button">Credits</button>
       </div>
     </main>
   );

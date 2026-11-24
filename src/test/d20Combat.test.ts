@@ -5,11 +5,10 @@ import { isMoveOrder } from "../main/engine/types";
 import { estimateAttack } from "../main/engine/combat";
 import { applyGradeSide } from "../main/engine/d20/grades";
 import { standingHolder } from "../main/engine/d20/front";
-import { gradedModifiers, gradedSide } from "../main/engine/d20/modifiers";
-import { columnBands, gradedOdds, scoreFor } from "../main/engine/d20/odds";
-import { requireD20 } from "../main/engine/d20/rules";
+import { battleModifiers, fightingSide } from "../main/engine/d20/modifiers";
+import { columnBands, battleOdds, scoreFor } from "../main/engine/d20/odds";
 import type { BattleDice } from "../main/engine/dice";
-import type { D20BattleOutcome, FatigueOutcome, GameState, Scenario, TurnResolutionResult, UnitTypeDefinition, UnitTypeId } from "../main/engine/types";
+import type { BattleOutcome, FatigueOutcome, GameState, Scenario, TurnResolutionResult, UnitTypeDefinition, UnitTypeId } from "../main/engine/types";
 import { loadPackage } from "../main/scenarios/loader";
 import { type Json, modularMap, modularScenario } from "./modularFixture";
 import { type ArmySpec, battlefield, faction, move, play, territory, unit } from "./support";
@@ -64,19 +63,19 @@ function loadedD20(faces: readonly number[]): BattleDice {
 }
 
 const types: readonly UnitTypeDefinition[] = [
-  { attack: 3, defence: 2, effects: [{ bonus: 1, exceptWeather: [], kind: "roll-bonus-per-points", max: 3, per: 3, role: "attack" }, { kind: "cannot-attack-alone" }], id: "cannon" as UnitTypeId, kind: "ground", name: "Cannon", orders: ["move"] },
-  { attack: 3, defence: 2, effects: [{ bonus: 1, exceptWeather: ["mud" as never], kind: "roll-bonus-per-points", max: 2, per: 3, role: "attack" }], id: "tank" as UnitTypeId, kind: "ground", name: "Tank", orders: ["move"] }
+  { attack: 3, defence: 2, effects: [{ bonus: 1, exceptWeather: [], kind: "roll-bonus-per-points", max: 3, per: 3, role: "attack" }, { kind: "cannot-attack-alone" }], id: "cannon" as UnitTypeId, kind: "ground", name: "Cannon", orders: ["move"], upkeep: {} },
+  { attack: 3, defence: 2, effects: [{ bonus: 1, exceptWeather: ["mud" as never], kind: "roll-bonus-per-points", max: 2, per: 3, role: "attack" }], id: "tank" as UnitTypeId, kind: "ground", name: "Tank", orders: ["move"], upkeep: {} }
 ];
 
 function field(scenario: Scenario, armies: readonly ArmySpec[], state: Partial<GameState> = {}) {
   return battlefield(scenario, armies, { state, types });
 }
 
-function d20Battles(result: TurnResolutionResult): readonly D20BattleOutcome[] {
-  return result.outcomes.flatMap((outcome) => (outcome.kind === "battle" && outcome.dice === "d20" ? [outcome] : []));
+function d20Battles(result: TurnResolutionResult): readonly BattleOutcome[] {
+  return result.outcomes.flatMap((outcome) => (outcome.kind === "battle" ? [outcome] : []));
 }
 
-function onlyBattle(result: TurnResolutionResult): D20BattleOutcome {
+function onlyBattle(result: TurnResolutionResult): BattleOutcome {
   const battles = d20Battles(result);
   expect(battles).toHaveLength(1);
   const [battle] = battles;
@@ -87,11 +86,11 @@ function onlyBattle(result: TurnResolutionResult): D20BattleOutcome {
 describe("the d20 table and odds (D1, D3)", () => {
   it("reads the explicit table, shows a column as bands, and spreads chances over the 20 faces", () => {
     const scenario = d20Scenario();
-    const rules = requireD20(scenario);
+    const rules = scenario.d20;
     const bands = columnBands(rules, 0);
     expect(bands[0]).toEqual({ from: 0, gradeId: "wiped", to: 3 });
     expect(bands.at(-1)?.to).toBe(20);
-    const odds = gradedOdds(rules, 8, 4, []);
+    const odds = battleOdds(rules, 8, 4, []);
     expect([odds.column, odds.oddsLabel]).toEqual([2, "2:1"]);
     expect([...odds.chances.values()].reduce((sum, chance) => sum + chance, 0)).toBeCloseTo(1);
     expect(odds.takeChance).toBeCloseTo([...odds.chances].filter(([id]) => ["driven", "broken", "destroyed"].includes(id)).reduce((sum, [, chance]) => sum + chance, 0));
@@ -100,9 +99,9 @@ describe("the d20 table and odds (D1, D3)", () => {
   });
 
   it("restates the odds steps x3: below 1:1 per halving, and above 6:1 per step", () => {
-    const rules = requireD20(d20Scenario());
-    expect(gradedOdds(rules, 2, 8, []).modifiers).toEqual([{ halvings: 2, kind: "odds-halving", roll: -6 }]);
-    expect(gradedOdds(rules, 32, 4, []).modifiers).toEqual([{ kind: "odds-overflow", roll: 6 }]);
+    const rules = d20Scenario().d20;
+    expect(battleOdds(rules, 2, 8, []).modifiers).toEqual([{ halvings: 2, kind: "odds-halving", roll: -6 }]);
+    expect(battleOdds(rules, 32, 4, []).modifiers).toEqual([{ kind: "odds-overflow", roll: 6 }]);
   });
 });
 
@@ -128,9 +127,9 @@ describe("d20 modifiers (D3-D5, C6, U6)", () => {
     const state: GameState = { ...placed.state, units: { ...placed.state.units, [unit("red-staff")]: { factionId: faction("red"), fatigue: 0, id: unit("red-staff"), morale: { demoralized: false, quietTurns: 0 }, strength: 50, territoryId: territory("highlands") } } };
     const attackers = ["red-staff", "g1", "g2", "g3", "g4"].map((id) => state.units[unit(id)]).flatMap((value) => value ?? []);
     const defenders = Object.values(state.units).filter((value) => value.factionId === faction("blue"));
-    const attacker = gradedSide(scenario, state, attackers.map((value) => ({ from: value.territoryId, unit: value })), "attack");
-    const defender = gradedSide(scenario, state, defenders.map((value) => ({ from: value.territoryId, unit: value })), "defence");
-    const modifiers = gradedModifiers(scenario, state, undefined, { attackerFactionId: faction("red"), defenderFactionIds: [faction("blue")], diggingIn: true, territoryId: territory("lowlands") },
+    const attacker = fightingSide(scenario, state, attackers.map((value) => ({ from: value.territoryId, unit: value })), "attack");
+    const defender = fightingSide(scenario, state, defenders.map((value) => ({ from: value.territoryId, unit: value })), "defence");
+    const modifiers = battleModifiers(scenario, state, undefined, { attackerFactionId: faction("red"), defenderFactionIds: [faction("blue")], diggingIn: true, territoryId: territory("lowlands") },
       { role: "attack", side: attacker, units: attackers }, { role: "defence", side: defender, units: defenders });
     expect(attacker.value).toBe(12);
     expect(modifiers.map((modifier) => [modifier.kind, modifier.roll])).toEqual([["general", 1], ["trait", 1], ["unit-bonus", 3]]);
@@ -174,7 +173,7 @@ describe("what a grade does to a side (D2, D6)", () => {
       { faction: "blue", fullStrength: 100, id: "b2", strength: 11, territory: "harbor" },
       { faction: "blue", fullStrength: 100, id: "b3", strength: 60, territory: "harbor" }
     ]);
-    const side = gradedSide(scenario, state, Object.values(state.units).map((value) => ({ from: value.territoryId, unit: value })), "defence");
+    const side = fightingSide(scenario, state, Object.values(state.units).map((value) => ({ from: value.territoryId, unit: value })), "defence");
     const casualties = applyGradeSide(scenario, state, { demoralized: "half", lossPercent: 20 }, side, state.units, 0.1);
     expect(casualties.losses).toEqual([
       { destroyed: false, men: 20, unitId: "b1" },
@@ -193,7 +192,7 @@ describe("what a grade does to a side (D2, D6)", () => {
     ]);
     const { scenario } = placed;
     const state: GameState = { ...placed.state, units: { [unit("red-staff")]: { factionId: faction("red"), fatigue: 0, id: unit("red-staff"), morale: { demoralized: false, quietTurns: 0 }, strength: 50, territoryId: territory("westfold") }, ...placed.state.units } };
-    const side = gradedSide(scenario, state, Object.values(state.units).map((value) => ({ from: value.territoryId, unit: value })), "defence");
+    const side = fightingSide(scenario, state, Object.values(state.units).map((value) => ({ from: value.territoryId, unit: value })), "defence");
     const casualties = applyGradeSide(scenario, state, { demoralized: "all", lossPercent: 35, weakestDestroyed: true }, side, state.units, 0.1);
     expect(casualties.losses).toEqual([{ destroyed: false, men: 35, unitId: "r1" }, { destroyed: true, men: 50, unitId: "r2" }]);
     expect(casualties.survivors.map((value) => [value.id, value.morale.demoralized])).toEqual([["red-staff", false], ["r1", true]]);
@@ -207,7 +206,7 @@ describe("d20 battles in a turn (M17-M21, P4, P5)", () => {
     const { scenario, state } = field(every("driven"), [...assault, { faction: "blue", id: "b2", territory: "lowlands" }]);
     const result = play(scenario, state, [move("red", "r1", "highlands", "harbor")], loadedD20([10]));
     const battle = onlyBattle(result);
-    expect([battle.dice, battle.grade, battle.ground, battle.site]).toEqual(["d20", "driven", "all", { kind: "assault", occupation: { factionId: "red", kind: "taken" }, territoryId: "harbor" }]);
+    expect([battle.grade, battle.ground, battle.site]).toEqual(["driven", "all", { kind: "assault", occupation: { factionId: "red", kind: "taken" }, territoryId: "harbor" }]);
     expect(battle.retreats).toEqual([{ from: "harbor", to: "lowlands", unitId: "b1" }]);
     expect(result.finalState.units[unit("r1")]).toMatchObject({ fatigue: 1, strength: 90, territoryId: "harbor" });
     expect(result.outcomes).toContainEqual({ demoralized: false, factionId: "red", fatigue: 1, kind: "fatigue", unitId: "r1" });
@@ -245,7 +244,7 @@ describe("d20 battles in a turn (M17-M21, P4, P5)", () => {
   it("matches the estimate's grade for the rolled face (C15)", () => {
     const { scenario, state } = field(d20Scenario(), assault);
     const estimate = estimateAttack(scenario, state, faction("red"), [unit("r1")], territory("harbor"));
-    if (estimate.kind !== "battle" || !("bands" in estimate)) throw new Error("expected a d20 estimate");
+    if (estimate.kind !== "battle") throw new Error("expected a d20 estimate");
     for (const die of [1, 7, 13, 20]) {
       const battle = onlyBattle(play(scenario, state, [move("red", "r1", "highlands", "harbor")], loadedD20([die])));
       expect([battle.modifiers, battle.column, battle.score]).toEqual([estimate.modifiers, estimate.column, scoreFor(die, estimate.rollModifier)]);
@@ -323,7 +322,12 @@ describe("the computer player on the d20 (C15, H5)", () => {
     ]);
     expect(plan(scenario, state)).toContainEqual(["r2", "lowlands"]);
     const worn: GameState = { ...state, units: { ...state.units, [unit("r2")]: { ...state.units[unit("r2")]!, fatigue: 2 } } };
-    expect(plan(scenario, worn)).not.toContainEqual(["r2", "lowlands"]);
+    // Blue is one territory short here, so a worn unit attacks it all the same; with no alarm it rests.
+    expect(plan(scenario, worn)).toContainEqual(["r2", "lowlands"]);
+    const red = scenario.ai.profiles[faction("red")]!;
+    const calm = { ...scenario, ai: { ...scenario.ai, profiles: { ...scenario.ai.profiles, [faction("red")]: { ...red, victoryAlarm: { ...red.victoryAlarm, critical: 0, perStep: 0 } } } } };
+    expect(plan(calm, state)).toContainEqual(["r2", "lowlands"]);
+    expect(plan(calm, worn)).not.toContainEqual(["r2", "lowlands"]);
   });
 
   it("never sends artillery to attack alone (D5)", () => {

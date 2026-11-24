@@ -6,8 +6,9 @@ import { andList, buildEntries, countOf, buildingGroups, buildingSummary, planne
 import { canReplenishSelection, chooseReplenish, type PlanningSession, replenishPlan, replenishSelectionDetail, replenishSkipReason, skippedText } from "../../main/state/planning";
 import { emptyDraft } from "../../main/state/session";
 import { armyIn, faction, spain, spainId, territory } from "../support";
+import { pinned } from "../pinned";
 
-const scenario = spain();
+const scenario = pinned(spain());
 const start = initialGameState(scenario);
 const republic = faction("republic");
 const north = faction("north");
@@ -128,7 +129,7 @@ describe("Global Building's groups (U9)", () => {
 
 describe("the balance view's rows (U11)", () => {
   it("lists each territory with its yield, a contested loss on its row, then the expenses, and totals to next turn", () => {
-    const [funds, manpower] = ledgersFor(scenario, start, republic, { builds: [build("madrid", building("fortifications"))], recruits: [recruit("madrid", "militia-column")], replenish: { funds: 2 } as never, replenishCount: 2 });
+    const [funds, manpower] = ledgersFor(scenario, start, republic, { builds: [build("madrid", building("fortifications"))], recruits: [recruit("madrid", "militia-column")] });
     expect(funds).toBeDefined();
     const values = funds!.rows.map((row) => row.value);
     expect(funds!.total).toBe(values.reduce((sum, value) => sum + value, 0));
@@ -139,8 +140,8 @@ describe("the balance view's rows (U11)", () => {
     expect(contested.every((row) => row.value === 0 && row.yield === row.loss && /^\d+\/\d+ held$/u.test(row.note ?? ""))).toBe(true);
     expect(funds!.rows.slice(-3).map((row) => [row.label, row.note, row.value])).toEqual([
       ["Builds under way", "paid when queued", 0],
-      ["Replenish", "2 units, planned this turn", -2],
-      ["Upkeep", "none in this scenario", 0]
+      ["Replenish", "none planned", -0],
+      ["Upkeep", "none", 0]
     ]);
     expect(funds!.now).toBe(funds!.held - funds!.spent);
     expect(funds!.spent).toBeGreaterThan(0);
@@ -148,7 +149,7 @@ describe("the balance view's rows (U11)", () => {
   });
 
   it("leaves out territories that yield none of a resource unless contested, and has no raid row without a raid", () => {
-    const [funds] = ledgersFor(scenario, start, republic, { replenish: {}, replenishCount: 0 });
+    const [funds] = ledgersFor(scenario, start, republic, {});
     expect(funds!.rows.every((row) => row.kind !== "territory" || row.yield !== 0 || row.loss > 0 || row.note !== undefined)).toBe(true);
     expect(funds!.rows.some((row) => row.kind === "raid")).toBe(false);
     expect(funds!.spent).toBe(0);

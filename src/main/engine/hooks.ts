@@ -1,3 +1,4 @@
+import type { MoveRoute } from "./movement/routes";
 import type { TurnScratch } from "./phases/draft";
 import type {
   CombatModifier,
@@ -18,8 +19,8 @@ import type {
  * Cross-area rule hooks. Some numbers take inputs from several slices: a battle's roll
  * modifiers, a move's allowance, whether works can grow, whether an aircraft flies, income,
  * replenishment and recruiting. A module answers for its own area through `RuleModule.hooks`;
- * the engine collects the answers of every selected module, in area order, and both the d6 and
- * the d20 rules call the collectors. With no hooks registered every collector is neutral.
+ * the engine collects the answers of every selected module, in area order, and the
+ * rules call the collectors. With no hooks registered every collector is neutral.
  */
 
 /** What every hook sees: the scenario and the start-of-turn state. */
@@ -38,6 +39,8 @@ export interface CombatHookContext extends HookContext {
   /** R11: the defending units, whose AA joins the air battle; absent means the defenders' units in the territory. */
   readonly defenderUnitIds?: readonly UnitId[];
   readonly diggingIn: boolean;
+  /** A planning estimate's attackers whose way there is already chosen; the hooks infer the others'. */
+  readonly plannedRoutes?: ReadonlyMap<UnitId, MoveRoute>;
   /** The turn's scratch while a turn resolves (bombers on support, generals on the move); absent for planning estimates. */
   readonly scratch?: TurnScratch;
   readonly territoryId: TerritoryId;

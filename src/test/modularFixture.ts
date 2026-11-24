@@ -44,7 +44,7 @@ export function modularScenario(): Json {
     ...base,
     ruleset: "m3-modular",
     ai: { ...ai, profiles },
-    rules: { dice: "d20-graded", economy: "development", recruitment: "buildings", weather: "seasonal-zones", movement: "allowance", partition: "provinces", air: "missions" },
+    rules: { economy: "development", recruitment: "buildings", weather: "seasonal-zones", movement: "allowance", partition: "provinces", air: "missions" },
     factions,
     territories: (base["territories"] as Json[]).map((territory) => ({ ...territory, capitalSubTerritoryId: capitals[territory["id"] as string], weatherZone: "plains" })),
     connections: (base["connections"] as Json[]).map((connection) => {
@@ -84,7 +84,7 @@ export function modularScenario(): Json {
     ],
     linkModifiers: [
       { "@type": "road", "@data": { label: "Road", motorLevel: "main", motorRange: 2 } },
-      { "@type": "rail", "@data": { label: "Railway", rangeByLevel: { single: 2, main: 4 } } },
+      { "@type": "rail", "@data": { label: "Railway", rangeByLevel: { single: 2, main: 4 }, unitsPerLevel: 2 } },
       { "@type": "pass", "@data": { label: "Mountain pass", noMotor: true, defenderRoll: -2, lostToFlanking: true } }
     ],
     linkProjects: { "new-rail": { cost: { funds: 8 }, turns: 4 }, "rail-upgrade": { cost: { funds: 4 }, turns: 2 }, "road-upgrade": { cost: { funds: 2 }, turns: 1 } },

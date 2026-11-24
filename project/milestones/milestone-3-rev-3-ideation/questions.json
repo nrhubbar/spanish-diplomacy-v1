@@ -1,0 +1,647 @@
+[
+ {
+  "id": "Q-R3-6a",
+  "idea": "upkeep",
+  "text": "What shape should upkeep take?",
+  "context": "Today armies cost nothing to keep. The South earns no Manpower at the start, so any upkeep needs an allowance or it goes broke in its first turns.",
+  "options": [
+   {
+    "label": "A. Each unit costs Manpower every turn by its full size (half a point per 1,000 men); each side's depots feed the first 6",
+    "recommended": true,
+    "rationale": "Militia pays 1.25 a turn and an infantry regiment 0.35, with no special rule. At the start only the Republic pays: 5 to 7 of its 27, depending on the size of security forces."
+   },
+   {
+    "label": "B. Every army costs 1 Manpower a turn",
+    "rationale": "Simplest, but the South is broke at the end of turn 1 and a truck column costs as much as a militia column."
+   },
+   {
+    "label": "C. Option A, plus half a Fund a turn for each gun, tank, truck and aircraft",
+    "rationale": "More realistic, and one more number to read."
+   },
+   {
+    "label": "D. A supply limit: each whole territory feeds three armies, each one over costs 1 Manpower",
+    "rationale": "Easy to see, but losing ground raises the bill at once."
+   }
+  ]
+ },
+ {
+  "id": "Q-R3-6b",
+  "idea": "upkeep",
+  "text": "What happens when a side can't feed its armies?",
+  "context": "It should hurt without ending the game. Units cost less to feed as they lose men, so the bill shrinks.",
+  "options": [
+   {
+    "label": "A. No recruiting or Replenish, and the missing Manpower leaves as men, at most 10% of a unit a turn and never below half",
+    "recommended": true,
+    "rationale": "No unit is ever lost to hunger, and it needs no new order."
+   },
+   {
+    "label": "B. No recruiting or Replenish, and nothing else",
+    "rationale": "Gentlest; a side can sit on a large unpaid army."
+   },
+   {
+    "label": "C. Let players disband units",
+    "rationale": "More control, but a new order the computer player must learn too."
+   }
+  ]
+ },
+ {
+  "id": "Q-R3-6c",
+  "idea": "values",
+  "text": "Which value package should we build?",
+  "context": "Both make armies cost something to keep, builds pay back sooner and regulars cheaper. Moderate passes 11 of 12 economy tests, Bold 10 and today 2. The tests were used to tune Moderate, so a pass isn't proof of balance.",
+  "options": [
+   {
+    "label": "A. Moderate",
+    "recommended": true,
+    "rationale": "The same units, prices and incomes you know, moved. By arithmetic, a Republic raising only militia reaches 91 attack on turn 10 instead of 318."
+   },
+   {
+    "label": "B. Bold: twice the upkeep, plus Funds upkeep for machines",
+    "rationale": "Makes Manpower a real limit for everyone, but a large Republican army outgrows its income."
+   },
+   {
+    "label": "C. Upkeep only; leave prices and builds alone",
+    "rationale": "Smallest change. Mines still pay back on turn 10, and the North's militia still adds 77 percent more attack than its regulars."
+   }
+  ]
+ },
+ {
+  "id": "Q-R3-6d",
+  "idea": "values",
+  "text": "How should militia change?",
+  "context": "Today it has the most attack and defence for its price and trains fastest. It holds and storms equally well.",
+  "options": [
+   {
+    "label": "A. 3 Funds (from 2), attack 2 (from 3), defence stays 4",
+    "recommended": true,
+    "rationale": "Militia holds ground, regulars take it: militia alone adds less attack than regulars for every side (the North is closest, at 92 percent). The Republic loses 5 of its 64 starting attack."
+   },
+   {
+    "label": "B. 3 Funds, attack and defence unchanged",
+    "rationale": "Easier to accept, but the North's militia still adds 38 percent more attack than its regulars."
+   },
+   {
+    "label": "C. 4 Funds, values unchanged",
+    "rationale": "Militia becomes an emergency buy, and the North's still adds 4 percent more attack than its regulars."
+   }
+  ]
+ },
+ {
+  "id": "Q-R3-6e",
+  "idea": "values",
+  "text": "What should security forces be for?",
+  "context": "Infantry beats them on every number at the same price, as you noticed.",
+  "options": [
+   {
+    "label": "A. A quick garrison: 4 Funds, 1 Manpower, 1,000 men, trained in 1 turn",
+    "recommended": true,
+    "rationale": "Cheaper and faster than infantry, and weaker."
+   },
+   {
+    "label": "B. Keep the price and make them 4/6, like infantry",
+    "rationale": "Then they duplicate infantry."
+   },
+   {
+    "label": "C. A city specialist: a bonus when defending a city",
+    "rationale": "More flavour, but a new kind of unit effect."
+   }
+  ]
+ },
+ {
+  "id": "Q-R3-7a",
+  "idea": "payback",
+  "text": "How fast should mines and industry pay back?",
+  "context": "A mine started on turn 1 pays back on turn 10 and Industry on turn 13. Past simulations ended at a median of 12 to 15 turns; your games end before turn 10.",
+  "options": [
+   {
+    "label": "A. Cheaper and 2 turns to build: mines back by turn 6, industry by turn 7",
+    "recommended": true,
+    "rationale": "A turn-3 build still profits in a 10-turn game. Building in a month is quicker than history."
+   },
+   {
+    "label": "B. Keep the build times and cut prices further",
+    "rationale": "Truer to history, and the first payment still comes late."
+   },
+   {
+    "label": "C. Make each industry level pay 2",
+    "rationale": "Doubles the industry already standing: the Republic gains 10 Funds a turn at once."
+   }
+  ]
+ },
+ {
+  "id": "Q-R3-7b",
+  "idea": "payback",
+  "text": "Should some building cost Manpower as well as Funds?",
+  "context": "The North has 27 Manpower a turn but only 5 Funds, so it can't spend its men. No number in either package fixes that without touching incomes.",
+  "options": [
+   {
+    "label": "A. Yes: fortifications, roads and rail take part of their price in Manpower",
+    "recommended": true,
+    "rationale": "Labour battalions did this work, and men become useful to a poor side."
+   },
+   {
+    "label": "B. No, but give the North more Funds",
+    "rationale": "Simple, and it makes the strongest computer side stronger."
+   },
+   {
+    "label": "C. No, but trim the farms",
+    "rationale": "Less Manpower for everyone; you said the incomes feel right."
+   }
+  ]
+ },
+ {
+  "id": "Q-R3-11",
+  "idea": "republic",
+  "text": "When Popular Resistance goes, what should replace it?",
+  "context": "It takes 3 off the attacker's die in Republican cities, worth 15 points of success chance in a contested city fight. Past simulations gave the Republic 10 to 16 percent of wins even with it, so removing it and adding upkeep both hurt the Republic.",
+  "options": [
+   {
+    "label": "A. Barricades worth 2 in any city, for every side",
+    "recommended": true,
+    "rationale": "Gives back 5 of the 15 points evenly, and city fighting stays hard for all."
+   },
+   {
+    "label": "B. Nothing",
+    "rationale": "Cleanest; expect the Republic to win less."
+   },
+   {
+    "label": "C. Barricades worth 2, and Madrid and Barcelona start fortified",
+    "rationale": "Gives those two capitals 10 more points."
+   },
+   {
+    "label": "D. Barricades worth 2, and 10 more starting Funds for the Republic",
+    "rationale": "Two more regiments from the Bank of Spain's reserves."
+   }
+  ]
+ },
+ {
+  "id": "Q-R3-10a",
+  "idea": "ai",
+  "text": "When a rival is one step from winning, what should the computer players do?",
+  "context": "Today a rival one step short makes them value guarding their own ground more (4 times) than attacking the leader's (2.5 times), and the last army on such ground never leaves. They see a human leader as well as a computer one.",
+  "options": [
+   {
+    "label": "A. Attack the leader as readily as they guard, accept worse odds, and count a foothold that spoils a territory as a full success",
+    "recommended": true,
+    "rationale": "One foothold takes a territory off the leader's count, which is the cheapest way to stop a win."
+   },
+   {
+    "label": "B. Attack the leader only, and stop guarding",
+    "rationale": "Aggressive, but an easily led army leaves its own ground open."
+   },
+   {
+    "label": "C. Keep the present balance and only fix what it overlooks: a leader needing a third side's ground, or two territories at once",
+    "rationale": "Smaller change, but still defensive."
+   }
+  ]
+ },
+ {
+  "id": "Q-R3-10b",
+  "idea": "ai",
+  "text": "Should the computer players change how they spend when a rival is close to winning?",
+  "context": "Today their recruiting and building ignore it. They set aside 30 percent of Funds for builds.",
+  "options": [
+   {
+    "label": "A. Yes: at 2 steps or fewer, no saving for builds, and prefer units that train in one turn",
+    "recommended": true,
+    "rationale": "New units arrive in time to matter."
+   },
+   {
+    "label": "B. Yes, but only at one step",
+    "rationale": "Later, and often too late for a 2-turn unit."
+   },
+   {
+    "label": "C. No",
+    "rationale": "Keeps the economy steady, at the cost of losing the game first."
+   }
+  ]
+ },
+ {
+  "id": "Q-R3-3a",
+  "idea": "music",
+  "text": "How should the music be delivered?",
+  "context": "One 16 MB file is downloaded whole within seconds by Firefox and Safari on a fast connection, even if the player leaves after a minute. Chrome takes about 6 MB.",
+  "options": [
+   {
+    "label": "Four files, one per track, with the fades built in",
+    "recommended": true,
+    "rationale": "A first listen costs 1.4 to 3.4 MB, a session can start on a different track, and no fading script is needed on iPhone. Needs a small change to the mix script."
+   },
+   {
+    "label": "One file, the mix as it is",
+    "rationale": "Simplest and exactly your mix, but 6 to 16 MB on a first listen and it always opens the same way."
+   },
+   {
+    "label": "Music only as a download the player asks for",
+    "rationale": "Cheapest, but most players would never hear it."
+   }
+  ]
+ },
+ {
+  "id": "Q-R3-3b",
+  "idea": "music",
+  "text": "Which quality should the music ship at?",
+  "context": "All four tracks: Opus 64 is 10.8 MB, Opus 96 is 16.3 MB. iPhones use a separate AAC copy (16.2 MB at 96). Listen to the samples above in headphones first.",
+  "options": [
+   {
+    "label": "Opus 64 and AAC 96, after you listen",
+    "recommended": true,
+    "rationale": "A third smaller. Best if you cannot tell the difference in headphones; please compare on Unraveling."
+   },
+   {
+    "label": "Opus 96 and AAC 96",
+    "rationale": "Closer to the usual guideline, 5.5 MB more in total."
+   },
+   {
+    "label": "Opus 96 and AAC 128",
+    "rationale": "Nearest to your current files, 16 to 21 MB."
+   }
+  ]
+ },
+ {
+  "id": "Q-R3-3c",
+  "idea": "music",
+  "text": "What should happen with sound on a first visit?",
+  "context": "Browsers do not allow sound before a click.",
+  "options": [
+   {
+    "label": "Music starts with the first campaign, at a modest level, with a notice and a mute button",
+    "recommended": true,
+    "rationale": "Players hear it, and one press stops it."
+   },
+   {
+    "label": "Everything starts off until the player turns it on",
+    "rationale": "Never annoys, but most players will not find it."
+   },
+   {
+    "label": "Effects on, music off",
+    "rationale": "A middle path that hides the music."
+   }
+  ]
+ },
+ {
+  "id": "Q-R3-3d",
+  "idea": "sfx",
+  "text": "Which sounds should we make now?",
+  "context": "Fourteen candidates are in the audition board. Every licence was checked; none has been listened to by us.",
+  "options": [
+   {
+    "label": "Your eight, plus a soft refused tick and one distant-guns sound when the battle report opens",
+    "recommended": true,
+    "rationale": "Covers your list and gives the report some weight, about 0.1 MB in all."
+   },
+   {
+    "label": "Only your eight",
+    "rationale": "Fewest sounds to tire of."
+   },
+   {
+    "label": "Your eight plus victory, defeat and weather",
+    "rationale": "More atmosphere, and more to license and tune."
+   }
+  ]
+ },
+ {
+  "id": "Q-R3-3e",
+  "idea": "sfx",
+  "multi": true,
+  "text": "Which candidate sounds do you like? Tick every one to keep.",
+  "context": "Play them in the board above. The ticks for the recommended set are a starting guess: no one on the research team could listen. Leave out anything that sounds wrong and I'll find another.",
+  "options": [
+   {
+    "label": "Create order: Typewriter burst"
+   },
+   {
+    "label": "Create order: Marker set down",
+    "recommended": true
+   },
+   {
+    "label": "Recruit: Snare drum roll",
+    "recommended": true
+   },
+   {
+    "label": "Recruit: Rubber stamp"
+   },
+   {
+    "label": "Build: Two anvil strikes",
+    "recommended": true
+   },
+   {
+    "label": "Air mission: Fighter flyover",
+    "recommended": true
+   },
+   {
+    "label": "Air mission: Twin-propeller flyover"
+   },
+   {
+    "label": "Rail move: Whistle, then train on rails",
+    "recommended": true
+   },
+   {
+    "label": "Truck move: Diesel pulls away",
+    "recommended": true
+   },
+   {
+    "label": "Reinforce on foot: Squad marching",
+    "recommended": true
+   },
+   {
+    "label": "End turn: Orchestral hit with horns",
+    "recommended": true
+   },
+   {
+    "label": "End turn: Two drum strikes (made for this game)"
+   },
+   {
+    "label": "Battle report opens: Distant cannon",
+    "recommended": true
+   },
+   {
+    "label": "Order refused: Soft double tick",
+    "recommended": true
+   }
+  ]
+ },
+ {
+  "id": "Q-R3-3f",
+  "idea": "sfx",
+  "text": "How strict should the limits on repeated sounds be?",
+  "context": "Ten rail orders at once would be ten whistles and about 5 dB over the maximum, which crackles. Try both in the mix lab.",
+  "options": [
+   {
+    "label": "Strict: one sound per action, a special sound at most every four seconds, then a quiet tick",
+    "recommended": true,
+    "rationale": "Special sounds stay special. Four seconds is a starting value to tune by ear."
+   },
+   {
+    "label": "Looser: special sounds every second or so",
+    "rationale": "Livelier, and tires faster."
+   },
+   {
+    "label": "Special sounds only for the first order of each kind each turn",
+    "rationale": "Calmest, and the player may wonder why a later train is silent."
+   }
+  ]
+ },
+ {
+  "id": "Q-R3-3.a-1",
+  "idea": "bandwidth",
+  "text": "When should the detailed map picture load?",
+  "context": "It is 1.8 MB of the 3.1 MB a new player downloads, and it loads before anyone zooms in.",
+  "options": [
+   {
+    "label": "Only when the player zooms in, or when idle on a fast connection",
+    "recommended": true,
+    "rationale": "Cuts up to 59% for players who do not zoom. A zoom may be soft for a moment."
+   },
+   {
+    "label": "As now, at the start of the campaign",
+    "rationale": "Sharp at once, and the largest cost in the game."
+   },
+   {
+    "label": "On zoom, and re-encode it smaller",
+    "rationale": "A further 0.8 MB or so in all, but the map must be looked at and the visual tests refreshed."
+   }
+  ]
+ },
+ {
+  "id": "Q-R3-3.a-2",
+  "idea": "bandwidth",
+  "text": "Should a download size limit stop a build?",
+  "context": "A limit exists and is already missed (159.4 kB against 155 kB for the first script), but nothing runs the check.",
+  "options": [
+   {
+    "label": "Yes, after moving the rules and computer player out of the first script, and cover audio and images too",
+    "recommended": true,
+    "rationale": "Keeps growth visible, and the limit stays where you set it."
+   },
+   {
+    "label": "Yes, from today, blocking",
+    "rationale": "Nothing else can merge until the miss is fixed."
+   },
+   {
+    "label": "Report only",
+    "rationale": "Easy, and easily ignored, as now."
+   }
+  ]
+ },
+ {
+  "id": "Q-R3-2",
+  "idea": "markers",
+  "text": "What should an aircraft card print?",
+  "context": "Aircraft attack and defence are 0 and 1 for every type, so they say nothing.",
+  "options": [
+   {
+    "label": "The role (FTR, BOMB, RCN), with the bonus at the closest zoom",
+    "recommended": true,
+    "rationale": "Says what the squadron is for."
+   },
+   {
+    "label": "Attack-defence like other units",
+    "rationale": "Consistent, but always 0-1."
+   },
+   {
+    "label": "Symbol only",
+    "rationale": "Clean, but less information."
+   }
+  ]
+ },
+ {
+  "id": "Q-R3-4",
+  "idea": "recruit",
+  "text": "How should Recruit show a unit's special effects?",
+  "context": "The list shows none of them today.",
+  "options": [
+   {
+    "label": "Small chips under the price, tap for the detail",
+    "recommended": true,
+    "rationale": "Visible on a phone and wraps in a narrow pane."
+   },
+   {
+    "label": "A fold-out line per unit",
+    "rationale": "Shorter rows, hidden until opened."
+   },
+   {
+    "label": "A comparison table",
+    "rationale": "Useful later; too wide for a narrow pane."
+   }
+  ]
+ },
+ {
+  "id": "Q-R3-5",
+  "idea": "battle",
+  "text": "Should the battle sheet show why a unit's strength is what it is (men, morale), not just the total?",
+  "context": "The game does not record this per unit today, so showing it needs a small change to what each battle saves.",
+  "options": [
+   {
+    "label": "Yes, show men and morale per unit",
+    "recommended": true,
+    "rationale": "Players can see why a unit counted for less; small engine change."
+   },
+   {
+    "label": "No, total strength only",
+    "rationale": "No engine change, but less explanation."
+   }
+  ]
+ },
+ {
+  "id": "Q-R3-8",
+  "idea": "invade",
+  "text": "On Invade, keep the odds pinned while you scroll the units?",
+  "context": "Today the pinned box fills the pane. You asked for the details at the top; a thin one-line odds bar could stay.",
+  "options": [
+   {
+    "label": "Keep a one-line odds bar, scroll the defenders away",
+    "recommended": true,
+    "rationale": "Shows 4 units instead of 0, and the odds stay in view."
+   },
+   {
+    "label": "Scroll everything",
+    "rationale": "Most room once scrolled; only 2 units at the top."
+   },
+   {
+    "label": "Two tabs: Your units and Defenders",
+    "rationale": "Same room as the first, one more tap."
+   }
+  ]
+ },
+ {
+  "id": "Q-R3-9a",
+  "idea": "casualties",
+  "text": "What should the casualty counter count?",
+  "context": "The game records battle losses and frostbite. Units that surrender or are disbanded don't record their men yet.",
+  "options": [
+   {
+    "label": "All men lost: battles, surrenders, disbanded units and cold",
+    "recommended": true,
+    "rationale": "Matches what players expect from casualties; needs men added to surrender records."
+   },
+   {
+    "label": "Battle losses only",
+    "rationale": "Simplest, but a surrendered army counts as no loss."
+   },
+   {
+    "label": "Battle losses and surrenders only",
+    "rationale": "Leaves out cold losses, which are small."
+   }
+  ]
+ },
+ {
+  "id": "Q-R3-9b",
+  "idea": "casualties",
+  "text": "Where should the casualty total sit, and how long can it be?",
+  "context": "The top bar already overflows at 1280 px. At 1440 the long form does not fit beside the name.",
+  "options": [
+   {
+    "label": "Beside the faction name, as 12.4k, tapping shows the split by side",
+    "recommended": true,
+    "rationale": "Fits and is nearest the turn counter."
+   },
+   {
+    "label": "In full in the turn row, replacing the readiness chips when narrow",
+    "rationale": "Closest, but crowds the row."
+   },
+   {
+    "label": "In the menu",
+    "rationale": "No room problem, harder to see."
+   }
+  ]
+ },
+ {
+  "id": "Q-R3-P1",
+  "idea": "pruning",
+  "text": "The game no longer uses the old six-sided-die battle rules, but most tests still run on them. Remove them?",
+  "context": "About 1,000 lines of code and many tests pin the map to the old rules. Removing them simplifies the code, but a future era could use them.",
+  "options": [
+   {
+    "label": "Keep the old rules for now, and move the tests that should follow the real game to the current dice",
+    "recommended": true,
+    "rationale": "Tests then check what players play; deleting code can follow later."
+   },
+   {
+    "label": "Remove them completely",
+    "rationale": "Simplest code, most test work, and no old-rules option for other eras."
+   },
+   {
+    "label": "Leave everything as it is",
+    "rationale": "No cost, but the cruft and wrong-rules tests remain."
+   }
+  ]
+ },
+ {
+  "id": "Q-R3-P2",
+  "idea": "pruning",
+  "text": "When should the pruning happen?",
+  "context": "The safe removals are small and touch many files, so they collide with feature work if both run at once.",
+  "options": [
+   {
+    "label": "Safe removals first, before the feature work starts",
+    "recommended": true,
+    "rationale": "Everyone builds on the smaller code, and the unused-code check then stops regrowth."
+   },
+   {
+    "label": "A pass at the end",
+    "rationale": "Also catches what Rev 3 leaves behind, but merges are harder."
+   },
+   {
+    "label": "Both",
+    "rationale": "Cleanest result, and about twice the pruning cost."
+   }
+  ]
+ },
+ {
+  "id": "Q-R3-C1",
+  "idea": "carry",
+  "text": "Should a paved airfield still let aircraft fly in rain and snow?",
+  "context": "Open since Rev 2. You chose \"rain and snow ground all air\", but the building has no other use.",
+  "options": [
+   {
+    "label": "Yes, keep the exception",
+    "recommended": true,
+    "rationale": "Gives the upgrade a purpose, and it costs only 4 Funds in the Moderate package."
+   },
+   {
+    "label": "No: ground everything and remove the building",
+    "rationale": "Simpler, and one more thing pruned."
+   }
+  ]
+ },
+ {
+  "id": "Q-R3-C2",
+  "idea": "carry",
+  "text": "Should trucks move on any road, not only main roads?",
+  "context": "Open since Rev 2. On the opening map only Madrid to Valencia is main road all the way, and the Republic has no trucks. You also asked for a truck sound, which would almost never play.",
+  "options": [
+   {
+    "label": "Yes, any road, but still not across a mountain pass",
+    "recommended": true,
+    "rationale": "Trucks become worth buying at the new price."
+   },
+   {
+    "label": "No, leave it rare",
+    "rationale": "Truer to 1936; trucks stay a niche."
+   }
+  ]
+ },
+ {
+  "id": "Q-R3-S1",
+  "idea": "plan",
+  "text": "May I run balance sims on the finished economy?",
+  "context": "Nothing here predicts win rates. A 400-game run would take roughly half an hour of this Mac's time (estimated from the 10-game unit test) and few tokens. Sims only show computer against computer, so they can't prove that a person's militia spam is beaten; your playtest does that.",
+  "options": [
+   {
+    "label": "Yes: one run on the finished build, and one more after a single correction",
+    "recommended": true,
+    "rationale": "Removing Popular Resistance and adding upkeep both push the Republic down from 10 to 16 percent of wins, by an unknown amount."
+   },
+   {
+    "label": "Only after I've playtested",
+    "rationale": "Your feel first, numbers second."
+   },
+   {
+    "label": "No sims in Rev 3",
+    "rationale": "Playtests and the tenet checks only."
+   }
+  ]
+ }
+]

@@ -1,5 +1,5 @@
 import { addResources, adjustTreasury, canAfford, subtractResources } from "../resources";
-import type { FactionId, GameState, ResourceId, Resources, Scenario } from "../types";
+import type { FactionId, GameState, ResourceId, Resources } from "../types";
 
 /**
  * $1: the economy's helpers over resource amounts, built on the shared `engine/resources.ts`
@@ -41,9 +41,4 @@ export function pay(treasuries: GameState["treasuries"], factionId: FactionId, c
 /** Gives `amount` to a faction (a refund, or income). */
 export function credit(treasuries: GameState["treasuries"], factionId: FactionId, amount: Resources): GameState["treasuries"] {
   return adjustTreasury(treasuries, factionId, amount);
-}
-
-/** The scenario's resources in catalogue order. */
-export function resourceIds(scenario: Scenario): readonly ResourceId[] {
-  return scenario.resources.map((resource) => resource.id);
 }

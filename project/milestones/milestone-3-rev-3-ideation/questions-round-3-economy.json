@@ -1,0 +1,150 @@
+[
+ {
+  "id": "R3C-1",
+  "idea": "militia",
+  "text": "How should militia be made too dear to spam?",
+  "context": "Manpower upkeep can't do it for the North, which has more Manpower than it can use.",
+  "options": [
+   {
+    "label": "A. 0.5 Funds a turn for each column, and your 1.5 Manpower",
+    "rationale": "No militia in the strongest army of any side. Costs the Republic 2.5 Funds a turn at the start.",
+    "recommended": true
+   },
+   {
+    "label": "B. 0.25 Funds a turn, and your 1.5 Manpower",
+    "rationale": "Ends it for armies a side can keep; 28 columns can still be fed for a few turns from banked Manpower."
+   },
+   {
+    "label": "C. 4 Funds to raise",
+    "rationale": "No new kind of upkeep. The bank can still feed a burst."
+   },
+   {
+    "label": "D. 3 Manpower a turn",
+    "rationale": "Manpower only. The Republic could never keep more than 30 regiments."
+   }
+  ]
+ },
+ {
+  "id": "R3C-2",
+  "idea": "militia",
+  "text": "Can militia attack without other troops?",
+  "context": "Guns already can't. Militia beside a regiment, veterans, security forces, cavalry or tanks would still attack.",
+  "options": [
+   {
+    "label": "A. Yes, as today",
+    "rationale": "Price and an attack of 2 already make it poor at attacking.",
+    "recommended": true
+   },
+   {
+    "label": "B. No, they need other troops with them",
+    "rationale": "Forces mixed armies. Blocks the Republic's all-militia columns, and the computer player needs a change so it doesn't mistake militia for guns."
+   }
+  ]
+ },
+ {
+  "id": "R3C-3",
+  "idea": "arms",
+  "text": "Should guns help hold ground too?",
+  "context": "Today they add to the roll only when attacking.",
+  "options": [
+   {
+    "label": "A. Yes: +1 for every 3 defence points of guns, up to +2",
+    "rationale": "Two full-strength guns give it all. Data only.",
+    "recommended": true
+   },
+   {
+    "label": "B. No, guns are for attacking",
+    "rationale": "Defence stays with infantry."
+   }
+  ]
+ },
+ {
+  "id": "R3C-4",
+  "idea": "arms",
+  "text": "Should there be a bonus for mixing arms as such?",
+  "context": "For example +1 for each kind beyond the first among foot, guns, armour, cavalry and air, up to +3. A new rule; you've asked me to prefer tuning.",
+  "options": [
+   {
+    "label": "A. No: the unit bonuses already do it",
+    "rationale": "65% against 25% for the same Funds.",
+    "recommended": true
+   },
+   {
+    "label": "B. Yes, on attack",
+    "rationale": "Simple to explain, and stacks on bonuses that are already large."
+   },
+   {
+    "label": "C. Yes, on attack and defence",
+    "rationale": "Also gives defenders a reason to mix."
+   }
+  ]
+ },
+ {
+  "id": "R3C-5",
+  "idea": "factory",
+  "text": "How many Factories can a city have?",
+  "context": "",
+  "options": [
+   {
+    "label": "A. One",
+    "rationale": "Keeps today's incomes. 17 at the start, 8 more to build.",
+    "recommended": true
+   },
+   {
+    "label": "B. Up to three, and each Industry level today becomes one",
+    "rationale": "More to build, but the Republic gains 5 Funds a turn at once."
+   }
+  ]
+ },
+ {
+  "id": "R3C-6",
+  "idea": "factory",
+  "text": "What do guns need?",
+  "context": "Your note says the Factory enables artillery. Your chain answer says Barracks and Depot.",
+  "options": [
+   {
+    "label": "A. Barracks and Factory",
+    "rationale": "Your note. Six places for the Republic and one for the North on turn 1.",
+    "recommended": true
+   },
+   {
+    "label": "B. Barracks and Depot",
+    "rationale": "Three places each for the Republic and the North; first gun one turn sooner."
+   }
+  ]
+ },
+ {
+  "id": "R3C-7",
+  "idea": "factory",
+  "text": "What do trucks, anti-air and aircraft need, now the old Factory is gone?",
+  "context": "",
+  "options": [
+   {
+    "label": "A. Trucks and anti-air a Depot; aircraft an Airfield",
+    "rationale": "Short chains. Spain requisitioned its trucks and imported most aircraft.",
+    "recommended": true
+   },
+   {
+    "label": "B. The merged Factory as well, as today",
+    "rationale": "Longer chains and fewer places."
+   }
+  ]
+ },
+ {
+  "id": "R3C-8",
+  "idea": "south",
+  "text": "Knowing the odds, leave the South's opening alone?",
+  "context": "You chose to leave it. A Republic that empties Madrid on turn 1 cuts the South's chance to 10% to 20% a turn.",
+  "options": [
+   {
+    "label": "A. Leave it",
+    "rationale": "The gamble costs the Republic Madrid's garrison.",
+    "recommended": true
+   },
+   {
+    "label": "B. Give the South 3 more starting Manpower",
+    "rationale": "It starves from turn 4 instead of turn 3."
+   }
+  ]
+ }
+]

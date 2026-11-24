@@ -1,11 +1,5 @@
-// Air layer and air pane (U2, U5; m3r1-air-generals): aircraft counters at their airfields, the
+// Air layer and air pane (U2, U5; D7): aircraft on the army counters' own cards (`_counters`), the
 // selected aircraft's range ring, planned missions, the mission buttons and the general's pill.
-.air-layer {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-
 .air-layer-lines {
   position: absolute;
   inset: 0;
@@ -32,87 +26,36 @@
   }
 }
 
-// B1, M3 (`ux-air-a`): the counter is the NATO frame itself, in the faction's colour, with the
-// mission tag under it. The plain button's min-height and hover are reset.
-.air-counter {
-  position: absolute;
-  display: block;
-  min-height: 0;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  border-radius: 1px;
-  color: var(--ink);
-  background: none;
-  box-shadow: 0 1px 2px rgb(36 29 24 / 45%);
-  cursor: pointer;
-  pointer-events: auto;
-
-  &:hover:not(:disabled) {
-    color: var(--ink);
-    background: none;
-  }
-
-  @media (hover: hover) {
-    &:hover:not(:disabled) {
-      z-index: 2;
-      transform: translateY(-1px);
-      filter: brightness(1.12);
-    }
-  }
-
-  &[data-selected="true"] {
-    z-index: 2;
-    outline: 3px solid #e0b100;
-    outline-offset: 1px;
-  }
-
-  &:focus-visible {
-    outline: 3px solid var(--accent);
-    outline-offset: 2px;
-  }
+// The role ("BOMB") is wider than most short names: a smaller symbol and gap keep it on the card.
+.air-counter .unit-counter-head {
+  gap: 2px;
+  max-width: none;
+  margin: 0 -3px;
 }
 
-.air-counter-symbol {
-  display: block;
-  width: 100%;
-  height: 100%;
-
-  svg {
-    display: block;
-    width: 100%;
-    height: 100%;
-  }
+.counter-layer .air-counter .unit-counter-symbol {
+  width: 13px;
+  height: 9px;
 }
 
-.air-counter-tag {
-  position: absolute;
-  top: calc(100% + 1px);
-  left: 50%;
-  padding: 0 3px;
-  transform: translateX(-50%);
-  border-radius: 2px;
-  color: var(--paper);
-  background: var(--ink);
-  font-size: 8.5px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  line-height: 11px;
-  white-space: nowrap;
+// D7: grounded by the weather. The hatch is an image, so every state's own colour shows under it.
+.unit-counter.air-counter[data-grounded="true"] {
+  background-image: repeating-linear-gradient(-45deg, rgb(36 29 24 / 15%) 0 2px, transparent 2px 6px);
 }
 
-.air-counter-badge {
+.unit-counter-grounded {
   position: absolute;
-  top: -7px;
   right: -7px;
+  bottom: -7px;
   display: grid;
+  width: 17px;
+  height: 17px;
   place-items: center;
-  width: 14px;
-  height: 14px;
+  border: 1.5px solid var(--paper);
   border-radius: 50%;
   color: var(--paper);
-  background: var(--ink);
-  font-size: 9px;
+  background: var(--ink-soft);
+  font-size: 11px;
 }
 
 .air-missions {
@@ -197,6 +140,58 @@
   align-items: center;
   gap: 6px;
   margin: 2px 0 6px 28px;
+}
+
+// D1: Disband on a unit's card, and its second step.
+.disband-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  font-size: 0.85rem;
+
+  > span {
+    flex: 1 1 8rem;
+  }
+
+  > button {
+    min-height: 32px;
+    padding: 4px 12px;
+  }
+
+  &[data-step="confirm"] {
+    border-radius: 6px;
+    background: rgb(168 50 20 / 8%);
+  }
+}
+
+.disband-button {
+  border: 1px solid var(--accent);
+  background: var(--paper);
+  color: var(--accent);
+  font-weight: 700;
+
+  &:hover:not(:disabled) {
+    background: var(--paper-deep);
+  }
+}
+
+.shortage-warning {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--accent);
+  border-left-width: 4px;
+  border-radius: 6px;
+  background: rgb(168 50 20 / 8%);
+
+  strong {
+    color: var(--accent);
+  }
+
+  p {
+    margin: 2px 0 0;
+  }
 }
 
 // M11 (`ux-air-a`): colour keys for the raid's chances.

@@ -49,7 +49,6 @@ export function BattleCard({ finalState, focused, group, onToggle, open, reveal,
       data-battle-kind={group.kind}
       data-focused={focused}
       data-places={placesOf(group).join(" ")}
-      data-dice={lead.battle.dice}
       data-result={result}
       data-sides={several ? group.battles.length + 1 : 2}
       // Read the element, not a flipped flag: the event also fires when React sets `open`.

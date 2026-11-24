@@ -72,13 +72,13 @@ describe("the Recruit tab and the Replenish order (X4, X7)", () => {
     expect(screen.getByText("Recruit at Barcelona")).toBeTruthy();
     expect(screen.getAllByText(/Not raised by the Republican Government/u).length).toBeGreaterThan(0);
     await user.click(screen.getByRole("button", { name: "One more Militia column" }));
-    expect(screen.getByText(/This turn: 2 Funds, 3k Manpower/u)).toBeTruthy();
+    expect(screen.getByText(/This turn: 3 Funds, 3k Manpower/u)).toBeTruthy();
     const session = store.getState().game.session;
     expect(session.phase === "planning" ? session.draft.recruits?.length : 0).toBe(1);
   });
 
   it("says why a site is closed: contested ground", async () => {
-    const poor: GameState = { ...state, treasuries: { ...state.treasuries, [republic]: { funds: 7, manpower: 30 } as never } };
+    const poor: GameState = { ...state, treasuries: { ...state.treasuries, [republic]: { funds: 9, manpower: 30 } as never } };
     const { store, user } = renderPlanning(poor);
     // Pais Vasco is contested from turn 1 (Alava is the North's): the site note locks every row.
     act(() => { clickTerritoryIn(store, "pais-vasco"); });
@@ -88,18 +88,18 @@ describe("the Recruit tab and the Replenish order (X4, X7)", () => {
   });
 
   it("says why a type is closed: full slots and a short balance", async () => {
-    const poor: GameState = { ...state, treasuries: { ...state.treasuries, [republic]: { funds: 7, manpower: 30 } as never } };
+    const poor: GameState = { ...state, treasuries: { ...state.treasuries, [republic]: { funds: 9, manpower: 30 } as never } };
     const again = renderPlanning(poor);
-    act(() => { clickTerritoryIn(again.store, "catalunya"); });
+    act(() => { clickTerritoryIn(again.store, "madrid"); });
     await again.user.click(await screen.findByRole("tab", { name: /^Recruit/u }));
     expect(screen.getByText("0 of 3 Recruit orders here this turn")).toBeTruthy();
-    // 7 Funds: one infantry regiment (6) leaves too little for a second.
+    // 9 Funds: one infantry regiment (5) leaves too little for a second, and three militia columns (3 each) take it all.
     await again.user.click(screen.getByRole("button", { name: "One more Infantry regiment" }));
     expect(screen.getByRole("button", { name: "One more Infantry regiment" }).getAttribute("title")).toBe("Not enough Funds.");
     await again.user.click(screen.getByRole("button", { name: "One fewer Infantry regiment" }));
     for (let index = 0; index < 3; index += 1) await again.user.click(screen.getByRole("button", { name: "One more Militia column" }));
     expect(screen.getByText("3 of 3 Recruit orders here this turn")).toBeTruthy();
     expect(screen.getByRole("button", { name: "One more Militia column" }).getAttribute("title")).toBe("No Recruit orders left here this turn.");
-    expect(screen.getByText(/Left: 1 Funds/u)).toBeTruthy();
+    expect(screen.getByText(/Left: 21k Manpower/u)).toBeTruthy();
   });
 });

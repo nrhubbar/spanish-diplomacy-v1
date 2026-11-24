@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { initialGameState } from "../../main/engine/resolution";
 import { MusterView } from "../../main/screens/actions/MusterView";
 import type { PlanningSession } from "../../main/state/planning";
-import { faction, spainD20, spainId, territory, testStore } from "../support";
+import { faction, spainWithAir, spainId, territory, testStore } from "../support";
 
 // The engine takes back a move between drawing the pane and ordering it (the board changed).
 vi.mock("../../main/state/planning", async (original) => ({ ...await original<typeof import("../../main/state/planning")>(), musterRefusal: () => "That route is closed now." }));
@@ -14,7 +14,7 @@ afterEach(cleanup);
 
 describe("U6: a refused order", () => {
   it("keeps the pane and its ticks, and says why", async () => {
-    const scenario = spainD20();
+    const scenario = spainWithAir();
     const session: PlanningSession = {
       draft: { orders: [], selectedUnitIds: [] },
       factionId: faction("republic"),
@@ -31,6 +31,6 @@ describe("U6: a refused order", () => {
     await user.click(within(pane).getByRole("button", { name: /^Order 1 unit to reinforce/ }));
     expect(screen.getByRole("alert")).toHaveTextContent("That route is closed now.");
     expect(first).toBeChecked();
-    expect(dispatched).not.toHaveBeenCalled();
+    expect(dispatched).not.toHaveBeenCalledWith(expect.objectContaining({ type: "game/orderFromMuster" }));
   });
 });

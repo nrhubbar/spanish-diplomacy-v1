@@ -22,6 +22,70 @@
   background: rgb(251 246 234 / 92%);
 }
 
+.map-pane-grip {
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  bottom: 0;
+  left: -9px;
+  width: 18px;
+  cursor: ew-resize;
+  touch-action: none;
+
+  &::after {
+    position: absolute;
+    top: calc(50% - 24px);
+    left: 6px;
+    width: 5px;
+    height: 48px;
+    border-radius: 3px;
+    background: rgb(36 29 24 / 55%);
+    content: "";
+  }
+
+  &:hover::after {
+    background: var(--ink);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: -4px;
+  }
+}
+
+.map-sheet-grip {
+  display: grid;
+  flex: none;
+  place-items: center;
+  height: 24px;
+  cursor: ns-resize;
+  touch-action: none;
+
+  &::after {
+    width: 48px;
+    height: 5px;
+    border-radius: 3px;
+    background: rgb(36 29 24 / 55%);
+    content: "";
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: -3px;
+  }
+}
+
+// Collapsed, the grip lies on the bar's top edge, so the bar keeps the height the camera leaves clear.
+.map-pane[data-open="false"] .map-sheet-grip {
+  position: absolute;
+  z-index: 1;
+  top: -12px;
+  right: 0;
+  left: 0;
+  width: 6rem;
+  margin: 0 auto;
+}
+
 .map-pane-header {
   display: flex;
   align-items: center;
@@ -31,6 +95,7 @@
 
 .map-pane-title {
   flex: 1;
+  overflow-wrap: anywhere;
   font-size: 1.35rem;
 }
 
@@ -69,6 +134,48 @@
   background: var(--accent-dark);
 }
 
+// Too narrow for the words beside the title: the icon alone, named for screen readers.
+.map-pane[data-open="true"] {
+  container: map-pane / inline-size;
+}
+
+// Large text in a narrow pane: the header takes rows instead of squeezing the title.
+@container map-pane (max-width: 18rem) {
+  .map-pane-header {
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    padding: 0.25rem 0.5rem;
+  }
+
+  .map-pane-title {
+    flex: 1 1 60%;
+    overflow-wrap: break-word;
+    font-size: 1rem;
+  }
+
+  .map-pane-bar-action {
+    flex: 1 1 100%;
+    order: 1;
+  }
+}
+
+@container map-pane (max-width: 440px) {
+  .map-pane-toggle {
+    justify-content: center;
+    width: 2.2rem;
+    padding: 0;
+  }
+
+  .map-pane-toggle-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
 .map-pane[data-open="false"] .map-pane-toggle {
   margin-left: 0;
   font-weight: 700;
@@ -102,8 +209,6 @@
   min-height: 0;
   padding: 0 1rem 1rem;
   overflow: auto;
-  // B3, WCAG 2.4.11: a row scrolled into view or focused stays above the sticky order bar.
-  scroll-padding-bottom: 4.75rem;
 }
 
 .map-pane-body:focus-visible {
@@ -143,6 +248,11 @@
 
 .campaign-map[data-pane-layout="sheet"] .map-pane[data-open="true"] {
   max-height: 46%;
+}
+
+.campaign-map[data-pane-layout="sheet"] .map-pane[data-stop="tall"] {
+  height: 86%;
+  max-height: 86%;
 }
 
 .map-pane-bar-focus {
@@ -214,13 +324,6 @@
   .text-button {
     justify-self: start;
   }
-}
-
-.pane-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-top: 0.75rem;
 }
 
 .formation-list,

@@ -43,3 +43,8 @@ export function groupedItems(game: GameState, expandedTerritoryId: TerritoryId |
 export function itemTerritory(item: CounterItem): TerritoryId {
   return item.kind === "army" ? item.unit.territoryId : item.territoryId;
 }
+
+/** The units an item stands for. */
+export function itemUnits(item: CounterItem): readonly UnitState[] {
+  return item.kind === "army" ? [item.unit] : item.units;
+}

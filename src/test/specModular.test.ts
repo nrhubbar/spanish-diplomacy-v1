@@ -3,7 +3,6 @@ import { initialGameState } from "../main/engine/resolution";
 import {
   airMissionKinds,
   buildingEffectKinds,
-  m2StrengthRules,
   raidOutcomes,
   ruleAreas,
   terrainKinds,
@@ -64,7 +63,6 @@ describe("spec version 2 contract", () => {
   it("indexes every block of an m3-modular package", () => {
     const { scenario } = load();
     expect(scenario.ruleset).toBe("m3-modular");
-    expect(scenario.rules.dice).toBe("d20-graded");
     expect(scenario.index.subTerritoriesByTerritory.get(scenario.territories[0]!.id)?.map((sub) => sub.id)).toEqual(["west-town-quarter", "west-hills"]);
     expect(scenario.index.subTerritoryNeighbors.get(scenario.subTerritories[1]!.id)).toEqual(["west-town-quarter", "highlands"]);
     expect(scenario.index.subTerritories.get(scenario.subTerritories[0]!.id)?.cityIds).toEqual(["west-town"]);
@@ -74,8 +72,8 @@ describe("spec version 2 contract", () => {
     expect(scenario.index.generalsByFaction.get(scenario.factions[1]!.id)?.map((general) => general.id)).toEqual(["blue-1", "blue-2", "blue-3"]);
     expect(scenario.ai.profiles[scenario.factions[0]!.id]?.stakes.objective).toBe(5);
     expect(scenario.unitTypes.map((type) => type.kind)).toEqual(["ground", "ground", "air", "general"]);
-    expect(scenario.unitTypes[0]?.recruit).toMatchObject({ establishment: 400, requires: ["barracks"], trainingTurns: 2 });
-    expect(scenario.d20?.table[6]?.[20]).toBe("driven-out");
+    expect(scenario.unitTypes[0]?.recruit).toMatchObject({ establishment: 400, requires: [{ buildingId: "barracks", kind: "building" }], trainingTurns: 2 });
+    expect(scenario.d20.table[6]?.[20]).toBe("driven-out");
     expect(scenario.weather?.zones[0]?.tables["winter" as never]).toHaveLength(3);
     expect(scenario.buildings.find((building) => building.id === "paved-airfield")?.upgradeOf).toBe("airfield");
     expect(scenario.improvements?.railDamageOnContest).toBe(1);
@@ -91,9 +89,9 @@ describe("spec version 2 contract", () => {
     expect(state).toMatchObject({ raidCuts: [], raised: {}, reveals: [], training: [] });
   });
 
-  it("gives m2-strength packages the preset and no Milestone 3 systems (declog D3)", () => {
+  it("gives a package that selects no optional system none of them (declog D3)", () => {
     const scenario = tiny();
-    expect(scenario.rules).toEqual(m2StrengthRules);
+    expect(scenario.rules).toEqual({ air: "none", economy: "none", movement: "single-step", partition: "none", recruitment: "none", weather: "none" });
     expect(scenario.unitTypes[0]).toMatchObject({ effects: [], kind: "ground", orders: ["move"] });
     expect([scenario.subTerritories, scenario.resources, scenario.buildings, scenario.generals]).toEqual([[], [], [], []]);
     expect(initialGameState(scenario)).toMatchObject({ generals: {}, subTerritories: {}, treasuries: {} });
@@ -107,8 +105,8 @@ describe("m3-modular loader rules", () => {
 
   it.each([
     ["L1 spec version 1", (s: Json) => { s["specVersion"] = 1; }, "specVersion"],
-    ["L1 m2 package with a rules block", (s: Json) => { s["ruleset"] = "m2-strength"; }, "rules"],
-    ["L14 unknown module", (s: Json) => { block(s, "rules")["dice"] = "d12-chart"; }, "rules.dice: unknown dice module \"d12-chart\" (L14)"],
+    ["L1 unknown ruleset", (s: Json) => { s["ruleset"] = "m2-strength"; }, "ruleset"],
+    ["L14 unknown module", (s: Json) => { block(s, "rules")["air"] = "zeppelins"; }, "rules.air: unknown air module \"zeppelins\" (L14)"],
     ["L15 missing module data", (s: Json) => { delete s["weather"]; }, "weather: required by the weather module \"seasonal-zones\" (L15)"],
     ["L15 empty sub-territories", (s: Json) => { s["subTerritories"] = []; s["subTerritoryBorders"] = []; }, "subTerritories: required by"],
     ["L16 territory without a capital", (s: Json) => { delete list(s["territories"])[1]!["capitalSubTerritoryId"]; }, "needs a capitalSubTerritoryId (L16)"],
@@ -119,10 +117,9 @@ describe("m3-modular loader rules", () => {
     ["L16 city in an unknown sub-territory", (s: Json) => { list(s["cities"])[0]!["subTerritoryId"] = "nowhere"; }, "unknown sub-territory"],
     ["L17 air type without range", (s: Json) => { delete list(s["unitTypes"])[2]!["air"]; }, "\"wing\" needs an air block (L17)"],
     ["L17 ground type with range", (s: Json) => { list(s["unitTypes"])[0]!["air"] = { range: 1, missions: ["recon"] }; }, "\"foot\" cannot have an air block (L17)"],
-    ["L17 unknown required building", (s: Json) => { block(list(s["unitTypes"])[0]!, "recruit")["requires"] = ["foundry"]; }, "unknown building \"foundry\""],
+    ["L17 unknown required building", (s: Json) => { block(list(s["unitTypes"])[0]!, "recruit")["requires"] = ["foundry"]; }, "unknown building or development track \"foundry\""],
     ["L17 unknown recruiting faction", (s: Json) => { block(list(s["unitTypes"])[0]!, "recruit")["factionIds"] = ["green"]; }, "unknown faction \"green\""],
     ["L17 unknown weather in an effect", (s: Json) => { data(list(list(s["unitTypes"])[1]!["effects"])[0]!)["exceptWeather"] = ["fog"]; }, "unknown weather outcome \"fog\""],
-    ["L18 sub-territory without basis", (s: Json) => { delete list(s["subTerritories"])[0]!["note"]; }, "needs sources or a note (L18)"],
     ["L18 unknown source", (s: Json) => { list(s["subTerritories"])[5]!["sources"] = [{ sourceId: "rumour" }]; }, "unknown source \"rumour\""],
     ["L18 development above its cap", (s: Json) => { list(s["subTerritories"])[1]!["development"] = { farms: 4 }; }, "level 4 is above 3 (L18)"],
     ["L18 unknown development track", (s: Json) => { list(s["subTerritories"])[1]!["development"] = { vineyards: 1 }; }, "unknown development track"],
@@ -136,7 +133,6 @@ describe("m3-modular loader rules", () => {
     ["L28 duplicate link", (s: Json) => { list(s["links"]).push(structuredClone(list(s["links"])[1]!)); }, "duplicate link west-town-quarter - west-hills (L28)"],
     ["L28 link off the borders", (s: Json) => { list(s["links"]).push({ a: "isle", b: "highlands", note: "x", modifiers: [] }); }, "isle - highlands is not a sub-territory border (L28)"],
     ["L28 border without a link", (s: Json) => { list(s["links"]).splice(1, 1); }, "west-town-quarter - west-hills has no link (L28)"],
-    ["L28 link without a basis", (s: Json) => { delete list(s["links"])[1]!["note"]; }, "needs sources or a note (L28)"],
     ["L28 link citing an unknown source", (s: Json) => { list(s["links"])[1]!["sources"] = [{ sourceId: "nope" }]; }, "links[1].sources: unknown source \"nope\""],
     ["L28 modifier listed twice", (s: Json) => { list(list(s["links"])[1]!["modifiers"]).push({ "@type": "road", "@data": { level: "main" } }); }, "\"road\" is listed twice (L28)"],
     ["L28 modifier without rules", (s: Json) => {

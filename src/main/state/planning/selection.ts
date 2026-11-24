@@ -3,7 +3,7 @@ import { isMoveOrder, type ReplenishOrder, type Scenario, type TerritoryId, type
 import type { MoveRoute } from "../../engine/movement/routes";
 import { legalDestinations } from "../../engine/validation";
 import { selectionRoutes } from "../../presentation/movement";
-import type { Draft, OrderKind, PlannedOrder, Session } from "../session";
+import type { Draft, OrderKind, PlannedOrder, Session, UnitOrderKind } from "../session";
 import { isAircraft, keepAirOrders, selectAircraft } from "./air";
 import { inContestedGround, withdrawDestinations } from "./contested";
 import { chooseDestination } from "./orders";
@@ -30,20 +30,21 @@ export function orderKindsFor(session: PlanningSession, scenario?: Scenario): re
 }
 
 /**
- * The order an army has in the draft: its move, withdrawal or Replenish, or else its default:
+ * The order a unit has in the draft: its move, withdrawal, Replenish or Disband, or else its default:
  * Attack in contested ground (Hold when demoralized, C1, C4), otherwise its standing order (O1, O5).
  */
-export function orderOf(session: PlanningSession, unit: UnitState, scenario?: Scenario): OrderKind {
+export function orderOf(session: PlanningSession, unit: UnitState, scenario?: Scenario): UnitOrderKind {
   const planned = session.draft.orders.find((order) => order.unitId === unit.id);
   if (planned !== undefined) return planned.kind;
   if (session.draft.replenishments?.some((order) => order.unitId === unit.id) === true) return "replenish";
+  if (session.draft.disbands?.some((order) => order.unitId === unit.id) === true) return "disband";
   if (inContestedGround(scenario, session, unit)) return unit.morale.demoralized ? "hold" : "attack";
   return standingOrder(unit);
 }
 
 /** How many of the player's armies move, replenish, entrench, and rest under the draft; contested-ground kinds appear once used. */
-export function orderCounts(session: PlanningSession, scenario?: Scenario): Readonly<Partial<Record<OrderKind, number>> & Record<"entrench" | "move" | "replenish" | "rest", number>> {
-  const counts: Partial<Record<OrderKind, number>> & Record<"entrench" | "move" | "replenish" | "rest", number> = { entrench: 0, move: 0, replenish: 0, rest: 0 };
+export function orderCounts(session: PlanningSession, scenario?: Scenario): Readonly<Partial<Record<UnitOrderKind, number>> & Record<"entrench" | "move" | "replenish" | "rest", number>> {
+  const counts: Partial<Record<UnitOrderKind, number>> & Record<"entrench" | "move" | "replenish" | "rest", number> = { entrench: 0, move: 0, replenish: 0, rest: 0 };
   for (const unit of Object.values(session.game.state.units)) {
     if (unit.factionId !== session.factionId) continue;
     const kind = orderOf(session, unit, scenario);
@@ -100,7 +101,7 @@ function ownUnitIdsIn(session: PlanningSession, territoryId: TerritoryId, scenar
     .map((unit) => unit.id);
 }
 
-/** The player's armies in a territory that have no move or withdrawal in `orders`, nor a Replenish order (R5). Aircraft are left out when the scenario is given (U2). */
+/** The player's armies in a territory that have no move or withdrawal in `orders`, nor a Replenish (R5) or Disband order (D1). Aircraft are left out when the scenario is given (U2). */
 export function availableUnitIds(
   session: PlanningSession,
   territoryId: TerritoryId,
@@ -108,7 +109,7 @@ export function availableUnitIds(
   replenishments: readonly ReplenishOrder[] = session.draft.replenishments ?? [],
   scenario?: Scenario
 ): readonly UnitId[] {
-  const ordered = new Set([...orders, ...replenishments].map((order) => order.unitId));
+  const ordered = new Set([...orders, ...replenishments, ...(session.draft.disbands ?? [])].map((order) => order.unitId));
   return ownUnitIdsIn(session, territoryId, scenario).filter((id) => !ordered.has(id));
 }
 

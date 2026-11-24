@@ -12,6 +12,7 @@ import { addErrorNotification } from "./state/notificationSlice";
 import { isPathAllowed, paths, routeForSession } from "./state/routing";
 import { isInGame } from "./state/session";
 
+const CreditsScreen = lazy(async () => ({ default: (await import("./screens/CreditsScreen")).CreditsScreen }));
 const loadMapScreens = () => import("./screens/mapScreens");
 const OrdersScreen = lazy(async () => ({ default: (await loadMapScreens()).OrdersScreen }));
 const ResultsScreen = lazy(async () => ({ default: (await loadMapScreens()).ResultsScreen }));
@@ -63,6 +64,7 @@ export function App(): JSX.Element {
           <Routes>
             <Route element={<SessionGuard />}>
               <Route element={<StartScreen />} path={paths.home} />
+              <Route element={<Suspense fallback={null}><CreditsScreen /></Suspense>} path={paths.credits} />
               <Route element={<SettingsScreen />} path={paths.settings} />
               <Route element={<SetupScreen />} path={paths.setup} />
               <Route element={<HandoffScreen />} path={paths.handoff} />

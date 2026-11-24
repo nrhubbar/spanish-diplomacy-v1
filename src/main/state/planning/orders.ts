@@ -1,10 +1,12 @@
 import { isNeighbor, requireTerritory } from "../../engine/lookup";
 import { type StandingOrder, standingOrder } from "../../engine/orders";
-import type { MoveOrder, Scenario, TerritoryId, UnitId, WithdrawOrder } from "../../engine/types";
+import { railShortageText } from "../../engine/movement/routes";
+import { isMoveOrder, type MoveOrder, type Scenario, type TerritoryId, type UnitId, type WithdrawOrder } from "../../engine/types";
 import { validateMoveOrder } from "../../engine/validation";
+import { selectionFullTrains } from "../../presentation/movement";
 import type { Draft, OrderKind, PlannedOrder } from "../session";
 import { selectedWithdrawRoutes } from "./contested";
-import { chooseReplenish, replenishWithout } from "./recruitment";
+import { chooseReplenish, unitOrdersWithout } from "./recruitment";
 import { type PlanningSession, feedback, selectedDestinations, selectedRoutes, selectedUnits, selecting, selectionOf, withDraft } from "./selection";
 
 /**
@@ -38,7 +40,7 @@ function chooseDefault(session: PlanningSession, kind: "attack" | "hold"): Plann
   const orders = session.draft.orders.filter((order) => !chosen.has(order.unitId));
   const draft = afterOrder(session.draft.selectedTerritoryId, orders);
   const who = chosen.size === 1 ? "1 unit" : `${String(chosen.size)} units`;
-  return withDraft(session, { ...draft, ...toldToStay(session.draft, chosen), feedback: `${who} will ${kind === "attack" ? "attack where they stand" : "hold"}.` });
+  return withDraft(session, { ...draft, ...unitOrdersWithout(session.draft, chosen), ...toldToStay(session.draft, chosen), feedback: `${who} will ${kind === "attack" ? "attack where they stand" : "hold"}.` });
 }
 
 /** C1, P6: Withdraw. With one way out it is planned at once; with several, the player picks a highlighted territory. */
@@ -56,7 +58,7 @@ function chooseStanding(session: PlanningSession, kind: StandingOrder): Planning
     return feedback(session, kind === "entrench" ? "Demoralized units cannot entrench. They rest instead." : "Only demoralized units rest.");
   }
   const orders = session.draft.orders.filter((order) => !fitting.has(order.unitId));
-  const draft = { ...afterOrder(session.draft.selectedTerritoryId, orders), ...replenishWithout(session.draft, fitting), ...toldToStay(session.draft, fitting) };
+  const draft = { ...afterOrder(session.draft.selectedTerritoryId, orders), ...unitOrdersWithout(session.draft, fitting), ...toldToStay(session.draft, fitting) };
   const who = fitting.size === 1 ? "1 unit" : `${String(fitting.size)} units`;
   return withDraft(session, { ...draft, feedback: `${who} will ${kind === "entrench" ? "entrench" : "rest"}.` });
 }
@@ -110,7 +112,7 @@ export function chooseDestination(scenario: Scenario, session: PlanningSession, 
   const replanned = new Set(session.draft.selectedUnitIds);
   const orders = [...session.draft.orders.filter((order) => !replanned.has(order.unitId)), ...planned];
   // A move replaces a stay order given earlier (U2).
-  return withDraft(session, { ...afterOrder(origin, orders), ...replenishWithout(session.draft, replanned), ...stayWithout(session.draft, [...replanned]) });
+  return withDraft(session, { ...afterOrder(origin, orders), ...unitOrdersWithout(session.draft, replanned), ...stayWithout(session.draft, [...replanned]) });
 }
 
 /** Note 11: after an order the territory stays open and nothing is selected. */
@@ -128,7 +130,7 @@ export function stayWithout(draft: Draft, unitIds: readonly UnitId[]): Pick<Draf
   return draft.orderedToStay === undefined ? {} : { orderedToStay: draft.orderedToStay.filter((id) => !unitIds.includes(id)) };
 }
 
-/** Clears an army's move, Replenish or stay order, which returns it to its standing order (O5). */
+/** Clears a unit's move, Replenish, Disband or stay order, which returns it to its standing order (O5). */
 export function removeOrder(session: PlanningSession, unitId: UnitId): PlanningSession {
   // The feedback was about the order being cleared, so it goes too.
   const draft: Draft = { ...session.draft };
@@ -136,13 +138,16 @@ export function removeOrder(session: PlanningSession, unitId: UnitId): PlanningS
   return withDraft(session, {
     ...draft,
     orders: session.draft.orders.filter((order) => order.unitId !== unitId),
-    ...replenishWithout(session.draft, [unitId]),
+    ...unitOrdersWithout(session.draft, [unitId]),
     ...stayWithout(session.draft, [unitId])
   });
 }
 
-/** Why the selected armies cannot move to `to`: no connection, or the engine's own reason. */
+/** Why the selected armies cannot move to `to`: full trains, no connection, or the engine's own reason. */
 function refusal(scenario: Scenario, session: PlanningSession, from: TerritoryId, to: TerritoryId): string {
+  // D5: a ride is there, but its trains can't take the units whole.
+  const full = selectionFullTrains(scenario, session.game.state, session.factionId, from, session.draft.selectedUnitIds, session.draft.orders.filter(isMoveOrder)).get(to);
+  if (full !== undefined) return railShortageText(scenario, full);
   if (!isNeighbor(scenario, from, to)) {
     return `${requireTerritory(scenario, to).name} is not connected to ${requireTerritory(scenario, from).name}. Choose a highlighted territory.`;
   }

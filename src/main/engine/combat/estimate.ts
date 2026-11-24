@@ -1,12 +1,10 @@
-import { type PlannedAir, plannedAir } from "../air/groundSupport";
-import { isGroundUnit, onGroundBoard } from "../air/pieces";
+import { onGroundBoard } from "../air/pieces";
 import { requireUnitState } from "../lookup";
-import type { BattleResult, BattleSide, CombatModifier, FactionId, GameState, Scenario, TerritoryId, UnitId } from "../types";
-import { estimateGradedBattle, type GradedEstimate, gradedOddsForValues } from "../d20/estimate";
-import type { GradedOdds } from "../d20/odds";
-import { usesD20 } from "../d20/rules";
-import { type BattleContext, type BattleOdds, battleOdds, situationalModifiers } from "./odds";
-import { battleSide } from "./values";
+import { type BattleEstimate, estimateBattle } from "../d20/estimate";
+import type { MoveRoute } from "../movement/routes";
+import type { FactionId, GameState, Scenario, TerritoryId, UnitId } from "../types";
+
+export { oddsForValues } from "../d20/estimate";
 
 /** What a move into a territory would meet, judged from the start-of-turn state. */
 export type AttackEstimate =
@@ -14,10 +12,8 @@ export type AttackEstimate =
   | { readonly kind: "reinforcement" }
   /** No army of another faction is there; the move is unopposed unless another faction also enters. */
   | { readonly kind: "unopposed" }
-  /** R11: `air` as on the d20 (`GradedEstimate`). */
-  | (BattleOdds & { readonly air?: PlannedAir; readonly attacker: BattleSide; readonly defender: BattleSide; readonly kind: "battle" })
-  /** D1-D8: the same on the d20, with grade chances in place of d6 results. */
-  | GradedEstimate;
+  /** D1-D8: the battle it would fight. */
+  | BattleEstimate;
 
 /**
  * C15: the odds and the chance to take a territory if `unitIds` of `factionId` attack it,
@@ -26,6 +22,7 @@ export type AttackEstimate =
  * not judge whether the order is legal (a demoralized army cannot attack, M23); validation does.
  * R11: `support` names the faction's aircraft planned on Ground Support over the target; their
  * support counts with the chance it wins the air battle against the defenders' AA.
+ * `plannedRoutes` names the way each attacker takes, where it is already chosen.
  */
 export function estimateAttack(
   scenario: Scenario,
@@ -33,16 +30,14 @@ export function estimateAttack(
   factionId: FactionId,
   unitIds: readonly UnitId[],
   targetTerritoryId: TerritoryId,
-  support: readonly UnitId[] = []
+  support: readonly UnitId[] = [],
+  plannedRoutes?: ReadonlyMap<UnitId, MoveRoute>
 ): AttackEstimate {
   const ordered = unitIds.map((id) => requireUnitState(state, id));
   if (ordered.length === 0 || ordered.some((unit) => unit.factionId !== factionId)) {
     throw new Error(`Invariant violated: an attack needs one or more armies of "${factionId}".`);
   }
-  // AG-3: under the d6 table only ground units fight, and a general with the attack counts through the hooks.
-  const ground = ordered.filter((unit) => isGroundUnit(scenario, state.raised, unit.id));
-  const attackers = ground.length === 0 ? ordered : ground;
-  // D17, M11: what the ground steps see there: never aircraft; under the d20, generals too (a lone general is defended ground).
+  // D17, M11: what the ground steps see there: never aircraft; generals too (a lone general is defended ground).
   const present = Object.values(state.units).filter((unit) => unit.territoryId === targetTerritoryId && onGroundBoard(scenario, state.raised, unit.id));
   const control = state.control[targetTerritoryId];
   const own = control?.kind === "controlled" && control.factionId === factionId;
@@ -52,46 +47,5 @@ export function estimateAttack(
   if (present.length === 0) {
     return { kind: "unopposed" };
   }
-  if (usesD20(scenario)) return estimateGradedBattle(scenario, state, factionId, unitIds, targetTerritoryId, support);
-  const attacker = battleSide(scenario, attackers, "attack");
-  const defender = battleSide(scenario, present, "defence");
-  const defenderFactionIds = [...new Set(present.map((unit) => unit.factionId))];
-  const situational = situationalModifiers(scenario, state, {
-    attackerFactionId: factionId,
-    attackerUnitIds: unitIds,
-    defenderFactionIds,
-    diggingIn: true,
-    territoryId: targetTerritoryId
-  });
-  const plain = battleOdds(scenario.combat, attacker.value, defender.value, situational);
-  const air = plannedAir(scenario, state, { attackerFactionId: factionId, defenderFactionIds, defenderUnitIds: present.map((unit) => unit.id), territoryId: targetTerritoryId }, support);
-  const supported = (extra: CombatModifier): BattleOdds => battleOdds(scenario.combat, attacker.value, defender.value, [...situational, extra]);
-  const odds = air === undefined ? plain : air.chance === 1 ? supported(air.modifier) : weighOdds(plain, supported(air.modifier), air.chance);
-  return {
-    ...odds,
-    ...(air === undefined ? {} : { air }),
-    attacker,
-    defender,
-    kind: "battle"
-  };
-}
-
-/**
- * C15: the odds for bare side values under the scenario's dice, d6 or d20, with the situational
- * modifiers of `context`. The computer player's threat checks use it.
- */
-export function oddsForValues(scenario: Scenario, state: GameState, context: BattleContext, attack: number, defence: number): BattleOdds | GradedOdds {
-  if (usesD20(scenario)) return gradedOddsForValues(scenario, state, context, attack, defence);
-  return battleOdds(scenario.combat, attack, defence, situationalModifiers(scenario, state, context));
-}
-
-/**
- * R11 on the d6: the odds over the air battle, `supported` with chance `chance`, else `plain`.
- * Only the result chances and the take chance are weighed; the faces, column, label and modifiers
- * are `plain`'s (the battle without the support).
- */
-export function weighOdds(plain: BattleOdds, supported: BattleOdds, chance: number): BattleOdds {
-  const chances = Object.fromEntries(Object.entries(plain.chances).map(([result, value]) =>
-    [result, value * (1 - chance) + supported.chances[result as BattleResult] * chance])) as Record<BattleResult, number>;
-  return { ...plain, chances, takeChance: plain.takeChance * (1 - chance) + supported.takeChance * chance };
+  return estimateBattle(scenario, state, factionId, unitIds, targetTerritoryId, support, plannedRoutes);
 }

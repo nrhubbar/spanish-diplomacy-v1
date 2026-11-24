@@ -1,6 +1,5 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import { exitGame, startGame } from "./gameSlice";
-import type { RootState } from "./store";
 
 /** T5 (Q-TIMER-1): the setup choices. 30 minutes and 1 hour wait for online play. */
 export const timerChoices = [0, 1, 5, 10] as const;
@@ -70,7 +69,3 @@ export const timerSlice = createSlice({
 });
 
 export const { chooseTimer, clockWarned, pauseClock, resumeClock, startClock } = timerSlice.actions;
-
-export function selectTimer(state: RootState): TimerState {
-  return state.timer;
-}

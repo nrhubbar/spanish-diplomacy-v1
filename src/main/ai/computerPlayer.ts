@@ -7,6 +7,7 @@ import { planBuilds } from "./orders/build";
 import { planGeneralMoves } from "./orders/general";
 import { planMoves } from "./orders/move";
 import type { ComputerPlayerContext, OrderPlanner, PlanningContext } from "./orders/planner";
+import { planDisbands } from "./orders/disband";
 import { planRecruits } from "./orders/recruit";
 import { planReplenishment } from "./orders/replenish";
 import { planSackings } from "./orders/sack";
@@ -38,6 +39,7 @@ export function movePlanningView(scenario: Scenario, state: GameState, factionId
 const planners: readonly OrderPlanner<Order>[] = [
   planGroundMoves,
   planWithdrawals,
+  planDisbands,
   planReplenishment,
   planRecruits,
   planBuilds,

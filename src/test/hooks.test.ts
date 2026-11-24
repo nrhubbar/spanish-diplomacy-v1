@@ -47,7 +47,7 @@ describe("cross-area rule hooks", () => {
   const state = withUnits(scenario, [["red-guard", "red", "westfold"], ["blue-marines", "blue", "lowlands"]]);
   const base = { scenario, state };
 
-  it("add their combat modifiers to the d6 battles and to planning estimates", () => {
+  it("add their combat modifiers to the battles and to planning estimates", () => {
     const estimate = estimateAttack(scenario, state, faction("red"), [unit("red-guard")], territory("lowlands"));
     expect(estimate.kind === "battle" && estimate.modifiers).toContainEqual({ kind: "barricades", roll: -1 });
     const result = resolveTurn(scenario, state, [{ factionId: faction("red"), orders: [move("red", "red-guard", "westfold", "lowlands")] }], 3);
@@ -55,7 +55,7 @@ describe("cross-area rule hooks", () => {
     expect(battle?.kind === "battle" && battle.modifiers).toContainEqual({ kind: "barricades", roll: -1 });
   });
 
-  it("can stop the works growing under the d6 rules (T4)", () => {
+  it("can stop the works growing (T4)", () => {
     const quiet = resolveTurn(scenario, state, [], 1);
     expect(quiet.finalState.fortification).toEqual({});
     expect(resolveTurn(tiny(), initialGameState(tiny()), [], 1).finalState.fortification).not.toEqual({});

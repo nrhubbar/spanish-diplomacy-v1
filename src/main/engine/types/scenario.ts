@@ -1,5 +1,4 @@
 import type {
-  BuildingId,
   CityId,
   FactionId,
   GeneralId,
@@ -11,7 +10,7 @@ import type {
   WeatherZoneId
 } from "../ids";
 import type { UnitEffect } from "./effects";
-import type { Resources } from "./economy";
+import type { RecruitRequirement, Resources } from "./economy";
 import type { AirMissionKind, UnitKind, UnitOrderKind, UnitSymbol } from "./rules";
 
 export type ActorKind = "local-human" | "computer" | "online-human";
@@ -89,8 +88,8 @@ export interface RecruitRules {
   /** Men in a new unit of the type: its full strength. */
   readonly establishment: number;
   readonly cost: Resources;
-  /** R3: buildings the capital sub-territory needs. */
-  readonly requires: readonly BuildingId[];
+  /** R3: the buildings and development tracks a territory needs. */
+  readonly requires: readonly RecruitRequirement[];
   readonly trainingTurns: number;
 }
 
@@ -111,7 +110,9 @@ export interface UnitTypeDefinition {
   /** W5: the order kinds a unit of this type may take. */
   readonly orders: readonly UnitOrderKind[];
   readonly recruit?: RecruitRules;
-  /** W5: the NATO function its counter shows. Absent under `m2-strength`. */
+  /** D1: points of each resource a unit costs every turn, to thousandths, at any strength. */
+  readonly upkeep: Resources;
+  /** W5: the NATO function its counter shows. */
   readonly symbol?: UnitSymbol;
 }
 
@@ -184,15 +185,10 @@ export const battleResults = [
 ] as const;
 export type BattleResult = (typeof battleResults)[number];
 
-/** The scenario's `combat` block: every tunable number of the m2-strength battle rules. */
+/** The scenario's `combat` block: digging in and demoralization. */
 export interface CombatRules {
-  /** Below 1:1 the attacker's roll takes `rollPenalty` per halving of the odds (C3). */
-  readonly belowOneToOne: { readonly kind: "halving"; readonly rollPenalty: number };
   /** Multiplier applied to a demoralized army's values (C6). */
   readonly demoralizationFactor: number;
   /** Defence roll bonus a held territory gains each turn one of its holder's armies entrenches, and its cap (C7, O3). */
   readonly diggingIn: { readonly max: number; readonly perTurn: number };
-  readonly factionModifiers: readonly FactionModifier[];
-  /** `table[column][row]`: seven odds columns (below 1:1, then 1:1 to 6:1) by seven rows (modified roll 0 to 6). */
-  readonly table: readonly (readonly BattleResult[])[];
 }

@@ -1,0 +1,17 @@
+{"items":[
+{"id":"p01","title":"Notes and sources shipped in the scenario","verdict":"remove now","lines":0,"bytesRaw":67649,"bytesGzip":11371,"risk":"low; strip after validation","evidence":"No screen reads historicalNote, basis or sources; loader only requires them"},
+{"id":"p02","title":"Four uncited source records","verdict":"remove now","lines":8,"bytesRaw":600,"bytesGzip":200,"risk":"low","evidence":"spanish-memory, country-study-map, spanish-defence-human-factor, alpert-2013 cited nowhere (size estimated)"},
+{"id":"p03","title":"Dead CSS classes","verdict":"remove now","lines":30,"bytesRaw":600,"bytesGzip":200,"risk":"low","evidence":"8 selectors with no reference in src/main (sizes estimated)"},
+{"id":"p04","title":"Placeholder view","verdict":"remove now","lines":12,"bytesRaw":0,"bytesGzip":0,"risk":"low","evidence":"knip: no importer"},
+{"id":"p05","title":"Unused engineers and signals icons","verdict":"remove now","lines":0,"bytesRaw":1522,"bytesGzip":862,"risk":"low; update ATTRIBUTION.md","evidence":"Not in unitSymbols, ships as chunks"},
+{"id":"p06","title":"59 unused exports and 43 unused types","verdict":"remove now","lines":100,"bytesRaw":0,"bytesGzip":0,"risk":"low-medium; check tests","evidence":"knip list"},
+{"id":"p07","title":"Stale TODO comments and MANIFEST.md reference","verdict":"remove now","lines":12,"bytesRaw":0,"bytesGzip":0,"risk":"none","evidence":"grep; file does not exist"},
+{"id":"p08","title":"Duplicate test and test:unit scripts, personal-prod","verdict":"owner decides","lines":2,"bytesRaw":0,"bytesGzip":0,"risk":"low","evidence":"package.json; personal-prod has no reference"},
+{"id":"p09","title":"Old d6 combat path and d6-pinned tests","verdict":"owner decides","lines":1000,"bytesRaw":0,"bytesGzip":0,"risk":"high; 205 spain() uses in tests run on the d6","evidence":"Shipped scenario is d20-graded; only the fixture uses d6 (lines estimated, upper bound)"},
+{"id":"p10","title":"d6-only combat fields in the shipped scenario","verdict":"owner decides","lines":0,"bytesRaw":1200,"bytesGzip":300,"risk":"medium; schema requires them","evidence":"combat.table, belowOneToOne, factionModifiers read only by d6 code (size estimated)"},
+{"id":"p11","title":"subTerritoryBorders duplicate links","verdict":"owner decides","lines":0,"bytesRaw":2676,"bytesGzip":500,"risk":"medium; engine and schema change","evidence":"Both are the same 120 pairs"},
+{"id":"p12","title":"Schema JSON files","verdict":"keep","lines":0,"bytesRaw":182405,"bytesGzip":0,"risk":"none","evidence":"Not imported by the app; published docs"},
+{"id":"p13","title":"sub-territory-topology.json","verdict":"keep","lines":0,"bytesRaw":37000,"bytesGzip":0,"risk":"none","evidence":"Not shipped; two tests compare it to scenario.json"},
+{"id":"p14","title":"Old mockups and milestone-3 ideation images","verdict":"owner decides","lines":0,"bytesRaw":14700000,"bytesGzip":0,"risk":"low; LFS history","evidence":"mockups/milestone-2-rev-4 7.7 MB, milestone-3-ideation 7.0 MB"},
+{"id":"p15","title":"Popular Resistance data","verdict":"remove now","lines":4,"bytesRaw":250,"bytesGzip":100,"risk":"low; about 12 test files","evidence":"Two data entries: combat and d20"}
+]}

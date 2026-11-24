@@ -8,7 +8,7 @@ import { initialGameState, resolveTurn } from "../main/engine/resolution";
 import type {
   AirMission,
   AirMissionOrder,
-  D20BattleOutcome,
+  BattleOutcome,
   GameState,
   MoveOrder,
   PlayerSubmission,
@@ -21,14 +21,14 @@ import type {
   UnitTypeId
 } from "../main/engine/types";
 import { holdWhole } from "./air/holdWhole";
-import { type ArmySpec, battlefield, faction, move, spainD20, territory, unit } from "./support";
+import { type ArmySpec, battlefield, faction, move, spainWithAir, territory, unit } from "./support";
 
 /**
  * Rules paths of the d20 front and standing battles with three factions (C3), the air missions
  * (grounding, anti-air, building hits) and the generals' step-9 part, on Spain as shipped.
  */
 
-const scenario = spainD20();
+const scenario = spainWithAir();
 const opening = initialGameState(scenario);
 
 function loadedD20(faces: readonly number[]): BattleDice {
@@ -50,8 +50,8 @@ function mission(factionId: string, unitId: string, flown: AirMission): AirMissi
   return { factionId: faction(factionId), kind: "air-mission", mission: flown, unitId: unit(unitId) };
 }
 
-const battles = (result: TurnResolutionResult): readonly D20BattleOutcome[] =>
-  result.outcomes.flatMap((outcome) => (outcome.kind === "battle" && outcome.dice === "d20" ? [outcome] : []));
+const battles = (result: TurnResolutionResult): readonly BattleOutcome[] =>
+  result.outcomes.flatMap((outcome) => (outcome.kind === "battle" ? [outcome] : []));
 
 const ofKind = <Kind extends TurnOutcome["kind"]>(result: TurnResolutionResult, kind: Kind) =>
   result.outcomes.filter((outcome): outcome is Extract<TurnOutcome, { kind: Kind }> => outcome.kind === kind);
@@ -64,10 +64,10 @@ function southern(armies: readonly ArmySpec[]) {
   return { scenario: placed.scenario, state: holdWhole(scenario, placed.state, territory("andalucia"), faction("south")) };
 }
 
-const grades = new Map(scenario.d20!.grades.map((grade) => [String(grade.id), grade]));
+const grades = new Map(scenario.d20.grades.map((grade) => [String(grade.id), grade]));
 
 /** The first face whose single battle satisfies `wanted`, with its result. */
-function firstFace(run: (face: number) => TurnResolutionResult, wanted: (battle: D20BattleOutcome, result: TurnResolutionResult) => boolean): { readonly battle: D20BattleOutcome; readonly result: TurnResolutionResult } {
+function firstFace(run: (face: number) => TurnResolutionResult, wanted: (battle: BattleOutcome, result: TurnResolutionResult) => boolean): { readonly battle: BattleOutcome; readonly result: TurnResolutionResult } {
   for (let face = 1; face <= 20; face += 1) {
     const result = run(face);
     const [battle] = battles(result);

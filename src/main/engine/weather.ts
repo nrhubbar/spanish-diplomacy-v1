@@ -32,7 +32,7 @@ export function weatherRules(scenario: Scenario): WeatherRules | undefined {
 }
 
 /** The season holding a calendar month. The loader guarantees exactly one (L20). */
-export function seasonOf(rules: WeatherRules, month: number): Season | undefined {
+function seasonOf(rules: WeatherRules, month: number): Season | undefined {
   return rules.seasons.find((season) => season.months.includes(month));
 }
 
@@ -83,7 +83,7 @@ export function weatherOutcome(scenario: Scenario, id: WeatherId): WeatherOutcom
 }
 
 /** The weather in a zone this turn; undefined before the roll or without weather. */
-export function zoneWeather(scenario: Scenario, state: GameState, zoneId: WeatherZoneId): WeatherOutcome | undefined {
+function zoneWeather(scenario: Scenario, state: GameState, zoneId: WeatherZoneId): WeatherOutcome | undefined {
   const id = state.weather?.outcomes[zoneId];
   return id === undefined ? undefined : weatherOutcome(scenario, id);
 }

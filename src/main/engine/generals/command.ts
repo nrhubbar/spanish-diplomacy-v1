@@ -1,8 +1,6 @@
-import { generalOf, generalsSetAside, unitKindIn, unitTypeIn } from "../air/pieces";
-import type { AirScratch } from "../air/scratch";
+import { generalOf, unitTypeIn } from "../air/pieces";
 import { compareIds } from "../board";
-import type { CombatHookContext } from "../hooks";
-import type { CombatModifier, CombatRole, FactionId, GameState, GeneralDefinition, Scenario, TerritoryId, UnitId } from "../types";
+import type { CombatModifier, CombatRole, FactionId, GameState, GeneralDefinition, Scenario, UnitId } from "../types";
 
 export interface Commander {
   /** D4: the general's command bonus on the d20, from his type's `command-bonus` effects. */
@@ -29,7 +27,7 @@ function rosterIndex(scenario: Scenario, general: GeneralDefinition): number {
 /**
  * U6, D5 (M5): of several generals, only the best counts, for the roll and the rally alike: the
  * greatest command bonus plus his trait's roll for the role, then the senior (earlier in the
- * roster), then unit id. The d20 battle and the d6 hook rank a side for its role; the rally
+ * roster), then unit id. A battle ranks a side for its role; the rally
  * ranks an army for the role it fought in this turn (`rallyRole`).
  */
 export function bestGeneral(scenario: Scenario, raised: GameState["raised"], unitIds: readonly UnitId[], role: CombatRole): Commander | undefined {
@@ -49,27 +47,6 @@ export function canRally(scenario: Scenario, raised: GameState["raised"], unitId
   return rallies && !(trait?.effects.some((effect) => effect.kind === "no-rally") ?? false);
 }
 
-/**
- * Where each general of a faction stands for a battle in `territoryId`. During resolution the air
- * scratch knows this turn's moves; for a planning estimate, a general is where he stands, or among
- * the attacking units.
- */
-function generalsAt(context: CombatHookContext, factionIds: readonly FactionId[], territoryId: TerritoryId, attacking: boolean): readonly UnitId[] {
-  const { scenario, state } = context;
-  const scratch: AirScratch | undefined = context.scratch?.air;
-  if (scratch !== undefined) {
-    return Object.values(scratch.aside)
-      .filter((unit) => factionIds.includes(unit.factionId) && unitKindIn(scenario, state.raised, unit.id) === "general")
-      .filter((unit) => (scratch.generalMoves[unit.id] ?? unit.territoryId) === territoryId)
-      .map((unit) => unit.id);
-  }
-  const standing = Object.values(state.units)
-    .filter((unit) => factionIds.includes(unit.factionId) && unit.territoryId === territoryId && unitKindIn(scenario, state.raised, unit.id) === "general")
-    .map((unit) => unit.id);
-  const moving = attacking ? (context.attackerUnitIds ?? []).filter((id) => unitKindIn(scenario, state.raised, id) === "general") : [];
-  return [...new Set([...standing, ...moving])];
-}
-
 /** One side's general and trait modifiers, signed from the attacker's view. */
 export function commanderModifiers(commander: Commander | undefined, factionId: FactionId | undefined, role: CombatRole): readonly CombatModifier[] {
   if (commander === undefined || factionId === undefined) return [];
@@ -80,26 +57,4 @@ export function commanderModifiers(commander: Commander | undefined, factionId: 
     modifiers.push({ generalId: commander.general.id, kind: "trait", role, roll: sign * commander.traitRoll, traitId: commander.general.traitId });
   }
   return modifiers;
-}
-
-/**
- * D4, U5, U6 (D5): each side's best general gives his command bonus, and his trait when it
- * matches the side's role. The attacker's side is its faction; the defender's is every
- * defending faction together.
- */
-export function generalModifiers(context: CombatHookContext): readonly CombatModifier[] {
-  const { scenario, state } = context;
-  // DC-16: the d20 module emits the general and his trait itself.
-  if (!generalsSetAside(scenario)) return [];
-  const attacker = bestGeneral(scenario, state.raised, generalsAt(context, [context.attackerFactionId], context.territoryId, true), "attack");
-  const defender = bestGeneral(scenario, state.raised, generalsAt(context, context.defenderFactionIds, context.territoryId, false), "defence");
-  const defenderFaction = defender === undefined ? undefined : generalFaction(state, context, defender.unitId);
-  return [
-    ...commanderModifiers(attacker, context.attackerFactionId, "attack"),
-    ...commanderModifiers(defender, defenderFaction, "defence")
-  ];
-}
-
-function generalFaction(state: GameState, context: CombatHookContext, unitId: UnitId): FactionId | undefined {
-  return state.units[unitId]?.factionId ?? context.scratch?.air?.aside[unitId]?.factionId;
 }

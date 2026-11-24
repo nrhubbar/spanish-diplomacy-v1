@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 /**
- * Parts of the scenario schema that every ruleset shares. Imports only zod (and sibling schema
+ * The core of the scenario schema. Imports only zod (and sibling schema
  * files by their `.ts` path), so `npm run spec:build` can run it directly under Node.
  */
 
@@ -10,9 +10,11 @@ export const slugSchema = z
   .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Ids are lowercase kebab-case.")
   .meta({ description: "Stable kebab-case identifier. Never shown to players." });
 
-export const colorSchema = z.string().regex(/^#[0-9a-fA-F]{6}$/, "Colors are #rrggbb hex values.");
+const colorSchema = z.string().regex(/^#[0-9a-fA-F]{6}$/, "Colors are #rrggbb hex values.");
 export const wholeSchema = z.number().int().nonnegative();
 export const positiveWholeSchema = z.number().int().positive();
+/** Points of a resource, to thousandths of a point. */
+export const positiveThousandthsSchema = z.number().positive().multipleOf(0.001);
 export const shareSchema = z.number().gte(0).lte(1);
 export const textSchema = z.string().min(1);
 
@@ -62,17 +64,6 @@ const controlSchema = z.discriminatedUnion("@type", [
   })
 ]);
 
-/** The seven battle results. Must equal `battleResults` in `engine/types` (a unit test checks). */
-export const battleResultSchema = z.enum([
-  "attacker-eliminated",
-  "attacker-attrition",
-  "attacker-demoralized",
-  "both-demoralized",
-  "defender-demoralized",
-  "defender-exchange",
-  "defender-eliminated"
-]);
-
 export const factionModifierSchema = z.strictObject({
   id: slugSchema,
   name: textSchema.meta({ description: "Player-facing name shown in battle breakdowns." }),
@@ -86,13 +77,6 @@ export const factionModifierSchema = z.strictObject({
 
 export const combatSchema = z
   .strictObject({
-    table: z
-      .array(z.array(battleResultSchema).length(7).meta({ description: "Results for modified rolls 0 to 6." }))
-      .length(7)
-      .meta({ description: "Seven odds columns: below 1:1, then 1:1 to 6:1. Each lists the result for modified rolls 0 to 6." }),
-    belowOneToOne: z
-      .discriminatedUnion("@type", [typedEntry("halving", { rollPenalty: wholeSchema })])
-      .meta({ description: "Below 1:1 the attacker's roll takes rollPenalty for each halving of the odds." }),
     diggingIn: z
       .strictObject({ perTurn: positiveWholeSchema, max: positiveWholeSchema })
       .meta({ description: "Defence roll bonus a territory gains, up to max, each turn its holder keeps it without a battle while at least one of the holder's armies there entrenches (is healthy and has no move order)." }),
@@ -100,10 +84,9 @@ export const combatSchema = z
       .number()
       .gt(0)
       .lte(1)
-      .meta({ description: "Multiplier applied to a demoralized army's attack and defence." }),
-    factionModifiers: z.array(factionModifierSchema).meta({ description: "Named roll modifiers for particular factions." })
+      .meta({ description: "Multiplier applied to a demoralized army's attack and defence." })
   })
-  .meta({ description: "Tunable numbers of the d6 battle rules (the d6-table dice module)." });
+  .meta({ description: "Digging in and demoralization." });
 
 export const victorySchema = z.strictObject({
   territoryShare: z.number().gt(0).lte(1),
@@ -146,7 +129,7 @@ const connectionShape = {
   label: textSchema.optional()
 };
 
-/** D1: a land or sea connection, as a typed entry. `extra` adds a ruleset's fields to both kinds. */
+/** D1: a land or sea connection, as a typed entry. `extra` adds fields to both kinds. */
 export function connectionSchema<Extra extends z.ZodRawShape>(extra: Extra) {
   return z.discriminatedUnion("@type", [
     typedEntry("land", { ...connectionShape, ...extra }),
@@ -184,7 +167,7 @@ export const unitSchema = z.strictObject({
   fullStrength: positiveWholeSchema.meta({ description: "Men at full establishment; the type's values apply at this strength." }),
   territoryId: slugSchema,
   cityId: slugSchema.optional(),
-  sources: z.array(citationSchema).min(1),
+  sources: z.array(citationSchema).default([]).meta({ description: "At least one in an authored scenario; the shipped copy leaves them out." }),
   historicalNote: textSchema.optional()
 });
 

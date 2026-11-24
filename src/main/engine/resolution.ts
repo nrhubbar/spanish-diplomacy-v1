@@ -18,8 +18,7 @@ import type {
 
 /**
  * Resolves one turn as the ordered steps of section 2 (`phases/`), each made of the engine's
- * own part and the selected rule modules' parts. Under the `m2-strength` preset, and until the
- * Milestone 3 slices land, this is M26 exactly. Rule ids refer to
+ * own part and the selected rule modules' parts. Rule ids refer to
  * `project/specs/scenario-package.md`. Pure: the same scenario, state, orders, and seed always
  * give the same result. `dice` stands in for the seeded battle streams in tests only.
  */

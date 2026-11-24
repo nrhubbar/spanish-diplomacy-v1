@@ -1,5 +1,5 @@
 import { holdsWhole } from "../partition/holders";
-import { generalsSetAside, heldWholeByAnother, isAirbaseFor, territoriesWithin, unitDefinitionIn, unitKindIn, unitTypeIn } from "../air/pieces";
+import { heldWholeByAnother, isAirbaseFor, territoriesWithin, unitDefinitionIn, unitKindIn, unitTypeIn } from "../air/pieces";
 import { airOverFoughtBattles } from "../air/groundSupport";
 import { airScratch } from "../air/scratch";
 import { compareIds, removeArmies, replaceArmies } from "../board";
@@ -8,7 +8,7 @@ import type { Phase, TurnDraft } from "../phases/draft";
 import type {
   BattleSide,
   FactionId,
-  GradeDefinition,
+  
   GameState,
   GeneralId,
   SackOrder,
@@ -157,75 +157,40 @@ export const commandChanges: Phase = (draft) => {
     generals = called.generals;
     if (called.outcome !== undefined) events.push(called.outcome);
   };
-  // AG-8 on the d20 (DC-5): generals stand on the board through the battles; one dies only when a
+  // AG-8 (DC-5): generals stand on the board through the battles; one dies only when a
   // battle's grade destroyed or routed his side, or he was left alone in ground the enemy holds.
-  if (!generalsSetAside(scenario)) {
-    const broken = new Set(brokenUnits(scenario, draft));
-    // A general the ground steps removed (his side destroyed, or surrendered with nowhere to go) is a broken army too.
-    const sacked = new Set([
-      ...draft.events.flatMap((event) => (event.kind === "general-sacked" ? [event.order.unitId] : [])),
-      // M9: a general disbanded for an impossible move left no army behind to break.
-      ...draft.orders.invalid.map((outcome) => outcome.order.unitId)
-    ]);
-    const taken = Object.values(start.units).filter((unit) => armies[unit.id] === undefined && !sacked.has(unit.id) && unitKindIn(scenario, start.raised, unit.id) === "general");
-    for (const unit of taken) broken.add(unit.id);
-    const standing = Object.values(armies).filter((other) => unitKindIn(scenario, start.raised, other.id) === "general");
-    for (const unit of [...standing, ...taken].sort((a, b) => compareIds(a.id, b.id))) {
-      const generalId = unitDefinitionIn(scenario, start.raised, unit.id)?.generalId;
-      if (generalId === undefined) continue;
-      const lostGround = heldWholeByAnother(scenario, { control, subTerritories: draft.systems.subTerritories }, unit.territoryId, unit.factionId);
-      const ownGround = Object.values(armies).some((other) => other.territoryId === unit.territoryId && other.factionId === unit.factionId && other.id !== unit.id
-        && unitKindIn(scenario, start.raised, other.id) === "ground");
-      const alone = !ownGround && (lostGround
-        || Object.values(armies).some((other) => other.territoryId === unit.territoryId && other.factionId !== unit.factionId));
-      if (!broken.has(unit.id) && !alone) continue;
-      const roll = pick(streams("general-death", deathIndex), 20);
-      deathIndex += 1;
-      const removed = armies[unit.id] === undefined;
-      const safe = alone || removed ? fallbackTerritory(scenario, { control, subTerritories: draft.systems.subTerritories }, unit.factionId) : unit.territoryId;
-      if (roll > deathRoll && safe !== undefined) {
-        if (safe !== unit.territoryId || removed) restored.push({ ...unit, territoryId: safe });
-        continue;
-      }
-      if (!removed) died.push(unit.id);
-      events.push({ factionId: unit.factionId, generalId, kind: "general-died", territoryId: unit.territoryId, unitId: unit.id });
-      callFor(unit.factionId);
-    }
-    armies = removeArmies(armies, died);
-  }
-  for (const unit of aside) {
-    if (unitKindIn(scenario, start.raised, unit.id) !== "general") continue;
+  const broken = new Set(brokenUnits(scenario, draft));
+  // A general the ground steps removed (his side destroyed, or surrendered with nowhere to go) is a broken army too.
+  const sacked = new Set([
+    ...draft.events.flatMap((event) => (event.kind === "general-sacked" ? [event.order.unitId] : [])),
+    // M9: a general disbanded for an impossible move left no army behind to break.
+    ...draft.orders.invalid.map((outcome) => outcome.order.unitId)
+  ]);
+  const taken = Object.values(start.units).filter((unit) => armies[unit.id] === undefined && !sacked.has(unit.id) && unitKindIn(scenario, start.raised, unit.id) === "general");
+  for (const unit of taken) broken.add(unit.id);
+  const standing = Object.values(armies).filter((other) => unitKindIn(scenario, start.raised, other.id) === "general");
+  for (const unit of [...standing, ...taken].sort((a, b) => compareIds(a.id, b.id))) {
     const generalId = unitDefinitionIn(scenario, start.raised, unit.id)?.generalId;
     if (generalId === undefined) continue;
-    const members = scratch.armies[unit.id] ?? [];
-    const target = scratch.generalMoves[unit.id];
-    const ownGroundIn = (id: TerritoryId): boolean => Object.values(armies).some((other) => other.territoryId === id && other.factionId === unit.factionId);
-    const position = target !== undefined && ownGroundIn(target) ? target : unit.territoryId;
-    if (target !== undefined) {
-      events.push({ arrived: position === target, kind: "general-moved", order: { factionId: unit.factionId, from: unit.territoryId, kind: "move", to: target, unitId: unit.id } });
-    }
-    const gone = (id: UnitId): boolean => armies[id] === undefined || retreatedTo.has(id) || surrendered.has(id);
-    const routedTo = members.map((id) => retreatedTo.get(id)).find((to) => to !== undefined);
-
-    const overrun = members.length === 0
-      ? heldWholeByAnother(scenario, { control, subTerritories: draft.systems.subTerritories }, position, unit.factionId)
-        || (!ownGroundIn(position) && Object.values(armies).some((other) => other.territoryId === position && other.factionId !== unit.factionId))
-      : members.every(gone);
-    if (!overrun) {
-      restored.push(position === unit.territoryId ? unit : { ...unit, territoryId: position });
-      continue;
-    }
+    const lostGround = heldWholeByAnother(scenario, { control, subTerritories: draft.systems.subTerritories }, unit.territoryId, unit.factionId);
+    const ownGround = Object.values(armies).some((other) => other.territoryId === unit.territoryId && other.factionId === unit.factionId && other.id !== unit.id
+      && unitKindIn(scenario, start.raised, other.id) === "ground");
+    const alone = !ownGround && (lostGround
+      || Object.values(armies).some((other) => other.territoryId === unit.territoryId && other.factionId !== unit.factionId));
+    if (!broken.has(unit.id) && !alone) continue;
     const roll = pick(streams("general-death", deathIndex), 20);
     deathIndex += 1;
-    const safe = routedTo ?? fallbackTerritory(scenario, { control, subTerritories: draft.systems.subTerritories }, unit.factionId);
+    const removed = armies[unit.id] === undefined;
+    const safe = alone || removed ? fallbackTerritory(scenario, { control, subTerritories: draft.systems.subTerritories }, unit.factionId) : unit.territoryId;
     if (roll > deathRoll && safe !== undefined) {
-      restored.push({ ...unit, territoryId: safe });
+      if (safe !== unit.territoryId || removed) restored.push({ ...unit, territoryId: safe });
       continue;
     }
-    died.push(unit.id);
-    events.push({ factionId: unit.factionId, generalId, kind: "general-died", territoryId: position, unitId: unit.id });
+    if (!removed) died.push(unit.id);
+    events.push({ factionId: unit.factionId, generalId, kind: "general-died", territoryId: unit.territoryId, unitId: unit.id });
     callFor(unit.factionId);
   }
+  armies = removeArmies(armies, died);
   armies = replaceArmies(armies, restored);
 
   const rallied = new Map<string, { factionId: FactionId; generalId: GeneralId; territoryId: TerritoryId; unitIds: UnitId[] }>();
@@ -290,7 +255,7 @@ export const commandChanges: Phase = (draft) => {
  */
 function brokenUnits(scenario: Scenario, draft: TurnDraft): ReadonlySet<UnitId> {
   const { raised } = draft.input.start;
-  const grades = new Map((scenario.d20?.grades ?? []).map((grade) => [grade.id, grade]));
+  const grades = new Map(scenario.d20.grades.map((grade) => [grade.id, grade]));
   const reports = [...draft.meetings.battles, ...[...draft.front.battles, ...draft.standing].map((pending) => pending.report)];
   const destroyed = new Set(reports.flatMap((report) => report.losses.flatMap((loss) => (loss.destroyed ? [loss.unitId] : []))));
   const broken = new Set<UnitId>();
@@ -300,14 +265,12 @@ function brokenUnits(scenario: Scenario, draft: TurnDraft): ReadonlySet<UnitId> 
     if (wiped || (effect !== undefined && (effect.lossPercent >= 100 || effect.demoralized === "all"))) for (const army of side.armies) broken.add(army.unitId);
   };
   for (const outcome of draft.meetings.battles) {
-    if (outcome.dice !== "d20") continue;
     const grade = grades.get(outcome.grade);
     mark(outcome.attacker, grade?.attacker);
     mark(outcome.defender, grade?.defender);
   }
   for (const pending of [...draft.front.battles, ...draft.standing]) {
-    const battle = pending.battle as unknown as { readonly attacker: BattleSide; readonly defender: BattleSide; readonly grade?: GradeDefinition };
-    if (battle.grade === undefined) continue;
+    const { battle } = pending;
     mark(battle.attacker, battle.grade.attacker);
     mark(battle.defender, battle.grade.defender);
   }

@@ -1,5 +1,6 @@
 import type { JSX, ReactNode } from "react";
 import type { SubmissionStatus } from "../state/selectors";
+import { CasualtyChip } from "./header/CasualtyChip";
 import { DateChip } from "./header/DateChip";
 import { GameMenu } from "./header/GameMenu";
 import { ReadinessChips } from "./header/ReadinessChips";
@@ -19,7 +20,7 @@ interface GameHeaderProps {
 
 /**
  * Compact top bar for game screens, leaving the height to the map (U1). Left to right: the date
- * and readiness (X1, T6) by the title, the timer and the resources, then the screen's actions and
+ * and readiness (X1, T6) by the title, the casualties beside it, the timer and the resources, then the screen's actions and
  * the game menu. Each slot is its own component under `header/`, owned by its slice.
  */
 export function GameHeader({ actions, kicker, slots, status = [], title }: GameHeaderProps): JSX.Element {
@@ -30,7 +31,10 @@ export function GameHeader({ actions, kicker, slots, status = [], title }: GameH
           <p className="screen-kicker">{kicker}</p>
           <ReadinessChips status={status} />
         </div>
-        <h1>{title}</h1>
+        <div className="game-header-name">
+          <h1>{title}</h1>
+          {slots === undefined ? null : <CasualtyChip {...slots} />}
+        </div>
       </div>
       {slots === undefined ? null : (
         <>

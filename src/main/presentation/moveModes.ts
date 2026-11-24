@@ -1,7 +1,7 @@
 import { connectionBetween, landNeighbors } from "../engine/movement/network";
-import type { MoveRoute } from "../engine/movement/routes";
+import { boardingRefusal, type MoveRoute } from "../engine/movement/routes";
 import type { MoveMode } from "../engine/network/reach";
-import type { FactionId, GameState, MoveLeg, Scenario, TerritoryId, UnitId } from "../engine/types";
+import type { FactionId, GameState, MoveLeg, MoveOrder, Scenario, TerritoryId, UnitId } from "../engine/types";
 import { validateMoveOrder } from "../engine/validation";
 
 /**
@@ -12,7 +12,7 @@ import { validateMoveOrder } from "../engine/validation";
 
 /** The land modes a card shows, in order. Sea joins them when the route offered sails. */
 type LandMode = Exclude<MoveMode, "sea">;
-export const cardModes: readonly LandMode[] = ["march", "motor", "rail"];
+const cardModes: readonly LandMode[] = ["march", "motor", "rail"];
 
 export const modeNames: Readonly<Record<MoveMode, string>> = { march: "March", motor: "Motor", rail: "Rail", sea: "Sea" };
 
@@ -56,9 +56,10 @@ function noRouteReason(scenario: Scenario, mode: LandMode): string {
 /**
  * U6: every mode on a unit's card for one target. `offered` is the route the game offers it
  * (`moveRoutes`); it is always available. Each other land mode is available when one of its leg
- * lists passes the engine's order check; otherwise it carries the first refusal.
+ * lists passes the engine's order check and has a train place for the unit beside `others`, the
+ * side's other planned moves (D5); otherwise it carries the first refusal.
  */
-export function modeChips(scenario: Scenario, state: GameState, factionId: FactionId, unitId: UnitId, offered: MoveRoute): readonly ModeChip[] {
+export function modeChips(scenario: Scenario, state: GameState, factionId: FactionId, unitId: UnitId, offered: MoveRoute, others: readonly MoveOrder[] = []): readonly ModeChip[] {
   const { from, to } = offered;
   const legs = orderLegs(offered);
   const chosen = (mode: MoveMode): ModeChip => ({ ...(legs === undefined ? {} : { legs }), mode, ok: true });
@@ -67,9 +68,11 @@ export function modeChips(scenario: Scenario, state: GameState, factionId: Facti
     for (const each of candidates(scenario, mode, from, to)) {
       // A plain step carries no legs (CT-6).
       const carried = mode === "march" ? {} : { legs: each };
-      const verdict = validateMoveOrder(scenario, state, { factionId, from, kind: "move", ...carried, to, unitId });
-      if (verdict.ok) return { ...carried, mode, ok: true };
-      reason ??= verdict.reason;
+      const order: MoveOrder = { factionId, from, kind: "move", ...carried, to, unitId };
+      const verdict = validateMoveOrder(scenario, state, order);
+      const refused = verdict.ok ? boardingRefusal(scenario, state, [order], others) : verdict.reason;
+      if (refused === undefined) return { ...carried, mode, ok: true };
+      reason ??= refused;
     }
     return { mode, ok: false, reason: reason ?? noRouteReason(scenario, mode) };
   };

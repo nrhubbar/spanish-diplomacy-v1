@@ -1,8 +1,8 @@
 import { hookedOrderVerdict } from "../hooks";
 import { connectionBetween, enemyArmyIn, landNeighbors } from "../movement/network";
-import { armyMovement, describeRoute, moveRoutes, type RouteCheck } from "../movement/routes";
+import { armyMovement, describeRoute, railShortageText, type RouteCheck, routeOffers } from "../movement/routes";
 import { demoralizedAttackReason } from "../movement/validation";
-import type { FactionId, GameState, MoveLeg, Scenario, SubTerritoryId, TerritoryId, UnitId } from "../types";
+import type { FactionId, GameState, MoveLeg, MoveOrder, RailShortage, Scenario, SubTerritoryId, TerritoryId, UnitId } from "../types";
 
 /**
  * R5, U7: where a selection of units can go this turn, and how, or why not. Movement
@@ -10,7 +10,7 @@ import type { FactionId, GameState, MoveLeg, Scenario, SubTerritoryId, Territory
  * all read this one function. Owned by `network-engine`.
  */
 
-/** R5: March (one territory, foot only across a link with no road), Motor (main roads, trucks), Rail, Sea. */
+/** R5: March (one territory, foot only across a link with no road), Motor (roads trucks may use, and trucks), Rail, Sea. */
 export const moveModes = ["march", "motor", "rail", "sea"] as const;
 export type MoveMode = (typeof moveModes)[number];
 
@@ -30,6 +30,7 @@ export const unreachableCodes = [
   "contested",
   "enemy-ground",
   "no-rail",
+  "rail-full",
   "no-trucks",
   "no-port",
   "sea-closed",
@@ -57,7 +58,7 @@ const priority: readonly UnreachableCode[] = ["pass-blocks-motor", "contested", 
  * the first rule that stops it. A module's refusal of every move from here (contested ground)
  * is the one reason when it applies.
  */
-function unreachable(scenario: Scenario, state: GameState, factionId: FactionId, from: TerritoryId, unitIds: readonly [UnitId, ...UnitId[]], to: TerritoryId): readonly UnreachableReason[] {
+function unreachable(scenario: Scenario, state: GameState, factionId: FactionId, from: TerritoryId, unitIds: readonly [UnitId, ...UnitId[]], to: TerritoryId, full: RailShortage | undefined): readonly UnreachableReason[] {
   const verdict = hookedOrderVerdict({ order: { factionId, from, kind: "move", to, unitId: unitIds[0] }, scenario, state });
   if (verdict?.ok === false) return [{ code: "contested", text: verdict.reason }];
   const reasons: UnreachableReason[] = [];
@@ -77,17 +78,18 @@ function unreachable(scenario: Scenario, state: GameState, factionId: FactionId,
   // March: one territory.
   if (neighbour) first([check([{ kind: "land", to }])]);
   else add("too-far", "March reaches only a neighbouring territory.");
-  // Motor: two territories along main roads, with trucks.
+  // Motor: two territories along roads trucks may use, with trucks.
   const vias = landNeighbors(scenario, from).filter((via) => connectionBetween(scenario, via, to, "land") !== undefined);
   if (!neighbour && vias.length === 0) add("too-far", `Motor reaches at most ${String(scenario.linkModifiers.road?.motorRange ?? 2)} territories.`);
   else if (!neighbour && movement.allowance < 2) add("no-trucks", "Motor needs trucks for every unit.");
   else if (!neighbour) {
     first(vias.map((via) => check([{ kind: "land", to: via }, { kind: "land", to }])));
   }
-  // Rail: a ride from the capital, or a ride and then a step.
+  // Rail: a ride from the capital, or a ride and then a step. D5: a train that could take the units has too few places left.
   // Only where the army could board at all: its territory's capital is its side's, with an open station.
   const station = state.subTerritories[scenario.index.territories.get(from)?.capitalSubTerritoryId ?? capitalless];
-  if (scenario.linkModifiers.rail !== undefined && station?.holder === factionId && station.rail > 0) add("no-rail", "No rail line your side holds reaches it this turn.");
+  if (full !== undefined) add("rail-full", railShortageText(scenario, full));
+  else if (scenario.linkModifiers.rail !== undefined && station?.holder === factionId && station.rail > 0) add("no-rail", "No rail line your side holds reaches it this turn.");
   // Sea: as today.
   if (connectionBetween(scenario, from, to, "sea") !== undefined) first([check([{ kind: "sea", to }])]);
   return reasons.length > 0 ? reasons : [{ code: "not-connected", text: "Out of reach this turn." }];
@@ -98,20 +100,21 @@ function unreachable(scenario: Scenario, state: GameState, factionId: FactionId,
  * The units must share a territory and a faction; otherwise the map is empty. A reachable
  * territory gets the one route the game offers (`moveRoutes`: March or Sea first, then Rail,
  * then Motor), its mode and the links it crosses; movement validation, the computer player and
- * the screens read the same routes, so they agree.
+ * the screens read the same routes, so they agree. `planned` is the faction's other orders this
+ * turn, which use the trains', ports' and lanes' room.
  */
-export function reachFor(scenario: Scenario, state: GameState, factionId: FactionId, unitIds: readonly UnitId[]): ReadonlyMap<TerritoryId, Reach> {
+export function reachFor(scenario: Scenario, state: GameState, factionId: FactionId, unitIds: readonly UnitId[], planned: readonly MoveOrder[] = []): ReadonlyMap<TerritoryId, Reach> {
   const units = unitIds.map((unitId) => state.units[unitId]);
   const from = units[0]?.territoryId;
   const [probe, ...rest] = unitIds;
   if (from === undefined || probe === undefined || units.some((unit) => unit === undefined || unit.factionId !== factionId || unit.territoryId !== from)) return new Map();
-  const routes = moveRoutes(scenario, state, factionId, from, unitIds);
+  const { full, routes } = routeOffers(scenario, state, factionId, from, unitIds, planned);
   const reach = new Map<TerritoryId, Reach>();
   for (const territory of scenario.territories) {
     if (territory.id === from) continue;
     const route = routes.get(territory.id);
     reach.set(territory.id, route === undefined
-      ? { ok: false, reasons: unreachable(scenario, state, factionId, from, [probe, ...rest], territory.id) }
+      ? { ok: false, reasons: unreachable(scenario, state, factionId, from, [probe, ...rest], territory.id, full.get(territory.id)) }
       : { mode: route.mode, ok: true, path: route.path });
   }
   return reach;

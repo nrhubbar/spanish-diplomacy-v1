@@ -10,7 +10,7 @@ import { RecruitsAtChip } from "./RecruitsAtChip";
 import type { TerritoryTabProps } from "./TerritoryTabs";
 
 /** Whether the scenario plays any system the meta row shows (weather, economy, recruitment). */
-export function hasTerritoryMeta(scenario: Scenario): boolean {
+function hasTerritoryMeta(scenario: Scenario): boolean {
   const { rules } = scenario;
   return rules.weather !== "none" || rules.economy !== "none" || rules.recruitment !== "none";
 }

@@ -136,10 +136,6 @@ export function modifierName(modifier: CombatModifier, scenario?: Scenario): str
       return "Odds beyond 6:1";
     case "odds-halving":
       return `Odds below 1:1 (${String(modifier.halvings)} ${modifier.halvings === 1 ? "halving" : "halvings"})`;
-    // Placeholder names for the d20 modifiers; each owner replaces its own case:
-    // TODO(m3r1-air-generals): general,
-    // trait, air-support. TODO(m3r1-movement-rail-ports):
-    // amphibious. TODO(m3r1-economy-builds): building.
     case "general":
       return "General";
     case "trait":

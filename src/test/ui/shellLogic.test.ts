@@ -2,11 +2,11 @@ import { describe, expect, it } from "vitest";
 import { requireUnitState } from "../../main/engine/lookup";
 import { raisedUnitId } from "../../main/engine/recruitment/rules";
 import { initialGameState } from "../../main/engine/resolution";
-import type { AirMissionOrder, BuildingId, BuildOrder, GameState, MoveOrder, RecruitOrder, SubTerritoryId, SystemOutcome, TurnOutcome, UnitTypeId } from "../../main/engine/types";
+import type { AirMissionOrder, BuildingId, BuildOrder, GameState, MoveOrder, RecruitOrder, SubTerritoryId, SystemOutcome, TurnOutcome, UnitId, UnitTypeId } from "../../main/engine/types";
 import { groupThisTurn, ordersGivenLine, thisTurnEntries } from "../../main/presentation/thisTurn";
 import { eventCount, factionReportTitle, outcomeFaction, outcomesByFaction } from "../../main/screens/report/factions";
 import { beginPlanning, endTurn, exitGame } from "../../main/state/gameSlice";
-import { openView, type PaneView, paneSlice, popped, popView, pushed, pushView, resetPane, rootView, topView, viewKey } from "../../main/state/paneSlice";
+import { musterModeChosen, musterTicked, noMusterChoices, openView, paneSlice, type PaneView, popped, popView, pushed, pushView, resetPane, rootView, topView, viewKey } from "../../main/state/paneSlice";
 import { armiesWithoutOrders, chooseOrder, clearSelection, type PlanningSession, selectTerritory, toggleUnit } from "../../main/state/planning";
 import { emptyDraft } from "../../main/state/session";
 import { faction, move, spain, spainId, spainWithAir, territory, unit } from "../support";
@@ -34,19 +34,26 @@ describe("U3: the pane stack", () => {
     expect(popped([rootView, madrid])).toEqual([rootView]);
     expect(popped([rootView])).toEqual([rootView]);
     expect(popped([])).toEqual([rootView]);
-    const state = reduce({ stack: [rootView, madrid, lastTurn] }, popView());
+    const state = reduce({ muster: noMusterChoices, stack: [rootView, madrid, lastTurn] }, popView());
     expect(state.stack).toEqual([rootView, madrid]);
     expect(topView(state.stack)).toEqual(madrid);
     expect(topView([])).toEqual(rootView);
   });
 
   it("opens top-bar views straight on top of This turn", () => {
-    expect(reduce({ stack: [rootView, madrid] }, openView(lastTurn)).stack).toEqual([rootView, lastTurn]);
-    expect(reduce({ stack: [rootView, madrid] }, openView(rootView)).stack).toEqual([rootView]);
+    expect(reduce({ muster: noMusterChoices, stack: [rootView, madrid] }, openView(lastTurn)).stack).toEqual([rootView, lastTurn]);
+    expect(reduce({ muster: noMusterChoices, stack: [rootView, madrid] }, openView(rootView)).stack).toEqual([rootView]);
+  });
+
+  it("keeps the Invade pane's choices until the view changes", () => {
+    const id: UnitId = unit("rep-wad-ras-1");
+    const ticked = reduce(reduce({ muster: noMusterChoices, stack: [rootView, madrid] }, musterTicked({ ticked: true, unitId: id })), musterModeChosen({ mode: "rail", unitId: id }));
+    expect(ticked).toEqual({ muster: { modes: { [id]: "rail" }, ticks: { [id]: true } }, stack: [rootView, madrid] });
+    for (const action of [popView(), pushView(lastTurn), openView(lastTurn), resetPane()]) expect(reduce(ticked, action).muster).toEqual(noMusterChoices);
   });
 
   it("starts over on a new turn, a new player or a new game", () => {
-    const deep = { stack: [rootView, madrid, lastTurn] };
+    const deep = { muster: noMusterChoices, stack: [rootView, madrid, lastTurn] };
     for (const action of [resetPane(), endTurn(), beginPlanning(), exitGame()]) {
       expect(reduce(deep, action).stack).toEqual([rootView]);
     }
@@ -95,7 +102,7 @@ describe("U2: the armies with no order", () => {
 
 const republic = faction("republic");
 const sub = (id: string): SubTerritoryId => id as SubTerritoryId;
-const factory = { buildingId: "factory" as BuildingId, kind: "building" as const };
+const hospital = { buildingId: "hospital" as BuildingId, kind: "building" as const };
 
 describe("U3: This turn's orders", () => {
   const scenario = spainWithAir();
@@ -107,7 +114,7 @@ describe("U3: This turn's orders", () => {
   const recon: AirMissionOrder = { factionId: republic, kind: "air-mission", mission: { kind: "recon", territoryId: territory("aragon") }, unitId: unit("rep-ni52-fighters") };
   const lostRaid: AirMissionOrder = { ...raid, mission: { kind: "raid", subTerritoryId: sub("nowhere") } };
   const militia = (where: string): RecruitOrder => ({ factionId: republic, kind: "recruit", territoryId: territory(where), unitTypeId: "militia-column" as UnitTypeId });
-  const build: BuildOrder = { factionId: republic, kind: "build", project: factory, subTerritoryId: sub("girona") };
+  const build: BuildOrder = { factionId: republic, kind: "build", project: hospital, subTerritoryId: sub("girona") };
   const lostBuild: BuildOrder = { factionId: republic, kind: "build", project: { buildingId: "nothing" as BuildingId, kind: "building" }, subTerritoryId: sub("nowhere") };
   const entries = thisTurnEntries(scenario, {
     airOrders: [raid, recon, lostRaid, { factionId: republic, kind: "sack", unitId: unit("rep-general-miaja") }],
@@ -128,7 +135,7 @@ describe("U3: This turn's orders", () => {
       [expect.any(String), "Sacked at the end of the turn"],
       [expect.stringMatching(/^2 \u00d7 .+ at Catalu\u00f1a$/u), expect.stringMatching(/^Recruit \u00b7 /u)],
       [expect.stringMatching(/ at Valencia$/u), expect.stringMatching(/^Recruit \u00b7 /u)],
-      ["Factory at Girona", expect.stringMatching(/^Build \u00b7 /u)],
+      ["Hospital at Girona", expect.stringMatching(/^Build \u00b7 /u)],
       ["nothing at nowhere", "Build"]
     ]);
     expect(entries[0]?.move).toEqual(moveOrder);
@@ -158,8 +165,8 @@ describe("U10: the report by faction", () => {
   const militiaId = raisedUnitId(republic, "militia-column" as UnitTypeId, 3);
   const theirs: SystemOutcome = { demoralized: false, factionId: faction("south"), fatigue: 1, kind: "fatigue", unitId: unit("nat-x") };
   const ours: SystemOutcome = { factionId: republic, kind: "training-paused", territoryId: territory("catalunya"), unitId: militiaId };
-  const ordered: SystemOutcome = { kind: "build-queued", order: { factionId: faction("north"), kind: "build", project: factory, subTerritoryId: sub("girona") }, paid: {}, position: 0 };
-  const forfeited: SystemOutcome = { kind: "build-forfeited", lost: {}, newHolder: faction("south"), previousHolder: republic, project: factory, subTerritoryId: sub("girona") };
+  const ordered: SystemOutcome = { kind: "build-queued", order: { factionId: faction("north"), kind: "build", project: hospital, subTerritoryId: sub("girona") }, paid: {}, position: 0 };
+  const forfeited: SystemOutcome = { kind: "build-forfeited", lost: {}, newHolder: faction("south"), previousHolder: republic, project: hospital, subTerritoryId: sub("girona") };
   const rail: SystemOutcome = { after: 1, before: 2, kind: "rail-damaged", subTerritoryId: sub("girona") };
   const lostRail: SystemOutcome = { ...rail, subTerritoryId: sub("nowhere") };
   const weather = { kind: "weather-rolled" } as unknown as TurnOutcome;

@@ -12,7 +12,7 @@ const cache = new Map<string, Promise<SubTerritoryPaths>>();
 const loaded = new Map<string, SubTerritoryPaths>();
 
 /** One `d` per path element, keyed by its id. The paths are drawn even-odd. */
-export function parseSubTerritoryPaths(svg: string): SubTerritoryPaths {
+function parseSubTerritoryPaths(svg: string): SubTerritoryPaths {
   const paths = new Map<SubTerritoryId, string>();
   for (const match of svg.matchAll(/<path\s+id="([^"]+)"\s+d="([^"]+)"/g)) {
     const [, id, d] = match;
@@ -31,7 +31,7 @@ function loaderFor(svgPath: string, sources: Readonly<Record<string, RawLoader>>
   return Object.entries(sources).find(([path]) => normalizeSourcePath(path) === wanted)?.[1];
 }
 
-export function loadSubTerritoryPaths(svgPath: string, sources: Readonly<Record<string, RawLoader>> = builtInAssetSources.rawAssets): Promise<SubTerritoryPaths> {
+function loadSubTerritoryPaths(svgPath: string, sources: Readonly<Record<string, RawLoader>> = builtInAssetSources.rawAssets): Promise<SubTerritoryPaths> {
   const cached = cache.get(svgPath);
   if (cached !== undefined) return cached;
   const load = loaderFor(svgPath, sources);

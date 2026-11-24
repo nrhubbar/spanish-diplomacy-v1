@@ -1,0 +1,343 @@
+[
+ {
+  "id": "R3B-1",
+  "idea": "units",
+  "text": "What should security forces cost?",
+  "context": "Infantry costs the same 5 Funds, attacks at 4 against 2, and eats a third as much. Your table and your 6e answer differ.",
+  "options": [
+   {
+    "label": "A. 4 Funds, the rest of your row unchanged",
+    "recommended": true,
+    "rationale": "Your 6e price. Index −2% before upkeep; still the costly one to keep."
+   },
+   {
+    "label": "B. 5 Funds, as in your table",
+    "rationale": "A quick garrison at a premium; 20% below infantry."
+   },
+   {
+    "label": "C. 4 Funds and 0.5 upkeep",
+    "rationale": "Also closes most of the gap after ten turns (−23% instead of −42% at your table's numbers)."
+   }
+  ]
+ },
+ {
+  "id": "R3B-2",
+  "idea": "units",
+  "text": "Colonial veterans are 17% below infantry, 2 points outside your band. Change them?",
+  "context": "They have no ability to make up the gap, but the best attack for each Fund.",
+  "options": [
+   {
+    "label": "A. 1 Manpower instead of 2",
+    "recommended": true,
+    "rationale": "Inside the band at −12%."
+   },
+   {
+    "label": "B. Leave them",
+    "rationale": "The South's own unit, and its best attacker."
+   }
+  ]
+ },
+ {
+  "id": "R3B-3",
+  "idea": "units",
+  "text": "The North's best army by turn 10 is still 23 militia. Accept it?",
+  "context": "It has 94 attack and 192 defence, against 96 and 149 for infantry alone.",
+  "options": [
+   {
+    "label": "A. Accept it: it can hold but not win",
+    "recommended": true,
+    "rationale": "Attack is no better than regulars, and your playtest will show whether the wall is annoying."
+   },
+   {
+    "label": "B. Militia defence 4, your 6d answer",
+    "rationale": "94 attack, 168 defence. Militia falls 27% below infantry before upkeep."
+   },
+   {
+    "label": "C. Militia upkeep 2",
+    "rationale": "The North's best becomes 14 militia and 5 infantry: 92 attack, 171 defence. The Republic's opening bill rises to 14.7."
+   },
+   {
+    "label": "D. Two more Funds and two fewer farms for the North",
+    "rationale": "Best becomes 15 militia and 7 infantry: 102 attack, 188 defence. You said the incomes feel right."
+   }
+  ]
+ },
+ {
+  "id": "R3B-4",
+  "idea": "upkeep",
+  "text": "How does the South pay its upkeep?",
+  "context": "It owes 2.3 Manpower a turn, earns 0 and starts with 5. Your table has no free allowance.",
+  "options": [
+   {
+    "label": "A. The first 3 Manpower of upkeep are free for every side",
+    "recommended": true,
+    "rationale": "The South pays nothing at the start, the Republic 9.2 of 27 and the North 1.8. The same rule for all."
+   },
+   {
+    "label": "B. Ceuta and Melilla send 3 Manpower a turn between them",
+    "rationale": "Moroccan recruits. It can feed its army, with 0.7 to spare."
+   },
+   {
+    "label": "C. 7 more starting Manpower for the South",
+    "rationale": "Lasts five turns if it buys nothing."
+   },
+   {
+    "label": "D. Leave it: the South must clear Andalucía by turn 3",
+    "rationale": "Harsh on whoever plays the South."
+   }
+  ]
+ },
+ {
+  "id": "R3B-5",
+  "idea": "shortage",
+  "text": "Does a weakened unit eat less?",
+  "context": "If it doesn't, hunger never settles by itself.",
+  "options": [
+   {
+    "label": "A. Yes, by its share of full strength",
+    "recommended": true,
+    "rationale": "A half-strength militia column costs 0.75. Hunger shrinks the bill until it fits."
+   },
+   {
+    "label": "B. No, every unit costs its full number",
+    "rationale": "Easier to add up; only disbanding ends a shortage."
+   }
+  ]
+ },
+ {
+  "id": "R3B-6",
+  "idea": "shortage",
+  "text": "When can a player disband a unit, and what comes back?",
+  "context": "Disbanding is a new order, which the computer player must learn too.",
+  "options": [
+   {
+    "label": "A. Only while next turn's Manpower would be below zero; nothing comes back",
+    "recommended": true,
+    "rationale": "How I read your answer."
+   },
+   {
+    "label": "B. At any time; nothing comes back",
+    "rationale": "More control, and lets a player cut upkeep early."
+   },
+   {
+    "label": "C. At any time; half the unit's Manpower price comes back",
+    "rationale": "Softer, but militia could be used as a Manpower store."
+   }
+  ]
+ },
+ {
+  "id": "R3B-7",
+  "idea": "buildings",
+  "text": "What average game length should the payback and chain limits use?",
+  "context": "Your tenets are shares of game length. Your own games end before turn 10; older sims ended at 12 to 15.",
+  "options": [
+   {
+    "label": "A. 30 turns: payback in 5, as in your write-up",
+    "recommended": true,
+    "rationale": "Upkeep should lengthen games. Check against your playtest and change it then."
+   },
+   {
+    "label": "B. 20 turns: payback in 3",
+    "rationale": "A mine would have to cost 3 Funds. Much faster growth for whoever leads."
+   },
+   {
+    "label": "C. 15 turns: payback in 2",
+    "rationale": "A mine would have to cost 2 Funds."
+   }
+  ]
+ },
+ {
+  "id": "R3B-8",
+  "idea": "buildings",
+  "text": "How short should the unlock chains be?",
+  "context": "Today the first gun comes on turn 9 and the first tank on turn 10. Your limit is 3 turns of 30.",
+  "options": [
+   {
+    "label": "A. Fast chains: Barracks and Depot 1 turn, Factory 2, guns need Barracks and Depot",
+    "recommended": true,
+    "rationale": "First gun turn 4, truck 4, tank 6, fighter 7. Let machines take up to 25% of a game."
+   },
+   {
+    "label": "B. Moderate's times",
+    "rationale": "First gun turn 7, truck 6, tank 8, fighter 8."
+   },
+   {
+    "label": "C. Moderate's times, and a capital may build two things at once",
+    "rationale": "Guns turn 5, tanks 6, fighters 6. A new rule."
+   }
+  ]
+ },
+ {
+  "id": "R3B-9",
+  "idea": "buildings",
+  "text": "Should Industry pay back in 5 turns like mines?",
+  "context": "At Moderate's 6 Funds and 2 turns it takes 6.",
+  "options": [
+   {
+    "label": "A. Yes: 5 Funds and 1 Manpower",
+    "recommended": true,
+    "rationale": "Meets your limit, with the workers it takes."
+   },
+   {
+    "label": "B. No, 6 Funds",
+    "rationale": "One turn over."
+   }
+  ]
+ },
+ {
+  "id": "R3B-10",
+  "idea": "moves",
+  "text": "How should rail be limited?",
+  "context": "One departure carries a whole army of any size, so fewer departures barely slow a large move.",
+  "options": [
+   {
+    "label": "A. Count units: 2 a station level, and 2 more for a rail yard",
+    "recommended": true,
+    "rationale": "Madrid sends 6 units a turn. Trucks and tanks matter for the rest."
+   },
+   {
+    "label": "B. As you wrote: one departure a station, plus one for a yard",
+    "rationale": "32 departures become 22; a ten-unit army still rides on one."
+   },
+   {
+    "label": "C. Count units: 1 a station level, and 1 more for a rail yard",
+    "rationale": "Strict: Madrid sends 3 units a turn."
+   }
+  ]
+ },
+ {
+  "id": "R3B-11",
+  "idea": "endturn",
+  "text": "Which end-turn sounds are worth keeping? Tick any.",
+  "context": "If none, say what you like about the one you remember: drums, brass, a bell, its length.",
+  "options": [
+   {
+    "label": "Snare roll into two drum strikes"
+   },
+   {
+    "label": "Snare roll into the orchestral hit"
+   },
+   {
+    "label": "Drum strikes with distant cannon"
+   },
+   {
+    "label": "None: keep trying"
+   }
+  ],
+  "multi": true
+ },
+ {
+  "id": "R3B-12",
+  "idea": "markers",
+  "text": "Keep the aircraft's role on the card?",
+  "context": "All three types print 0-1, so only the symbol and the name tell them apart.",
+  "options": [
+   {
+    "label": "A. Only when zoomed in: FTR, BOMB or RCN in place of the short name",
+    "rationale": "The far view stays the same as for ground units.",
+    "recommended": true
+   },
+   {
+    "label": "B. Also a letter badge when zoomed out",
+    "rationale": "Tells them apart at any zoom; one more badge on a busy map."
+   },
+   {
+    "label": "C. No role",
+    "rationale": "Exactly like other units. BXL, HN52 and LRF stay."
+   }
+  ]
+ },
+ {
+  "id": "R3B-13",
+  "idea": "battle",
+  "text": "Whose view should the green and red follow?",
+  "context": "A plus always raises the attacker's roll.",
+  "options": [
+   {
+    "label": "A. The die's: plus is green for everyone",
+    "rationale": "What you described, and the numbers always add up the same way.",
+    "recommended": true
+   },
+   {
+    "label": "B. The player's: the sign stays, but a defender sees their own bonuses in green",
+    "rationale": "Friendlier, though a green −3 can confuse."
+   }
+  ]
+ },
+ {
+  "id": "R3B-14",
+  "idea": "battle",
+  "text": "Keep the Who fought fold-out?",
+  "context": "You chose men and morale per unit, and your note asked only for the ledger.",
+  "options": [
+   {
+    "label": "A. Yes, closed, under the bands",
+    "rationale": "Out of the way until someone wants it. Needs the engine to record it.",
+    "recommended": true
+   },
+   {
+    "label": "B. No, the ledger is enough for Rev 3",
+    "rationale": "No engine change."
+   }
+  ]
+ },
+ {
+  "id": "R3B-15",
+  "idea": "invade",
+  "text": "Where should the order button go?",
+  "context": "You doubted the floating one.",
+  "options": [
+   {
+    "label": "A. In the pane's header, beside the title",
+    "rationale": "The only place still on screen after ticking the last unit, and it covers nothing. Its label drops the aircraft count, and on a phone it takes End Turn's place in the sheet header.",
+    "recommended": true
+   },
+   {
+    "label": "B. After the units, before the defenders",
+    "rationale": "Natural reading order; 12 cards down."
+   },
+   {
+    "label": "C. At the bottom of the odds card",
+    "rationale": "Next to the odds, and scrolls away with them."
+   }
+  ]
+ },
+ {
+  "id": "R3B-16",
+  "idea": "invade",
+  "text": "How should ticked units show when the map groups them in one counter?",
+  "context": "Groups have no selected look today.",
+  "options": [
+   {
+    "label": "A. The group glows and says 4 of 5",
+    "rationale": "Clear at any zoom.",
+    "recommended": true
+   },
+   {
+    "label": "B. Open every group that has a ticked unit",
+    "rationale": "Shows each unit, and crowds the map."
+   },
+   {
+    "label": "C. The group glows",
+    "rationale": "Doesn't say how many."
+   }
+  ]
+ },
+ {
+  "id": "R3B-17",
+  "idea": "casualties",
+  "text": "Do men who leave count as casualties?",
+  "context": "Men sent home by Disband, or who leave because there's nothing to feed them. Your round 1 answer counts disbanded units, which then meant units broken up in battle.",
+  "options": [
+   {
+    "label": "A. No: they went home",
+    "rationale": "The counter stays about losses.",
+    "recommended": true
+   },
+   {
+    "label": "B. Yes: count every man lost",
+    "rationale": "Simplest total."
+   }
+  ]
+ }
+]

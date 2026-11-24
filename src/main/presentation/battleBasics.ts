@@ -1,6 +1,4 @@
-import { battleOdds } from "../engine/combat";
-import { gradedOdds } from "../engine/d20/odds";
-import { usesD20 } from "../engine/d20/rules";
+import { battleOdds } from "../engine/d20/odds";
 import type { CombatModifier, Scenario } from "../engine/types";
 import { worksRoll } from "../engine/works";
 
@@ -34,10 +32,8 @@ export function battleExample(scenario: Scenario): BattleExample | undefined {
   const dugInRoll = worksRoll(scenario, dugIn);
   const works: readonly CombatModifier[] = dugIn > 0 ? [{ kind: "dug-in", level: dugIn, roll: -dugInRoll }] : [];
   const cases = [2, 3].map((armies): ExampleCase => {
-    // D1: on the d20, "take" means a grade that takes the whole territory.
-    const odds = scenario.d20 !== undefined && usesD20(scenario)
-      ? gradedOdds(scenario.d20, armies * type.attack, type.defence, works)
-      : battleOdds(scenario.combat, armies * type.attack, type.defence, works);
+    // D1: "take" means a grade that takes the whole territory.
+    const odds = battleOdds(scenario.d20, armies * type.attack, type.defence, works);
     return { armies, attack: odds.attack, oddsLabel: odds.oddsLabel, takeChance: odds.takeChance };
   });
   return { cases, defence: type.defence, dugIn, dugInRoll, typeName: type.name.toLowerCase() };

@@ -37,6 +37,38 @@ describe("computer Build orders (H5)", () => {
     expect(planBuilds(contextFor(scenario, state, "red"))).toEqual(orders);
   });
 
+  it("opens a territory's first Factory for what it unlocks, and no second one for that", () => {
+    const target = spain();
+    const north = faction("north");
+    const oneOrder: Scenario = { ...target, ai: { ...target.ai, profiles: { ...target.ai.profiles, [north]: { ...target.ai.profiles[north]!, builds: { ...budget(target, "north"), developmentProjects: 0, maxOrdersPerTurn: 1, spendShare: 1 } } } } };
+    const start = initialGameState(oneOrder);
+    const inTerritory = (id: string) => new Set(oneOrder.subTerritories.filter((sub) => sub.territoryId === territory(id)).map((sub) => sub.id));
+    const leon = inTerritory("castilla-y-leon");
+    const bare: GameState = {
+      ...start,
+      subTerritories: Object.fromEntries(Object.entries(start.subTerritories).map(([id, site]) => [id, {
+        ...site,
+        // Every building stands, so only a Factory unlocks anything more.
+        buildings: oneOrder.buildings.map((entry) => entry.id),
+        development: Object.fromEntries(Object.entries(site.development).map(([track, level]) => [track, track === "factory" ? 0 : level]))
+      }])),
+      treasuries: { ...start.treasuries, [north]: { [funds]: 100, ["manpower" as ResourceId]: 100 } }
+    };
+    const [first] = planBuilds(contextFor(oneOrder, bare, "north"));
+    expect(first?.project).toEqual({ developmentId: "factory", kind: "development" });
+    // With one standing, or queued, in every territory that could have it, nothing is left for a Factory to unlock.
+    const cities = Object.keys(bare.subTerritories).filter((id) => oneOrder.cities.some((city) => city.subTerritoryId === id));
+    const firstCity = new Map(cities.map((id) => [oneOrder.index.subTerritories.get(id as SubTerritoryId)!.territoryId, id] as const).reverse());
+    const standing: GameState = { ...bare, subTerritories: Object.fromEntries(Object.entries(bare.subTerritories).map(([id, site]) => [id, [...firstCity.values()].includes(id) ? { ...site, development: { ...site.development, factory: 1 } } : site])) };
+    const [next] = planBuilds(contextFor(oneOrder, standing, "north"));
+    expect(next).toBeDefined();
+    expect(next?.project).not.toEqual({ developmentId: "factory", kind: "development" });
+    const queued: GameState = { ...standing, subTerritories: Object.fromEntries(Object.entries(standing.subTerritories).map(([id, site]) => [id, [...firstCity.values()].includes(id) && leon.has(id as SubTerritoryId)
+      ? { ...site, development: { ...site.development, factory: 0 }, queue: [{ cost: {}, factionId: north, id: "q1", progress: 0, project: { developmentId: "factory", kind: "development" }, turns: 2 }] }
+      : site])) as unknown as GameState["subTerritories"] };
+    expect(planBuilds(contextFor(oneOrder, queued, "north"))[0]?.project).toEqual(next?.project);
+  });
+
   it("reads its budget from the faction's AI profile (EB-15)", () => {
     expect(budget(spain(), "south")).toEqual({ developmentProjects: 1, developmentShare: 0.5, itemsPerEmptyQueue: 1, maxOrdersPerTurn: 3, reserveShare: 0.3, spendShare: 0.6 });
     const state = { ...initialGameState(scenario), treasuries: { [faction("red")]: { [funds]: 40 } } };

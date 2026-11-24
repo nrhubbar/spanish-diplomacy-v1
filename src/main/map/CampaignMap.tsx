@@ -6,7 +6,7 @@ import type { MapAssets } from "../scenarios/registry";
 import { MapControls } from "./MapControls";
 import { MapLayers } from "./MapLayers";
 import { MapLegend } from "./MapLegend";
-import { MapPane, type PaneContent, paneLayoutFor, paneWidthFor } from "./MapPane";
+import { MapPane, type PaneContent, paneLayoutFor } from "./MapPane";
 import { type CameraBounds, semanticLevel } from "./camera";
 import { autoLayers, defaultLayers, hiddenLayers, type LayerId, shownLayers } from "./layers/layerChoice";
 import { LayersToolbar } from "./layers/LayersToolbar";
@@ -75,7 +75,7 @@ export function CampaignMap({ assets, briefing, game, layers, onLayersChange, on
     zoomBy
   } = useMapCamera(bounds, paneView.insetsFor, selectFrom);
   const layout = paneLayoutFor(viewport.width);
-  const paneWidth = paneWidthFor(viewport.width);
+  const paneWidth = paneView.widthFor(viewport.width);
   const paneOpen = paneView.isOpen(layout);
   const paneContent = paneView.content;
   const level = semanticLevel(camera.zoom);
@@ -152,7 +152,17 @@ export function CampaignMap({ assets, briefing, game, layers, onLayersChange, on
       <LayersToolbar auto={auto} chosen={chosen} layout={layout} onChange={onLayersChange ?? setOwnLayers} />
       {/* The pane waits for measurement so it never flashes in the wrong layout. */}
       {paneContent === undefined || !measured ? null : (
-        <MapPane content={paneContent} layout={layout} onToggle={() => { paneView.togglePane(paneOpen); }} open={paneOpen} />
+        <MapPane
+          content={paneContent}
+          layout={layout}
+          mapWidth={viewport.width}
+          onStop={paneView.setStop}
+          onToggle={() => { paneView.togglePane(layout, paneOpen); }}
+          onWidth={paneView.setWidth}
+          open={paneOpen}
+          stop={paneView.stopIn(layout)}
+          width={paneWidth}
+        />
       )}
     </section>
   );

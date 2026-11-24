@@ -19,11 +19,12 @@ import {
 } from "../main/engine/recruitment/rules";
 import { initialGameState } from "../main/engine/resolution";
 import type { GameState, PlayerSubmission, Resources, Scenario, TerritoryId, UnitId, UnitState, UnitTypeId } from "../main/engine/types";
-import { faction, spainD20, territory, tiny, unit } from "./support";
+import { faction, spainWithAir, territory, tiny, unit } from "./support";
+import { pinned } from "./pinned";
 
 /** The recruitment module's rules and engine parts, branch by branch (R2-R7, C8). */
 
-const scenario = spainD20();
+const scenario = pinned(spainWithAir());
 const republic = faction("republic");
 const north = faction("north");
 const type = (id: string): UnitTypeId => id as UnitTypeId;
@@ -60,11 +61,11 @@ describe("recruiting sites and types (R2, R3, D7)", () => {
     expect(holdsTerritory(capitalless, start, republic, murcia)).toBe(true);
     // No capital: no capital buildings, so a Barracks is missing "in Murcia" (the territory).
     expect(typeLock(capitalless, start, republic, murcia, typeOf("infantry-regiment")).reasons).toEqual(["Needs a Barracks in Murcia."]);
-    expect(recruitSlots(capitalless, start, murcia)).toBe(2);
+    expect(recruitSlots(capitalless, start, murcia)).toBe(3);
   });
 
-  it("counts a Factory's extra Recruit order", () => {
-    expect(recruitSlots(scenario, start, territory("catalunya"))).toBe(3);
+  it("counts every Factory level's extra Recruit order", () => {
+    expect(recruitSlots(scenario, start, territory("catalunya"))).toBe(4);
     expect(recruitSlots(tiny(), initialGameState(tiny()), territory("westfold"))).toBe(0);
   });
 

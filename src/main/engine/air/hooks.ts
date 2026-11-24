@@ -1,5 +1,5 @@
 import { holdsWhole } from "../partition/holders";
-import { generalModifiers } from "../generals/command";
+import { toThousandth } from "../resources";
 import type { CombatHookContext, IncomeContext, RuleHooks } from "../hooks";
 import type { CombatModifier, Resources } from "../types";
 import { airOverHookedBattle, supportModifiersOf } from "./groundSupport";
@@ -10,7 +10,7 @@ import { airOverHookedBattle, supportModifiersOf } from "./groundSupport";
  * The flights are known only while the turn resolves (the air scratch); planning estimates add
  * planned Ground Support themselves (`combat/estimate.ts`).
  */
-export function supportModifiers(context: CombatHookContext): readonly CombatModifier[] {
+function supportModifiers(context: CombatHookContext): readonly CombatModifier[] {
   const scratch = context.scratch?.air;
   return scratch === undefined ? [] : supportModifiersOf(airOverHookedBattle(context, scratch));
 }
@@ -33,13 +33,13 @@ export function raidIncomeDelta(context: IncomeContext): Resources {
     for (const [developmentId, level] of Object.entries(sub.development)) {
       const track = scenario.development.find((candidate) => candidate.id === developmentId);
       if (track === undefined || level <= 0) continue;
-      delta[track.resource] = (delta[track.resource] ?? 0) - level * track.yieldPerLevel;
+      delta[track.resource] = toThousandth((delta[track.resource] ?? 0) - level * track.yieldPerLevel);
     }
   }
   return delta;
 }
 
 export const airHooks: RuleHooks = {
-  combatModifiers: (context) => [...generalModifiers(context), ...supportModifiers(context)],
+  combatModifiers: supportModifiers,
   incomeDelta: raidIncomeDelta
 };

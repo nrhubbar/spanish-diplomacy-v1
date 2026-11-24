@@ -8,6 +8,7 @@
 // M6 (`ux-pane-a-units`): boxed tabs on a rule, each with its count.
 .pane-tab-list {
   display: flex;
+  flex-wrap: wrap;
   gap: 2px;
   margin: 6px 0 8px;
   border-bottom: 1px solid var(--rule);
@@ -17,6 +18,8 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  flex-wrap: wrap;
+  max-width: 100%;
   min-height: 34px;
   margin-bottom: -1px;
   padding: 4px 12px;
@@ -27,6 +30,7 @@
   color: inherit;
   font: inherit;
   font-weight: 600;
+  overflow-wrap: anywhere;
   cursor: pointer;
 
   &[aria-selected="true"] {
@@ -67,8 +71,4 @@
 .campaign-map[data-pane-layout="sheet"] .pane-tab-list {
   order: -1;
   margin-top: 0;
-}
-
-.sub-territory-focus h3 {
-  margin-top: 4px;
 }

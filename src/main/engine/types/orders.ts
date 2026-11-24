@@ -3,8 +3,8 @@ import type { BuildProject } from "./state";
 
 /**
  * E8: one flat list of typed orders per faction, for units and sites alike. Entrench, Rest and
- * the contested Attack stay derived defaults, never submitted. Under `m2-strength` only Move
- * orders are valid; every other kind is an impossible order (M9).
+ * the contested Attack stay derived defaults, never submitted. An order kind that no
+ * selected module handles is an impossible order (M9).
  */
 
 /** M4: one leg of a move. Land and sea legs follow a connection; a rail leg rides to `to`'s capital. */
@@ -20,7 +20,7 @@ export interface MoveOrder {
   readonly kind: "move";
   /**
    * The path, in order. Absent means one step along the connection from `from` to `to`, the
-   * only shape `m2-strength` allows.
+   * only shape the `single-step` movement module allows.
    */
   readonly legs?: readonly MoveLeg[];
   readonly to: TerritoryId;
@@ -40,6 +40,13 @@ export interface WithdrawOrder {
 export interface ReplenishOrder {
   readonly factionId: FactionId;
   readonly kind: "replenish";
+  readonly unitId: UnitId;
+}
+
+/** D1: send one of the faction's own units home at the end of the turn, for nothing. */
+export interface DisbandOrder {
+  readonly factionId: FactionId;
+  readonly kind: "disband";
   readonly unitId: UnitId;
 }
 
@@ -84,10 +91,10 @@ export interface SackOrder {
   readonly unitId: UnitId;
 }
 
-export type Order = MoveOrder | WithdrawOrder | ReplenishOrder | RecruitOrder | BuildOrder | AirMissionOrder | SackOrder;
+export type Order = MoveOrder | WithdrawOrder | ReplenishOrder | DisbandOrder | RecruitOrder | BuildOrder | AirMissionOrder | SackOrder;
 
 /** Orders given to one unit; a unit takes at most one of them per turn (M1). */
-export type UnitOrder = MoveOrder | WithdrawOrder | ReplenishOrder | AirMissionOrder | SackOrder;
+export type UnitOrder = MoveOrder | WithdrawOrder | ReplenishOrder | DisbandOrder | AirMissionOrder | SackOrder;
 
 export interface PlayerSubmission {
   readonly factionId: FactionId;

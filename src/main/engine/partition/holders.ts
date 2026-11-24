@@ -45,7 +45,7 @@ export function heldBy(scenario: Scenario, holdings: Holdings, territoryId: Terr
 }
 
 /** W6: one holder controls a territory whole; two or more contest it. Undefined for a territory without sub-territories. */
-export function territoryControlFrom(scenario: Scenario, holdings: Holdings, territoryId: TerritoryId): TerritoryControl | undefined {
+function territoryControlFrom(scenario: Scenario, holdings: Holdings, territoryId: TerritoryId): TerritoryControl | undefined {
   const holders = holdersIn(scenario, holdings, territoryId);
   const [only] = holders;
   if (only === undefined) return undefined;

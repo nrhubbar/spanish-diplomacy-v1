@@ -162,7 +162,7 @@ describe("only the session hook reads the raw session (m3)", () => {
   });
 });
 
-describe("viewFor under m2-strength (CT-37)", () => {
+describe("viewFor without an economy (CT-37)", () => {
   it("returns an equal state after turns of play, for every viewer", () => {
     const scenario = tiny();
     let state = initialGameState(scenario);

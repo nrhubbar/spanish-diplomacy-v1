@@ -1,9 +1,14 @@
+import { carryOf, carryScale } from "../engine/carry";
 import { plannedSpend } from "../engine/economy/catalogue";
 import { holdersIn, subTerritoriesOf } from "../engine/economy/holdings";
 import { incomeFor, subTerritoryYield } from "../engine/economy/income";
 import { amountOf, sumResources, treasuryOf } from "../engine/economy/resources";
+import { type UpkeepLine, upkeepLines } from "../engine/economy/upkeep";
+import { priceReplenishments, replenishQuote } from "../engine/recruitment/rules";
+import { toThousandth } from "../engine/resources";
+import { resourceAmount } from "./economy";
 import { glyphs } from "./glyphs";
-import type { BuildOrder, FactionId, GameState, RecruitOrder, ResourceId, Resources, Scenario, TerritoryId } from "../engine/types";
+import type { BuildOrder, DisbandOrder, FactionId, GameState, RecruitOrder, ReplenishOrder, ResourceId, Resources, Scenario, TerritoryId, UnitState } from "../engine/types";
 
 /**
  * U11 (note 16): the balance view behind the Funds and Manpower chips, one flat list of rows.
@@ -13,14 +18,24 @@ import type { BuildOrder, FactionId, GameState, RecruitOrder, ResourceId, Resour
  *   queued.
  * - **next turn** is this list's total: each territory's yield (a contested one shows its loss
  *   on its own row and pays nothing), less raid cuts, less this turn's Replenish orders, less
- *   upkeep (none yet).
- * Every order is still paid once: `now + next turn` is the balance after the turn.
+ *   upkeep (D1, one line per unit type), and the fractions of a point the carry keeps.
+ * Every order is still paid once: `now + next turn` is what the faction has after the turn, to
+ * the thousandth (`projectedHoldings`).
  */
+
+/** D1: what one unit type's upkeep takes: "Militia column, 7 at 1.5k". */
+export interface LedgerLine {
+  readonly key: string;
+  readonly label: string;
+  readonly value: number;
+}
 
 export interface LedgerRow {
   readonly key: string;
   readonly kind: "expense" | "raid" | "territory";
   readonly label: string;
+  /** The row's breakdown, opened from the row. */
+  readonly lines?: readonly LedgerLine[];
   /** A contested territory's yield it does not receive, as a positive amount. */
   readonly loss: number;
   readonly note?: string;
@@ -44,10 +59,9 @@ export interface Ledger {
 
 export interface LedgerOrders {
   readonly builds?: readonly BuildOrder[];
+  readonly disbands?: readonly DisbandOrder[];
   readonly recruits?: readonly RecruitOrder[];
-  /** What this turn's Replenish orders pay at reveal (`replenishmentCost`). */
-  readonly replenish: Resources;
-  readonly replenishCount: number;
+  readonly replenishments?: readonly ReplenishOrder[];
 }
 
 interface TerritoryYield {
@@ -86,6 +100,14 @@ export function ledgersFor(scenario: Scenario, state: GameState, viewer: Faction
   const balance = treasuryOf(state, viewer);
   const upfront = plannedSpend(scenario, [...orders.builds ?? [], ...orders.recruits ?? []]);
   const queued = Object.values(state.subTerritories).flatMap((site) => site.queue).filter((item) => item.factionId === viewer).length + (orders.builds ?? []).length;
+  const replenishing = (orders.replenishments ?? []).flatMap((order): UnitState[] => {
+    const unit = state.units[order.unitId];
+    return unit === undefined ? [] : [unit];
+  });
+  // B2: Replenish takes whole points and leaves the fraction it owes in the carry.
+  const replenishPaid = priceReplenishments(scenario, state, viewer, replenishing).total;
+  const replenishOwed = sumResources(...replenishing.flatMap((unit) => replenishQuote(scenario, state, unit)?.owed ?? []));
+  const paying = upkeepLines(scenario, state, viewer, [...orders.disbands ?? [], ...orders.recruits ?? []]);
   return scenario.resources.map((resource): Ledger => {
     const id = resource.id;
     const places = territories
@@ -102,18 +124,33 @@ export function ledgersFor(scenario: Scenario, state: GameState, viewer: Faction
       }))
       .sort((a, b) => b.value - a.value || b.loss - a.loss);
     const cut = amountOf(income.cut, id);
-    const replenish = amountOf(orders.replenish, id);
+    const replenish = amountOf(replenishPaid, id);
+    const carried = toThousandth(replenish - (amountOf(replenishOwed, id) + amountOf(carryOf(state, viewer), id)) / carryScale);
     const rows: readonly LedgerRow[] = [
       ...places,
       ...(cut === 0 ? [] : [expense("raids", "Raids", "cut for a turn", -cut, "raid")]),
+      ...(carried === 0 ? [] : [expense("carried", "Carried over", "fractions of a point", carried)]),
       expense("builds", "Builds under way", queued === 0 ? "none" : "paid when queued", 0),
-      expense("replenish", "Replenish", orders.replenishCount === 0 ? "none planned" : `${String(orders.replenishCount)} ${orders.replenishCount === 1 ? "unit" : "units"}, planned this turn`, -replenish),
-      expense("upkeep", "Upkeep", "none in this scenario", 0)
+      expense("replenish", "Replenish", replenishing.length === 0 ? "none planned" : `${String(replenishing.length)} ${replenishing.length === 1 ? "unit" : "units"}, planned this turn`, -replenish),
+      upkeepRow(scenario, id, paying)
     ];
     const held = amountOf(balance, id);
     const spent = amountOf(upfront, id);
-    return { held, now: held - spent, resourceId: id, rows, spent, total: rows.reduce((sum, row) => sum + row.value, 0) };
+    return { held, now: held - spent, resourceId: id, rows, spent, total: toThousandth(rows.reduce((sum, row) => sum + row.value, 0)) };
   });
+}
+
+/** D1: the Upkeep row of one resource: how many units pay it, the sum, and a line per type, the dearest first. */
+function upkeepRow(scenario: Scenario, id: ResourceId, paying: readonly UpkeepLine[]): LedgerRow {
+  const own = paying.filter(({ type }) => type.upkeep[id] !== undefined);
+  const count = own.reduce((sum, line) => sum + line.count, 0);
+  const lines = own.map((line): LedgerLine => ({
+    key: line.type.id,
+    label: `${line.type.name}, ${String(line.count)} at ${resourceAmount(scenario, id, amountOf(line.type.upkeep, id))}`,
+    value: -toThousandth(line.count * amountOf(line.type.upkeep, id))
+  })).sort((a, b) => a.value - b.value);
+  const note = scenario.upkeep === undefined ? "none in this scenario" : count === 0 ? "none" : `${String(count)} ${count === 1 ? "unit" : "units"}`;
+  return { ...expense("upkeep", "Upkeep", note, toThousandth(lines.reduce((sum, line) => sum + line.value, 0))), ...(lines.length === 0 ? {} : { lines }) };
 }
 
 function expense(key: string, label: string, note: string, value: number, kind: LedgerRow["kind"] = "expense"): LedgerRow {

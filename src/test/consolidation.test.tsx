@@ -44,8 +44,6 @@ function resultOf(result: TurnResolutionResult, unitId: string): string {
       return "invalid";
     case "reinforcement-arrived":
       return "reinforced";
-    case "general-moved":
-      return outcome.arrived ? "moved" : "stayed";
   }
 }
 
@@ -87,9 +85,9 @@ describe("friendly consolidation (engine)", () => {
     // r attacks Blue in the Harbor and is driven back; a still arrives, and r comes home to
     // its friend rather than falling back (M21).
     const field = battlefield(scenario, [red("a", "westfold"), red("r", "highlands"), blue("b", "harbor")]);
-    const returns = play(field.scenario, field.state, [move("red", "a", "westfold", "highlands"), move("red", "r", "highlands", "harbor")], loadedDice([5]));
+    const returns = play(field.scenario, field.state, [move("red", "a", "westfold", "highlands"), move("red", "r", "highlands", "harbor")], loadedDice([14]));
     expect([resultOf(returns, "a"), resultOf(returns, "r")]).toEqual(["reinforced", "fought"]);
-    expect(battlesOf(returns)[0]).toMatchObject({ result: "attacker-demoralized", retreats: [] });
+    expect(battlesOf(returns)[0]).toMatchObject({ grade: "attacker-repulsed", retreats: [] });
     expect([at(returns, "a"), at(returns, "r")]).toEqual(["highlands", "highlands"]);
   });
 
@@ -120,7 +118,7 @@ describe("friendly consolidation (engine)", () => {
       move("red", "l", "lowlands", "westfold"),
       move("red", "w", "westfold", "highlands"),
       move("red", "h", "highlands", "harbor")
-    ], loadedDice([5]));
+    ], loadedDice([14]));
     expect(["l", "w", "h"].map((id) => resultOf(chain, id))).toEqual(["reinforced", "reinforced", "fought"]);
     expect(["l", "w", "h"].map((id) => at(chain, id))).toEqual(["westfold", "highlands", "highlands"]);
   });
@@ -139,15 +137,15 @@ describe("friendly consolidation (engine)", () => {
     ];
     // They arrive, and the shared territory then fights its standing battle (M27): 12 against 6,
     // and a 3 demoralizes both sides, so both stay.
-    const result = play(scenario, withUnits(scenario, units), orders, loadedDice([3]));
+    const result = play(scenario, withUnits(scenario, units), orders, loadedDice([8]));
     expect([resultOf(result, "rep-sevilla-34"), resultOf(result, "rep-wad-ras-1")]).toEqual(["reinforced", "reinforced"]);
-    expect(battlesOf(result).map((battle) => [battle.site.kind, battle.attackerFactionId, battle.result])).toEqual([["standing", "republic", "both-demoralized"]]);
+    expect(battlesOf(result).map((battle) => [battle.site.kind, battle.attackerFactionId, battle.grade])).toEqual([["standing", "republic", "stalemate"]]);
     expect(result.finalState.control[territory("andalucia")]?.kind).toBe("contested");
 
     // Without a friendly foothold the two attack the stationary hostile together (M17).
-    const noFoothold = play(scenario, withUnits(scenario, units.slice(1)), orders, loadedDice([2]));
+    const noFoothold = play(scenario, withUnits(scenario, units.slice(1)), orders, loadedDice([5]));
     expect([resultOf(noFoothold, "rep-sevilla-34"), resultOf(noFoothold, "rep-wad-ras-1")]).toEqual(["fought", "fought"]);
-    expect(battlesOf(noFoothold)[0]).toMatchObject({ attacker: { value: 8 }, result: "attacker-demoralized", site: { kind: "assault", territoryId: "andalucia" } });
+    expect(battlesOf(noFoothold)[0]).toMatchObject({ attacker: { value: 8 }, grade: "attacker-repulsed", site: { kind: "assault", territoryId: "andalucia" } });
     expect([at(noFoothold, "rep-sevilla-34"), at(noFoothold, "rep-wad-ras-1")]).toEqual(["murcia", "castilla-la-mancha"]);
   });
 
@@ -165,14 +163,14 @@ describe("friendly consolidation (engine)", () => {
     const leaves = play(scenario, withUnits(scenario, units), [
       move("republic", "rep-vitoria-8", "andalucia", "extremadura"),
       move("republic", "rep-sevilla-34", "murcia", "andalucia")
-    ], loadedDice([4]));
+    ], loadedDice([11]));
     expect([resultOf(leaves, "rep-vitoria-8"), resultOf(leaves, "rep-sevilla-34")]).toEqual(["moved", "fought"]);
     expect(battlesOf(leaves)[0]).toMatchObject({ defender: { armies: [{ unitId: "south-granada-6" }] }, site: { territoryId: "andalucia" } });
 
     const staysBehind = play(scenario, withUnits(scenario, units), [
       move("republic", "rep-vitoria-8", "andalucia", "melilla"),
       move("republic", "rep-sevilla-34", "murcia", "andalucia")
-    ], loadedDice([4, 4, 4]));
+    ], loadedDice([11, 14, 11]));
     expect([resultOf(staysBehind, "rep-vitoria-8"), resultOf(staysBehind, "rep-sevilla-34")]).toEqual(["fought", "fought"]);
     expect([at(staysBehind, "rep-vitoria-8"), at(staysBehind, "rep-sevilla-34")]).toEqual(["andalucia", "murcia"]);
   });
@@ -185,7 +183,7 @@ describe("friendly consolidation (engine)", () => {
       move("north", "north-aragon-17", "aragon", "castilla-la-mancha"),
       move("south", "south-granada-6", "andalucia", "castilla-la-mancha"),
       move("south", "south-lepanto-5", "andalucia", "castilla-la-mancha")
-    ], loadedDice([1, 4, 1, 4, 4, 4, 4, 4]));
+    ], loadedDice([2, 11, 2, 11, 11, 11, 11, 11]));
     expect([resultOf(result, "rep-wad-ras-1"), resultOf(result, "rep-covadonga-4")]).toEqual(["reinforced", "reinforced"]);
     const attacks = battlesOf(result).filter((battle) => battle.site.kind === "assault");
     expect(attacks.map((battle) => battle.attackerFactionId)).toEqual(["north", "south"]);
@@ -198,9 +196,9 @@ describe("friendly consolidation (engine)", () => {
     // Blue controls the Lowlands, so its move is a reinforcement too. Both arrive, and the two
     // factions sharing the Lowlands fight a standing battle (M27).
     const field = battlefield(tiny(), [red("c", "lowlands"), red("a", "westfold"), blue("b", "harbor")]);
-    const result = play(field.scenario, field.state, [move("red", "a", "westfold", "lowlands"), move("blue", "b", "harbor", "lowlands")], loadedDice([3]));
+    const result = play(field.scenario, field.state, [move("red", "a", "westfold", "lowlands"), move("blue", "b", "harbor", "lowlands")], loadedDice([8]));
     expect([resultOf(result, "a"), resultOf(result, "b"), resultOf(result, "c")]).toEqual(["reinforced", "reinforced", "no order"]);
-    expect(battlesOf(result).map((battle) => [battle.site.kind, battle.attackerFactionId, battle.result])).toEqual([["standing", "red", "both-demoralized"]]);
+    expect(battlesOf(result).map((battle) => [battle.site.kind, battle.attackerFactionId, battle.grade])).toEqual([["standing", "red", "stalemate"]]);
     expect([at(result, "a"), at(result, "b"), at(result, "c")]).toEqual(["lowlands", "lowlands", "lowlands"]);
   });
 
@@ -210,10 +208,10 @@ describe("friendly consolidation (engine)", () => {
       move("red", "a", "westfold", "highlands"),
       move("red", "r", "highlands", "westfold"),
       move("blue", "b", "harbor", "highlands")
-    ], loadedDice([1]));
+    ], loadedDice([2]));
     expect(["a", "r", "b"].map((id) => resultOf(result, id))).toEqual(["reinforced", "reinforced", "fought"]);
     // a arrives in time to defend the Highlands; r reaches Westfold.
-    expect(battlesOf(result)[0]).toMatchObject({ defender: { armies: [{ from: "westfold", unitId: "a" }] }, result: "attacker-eliminated" });
+    expect(battlesOf(result)[0]).toMatchObject({ defender: { armies: [{ from: "westfold", unitId: "a" }] }, grade: "attacker-destroyed" });
     expect([at(result, "a"), at(result, "r")]).toEqual(["highlands", "westfold"]);
   });
 
@@ -323,7 +321,14 @@ function reportedCase(capture: boolean): TurnResolutionResult {
     ["north-america-23", "north", "valencia"],
     ["south-cadiz-33", "south", "murcia"]
   ] as const;
-  return play(scenario, withUnits(scenario, units), [
+  // Nobody holds Extremadura or its capital, so none of the three entrants stands as its defender (C3).
+  const start = withUnits(scenario, units);
+  const state: GameState = {
+    ...start,
+    control: { ...start.control, [territory("extremadura")]: { factionIds: [faction("north"), faction("republic"), faction("south")], kind: "contested" } },
+    subTerritories: {}
+  };
+  return play(scenario, state, [
     move("republic", "rep-wad-ras-1", "castilla-la-mancha", "extremadura"),
     move("republic", "rep-covadonga-4", "castilla-la-mancha", "extremadura"),
     move("north", "north-san-marcial-22", "castilla-y-leon", "extremadura"),
@@ -371,8 +376,8 @@ describe("friendly consolidation (turn report)", () => {
       move("south", "south-legion", "castilla-y-leon", "extremadura")
     ]);
     expect(groupOutcomes(result.outcomes).map((group) => group.unitIds)).toEqual([
-      // The last four are the north's hold and each faction's income ($2).
-      ["rep-wad-ras-1"], ["rep-covadonga-4"], ["south-granada-6"], ["south-legion"], [], [], [], []
+      // The rest are the north's hold, each faction's income ($2) and the upkeep of the two with units (D1).
+      ["rep-wad-ras-1"], ["rep-covadonga-4"], ["south-granada-6"], ["south-legion"], [], [], [], [], [], []
     ]);
     const report = groupOutcomes(result.outcomes).map((group) => describeOutcomeGroup(field.scenario, group, result.outcomes));
     expect(report[0]).toBe("Republican Government: Wad-Ras Infantry Regiment No. 1 tried to move from Castilla-La Mancha to Extremadura and bounced: standoff with Southern Insurgent Command (from Andaluc\u00eda and Castilla y Le\u00f3n).");
@@ -387,7 +392,7 @@ describe("friendly consolidation (turn report)", () => {
       { factionId: faction("red"), kind: "no-move", unitId: unit("red-guard") },
       { factionId: faction("red"), kind: "no-move", unitId: unit("red-rangers") },
       { factionId: faction("blue"), kind: "no-move" },
-      { kind: "invalid-order", order: move("red", "red-guard", "westfold", "harbor"), reason: "Destination is not connected to the unit's territory." }
+      { kind: "invalid-order", men: 500, order: move("red", "red-guard", "westfold", "harbor"), reason: "Destination is not connected to the unit's territory." }
     ];
     expect(groupOutcomes(outcomes).map((group) => describeOutcomeGroup(scenario, group))).toEqual([
       "Red Guard held.",

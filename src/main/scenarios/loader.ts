@@ -129,10 +129,8 @@ function formatZodIssues(error: ZodError): readonly string[] {
 function checkScenario(document: ScenarioDocument, modules: ModuleRegistry): readonly string[] {
   const issues = createIssues();
   checkCore(document, issues);
-  if (document.ruleset === "m3-modular") {
-    checkModular(document, issues, modules);
-    checkSystems(document, issues);
-  }
+  checkModular(document, issues, modules);
+  checkSystems(document, issues);
   return issues.list;
 }
 

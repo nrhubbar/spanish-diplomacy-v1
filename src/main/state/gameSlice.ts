@@ -15,6 +15,7 @@ import {
   type MusterOrder,
   orderMuster,
   planBuild,
+  planDisband,
   removeOrder,
   selectAllAvailable,
   setAirMission,
@@ -36,7 +37,7 @@ export interface GameReducerDependencies {
   readonly registry: Pick<ScenarioRegistry, "list" | "require">;
 }
 
-export function randomSeed(): number {
+function randomSeed(): number {
   return Math.floor(Math.random() * 0x100000000);
 }
 
@@ -54,6 +55,8 @@ export const toggleUnitSelection = createAction<UnitId>("game/toggleUnitSelectio
 export const selectAllAvailableUnits = createAction("game/selectAllAvailableUnits");
 export const clearUnitSelection = createAction("game/clearUnitSelection");
 export const chooseOrderKind = createAction<OrderKind>("game/chooseOrderKind");
+/** D1: sends one unit home at the end of the turn; cleared with `removePlannedOrder`. */
+export const disbandUnit = createAction<UnitId>("game/disbandUnit");
 export const cancelOrderStage = createAction("game/cancelOrderStage");
 export const removePlannedOrder = createAction<UnitId>("game/removePlannedOrder");
 export const endTurn = createAction("game/endTurn");
@@ -156,6 +159,8 @@ export function createGameReducer(dependencies: GameReducerDependencies) {
         set(inPlanning(state.session, (_scenario, planning) => cancelOrder(planning))))
       .addCase(orderFromMuster, (state, { payload }) =>
         set(inPlanning(state.session, (scenario, planning) => orderMuster(scenario, planning, payload))))
+      .addCase(disbandUnit, (state, { payload }) =>
+        set(inPlanning(state.session, (scenario, planning) => planDisband(scenario, planning, payload))))
       .addCase(removePlannedOrder, (state, { payload }) =>
         set(inPlanning(state.session, (_scenario, planning) => removeOrder(planning, payload))))
       .addCase(planAirMission, (state, { payload }) =>

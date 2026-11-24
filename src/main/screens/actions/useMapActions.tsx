@@ -1,7 +1,7 @@
 import type { UnknownAction } from "@reduxjs/toolkit";
 import { type JSX, useCallback, useMemo, useState } from "react";
 import { reachFor } from "../../engine/network/reach";
-import type { Scenario, TerritoryId } from "../../engine/types";
+import { isMoveOrder, type Scenario, type TerritoryId } from "../../engine/types";
 import type { MapView, PointerInput } from "../../map/view";
 import { quickActions, type QuickActionKind, type QuickActionMenu as Menu } from "../../presentation/quickActions";
 import { reachNote } from "../../presentation/reachNote";
@@ -47,8 +47,8 @@ export function useMapActions(scenario: Scenario, session: PlanningSession, disp
   const [tapped, setTapped] = useState<TerritoryId | undefined>(undefined);
   const moving = draft.stage?.orderKind === "move" && draft.selectedUnitIds.length > 0;
   const reach = useMemo(
-    () => (moving ? reachFor(scenario, game.state, factionId, draft.selectedUnitIds) : undefined),
-    [draft.selectedUnitIds, factionId, game.state, moving, scenario]
+    () => (moving ? reachFor(scenario, game.state, factionId, draft.selectedUnitIds, draft.orders.filter(isMoveOrder)) : undefined),
+    [draft.orders, draft.selectedUnitIds, factionId, game.state, moving, scenario]
   );
   const noteFor = useCallback((territoryId: TerritoryId) => reachNote(scenario, territoryId, reach?.get(territoryId)), [reach, scenario]);
 

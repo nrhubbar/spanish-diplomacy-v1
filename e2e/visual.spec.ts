@@ -20,6 +20,8 @@ async function startGame(page: Page): Promise<void> {
   await expect(page.locator(".map-vector")).toBeVisible();
   await expect(page.locator(".terrain-layer")).toHaveAttribute("data-renderer", "webgl", { timeout: 15000 });
   await expect(page.locator(".terrain-layer")).toHaveAttribute("data-refined", "true", { timeout: 15000 });
+  // Loaded after a quiet moment; waited for, so it cannot fade in between two screenshots.
+  await expect(page.locator(".terrain-layer")).toHaveAttribute("data-detail", "shown", { timeout: 15000 });
 }
 
 test("setup", async ({ page }) => {
@@ -47,6 +49,8 @@ test("resolution", async ({ page }) => {
   await page.mouse.move(0, 0);
   await expect(page.locator(".terrain-layer")).toHaveAttribute("data-renderer", "webgl", { timeout: 15000 });
   await expect(page.locator(".terrain-layer")).toHaveAttribute("data-refined", "true", { timeout: 15000 });
+  // Loaded after a quiet moment; waited for, so it cannot fade in between two screenshots.
+  await expect(page.locator(".terrain-layer")).toHaveAttribute("data-detail", "shown", { timeout: 15000 });
   await expect(page).toHaveScreenshot("resolution.png");
 });
 

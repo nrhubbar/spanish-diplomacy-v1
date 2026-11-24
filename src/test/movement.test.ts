@@ -3,7 +3,7 @@ import { legalMoves, withRoutes } from "../main/ai/orders/move";
 import { initialGameState, resolveTurn } from "../main/engine/resolution";
 import { armyAllowance, truckBonus } from "../main/engine/movement/allowance";
 import { amphibiousModifiers } from "../main/engine/movement/hooks";
-import { holdsWhole, railDepartures, railReach, rideableNetwork } from "../main/engine/movement/network";
+import { holdsWhole, railCapacity, railReach, rideableNetwork } from "../main/engine/movement/network";
 import { moveRoutes, validateRoute } from "../main/engine/movement/routes";
 import type { GameState, MoveLeg, MoveOrder, Scenario, SubTerritoryId, SubTerritoryState, TerritoryId, TurnResolutionResult } from "../main/engine/types";
 import { validateMoveOrder } from "../main/engine/validation";
@@ -116,13 +116,21 @@ describe("movement: ground and rail (M2, M3)", () => {
     expect([...reach.keys()]).toEqual(["highlands", "harbor"]);
   });
 
-  it("counts a capital's departures as its rail level plus its buildings' rail departures", () => {
+  it("boards the scenario's units per station level, plus its buildings' rail capacity (D5)", () => {
     const scenario = load((data) => {
-      (data["buildings"] as Json[]).push({ id: "yard", name: "Yard", cost: { funds: 1 }, turns: 1, effects: [{ "@type": "rail-departures", "@data": { extra: 1 } }] });
+      (data["buildings"] as Json[]).push({ id: "yard", name: "Yard", cost: { funds: 1 }, turns: 1, effects: [{ "@type": "rail-capacity", "@data": { units: 2 } }] });
     });
     const state = initialGameState(scenario);
-    expect(railDepartures(scenario, state, sub("west-town-quarter"))).toBe(2);
-    expect(railDepartures(scenario, withSubs(state, { "west-town-quarter": { buildings: ["yard" as never] } }), sub("west-town-quarter"))).toBe(3);
+    expect(railCapacity(scenario, state, sub("west-town-quarter"))).toBe(4);
+    const yard = (rail: number) => withSubs(state, { "west-town-quarter": { buildings: ["yard" as never], rail } });
+    expect(railCapacity(scenario, yard(2), sub("west-town-quarter"))).toBe(6);
+    expect(railCapacity(scenario, yard(1), sub("west-town-quarter"))).toBe(4);
+    expect(railCapacity(scenario, yard(0), sub("west-town-quarter"))).toBe(0);
+    expect(railCapacity(scenario, state, sub("nowhere"))).toBe(0);
+    // The number is the scenario's own.
+    const roomy = { ...scenario, linkModifiers: { ...scenario.linkModifiers, rail: { label: "Railway", rangeByLevel: { main: 4, single: 2 }, unitsPerLevel: 5 } } };
+    expect(railCapacity(roomy, state, sub("west-town-quarter"))).toBe(10);
+    expect(railCapacity({ ...scenario, linkModifiers: {} }, state, sub("west-town-quarter"))).toBe(0);
   });
 });
 
@@ -185,7 +193,7 @@ describe("movement: routes and their checks (M2, M4, M5)", () => {
     expect(validateRoute(scenario, redInHarbor, order("red", "red-guard", "harbor", [sea("isle")])).ok).toBe(false);
   });
 
-  it("takes the amphibious modifier under d20 only, from the attacker's sea-only origin", () => {
+  it("takes the amphibious modifier from the attacker's sea-only origin", () => {
     const scenario = load();
     const state = withSubs(initialGameState(scenario), { isle: { holder: faction("red") } });
     const context = { attackerFactionId: faction("blue"), attackerUnitIds: [unit("blue-marines")], defenderFactionIds: [faction("red")], diggingIn: false, scenario, state, territoryId: territory("isle") };
@@ -230,7 +238,7 @@ describe("movement: resolution (step 1 armies, step 3 transit)", () => {
     expect(kinds(trucked)).not.toContain("move-held-back");
   });
 
-  it("lets as many armies board as the capital's departures and holds back the rest", () => {
+  it("boards armies while their units fit the trains, and holds back whole the one that does not (D5)", () => {
     const scenario = load();
     const state = withSubs(initialGameState(scenario), { "west-town-quarter": { rail: 1 } });
     const result = play(scenario, state, [
@@ -239,9 +247,25 @@ describe("movement: resolution (step 1 armies, step 3 transit)", () => {
       order("red", "red-third", "westfold", [rail("highlands"), land("harbor")])
     ]);
     const held = result.outcomes.filter((outcome) => outcome.kind === "move-held-back");
-    expect(held).toMatchObject([{ reason: "rail-departures", unitIds: ["red-third"] }]);
+    expect(held).toMatchObject([{ rail: { boarding: "west-town-quarter", left: 0, places: 1 }, reason: "rail-full", unitIds: ["red-third"] }]);
     expect(at(result, "red-second")).toBe("highlands");
     expect(at(result, "red-guard")).toBe("highlands");
+  });
+
+  it("refuses an army its trains can't take whole, and lets a later one that fits board (D5)", () => {
+    const scenario = load();
+    const state = withSubs(initialGameState(scenario), { "west-town-quarter": { rail: 1 } });
+    const result = play(scenario, state, [
+      order("red", "red-guard", "westfold", [rail("highlands")]),
+      order("red", "red-second", "westfold", [rail("highlands")]),
+      order("red", "red-lorry", "westfold", [rail("highlands")]),
+      order("red", "red-third", "westfold", [rail("highlands"), land("harbor")])
+    ]);
+    // The truck takes a place too: three units on two places.
+    const held = result.outcomes.filter((outcome) => outcome.kind === "move-held-back");
+    expect(held).toMatchObject([{ rail: { boarding: "west-town-quarter", left: 2, places: 3 }, reason: "rail-full", unitIds: ["red-guard", "red-second", "red-lorry"] }]);
+    for (const id of ["red-guard", "red-second", "red-lorry"]) expect(at(result, id)).toBe("westfold");
+    expect(at(result, "red-third")).not.toBe("westfold");
   });
 
   it("lands units sailing one lane together as one amphibious army (W4)", () => {

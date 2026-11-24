@@ -1,0 +1,354 @@
+[
+  {
+    "id": "end3-bugle-and-drums",
+    "kind": "candidate",
+    "label": "Bugle call over a street band's drums",
+    "file": "end3-bugle-and-drums.mp3",
+    "seconds": 2.8,
+    "parts": [
+      {
+        "source": "Corneta Militar",
+        "author": "Boscoricardo17",
+        "licence": "CC0",
+        "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "url": "https://freesound.org/people/Boscoricardo17/sounds/868980/"
+      },
+      {
+        "source": "20051127.marching.band.flac",
+        "author": "dobroide",
+        "licence": "CC BY 4.0",
+        "licenceUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "url": "https://freesound.org/people/dobroide/sounds/12638/"
+      }
+    ],
+    "modified": "bugle 6.44-8.94 s from 0, band drums 26.00-28.62 s from 0.07, trimmed, filtered, mixed, faded, light artificial room echo added, levelled",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "end3-church-bell",
+    "kind": "candidate",
+    "label": "One deep church bell toll",
+    "file": "end3-church-bell.mp3",
+    "seconds": 3.0,
+    "parts": [
+      {
+        "source": "Church Bell.wav",
+        "author": "Kalomina",
+        "licence": "CC0",
+        "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "url": "https://freesound.org/people/Kalomina/sounds/611469/"
+      }
+    ],
+    "modified": "the strike at 50.3 s, slowed to 65% so it sounds lower, faded, light artificial room echo added, levelled",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "end3-field-drum",
+    "kind": "candidate",
+    "label": "Slow field drum: a short march figure, then two strikes",
+    "file": "end3-field-drum.mp3",
+    "seconds": 2.9,
+    "parts": [
+      {
+        "source": "execution_march.aif",
+        "author": "ddohler",
+        "licence": "CC BY 4.0",
+        "licenceUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "url": "https://freesound.org/people/ddohler/sounds/34259/"
+      }
+    ],
+    "modified": "1.6-4.4 s, trimmed, filtered, faded, light artificial room echo added, levelled",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "end3-kettledrum",
+    "kind": "candidate",
+    "label": "Kettledrum roll into one strike",
+    "file": "end3-kettledrum.mp3",
+    "seconds": 2.9,
+    "parts": [
+      {
+        "source": "VSCO 2 Community Edition: Timpani3_Roll_v5_rr1_Sum.wav, Timpani3_Hit_v4_rr1_Sum.wav",
+        "author": "Versilian Studios (recorded by Sam Gossner and Simon Dalzell)",
+        "licence": "CC0",
+        "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "url": "https://github.com/sgossner/VSCO-2-CE"
+      }
+    ],
+    "modified": "roll swells for 1.35 s, then the hit, trimmed, swell shaped by volume, mixed, faded, light artificial room echo added, peaks limited, levelled",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "end3-brass-chords",
+    "kind": "candidate",
+    "label": "Brass: two short chords and a long one",
+    "file": "end3-brass-chords.mp3",
+    "seconds": 2.9,
+    "parts": [
+      {
+        "source": "VSCO 2 Community Edition: Tuba3_sus_A#0_v3, tenortbn_sus_A#1_v3 D2_v3 F2_v3, MOHorn_sus_F2_v3 A2_v3, SHTrumpet_sus_A#3_v3 D4_v3",
+        "author": "Versilian Studios (recorded by Sam Gossner and Simon Dalzell)",
+        "licence": "CC0",
+        "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "url": "https://github.com/sgossner/VSCO-2-CE"
+      }
+    ],
+    "modified": "single notes tuned by up to one semitone and arranged into an original three-chord figure (B flat at 0 and 0.34 s, A major at 0.68 s), faded, light artificial room echo added, levelled",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "end3-clock-tower",
+    "kind": "candidate",
+    "label": "Pocket watch wound, then a tower clock strikes",
+    "file": "end3-clock-tower.mp3",
+    "seconds": 3.0,
+    "parts": [
+      {
+        "source": "Antique Pocket Watch Ticking and Winding",
+        "author": "apintofmild",
+        "licence": "CC0",
+        "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "url": "https://freesound.org/people/apintofmild/sounds/847217/"
+      },
+      {
+        "source": "mourezebellsHPF1.wav",
+        "author": "AGC66",
+        "licence": "CC0",
+        "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "url": "https://freesound.org/people/AGC66/sounds/394657/"
+      }
+    ],
+    "modified": "winding 85.8-87.0 s from 0, clock strike at 1.14 s of the original from 1.30 s, trimmed, bell slowed to 70% so it sounds lower, mixed, faded, light artificial room echo added, levelled",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "end3-ledger-stamp",
+    "kind": "candidate",
+    "label": "Heavy ledger shut, then a rubber stamp",
+    "file": "end3-ledger-stamp.mp3",
+    "seconds": 1.9,
+    "parts": [
+      {
+        "source": "slambook",
+        "author": "diluent_",
+        "licence": "CC0",
+        "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "url": "https://freesound.org/people/diluent_/sounds/204524/"
+      },
+      {
+        "source": "traditional stamp.wav",
+        "author": "I.fekry",
+        "licence": "CC0",
+        "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "url": "https://freesound.org/people/I.fekry/sounds/470710/"
+      },
+      {
+        "source": "VSCO 2 Community Edition: BDrumNewhit_v3_rr1_Sum.wav",
+        "author": "Versilian Studios (recorded by Sam Gossner and Simon Dalzell)",
+        "licence": "CC0",
+        "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "url": "https://github.com/sgossner/VSCO-2-CE"
+      }
+    ],
+    "modified": "trimmed, book slowed to 72%, stamp at 0.72 s, bass drum mixed under, light artificial room echo added, peaks limited, levelled",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "end3-fife-and-drum",
+    "kind": "candidate",
+    "label": "Fife and drum corps, a short burst",
+    "file": "end3-fife-and-drum.mp3",
+    "seconds": 2.8,
+    "parts": [
+      {
+        "source": "reenactment3.aif",
+        "author": "alienistcog",
+        "licence": "CC0",
+        "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "url": "https://freesound.org/people/alienistcog/sounds/125933/"
+      }
+    ],
+    "modified": "26.3-28.4 s, trimmed, filtered, faded, light artificial room echo added, peaks limited, levelled",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "stem-bell",
+    "kind": "stem",
+    "label": "Church bell",
+    "file": "stem-bell.mp3",
+    "seconds": 3.0,
+    "parts": [
+      {
+        "source": "Church Bell.wav",
+        "author": "Kalomina",
+        "licence": "CC0",
+        "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "url": "https://freesound.org/people/Kalomina/sounds/611469/"
+      }
+    ],
+    "modified": "the strike at 50.3 s, slowed to 65%, faded, levelled",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "stem-bugle",
+    "kind": "stem",
+    "label": "Bugle call",
+    "file": "stem-bugle.mp3",
+    "seconds": 2.36,
+    "parts": [
+      {
+        "source": "Corneta Militar",
+        "author": "Boscoricardo17",
+        "licence": "CC0",
+        "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "url": "https://freesound.org/people/Boscoricardo17/sounds/868980/"
+      }
+    ],
+    "modified": "6.44-8.94 s, trimmed, filtered, faded, levelled",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "stem-field-drum",
+    "kind": "stem",
+    "label": "Field drum march figure",
+    "file": "stem-field-drum.mp3",
+    "seconds": 2.75,
+    "parts": [
+      {
+        "source": "execution_march.aif",
+        "author": "ddohler",
+        "licence": "CC BY 4.0",
+        "licenceUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "url": "https://freesound.org/people/ddohler/sounds/34259/"
+      }
+    ],
+    "modified": "1.6-4.4 s, trimmed, filtered, faded, levelled",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "stem-kettledrum-roll",
+    "kind": "stem",
+    "label": "Kettledrum roll, swelling",
+    "file": "stem-kettledrum-roll.mp3",
+    "seconds": 1.9,
+    "parts": [
+      {
+        "source": "VSCO 2 Community Edition: Timpani3_Roll_v5_rr1_Sum.wav",
+        "author": "Versilian Studios (recorded by Sam Gossner and Simon Dalzell)",
+        "licence": "CC0",
+        "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "url": "https://github.com/sgossner/VSCO-2-CE"
+      }
+    ],
+    "modified": "loudest at 1.35 s, trimmed, swell shaped by volume, faded, levelled",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "stem-kettledrum-hit",
+    "kind": "stem",
+    "label": "Kettledrum strike",
+    "file": "stem-kettledrum-hit.mp3",
+    "seconds": 1.8,
+    "parts": [
+      {
+        "source": "VSCO 2 Community Edition: Timpani3_Hit_v4_rr1_Sum.wav",
+        "author": "Versilian Studios (recorded by Sam Gossner and Simon Dalzell)",
+        "licence": "CC0",
+        "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "url": "https://github.com/sgossner/VSCO-2-CE"
+      }
+    ],
+    "modified": "trimmed, faded, peaks limited, levelled",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "stem-cymbal-swell",
+    "kind": "stem",
+    "label": "Cymbal swell",
+    "file": "stem-cymbal-swell.mp3",
+    "seconds": 2.3,
+    "parts": [
+      {
+        "source": "Double_Cymbal_Swells.wav",
+        "author": "Brokenphono",
+        "licence": "CC0",
+        "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "url": "https://freesound.org/people/Brokenphono/sounds/343827/"
+      }
+    ],
+    "modified": "12.75-15.05 s, loudest at about 1.4 s, trimmed, filtered, faded, levelled",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "stem-brass-chord",
+    "kind": "stem",
+    "label": "Long brass chord",
+    "file": "stem-brass-chord.mp3",
+    "seconds": 1.9,
+    "parts": [
+      {
+        "source": "VSCO 2 Community Edition: Tuba3_sus_A#0_v3, tenortbn_sus_A#1_v3 D2_v3 F2_v3, MOHorn_sus_F2_v3 A2_v3, SHTrumpet_sus_A#3_v3 D4_v3",
+        "author": "Versilian Studios (recorded by Sam Gossner and Simon Dalzell)",
+        "licence": "CC0",
+        "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "url": "https://github.com/sgossner/VSCO-2-CE"
+      }
+    ],
+    "modified": "single notes tuned by up to one semitone and arranged into one chord, faded, levelled",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "stem-ledger-shut",
+    "kind": "stem",
+    "label": "Ledger shut",
+    "file": "stem-ledger-shut.mp3",
+    "seconds": 0.5,
+    "parts": [
+      {
+        "source": "slambook",
+        "author": "diluent_",
+        "licence": "CC0",
+        "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "url": "https://freesound.org/people/diluent_/sounds/204524/"
+      }
+    ],
+    "modified": "trimmed, slowed to 72%, peaks limited, faded, levelled",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "stem-stamp",
+    "kind": "stem",
+    "label": "Rubber stamp",
+    "file": "stem-stamp.mp3",
+    "seconds": 0.5,
+    "parts": [
+      {
+        "source": "traditional stamp.wav",
+        "author": "I.fekry",
+        "licence": "CC0",
+        "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "url": "https://freesound.org/people/I.fekry/sounds/470710/"
+      }
+    ],
+    "modified": "trimmed, peaks limited, faded, levelled",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "stem-low-drum",
+    "kind": "stem",
+    "label": "Low bass drum",
+    "file": "stem-low-drum.mp3",
+    "seconds": 1.3,
+    "parts": [
+      {
+        "source": "VSCO 2 Community Edition: BDrumNewhit_v7_rr1_Sum.wav",
+        "author": "Versilian Studios (recorded by Sam Gossner and Simon Dalzell)",
+        "licence": "CC0",
+        "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "url": "https://github.com/sgossner/VSCO-2-CE"
+      }
+    ],
+    "modified": "trimmed, faded, peaks limited, levelled",
+    "checked": "2026-11-23"
+  }
+]

@@ -12,7 +12,7 @@ interface RouteLayerProps {
   readonly factionColor: (id: FactionId) => string;
   /** U8: the start-of-turn state the moves are read against, so each line follows the links it uses. */
   readonly game?: GameState;
-  /** Names d20 grades (D8); optional so d6-only callers need not pass it. */
+  /** Names the battles' grades (D8). */
   readonly scenario?: Scenario;
   /** Map units per screen pixel. */
   readonly unit: number;

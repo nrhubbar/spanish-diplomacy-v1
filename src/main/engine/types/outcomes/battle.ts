@@ -1,5 +1,5 @@
 import type { BuildingId, FactionId, GeneralId, GradeId, SubTerritoryId, TerritoryId, TraitId, UnitId, UnitTypeId, WeatherId } from "../../ids";
-import type { BattleResult, CombatRole } from "../scenario";
+import type { CombatRole } from "../scenario";
 
 /** Battle outcomes (M12-M21, M27; D1-D8 for the d20), owned by the combat phases. */
 
@@ -43,9 +43,14 @@ export type CombatModifier =
 
 /** One army's contribution to a battle side. */
 export interface BattleArmy {
+  /** Its morale as it fought; a demoralized army's value counts at the scenario's reduced share. */
+  readonly demoralized: boolean;
   readonly factionId: FactionId;
   /** Where the army fought from: its origin when it moved this turn, else the battle territory. */
   readonly from: TerritoryId;
+  /** Its men at full strength, and the men it fought with. `value` is rounded from their share. */
+  readonly fullMen: number;
+  readonly men: number;
   readonly unitId: UnitId;
   /** Its combat value in this battle (C5): attack or defence, after strength and morale. */
   readonly value: number;
@@ -104,53 +109,31 @@ export interface Retreat {
 }
 
 /**
- * What every battle reports, whichever dice module rolled it. `losses` (men lost and units
- * destroyed, per unit) and `demoralizedUnitIds` are the one record of what a battle did to
- * units, for d6 and d20 alike; the harness reads them.
+ * One battle on the d20 table (D1, D2, P4). `losses` (men lost and units destroyed, per unit)
+ * and `demoralizedUnitIds` are the one record of what a battle did to units; the harness reads them.
  */
-interface BattleCommon {
+export interface BattleOutcome {
   readonly attacker: BattleSide;
   readonly attackerFactionId: FactionId;
   /** The odds column, 0 (below 1:1) to 6 (6:1). */
   readonly column: number;
   readonly defender: BattleSide;
   readonly demoralizedUnitIds: readonly UnitId[];
+  /** The die as rolled, 1 to 20. */
+  readonly die: number;
+  readonly grade: GradeId;
+  /** P4: sub-territories that changed hands: 0, 1, 2 or the whole territory. */
+  readonly ground: 0 | 1 | 2 | "all";
   readonly kind: "battle";
   readonly losses: readonly ArmyLoss[];
   readonly modifiers: readonly CombatModifier[];
   /** The odds as players read them, for example "2:1" or "1:3". */
   readonly oddsLabel: string;
   readonly retreats: readonly Retreat[];
-  readonly site: BattleSite;
-  readonly surrenderedUnitIds: readonly UnitId[];
-}
-
-/** One battle on the d6 table (M15, M16): the sides, the roll, the result, and what it did. */
-export interface D6BattleOutcome extends BattleCommon {
-  /** The die as rolled, 1 to 6. */
-  readonly die: number;
-  readonly dice: "d6";
-  readonly result: BattleResult;
-  /** The table row used: the die plus every modifier, clamped to 0..6. */
-  readonly row: number;
-}
-
-/** One battle on the d20 table (D1, D2, P4). TODO(m3r1-d20-combat): produced by the d20-graded module. */
-export interface D20BattleOutcome extends BattleCommon {
-  /** The die as rolled, 1 to 20. */
-  readonly die: number;
-  readonly dice: "d20";
-  readonly grade: GradeId;
-  /** P4: sub-territories that changed hands: 0, 1, 2 or the whole territory. */
-  readonly ground: 0 | 1 | 2 | "all";
   /** The table score used: the die plus every modifier, clamped to 0..20. */
   readonly score: number;
-}
-
-/** A battle, by the dice module that rolled it. */
-export type BattleOutcome = D6BattleOutcome | D20BattleOutcome;
-
-/** The d6 battles of a turn. TODO(m3r1-d20-combat): the report and map show d20 battles too. */
-export function isD6Battle(outcome: { readonly kind: string }): outcome is D6BattleOutcome {
-  return outcome.kind === "battle" && "dice" in outcome && outcome.dice === "d6";
+  readonly site: BattleSite;
+  /** The men who surrendered with each unit of `surrenderedUnitIds`, beyond its battle losses. Absent: none surrendered. */
+  readonly surrenderedMen?: Readonly<Record<UnitId, number>>;
+  readonly surrenderedUnitIds: readonly UnitId[];
 }

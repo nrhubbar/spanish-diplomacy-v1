@@ -132,7 +132,7 @@ export function orderRoute(order: TurnResolutionResult["submittedOrders"][number
   return isMoveOrder(order) ? `${order.from}>${order.to}` : order.kind;
 }
 
-/** A battle's result as a stable key: the d6 result, or the d20 grade. */
+/** A battle's result as a stable key: its grade. */
 export function battleResultKey(outcome: Extract<TurnOutcome, { kind: "battle" }>): string {
-  return outcome.dice === "d20" ? outcome.grade : outcome.result;
+  return outcome.grade;
 }

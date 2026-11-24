@@ -3,20 +3,23 @@ import { classifyMoves } from "../orders";
 import type { Phase } from "../phases/draft";
 import type {
   FactionId,
-  HeldBackReason,
+  GameState,
+  HeldBackCause,
   MoveHeldBackOutcome,
   MoveInterceptedOutcome,
   MoveLeg,
   MoveOrder,
   MoveTransitOutcome,
+  Scenario,
+  SubTerritoryId,
   SystemOutcome,
   TerritoryId,
   UnitId
 } from "../types";
 import { hasFighter } from "../units/fighting";
 import { armyAllowance, fitsAllowance, transportOf } from "./allowance";
-import { portLandings, railDepartures } from "./network";
-import { armyKey, describeRoute, legsOf, type MoveRoute, routeClaims } from "./routes";
+import { portLandings, railPlaces } from "./network";
+import { armyKey, describeRoute, legsOf, type MoveRoute, railShortage, type RouteCheck, routeClaims } from "./routes";
 
 /** The movement area's turn-only data (`TurnScratch.movement`). */
 export interface MovementScratch {
@@ -28,25 +31,48 @@ export interface MovementScratch {
 
 interface Army {
   readonly key: string;
-  readonly orders: readonly MoveOrder[];
+  readonly orders: readonly [MoveOrder, ...MoveOrder[]];
 }
 
 /** W4: the valid moves grouped into armies, in the order their first unit was ordered. */
 export function armiesOf(scenarioKey: (order: MoveOrder) => string, orders: readonly MoveOrder[]): readonly Army[] {
-  const groups = new Map<string, MoveOrder[]>();
+  const groups = new Map<string, [MoveOrder, ...MoveOrder[]]>();
   for (const order of orders) {
     const key = scenarioKey(order);
-    const group = groups.get(key) ?? [];
-    group.push(order);
-    groups.set(key, group);
+    const group = groups.get(key);
+    if (group === undefined) groups.set(key, [order]);
+    else group.push(order);
   }
   return [...groups].map(([key, group]) => ({ key, orders: group }));
+}
+
+/** The route an army's orders take from the start-of-turn state, as checked at reveal. */
+function armyRoute(scenario: Scenario, state: GameState, orders: readonly [MoveOrder, ...MoveOrder[]]): RouteCheck {
+  const [first] = orders;
+  const unitIds = orders.map((order) => order.unitId);
+  const { allMobile } = transportOf(scenario, state, unitIds);
+  return describeRoute(scenario, state, first.factionId, first.from, legsOf(scenario, first), allMobile, undefined, unitIds);
+}
+
+/**
+ * The route each planned move would take, for a planning estimate that knows how every attacker
+ * travels: the moves are grouped into armies (W4) and described as at reveal. A move with no
+ * route has no entry.
+ */
+export function routesOfMoves(scenario: Scenario, state: GameState, moves: readonly MoveOrder[]): ReadonlyMap<UnitId, MoveRoute> {
+  const routes = new Map<UnitId, MoveRoute>();
+  for (const army of armiesOf((order) => armyKey(scenario, order), moves)) {
+    const check = armyRoute(scenario, state, army.orders);
+    if (check.ok) for (const order of army.orders) routes.set(order.unitId, check.route);
+  }
+  return routes;
 }
 
 /**
  * Step 1, the `allowance` module's part (M1, M3, M5). Each order's legs were checked on their
  * own; here the moves are grouped into armies (W4) and checked as armies: the route must fit the
- * army's allowance, and its boarding capital, landing port or sea lane must have room. Armies
+ * army's allowance, and its boarding capital's trains, landing port or sea lane must have room. The
+ * trains take an army whole, a place for each of its units, or not at all (D5). Armies
  * are served in the order their first unit was ordered. D27.1: an army with no unit that can
  * fight (generals, trucks, anti-air) may not advance; it may only reinforce its own side. An army
  * that cannot go stays where it is, with its standing order; nothing is disbanded. The rest are
@@ -56,39 +82,39 @@ export const checkArmies: Phase = (draft) => {
   const { scenario, start } = draft.input;
   const held: MoveHeldBackOutcome[] = [];
   const routes = new Map<UnitId, MoveRoute>();
-  const departures = new Map<string, number>();
+  const departures = new Map<SubTerritoryId, number>();
   const landings = new Map<string, number>();
   const lanes = new Map<string, number>();
   const heldUnits = new Set<UnitId>();
   const advancing = new Set(classifyMoves(scenario, start, draft.armies, draft.orders.valid).advances.map((order) => order.unitId));
   for (const army of armiesOf((order) => armyKey(scenario, order), draft.orders.valid)) {
     const [first] = army.orders;
-    if (first === undefined) continue;
     const unitIds = army.orders.map((order) => order.unitId);
-    const transport = transportOf(scenario, start, unitIds);
-    const check = describeRoute(scenario, start, first.factionId, first.from, legsOf(scenario, first), transport.allMobile, undefined, unitIds);
-    const reason = ((): HeldBackReason | undefined => {
-      if (!check.ok) return "allowance";
+    const check = armyRoute(scenario, start, army.orders);
+    const places = railPlaces(scenario, start, unitIds);
+    const cause = ((): HeldBackCause | undefined => {
+      if (!check.ok) return { reason: "allowance" };
       const { route } = check;
-      if (unitIds.some((unitId) => advancing.has(unitId)) && !hasFighter(scenario, start.raised, unitIds)) return "cannot-fight";
-      if (!fitsAllowance(route.cost, route.steps, armyAllowance(scenario, start, first.factionId, first.from, unitIds))) return "allowance";
+      if (unitIds.some((unitId) => advancing.has(unitId)) && !hasFighter(scenario, start.raised, unitIds)) return { reason: "cannot-fight" };
+      if (!fitsAllowance(route.cost, route.steps, armyAllowance(scenario, start, first.factionId, first.from, unitIds))) return { reason: "allowance" };
       const claims = routeClaims(route);
-      if (claims.departure !== undefined && (departures.get(claims.departure) ?? 0) >= railDepartures(scenario, start, claims.departure)) return "rail-departures";
+      const rail = railShortage(scenario, start, { places, route }, { departures });
+      if (rail !== undefined) return { rail, reason: "rail-full" };
       // A port lands only its holder's armies, so landings count per port (M5).
       const landingKey = claims.landing;
-      if (landingKey !== undefined && (landings.get(landingKey) ?? 0) >= portLandings(scenario, route.sea?.level ?? 0)) return "port-landings";
+      if (landingKey !== undefined && (landings.get(landingKey) ?? 0) >= portLandings(scenario, route.sea?.level ?? 0)) return { reason: "port-landings" };
       const laneKey = claims.amphibious === undefined ? undefined : `${first.factionId}|${claims.amphibious}`;
-      if (laneKey !== undefined && (lanes.get(laneKey) ?? 0) >= 1) return "amphibious-lane";
-      if (claims.departure !== undefined) departures.set(claims.departure, (departures.get(claims.departure) ?? 0) + 1);
+      if (laneKey !== undefined && (lanes.get(laneKey) ?? 0) >= 1) return { reason: "amphibious-lane" };
+      if (claims.departure !== undefined) departures.set(claims.departure, (departures.get(claims.departure) ?? 0) + places);
       if (landingKey !== undefined) landings.set(landingKey, (landings.get(landingKey) ?? 0) + 1);
       if (laneKey !== undefined) lanes.set(laneKey, (lanes.get(laneKey) ?? 0) + 1);
       return undefined;
     })();
-    if (reason === undefined && check.ok) {
+    if (cause === undefined && check.ok) {
       for (const unitId of unitIds) routes.set(unitId, check.route);
     } else {
       for (const unitId of unitIds) heldUnits.add(unitId);
-      held.push({ factionId: first.factionId, from: first.from, kind: "move-held-back", reason: reason ?? "allowance", to: first.to, unitIds });
+      held.push({ factionId: first.factionId, from: first.from, kind: "move-held-back", ...(cause ?? { reason: "allowance" as const }), to: first.to, unitIds });
     }
   }
   const valid = draft.orders.valid.filter((order) => !heldUnits.has(order.unitId));
@@ -104,7 +130,7 @@ export const checkArmies: Phase = (draft) => {
 };
 
 /** The legs of a route cut short at `stop`: up to the leg that ends there, or a ride cut at a territory the train passes. */
-export function legsTo(route: MoveRoute, stop: TerritoryId): readonly MoveLeg[] {
+function legsTo(route: MoveRoute, stop: TerritoryId): readonly MoveLeg[] {
   const legs: MoveLeg[] = [];
   for (const leg of route.legs) {
     if (leg.kind === "rail" && route.rail?.through.includes(stop) === true) return [...legs, { kind: "rail", to: stop }];
@@ -122,8 +148,7 @@ export function legsTo(route: MoveRoute, stop: TerritoryId): readonly MoveLeg[] 
  * - Every other move that is not a reinforcement goes to the territory its last leg starts
  *   from, and from there it is an ordinary one-step move for the meeting and territory battles
  *   (steps 4 and 5): a bounced army returns there.
- * - Reinforcements arrive (M11), as in the preset.
- * A general set aside by the air module (d6 table) is sent where his intercepted army stops.
+ * - Reinforcements arrive (M11).
  * Frostbite (T4) is the weather module's step-9 part (`m3r1-weather-timer`, WT-5).
  */
 export const moveAlongRoutes: Phase = (draft) => {
@@ -182,22 +207,10 @@ export const moveAlongRoutes: Phase = (draft) => {
   armies = replaceArmies(armies, [...staged].map(([unitId, staging]) => placeAt(requireArmy(armies, unitId), staging)));
   armies = replaceArmies(armies, reinforcements.map((order) => placeAt(requireArmy(armies, order.unitId), order.to)));
 
-  // AG-3: a general set aside from the ground steps follows his army; an intercepted army stops
-  // short, so he goes where it stops rather than to its destination.
-  const air = draft.scratch.air;
-  const generalMoves = air === undefined ? undefined : { ...air.generalMoves };
-  if (air !== undefined && generalMoves !== undefined) {
-    for (const [generalId, members] of Object.entries(air.armies) as [UnitId, readonly UnitId[]][]) {
-      const stopped = members.map((id) => replaced.get(id)).find((order) => order !== undefined && intercepted.has(order.unitId));
-      if (stopped !== undefined && generalMoves[generalId] !== undefined) generalMoves[generalId] = stopped.to;
-    }
-  }
-
   return {
     ...draft,
     armies,
     events: [...draft.events, ...events],
-    orders: { ...draft.orders, advances, origins, reinforcements, valid },
-    ...(air === undefined || generalMoves === undefined ? {} : { scratch: { ...draft.scratch, air: { ...air, generalMoves } } })
+    orders: { ...draft.orders, advances, origins, reinforcements, valid }
   };
 };

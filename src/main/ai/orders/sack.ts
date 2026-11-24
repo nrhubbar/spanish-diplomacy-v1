@@ -5,7 +5,7 @@ import type { GeneralDefinition, SackOrder, Scenario } from "../../engine/types"
 import type { OrderPlanner } from "./planner";
 
 /** U5: how good a general's trait is: the sum of its roll changes, and -1 for a general who cannot rally. */
-export function traitScore(scenario: Scenario, general: GeneralDefinition): number {
+function traitScore(scenario: Scenario, general: GeneralDefinition): number {
   const trait = scenario.generalTraits.find((candidate) => candidate.id === general.traitId);
   return (trait?.effects ?? []).reduce((sum, effect) => sum + (effect.kind === "roll-modifier" ? effect.roll : -1), 0);
 }

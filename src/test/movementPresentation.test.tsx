@@ -8,7 +8,7 @@ import { RouteCard } from "../main/screens/movement/RouteCard";
 import { blockedOrders, enemyPresent, inContestedGround, selectedWithdrawRoutes, withdrawDestinations } from "../main/state/planning/contested";
 import { type PlanningSession, selectTerritory } from "../main/state/planning";
 import { emptyDraft } from "../main/state/session";
-import { armyIn, faction, onD6Dice, spainD20, spainId, territory, tiny, unit, withUnits } from "./support";
+import { armyIn, faction, spainWithAir, spainId, territory, tiny, unit, withUnits } from "./support";
 
 /**
  * M-9: the route chips, rows, detail line and "Army leaving" summary for every route shape
@@ -25,7 +25,7 @@ function route(partial: Partial<MoveRoute> & Pick<MoveRoute, "shape" | "to">): M
 const ride = { boarding: sub("madrid"), crossings: 2, end: t("catalunya"), level: 2, range: 4, start: t("madrid"), stations: [sub("madrid"), sub("barcelona")], through: [t("castilla-la-mancha"), t("valencia")] };
 
 describe("route chips and rows for each shape (X5)", () => {
-  const scenario = spainD20();
+  const scenario = spainWithAir();
   const state = initialGameState(scenario);
 
   it("names a mountain or swamp entry, the moves left and the fatigue on a march", () => {
@@ -64,7 +64,7 @@ describe("route chips and rows for each shape (X5)", () => {
     expect(routeTag(route({ shape: "rail-step", to: t("aragon") }), false)).toBe("Rail, then march");
   });
 
-  it("separates a port landing from an amphibious assault, with the d20 modifier only under the d20", () => {
+  it("separates a port landing from an amphibious assault, with its roll modifier", () => {
     const port = route({ legs: [{ kind: "sea", to: t("islas-baleares") }], sea: { departure: sub("barcelona"), kind: "port", level: 2, port: sub("mallorca") }, shape: "sea", to: t("islas-baleares") });
     expect(routeChips(scenario, port, [], 1, undefined)).toEqual([{ kind: "sea", text: "Port of Mallorca", warn: false }]);
     expect(routeDetail(scenario, state, port, 0)).toBe("Sails from Barcelona, lands at Mallorca (2 a turn)");
@@ -74,9 +74,9 @@ describe("route chips and rows for each shape (X5)", () => {
     expect(routeRows(scenario, state, assault, 1)).toContainEqual({ label: "Amphibious assault", value: "\u22124" });
     expect(routeDetail(scenario, state, assault, 0)).toBe("Sails from Barcelona and storms the coast: one army per lane a turn");
     expect(routeTag(assault)).toBe("Amphibious");
-    const d6 = onD6Dice(scenario);
-    expect(routeChips(d6, assault, [], 1, undefined)[0]?.text).toBe("Amphibious assault");
-    expect(routeRows(d6, state, assault, 1)).toContainEqual({ label: "Amphibious assault", value: "No roll modifier" });
+    const noModifier: Scenario = { ...scenario, d20: { ...scenario.d20, modifiers: { ...scenario.d20.modifiers, amphibious: 0 } } };
+    expect(routeChips(noModifier, assault, [], 1, undefined)[0]?.text).toBe("Amphibious assault");
+    expect(routeRows(noModifier, state, assault, 1)).toContainEqual({ label: "Amphibious assault", value: "No roll modifier" });
   });
 
   it("adds the weather row for the destination when the turn has weather", () => {
@@ -87,7 +87,7 @@ describe("route chips and rows for each shape (X5)", () => {
 });
 
 describe("the army leaving (X5, M1)", () => {
-  const scenario = spainD20();
+  const scenario = spainWithAir();
 
   it("counts trucks with the scenario's own carrying number, and mounted armies", () => {
     const state = withUnits(scenario, [["rep-wad-ras-1", "republic", "madrid"], ["rep-sevilla-34", "republic", "madrid"], ["rep-vitoria-8", "republic", "madrid"]]);
@@ -120,7 +120,7 @@ describe("the army leaving (X5, M1)", () => {
 });
 
 describe("the route breakdown card (X5)", () => {
-  const scenario = spainD20();
+  const scenario = spainWithAir();
   const state = initialGameState(scenario);
   const step = route({ shape: "step", to: t("aragon") });
 
@@ -144,7 +144,7 @@ describe("the route breakdown card (X5)", () => {
 });
 
 describe("planning in contested ground: the helpers (C1)", () => {
-  const scenario = spainD20();
+  const scenario = spainWithAir();
   const session = (state: GameState, factionId = "republic"): PlanningSession => ({
     draft: emptyDraft,
     factionId: faction(factionId),

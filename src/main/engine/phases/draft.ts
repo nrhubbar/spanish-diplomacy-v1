@@ -1,8 +1,8 @@
-import type { PendingBattle } from "../battle";
+import type { PendingBattle } from "../d20/battle";
 import type { Armies } from "../board";
 import type { BattleDice, RollStreams } from "../dice";
-import type { FrontResolution } from "../front";
-import type { MeetingResolution } from "../meeting";
+import type { FrontResolution } from "../d20/front";
+import type { MeetingResolution } from "../d20/meeting";
 import type { Settled } from "../retreat";
 import type {
   GameState,
@@ -95,7 +95,7 @@ export function startDraft(input: TurnInput): TurnDraft {
   const { generals, raidCuts, raised, reveals, subTerritories, training, treasuries } = start;
   const systems: SystemState = {
     generals, raidCuts, raised, reveals, subTerritories, training, treasuries,
-    ...(start.replenishCarry === undefined ? {} : { replenishCarry: start.replenishCarry }),
+    ...(start.carry === undefined ? {} : { carry: start.carry }),
     ...(start.builtLinks === undefined ? {} : { builtLinks: start.builtLinks }),
     ...(start.weather === undefined ? {} : { weather: start.weather })
   };

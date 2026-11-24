@@ -11,8 +11,6 @@ Wikimedia Commons under
 | `artillery.svg` | [Artillery](https://commons.wikimedia.org/wiki/File:Military_Symbol_-_Friendly_Unit_(Solid_Light_1.5x1_Frame)-_Artillery_(NATO_APP-6).svg) |
 | `cavalry.svg` | [Reconnaissance or cavalry](https://commons.wikimedia.org/wiki/File:Military_Symbol_-_Friendly_Unit_(Solid_Light_1.5x1_Frame)-_Reconnaissance_(NATO_APP-6).svg) |
 | `armor.svg` | [Armour](https://commons.wikimedia.org/wiki/File:Military_Symbol_-_Friendly_Unit_(Solid_Light_1.5x1_Frame)-_Armour_(NATO_APP-6).svg) |
-| `engineers.svg` | [Military engineers](https://commons.wikimedia.org/wiki/File:Military_Symbol_-_Friendly_Unit_(Solid_Light_1.5x1_Frame)-_Military_Engineers_(NATO_APP-6).svg) |
-| `signals.svg` | [Signals or communication](https://commons.wikimedia.org/wiki/File:Military_Symbol_-_Friendly_Unit_(Solid_Light_1.5x1_Frame)-_Signals_or_Communication_(NATO_APP-6).svg) |
 
 The local filenames are shortened for application use. The SVG contents are
 otherwise unchanged from their downloaded source files.

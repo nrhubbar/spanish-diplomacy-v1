@@ -54,7 +54,7 @@ export function checkMap(document: ScenarioDocument, map: MapDocument, assetPath
   issues.push(...checkWater(map));
   const entries = (map as { readonly subTerritories?: { readonly entries: MapSubTerritoryEntries } }).subTerritories?.entries;
   if (entries !== undefined) {
-    issues.push(...checkSubTerritoryMap(document.ruleset === "m3-modular" ? document.subTerritories : [], entries));
+    issues.push(...checkSubTerritoryMap(document.subTerritories, entries));
   }
   return issues;
 }
@@ -105,8 +105,7 @@ export type MapSubTerritoryEntries = Readonly<Record<string, { readonly territor
 
 /**
  * L10: the map's sub-territory entries and the scenario's sub-territories match one to one, in
- * the same territories. TODO(integrator, at the map-provinces merge): read `map.subTerritories`
- * through its schema and require it for partitioned packages.
+ * the same territories.
  */
 export function checkSubTerritoryMap(
   subTerritories: readonly { readonly id: string; readonly territoryId: string }[],

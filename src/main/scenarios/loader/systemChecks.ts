@@ -1,8 +1,8 @@
-import type { ModularScenarioDocument } from "../schema/scenarioSchema";
+import type { ScenarioDocument } from "../schema/scenarioSchema";
 import { bandsCoverD20, idSet, type Issues } from "./issues";
 
 /** Rules L20-L22 and L25: weather, generals, the d20 table and the raid table. */
-export function checkSystems(document: ModularScenarioDocument, issues: Issues): void {
+export function checkSystems(document: ScenarioDocument, issues: Issues): void {
   checkWeather(document, issues);
   checkGenerals(document, issues);
   checkGeneralUnits(document, issues);
@@ -13,7 +13,7 @@ export function checkSystems(document: ModularScenarioDocument, issues: Issues):
 }
 
 /** L20: seasons cover the year once; every zone has a table per season; every territory names a zone. */
-function checkWeather(document: ModularScenarioDocument, issues: Issues): void {
+function checkWeather(document: ScenarioDocument, issues: Issues): void {
   const weather = document.weather;
   const zones = idSet(weather?.zones ?? []);
   document.territories.forEach((territory, index) => {
@@ -44,7 +44,7 @@ function checkWeather(document: ModularScenarioDocument, issues: Issues): void {
 }
 
 /** L21: traits resolve; each faction fields 3 to 5 generals and names a seat territory. */
-function checkGenerals(document: ModularScenarioDocument, issues: Issues): void {
+function checkGenerals(document: ScenarioDocument, issues: Issues): void {
   const generals = document.generals;
   if (generals === undefined) return;
   issues.unique("generals.traits", generals.traits);
@@ -67,7 +67,7 @@ function checkGenerals(document: ModularScenarioDocument, issues: Issues): void 
 }
 
 /** L21: a unit of a general type is exactly one roster general of its own faction, and no other unit names one. */
-function checkGeneralUnits(document: ModularScenarioDocument, issues: Issues): void {
+function checkGeneralUnits(document: ScenarioDocument, issues: Issues): void {
   const roster = new Map((document.generals?.roster ?? []).map((general) => [general.id, general]));
   const generalTypes = new Set(document.unitTypes.filter((type) => type.kind === "general").map((type) => type.id));
   const fielded = new Set<string>();
@@ -86,10 +86,9 @@ function checkGeneralUnits(document: ModularScenarioDocument, issues: Issues): v
   });
 }
 
-/** L22: the table names known grades, and the fatigue and works numbers are in order. */
-function checkD20(document: ModularScenarioDocument, issues: Issues): void {
-  const d20 = document.d20;
-  if (d20 === undefined) return;
+/** L13, L22: every faction modifier changes something, the table names known grades, and the fatigue and works numbers are in order. */
+function checkD20(document: ScenarioDocument, issues: Issues): void {
+  const { d20 } = document;
   issues.unique("d20.grades", d20.grades);
   issues.unique("d20.factionModifiers", d20.factionModifiers);
   const grades = idSet(d20.grades);
@@ -97,7 +96,13 @@ function checkD20(document: ModularScenarioDocument, issues: Issues): void {
     column.forEach((grade, score) => { issues.ref(`d20.table[${columnIndex}][${score}]`, grade, grades, "grade"); });
   });
   const factions = idSet(document.factions);
-  d20.factionModifiers.forEach((modifier, index) => { issues.ref(`d20.factionModifiers[${index}].factionId`, modifier.factionId, factions, "faction"); });
+  d20.factionModifiers.forEach((modifier, index) => {
+    const path = `d20.factionModifiers[${index}]`;
+    issues.ref(`${path}.factionId`, modifier.factionId, factions, "faction");
+    if ((modifier.attack ?? 0) === 0 && (modifier.defence ?? 0) === 0) {
+      issues.add(`${path}: "${modifier.id}" changes nothing; give it an attack or defence bonus (L13)`);
+    }
+  });
   if (d20.fatigue.fatiguedLevel >= d20.fatigue.demoralizedLevel) issues.add("d20.fatigue: fatiguedLevel must be below demoralizedLevel (L22)");
   if (d20.modifiers.worksPerTurn > d20.modifiers.worksMax) issues.add("d20.modifiers: worksPerTurn cannot exceed worksMax (L22)");
 }

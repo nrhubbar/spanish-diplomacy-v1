@@ -36,10 +36,11 @@ export interface RoadRules {
   readonly motorRange: number;
 }
 
-/** R5: rail range in territories by the weakest rail level on the route. */
+/** R5: rail range in territories by the weakest rail level on the route. D5: a station boards `unitsPerLevel` units a turn per level. */
 export interface RailRules {
   readonly label: string;
   readonly rangeByLevel: Readonly<Record<RailLevel, number>>;
+  readonly unitsPerLevel: number;
 }
 
 /** R6: a pass. `defenderRoll` is the attacker's roll change when every attacking ground unit crosses one. */

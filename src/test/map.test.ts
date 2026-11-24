@@ -13,14 +13,15 @@ import {
 import { idleGesture, pointerDown, pointerMove, pointerUp } from "../main/map/gesture";
 import { classifyKeyTarget, mapKeyIntent, shouldHandleMapKey } from "../main/map/keyboard";
 import { legendEntries } from "../main/map/MapLegend";
-import { paneLayoutFor, paneWidthFor } from "../main/map/MapPane";
+import { paneLayoutFor } from "../main/map/MapPane";
+import { paneWidthFor } from "../main/map/paneSize";
 import { prepareGeometry, prepareSymbol } from "../main/map/markup";
 import { intersects, placeCounters, visibleContextLabels } from "../main/map/placement";
 import { groupRoutes, routeCurve } from "../main/map/routes";
 import { terrainFrustum, terrainRenderMetrics } from "../main/map/terrainRendering";
 import { staticMapView } from "../main/map/view";
 import { initialGameState, resolveTurn } from "../main/engine/resolution";
-import { type D6BattleOutcome, type BouncedMoveOutcome, isMoveOrder } from "../main/engine/types";
+import { type BattleOutcome, type BouncedMoveOutcome, type GradeId, isMoveOrder } from "../main/engine/types";
 import {
   bounceReason,
   controlDescription,
@@ -33,6 +34,7 @@ import {
 } from "../main/presentation/text";
 import { turnLabel } from "../main/presentation/turn";
 import { faction, move, spain, territory, testRegistry, tiny, tinyId, unit, withUnits } from "./support";
+import { pinned } from "./pinned";
 
 const bounds: CameraBounds = { content: { height: 200, width: 200, x: 0, y: 0 }, focus: { height: 100, width: 100, x: 50, y: 50 } };
 const viewport = { height: 400, insetBottom: 0, insetRight: 200, width: 600 };
@@ -229,7 +231,7 @@ describe("markup and rendering helpers", () => {
   });
 
   it("builds legend entries from what is shown (V9)", () => {
-    const scenario = spain();
+    const scenario = pinned(spain());
     const state = initialGameState(scenario);
     // m11: Spain has rail on the board from the start.
     expect(legendEntries(scenario, state, staticMapView)).toEqual(["contested", "sea", "rail"]);
@@ -239,7 +241,7 @@ describe("markup and rendering helpers", () => {
       { factionId: faction("republic"), orders: [move("republic", "rep-wad-ras-1", "madrid", "castilla-y-leon")] },
       { factionId: faction("north"), orders: [move("north", "north-san-marcial-22", "castilla-y-leon", "madrid")] }
     ], 1);
-    expect(legendEntries(scenario, state, { ...staticMapView, outcomes: result.outcomes, plannedOrders: result.submittedOrders.filter(isMoveOrder) })).toEqual(["contested", "sea", "planned", "bounced", "attacker-eliminated", "attacker-demoralized", "both-demoralized", "defender-demoralized", "defender-exchange", "rail"]);
+    expect(legendEntries(scenario, state, { ...staticMapView, outcomes: result.outcomes, plannedOrders: result.submittedOrders.filter(isMoveOrder) })).toEqual(["contested", "sea", "planned", "bounced", "attacker-eliminated", "both-demoralized", "defender-demoralized", "defender-exchange", "rail"]);
   });
 });
 
@@ -278,36 +280,37 @@ describe("player-facing text", () => {
       capturedByFactionId: faction("blue"),
       cause: { holdingFactionIds: [faction("blue")], kind: "held" },
       kind: "disbanded-move",
+      men: 500,
       order: move("red", "red-rangers", "highlands", "harbor")
     });
     expect(text).toBe("Red League: Red Rangers was lost. It tried to move from Highlands to Harbor and bounced: held by Blue Union. Blue Union took Highlands.");
   });
 
-  it("gives one-line headlines for battles and the m2-strength statuses", () => {
+  it("gives one-line headlines for battles and unit statuses", () => {
     const scenario = tiny();
     const army = (unitId: string, factionId: string, from: string, value: number) =>
-      ({ factionId: faction(factionId), from: territory(from), unitId: unit(unitId), value });
-    const battle: D6BattleOutcome = {
-      dice: "d6",
+      ({ demoralized: false, factionId: faction(factionId), from: territory(from), fullMen: 700, men: 700, unitId: unit(unitId), value });
+    const battle: BattleOutcome = {
       attacker: { armies: [army("red-guard", "red", "westfold", 4), army("red-rangers", "red", "highlands", 3)], value: 7 },
       attackerFactionId: faction("red"),
       column: 1,
       defender: { armies: [army("blue-marines", "blue", "harbor", 5)], value: 5 },
       demoralizedUnitIds: [],
-      die: 4,
+      die: 12,
+      grade: "stalemate" as GradeId,
+      ground: 0,
       kind: "battle",
       losses: [],
       modifiers: [],
       oddsLabel: "1:1",
-      result: "both-demoralized",
       retreats: [],
-      row: 4,
+      score: 12,
       site: { kind: "assault", occupation: { kind: "held" }, territoryId: territory("harbor") },
       surrenderedUnitIds: []
     };
-    expect(describeOutcome(scenario, battle)).toBe("Battle for Harbor: Both sides demoralized.");
+    expect(describeOutcome(scenario, battle)).toBe("Battle for Harbor: Stalemate.");
     expect(describeOutcome(scenario, { ...battle, site: { between: [territory("harbor"), territory("highlands")], kind: "meeting" } }))
-      .toBe("Battle on the road between Harbor and Highlands: Both sides demoralized.");
+      .toBe("Battle on the road between Harbor and Highlands: Stalemate.");
     expect(groupOutcomes([battle])[0]?.unitIds).toEqual(["red-guard", "red-rangers", "blue-marines"]);
     const bounced: BouncedMoveOutcome = {
       cause: { holdingFactionIds: [faction("blue")], kind: "held" },

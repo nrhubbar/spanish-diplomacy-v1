@@ -55,10 +55,9 @@ function contestedDescriptions(scenario: Scenario, session: PlanningSession): Pa
   const routes = selectedWithdrawRoutes(scenario, session);
   const territory = territoryName(scenario, territoryId);
   const through = [...new Set(routes.flatMap((route) => routeNames(scenario, route)))];
-  const fatigue = scenario.rules.dice === "d20-graded" ? "; +1 fatigue" : "";
   return {
     attack: enemyPresent(session, territoryId)
-      ? `Default here. Joins the standing battle for ${territory}${fatigue}.`
+      ? `Default here. Joins the standing battle for ${territory}; +1 fatigue.`
       : `Default here. Takes one enemy sub-territory of ${territory} a turn, the capital last.`,
     withdraw: routes.length === 0
       ? "No way out: every neighbouring territory you hold is cut off from your sub-territories here."

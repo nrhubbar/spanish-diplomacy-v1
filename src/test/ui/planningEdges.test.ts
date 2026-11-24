@@ -12,7 +12,7 @@ import {
   keepBasket,
   type PlanningSession,
   recruitQuantity,
-  replenishWithout,
+  unitOrdersWithout,
   selectedWithdrawRoutes,
   setRecruitQuantity,
   withdrawDestinations
@@ -76,8 +76,8 @@ describe("the Recruit basket's edges (X4, R2)", () => {
     expect(keepBasket(emptyDraft)).toEqual({});
     const recruits = [{ factionId: republic, kind: "recruit" as const, territoryId: catalunya, unitTypeId: type("militia-column") }];
     expect(keepBasket({ ...emptyDraft, recruits })).toEqual({ recruits });
-    expect(replenishWithout(emptyDraft, ["rep-wad-ras-1"])).toEqual({});
-    expect(replenishWithout({ ...emptyDraft, replenishments: [replenish("rep-wad-ras-1"), replenish("rep-covadonga-4")] }, ["rep-wad-ras-1"]))
+    expect(unitOrdersWithout(emptyDraft, ["rep-wad-ras-1"])).toEqual({});
+    expect(unitOrdersWithout({ ...emptyDraft, replenishments: [replenish("rep-wad-ras-1"), replenish("rep-covadonga-4")] }, ["rep-wad-ras-1"]))
       .toEqual({ replenishments: [replenish("rep-covadonga-4")] });
   });
 });

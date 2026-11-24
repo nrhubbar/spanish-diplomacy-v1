@@ -25,7 +25,7 @@ import type {
   UnitTypeId
 } from "../../main/engine/types";
 import { estimateAttack } from "../../main/engine/combat";
-import { faction, move, spainD20, spainWithAir, territory, unit } from "../support";
+import { faction, move, spainWithAir, territory, unit } from "../support";
 
 /** R10, R11: the air battle before a battle, and whose Ground Support applies. */
 
@@ -83,7 +83,7 @@ describe("the air battle (R11, pure)", () => {
 });
 
 describe("the air over a battle, from the scenario (R10, R11)", () => {
-  const scenario = spainD20();
+  const scenario = spainWithAir();
   const state = initialGameState(scenario);
   const madrid = territory("madrid");
 
@@ -159,7 +159,7 @@ describe("the air over a battle, from the scenario (R10, R11)", () => {
 });
 
 describe("the air battle in a turn (R11)", () => {
-  const scenario = spainD20();
+  const scenario = spainWithAir();
   // A Republican attack on Castilla y León with two aircraft on Ground Support, against the North's AA battery there.
   const state = raise(initialGameState(scenario), "r_north_anti-air-battery_1", "north", "anti-air-battery", "castilla-y-leon");
   const target = territory("castilla-y-leon");
@@ -204,52 +204,49 @@ describe("the odds with planned Ground Support (R11)", () => {
   const aircraft = [unit("rep-breguet-bombers"), unit("rep-ni52-fighters")];
   const target = territory("castilla-y-leon");
 
-  // The defenders' infantry carry AA of 3 in the guarded variant (the d6 table cannot value a unit raised in play).
+  // The defenders' infantry carry AA of 3 in the guarded variant.
   const guardedBy = (scenario: Scenario): Scenario => {
     const retype = (type: UnitTypeDefinition): UnitTypeDefinition => (type.id === "infantry-regiment" ? { ...type, effects: [...type.effects, { kind: "raid-defence", roll: -3 }] } : type);
     return { ...scenario, index: { ...scenario.index, unitTypes: new Map([...scenario.index.unitTypes].map(([id, type]) => [id, retype(type)])) }, unitTypes: scenario.unitTypes.map(retype) };
   };
 
-  for (const [dice, plainScenario] of [["d20", spainD20()], ["d6", spainWithAir()]] as const) {
-    describe(`on the ${dice}`, () => {
-      const state = initialGameState(plainScenario);
-      const open = plainScenario;
-      const guarded = guardedBy(plainScenario);
-      const battle = (scenario: Scenario, support: readonly typeof aircraft[number][] = []) => {
-        const estimate = estimateAttack(scenario, state, republic, attackers, target, support);
-        if (estimate.kind !== "battle") throw new Error("expected a battle");
-        return estimate;
-      };
+  const plainScenario = spainWithAir();
+  const state = initialGameState(plainScenario);
+  const open = plainScenario;
+  const guarded = guardedBy(plainScenario);
+  const battle = (scenario: Scenario, support: readonly typeof aircraft[number][] = []) => {
+    const estimate = estimateAttack(scenario, state, republic, attackers, target, support);
+    if (estimate.kind !== "battle") throw new Error("expected a battle");
+    return estimate;
+  };
 
-      it("leaves the odds alone without planned support, with aircraft that are not the attacker's, or grounded ones", () => {
-        expect(battle(open)).not.toHaveProperty("air");
-        expect(battle(open, [unit("south-ju52-bombers")])).toEqual(battle(open));
-        const rainy = { ...state, weather: { outcomes: Object.fromEntries((plainScenario.weather?.zones ?? []).map((zone) => [zone.id, "rain"])), roll: 10 } } as GameState;
-        expect(estimateAttack(open, rainy, republic, attackers, target, aircraft)).not.toHaveProperty("air");
-      });
+  it("leaves the odds alone without planned support, with aircraft that are not the attacker's, or grounded ones", () => {
+    expect(battle(open)).not.toHaveProperty("air");
+    expect(battle(open, [unit("south-ju52-bombers")])).toEqual(battle(open));
+    const rainy = { ...state, weather: { outcomes: Object.fromEntries((plainScenario.weather?.zones ?? []).map((zone) => [zone.id, "rain"])), roll: 10 } } as GameState;
+    expect(estimateAttack(open, rainy, republic, attackers, target, aircraft)).not.toHaveProperty("air");
+  });
 
-      it("counts unopposed support in full, in the modifiers too", () => {
-        const estimate = battle(open, aircraft);
-        expect(estimate.air).toMatchObject({ chance: 1, modifier: { kind: "air-support", roll: 6 } });
-        expect(estimate.air?.odds).toBeUndefined();
-        expect(estimate.modifiers).toContainEqual(estimate.air?.modifier);
-        expect(estimate.takeChance).toBeGreaterThan(battle(open).takeChance);
-      });
+  it("counts unopposed support in full, in the modifiers too", () => {
+    const estimate = battle(open, aircraft);
+    expect(estimate.air).toMatchObject({ chance: 1, modifier: { kind: "air-support", roll: 6 } });
+    expect(estimate.air?.odds).toBeUndefined();
+    expect(estimate.modifiers).toContainEqual(estimate.air?.modifier);
+    expect(estimate.takeChance).toBeGreaterThan(battle(open).takeChance);
+  });
 
-      it("weighs the odds by the chance to win the air against the defenders' AA", () => {
-        const plain = battle(guarded);
-        const estimate = battle(guarded, aircraft);
-        const air = estimate.air!;
-        expect(air.odds).toEqual(airBattleOdds(air.input));
-        expect(air.chance).toBe(air.odds?.attackerWins);
-        expect(estimate.modifiers).toEqual(plain.modifiers);
-        const sure = battle(open, aircraft);
-        expect(estimate.takeChance).toBeCloseTo(plain.takeChance * (1 - air.chance) + sure.takeChance * air.chance, 10);
-        const chances: readonly number[] = "faces" in estimate ? Object.values(estimate.chances) : [...estimate.chances.values()];
-        expect(chances.reduce((sum, value) => sum + value, 0)).toBeCloseTo(1, 10);
-      });
-    });
-  }
+  it("weighs the odds by the chance to win the air against the defenders' AA", () => {
+    const plain = battle(guarded);
+    const estimate = battle(guarded, aircraft);
+    const air = estimate.air!;
+    expect(air.odds).toEqual(airBattleOdds(air.input));
+    expect(air.chance).toBe(air.odds?.attackerWins);
+    expect(estimate.modifiers).toEqual(plain.modifiers);
+    const sure = battle(open, aircraft);
+    expect(estimate.takeChance).toBeCloseTo(plain.takeChance * (1 - air.chance) + sure.takeChance * air.chance, 10);
+    const chances = [...estimate.chances.values()];
+    expect(chances.reduce((sum, value) => sum + value, 0)).toBeCloseTo(1, 10);
+  });
 });
 
 function raise(state: GameState, id: string, factionId: string, type: string, territoryId: string): GameState {

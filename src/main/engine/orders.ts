@@ -37,7 +37,7 @@ export function partitionOrders(
   const rejected: RejectedOrderOutcome[] = [];
   const valid: MoveOrder[] = [];
   const fail = (order: Order, reason: string): void => {
-    if (order.kind === "move") invalid.push({ kind: "invalid-order", order, reason });
+    if (order.kind === "move") invalid.push({ kind: "invalid-order", men: state.units[order.unitId]?.strength ?? 0, order, reason });
     else rejected.push({ kind: "rejected-order", order, reason });
   };
   for (const order of orders) {
@@ -56,8 +56,7 @@ export function partitionOrders(
  * M11 (C10): a move is a reinforcement when its faction controls the destination at the start
  * of the turn, or an army of its faction stays there: it has no move order, was not disbanded
  * for an impossible one (`armies` no longer holds those), and stands on the board through the
- * ground steps (D17, `onGroundBoard`: never aircraft, nor generals under the d6 table). Every
- * other move is an advance.
+ * ground steps (D17, `onGroundBoard`: never aircraft). Every other move is an advance.
  */
 export function classifyMoves(
   scenario: Scenario,

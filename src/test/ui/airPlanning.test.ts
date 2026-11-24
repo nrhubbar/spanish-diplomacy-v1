@@ -139,11 +139,11 @@ describe("the raid preview (U3)", () => {
     const preview = raidPreview(scenario, state, unit("rep-breguet-bombers"), sub("burgos"));
     expect(preview?.antiAir).toBe(0);
     expect(preview?.fightersInReach).toBe(0);
-    // The table: air eliminated up to 3, nothing hit up to 10, income cut up to 16, building hit up to 20.
+    // The table: air eliminated up to 3, nothing hit up to 7, income cut up to 14, building hit up to 20.
     expect(preview?.chances["air-eliminated"]).toBeCloseTo(3 / 20);
-    expect(preview?.chances["nothing-hit"]).toBeCloseTo(7 / 20);
-    expect(preview?.chances["income-cut"]).toBeCloseTo(6 / 20);
-    expect(preview?.chances["building-hit"]).toBeCloseTo(4 / 20);
+    expect(preview?.chances["nothing-hit"]).toBeCloseTo(4 / 20);
+    expect(preview?.chances["income-cut"]).toBeCloseTo(7 / 20);
+    expect(preview?.chances["building-hit"]).toBeCloseTo(6 / 20);
   });
 
   it("counts anti-air at the target and enemy fighters that reach it", () => {
@@ -152,7 +152,7 @@ describe("the raid preview (U3)", () => {
     expect(preview?.antiAir).toBe(-3);
     expect(preview?.fightersInReach).toBe(1);
     expect(preview?.chances["air-eliminated"]).toBeCloseTo(6 / 20);
-    expect(preview?.chances["building-hit"]).toBeCloseTo(1 / 20);
+    expect(preview?.chances["building-hit"]).toBeCloseTo(3 / 20);
     // The raider's own fighters never intercept it.
     const ownFighters = raidPreview(scenario, state, unit("south-ju52-bombers"), sub("madrid"));
     expect(ownFighters?.fightersInReach).toBe(1);

@@ -148,7 +148,7 @@ describe("Build orders ($4, $5)", () => {
     expect(twice.subTerritories[sub("west-hills")]?.queue).toHaveLength(1);
   });
 
-  it("goes through the validation gateway, and not under m2-strength", () => {
+  it("goes through the validation gateway, and not without the economy module", () => {
     expect(validateOrder(scenario, start(), build("red", "west-hills", rail))).toEqual({ ok: true });
     const off: Scenario = { ...scenario, rules: { ...scenario.rules, economy: "none" } };
     expect(validateBuildOrder(off, start(), build("red", "west-hills", rail)).ok).toBe(false);

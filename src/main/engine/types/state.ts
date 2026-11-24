@@ -26,7 +26,7 @@ export interface Morale {
 export interface UnitState {
   readonly cityId?: CityId;
   readonly factionId: FactionId;
-  /** C6: the fatigue track, 0 up to the scenario's demoralizing level. Always 0 under `m2-strength`. */
+  /** C6: the fatigue track, 0 up to the scenario's demoralizing level. */
   readonly fatigue: number;
   readonly id: UnitId;
   readonly morale: Morale;
@@ -144,6 +144,11 @@ export interface RaidCut {
 }
 
 export interface GameState {
+  /**
+   * Men each faction has lost since the first turn (`engine/casualties.ts`), public like the
+   * battles that cost them. Replenish never lowers it. Absent: none lost yet.
+   */
+  readonly casualties?: Readonly<Record<FactionId, number>>;
   readonly cityControl: Readonly<Record<CityId, FactionId>>;
   readonly control: Readonly<Record<TerritoryId, TerritoryControl>>;
   /** Dug-in territories. A territory with no entry has no works. */
@@ -158,10 +163,11 @@ export interface GameState {
   /** $6: each faction's balances. Hidden from other viewers (per-viewer filtering). Empty without an economy. */
   readonly treasuries: Readonly<Record<FactionId, Resources>>;
   /**
-   * B2, D28.3: thousandths of a point each faction owes for Replenish orders it has paid in
-   * whole points (`engine/recruitment/rules.ts`). Hidden like the treasuries. Absent: nothing owed.
+   * Thousandths of a point each faction owes on top of its whole treasury, shared by income,
+   * upkeep and Replenish (`engine/carry.ts`); below zero, thousandths it has in hand. Hidden
+   * like the treasuries. Absent: none.
    */
-  readonly replenishCarry?: Readonly<Record<FactionId, Resources>>;
+  readonly carry?: Readonly<Record<FactionId, Resources>>;
   /**
    * R7: links whose modifiers changed in play (a new railway, an upgraded road or line), keyed
    * by `linkKey`; each entry replaces the scenario's modifiers for that link. Absent: none changed.

@@ -1,4 +1,4 @@
-import type { FactionId, TerritoryId, UnitId } from "../../ids";
+import type { FactionId, SubTerritoryId, TerritoryId, UnitId } from "../../ids";
 import type { MoveLeg, MoveOrder, Order } from "../orders";
 
 /** Move outcomes (M1-M11, M19-M21) and order outcomes, owned by the movement and reveal phases. */
@@ -31,12 +31,16 @@ export interface DisbandedMoveOutcome {
   readonly capturedByFactionId: FactionId;
   readonly cause: BounceCause;
   readonly kind: "disbanded-move";
+  /** The army's men when it surrendered. */
+  readonly men: number;
   readonly order: MoveOrder;
 }
 
 /** M9: an impossible move; its army is disbanded. */
 export interface InvalidOrderOutcome {
   readonly kind: "invalid-order";
+  /** The men of the disbanded army. */
+  readonly men: number;
   readonly order: MoveOrder;
   readonly reason: string;
 }
@@ -63,8 +67,19 @@ export interface ReinforcementArrivedOutcome {
   readonly order: MoveOrder;
 }
 
+/** D5: a boarding capital whose trains have too few places left for an army. */
+export interface RailShortage {
+  readonly boarding: SubTerritoryId;
+  /** Places left, fewer than the army needs. */
+  readonly left: number;
+  /** Places the army needs. */
+  readonly places: number;
+}
+
 /** M1, M3, M5, D27.1: why an army's move could not go this turn. */
-export type HeldBackReason = "allowance" | "rail-departures" | "port-landings" | "amphibious-lane" | "cannot-fight";
+export type HeldBackCause =
+  | { readonly reason: "allowance" | "port-landings" | "amphibious-lane" | "cannot-fight" }
+  | { readonly rail: RailShortage; readonly reason: "rail-full" };
 
 /**
  * M1, M3, M5: an army's move did not go. Its route was longer than its allowance, or the
@@ -72,14 +87,13 @@ export type HeldBackReason = "allowance" | "rail-departures" | "port-landings" |
  * unit that can fight and was not joining its own side (D27.1). The army
  * stays where it is and takes its standing order; nothing is disbanded.
  */
-export interface MoveHeldBackOutcome {
+export type MoveHeldBackOutcome = HeldBackCause & {
   readonly factionId: FactionId;
   readonly from: TerritoryId;
   readonly kind: "move-held-back";
-  readonly reason: HeldBackReason;
   readonly to: TerritoryId;
   readonly unitIds: readonly UnitId[];
-}
+};
 
 /** M2 (Q-UX-I3): an enemy army entered a territory the army was passing through; it stopped there and defends it. */
 export interface MoveInterceptedOutcome {

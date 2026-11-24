@@ -5,7 +5,7 @@ import type { CityChange, CityId, ControlChange, FactionId, GameState, Scenario,
 
 /**
  * R2: the factions with ground armies in each territory, in id order. Aircraft never count
- * (nor generals under the d6 table, which sets them aside from the ground steps: `onGroundBoard`).
+ * (`onGroundBoard`).
  */
 export function groundSides(scenario: Scenario, raised: GameState["raised"], armies: Armies): ReadonlyMap<TerritoryId, readonly FactionId[]> {
   const sides = new Map<TerritoryId, Set<FactionId>>();

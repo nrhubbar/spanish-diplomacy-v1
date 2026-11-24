@@ -23,9 +23,10 @@ import type {
   UnitTypeId
 } from "../main/engine/types";
 import { validateOrder } from "../main/engine/validation";
-import { faction, spain, territory, unit } from "./support";
+import { faction, spain, territory, unit, withoutUpkeep } from "./support";
+import { pinned } from "./pinned";
 
-const scenario = spain();
+const scenario = withoutUpkeep(pinned(spain()));
 const republic = faction("republic");
 const north = faction("north");
 const type = (id: string): UnitTypeId => id as UnitTypeId;
@@ -43,6 +44,9 @@ function play(state: GameState, orders: readonly (RecruitOrder | ReplenishOrder)
 const ofKind = <Kind extends TurnOutcome["kind"]>(outcomes: readonly TurnOutcome[], kind: Kind) =>
   outcomes.filter((outcome): outcome is Extract<TurnOutcome, { kind: Kind }> => outcome.kind === kind);
 const funded = (state: GameState, amount: Resources): GameState => ({ ...state, treasuries: { ...state.treasuries, [republic]: amount, [north]: amount } });
+
+/** Treasuries hold the whole points of a fractional income; the rest waits in the carry. */
+const whole = (amounts: Resources): Resources => Object.fromEntries(Object.entries(amounts).map(([id, value]) => [id, Math.floor(value)]));
 
 describe("resources", () => {
   it("adds, subtracts, scales up and checks a price", () => {
@@ -72,8 +76,8 @@ describe("where and what a faction may recruit (R2, R3, D7)", () => {
   it("militia need no building; others need the capital's buildings, named inline", () => {
     expect(typeLock(scenario, start, north, territory("la-rioja"), scenario.index.unitTypes.get(type("militia-column"))!).reasons).toEqual([]);
     const lock = typeLock(scenario, start, north, territory("la-rioja"), scenario.index.unitTypes.get(type("artillery-group"))!);
-    expect(lock.missingBuildings).toEqual(["barracks", "factory"]);
-    expect(lock.reasons[0]).toMatch(/^Needs a Barracks and a Factory in /u);
+    expect(lock.missing.map((entry) => (entry.kind === "building" ? entry.buildingId : entry.developmentId))).toEqual(["barracks", "factory"]);
+    expect(lock.reasons[0]).toMatch(/^Needs a Barracks in .+ and a Factory in La Rioja\.$/u);
   });
 
   it("limits types to factions (colonial veterans are not Republican)", () => {
@@ -81,12 +85,13 @@ describe("where and what a faction may recruit (R2, R3, D7)", () => {
     expect(validateOrder(scenario, start, recruit("north", "castilla-y-leon", "colonial-veterans")).ok).toBe(true);
   });
 
-  it("takes two orders a turn, three with a Factory (D7)", () => {
-    expect(recruitSlots(scenario, start, territory("castilla-y-leon"))).toBe(2);
-    expect(recruitSlots(scenario, start, territory("catalunya"))).toBe(3);
+  it("takes two orders a turn, one more for each Factory level (D3, D7)", () => {
+    expect(recruitSlots(scenario, start, territory("la-rioja"))).toBe(2);
+    expect(recruitSlots(scenario, start, territory("castilla-y-leon"))).toBe(3);
+    expect(recruitSlots(scenario, start, territory("catalunya"))).toBe(4);
   });
 
-  it("is refused outright under m2-strength rules (M9)", () => {
+  it("is refused outright without the recruitment module (M9)", () => {
     const off = { ...scenario, rules: { ...scenario.rules, recruitment: "none" } };
     expect(validateOrder(off, start, recruit("republic", "catalunya", "militia-column")).ok).toBe(false);
   });
@@ -105,7 +110,7 @@ describe("Recruit orders through the turn (R4, R6, R7)", () => {
     expect(turn1.finalState.raised[militiaId]?.name).toBe("Militia column No. 1");
     // Paid 8 Funds and 4 Manpower, then step 11's income ($2, m3r1-economy-builds), on the ground
     // held after step 8 (the turn-1 flips take Alava and Caceres, R2).
-    expect(turn1.finalState.treasuries[republic]).toEqual(addResources({ funds: 22, manpower: 6 } as Resources, incomeFor(scenario, { ...start, subTerritories: turn1.finalState.subTerritories }, republic).paid));
+    expect(turn1.finalState.treasuries[republic]).toEqual(whole(addResources({ funds: 22, manpower: 6 } as Resources, incomeFor(scenario, { ...start, subTerritories: turn1.finalState.subTerritories }, republic).paid)));
     expect(turn1.finalState.training).toHaveLength(1);
 
     const turn2 = play({ ...turn1.finalState, turnNumber: 2 }, []);
@@ -126,8 +131,8 @@ describe("Recruit orders through the turn (R4, R6, R7)", () => {
     expect(ofKind(result.outcomes, "training-refunded").map((outcome) => outcome.reason)).toEqual([expect.stringContaining("Not enough") as string]);
     // m1: nothing was taken, so the refusal refunds nothing.
     expect(ofKind(result.outcomes, "training-refunded").map((outcome) => outcome.refund)).toEqual([{}]);
-    const crowded = play(funded(initialGameState(scenario), { funds: 99, manpower: 99 } as Resources), [1, 2, 3].map(() => recruit("north", "castilla-y-leon", "militia-column")));
-    expect(ofKind(crowded.outcomes, "training-refunded").map((outcome) => outcome.reason)).toEqual([expect.stringContaining("At most 2") as string]);
+    const crowded = play(funded(initialGameState(scenario), { funds: 99, manpower: 99 } as Resources), [1, 2, 3, 4].map(() => recruit("north", "castilla-y-leon", "militia-column")));
+    expect(ofKind(crowded.outcomes, "training-refunded").map((outcome) => outcome.reason)).toEqual([expect.stringContaining("At most 3") as string]);
   });
 
   it("C8: other types pause while their territory is contested; militia finish; a fallen capital loses it", () => {
@@ -162,7 +167,8 @@ describe("Recruit orders through the turn (R4, R6, R7)", () => {
     });
     const fallen: GameState = {
       ...base,
-      units: Object.fromEntries(Object.entries(base.units).filter(([, entry]) => entry.territoryId !== "catalunya")),
+      // The Barbastro garrison goes too: driven out of Aragon, it would fall back here and retake Barcelona.
+      units: Object.fromEntries(Object.entries(base.units).filter(([id, entry]) => entry.territoryId !== "catalunya" && id !== "rep-barbastro-garrison")),
       subTerritories: { ...base.subTerritories, [barcelona]: { ...base.subTerritories[barcelona]!, holder: north } },
       // Serial 1 was paid this turn's reveal (2 turns left of 2); serial 2 has trained a turn.
       training: [item(1, 2), item(2, 1)],
@@ -233,7 +239,7 @@ describe("Replenish (R5)", () => {
     const cancelled = ofKind(result.outcomes, "replenish-cancelled");
     expect(cancelled).toHaveLength(1);
     // Refunded in full; only step 11's income ($2) is added.
-    expect(result.finalState.treasuries[republic]).toEqual(addResources(worn.treasuries[republic]!, incomeFor(scenario, { ...worn, subTerritories: result.finalState.subTerritories }, republic).paid));
+    expect(result.finalState.treasuries[republic]).toEqual(whole(addResources(worn.treasuries[republic]!, incomeFor(scenario, { ...worn, subTerritories: result.finalState.subTerritories }, republic).paid)));
   });
 });
 

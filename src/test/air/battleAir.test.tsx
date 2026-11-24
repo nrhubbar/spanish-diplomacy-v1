@@ -7,13 +7,13 @@ import { groupBattles } from "../../main/presentation/battle";
 import { airBattleFor, airBattleView } from "../../main/presentation/battleAir";
 import { BattleAir } from "../../main/screens/report/BattleAir";
 import { BattleReport } from "../../main/screens/report/BattleReport";
-import { faction, move, spainD20, territory, unit } from "../support";
+import { faction, move, spainWithAir, territory, unit } from "../support";
 
 /** U10, R11: the air battle on the battle card. */
 
 afterEach(cleanup);
 
-const scenario = spainD20();
+const scenario = spainWithAir();
 const republic = faction("republic");
 const north = faction("north");
 const target = territory("castilla-y-leon");

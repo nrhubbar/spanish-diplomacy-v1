@@ -252,13 +252,11 @@
   }
 }
 
-// Phone (X1, Q-UX-12, M1): the title and the menu, then one compact row of meters and actions.
-// The meters keep a small gap and drop their visible names (the icon carries the name; screen
-// readers still hear it). End Turn moves to the pane's bar (U1, `_shell.scss`).
-@media (max-width: 720px) {
+// Between a phone and a wide screen the bar wraps to a second row, and the meters drop their
+// visible names, so nothing is ever wider than the window.
+@media (max-width: 1400px) {
   .game-header {
     flex-wrap: wrap;
-    column-gap: 0.35rem;
 
     .resource-name {
       position: absolute;
@@ -268,6 +266,15 @@
       clip-path: inset(50%);
       white-space: nowrap;
     }
+  }
+}
+
+// Phone (X1, Q-UX-12, M1): the title and the menu, then one compact row of meters and actions.
+// The meters keep a small gap and drop their visible names (the icon carries the name; screen
+// readers still hear it). End Turn moves to the pane's bar (U1, `_shell.scss`).
+@media (max-width: 720px) {
+  .game-header {
+    column-gap: 0.35rem;
 
     > .game-header-title {
       flex: 1 1 100%;

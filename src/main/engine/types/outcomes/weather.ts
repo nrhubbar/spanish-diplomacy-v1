@@ -16,6 +16,7 @@ export interface FrostbiteOutcome {
   readonly destroyed?: true;
   readonly factionId: FactionId;
   readonly kind: "frostbite";
+  /** Men lost: all the unit had left when it broke up. */
   readonly men: number;
   readonly territoryId: TerritoryId;
   readonly unitId: UnitId;

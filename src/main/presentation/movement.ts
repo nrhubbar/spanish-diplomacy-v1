@@ -1,8 +1,9 @@
-import { battleSide } from "../engine/combat";
-import { armyMovement, type MoveRoute, moveRoutes } from "../engine/movement/routes";
-import { portLandings, railDepartures } from "../engine/movement/network";
+import { type ArmyMovement, armyMovement, type MoveRoute, moveRoutes, type RouteOffers, routeOffers } from "../engine/movement/routes";
+import { portLandings, railCapacity, unitTypeOf } from "../engine/movement/network";
+import { carriesOf, isTruckType } from "../engine/units/fighting";
 import { weatherIn } from "../engine/weather";
 import type { FactionId, GameState, MoveOrder, Scenario, SubTerritoryId, TerritoryId, UnitId, UnitState, WeatherId } from "../engine/types";
+import { printedValue } from "./army";
 import { glyphs } from "./glyphs";
 import type { DestinationEstimate } from "./odds";
 import { territoryName } from "./text";
@@ -29,6 +30,11 @@ export function selectionRoutes(
   if (scenario.rules.movement !== "allowance") return undefined;
   if (from === undefined || unitIds.length === 0) return new Map();
   return moveRoutes(scenario, state, factionId, from, unitIds, planned);
+}
+
+/** D5: the destinations only full trains keep the selected units from, or none under `single-step`. */
+export function selectionFullTrains(scenario: Scenario, state: GameState, factionId: FactionId, from: TerritoryId, unitIds: readonly UnitId[], planned: readonly MoveOrder[]): RouteOffers["full"] {
+  return scenario.rules.movement === "allowance" ? routeOffers(scenario, state, factionId, from, unitIds, planned).full : new Map();
 }
 
 export function subTerritoryName(scenario: Scenario, id: SubTerritoryId): string {
@@ -72,22 +78,35 @@ export interface RouteChip {
   readonly warn: boolean;
 }
 
-/** M5, MV-20: the amphibious roll modifier, which only the d20 rules apply. */
+/** M5, MV-20: the amphibious roll modifier. */
 function amphibiousRoll(scenario: Scenario): number {
-  return scenario.rules.dice === "d20-graded" ? (scenario.d20?.modifiers.amphibious ?? 0) : 0;
+  return scenario.d20.modifiers.amphibious;
 }
 
-/** M1: the units one truck carries (the scenario's first transport type), for the truck rule's sums. */
-function truckCarries(scenario: Scenario): number {
-  for (const type of scenario.unitTypes) {
-    for (const effect of type.effects) if (effect.kind === "transport" && effect.carries > 0) return effect.carries;
+/** M1: the units one truck carries (the scenario's first transport type that cannot fight); undefined without trucks. */
+function truckCarries(scenario: Scenario): number | undefined {
+  const truck = scenario.unitTypes.find(isTruckType);
+  return truck === undefined ? undefined : carriesOf(truck);
+}
+
+/** M1: the truck rule for an army: what it lacks, or what its trucks and other transport carry. */
+function transportText(scenario: Scenario, state: GameState, unitIds: readonly UnitId[], movement: ArmyMovement): string {
+  if (movement.transports === 0) {
+    if (movement.allMobile) return "all mounted";
+    const carries = truckCarries(scenario);
+    if (carries === undefined) return "no trucks";
+    const needed = Math.ceil(movement.needing / carries);
+    return `no trucks (${String(needed)} ${needed === 1 ? "truck" : "trucks"} for ${movement.needing === 1 ? "this unit" : `these ${String(movement.needing)} units`} would give +1)`;
   }
-  return 2;
+  const trucks = unitIds.flatMap((id) => unitTypeOf(scenario, state, id) ?? []).filter(isTruckType).length;
+  const units = `${String(movement.needing)} ${movement.needing === 1 ? "unit" : "units"}`;
+  if (trucks === movement.transports) return `${String(trucks)} ${trucks === 1 ? "truck" : "trucks"} for ${units}`;
+  return movement.needing === 0 ? "needs no trucks" : `transport for ${String(movement.capacity)}, ${units} to carry`;
 }
 
 function fatiguedUnits(scenario: Scenario, units: readonly UnitState[]): number {
-  const level = scenario.d20?.fatigue.fatiguedLevel;
-  return level === undefined ? 0 : units.filter((unit) => unit.fatigue >= level).length;
+  const level = scenario.d20.fatigue.fatiguedLevel;
+  return units.filter((unit) => unit.fatigue >= level).length;
 }
 
 /** X5: the chips on a destination row: terrain, fatigue, rail or sea, transit and moves left (weather is `WeatherChip`). */
@@ -106,7 +125,7 @@ export function routeChips(
     chips.push({ kind: "terrain", text: `${terrain === "swamp" ? "Swamp" : "Mountain"} entry (${subTerritoryName(scenario, entry)})`, warn: true });
   }
   const fatigued = estimate?.kind === "battle" ? fatiguedUnits(scenario, units) : 0;
-  if (fatigued > 0) chips.push({ kind: "fatigue", text: `Fatigued ${signedRoll(scenario.d20?.modifiers.fatigued ?? 0)} on ${String(fatigued)} ${fatigued === 1 ? "unit" : "units"}`, warn: true });
+  if (fatigued > 0) chips.push({ kind: "fatigue", text: `Fatigued ${signedRoll(scenario.d20.modifiers.fatigued)} on ${String(fatigued)} ${fatigued === 1 ? "unit" : "units"}`, warn: true });
   if (route.rail !== undefined) chips.push({ kind: "rail", text: `Rail ${glyphs.dot} level ${String(route.rail.level)}`, warn: false });
   if (route.sea !== undefined) {
     chips.push(route.sea.kind === "port"
@@ -126,17 +145,20 @@ function signedRoll(value: number): string {
   return value < 0 ? `${glyphs.minus}${String(-value)}` : "0";
 }
 
-/** X5: the line under a destination's name that explains its route. Undefined for a plain step. */
-export function routeDetail(scenario: Scenario, state: GameState, route: MoveRoute, usedDepartures: number): string | undefined {
+/**
+ * X5: the line under a destination's name that explains its route. Undefined for a plain step.
+ * `placesUsed` is the train places its boarding capital would have used, these units included (D5).
+ */
+export function routeDetail(scenario: Scenario, state: GameState, route: MoveRoute, placesUsed: number): string | undefined {
   const parts: string[] = [];
   if (route.rail !== undefined) {
     const { rail } = route;
     const start = territoryName(scenario, rail.start);
     const end = territoryName(scenario, rail.end);
     const boarding = subTerritoryName(scenario, rail.boarding);
-    const places = railDepartures(scenario, state, rail.boarding);
+    const places = railCapacity(scenario, state, rail.boarding);
     parts.push(`Rail from ${start} to ${end}, level ${String(rail.level)} or better the whole way (range ${String(rail.range)})`);
-    parts.push(`uses ${String(Math.min(places, usedDepartures + 1))} of ${boarding}'s ${String(places)} boarding ${places === 1 ? "place" : "places"}`);
+    parts.push(`uses ${String(placesUsed)} of ${boarding}'s ${String(places)} train ${places === 1 ? "place" : "places"}`);
   }
   if (route.sea !== undefined) {
     parts.push(route.sea.kind === "port"
@@ -175,14 +197,10 @@ export function armyLeaving(scenario: Scenario, state: GameState, factionId: Fac
   if (scenario.rules.movement !== "allowance" || unitIds.length === 0) return undefined;
   const units = unitIds.flatMap((id) => state.units[id] ?? []);
   const movement = armyMovement(scenario, state, factionId, from, unitIds);
-  const attack = units.length === 0 ? 0 : battleSide(scenario, units, "attack").value;
+  const attack = units.reduce((sum, unit) => sum + printedValue(scenario, unit, "attack"), 0);
   const count = `${String(units.length)} ${units.length === 1 ? "unit" : "units"}`;
-  const needed = Math.ceil(movement.needing / truckCarries(scenario));
-  const trucks = movement.transports === 0
-    ? (movement.allMobile ? "all mounted" : `no trucks (${String(needed)} ${needed === 1 ? "truck" : "trucks"} for ${movement.needing === 1 ? "this unit" : `these ${String(movement.needing)} units`} would give +1)`)
-    : `${String(movement.transports)} ${movement.transports === 1 ? "truck" : "trucks"} for ${String(movement.needing)} ${movement.needing === 1 ? "unit" : "units"}`;
   return {
     heading: `Army leaving ${territoryName(scenario, from)} ${glyphs.dot} ${count}, ${String(attack)} attack`,
-    line: `${String(movement.allowance)} ${movement.allowance === 1 ? "move" : "moves"} this turn: ${trucks}. Rail does not use moves.`
+    line: `${String(movement.allowance)} ${movement.allowance === 1 ? "move" : "moves"} this turn: ${transportText(scenario, state, unitIds, movement)}. Rail does not use moves.`
   };
 }

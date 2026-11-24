@@ -1,10 +1,10 @@
 import { requireUnitType } from "../engine/lookup";
-import type { AirMissionOrder, BuildOrder, FactionId, GameState, MoveOrder, RecruitOrder, ReplenishOrder, SackOrder, Scenario, SubTerritoryId, TerritoryId, UnitId, UnitTypeId, WithdrawOrder } from "../engine/types";
+import type { AirMissionOrder, BuildOrder, DisbandOrder, FactionId, GameState, MoveOrder, RecruitOrder, ReplenishOrder, SackOrder, Scenario, SubTerritoryId, TerritoryId, UnitId, UnitTypeId, WithdrawOrder } from "../engine/types";
 import { missionNames } from "./airPane";
 import { projectBaseName, projectTerms } from "./economy";
 import { glyphs } from "./glyphs";
 import { subTerritoryName } from "./movement";
-import { recruitTerms } from "./recruitment";
+import { recruitTerms, termsLine } from "./recruitment";
 import { plannedOrderRoute, territoryName, unitName } from "./text";
 
 /**
@@ -16,6 +16,7 @@ import { plannedOrderRoute, territoryName, unitName } from "./text";
 export interface PlannedSoFar {
   readonly airOrders: readonly (AirMissionOrder | SackOrder)[];
   readonly builds?: readonly BuildOrder[];
+  readonly disbands?: readonly DisbandOrder[];
   readonly orders: readonly (MoveOrder | WithdrawOrder)[];
   readonly recruits?: readonly RecruitOrder[];
   readonly replenishments?: readonly ReplenishOrder[];
@@ -56,7 +57,7 @@ export interface ThisTurnGroup {
 
 export type ThisTurnGrouping = "type" | "region";
 
-export const groupLabels: Readonly<Record<ThisTurnGroupKind, string>> = {
+const groupLabels: Readonly<Record<ThisTurnGroupKind, string>> = {
   air: "Air missions",
   builds: "Builds",
   recruits: "Recruits",
@@ -92,6 +93,18 @@ function unitEntries(scenario: Scenario, draft: PlannedSoFar, territoryOf: (unit
       title: unitName(scenario, order.unitId)
     };
   });
+  const disbands = (draft.disbands ?? []).map((order): ThisTurnEntry => {
+    const region = territoryOf(order.unitId);
+    return {
+      cancel: { kind: "order", unitId: order.unitId },
+      count: 1,
+      detail: `Disband ${glyphs.dot} ${territoryName(scenario, region)}`,
+      group: "units",
+      key: `disband:${order.unitId}`,
+      region,
+      title: unitName(scenario, order.unitId)
+    };
+  });
   const stays = (draft.stays ?? []).map((stay): ThisTurnEntry => {
     const region = territoryOf(stay.unitId);
     return {
@@ -104,7 +117,7 @@ function unitEntries(scenario: Scenario, draft: PlannedSoFar, territoryOf: (unit
       title: unitName(scenario, stay.unitId)
     };
   });
-  return [...moves, ...replenish, ...stays];
+  return [...moves, ...replenish, ...disbands, ...stays];
 }
 
 function airEntry(scenario: Scenario, order: AirMissionOrder | SackOrder, territoryOf: (unitId: UnitId) => TerritoryId): ThisTurnEntry {
@@ -140,7 +153,7 @@ function recruitEntries(scenario: Scenario, recruits: readonly RecruitOrder[]): 
     return {
       cancel: { kind: "recruit", territoryId: order.territoryId, unitTypeId: order.unitTypeId },
       count,
-      detail: `Recruit ${glyphs.dot} ${recruitTerms(scenario, type).meta}`,
+      detail: `Recruit ${glyphs.dot} ${termsLine(recruitTerms(scenario, type), "meta")}`,
       group: "recruits",
       key: `recruit:${key}`,
       region: order.territoryId,

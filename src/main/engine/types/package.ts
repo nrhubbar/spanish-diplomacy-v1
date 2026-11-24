@@ -15,7 +15,7 @@ import type {
   DevelopmentDefinition,
   ImprovementRules,
   MovementRules,
-  RecruitmentRules,
+  RecruitmentRules, UpkeepRules,
   ResourceDefinition,
   SubTerritoryDefinition
 } from "./economy";
@@ -77,10 +77,9 @@ export interface Scenario {
   readonly buildings: readonly BuildingDefinition[];
   readonly calendar?: CalendarRules;
   readonly cities: readonly CityDefinition[];
-  /** The d6 rules. Required while the `d6-table` dice module is the only implemented one. */
   readonly combat: CombatRules;
   readonly connections: readonly ConnectionDefinition[];
-  readonly d20?: D20Rules;
+  readonly d20: D20Rules;
   readonly development: readonly DevelopmentDefinition[];
   readonly factions: readonly FactionDefinition[];
   readonly generalTraits: readonly GeneralTrait[];
@@ -98,6 +97,7 @@ export interface Scenario {
   readonly movement?: MovementRules;
   readonly name: string;
   readonly recruitment?: RecruitmentRules;
+  readonly upkeep?: UpkeepRules;
   readonly resources: readonly ResourceDefinition[];
   readonly rules: RulesSelection;
   readonly ruleset: RulesetId;

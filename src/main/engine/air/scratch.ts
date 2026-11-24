@@ -1,6 +1,6 @@
 import type { RollStreams } from "../dice";
 import type { TurnDraft } from "../phases/draft";
-import type { AirMissionOrder, Order, TerritoryId, UnitId, UnitState } from "../types";
+import type { AirMissionOrder, Order, UnitId, UnitState } from "../types";
 
 /**
  * The air area's turn-only data (`TurnDraft.scratch.air`), passed between its own parts and to
@@ -8,14 +8,10 @@ import type { AirMissionOrder, Order, TerritoryId, UnitId, UnitState } from "../
  */
 export interface AirScratch {
   /**
-   * AG-3: aircraft and generals held out of the ground steps (3 to 8), as they stood after
-   * reveal. Only ground units march, fight, retreat and hold ground; these come back at step 9.
+   * AG-3: aircraft held out of the ground steps (3 to 8), as they stood after reveal. They come
+   * back at step 9.
    */
   readonly aside: Readonly<Record<UnitId, UnitState>>;
-  /** U5: the ground units each general is with this turn (his army, D7), by general unit. */
-  readonly armies: Readonly<Record<UnitId, readonly UnitId[]>>;
-  /** U5: where each general that moves this turn is going. */
-  readonly generalMoves: Readonly<Record<UnitId, TerritoryId>>;
   /** R10: fighters that flew Patrol, set at step 2; they join the air battles over their territory (R11). */
   readonly patrols: readonly AirMissionOrder[];
   /** R11: the turn's roll streams, set at step 2, so a battle's air battle rolls on the `air-battle` stream of its index. */
@@ -24,7 +20,7 @@ export interface AirScratch {
   readonly support: readonly AirMissionOrder[];
 }
 
-export const emptyAirScratch: AirScratch = { armies: {}, aside: {}, generalMoves: {}, patrols: [], support: [] };
+export const emptyAirScratch: AirScratch = { aside: {}, patrols: [], support: [] };
 
 /** The turn's air scratch, empty before step 1's part. */
 export function airScratch(draft: TurnDraft): AirScratch {

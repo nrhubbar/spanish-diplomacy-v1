@@ -11,8 +11,8 @@ import { destinationEstimates } from "../presentation/odds";
 import { queueCounts } from "../presentation/thisTurn";
 import { turnLabel } from "../presentation/turn";
 import { cancelOrderStage } from "../state/gameSlice";
-import { popView, topView, viewKey } from "../state/paneSlice";
-import { oddsDestinations, type PlanningSession, planningMapView, selectedDestinations } from "../state/planning";
+import { opensTall, popView, topView, viewKey } from "../state/paneSlice";
+import { oddsDestinations, type PlanningSession, planningMapView, selectedDestinations, tickedOnMap } from "../state/planning";
 import { selectSubmissionStatus } from "../state/selectors";
 import { useMapActions } from "./actions/useMapActions";
 import { MapScreenFrame } from "./MapScreenFrame";
@@ -36,6 +36,8 @@ function Orders({ scenario, session }: { readonly scenario: Scenario; readonly s
   const faction = requireFaction(scenario, factionId);
   const stack = useAppSelector((state) => state.pane.stack);
   const shown = topView(stack);
+  const choices = useAppSelector((state) => state.pane.muster);
+  const ticked = useMemo(() => tickedOnMap(scenario, session, shown, choices), [choices, scenario, session, shown]);
   const previous = stack.at(-2);
   const destinations = useMemo(() => selectedDestinations(scenario, session), [scenario, session]);
   const estimates = useMemo(
@@ -49,8 +51,8 @@ function Orders({ scenario, session }: { readonly scenario: Scenario; readonly s
     const clicks = planningMapHandlers(dispatch, scenario, draft);
     // U7: a tap on a territory the units can't reach explains why, on a phone.
     const onSelectTerritory: MapView["onSelectTerritory"] = (territoryId, input) => { onTap(territoryId, input); clicks.onSelectTerritory(territoryId); };
-    return { ...planningMapView(scenario, session, destinations, estimates), ...clicks, onSelectTerritory, ...actionHandlers };
-  }, [actionHandlers, destinations, dispatch, draft, estimates, onTap, scenario, session]);
+    return { ...planningMapView(scenario, session, destinations, estimates, ticked), ...clicks, onSelectTerritory, ...actionHandlers };
+  }, [actionHandlers, destinations, dispatch, draft, estimates, onTap, scenario, session, ticked]);
   const counts = queueCounts(scenario, game.state, factionId, draft);
   const endTurnButton = <EndTurnButton scenario={scenario} session={session} />;
 
@@ -98,6 +100,7 @@ function Orders({ scenario, session }: { readonly scenario: Scenario; readonly s
           </>
         ),
         ...(hasSelectionBar(draft) ? { footer: <SelectionBar scenario={scenario} session={session} /> } : {}),
+        ...(opensTall(shown) ? { tall: true } : {}),
         title: paneViewTitle(scenario, shown)
       }}
       scenarioId={game.scenarioId}

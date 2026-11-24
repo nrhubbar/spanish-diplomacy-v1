@@ -25,6 +25,17 @@ export default defineConfig({
   use: {
     baseURL: `${baseURL}/assets/`,
     screenshot: "only-on-failure",
+    // Sound is off, so no run downloads music; e2e/sound.spec.ts turns it on for itself.
+    storageState: {
+      cookies: [],
+      origins: [{
+        localStorage: [{
+          name: "spanish-diplomacy.audio.v1",
+          value: JSON.stringify({ levels: { effects: { muted: true }, master: { muted: true }, music: { muted: true } }, noticeSeen: true })
+        }],
+        origin: baseURL
+      }]
+    },
     trace: "retain-on-failure"
   },
   webServer: {

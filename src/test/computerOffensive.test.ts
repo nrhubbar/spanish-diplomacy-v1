@@ -8,6 +8,7 @@ import { seededRandom } from "../main/engine/random";
 import type { GameState, TurnOutcome } from "../main/engine/types";
 import { board, demoralize, into, ordersOf, type Placement } from "./aiBoards";
 import { faction, move, spainM2, territory, tiny, unit, withUnits } from "./support";
+import { pinned } from "./pinned";
 
 // The South holds everything but Valencia; its objectives are all held, so only an offensive
 // gives its armies a direction. One regiment holds Valencia.
@@ -46,7 +47,10 @@ describe("computer player: offensives (C18)", () => {
   });
 
   it("attacks once the massed armies have the odds", () => {
-    const scenario = spainM2();
+    // The Republic is three steps short here: an alarm of the test's own starts at three steps.
+    const base = spainM2();
+    const south = base.ai.profiles[faction("south")]!;
+    const scenario = { ...base, ai: { ...base.ai, profiles: { ...base.ai.profiles, [faction("south")]: { ...south, victoryAlarm: { ...south.victoryAlarm, perStep: 0.5, steps: 4 } } } } };
     const massed = board(scenario, "south", ["valencia"], [
       ...valencia,
       ["south-legion", "south", "murcia"],
@@ -59,26 +63,27 @@ describe("computer player: offensives (C18)", () => {
   });
 
   it("accepts worse odds after turns without a gain (stall pressure)", () => {
-    const scenario = spainM2();
-    // Two colonial counters against a militia column dug in at +3 in Ceuta: 3:1 with three off
-    // the roll, one chance in six. Andalucia's demoralized regiments hold it meanwhile.
+    const scenario = pinned(spainM2());
+    // Two colonial counters against two militia columns in Ceuta: 1:1, seven chances in twenty.
+    // Andalucia's demoralized regiments hold it meanwhile.
     const base = demoralize(board(scenario, "south", ["ceuta"], [
       ["south-legion", "south", "andalucia"],
       ["south-regulares", "south", "andalucia"],
       ["south-lepanto-5", "south", "andalucia"],
       ["south-granada-6", "south", "andalucia"],
-      ["rep-madrid-sierra-column", "republic", "ceuta"]
+      ["rep-madrid-sierra-column", "republic", "ceuta"],
+      ["rep-catalan-columns", "republic", "ceuta"]
     ], ["ceuta"]), ["south-lepanto-5", "south-granada-6"]);
     // Every city is the South's too, so no rival is near victory (no alarm).
     const cityControl = Object.fromEntries(scenario.cities.map((entry) => [entry.id, faction("south")]));
-    const state: GameState = { ...base, cityControl, fortification: { [territory("ceuta")]: { factionId: faction("republic"), level: 3 } } };
+    const state: GameState = { ...base, cityControl };
     expect(ordersOf(scenario, state, "south")).toEqual([]);
     const quiet: readonly (readonly TurnOutcome[])[] = [[], [], [], []];
     const pressed = generateComputerSubmission(scenario, state, faction("south"), seededRandom(1), { history: quiet });
     const attackers = into(pressed.orders, "ceuta");
     expect(attackers).toEqual(["south-legion", "south-regulares"]);
     const estimate = estimateAttack(scenario, state, faction("south"), attackers.map(unit), territory("ceuta"));
-    expect(estimate.kind === "battle" && estimate.takeChance).toBe(1 / 6);
+    expect(estimate.kind === "battle" && estimate.takeChance).toBe(0.35);
   });
 
   it("counts turns without a gain, and raises the prize for the target and for a stall", () => {

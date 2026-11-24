@@ -1,29 +1,23 @@
 import { columnBands, type GradeBand } from "../engine/d20/odds";
-import type { BattleOutcome, BattleResult, CombatModifier, D20BattleOutcome, GradeDefinition, GradeSideEffect, Scenario } from "../engine/types";
+import type { BattleOutcome, BattleResult, GradeDefinition, GradeSideEffect, Scenario } from "../engine/types";
 import { glyphs } from "./glyphs";
-import { modifierName } from "./odds";
-import { outcomeText } from "./outcomeText";
 
 /**
- * Words and keys for d20 battles (D1, D2, D8). Grades come from the scenario's catalogue, so
- * their names are data; the art and the legend reuse the seven d6 result keys, each grade drawn
- * with the result nearest to it (`gradeFamily`).
+ * Words and keys for battles (D1, D2, D8). Grades come from the scenario's catalogue, so
+ * their names are data; the art and the legend use seven result families, each grade drawn
+ * as the family nearest to it (`gradeFamily`).
  */
-
-export function isD20Battle(outcome: { readonly kind: string }): outcome is D20BattleOutcome {
-  return outcome.kind === "battle" && "dice" in outcome && outcome.dice === "d20";
-}
 
 export function isBattle(outcome: { readonly kind: string }): outcome is BattleOutcome {
   return outcome.kind === "battle";
 }
 
-export function gradeOf(scenario: Scenario, battle: D20BattleOutcome): GradeDefinition | undefined {
-  return scenario.d20?.grades.find((grade) => grade.id === battle.grade);
+export function gradeOf(scenario: Scenario, battle: BattleOutcome): GradeDefinition | undefined {
+  return scenario.d20.grades.find((grade) => grade.id === battle.grade);
 }
 
 /**
- * The d6 result a grade is drawn as: whole-territory grades as the defender's results
+ * The result family a grade is drawn as: whole-territory grades as the defender's results
  * (destroyed, a costly exchange, or driven off), partial ground as driven off, and the rest by
  * who suffered: the attacker alone, or both sides.
  */
@@ -39,16 +33,14 @@ export function gradeFamily(grade: GradeDefinition): BattleResult {
   return attacker.demoralized === "none" ? "attacker-attrition" : "attacker-demoralized";
 }
 
-/** The result key a battle is drawn with: the d6 result, or its grade's family. */
+/** The result key a battle is drawn with: its grade's family. */
 export function resultKeyOf(scenario: Scenario, battle: BattleOutcome): BattleResult {
-  if (battle.dice === "d6") return battle.result;
   const grade = gradeOf(scenario, battle);
   return grade === undefined ? "both-demoralized" : gradeFamily(grade);
 }
 
-/** A battle's result as players read it: the d6 result's title, or the grade's name. */
+/** A battle's result as players read it: its grade's name. */
 export function battleTitle(scenario: Scenario, battle: BattleOutcome): string {
-  if (battle.dice === "d6") return outcomeText[battle.result].title;
   return gradeOf(scenario, battle)?.name ?? battle.grade;
 }
 
@@ -84,25 +76,12 @@ export interface BandView {
   readonly range: string;
 }
 
-export function battleBands(scenario: Scenario, battle: D20BattleOutcome): readonly BandView[] {
+export function battleBands(scenario: Scenario, battle: BattleOutcome): readonly BandView[] {
   const rules = scenario.d20;
-  if (rules === undefined) return [];
   return columnBands(rules, battle.column).map((band) => ({
     band,
     grade: rules.grades.find((grade) => grade.id === band.gradeId),
     hit: battle.score >= band.from && battle.score <= band.to,
     range: band.from === band.to ? String(band.from) : `${String(band.from)}\u2013${String(band.to)}`
   }));
-}
-
-/** A modifier's name in the score line, where its signed roll follows it: "Popular resistance", "Dug in". */
-export function termName(modifier: CombatModifier, scenario: Scenario): string {
-  if (modifier.kind === "faction") return modifier.name;
-  if (modifier.kind === "dug-in") return "Dug in";
-  return modifierName(modifier, scenario);
-}
-
-/** The score before the 0..20 clamp, so the card can say when the clamp applied. */
-export function rawScore(battle: D20BattleOutcome): number {
-  return battle.modifiers.reduce((sum, modifier) => sum + modifier.roll, battle.die);
 }

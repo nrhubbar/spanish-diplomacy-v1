@@ -4,8 +4,8 @@ type SystemState = Omit<GameState, "cityControl" | "control" | "fortification" |
 
 /**
  * The Milestone 3 part of the starting state: sub-territories at their start holders (P1) and
- * 1936 data, starting treasuries ($7), and empty training, reveals and raid cuts. Under
- * `m2-strength` every collection is empty. The weather is rolled by phase 0, not here.
+ * 1936 data, starting treasuries ($7), and empty training, reveals and raid cuts. A
+ * scenario without a system leaves its collections empty. The weather is rolled by phase 0, not here.
  */
 export function initialSystems(scenario: Scenario): SystemState {
   const subTerritories: Record<SubTerritoryId, SubTerritoryState> = {};

@@ -1,3 +1,4 @@
+import { chargeUpkeep } from "../economy/upkeep";
 import { validateBuildOrder } from "../economy/catalogue";
 import { buildingCombatModifiers, buildingReplenishBonus } from "../economy/effects";
 import { advanceBuildQueues, collectIncome, payForBuilds } from "../economy/queues";
@@ -20,6 +21,6 @@ export const economyModules: readonly RuleModule[] = [
       validateOrder: { build: ({ order, scenario, state }) => validateBuildOrder(scenario, state, order) }
     },
     id: "development",
-    steps: { income: collectIncome, reveal: payForBuilds, training: advanceBuildQueues }
+    steps: { income: (draft) => chargeUpkeep(collectIncome(draft)), reveal: payForBuilds, training: advanceBuildQueues }
   }
 ];

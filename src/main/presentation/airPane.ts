@@ -1,6 +1,10 @@
-import { unitDefinitionIn, unitTypeIn } from "../engine/air/pieces";
-import type { AirMissionKind, AirMissionOrder, GameState, GeneralDefinition, GeneralTrait, Scenario, UnitState, UnitTypeDefinition } from "../engine/types";
+import { hookedGrounded } from "../engine/hooks";
+import { requireFaction, requireUnitDefinition, requireUnitType } from "../engine/lookup";
+import { weatherEffectsIn, weatherIn, zoneOf } from "../engine/weather";
+import type { AirMissionKind, AirMissionOrder, GameState, GeneralDefinition, GeneralTrait, Scenario, UnitState, UnitTypeDefinition, WeatherOutcome } from "../engine/types";
+import { type ArmyFigures, armyFigures, figuresDescription, type GroupFigures, groupFigures, groupLabel } from "./army";
 import { glyphs } from "./glyphs";
+import { territoryName } from "./text";
 
 /**
  * U2, U3, U5 (`ux-air-a.webp`, `ux-pane-a-units.webp`): the words of the aircraft pane and of a
@@ -65,16 +69,19 @@ export function generalPill(general: GeneralDefinition, trait: GeneralTrait | un
     : { text: `${general.name} ${glyphs.dot} ${trait.name}`, title: `${general.name}: ${trait.name}` };
 }
 
-/** U2: the counter's short tag, from the missions its type flies. */
+/** U2, D7: the role a counter prints in place of its short name, from the missions its type flies. */
 export function aircraftTag(missions: readonly AirMissionKind[]): string {
-  if (missions.includes("raid") || missions.includes("support")) return "BOMB";
+  // Fighters also fly Ground Support, so Patrol decides first.
   if (missions.includes("patrol")) return "FTR";
+  if (missions.includes("raid") || missions.includes("support")) return "BOMB";
   return "RCN";
 }
 
-/** B1, U2: what an aircraft's counter on the map says: its name, tag, colour and planned mission. */
+/** U2, D7: what an aircraft's card on the map says. */
 export interface AircraftCounterText {
   readonly color: string;
+  readonly figures: ArmyFigures;
+  readonly grounded: boolean;
   readonly label: string;
   readonly name: string;
   readonly planned: AirMissionOrder | undefined;
@@ -82,18 +89,93 @@ export interface AircraftCounterText {
   readonly tag: string;
 }
 
-export function aircraftCounterText(scenario: Scenario, raised: GameState["raised"], unit: UnitState, plannedAirMissions: readonly AirMissionOrder[] | undefined): AircraftCounterText {
-  const definition = unitDefinitionIn(scenario, raised, unit.id);
-  const type = unitTypeIn(scenario, raised, unit.id);
-  const faction = scenario.index.factions.get(unit.factionId);
+export function aircraftCounterText(scenario: Scenario, state: GameState, unit: UnitState, plannedAirMissions: readonly AirMissionOrder[] | undefined): AircraftCounterText {
+  const definition = requireUnitDefinition(scenario, unit.id);
+  const type = requireUnitType(scenario, definition.type);
+  const faction = requireFaction(scenario, unit.factionId);
   const planned = plannedAirMissions?.find((order) => order.unitId === unit.id);
-  const name = definition?.name ?? unit.id;
+  const figures = armyFigures(scenario, withoutWorks(state), unit);
   return {
-    color: faction?.color ?? "#888888",
-    label: `${name}, ${type?.name ?? "aircraft"}, ${faction?.name ?? unit.factionId}${planned === undefined ? "" : `, ${planned.mission.kind} mission planned`}`,
-    name,
+    color: faction.color,
+    figures,
+    grounded: isGrounded(scenario, state, unit),
+    label: [
+      definition.name,
+      type.name,
+      faction.name,
+      figuresDescription(figures),
+      ...(planned === undefined ? [] : [`${planned.mission.kind} mission planned`]),
+      ...groundedWords(scenario, state, unit)
+    ].join(", "),
+    name: definition.name,
     planned,
-    symbolKey: `${unit.factionId}:${definition?.type ?? ""}`,
-    tag: aircraftTag(type?.air?.missions ?? [])
+    symbolKey: `${unit.factionId}:${definition.type}`,
+    tag: aircraftTag(allowedMissions(type))
+  };
+}
+
+/** D7: what one card for several aircraft at a base says. */
+export interface AircraftGroupText {
+  readonly color: string;
+  readonly figures: GroupFigures;
+  readonly grounded: boolean;
+  readonly label: string;
+  /** Every aircraft in the group has a planned mission. */
+  readonly ordered: boolean;
+}
+
+/** The aircraft share a faction and a base, so the weather grounds all of them or none. */
+export function aircraftGroupText(scenario: Scenario, state: GameState, units: readonly UnitState[], plannedAirMissions: readonly AirMissionOrder[] | undefined): AircraftGroupText {
+  const [first] = units;
+  if (first === undefined) throw new Error("A group of aircraft has at least one.");
+  const faction = requireFaction(scenario, first.factionId);
+  const figures = groupFigures(scenario, withoutWorks(state), units);
+  const missions = (plannedAirMissions ?? []).filter((order) => units.some((unit) => unit.id === order.unitId));
+  const words = missionButtonOrder
+    .map((kind) => ({ count: missions.filter((order) => order.mission.kind === kind).length, kind }))
+    .filter(({ count }) => count > 0)
+    .map(({ count, kind }) => `${String(count)} ${kind} planned`);
+  return {
+    color: faction.color,
+    figures,
+    grounded: isGrounded(scenario, state, first),
+    label: [groupLabel(faction.name, territoryName(scenario, first.territoryId), figures, "aircraft"), ...words, ...groundedWords(scenario, state, first)].join(", "),
+    ordered: missions.length === units.length
+  };
+}
+
+/** Field works shelter armies on the ground, so an aircraft's card never shows them. */
+function withoutWorks(state: GameState): GameState {
+  return { ...state, fortification: {} };
+}
+
+/** T3: whether the weather at its base keeps an aircraft on the ground, by the rule the turn resolves with. */
+function isGrounded(scenario: Scenario, state: GameState, unit: UnitState): boolean {
+  return hookedGrounded({ scenario, state, territoryId: unit.territoryId, unitId: unit.id });
+}
+
+function groundedWords(scenario: Scenario, state: GameState, unit: UnitState): readonly string[] {
+  const weather = weatherIn(scenario, state, unit.territoryId);
+  return weather !== undefined && isGrounded(scenario, state, unit) ? [`grounded by ${weather.name.toLowerCase()}`] : [];
+}
+
+/** M11, T3: the weather at an aircraft's base and whether it flies from there. */
+export interface BaseWeather {
+  readonly grounded: boolean;
+  readonly heading: string;
+  readonly verdict: string;
+  readonly weather: WeatherOutcome;
+}
+
+export function baseWeather(scenario: Scenario, state: GameState, unit: UnitState): BaseWeather | undefined {
+  const weather = weatherIn(scenario, state, unit.territoryId);
+  if (weather === undefined) return undefined;
+  const grounds = weatherEffectsIn(scenario, state, unit.territoryId, "grounds-aircraft").length > 0;
+  const grounded = isGrounded(scenario, state, unit);
+  return {
+    grounded,
+    heading: baseWeatherHeading(zoneOf(scenario, unit.territoryId)?.name),
+    verdict: baseWeatherVerdict(grounds, grounds && !grounded, weather.name),
+    weather
   };
 }

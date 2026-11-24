@@ -6,7 +6,7 @@ import { BattleCard } from "./BattleCard";
 import { battleKeysAt } from "./focus";
 
 /** Cards after this many start collapsed, so a heavy turn stays readable (tasks section 4). */
-export const openBattleCards = 2;
+const openBattleCards = 2;
 
 interface BattleReportProps {
   /** F1: the place focused on the map; its cards open, scroll into view, and are highlighted. */

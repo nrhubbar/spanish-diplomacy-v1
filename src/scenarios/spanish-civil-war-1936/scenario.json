@@ -6,7 +6,6 @@
   "snapshotLabel": "31 July 1936",
   "ruleset": "m3-modular",
   "rules": {
-    "dice": "d20-graded",
     "economy": "development",
     "recruitment": "buildings",
     "weather": "seasonal-zones",
@@ -24,91 +23,11 @@
     ]
   },
   "combat": {
-    "table": [
-      [
-        "attacker-eliminated",
-        "attacker-eliminated",
-        "attacker-attrition",
-        "attacker-demoralized",
-        "both-demoralized",
-        "both-demoralized",
-        "defender-demoralized"
-      ],
-      [
-        "attacker-eliminated",
-        "attacker-attrition",
-        "attacker-demoralized",
-        "both-demoralized",
-        "both-demoralized",
-        "defender-demoralized",
-        "defender-exchange"
-      ],
-      [
-        "attacker-attrition",
-        "attacker-demoralized",
-        "both-demoralized",
-        "both-demoralized",
-        "defender-demoralized",
-        "defender-exchange",
-        "defender-eliminated"
-      ],
-      [
-        "attacker-demoralized",
-        "both-demoralized",
-        "both-demoralized",
-        "defender-demoralized",
-        "defender-exchange",
-        "defender-eliminated",
-        "defender-eliminated"
-      ],
-      [
-        "both-demoralized",
-        "both-demoralized",
-        "defender-demoralized",
-        "defender-exchange",
-        "defender-eliminated",
-        "defender-eliminated",
-        "defender-eliminated"
-      ],
-      [
-        "both-demoralized",
-        "defender-demoralized",
-        "defender-exchange",
-        "defender-eliminated",
-        "defender-eliminated",
-        "defender-eliminated",
-        "defender-eliminated"
-      ],
-      [
-        "defender-demoralized",
-        "defender-exchange",
-        "defender-eliminated",
-        "defender-eliminated",
-        "defender-eliminated",
-        "defender-eliminated",
-        "defender-eliminated"
-      ]
-    ],
-    "belowOneToOne": {
-      "@type": "halving",
-      "@data": {
-        "rollPenalty": 1
-      }
-    },
     "diggingIn": {
       "perTurn": 1,
       "max": 3
     },
-    "demoralizationFactor": 0.5,
-    "factionModifiers": [
-      {
-        "id": "popular-resistance",
-        "name": "Popular resistance",
-        "factionId": "republic",
-        "when": "holds-controlled-city",
-        "defence": 1
-      }
-    ]
+    "demoralizationFactor": 0.5
   },
   "ai": {
     "profiles": {
@@ -134,10 +53,15 @@
           "objective": 5,
           "territory": 4
         },
+        "recruits": {
+          "upkeepTurns": 2
+        },
         "victoryAlarm": {
           "critical": 3,
-          "perStep": 0.5,
-          "steps": 4
+          "perStep": 1.5,
+          "riskFloor": 0.25,
+          "spendSteps": 2,
+          "steps": 3
         },
         "withdraw": {
           "hopelessTakeChance": 0.5,
@@ -174,10 +98,15 @@
           "objective": 5,
           "territory": 4
         },
+        "recruits": {
+          "upkeepTurns": 2
+        },
         "victoryAlarm": {
           "critical": 3,
-          "perStep": 0.5,
-          "steps": 4
+          "perStep": 1.5,
+          "riskFloor": 0.25,
+          "spendSteps": 2,
+          "steps": 3
         },
         "withdraw": {
           "hopelessTakeChance": 0.5,
@@ -214,10 +143,15 @@
           "objective": 5,
           "territory": 4
         },
+        "recruits": {
+          "upkeepTurns": 2
+        },
         "victoryAlarm": {
           "critical": 3,
-          "perStep": 0.5,
-          "steps": 4
+          "perStep": 1.5,
+          "riskFloor": 0.25,
+          "spendSteps": 2,
+          "steps": 3
         },
         "withdraw": {
           "hopelessTakeChance": 0.5,
@@ -233,7 +167,7 @@
         }
       }
     },
-    "note": "Design note. The weights are the Revision 7 computer player's constants (computerWeights, offensiveWeights, stakeWeights and victoryAlarm), moved into data unchanged, one profile per faction so a harness variant can change one side (E7, H4). The Build budget (EB-15) is economy-builds' starting value: builds spend at most 60 percent of what Recruit orders leave, at most 3 orders a turn, one new item per sub-territory with an empty queue; a design note for the harness to tune (H7). Design note (D23, D24, m3r1-ai-fixes): victoryAlarm.critical raises, by 1 + 3, the stake of a territory whose change of hands alone would decide the game: own ground a rival in reach would win by taking, and ground the faction itself would win by taking. It sits above the x2.5 the alarm gives a leader's territory one step short, so holding the deciding ground outranks attacking the leader, and taking it is weighed as much as holding it. withdraw.hopelessTakeChance 0.5: the computer player gives up contested ground when the standing battle is at least even odds to take it whole this turn, by the engine's own odds. withdraw.lastStandTakeChance 0.75: its seat, last objective or a victory-critical territory is given up only when it would be lost whole at least three times in four. Starting values, not tuned."
+    "note": "Design note. The weights are the Revision 7 computer player's constants (computerWeights, offensiveWeights, stakeWeights and victoryAlarm), moved into data unchanged, one profile per faction so a harness variant can change one side (E7, H4). The Build budget (EB-15) is economy-builds' starting value: builds spend at most 60 percent of what Recruit orders leave, at most 3 orders a turn, one new item per sub-territory with an empty queue; a design note for the harness to tune (H7). Design note (D23, D24, m3r1-ai-fixes): victoryAlarm.critical raises, by 1 + 3, the stake of a territory whose change of hands alone would decide the game: ground a rival in reach would win by taking, whoever holds it, and ground the faction itself would win by taking. perStep 1.5 over 3 steps gives the ground of a leader one step short the same x4, so striking the leader is weighed as much as guarding, and two steps short x2.5. riskFloor 0.25: attacking the leader, own losses and the danger at home count 1 / (1 + alarm), never under a quarter. spendSteps 2: at two steps or fewer, nothing is held back for builds and one-turn units come first where they can reach the leader. recruits.upkeepTurns 2: Recruit orders leave two turns of upkeep in stock where income does not cover it. withdraw.hopelessTakeChance 0.5: the computer player gives up contested ground when the standing battle is at least even odds to take it whole this turn, by the engine's own odds. withdraw.lastStandTakeChance 0.75: its seat, last objective or a victory-critical territory is given up only when it would be lost whole at least three times in four. Starting values, not tuned."
   },
   "unitTypes": [
     {
@@ -247,12 +181,16 @@
       "orders": [
         "move",
         "withdraw",
-        "replenish"
+        "replenish",
+        "disband"
       ],
+      "upkeep": {
+        "manpower": 0.25
+      },
       "effects": [],
       "recruit": {
         "cost": {
-          "funds": 6,
+          "funds": 5,
           "manpower": 1
         },
         "establishment": 700,
@@ -261,21 +199,25 @@
           "barracks"
         ]
       },
-      "note": "Values unchanged from Milestone 2 (sources on its units); recruit numbers are a design note for the harness to tune (R2-R4)."
+      "note": "Values from the owner's Rev 3 unit table (D2): the baseline the other units are measured against. Sources are on its units."
     },
     {
       "id": "militia-column",
       "name": "Militia column",
-      "attack": 3,
-      "defence": 4,
+      "attack": 2,
+      "defence": 5,
       "kind": "ground",
       "foot": true,
       "symbol": "militia",
       "orders": [
         "move",
         "withdraw",
-        "replenish"
+        "replenish",
+        "disband"
       ],
+      "upkeep": {
+        "manpower": 1.5
+      },
       "effects": [
         {
           "@type": "trains-in-contested"
@@ -283,33 +225,37 @@
       ],
       "recruit": {
         "cost": {
-          "funds": 2,
+          "funds": 3,
           "manpower": 3
         },
         "establishment": 2500,
         "trainingTurns": 1,
         "requires": []
       },
-      "note": "Values unchanged from Milestone 2. Militia need no building, train in one turn and finish even in contested ground (R3, R4, C8)."
+      "note": "Values from the owner's Rev 3 unit table (D2): cheap in Funds, dear in Manpower and upkeep. Militia need no building, train in one turn and finish even in contested ground (R3, R4, C8)."
     },
     {
       "id": "colonial-veterans",
       "name": "Colonial veterans",
       "attack": 6,
-      "defence": 5,
+      "defence": 6,
       "kind": "ground",
       "foot": true,
       "symbol": "infantry",
       "orders": [
         "move",
         "withdraw",
-        "replenish"
+        "replenish",
+        "disband"
       ],
+      "upkeep": {
+        "manpower": 0.25
+      },
       "effects": [],
       "recruit": {
         "cost": {
-          "funds": 8,
-          "manpower": 2
+          "funds": 7,
+          "manpower": 1
         },
         "establishment": 1800,
         "trainingTurns": 2,
@@ -321,53 +267,61 @@
           "south"
         ]
       },
-      "note": "Values unchanged from Milestone 2. Not raised by the Republic (R3)."
+      "note": "Values from the owner's Rev 3 unit table (D2), 1 Manpower by the later answer. Not raised by the Republic (R3)."
     },
     {
       "id": "security-forces",
       "name": "Security forces",
-      "attack": 3,
-      "defence": 5,
+      "attack": 2,
+      "defence": 6,
       "kind": "ground",
       "foot": true,
       "symbol": "security",
       "orders": [
         "move",
         "withdraw",
-        "replenish"
+        "replenish",
+        "disband"
       ],
+      "upkeep": {
+        "manpower": 1
+      },
       "effects": [],
       "recruit": {
         "cost": {
-          "funds": 6,
-          "manpower": 2
+          "funds": 4,
+          "manpower": 1
         },
-        "establishment": 2000,
-        "trainingTurns": 2,
+        "establishment": 1000,
+        "trainingTurns": 1,
         "requires": [
           "barracks"
         ]
       },
-      "note": "Values unchanged from Milestone 2 (sources on its units); recruit numbers are a design note for the harness to tune (R2-R4)."
+      "note": "Values from the owner's Rev 3 unit table (D2): a quick garrison of 1,000 men, trained in one turn. Sources are on its units."
     },
     {
       "id": "artillery-group",
       "name": "Artillery group",
-      "attack": 3,
+      "attack": 2,
       "defence": 3,
       "kind": "ground",
       "symbol": "artillery",
       "orders": [
         "move",
         "withdraw",
-        "replenish"
+        "replenish",
+        "disband"
       ],
+      "upkeep": {
+        "manpower": 0.1
+      },
       "effects": [
         {
           "@type": "roll-bonus-per-points",
           "@data": {
             "role": "attack",
-            "per": 3,
+            "per": 2,
             "bonus": 1,
             "max": 3
           }
@@ -378,17 +332,17 @@
       ],
       "recruit": {
         "cost": {
-          "funds": 8,
+          "funds": 6,
           "manpower": 1
         },
         "establishment": 600,
-        "trainingTurns": 3,
+        "trainingTurns": 2,
         "requires": [
           "barracks",
           "factory"
         ]
       },
-      "note": "D5, R3, R4. Design note: a starting value for the harness to tune (Q-MR-26, H7)."
+      "note": "D5, R3, R4. Values from the owner's Rev 3 unit table (D2)."
     },
     {
       "id": "cavalry-regiment",
@@ -401,8 +355,12 @@
       "orders": [
         "move",
         "withdraw",
-        "replenish"
+        "replenish",
+        "disband"
       ],
+      "upkeep": {
+        "manpower": 0.3
+      },
       "effects": [
         {
           "@type": "mobile"
@@ -410,7 +368,7 @@
       ],
       "recruit": {
         "cost": {
-          "funds": 6,
+          "funds": 4,
           "manpower": 1
         },
         "establishment": 600,
@@ -419,20 +377,24 @@
           "barracks"
         ]
       },
-      "note": "M1: moves +1 without trucks, also in mountains (unit sheet). Design note: a starting value for the harness to tune (Q-MR-26, H7)."
+      "note": "M1: moves +1 without trucks, also in mountains (unit sheet). Values from the owner's Rev 3 unit table (D2)."
     },
     {
       "id": "tank-company",
       "name": "Tank company",
-      "attack": 3,
-      "defence": 2,
+      "attack": 5,
+      "defence": 3,
       "kind": "ground",
       "symbol": "armour",
       "orders": [
         "move",
         "withdraw",
-        "replenish"
+        "replenish",
+        "disband"
       ],
+      "upkeep": {
+        "manpower": 0.15
+      },
       "effects": [
         {
           "@type": "roll-bonus-per-points",
@@ -446,21 +408,27 @@
               "snow"
             ]
           }
+        },
+        {
+          "@type": "transport",
+          "@data": {
+            "carries": 1
+          }
         }
       ],
       "recruit": {
         "cost": {
-          "funds": 12,
+          "funds": 8,
           "manpower": 1
         },
         "establishment": 300,
-        "trainingTurns": 4,
+        "trainingTurns": 3,
         "requires": [
           "factory",
           "depot"
         ]
       },
-      "note": "D5: no bonus in Mud or Snow; R3, R4. Design note: a starting value for the harness to tune (Q-MR-26, H7)."
+      "note": "D5: no bonus in Mud or Snow; R3, R4; carries one unit, so it moves 2 alone or with one unit on board. Values from the owner's Rev 3 unit table (D2)."
     },
     {
       "id": "truck-column",
@@ -472,8 +440,12 @@
       "orders": [
         "move",
         "withdraw",
-        "replenish"
+        "replenish",
+        "disband"
       ],
+      "upkeep": {
+        "manpower": 0.1
+      },
       "effects": [
         {
           "@type": "transport",
@@ -484,17 +456,16 @@
       ],
       "recruit": {
         "cost": {
-          "funds": 5,
+          "funds": 3,
           "manpower": 1
         },
         "establishment": 200,
-        "trainingTurns": 2,
+        "trainingTurns": 1,
         "requires": [
-          "factory",
           "depot"
         ]
       },
-      "note": "M1: one truck per two other units; no combat value (Q-MR-20). Design note: a starting value for the harness to tune (Q-MR-26, H7)."
+      "note": "M1: one truck per two other units; no combat value (Q-MR-20). Values from the owner's Rev 3 unit table (D2)."
     },
     {
       "id": "anti-air-battery",
@@ -506,8 +477,12 @@
       "orders": [
         "move",
         "withdraw",
-        "replenish"
+        "replenish",
+        "disband"
       ],
+      "upkeep": {
+        "manpower": 0.15
+      },
       "effects": [
         {
           "@type": "raid-defence",
@@ -518,16 +493,16 @@
       ],
       "recruit": {
         "cost": {
-          "funds": 7,
+          "funds": 5,
           "manpower": 1
         },
         "establishment": 300,
         "trainingTurns": 2,
         "requires": [
-          "factory"
+          "depot"
         ]
       },
-      "note": "U3: worsens raids on its territory by 3. Design note: a starting value for the harness to tune (Q-MR-26, H7)."
+      "note": "U3: worsens raids on its territory by 3. Values from the owner's Rev 3 unit table (D2)."
     },
     {
       "id": "recon-flight",
@@ -537,8 +512,12 @@
       "kind": "air",
       "symbol": "fixed-wing",
       "orders": [
-        "air-mission"
+        "air-mission",
+        "disband"
       ],
+      "upkeep": {
+        "manpower": 0.05
+      },
       "air": {
         "range": 4,
         "missions": [
@@ -547,17 +526,16 @@
       },
       "recruit": {
         "cost": {
-          "funds": 8,
+          "funds": 5,
           "manpower": 1
         },
         "establishment": 100,
-        "trainingTurns": 3,
+        "trainingTurns": 2,
         "requires": [
-          "airfield",
-          "factory"
+          "airfield"
         ]
       },
-      "note": "U2, U4. Design note: a starting value for the harness to tune (Q-MR-26, H7)."
+      "note": "U2, U4. Values from the owner's Rev 3 unit table (D2)."
     },
     {
       "id": "fighter-squadron",
@@ -567,8 +545,12 @@
       "kind": "air",
       "symbol": "fixed-wing",
       "orders": [
-        "air-mission"
+        "air-mission",
+        "disband"
       ],
+      "upkeep": {
+        "manpower": 0.05
+      },
       "effects": [
         {
           "@type": "battle-support",
@@ -592,17 +574,16 @@
       },
       "recruit": {
         "cost": {
-          "funds": 10,
+          "funds": 6,
           "manpower": 1
         },
         "establishment": 100,
         "trainingTurns": 3,
         "requires": [
-          "airfield",
-          "factory"
+          "airfield"
         ]
       },
-      "note": "U2, U3. R10, R11: flies Patrol or Ground Support; +3 on Ground Support when its side wins the air, and +2 a fighter in the air battle (closeout, Air). Design note: a starting value for the harness to tune (Q-MR-26, H7)."
+      "note": "U2, U3. R10, R11: flies Patrol or Ground Support; +3 on Ground Support when its side wins the air, and +2 a fighter in the air battle (closeout, Air). Values from the owner's Rev 3 unit table (D2)."
     },
     {
       "id": "bomber-squadron",
@@ -612,8 +593,12 @@
       "kind": "air",
       "symbol": "fixed-wing",
       "orders": [
-        "air-mission"
+        "air-mission",
+        "disband"
       ],
+      "upkeep": {
+        "manpower": 0.05
+      },
       "effects": [
         {
           "@type": "battle-support",
@@ -637,17 +622,16 @@
       },
       "recruit": {
         "cost": {
-          "funds": 12,
+          "funds": 7,
           "manpower": 1
         },
         "establishment": 100,
         "trainingTurns": 3,
         "requires": [
-          "airfield",
-          "factory"
+          "airfield"
         ]
       },
-      "note": "U2, U3, R11: +3 on Ground Support when its side wins the air, and +1 a bomber in the air battle (closeout, Air). Design note: a starting value for the harness to tune (Q-MR-26, H7)."
+      "note": "U2, U3, R11: +3 on Ground Support when its side wins the air, and +1 a bomber in the air battle (closeout, Air). Values from the owner's Rev 3 unit table (D2)."
     },
     {
       "id": "general",
@@ -2535,6 +2519,7 @@
     },
     {
       "id": "rep-ni52-fighters",
+      "designation": "NI52",
       "name": "Hispano-Nieuport Ni-52 Fighters",
       "factionId": "republic",
       "type": "fighter-squadron",
@@ -2552,6 +2537,7 @@
     },
     {
       "id": "rep-breguet-bombers",
+      "designation": "BR19",
       "name": "Breguet XIX Light Bombers",
       "factionId": "republic",
       "type": "bomber-squadron",
@@ -2569,6 +2555,7 @@
     },
     {
       "id": "rep-catalan-recon",
+      "designation": "REC",
       "name": "Catalan Reconnaissance Flight",
       "factionId": "republic",
       "type": "recon-flight",
@@ -2586,6 +2573,7 @@
     },
     {
       "id": "north-leon-recon",
+      "designation": "REC",
       "name": "Leon Reconnaissance Flight",
       "factionId": "north",
       "type": "recon-flight",
@@ -2603,6 +2591,7 @@
     },
     {
       "id": "south-ju52-bombers",
+      "designation": "JU52",
       "name": "Junkers Ju 52 Bombers",
       "factionId": "south",
       "type": "bomber-squadron",
@@ -2685,7 +2674,7 @@
       "startHolder": "north",
       "development": {
         "farms": 2,
-        "industry": 1
+        "factory": 1
       },
       "buildings": [
         "barracks",
@@ -2694,7 +2683,6 @@
       ],
       "buildable": [
         "barracks",
-        "factory",
         "depot",
         "fortifications",
         "hospital",
@@ -2703,7 +2691,7 @@
         "rail-yard",
         "farms",
         "mines",
-        "industry",
+        "factory",
         "rail",
         "port"
       ],
@@ -2711,9 +2699,12 @@
       "sources": [
         {
           "sourceId": "ubc-july-map"
+        },
+        {
+          "sourceId": "eswiki-secn"
         }
       ],
-      "note": "VIII Division seat; naval and air station. Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "VIII Division seat; naval and air station. Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune. Factory: the Ferrol naval yard, worked by the Sociedad Espa\u00f1ola de Construcci\u00f3n Naval (eswiki-secn)."
     },
     {
       "id": "lugo",
@@ -2812,15 +2803,13 @@
       "startHolder": "north",
       "development": {
         "mines": 1,
-        "industry": 1
+        "factory": 1
       },
       "buildings": [
-        "barracks",
-        "factory"
+        "barracks"
       ],
       "buildable": [
         "barracks",
-        "factory",
         "depot",
         "fortifications",
         "hospital",
@@ -2829,7 +2818,7 @@
         "rail-yard",
         "farms",
         "mines",
-        "industry",
+        "factory",
         "rail"
       ],
       "port": 0,
@@ -2839,9 +2828,12 @@
         },
         {
           "sourceId": "eswiki-oviedo-1936"
+        },
+        {
+          "sourceId": "eswiki-trubia"
         }
       ],
-      "note": "Aranda's garrison held the city (eswiki-oviedo-1936); the arms works stand for Trubia and La Vega. Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "Aranda's garrison held the city (eswiki-oviedo-1936); the arms works stand for Trubia and La Vega. Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune. Factory: the Trubia arms works, which made artillery pieces (eswiki-trubia; that it worked in 1936 is a design note)."
     },
     {
       "id": "asturias",
@@ -2852,7 +2844,7 @@
       "development": {
         "farms": 1,
         "mines": 3,
-        "industry": 2
+        "factory": 1
       },
       "buildings": [],
       "buildable": [
@@ -2864,7 +2856,7 @@
         "rail-yard",
         "farms",
         "mines",
-        "industry",
+        "factory",
         "rail",
         "port"
       ],
@@ -2874,7 +2866,7 @@
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "The Asturian coalfield and Gij\u00f3n's works and port (El Musel). Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune. D28.4: the 1936 garrison's Barracks and Factory are not listed, since only the territory's capital may hold one."
+      "note": "The Asturian coalfield and Gij\u00f3n's works and port (El Musel). Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune. D28.4: the 1936 garrison's Barracks is not listed, since only the territory's capital may hold one. Factory: Gij\u00f3n's metal works and port industry (design note)."
     },
     {
       "id": "cantabria",
@@ -2885,14 +2877,13 @@
       "development": {
         "farms": 1,
         "mines": 1,
-        "industry": 1
+        "factory": 1
       },
       "buildings": [
         "barracks"
       ],
       "buildable": [
         "barracks",
-        "factory",
         "depot",
         "fortifications",
         "hospital",
@@ -2901,7 +2892,7 @@
         "rail-yard",
         "farms",
         "mines",
-        "industry",
+        "factory",
         "rail",
         "port"
       ],
@@ -2909,9 +2900,12 @@
       "sources": [
         {
           "sourceId": "ubc-july-map"
+        },
+        {
+          "sourceId": "eswiki-secn"
         }
       ],
-      "note": "Port level for Santander. Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "Port level for Santander. Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune. Factory: the Reinosa steelworks of the Sociedad Espa\u00f1ola de Construcci\u00f3n Naval (eswiki-secn); Torrelavega's works (design note)."
     },
     {
       "id": "bizkaia",
@@ -2921,16 +2915,14 @@
       "startHolder": "republic",
       "development": {
         "mines": 2,
-        "industry": 3
+        "factory": 2
       },
       "buildings": [
         "barracks",
-        "factory",
         "depot"
       ],
       "buildable": [
         "barracks",
-        "factory",
         "depot",
         "fortifications",
         "hospital",
@@ -2939,7 +2931,7 @@
         "rail-yard",
         "farms",
         "mines",
-        "industry",
+        "factory",
         "rail",
         "port"
       ],
@@ -2947,9 +2939,12 @@
       "sources": [
         {
           "sourceId": "ubc-july-map"
+        },
+        {
+          "sourceId": "eswiki-altos-hornos"
         }
       ],
-      "note": "Basque iron, steel and shipyards around Bilbao. Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "Basque iron, steel and shipyards around Bilbao. Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune. Factory, level 2: the steel works at Baracaldo and Sestao, Spain's largest company within a few years of 1902 (eswiki-altos-hornos); level from the owner's Rev 3 answers."
     },
     {
       "id": "gipuzkoa",
@@ -2958,7 +2953,7 @@
       "terrain": "mountain",
       "startHolder": "republic",
       "development": {
-        "industry": 1
+        "factory": 1
       },
       "buildings": [],
       "buildable": [
@@ -2970,7 +2965,7 @@
         "rail-yard",
         "farms",
         "mines",
-        "industry",
+        "factory",
         "rail",
         "port"
       ],
@@ -2978,9 +2973,12 @@
       "sources": [
         {
           "sourceId": "ubc-july-map"
+        },
+        {
+          "sourceId": "eswiki-eibar"
         }
       ],
-      "note": "Eibar's small-arms works. Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune. D28.4: the 1936 garrison's Barracks and Factory are not listed, since only the territory's capital may hold one."
+      "note": "Eibar's small-arms works. Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune. D28.4: the 1936 garrison's Barracks is not listed, since only the territory's capital may hold one. Factory: \u00c9ibar's arms trade, its historic core (eswiki-eibar)."
     },
     {
       "id": "alava",
@@ -3026,7 +3024,6 @@
       ],
       "buildable": [
         "barracks",
-        "factory",
         "depot",
         "fortifications",
         "hospital",
@@ -3035,7 +3032,7 @@
         "rail-yard",
         "farms",
         "mines",
-        "industry",
+        "factory",
         "rail"
       ],
       "port": 0,
@@ -3084,7 +3081,7 @@
       "startHolder": "north",
       "development": {
         "farms": 2,
-        "industry": 1
+        "factory": 1
       },
       "buildings": [
         "barracks",
@@ -3094,7 +3091,6 @@
       ],
       "buildable": [
         "barracks",
-        "factory",
         "depot",
         "fortifications",
         "hospital",
@@ -3103,7 +3099,7 @@
         "rail-yard",
         "farms",
         "mines",
-        "industry",
+        "factory",
         "rail"
       ],
       "port": 0,
@@ -3112,7 +3108,7 @@
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "V Division seat and rail junction. Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "V Division seat and rail junction. Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune. Factory: the city's rail and metal works (design note)."
     },
     {
       "id": "huesca",
@@ -3163,7 +3159,7 @@
         "rail-yard",
         "farms",
         "mines",
-        "industry",
+        "factory",
         "rail"
       ],
       "port": 0,
@@ -3182,19 +3178,18 @@
       "startHolder": "republic",
       "development": {
         "farms": 1,
-        "industry": 2
+        "factory": 1
       },
       "buildings": [
         "barracks",
         "depot",
-        "factory",
         "hospital",
         "airfield",
-        "rail-yard"
+        "rail-yard",
+        "fortifications"
       ],
       "buildable": [
         "barracks",
-        "factory",
         "depot",
         "fortifications",
         "hospital",
@@ -3203,7 +3198,7 @@
         "rail-yard",
         "farms",
         "mines",
-        "industry",
+        "factory",
         "rail"
       ],
       "port": 0,
@@ -3212,7 +3207,7 @@
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "Capital: I Division, the arsenal, Getafe and Cuatro Vientos airfields. Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "Capital: I Division, the arsenal, Getafe and Cuatro Vientos airfields. Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune. Fortified at the start by the owner's Rev 3 answer (Q-R3-11), in place of Popular Resistance (a design note). Factory: the capital's arsenal and workshops (design note)."
     },
     {
       "id": "guadarrama",
@@ -3291,7 +3286,6 @@
       ],
       "buildable": [
         "barracks",
-        "factory",
         "depot",
         "fortifications",
         "hospital",
@@ -3300,7 +3294,7 @@
         "rail-yard",
         "farms",
         "mines",
-        "industry",
+        "factory",
         "rail"
       ],
       "port": 0,
@@ -3319,7 +3313,7 @@
       "startHolder": "north",
       "development": {
         "farms": 3,
-        "industry": 1
+        "factory": 1
       },
       "buildings": [
         "depot"
@@ -3333,7 +3327,7 @@
         "rail-yard",
         "farms",
         "mines",
-        "industry",
+        "factory",
         "rail"
       ],
       "port": 0,
@@ -3342,7 +3336,7 @@
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "VII Division seat; Medina del Campo junction. Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune. D28.4: the 1936 garrison's Barracks is not listed, since only the territory's capital may hold one."
+      "note": "VII Division seat; Medina del Campo junction. Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune. D28.4: the 1936 garrison's Barracks is not listed, since only the territory's capital may hold one. Factory: the railway workshops (design note)."
     },
     {
       "id": "leon",
@@ -3454,7 +3448,7 @@
         "rail-yard",
         "farms",
         "mines",
-        "industry",
+        "factory",
         "rail"
       ],
       "port": 0,
@@ -3559,16 +3553,15 @@
       "terrain": "open",
       "startHolder": "republic",
       "development": {
-        "farms": 2
+        "farms": 2,
+        "factory": 1
       },
       "buildings": [
         "barracks",
-        "factory",
         "rail-yard"
       ],
       "buildable": [
         "barracks",
-        "factory",
         "depot",
         "fortifications",
         "hospital",
@@ -3577,16 +3570,19 @@
         "rail-yard",
         "farms",
         "mines",
-        "industry",
+        "factory",
         "rail"
       ],
       "port": 0,
       "sources": [
         {
           "sourceId": "ubc-july-map"
+        },
+        {
+          "sourceId": "eswiki-toledo-armas"
         }
       ],
-      "note": "The Toledo arms factory. The rail yard stands for the region's main junction (Alc\u00e1zar de San Juan): rail yards count only at the boarding capital (M3). Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "The Toledo arms factory. The rail yard stands for the region's main junction (Alc\u00e1zar de San Juan): rail yards count only at the boarding capital (M3). Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune. Factory: the Toledo arms works, which made cartridges and was working before the war (eswiki-toledo-armas)."
     },
     {
       "id": "ciudad-real",
@@ -3695,7 +3691,7 @@
         "rail-yard",
         "farms",
         "mines",
-        "industry",
+        "factory",
         "rail"
       ],
       "port": 0,
@@ -3720,7 +3716,6 @@
       ],
       "buildable": [
         "barracks",
-        "factory",
         "depot",
         "fortifications",
         "hospital",
@@ -3729,7 +3724,7 @@
         "rail-yard",
         "farms",
         "mines",
-        "industry",
+        "factory",
         "rail"
       ],
       "port": 0,
@@ -3780,19 +3775,18 @@
       "startHolder": "republic",
       "development": {
         "farms": 1,
-        "industry": 3
+        "factory": 2
       },
       "buildings": [
         "barracks",
         "depot",
-        "factory",
         "hospital",
         "airfield",
-        "rail-yard"
+        "rail-yard",
+        "fortifications"
       ],
       "buildable": [
         "barracks",
-        "factory",
         "depot",
         "fortifications",
         "hospital",
@@ -3801,7 +3795,7 @@
         "rail-yard",
         "farms",
         "mines",
-        "industry",
+        "factory",
         "rail",
         "port"
       ],
@@ -3809,9 +3803,12 @@
       "sources": [
         {
           "sourceId": "ubc-july-map"
+        },
+        {
+          "sourceId": "eswiki-maquinista"
         }
       ],
-      "note": "IV Division seat; Catalan industry; El Prat. Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "IV Division seat; Catalan industry; El Prat. Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune. Fortified at the start by the owner's Rev 3 answer (Q-R3-11), in place of Popular Resistance (a design note). Factory, level 2: La Maquinista Terrestre y Mar\u00edtima's engineering works (eswiki-maquinista) and the Catalan industry; level from the owner's Rev 3 answers."
     },
     {
       "id": "girona",
@@ -3910,18 +3907,16 @@
       "startHolder": "republic",
       "development": {
         "farms": 3,
-        "industry": 2
+        "factory": 1
       },
       "buildings": [
         "barracks",
         "depot",
-        "factory",
         "airfield",
         "rail-yard"
       ],
       "buildable": [
         "barracks",
-        "factory",
         "depot",
         "fortifications",
         "hospital",
@@ -3930,7 +3925,7 @@
         "rail-yard",
         "farms",
         "mines",
-        "industry",
+        "factory",
         "rail",
         "port"
       ],
@@ -3940,7 +3935,7 @@
           "sourceId": "ubc-july-map"
         }
       ],
-      "note": "III Division seat; Manises. Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "III Division seat; Manises. Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune. Factory: the port's shipyards and Sagunto's steel (design note)."
     },
     {
       "id": "castellon",
@@ -3979,8 +3974,7 @@
       "terrain": "open",
       "startHolder": "republic",
       "development": {
-        "farms": 2,
-        "industry": 1
+        "farms": 2
       },
       "buildings": [],
       "buildable": [
@@ -3992,7 +3986,7 @@
         "rail-yard",
         "farms",
         "mines",
-        "industry",
+        "factory",
         "rail",
         "port"
       ],
@@ -4012,7 +4006,7 @@
       "startHolder": "south",
       "development": {
         "farms": 3,
-        "industry": 1
+        "factory": 1
       },
       "buildings": [
         "barracks",
@@ -4022,7 +4016,6 @@
       ],
       "buildable": [
         "barracks",
-        "factory",
         "depot",
         "fortifications",
         "hospital",
@@ -4031,7 +4024,7 @@
         "rail-yard",
         "farms",
         "mines",
-        "industry",
+        "factory",
         "rail",
         "port"
       ],
@@ -4044,7 +4037,7 @@
           "sourceId": "eswiki-sevilla-1936"
         }
       ],
-      "note": "II Division seat; Tablada; Queipo de Llano's rising (eswiki-sevilla-1936). Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "II Division seat; Tablada; Queipo de Llano's rising (eswiki-sevilla-1936). Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune. Factory: the city's military workshops (design note)."
     },
     {
       "id": "cadiz",
@@ -4054,7 +4047,7 @@
       "startHolder": "south",
       "development": {
         "farms": 2,
-        "industry": 1
+        "factory": 1
       },
       "buildings": [],
       "buildable": [
@@ -4066,7 +4059,7 @@
         "rail-yard",
         "farms",
         "mines",
-        "industry",
+        "factory",
         "rail",
         "port"
       ],
@@ -4074,9 +4067,12 @@
       "sources": [
         {
           "sourceId": "ubc-july-map"
+        },
+        {
+          "sourceId": "eswiki-secn"
         }
       ],
-      "note": "Port and naval base; the Strait crossing. Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune. D28.4: the 1936 garrison's Barracks is not listed, since only the territory's capital may hold one."
+      "note": "Port and naval base; the Strait crossing. Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune. D28.4: the 1936 garrison's Barracks is not listed, since only the territory's capital may hold one. Factory: the Matagorda and La Carraca yards of the Sociedad Espa\u00f1ola de Construcci\u00f3n Naval (eswiki-secn)."
     },
     {
       "id": "huelva",
@@ -4129,7 +4125,7 @@
         "rail-yard",
         "farms",
         "mines",
-        "industry",
+        "factory",
         "rail"
       ],
       "port": 0,
@@ -4159,7 +4155,7 @@
         "rail-yard",
         "farms",
         "mines",
-        "industry",
+        "factory",
         "rail",
         "port"
       ],
@@ -4178,8 +4174,7 @@
       "terrain": "open",
       "startHolder": "republic",
       "development": {
-        "farms": 1,
-        "industry": 1
+        "farms": 1
       },
       "buildings": [],
       "buildable": [
@@ -4191,7 +4186,7 @@
         "rail-yard",
         "farms",
         "mines",
-        "industry",
+        "factory",
         "rail",
         "port"
       ],
@@ -4273,15 +4268,13 @@
       "development": {
         "farms": 2,
         "mines": 1,
-        "industry": 1
+        "factory": 1
       },
       "buildings": [
-        "barracks",
-        "factory"
+        "barracks"
       ],
       "buildable": [
         "barracks",
-        "factory",
         "depot",
         "fortifications",
         "hospital",
@@ -4290,7 +4283,7 @@
         "rail-yard",
         "farms",
         "mines",
-        "industry",
+        "factory",
         "rail",
         "port"
       ],
@@ -4298,9 +4291,12 @@
       "sources": [
         {
           "sourceId": "ubc-july-map"
+        },
+        {
+          "sourceId": "eswiki-secn"
         }
       ],
-      "note": "Cartagena naval base, arsenal and port; La Uni\u00f3n mines. Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune."
+      "note": "Cartagena naval base, arsenal and port; La Uni\u00f3n mines. Holder on 31 July 1936 from the source map. Port, development and buildings: design note from the 1936 rail network, ports, garrisons (nafziger-1936) and the economy research; levels for the harness to tune. Factory: the Cartagena naval arsenal's yard, worked by the Sociedad Espa\u00f1ola de Construcci\u00f3n Naval (eswiki-secn)."
     },
     {
       "id": "ceuta",
@@ -7503,7 +7499,7 @@
       "@type": "road",
       "@data": {
         "label": "Road",
-        "motorLevel": "main",
+        "motorLevel": "track",
         "motorRange": 2
       }
     },
@@ -7514,7 +7510,8 @@
         "rangeByLevel": {
           "single": 2,
           "main": 4
-        }
+        },
+        "unitsPerLevel": 2
       }
     },
     {
@@ -7530,23 +7527,26 @@
   "linkProjects": {
     "new-rail": {
       "cost": {
-        "funds": 24
+        "funds": 10,
+        "manpower": 6
       },
-      "turns": 8
+      "turns": 5
     },
     "rail-upgrade": {
       "cost": {
-        "funds": 10
+        "funds": 5,
+        "manpower": 3
       },
-      "turns": 4
+      "turns": 3
     },
     "road-upgrade": {
       "cost": {
-        "funds": 6
+        "funds": 3,
+        "manpower": 2
       },
       "turns": 2
     },
-    "note": "R7, design note scaled to the catalogue: a factory is 12 Funds over 4 turns. A new single line costs twice that and takes twice as long (a province-to-province line; the 91 km Via Negrin took 40 days); a rail upgrade to main costs about a factory; a road upgrade costs a Barracks. Starting values for the harness to tune."
+    "note": "R7. Prices and times from the owner's Rev 3 table (D4): works take part of their price in Manpower. A road upgrade gives a link with no road one that trucks can use; every road takes trucks already."
   },
   "resources": [
     {
@@ -7571,11 +7571,11 @@
       "maxLevel": 3,
       "upgrade": {
         "cost": {
-          "funds": 6
+          "funds": 3
         },
-        "turns": 3
+        "turns": 2
       },
-      "note": "$3, Q-ECON-1: food folds into Manpower; one Manpower is about 1,000 men. Design note: a starting value for the harness to tune (Q-MR-26, H7)."
+      "note": "$3, Q-ECON-1: food folds into Manpower; one Manpower is about 1,000 men. Price and time from the owner's Rev 3 building table (D4)."
     },
     {
       "id": "mines",
@@ -7585,48 +7585,18 @@
       "maxLevel": 3,
       "upgrade": {
         "cost": {
-          "funds": 8
+          "funds": 5
         },
-        "turns": 3
+        "turns": 2
       },
-      "note": "$3. Design note: a starting value for the harness to tune (Q-MR-26, H7)."
-    },
-    {
-      "id": "industry",
-      "name": "Industry",
-      "resource": "funds",
-      "yieldPerLevel": 1,
-      "maxLevel": 3,
-      "cityOnly": true,
-      "upgrade": {
-        "cost": {
-          "funds": 10
-        },
-        "turns": 4
-      },
-      "note": "$3: city sub-territories only. Design note: a starting value for the harness to tune (Q-MR-26, H7)."
-    }
-  ],
-  "buildings": [
-    {
-      "id": "barracks",
-      "name": "Barracks",
-      "cost": {
-        "funds": 6
-      },
-      "turns": 2,
-      "capitalOnly": true,
-      "note": "R3: gates infantry, security forces and cavalry. D28.4: built only in a capital sub-territory, the only place it unlocks anything. Design note: a starting value for the harness to tune (Q-MR-26, H7)."
+      "note": "$3. Price and time from the owner's Rev 3 building table (D4)."
     },
     {
       "id": "factory",
       "name": "Factory",
-      "cost": {
-        "funds": 12,
-        "manpower": 6
-      },
-      "turns": 4,
-      "capitalOnly": true,
+      "resource": "funds",
+      "yieldPerLevel": 1.5,
+      "maxLevel": 3,
       "cityOnly": true,
       "effects": [
         {
@@ -7636,15 +7606,34 @@
           }
         }
       ],
-      "note": "R3, D7: one more Recruit order a turn. D28.4: built only in a capital sub-territory, the only place it unlocks anything. Design note: a starting value for the harness to tune (Q-MR-26, H7). R9: plus a one-time 6 Manpower, the workers it takes from the front (history.md note 13: the Catalan war industry employed 50,000-80,000; factory labour and soldiers came from one pool)."
+      "upgrade": {
+        "cost": {
+          "funds": 6,
+          "manpower": 4
+        },
+        "turns": 2
+      },
+      "note": "$3, R3, D7: city sub-territories only. Price, time, yield and one more Recruit order a turn for each level from the owner's Rev 3 answers (D3). The Manpower is the workers it takes from the front (R9: factory labour and soldiers came from one pool)."
+    }
+  ],
+  "buildings": [
+    {
+      "id": "barracks",
+      "name": "Barracks",
+      "cost": {
+        "funds": 5
+      },
+      "turns": 1,
+      "capitalOnly": true,
+      "note": "R3: gates infantry, security forces and cavalry. D28.4: built only in a capital sub-territory, the only place it unlocks anything. Price and time from the owner's Rev 3 building table (D4)."
     },
     {
       "id": "depot",
       "name": "Depot",
       "cost": {
-        "funds": 8
+        "funds": 6
       },
-      "turns": 2,
+      "turns": 1,
       "effects": [
         {
           "@type": "replenish-discount",
@@ -7654,30 +7643,31 @@
           }
         }
       ],
-      "note": "$4, D28.1: materiel on hand makes Replenish cost 25 percent less Funds; it also gates trucks and tanks (R3). Design note: a starting value for the harness to tune (Q-MR-26, H7)."
+      "note": "$4, D28.1: materiel on hand makes Replenish cost 25 percent less Funds; it also gates trucks and tanks (R3). Price and time from the owner's Rev 3 building table (D4)."
     },
     {
       "id": "fortifications",
       "name": "Fortifications",
       "cost": {
-        "funds": 6
+        "funds": 3,
+        "manpower": 2
       },
       "turns": 2,
       "effects": [
         {
           "@type": "defence-roll",
           "@data": {
-            "roll": 1
+            "roll": 2
           }
         }
       ],
-      "note": "$4. Design note: a starting value for the harness to tune (Q-MR-26, H7)."
+      "note": "$4: worth 2 since Rev 3, like barricades, now that Popular Resistance is gone (Q-R3-11). Price and time from the owner's Rev 3 building table (D4)."
     },
     {
       "id": "hospital",
       "name": "Hospital",
       "cost": {
-        "funds": 6
+        "funds": 5
       },
       "turns": 2,
       "effects": [
@@ -7688,27 +7678,27 @@
           }
         }
       ],
-      "note": "R5, D28.1: the per-turn Replenish cap rises from half the establishment to three quarters. Design note: a starting value for the harness to tune (Q-MR-26, H7)."
+      "note": "R5, D28.1: the per-turn Replenish cap rises from half the establishment to three quarters. Price and time from the owner's Rev 3 building table (D4)."
     },
     {
       "id": "airfield",
       "name": "Airfield",
       "cost": {
-        "funds": 8
+        "funds": 6
       },
-      "turns": 3,
+      "turns": 2,
       "effects": [
         {
           "@type": "airbase"
         }
       ],
-      "note": "U2. Design note: a starting value for the harness to tune (Q-MR-26, H7)."
+      "note": "U2. Price and time from the owner's Rev 3 building table (D4)."
     },
     {
       "id": "paved-airfield",
       "name": "Paved airfield",
       "cost": {
-        "funds": 6
+        "funds": 4
       },
       "turns": 2,
       "upgradeOf": "airfield",
@@ -7717,43 +7707,48 @@
           "@type": "all-weather-airbase"
         }
       ],
-      "note": "U2: flies in Mud and Snow. Design note: a starting value for the harness to tune (Q-MR-26, H7)."
+      "note": "U2: flies in Mud and Snow. Price and time from the owner's Rev 3 building table (D4)."
     },
     {
       "id": "rail-yard",
       "name": "Rail yard",
       "cost": {
-        "funds": 8
+        "funds": 6
       },
-      "turns": 3,
+      "turns": 2,
       "effects": [
         {
-          "@type": "rail-departures",
+          "@type": "rail-capacity",
           "@data": {
-            "extra": 1
+            "units": 2
           }
         }
       ],
-      "note": "M3: one more army by rail a turn from its capital. Design note: a starting value for the harness to tune (Q-MR-26, H7)."
+      "note": "M3, D5: two more units by rail a turn from its capital. Price and time from the owner's Rev 3 building table (D4)."
     }
   ],
   "improvements": {
     "rail": {
       "cost": {
-        "funds": 6
+        "funds": 3,
+        "manpower": 1
       },
-      "turns": 3,
+      "turns": 2,
       "maxLevel": 2
     },
     "port": {
       "cost": {
-        "funds": 8
+        "funds": 6
       },
-      "turns": 3,
+      "turns": 2,
       "maxLevel": 2
     },
     "railDamageOnContest": 1,
-    "note": "$4, $8. Design note: a starting value for the harness to tune (Q-MR-26, H7). The rail improvement repairs a station: it never rises above its best link (single 1, main 2; declog D12), so maxLevel is 2."
+    "note": "$4, $8. Price and time from the owner's Rev 3 building table (D4). The rail improvement repairs a station: it never rises above its best link (single 1, main 2; declog D12), so maxLevel is 2."
+  },
+  "upkeep": {
+    "maxLossShare": 0.1,
+    "minStrengthShare": 0.5
   },
   "recruitment": {
     "maxPerTerritory": 2,
@@ -8105,7 +8100,7 @@
       "worksPerTurn": 2,
       "worksMax": 6,
       "belowOneToOnePenalty": 3,
-      "barricades": 1,
+      "barricades": 2,
       "fatigued": -2,
       "amphibious": -4
     },
@@ -8114,16 +8109,8 @@
       "demoralizedLevel": 3
     },
     "breakUpShare": 0.1,
-    "factionModifiers": [
-      {
-        "id": "popular-resistance",
-        "name": "Popular resistance",
-        "factionId": "republic",
-        "when": "holds-controlled-city",
-        "defence": 3
-      }
-    ],
-    "note": "D1-D7: the 13-grade catalogue (Q-MR-06), today's modifiers x3 (Q-D20-6), but dug-in at -2 a pip to -6 (three pips; Q-R2-12a), fatigue (Q-MR-04), break-up at 10 percent (Q-MR-08). Column k reads grade floor((score + 3k + 4) / 3), with scores 0-1 destroying the attacker at 1:1 and below (Q-D20-1 note); a starting table for the harness to tune."
+    "factionModifiers": [],
+    "note": "D1-D7: the 13-grade catalogue (Q-MR-06), today's modifiers x3 (Q-D20-6), barricades worth 2 (Q-R3-11), but dug-in at -2 a pip to -6 (three pips; Q-R2-12a), fatigue (Q-MR-04), break-up at 10 percent (Q-MR-08). Column k reads grade floor((score + 3k + 4) / 3), with scores 0-1 destroying the attacker at 1:1 and below (Q-D20-1 note); a starting table for the harness to tune."
   },
   "weather": {
     "outcomes": [
@@ -8528,11 +8515,11 @@
       },
       {
         "outcome": "nothing-hit",
-        "upTo": 10
+        "upTo": 7
       },
       {
         "outcome": "income-cut",
-        "upTo": 16
+        "upTo": 14
       },
       {
         "outcome": "building-hit",
@@ -8543,7 +8530,7 @@
     "reconTurns": 1,
     "supportMax": 2,
     "generalDeathRoll": 4,
-    "note": "U3, U4 and declog D7. Design note: a starting value for the harness to tune (Q-MR-26, H7). R11: supportMax 2, at most two aircraft count for Ground Support on one side (closeout, Air). R10: Rain grounds aircraft like Mud and Snow; a paved airfield still flies. generalDeathRoll 4 (a 1 in 5 chance that a general dies when his army is destroyed or routed) is a design note for the harness to tune (U5, Q-MR-28)."
+    "note": "U3, U4 and declog D7. The raid table is the owner's Rev 3 one (D5): 1-3 the raiders are lost, 4-7 nothing, 8-14 income cut, 15-20 a building hit. R11: supportMax 2, at most two aircraft count for Ground Support on one side (closeout, Air). R10: Rain grounds aircraft like Mud and Snow; a paved airfield still flies. generalDeathRoll 4 (a 1 in 5 chance that a general dies when his army is destroyed or routed) is a design note for the harness to tune (U5, Q-MR-28)."
   },
   "generals": {
     "traits": [
@@ -8720,16 +8707,6 @@
       "url": "https://warwick.ac.uk/services/library/mrc/collections/digital/scw/simpletimeline2/"
     },
     {
-      "id": "spanish-memory",
-      "title": "Spain Ministry of Territorial Policy and Democratic Memory, Por vuestra libertad y la nuestra",
-      "url": "https://mptmd.gob.es/content/dam/mpt/memoria-democratica/publicaciones-memoria/catalogos_y_monografias/Por%20vuestra%20libertad%20y%20nuestra%20%28catalogo%29_WEB.pdf"
-    },
-    {
-      "id": "country-study-map",
-      "title": "U.S. Marine Corps, Spain: A Country Study, Figure 4",
-      "url": "https://www.marines.mil/portals/1/Publications/Spain%20Study_1.pdf?ver=2012-10-11-163301-923"
-    },
-    {
       "id": "ubc-july-map",
       "title": "University of British Columbia Press, Spain, July 1936",
       "url": "https://www.ubcpress.ca/asset/9430/1/9780774814171.pdf"
@@ -8738,15 +8715,6 @@
       "id": "nafziger-1936",
       "title": "Nafziger Collection, Spanish Army in Quarters: Strengths and Assignments, July 1936",
       "url": "https://cgsc.contentdm.oclc.org/digital/api/collection/p15040coll6/id/9540/download"
-    },
-    {
-      "id": "spanish-defence-human-factor",
-      "title": "Spanish Ministry of Defence, El factor humano",
-      "url": "https://publicaciones.defensa.gob.es/media/downloadable/files/links/e/l/el_factor_humano_adalid_75_.pdf"
-    },
-    {
-      "id": "alpert-2013",
-      "title": "Michael Alpert, The Republican Army in the Spanish Civil War, 1936-1939, Cambridge University Press, 2013"
     },
     {
       "id": "puell-2012",
@@ -8893,6 +8861,36 @@
       "id": "eswiki-malaga-1937",
       "title": "Spanish Wikipedia, Batalla de M\u00e1laga (1937)",
       "url": "https://es.wikipedia.org/wiki/Batalla_de_M%C3%A1laga_(1937)"
+    },
+    {
+      "id": "eswiki-secn",
+      "title": "Spanish Wikipedia, Sociedad Espa\u00f1ola de Construcci\u00f3n Naval",
+      "url": "https://es.wikipedia.org/wiki/Sociedad_Espa%C3%B1ola_de_Construcci%C3%B3n_Naval"
+    },
+    {
+      "id": "eswiki-toledo-armas",
+      "title": "Spanish Wikipedia, F\u00e1brica de Armas de Toledo",
+      "url": "https://es.wikipedia.org/wiki/F%C3%A1brica_de_Armas_de_Toledo"
+    },
+    {
+      "id": "eswiki-altos-hornos",
+      "title": "Spanish Wikipedia, Altos Hornos de Vizcaya",
+      "url": "https://es.wikipedia.org/wiki/Altos_Hornos_de_Vizcaya"
+    },
+    {
+      "id": "eswiki-maquinista",
+      "title": "Spanish Wikipedia, La Maquinista Terrestre y Mar\u00edtima",
+      "url": "https://es.wikipedia.org/wiki/La_Maquinista_Terrestre_y_Mar%C3%ADtima"
+    },
+    {
+      "id": "eswiki-trubia",
+      "title": "Spanish Wikipedia, F\u00e1brica de armas de Trubia",
+      "url": "https://es.wikipedia.org/wiki/F%C3%A1brica_de_armas_de_Trubia"
+    },
+    {
+      "id": "eswiki-eibar",
+      "title": "Spanish Wikipedia, \u00c9ibar",
+      "url": "https://es.wikipedia.org/wiki/%C3%89ibar"
     }
   ]
 }

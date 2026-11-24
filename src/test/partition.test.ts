@@ -10,7 +10,7 @@ import type { FactionId, GameState, SubTerritoryId, WithdrawOrder } from "../mai
 import { validateMoveOrder, validateOrder } from "../main/engine/validation";
 import { victoryProgress } from "../main/engine/victory";
 import { type Json } from "./modularFixture";
-import { faction, loadedDice, move, spain, spainD20, territory, unit, withUnits } from "./support";
+import { faction, loadedDice, move, spain, spainWithAir, territory, unit, withUnits } from "./support";
 
 const sub = (id: string): SubTerritoryId => id as SubTerritoryId;
 
@@ -121,7 +121,7 @@ describe("occupation and the sweep (P3)", () => {
     const garrisons = [["extremadura", "north-argel-27"], ["islas-baleares", "south-palma-36"], ["islas-baleares", "rep-baleares-37"], ["pais-vasco", "north-flandes-5"]] as const;
     for (const [territoryId, unitId] of garrisons) expect(start.units[unit(unitId)]?.territoryId).toBe(territoryId);
     // Dice that leave every standing battle's sides in place, so only the sweep rule is tested.
-    const swept = (state: GameState): readonly string[] => resolveTurn(scenario, state, [], 1, loadedDice([3, 4, 4, 5, 4, 3])).subTerritoryChanges
+    const swept = (state: GameState): readonly string[] => resolveTurn(scenario, state, [], 1, loadedDice([8, 8, 11, 11, 11, 11])).subTerritoryChanges
       .filter((change) => change.cause === "sweep")
       .map((change) => change.subTerritoryId);
     expect(swept(start).filter((id) => ["caceres", "alava", "mallorca", "ibiza", "menorca"].includes(id))).toEqual([]);
@@ -198,14 +198,14 @@ describe("the computer player in contested ground (H5)", () => {
     const { seededRandom } = await import("../main/engine/random");
     const scenario = spain();
     // Three regiments against one, 12 to 6 less popular resistance, leave the Republic better
-    // than even odds of holding Andalucia (D24); the Army of Africa's vanguard makes it hopeless.
+    // than even odds of holding Andalucia (D24); the Army of Africa makes it hopeless.
     const units = [
       ["rep-vitoria-8", "republic", "andalucia"],
       ["south-granada-6", "south", "andalucia"], ["south-lepanto-5", "south", "andalucia"], ["south-cadiz-33", "south", "andalucia"]
     ] as const;
     const holdable = withUnits(scenario, units);
     expect(planWithdrawals({ factionId: faction("republic"), memory: {}, planned: [], random: seededRandom(1), scenario, state: holdable })).toEqual([]);
-    const state = withUnits(scenario, [...units, ["south-africa-vanguard", "south", "andalucia"]]);
+    const state = withUnits(scenario, [...units, ["south-africa-vanguard", "south", "andalucia"], ["south-legion", "south", "andalucia"], ["south-regulares", "south", "andalucia"]]);
     const orders = planWithdrawals({ factionId: faction("republic"), memory: {}, planned: [], random: seededRandom(1), scenario, state });
     // R1: its pocket is Málaga alone, so the only way out is the sea lane to Murcia.
     expect(orders).toEqual([withdrawal("republic", "rep-vitoria-8", "andalucia", "murcia")]);
@@ -234,7 +234,7 @@ describe("the computer player in contested ground (H5)", () => {
     const d20Ground: unknown[] = [];
     // Kept short (M-6, as D22 did for the others): two games of eight turns, one per dice module, so it
     // finishes well inside the limit under the full suite's load.
-    for (const [scenario, seed] of [[spain(), 1], [spainD20(), 2]] as const) {
+    for (const [scenario, seed] of [[spain(), 1], [spainWithAir(), 2]] as const) {
       let state = initialGameState(scenario);
       for (let turn = 1; turn <= 8; turn += 1) {
         const submissions = scenario.factions.map((entry, index) =>
@@ -243,12 +243,10 @@ describe("the computer player in contested ground (H5)", () => {
         const bad = result.outcomes.filter((outcome) => outcome.kind === "invalid-order" || (outcome.kind === "rejected-order" && outcome.order.kind === "withdraw"));
         expect(bad).toEqual([]);
         // P4 under the shipped d20: battles flip sub-territories, each change naming a battle of the turn.
-        if (scenario.rules.dice === "d20-graded") {
-          const battles = result.outcomes.filter((outcome) => outcome.kind === "battle").length;
-          for (const change of result.subTerritoryChanges.filter((entry) => entry.cause === "battle")) {
-            expect(change.battleIndex).toBeLessThan(battles);
-            d20Ground.push(change);
-          }
+        const battles = result.outcomes.filter((outcome) => outcome.kind === "battle").length;
+        for (const change of result.subTerritoryChanges.filter((entry) => entry.cause === "battle")) {
+          expect(change.battleIndex).toBeLessThan(battles);
+          d20Ground.push(change);
         }
         if (result.victory !== undefined) break;
         state = { ...result.finalState, turnNumber: result.finalState.turnNumber + 1 };

@@ -10,6 +10,7 @@ import { Pips, SiteCard } from "../../main/screens/pane/build/SiteCard";
 import type { PlanningSession } from "../../main/state/planning";
 import { emptyDraft, type Draft } from "../../main/state/session";
 import { faction, spain, spainId, spainM2, testRegistry, testStore } from "../support";
+import { pinned } from "../pinned";
 
 afterEach(cleanup);
 
@@ -51,7 +52,7 @@ describe("level pips", () => {
 });
 
 describe("the site card (X7)", () => {
-  const scenario = spain();
+  const scenario = pinned(spain());
   const start = initialGameState(scenario);
 
   const card = (state: GameState, id: string, props: { readonly expanded?: boolean; readonly planned?: readonly { readonly index: number; readonly order: BuildOrder }[]; readonly scenario?: Scenario } = {}) => {
@@ -70,10 +71,10 @@ describe("the site card (X7)", () => {
     expect(within(within(article).getByRole("list", { name: "About this sub-territory" })).getAllByRole("listitem").map((chip) => chip.textContent)).toEqual(["Open ground", "Rail 2"]);
     expect(within(article).getByText(/^Cities: /u)).toBeTruthy();
     const levels = within(article).getByRole("list", { name: "Development and improvements" });
-    expect(within(levels).getByRole("img", { name: /^Industry level 2 of \d+$/u })).toBeTruthy();
+    expect(within(levels).getByRole("img", { name: /^Factory level 1 of \d+$/u })).toBeTruthy();
     expect(within(levels).getByRole("img", { name: /^Rail level 2 of \d+$/u })).toBeTruthy();
     expect(within(levels).queryByText("Port")).toBeNull();
-    expect(within(within(article).getByRole("list", { name: "Buildings" })).getByText("Factory")).toBeTruthy();
+    expect(within(within(article).getByRole("list", { name: "Buildings" })).getByText("Barracks")).toBeTruthy();
     expect(within(article).queryByRole("list", { name: "Build queue" })).toBeNull();
     expect(within(article).queryByText("Queue hidden")).toBeNull();
     expect(within(article).getByRole("region", { name: "Add to the queue" })).toBeTruthy();
@@ -174,7 +175,7 @@ describe("the site card (X7)", () => {
 });
 
 describe("what can be added to a queue ($4, $5)", () => {
-  const scenario = spain();
+  const scenario = pinned(spain());
   const start = initialGameState(scenario);
 
   const list = (state: GameState, id: string, given: Scenario = scenario, draft: Draft = emptyDraft) =>
@@ -190,7 +191,7 @@ describe("what can be added to a queue ($4, $5)", () => {
     expect(options[firstLocked]?.querySelector(".build-locked")?.textContent).toMatch(/\S/u);
     expect(within(options[firstLocked]!).queryByRole("button")).toBeNull();
     // A capital with a city is offered city-only tracks.
-    expect(options.some((option) => option.querySelector("strong")?.textContent.startsWith("Industry") === true)).toBe(true);
+    expect(options.some((option) => option.querySelector("strong")?.textContent.startsWith("Factory") === true)).toBe(true);
     const queue = within(options[0]!).getByRole("button", { name: /^Queue /u });
     await user.click(queue);
     expect(draftOf(store)?.builds).toHaveLength(1);
@@ -201,20 +202,19 @@ describe("what can be added to a queue ($4, $5)", () => {
       ...scenario,
       index: {
         ...scenario.index,
-        buildings: new Map([...scenario.index.buildings].map(([id, entry]) => [id, id === "barracks" ? { ...entry, capitalOnly: true } : id === "factory" ? { ...entry, cityOnly: true } : entry]))
+        buildings: new Map([...scenario.index.buildings].map(([id, entry]) => [id, id === "barracks" ? { ...entry, capitalOnly: true }  : entry]))
       }
     };
     list(start, "guadarrama", limited);
     const names = within(screen.getByRole("region", { name: "Add to the queue" })).getAllByRole("listitem").map((option) => option.querySelector("strong")?.textContent ?? "");
-    expect(names.some((name) => name.startsWith("Industry"))).toBe(false);
+    expect(names.some((name) => name.startsWith("Factory"))).toBe(false);
     expect(names).not.toContain("Barracks");
-    expect(names).not.toContain("Factory");
     expect(names).toContain("Depot");
     cleanup();
     list(start, "madrid", limited);
     const capitalNames = within(screen.getByRole("region", { name: "Add to the queue" })).getAllByRole("listitem").map((option) => option.querySelector("strong")?.textContent ?? "");
     expect(capitalNames).toContain("Barracks");
-    expect(capitalNames).toContain("Factory");
+    expect(capitalNames.some((name) => name.startsWith("Factory"))).toBe(true);
   });
 
   it("draws nothing for another faction's sub-territory, a missing site or an unknown sub-territory", () => {

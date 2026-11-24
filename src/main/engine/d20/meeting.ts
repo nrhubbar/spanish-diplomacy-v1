@@ -1,11 +1,20 @@
 import { type Armies, combatantsOf, compareIds, factionsOf, inScenarioOrder, removeArmies, replaceArmies } from "../board";
 import type { BattleDice } from "../dice";
-import type { MeetingResolution } from "../meeting";
 import type { BattleOutcome, BouncedMoveOutcome, FactionId, MoveOrder, Scenario, TerritoryId, UnitId } from "../types";
-import { fightGraded, type GradedBattle, type GradedInput, gradedOutcome, rollD20 } from "./battle";
+import { fight, type FoughtBattle, type BattleInput, battleOutcome, rollD20 } from "./battle";
 import { cannotAttackAlone } from "./front";
 import { fightingSurvivors } from "./grades";
-import { gradedSide } from "./modifiers";
+import { fightingSide } from "./modifiers";
+
+/** The result of the head-on step (M20). */
+export interface MeetingResolution {
+  readonly armies: Armies;
+  readonly battles: readonly BattleOutcome[];
+  /** Head-on moves that bounced without a battle. */
+  readonly bounced: readonly BouncedMoveOutcome[];
+  /** Moves still on their way: every advance not stopped on the road, its army alive. */
+  readonly continuing: readonly MoveOrder[];
+}
 
 interface Meeting {
   readonly attackerFactionId: FactionId;
@@ -26,7 +35,7 @@ interface Meeting {
  * the attacker continue; a grade that cost the defender nothing lets the defender continue;
  * anything else (stalemates and partial ground, Q-D20-7) bounces both.
  */
-export function resolveGradedMeetings(scenario: Scenario, input: GradedInput, start: Armies, advances: readonly MoveOrder[], dice: BattleDice): MeetingResolution {
+export function resolveMeetings(scenario: Scenario, input: BattleInput, start: Armies, advances: readonly MoveOrder[], dice: BattleDice): MeetingResolution {
   const meetings: Meeting[] = [];
   const bounced: BouncedMoveOutcome[] = [];
   for (const orders of roads(advances)) {
@@ -42,7 +51,7 @@ export function resolveGradedMeetings(scenario: Scenario, input: GradedInput, st
   const battles: BattleOutcome[] = [];
   let armies = start;
   for (const [index, meeting] of [...meetings].sort(compareMeetings).entries()) {
-    const battle = fightGraded(scenario, input, start, {
+    const battle = fight(scenario, input, start, {
       attackerFactionId: meeting.attackerFactionId,
       attackers: combatantsOf(start, meeting.attackers),
       context: { attackerFactionId: meeting.attackerFactionId, defenderFactionIds: [meeting.defenderFactionId], diggingIn: false, weatherTerritoryId: meeting.road[1] },
@@ -56,7 +65,7 @@ export function resolveGradedMeetings(scenario: Scenario, input: GradedInput, st
     const casualties = [battle.attackerCasualties, battle.defenderCasualties];
     armies = removeArmies(replaceArmies(armies, casualties.flatMap((side) => side.survivors)),
       casualties.flatMap((side) => side.losses.flatMap((loss) => (loss.destroyed ? [loss.unitId] : []))));
-    battles.push(gradedOutcome({ ...battle, ground: 0 }, { between: meeting.road, kind: "meeting", ...(winner === undefined ? {} : { winner }) }, {
+    battles.push(battleOutcome({ ...battle, ground: 0 }, { between: meeting.road, kind: "meeting", ...(winner === undefined ? {} : { winner }) }, {
       demoralizedUnitIds: [...battle.attackerCasualties.demoralized, ...battle.defenderCasualties.demoralized],
       losses: [...battle.attackerCasualties.losses, ...battle.defenderCasualties.losses],
       retreats: [],
@@ -66,7 +75,7 @@ export function resolveGradedMeetings(scenario: Scenario, input: GradedInput, st
   return { armies, battles, bounced, continuing: advances.filter((order) => !stopped.has(order.unitId) && armies[order.unitId] !== undefined) };
 }
 
-function winnerOf(scenario: Scenario, input: GradedInput, meeting: Meeting, battle: GradedBattle): FactionId | undefined {
+function winnerOf(scenario: Scenario, input: BattleInput, meeting: Meeting, battle: FoughtBattle): FactionId | undefined {
   if (battle.grade.ground === "all" && fightingSurvivors(scenario, input.start, battle.attackerCasualties).length > 0) return meeting.attackerFactionId;
   return battle.grade.ground === 0 && battle.grade.defender.lossPercent === 0 ? meeting.defenderFactionId : undefined;
 }
@@ -84,11 +93,11 @@ function opposed(direction: readonly MoveOrder[], opposite: readonly MoveOrder[]
   return direction.filter((order) => opposite.some((other) => other.factionId !== order.factionId));
 }
 
-function meetingOf(scenario: Scenario, input: GradedInput, armies: Armies, ahead: readonly MoveOrder[], behind: readonly MoveOrder[]): Meeting | undefined {
+function meetingOf(scenario: Scenario, input: BattleInput, armies: Armies, ahead: readonly MoveOrder[], behind: readonly MoveOrder[]): Meeting | undefined {
   const [aheadFactionId, ...moreAhead] = factionsOf(ahead);
   const [behindFactionId, ...moreBehind] = factionsOf(behind);
   if (aheadFactionId === undefined || behindFactionId === undefined || moreAhead.length > 0 || moreBehind.length > 0 || aheadFactionId === behindFactionId) return undefined;
-  const attack = (orders: readonly MoveOrder[]) => gradedSide(scenario, input.start, combatantsOf(armies, orders), "attack").value;
+  const attack = (orders: readonly MoveOrder[]) => fightingSide(scenario, input.start, combatantsOf(armies, orders), "attack").value;
   // D5, D27.1: a side that cannot attack (artillery alone, generals, trucks) never attacks; the other may.
   const able = (orders: readonly MoveOrder[]) => !cannotAttackAlone(scenario, input.start, combatantsOf(armies, orders).map((combatant) => combatant.unit));
   const [aheadAble, behindAble] = [able(ahead), able(behind)];

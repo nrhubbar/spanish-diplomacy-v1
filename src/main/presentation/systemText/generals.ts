@@ -14,11 +14,6 @@ export const generalsLines: ReportLines<GeneralsTurnOutcome> = {
     `${factionLabel(scenario, outcome.order.factionId)} relieved ${general(scenario, outcome.generalId)} of command.`,
   "replacement-due": (outcome, { scenario }) =>
     `${general(scenario, outcome.generalId)} has been called to command for ${factionLabel(scenario, outcome.factionId)} and arrives on turn ${String(outcome.arrivesOnTurn)}.`,
-  "general-moved": (outcome, { scenario }) => {
-    const name = scenario.index.units.get(outcome.order.unitId)?.name ?? general(scenario, outcome.order.unitId.replace(/^general-/u, "") as GeneralId);
-    const to = territoryLabel(scenario, outcome.order.to);
-    return outcome.arrived ? `${name} went with his army to ${to}.` : `${name} stayed behind: his army did not reach ${to}.`;
-  },
   "replacement-arrived": (outcome, { scenario }) =>
     `${general(scenario, outcome.generalId)} took command in ${territoryLabel(scenario, outcome.territoryId)}.`
 };

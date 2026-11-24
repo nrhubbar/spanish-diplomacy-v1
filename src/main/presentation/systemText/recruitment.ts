@@ -25,5 +25,6 @@ export const recruitmentLines: ReportLines<RecruitmentTurnOutcome> = {
   "replenish-applied": (outcome, { scenario }) =>
     `${unitLabel(scenario, outcome.order.unitId)} took in ${String(outcome.men)} men for ${replenishPriceLabel(scenario, outcome.paid)}${outcome.recovered ? " and recovered its morale" : ""}.`,
   "replenish-cancelled": (outcome, { scenario }) =>
-    `${unitLabel(scenario, outcome.order.unitId)} was not replenished: ${outcome.reason}${refunded(scenario, outcome.refund)}`
+    `${unitLabel(scenario, outcome.order.unitId)} was not replenished: ${outcome.reason}${refunded(scenario, outcome.refund)}`,
+  "unit-disbanded": (outcome, { scenario }) => `${unitLabel(scenario, outcome.unitId)} was disbanded in ${territoryLabel(scenario, outcome.territoryId)}.`
 };

@@ -16,13 +16,13 @@ export type EconomyIconName =
   | "rail"
   | "anchor"
   | "flag"
-  | "gear"
   | "crate"
   | "cross"
   | "fort"
   | "plane"
   | "runway"
   | "junction"
+  | "skull"
   | "star";
 
 const paths: Readonly<Record<EconomyIconName, string>> = {
@@ -33,13 +33,13 @@ const paths: Readonly<Record<EconomyIconName, string>> = {
   cross: "M6 2.5h4v3.5h3.5v4H10v3.5H6V10H2.5V6H6z",
   flag: "M3.5 14V2.5M3.5 3h8l-2 2.5 2 2.5h-8",
   fort: "M2.5 14V6h2v1.5h2V6h3v1.5h2V6h2v8zM6.5 14v-3h3v3",
-  gear: "M8 5.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M3.4 12.6l1.4-1.4M11.2 4.8l1.4-1.4",
   junction: "M3 14 8 2l5 12M4.5 10.5h7M6 7h4M8 10.5 13 14",
   people: "M5.5 3a2 2 0 1 1 0 4 2 2 0 0 1 0-4M2 13c0-2.2 1.6-4 3.5-4S9 10.8 9 13M11 4a1.7 1.7 0 1 1 0 3.4A1.7 1.7 0 0 1 11 4M10 9.2c.3-.1.7-.2 1-.2 1.7 0 3 1.6 3 3.6",
   pick: "M3 13 10 6M6.5 3.5c2.5-1 5-.5 6.5 1-1.5-.5-3.5-.5-5 .5zM8 5l3 3",
   plane: "M8 1.5c.6 0 1 .6 1 1.5v3.5l5 3v1.5l-5-1.5V13l1.5 1.2V15L8 14.3 5.5 15v-.8L7 13V9.5L2 11V9.5l5-3V3c0-.9.4-1.5 1-1.5",
   rail: "M5 1.5 3 14.5M11 1.5l2 13M3.8 4h8.4M3.4 7.5h9.2M3 11h10",
   runway: "M8 1.5c.5 0 .8.5.8 1.2V5l3.7 2.2v1.2L8.8 7.3v2.2l1.2.9v.8L8 10.7l-2 .5v-.8l1.2-.9V7.3L3.5 8.4V7.2L7.2 5V2.7c0-.7.3-1.2.8-1.2M2 14.5h12",
+  skull: "M4 6a4 4 0 1 1 8 0c0 1.3-.6 2.2-1.5 2.8v1.7h-5V8.8C4.6 8.2 4 7.3 4 6M6.2 6.1h.5M9.3 6.1h.5M8 7.7v.4M2.8 11.2l10.4 3M13.2 11.2l-10.4 3",
   star: "m8 1.8 1.8 4 4.3.4-3.3 2.9 1 4.2L8 11.1l-3.8 2.2 1-4.2-3.3-2.9 4.3-.4z",
   wheat: "M8 14.5V5M8 8c-2 0-3-1.2-3-3 2 0 3 1.2 3 3M8 8c2 0 3-1.2 3-3-2 0-3 1.2-3 3M8 11c-2 0-3-1.2-3-3 2 0 3 1.2 3 3M8 11c2 0 3-1.2 3-3-2 0-3 1.2-3 3M8 5c-.8-.8-.8-2.2 0-3 .8.8.8 2.2 0 3"
 };
@@ -57,7 +57,7 @@ export function resourceIcon(scenario: Scenario, resource: ResourceId): EconomyI
   return scenario.resources[0]?.id === resource ? "coin" : "people";
 }
 
-/** A development track's icon: a city track is industry; money is mining; anything else is farming. */
+/** A development track's icon: a city track is a factory; money is mining; anything else is farming. */
 export function developmentIcon(scenario: Scenario, track: DevelopmentDefinition): EconomyIconName {
   if (track.cityOnly) return "chimney";
   return resourceIcon(scenario, track.resource) === "coin" ? "pick" : "wheat";
@@ -67,8 +67,7 @@ const effectIcons: Readonly<Record<BuildingDefinition["effects"][number]["kind"]
   airbase: "plane",
   "all-weather-airbase": "runway",
   "defence-roll": "fort",
-  "rail-departures": "junction",
-  "recruit-slots": "gear",
+  "rail-capacity": "junction",
   "replenish-cap": "cross",
   "replenish-discount": "crate"
 };

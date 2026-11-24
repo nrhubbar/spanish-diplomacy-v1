@@ -45,9 +45,9 @@ describe("compact counters", () => {
     const game = shakenCovadonga();
     const madrid = Object.values(game.units).filter((unit) => unit.territoryId === "madrid");
     const figures = groupFigures(spain(), game, madrid);
-    expect(figures).toMatchObject({ attack: 12, count: 4, defence: 18, demoralizedCount: 1, dugIn: 2, fullAttack: 14, reduced: true, strength: 9100 });
+    expect(figures).toMatchObject({ attack: 10, count: 4, defence: 20, demoralizedCount: 1, dugIn: 2, fullAttack: 12, reduced: true, strength: 9100 });
     expect(groupLabel("Republican Government", "Madrid", figures))
-      .toBe("Republican Government, 4 units in Madrid, combined attack 12, defence 18, 9100 of 9100 men, 1 demoralized, dug in level 2 (+2)");
+      .toBe("Republican Government, 4 units in Madrid, combined attack 10, defence 20, 9100 of 9100 men, 1 demoralized, dug in level 2 (+4)");
   });
 
   it("is compact on a phone's overview, stays individual at the detail zoom, and reacts to crowding", () => {
@@ -124,9 +124,9 @@ describe("compact counters", () => {
       />
     );
     const group = screen.getByRole("button", { name: /^Republican Government, 4 units in Madrid/ });
-    expect(group).toHaveAccessibleName(/1 demoralized, dug in level 2 \(\+2\), 4 moving$/);
+    expect(group).toHaveAccessibleName(/1 demoralized, dug in level 2 \(\+4\), 4 moving$/);
     expect(group).toHaveAttribute("data-ordered", "true");
-    expect(group.querySelector(".unit-counter-current")?.textContent).toBe("12-18");
+    expect(group.querySelector(".unit-counter-current")?.textContent).toBe("10-20");
     expect(group.querySelector(".unit-counter-count")?.textContent).toBe("\u00d74");
     expect(group.querySelector(".unit-counter-works")).not.toBeNull();
     await userEvent.setup().click(group);

@@ -1,5 +1,6 @@
-import { currentLevel, maxLevel, projectCost, queuedLevel } from "../engine/economy/catalogue";
-import type { BuildingEffect, BuildProject, LinkWork, ResourceId, Resources, Scenario, SubTerritoryState } from "../engine/types";
+import { currentLevel, maxLevel, projectCost, queuedLevel, sameProject } from "../engine/economy/catalogue";
+import { toThousandth } from "../engine/resources";
+import type { BuildingEffect, BuildProject, DevelopmentEffect, LinkWork, RecruitRequirement, ResourceId, Resources, Scenario, SubTerritoryState } from "../engine/types";
 import { glyphs } from "./glyphs";
 
 /**
@@ -15,7 +16,7 @@ function displayOf(scenario: Scenario, resourceId: ResourceId) {
 
 /** EB-12: an amount of one resource as the header shows it: "18k" for Manpower, "42" for Funds. */
 export function resourceAmount(scenario: Scenario, resourceId: ResourceId, value: number): string {
-  return `${String(value)}${displayOf(scenario, resourceId)?.suffix ?? ""}`;
+  return `${String(toThousandth(value))}${displayOf(scenario, resourceId)?.suffix ?? ""}`;
 }
 
 /** EB-12: an amount with its sign, using a true minus: "+9k", "\u22123", "+0". */
@@ -25,7 +26,7 @@ export function signedResourceAmount(scenario: Scenario, resourceId: ResourceId,
 
 /** EB-12: an amount in full, points times the display unit: "18,000" for 18 Manpower, "42" for Funds. */
 export function resourceAmountInFull(scenario: Scenario, resourceId: ResourceId, value: number): string {
-  const full = value * (displayOf(scenario, resourceId)?.unit ?? 1);
+  const full = Math.round(value * (displayOf(scenario, resourceId)?.unit ?? 1));
   return String(full).replace(/\B(?=(\d{3})+(?!\d))/gu, ",");
 }
 
@@ -53,7 +54,7 @@ export function signed(value: number): string {
 }
 
 /** R7: the link works as the build lists name them. */
-export const linkWorkNames: Readonly<Record<LinkWork, string>> = { "new-rail": "New rail line", "rail-upgrade": "Rail upgrade", "road-upgrade": "Road upgrade" };
+const linkWorkNames: Readonly<Record<LinkWork, string>> = { "new-rail": "New rail line", "rail-upgrade": "Rail upgrade", "road-upgrade": "Road upgrade" };
 
 /** The project's base name: the building, the track, Rail or Port, or the link work. */
 export function projectBaseName(scenario: Scenario, project: BuildProject): string {
@@ -69,7 +70,7 @@ export function projectBaseName(scenario: Scenario, project: BuildProject): stri
   }
 }
 
-/** A project as the queue shows it: "Factory", or "Farms 1 \u2192 2" for a level after those queued ahead. */
+/** A project as the queue shows it: "Barracks", or "Farms 1 \u2192 2" for a level after those queued ahead. */
 export function projectName(scenario: Scenario, site: SubTerritoryState | undefined, project: BuildProject, levelBefore?: number): string {
   const base = projectBaseName(scenario, project);
   if (project.kind === "building" || project.kind === "link" || site === undefined) return base;
@@ -77,17 +78,20 @@ export function projectName(scenario: Scenario, site: SubTerritoryState | undefi
   return `${base} ${String(from)} ${glyphs.arrow} ${String(from + 1)}`;
 }
 
+/** What a development track's level does beyond its yield, in a few words. */
+function developmentEffectText(effect: DevelopmentEffect): string {
+  return `+${String(effect.extra)} ${effect.extra === 1 ? "Recruit order" : "Recruit orders"} a turn`;
+}
+
 /** What a building effect does, in a few words. */
 export function buildingEffectText(scenario: Scenario, effect: BuildingEffect): string {
   switch (effect.kind) {
-    case "recruit-slots":
-      return `+${String(effect.extra)} recruit a turn`;
     case "replenish-cap":
       return `replenishes ${String(Math.round(effect.share * 100))}% more men a turn`;
     case "replenish-discount":
       return `replenishing costs ${String(Math.round(effect.share * 100))}% less ${scenario.resources.find((resource) => resource.id === effect.resource)?.name ?? effect.resource}`;
-    case "rail-departures":
-      return `+${String(effect.extra)} rail departure`;
+    case "rail-capacity":
+      return `+${String(effect.units)} ${effect.units === 1 ? "unit" : "units"} a turn by rail`;
     case "airbase":
       return "bases aircraft";
     case "all-weather-airbase":
@@ -97,9 +101,9 @@ export function buildingEffectText(scenario: Scenario, effect: BuildingEffect): 
   }
 }
 
-/** The buildings that a unit type's recruitment needs, as "needed to recruit Infantry, Cavalry". */
-function unlocksText(scenario: Scenario, buildingId: string): string | undefined {
-  const types = scenario.unitTypes.filter((type) => type.recruit?.requires.some((id) => id === buildingId) === true).map((type) => type.name);
+/** The unit types whose recruitment needs the project, as "recruits Infantry, Cavalry". */
+function unlocksText(scenario: Scenario, project: RecruitRequirement): string | undefined {
+  const types = scenario.unitTypes.filter((type) => type.recruit?.requires.some((requirement) => sameProject(requirement, project)) === true).map((type) => type.name);
   return types.length === 0 ? undefined : `recruits ${types.slice(0, 3).join(", ")}${types.length > 3 ? glyphs.ellipsis : ""}`;
 }
 
@@ -108,16 +112,20 @@ export function projectEffectText(scenario: Scenario, project: BuildProject): st
   switch (project.kind) {
     case "development": {
       const track = scenario.index.development.get(project.developmentId);
-      return track === undefined ? undefined : `${signedResourceAmount(scenario, track.resource, track.yieldPerLevel)} ${scenario.resources.find((resource) => resource.id === track.resource)?.name ?? track.resource} a turn`;
+      if (track === undefined) return undefined;
+      const yields = `${signedResourceAmount(scenario, track.resource, track.yieldPerLevel)} ${scenario.resources.find((resource) => resource.id === track.resource)?.name ?? track.resource} a turn`;
+      const unlocks = unlocksText(scenario, project);
+      return [yields, ...track.effects.map(developmentEffectText), ...(unlocks === undefined ? [] : [unlocks])].join(", ");
     }
     case "improvement":
       return project.improvement === "rail" ? "longer rail moves" : "lands more armies";
     case "link":
-      return project.work === "road-upgrade" ? "a main road for trucks" : "longer rail moves";
+      return project.work === "road-upgrade" ? "a road trucks can use" : "longer rail moves";
     case "building": {
       const building = scenario.index.buildings.get(project.buildingId);
       if (building === undefined) return undefined;
-      const parts = [...building.effects.map((effect) => buildingEffectText(scenario, effect)), ...(unlocksText(scenario, building.id) === undefined ? [] : [unlocksText(scenario, building.id) ?? ""])];
+      const unlocks = unlocksText(scenario, project);
+      const parts = [...building.effects.map((effect) => buildingEffectText(scenario, effect)), ...(unlocks === undefined ? [] : [unlocks])];
       return parts.length === 0 ? undefined : parts.join(", ");
     }
   }

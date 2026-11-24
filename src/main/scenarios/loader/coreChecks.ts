@@ -1,10 +1,9 @@
 import type { ScenarioDocument } from "../schema/scenarioSchema";
 import { idSet, type Issues } from "./issues";
 
-/** Rules L2-L8, L12, L13 and L23, which apply to every ruleset. */
+/** Rules L2-L8, L12 and L23. */
 export function checkCore(document: ScenarioDocument, issues: Issues): void {
   issues.unique("cities", document.cities);
-  issues.unique("combat.factionModifiers", document.combat.factionModifiers);
   issues.unique("factions", document.factions);
   issues.unique("sources", document.sources);
   issues.unique("territories", document.territories);
@@ -51,14 +50,6 @@ export function checkCore(document: ScenarioDocument, issues: Issues): void {
       const city = cities.get(unit.cityId);
       if (city === undefined) issues.add(`${path}.cityId: unknown city "${unit.cityId}" (L3)`);
       else if (city.territoryId !== unit.territoryId) issues.add(`${path}.cityId: city "${unit.cityId}" is not in territory "${unit.territoryId}" (L4)`);
-    }
-  });
-
-  document.combat.factionModifiers.forEach((modifier, index) => {
-    const path = `combat.factionModifiers[${index}]`;
-    issues.ref(`${path}.factionId`, modifier.factionId, factions, "faction");
-    if ((modifier.attack ?? 0) === 0 && (modifier.defence ?? 0) === 0) {
-      issues.add(`${path}: "${modifier.id}" changes nothing; give it an attack or defence bonus (L13)`);
     }
   });
 

@@ -16,6 +16,7 @@ import type {
   LinkProjectRules,
   PassRules,
   RailRules,
+  RecruitRequirement,
   ResourceId,
   RoadRules,
   Resources,
@@ -32,12 +33,12 @@ import type {
   WeatherRules,
   WeatherZoneId
 } from "../../engine/types";
-import type { ModularScenarioDocument, ScenarioDocument } from "../schema/scenarioSchema";
+import type { ScenarioDocument } from "../schema/scenarioSchema";
 import { citations, factionModifier } from "./convert";
 
 type SystemFields =
   | "air" | "buildings" | "calendar" | "d20" | "development" | "generalTraits" | "generals" | "improvements" | "links" | "linkModifiers"
-  | "linkProjects" | "movement" | "recruitment" | "resources" | "subTerritories" | "subTerritoryBorders" | "weather";
+  | "linkProjects" | "movement" | "recruitment" | "resources" | "subTerritories" | "subTerritoryBorders" | "upkeep" | "weather";
 type SystemIndex = "buildings" | "development" | "generals" | "generalsByFaction" | "links" | "subTerritories" | "subTerritoriesByTerritory" | "subTerritoryNeighbors";
 
 export interface ModularParts {
@@ -47,19 +48,14 @@ export interface ModularParts {
 
 const resources = (record: Readonly<Record<string, number>>): Resources => record;
 
-/** The systems of an `m2-strength` package: none. */
-export function emptySystems(): ModularParts {
-  return indexSystems(undefined);
-}
-
 /** D3: the rail level of a link, as today's per-sub-territory levels count it: single 1, main 2. */
 function linkRail(link: LinkDefinition): number {
   const rail = link.modifiers.find((modifier) => modifier.kind === "rail");
   return rail === undefined ? 0 : rail.level === "main" ? 2 : 1;
 }
 
-export function indexSystems(document: ModularScenarioDocument | undefined): ModularParts {
-  const links = (document?.links ?? []).map((link): LinkDefinition => ({
+export function indexSystems(document: ScenarioDocument): ModularParts {
+  const links = document.links.map((link): LinkDefinition => ({
     a: link.a as SubTerritoryId,
     b: link.b as SubTerritoryId,
     basis: { sources: citations(link.sources), ...(link.note === undefined ? {} : { note: link.note }) },
@@ -71,11 +67,11 @@ export function indexSystems(document: ModularScenarioDocument | undefined): Mod
   for (const link of links) {
     for (const end of [link.a, link.b]) railLevels.set(end, Math.max(railLevels.get(end) ?? 0, linkRail(link)));
   }
-  const subTerritories = (document?.subTerritories ?? []).map((sub): SubTerritoryDefinition => ({
+  const subTerritories = document.subTerritories.map((sub): SubTerritoryDefinition => ({
     basis: { sources: citations(sub.sources), ...(sub.note === undefined ? {} : { note: sub.note }) },
     buildable: sub.buildable as BuildableId[],
     buildings: sub.buildings as BuildingId[],
-    cityIds: (document?.cities ?? []).filter((city) => city.subTerritoryId === sub.id).map((city) => city.id as CityId),
+    cityIds: document.cities.filter((city) => city.subTerritoryId === sub.id).map((city) => city.id as CityId),
     development: sub.development as Record<DevelopmentId, number>,
     id: sub.id as SubTerritoryId,
     name: sub.name,
@@ -85,14 +81,14 @@ export function indexSystems(document: ModularScenarioDocument | undefined): Mod
     terrain: sub.terrain,
     territoryId: sub.territoryId as TerritoryId
   }));
-  const borders = (document?.subTerritoryBorders ?? []).map(([a, b]) => [a as SubTerritoryId, b as SubTerritoryId] as const);
-  const development = (document?.development ?? []).map((track): DevelopmentDefinition => ({
+  const borders = document.subTerritoryBorders.map(([a, b]) => [a as SubTerritoryId, b as SubTerritoryId] as const);
+  const development = document.development.map((track): DevelopmentDefinition => ({
     ...track,
     id: track.id as DevelopmentId,
     resource: track.resource as ResourceId,
     upgrade: { cost: resources(track.upgrade.cost), turns: track.upgrade.turns }
   }));
-  const buildings = (document?.buildings ?? []).map((building): BuildingDefinition => ({
+  const buildings = document.buildings.map((building): BuildingDefinition => ({
     capitalOnly: building.capitalOnly,
     cityOnly: building.cityOnly,
     cost: resources(building.cost),
@@ -102,7 +98,7 @@ export function indexSystems(document: ModularScenarioDocument | undefined): Mod
     turns: building.turns,
     ...(building.upgradeOf === undefined ? {} : { upgradeOf: building.upgradeOf as BuildingId })
   }));
-  const generals = (document?.generals?.roster ?? []).map((general): GeneralDefinition => ({
+  const generals = (document.generals?.roster ?? []).map((general): GeneralDefinition => ({
     factionId: general.factionId as FactionId,
     id: general.id as GeneralId,
     name: general.name,
@@ -135,26 +131,26 @@ export function indexSystems(document: ModularScenarioDocument | undefined): Mod
     scenario: {
       buildings,
       development,
-      generalTraits: (document?.generals?.traits ?? []).map((trait) => ({ ...trait, id: trait.id as TraitId })),
+      generalTraits: (document.generals?.traits ?? []).map((trait) => ({ ...trait, id: trait.id as TraitId })),
       generals,
       links,
       linkModifiers: linkModifierRules(document),
-      resources: (document?.resources ?? []).map((resource) => ({
+      resources: document.resources.map((resource) => ({
         ...(resource.display === undefined ? {} : { display: resource.display }),
         id: resource.id as ResourceId,
         name: resource.name
       })),
       subTerritories,
       subTerritoryBorders: borders,
-      ...optionalBlocks(document)
+      ...ruleBlocks(document)
     }
   };
 }
 
 /** D2: the scenario's link modifier entries, by kind. */
-function linkModifierRules(document: ModularScenarioDocument | undefined): LinkModifierRules {
+function linkModifierRules(document: ScenarioDocument): LinkModifierRules {
   const rules: { pass?: PassRules; rail?: RailRules; road?: RoadRules } = {};
-  for (const { kind, ...entry } of document?.linkModifiers ?? []) {
+  for (const { kind, ...entry } of document.linkModifiers) {
     if (kind === "pass") rules.pass = entry as PassRules;
     else if (kind === "rail") rules.rail = entry as RailRules;
     else rules.road = entry as RoadRules;
@@ -162,9 +158,8 @@ function linkModifierRules(document: ModularScenarioDocument | undefined): LinkM
   return rules;
 }
 
-function optionalBlocks(document: ModularScenarioDocument | undefined): Partial<Pick<Scenario, SystemFields>> {
-  if (document === undefined) return {};
-  const { air, calendar, d20, improvements, linkProjects, movement, recruitment, weather } = document;
+function ruleBlocks(document: ScenarioDocument): Pick<Scenario, "d20"> & Partial<Pick<Scenario, SystemFields>> {
+  const { air, calendar, d20, improvements, linkProjects, movement, recruitment, upkeep, weather } = document;
   return {
     ...(linkProjects === undefined
       ? {}
@@ -173,16 +168,12 @@ function optionalBlocks(document: ModularScenarioDocument | undefined): Partial<
         }),
     ...(air === undefined ? {} : { air }),
     ...(calendar === undefined ? {} : { calendar }),
-    ...(d20 === undefined
-      ? {}
-      : {
-          d20: {
-            ...d20,
-            factionModifiers: d20.factionModifiers.map(factionModifier),
-            grades: d20.grades.map((grade) => ({ ...grade, id: grade.id as GradeId })),
-            table: d20.table as GradeId[][]
-          }
-        }),
+    d20: {
+      ...d20,
+      factionModifiers: d20.factionModifiers.map(factionModifier),
+      grades: d20.grades.map((grade) => ({ ...grade, id: grade.id as GradeId })),
+      table: d20.table as GradeId[][]
+    },
     ...(improvements === undefined
       ? {}
       : {
@@ -194,11 +185,12 @@ function optionalBlocks(document: ModularScenarioDocument | undefined): Partial<
         }),
     ...(movement === undefined ? {} : { movement }),
     ...(recruitment === undefined ? {} : { recruitment }),
+    ...(upkeep === undefined ? {} : { upkeep }),
     ...(weather === undefined ? {} : { weather: indexWeather(weather) })
   };
 }
 
-function indexWeather(weather: NonNullable<ModularScenarioDocument["weather"]>): WeatherRules {
+function indexWeather(weather: NonNullable<ScenarioDocument["weather"]>): WeatherRules {
   return {
     outcomes: weather.outcomes.map((outcome) => ({
       attackRoll: outcome.attackRoll,
@@ -219,11 +211,8 @@ function indexWeather(weather: NonNullable<ModularScenarioDocument["weather"]>):
   };
 }
 
-/** W5: `m2-strength` types are ground units that may only move, with no effects. */
 export function indexUnitTypes(document: ScenarioDocument): UnitTypeDefinition[] {
-  if (document.ruleset === "m2-strength") {
-    return document.unitTypes.map((type) => ({ ...type, effects: [], id: type.id as UnitTypeId, kind: "ground", orders: ["move"] }));
-  }
+  const tracks = new Set(document.development.map((track) => track.id));
   return document.unitTypes.map((type): UnitTypeDefinition => ({
     attack: type.attack,
     defence: type.defence,
@@ -234,6 +223,7 @@ export function indexUnitTypes(document: ScenarioDocument): UnitTypeDefinition[]
     name: type.name,
     orders: type.orders,
     symbol: type.symbol,
+    upkeep: resources(type.upkeep),
     ...(type.air === undefined ? {} : { air: type.air }),
     ...(type.recruit === undefined
       ? {}
@@ -241,7 +231,9 @@ export function indexUnitTypes(document: ScenarioDocument): UnitTypeDefinition[]
           recruit: {
             cost: resources(type.recruit.cost),
             establishment: type.recruit.establishment,
-            requires: type.recruit.requires as BuildingId[],
+            requires: type.recruit.requires.map((id): RecruitRequirement => (tracks.has(id)
+              ? { developmentId: id as DevelopmentId, kind: "development" }
+              : { buildingId: id as BuildingId, kind: "building" })),
             trainingTurns: type.recruit.trainingTurns,
             ...(type.recruit.factionIds === undefined ? {} : { factionIds: type.recruit.factionIds as FactionId[] })
           }

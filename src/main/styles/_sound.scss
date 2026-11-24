@@ -1,0 +1,68 @@
+// Master, Music and Effects, in Settings and in the game's menu.
+
+.sound-controls {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.sound-row {
+  display: grid;
+  grid-template-columns: 5rem minmax(6rem, 1fr) 3.2rem auto;
+  align-items: center;
+  gap: 0.6rem;
+
+  label {
+    font: 600 0.92rem var(--sans);
+  }
+
+  input[type="range"] {
+    width: 100%;
+    min-height: 44px;
+    margin: 0;
+    accent-color: var(--accent);
+  }
+
+  output {
+    font: 700 0.92rem var(--sans);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+
+  button {
+    min-width: 5.2rem;
+    min-height: 44px;
+    padding: 0.3rem 0.6rem;
+    font-size: 0.88rem;
+  }
+}
+
+.game-menu-sound {
+  width: min(20rem, calc(100vw - 2.5rem));
+  padding: 0.4rem 0.6rem 0.2rem;
+
+  h2 {
+    margin: 0 0 0.3rem;
+    font-size: 1rem;
+  }
+
+  // The menu is narrow: each name sits above its slider.
+  .sound-row {
+    grid-template-columns: minmax(6rem, 1fr) 3.2rem auto;
+    gap: 0 0.5rem;
+
+    label {
+      grid-column: 1 / -1;
+    }
+  }
+}
+
+@media (max-width: 520px) {
+  .settings-section .sound-row {
+    grid-template-columns: minmax(6rem, 1fr) 3.2rem auto;
+    gap: 0 0.5rem;
+
+    label {
+      grid-column: 1 / -1;
+    }
+  }
+}

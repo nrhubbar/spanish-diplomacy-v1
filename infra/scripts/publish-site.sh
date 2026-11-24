@@ -17,8 +17,8 @@ dist="${2:-$repo_root/build/dist}"
 [[ -f "$outputs" ]] || { echo "Missing $outputs; run the CDK deploy first." >&2; exit 1; }
 [[ -f "$dist/index.html" ]] || { echo "Missing $dist/index.html; run npm run build first." >&2; exit 1; }
 
-# Guard against shipping Git LFS pointer files instead of images (a checkout without LFS).
-if grep -rlq --include='*.webp' --include='*.png' --include='*.ico' '^version https://git-lfs' "$dist"; then
+# Guard against shipping Git LFS pointer files instead of images and audio (a checkout without LFS).
+if grep -rlq --include='*.webp' --include='*.png' --include='*.ico' --include='*.ogg' --include='*.m4a' --include='*.mp3' '^version https://git-lfs' "$dist"; then
   echo "build output contains Git LFS pointer files; run git lfs pull and rebuild." >&2
   exit 1
 fi
@@ -28,8 +28,16 @@ bucket="$(read_output BucketName)"
 distribution="$(read_output DistributionId)"
 
 echo "Publishing $dist to s3://$bucket (distribution $distribution)"
-aws s3 sync "$dist" "s3://$bucket" --exclude '*.html' \
-  --cache-control 'public, max-age=31536000, immutable' --no-progress
+immutable='public, max-age=31536000, immutable'
+# Audio types are named, not guessed: Python's table calls .m4a audio/mp4a-latm, which browsers may
+# refuse. Audio goes up as it is: it is compressed already, and CloudFront's list leaves it alone, so
+# byte ranges (seeking and streaming) work end to end.
+for audio in ogg:audio/ogg m4a:audio/mp4 mp3:audio/mpeg; do
+  aws s3 sync "$dist" "s3://$bucket" --exclude '*' --include "*.${audio%%:*}" \
+    --content-type "${audio#*:}" --cache-control "$immutable" --no-progress
+done
+aws s3 sync "$dist" "s3://$bucket" --exclude '*.html' --exclude '*.ogg' --exclude '*.m4a' --exclude '*.mp3' \
+  --cache-control "$immutable" --no-progress
 aws s3 sync "$dist" "s3://$bucket" --exclude '*' --include '*.html' \
   --cache-control 'no-cache' --content-type 'text/html; charset=utf-8' --no-progress
 

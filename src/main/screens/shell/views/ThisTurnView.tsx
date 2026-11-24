@@ -73,7 +73,7 @@ function stayOrders(scenario: Scenario, session: PlanningSession): readonly { re
     const unit = game.state.units[unitId];
     if (unit === undefined) return [];
     const kind = orderOf(session, unit, scenario);
-    return kind === "move" || kind === "withdraw" || kind === "replenish" ? [] : [{ label: orderLabels[kind].label, unitId }];
+    return kind === "disband" || kind === "move" || kind === "withdraw" || kind === "replenish" ? [] : [{ label: orderLabels[kind].label, unitId }];
   });
 }
 
@@ -81,7 +81,7 @@ function stayOrders(scenario: Scenario, session: PlanningSession): readonly { re
 function OrderSummary({ scenario, session }: Pick<PaneViewProps, "scenario" | "session">): JSX.Element {
   const counts = orderCounts(session, scenario);
   // C1: contested-ground kinds join the line once any army has one.
-  const extra = (["withdraw", "attack", "replenish", "hold"] as const).flatMap((kind) => {
+  const extra = (["withdraw", "attack", "replenish", "disband", "hold"] as const).flatMap((kind) => {
     const count = counts[kind] ?? 0;
     return count === 0 ? [] : [`${String(count)} ${orderStatus[kind].toLowerCase()}`];
   });

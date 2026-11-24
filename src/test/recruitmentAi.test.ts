@@ -23,7 +23,8 @@ describe("the computer player's Recruit orders (H5)", () => {
       const random = seededRandom(9);
       const before = random();
       const orders = planRecruits({ ...context(start, entry.id), random: seededRandom(9) });
-      expect(orders.length).toBeGreaterThan(0);
+      // The South earns no Manpower before it clears Andalucia, and keeps what its army needs to eat.
+      expect(orders.length > 0).toBe(entry.id !== faction("south"));
       expect(validateSubmission(scenario, start, entry.id, { factionId: entry.id, orders }).ok).toBe(true);
       const left = balanceLeft(context(start, entry.id, orders));
       expect(Object.values(left).every((amount) => amount >= 0)).toBe(true);

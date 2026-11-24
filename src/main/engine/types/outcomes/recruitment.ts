@@ -1,6 +1,6 @@
 import type { FactionId, TerritoryId, UnitId, UnitTypeId } from "../../ids";
 import type { Resources } from "../economy";
-import type { RecruitOrder, ReplenishOrder } from "../orders";
+import type { DisbandOrder, RecruitOrder, ReplenishOrder } from "../orders";
 
 /** Recruit, training and Replenish outcomes (R1-R7, C8), owned by `m3r1-recruit-replenish` (phases 1, 9, 10). */
 
@@ -59,6 +59,14 @@ export interface ReplenishCancelledOutcome {
   readonly refund: Resources;
 }
 
+/** D1: a unit its own side disbanded left the map. Public: everyone sees it is gone. */
+export interface UnitDisbandedOutcome {
+  readonly kind: "unit-disbanded";
+  readonly order: DisbandOrder;
+  readonly territoryId: TerritoryId;
+  readonly unitId: UnitId;
+}
+
 /** Every outcome of this area. Adding a kind here is all the union needs. */
 export type RecruitmentTurnOutcome =
   | TrainingStartedOutcome
@@ -66,4 +74,5 @@ export type RecruitmentTurnOutcome =
   | TrainingCompletedOutcome
   | TrainingRefundedOutcome
   | ReplenishAppliedOutcome
-  | ReplenishCancelledOutcome;
+  | ReplenishCancelledOutcome
+  | UnitDisbandedOutcome;

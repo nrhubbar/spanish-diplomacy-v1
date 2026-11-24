@@ -10,6 +10,7 @@ import type {
   SubTerritoryState,
   SystemOutcome
 } from "../types";
+import { deposit, inThousandths } from "../carry";
 import { draftState, type Phase, type SystemState } from "../phases/draft";
 import { afterWork, linkBetween, linkKey, linkModifiers, stationCap } from "../network/links";
 import { applyBuildOrder, levelCap, projectCost } from "./catalogue";
@@ -141,7 +142,7 @@ function complete(scenario: Scenario, systems: SystemState, subTerritoryId: SubT
  */
 function completeLink(scenario: Scenario, systems: SystemState, subTerritories: Record<SubTerritoryId, SubTerritoryState>, project: LinkProject): SystemState["builtLinks"] {
   const link = linkBetween(scenario, project.a, project.b);
-  const modifiers = link === undefined ? undefined : afterWork(linkModifiers(link, systems), project.work);
+  const modifiers = link === undefined ? undefined : afterWork(linkModifiers(link, systems), project.work, scenario.linkModifiers.road);
   if (modifiers === undefined) return systems.builtLinks;
   const builtLinks: Record<string, readonly LinkModifier[]> = { ...systems.builtLinks, [linkKey(project.a, project.b)]: modifiers };
   for (const end of [project.a, project.b]) {
@@ -201,19 +202,19 @@ export const advanceBuildQueues: Phase = (draft) => {
   return { ...draft, events: [...draft.events, ...events], systems: advanced.systems };
 };
 
-/** Step 11 ($2, U3): each faction with a treasury is paid its income, after raid cuts. */
+/** Step 11 ($2, U3): each faction with a treasury is paid its income, after raid cuts; a fraction of a point waits in its carry. */
 export const collectIncome: Phase = (draft) => {
   const { scenario } = draft.input;
   const state = draftState(draft);
-  let { treasuries } = draft.systems;
+  let ledger: SystemState = draft.systems;
   const events: EconomyTurnOutcome[] = [];
-  if (Object.keys(treasuries).length === 0) return draft;
+  if (Object.keys(ledger.treasuries).length === 0) return draft;
   for (const faction of scenario.factions) {
-    if (treasuries[faction.id] === undefined) continue;
+    if (ledger.treasuries[faction.id] === undefined) continue;
     const income = incomeFor(scenario, state, faction.id);
-    treasuries = credit(treasuries, faction.id, income.paid);
+    ledger = { ...ledger, ...deposit(ledger, faction.id, inThousandths(income.paid)) };
     events.push({ cut: income.cut, cutSubTerritoryIds: income.cutSubTerritoryIds, factionId: faction.id, kind: "income", paid: income.paid });
   }
-  return { ...draft, events: [...draft.events, ...events], systems: { ...draft.systems, treasuries } };
+  return { ...draft, events: [...draft.events, ...events], systems: ledger };
 };
 

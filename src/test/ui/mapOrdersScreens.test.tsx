@@ -14,7 +14,7 @@ import { quickActionView } from "../../main/screens/actions/useMapActions";
 import type { PlanningSession } from "../../main/state/planning";
 import { openView } from "../../main/state/paneSlice";
 import type { Draft, Session } from "../../main/state/session";
-import { faction, spain, spainD20, spainId, territory, testRegistry, testStore, unit, withUnits } from "../support";
+import { faction, spain, spainWithAir, spainId, territory, testRegistry, testStore, unit, withUnits } from "../support";
 
 afterEach(() => {
   cleanup();
@@ -188,11 +188,22 @@ describe("U6: the Invade pane", () => {
     const motor = within(wadRas).getByRole("button", { name: "Motor" });
     await user.click(motor);
     expect(motor).toHaveAttribute("aria-pressed", "true");
-    // Units that set out further away show the modes they can't use, struck through with why.
+    // Units that set out further away offer only the modes they can take; why not is one line for the group.
     const catalonia = within(invade).getByRole("region", { name: "From Cataluña" });
     const [far] = within(catalonia).getAllByRole("article");
-    expect(within(far!).getByRole("button", { name: "March" })).toBeDisabled();
-    expect(far).toHaveTextContent("March: March reaches only a neighbouring territory.");
+    expect(within(far!).queryByRole("button", { name: "March" })).toBeNull();
+    expect(within(catalonia).getAllByText(/^Why not /)).toHaveLength(1);
+    expect(catalonia).toHaveTextContent("March: March reaches only a neighbouring territory.");
+    // One ledger of every known effect, then what isn't known, then the order button, all in the odds card.
+    const ledger = within(invade).getByRole("table", { name: "Effects on the roll:" });
+    expect(within(ledger).getByRole("rowheader", { name: "Total known now" })).toBeVisible();
+    expect(invade).toHaveTextContent("Not known yet: the die, their moves, and whether their aircraft fly.");
+    expect(ledger.closest(".muster-box")).toContainElement(within(invade).getByRole("button", { name: /^Order 1 unit/ }));
+    // The defenders are on the same card, with nothing to tick and no way to travel.
+    const defenders = within(invade).getByRole("region", { name: "Defenders" });
+    expect(within(defenders).getAllByRole("article").length).toBeGreaterThan(0);
+    expect(within(defenders).queryByRole("checkbox")).toBeNull();
+    expect(within(defenders).queryByRole("button")).toBeNull();
     const supportGroup = within(invade).queryByRole("region", { name: "Ground Support" });
     if (supportGroup !== null) {
       const boxes = within(supportGroup).getAllByRole("checkbox");
@@ -321,7 +332,7 @@ describe("U7: why a territory is out of reach", () => {
 });
 
 describe("U6: Ground Support and the odds box, on the shipped scenario", () => {
-  const shipped = spainD20();
+  const shipped = spainWithAir();
   const session = (draft: Partial<Draft> = {}, state: GameState = initialGameState(shipped)): PlanningSession => ({
     draft: { orders: [], selectedUnitIds: [], ...draft },
     factionId: republic,
@@ -348,7 +359,7 @@ describe("U6: Ground Support and the odds box, on the shipped scenario", () => {
     for (const box of closed) expect(box).toBeDisabled();
     if (closed.length > 0) expect(group).toHaveTextContent("At most 2 aircraft give Ground Support to one battle.");
     await user.click(within(screen.getByRole("region", { name: "Invade" })).getByRole("article", { name: "Wad-Ras Infantry Regiment No. 1" }).querySelector("input")!);
-    expect(screen.getByRole("status")).toHaveTextContent("Ground Support");
+    expect(screen.getByRole("table")).toHaveTextContent("Ground Support");
     await user.click(screen.getByRole("button", { name: /^Order 1 unit and 2 aircraft to invade/ }));
     expect(dispatched).toHaveBeenCalledWith(expect.objectContaining({ payload: expect.objectContaining({ kind: "invade", support: expect.arrayContaining([unit("rep-ni52-fighters")]) }), type: "game/orderFromMuster" }));
     expect(dispatched).toHaveBeenCalledWith(expect.objectContaining({ type: "pane/popView" }));
@@ -362,18 +373,18 @@ describe("U6: Ground Support and the odds box, on the shipped scenario", () => {
       subTerritories: Object.fromEntries(Object.entries(asturias.subTerritories).map(([id, site]) => [id, shipped.index.subTerritories.get(id as never)?.territoryId === territory("asturias") ? { ...site, holder: republic } : site]))
     };
     const store = planningStore();
-    render(<Provider store={store}><OddsBox draft={{ orders: [] }} scenario={shipped} session={session({}, held)} support={[]} target={territory("castilla-y-leon")} units={[unit("rep-asturian-militia")]} /></Provider>);
-    expect(screen.getByRole("status")).toHaveTextContent("Pajares pass");
+    render(<Provider store={store}><OddsBox action={null} draft={{ orders: [] }} scenario={shipped} session={session({}, held)} support={[]} target={territory("castilla-y-leon")} moves={[{ unitId: unit("rep-asturian-militia") }]} /></Provider>);
+    expect(screen.getByRole("table")).toHaveTextContent("Pajares pass, crossed by every unit\u22122");
     cleanup();
     const guns: GameState = {
       ...held,
       raised: { ...held.raised, [unit("guns-1")]: { factionId: republic, fullStrength: 300, id: unit("guns-1"), name: "Guns", type: "artillery-group" as never } },
       units: { ...held.units, [unit("guns-1")]: { factionId: republic, fatigue: 0, id: unit("guns-1"), morale: { demoralized: false, quietTurns: 0 }, strength: 300, territoryId: territory("madrid") } }
     };
-    render(<Provider store={store}><OddsBox draft={{ orders: [] }} scenario={shipped} session={session({}, guns)} support={[]} target={territory("castilla-y-leon")} units={[unit("guns-1")]} /></Provider>);
+    render(<Provider store={store}><OddsBox action={null} draft={{ orders: [] }} scenario={shipped} session={session({}, guns)} support={[]} target={territory("castilla-y-leon")} moves={[{ unitId: unit("guns-1") }]} /></Provider>);
     expect(screen.getByRole("status")).toHaveTextContent("Artillery alone turns back without a battle.");
     cleanup();
-    render(<DefenceBox scenario={shipped} session={session()} target={territory("islas-baleares")} units={[]} />);
+    render(<DefenceBox action={null} scenario={shipped} session={session()} target={territory("islas-baleares")} units={[]} />);
     expect(screen.getByRole("status")).toHaveTextContent("None next door");
   });
 });

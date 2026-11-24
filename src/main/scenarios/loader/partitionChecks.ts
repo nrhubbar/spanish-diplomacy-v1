@@ -1,4 +1,4 @@
-import type { ModularScenarioDocument } from "../schema/scenarioSchema";
+import type { ScenarioDocument } from "../schema/scenarioSchema";
 import type { Issues } from "./issues";
 
 /**
@@ -7,7 +7,7 @@ import type { Issues } from "./issues";
  * exactly them), and a city's `initialController` is its sub-territory's start holder. Control is
  * derived from the holders during play, so a disagreement would silently flip on turn 1.
  */
-export function checkPartition(document: ModularScenarioDocument, issues: Issues): void {
+export function checkPartition(document: ScenarioDocument, issues: Issues): void {
   if (document.rules.partition !== "provinces" || document.subTerritories.length === 0) return;
   const holderOf = new Map(document.subTerritories.map((sub) => [sub.id, sub.startHolder]));
   document.territories.forEach((territory, index) => {

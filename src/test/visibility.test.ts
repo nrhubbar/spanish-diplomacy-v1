@@ -60,7 +60,7 @@ describe("per-viewer state ($6, U4)", () => {
     expect(view.reveals).toEqual([state.reveals[0], state.reveals[3]]);
   });
 
-  it("changes nothing under m2-strength", () => {
+  it("changes nothing where no system hides anything", () => {
     const state = initialGameState(tiny());
     expect(viewFor(tiny(), state, faction("red"))).toEqual(state);
   });

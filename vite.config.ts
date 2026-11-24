@@ -1,9 +1,11 @@
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
+import { stripCitations } from "./scripts/strip-citations.ts";
 
 export default defineConfig({
   plugins: [
     react(),
+    stripCitations(),
     {
       // Stamps the commit into the production HTML. CI sets BUILD_COMMIT, and after a deploy
       // it waits until the live site serves this exact commit (infra/scripts/check-deployed-commit.sh).

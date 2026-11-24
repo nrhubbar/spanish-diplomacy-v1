@@ -16,11 +16,10 @@ const singleStepSteps = { transit: moveInTransit };
 
 /**
  * The movement area's modules (M1-M6). `allowance` checks moves as armies at reveal (allowance,
- * rail departures, port landings, amphibious lanes), then moves them along their routes at
+ * train places, port landings, amphibious lanes), then moves them along their routes at
  * step 3 (transit legs, interception stops, reinforcements).
  * Both validate Move orders (`movement/validation.ts`): one step under `single-step`, a route
  * under `allowance`.
- * TODO(m3r1-sub-territories): Withdraw legs at step 6 use `movement/withdraw.ts` once Withdraw validates.
  */
 export const movementModules: readonly RuleModule[] = [
   { area: "movement", blocks: [], hooks: { validateOrder: { move: validateSingleStepMove } }, id: "single-step", steps: singleStepSteps },

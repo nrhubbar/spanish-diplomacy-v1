@@ -60,10 +60,7 @@ export function placeCounterStacks(
   const step = metrics.height / 2 + metrics.gap;
 
   for (const { anchor, ids } of stacks.values()) {
-    const columns = Math.min(metrics.perRow, ids.length);
-    const rows = Math.ceil(ids.length / metrics.perRow);
-    const width = columns * metrics.width + (columns - 1) * metrics.gap;
-    const height = rows * metrics.height + (rows - 1) * metrics.gap;
+    const { height, width } = stackSize(ids.length, metrics);
     const base: ScreenRect = { height, width, x: anchor.x - width / 2, y: anchor.y + metrics.gap + 3 };
 
     const blocked = (rect: ScreenRect): boolean =>
@@ -89,22 +86,31 @@ export function placeCounterStacks(
     placed.push(box);
     maxDisplacement = Math.max(maxDisplacement, Math.hypot(offset.dx, offset.dy));
 
-    ids.forEach((id, index) => {
-      const column = index % metrics.perRow;
-      const row = Math.floor(index / metrics.perRow);
-      const rowCount = Math.min(metrics.perRow, ids.length - row * metrics.perRow);
-      const rowWidth = rowCount * metrics.width + (rowCount - 1) * metrics.gap;
-      positions.set(id, {
-        x: box.x + (width - rowWidth) / 2 + column * (metrics.width + metrics.gap),
-        y: box.y + row * (metrics.height + metrics.gap)
-      });
-    });
+    ids.forEach((id, index) => { positions.set(id, positionInStack(box, index, ids.length, metrics)); });
   }
   return { maxDisplacement, positions };
 }
 
+/** The room a stack of this many counters takes, `perRow` to a row. */
+export function stackSize(count: number, metrics: CounterMetrics): ScreenSize {
+  const columns = Math.min(metrics.perRow, count);
+  const rows = Math.ceil(count / metrics.perRow);
+  return { height: rows * metrics.height + (rows - 1) * metrics.gap, width: columns * metrics.width + (columns - 1) * metrics.gap };
+}
+
+/** The top-left corner of one counter in its stack's box; a short last row is centred. */
+export function positionInStack(box: ScreenRect, index: number, count: number, metrics: CounterMetrics): MapPoint {
+  const column = index % metrics.perRow;
+  const row = Math.floor(index / metrics.perRow);
+  const rowWidth = stackSize(Math.min(metrics.perRow, count - row * metrics.perRow), metrics).width;
+  return {
+    x: box.x + (box.width - rowWidth) / 2 + column * (metrics.width + metrics.gap),
+    y: box.y + row * (metrics.height + metrics.gap)
+  };
+}
+
 /** Total area of `rect` covered by the others. */
-function overlap(rect: ScreenRect, others: readonly ScreenRect[]): number {
+export function overlap(rect: ScreenRect, others: readonly ScreenRect[]): number {
   return others.reduce((sum, other) => {
     const width = Math.min(rect.x + rect.width, other.x + other.width) - Math.max(rect.x, other.x);
     const height = Math.min(rect.y + rect.height, other.y + other.height) - Math.max(rect.y, other.y);

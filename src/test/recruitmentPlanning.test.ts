@@ -20,8 +20,9 @@ import {
 } from "../main/state/planning";
 import { emptyDraft } from "../main/state/session";
 import { faction, spain, spainId, territory } from "./support";
+import { pinned } from "./pinned";
 
-const scenario = spain();
+const scenario = pinned(spain());
 const republic = faction("republic");
 const type = (id: string): UnitTypeId => id as UnitTypeId;
 const catalunya = territory("catalunya");
@@ -39,8 +40,8 @@ describe("the Recruit basket (X4)", () => {
   it("sets quantities within the D7 limit and totals the cost and what is left", () => {
     let session = setRecruitQuantity(scenario, planning(), catalunya, type("infantry-regiment"), 2);
     expect(recruitQuantity(session.draft, catalunya, type("infantry-regiment"))).toBe(2);
-    session = setRecruitQuantity(scenario, session, catalunya, type("militia-column"), 2);
-    expect(session.draft.feedback).toMatch(/At most 3/u);
+    session = setRecruitQuantity(scenario, session, catalunya, type("militia-column"), 3);
+    expect(session.draft.feedback).toMatch(/At most 4/u);
     session = setRecruitQuantity(scenario, session, catalunya, type("militia-column"), 1);
     expect(basketCost(scenario, session)).toEqual({ funds: 14, manpower: 5 });
     expect(balanceAfterBasket(scenario, session)).toEqual({ funds: 26, manpower: 5 });
@@ -119,11 +120,12 @@ describe("wording", () => {
       { factionId: republic, kind: "recruit", territoryId: catalunya, unitTypeId: type("militia-column") },
       { factionId: republic, kind: "recruit", territoryId: catalunya, unitTypeId: type("tank-company") },
       { factionId: republic, kind: "recruit", territoryId: catalunya, unitTypeId: type("tank-company") },
+      { factionId: republic, kind: "recruit", territoryId: catalunya, unitTypeId: type("tank-company") },
       { factionId: republic, kind: "recruit", territoryId: catalunya, unitTypeId: type("tank-company") }
     ] }], 2);
     const lines = result.outcomes.filter((outcome) => outcome.kind.startsWith("training")).map((outcome) => describeOutcome(scenario, outcome));
     expect(lines).toContain("Militia column No. 1 finished training at Barcelona. It can move next turn.");
-    expect(lines.some((line) => line.startsWith("Tank company (new) began training at Barcelona for 12 Funds and 1k Manpower; ready in 4 turns."))).toBe(true);
+    expect(lines.some((line) => line.startsWith("Tank company (new) began training at Barcelona for 8 Funds and 1k Manpower; ready in 3 turns."))).toBe(true);
     expect(lines.some((line) => line.includes("was not raised"))).toBe(true);
   });
 });

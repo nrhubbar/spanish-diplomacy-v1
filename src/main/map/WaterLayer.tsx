@@ -4,7 +4,7 @@ import type { SemanticLevel } from "./camera";
 import { displayText, riverLabelType, type VisibleWater, type WaterType, waterLabelType } from "./waterLabels";
 
 /** River widths in screen pixels: the water, and the paler centre line drawn along it. */
-export const riverWidths: Readonly<Record<MapRiver["rank"], { readonly water: number; readonly centre: number }>> = {
+const riverWidths: Readonly<Record<MapRiver["rank"], { readonly water: number; readonly centre: number }>> = {
   main: { centre: 0.8, water: 2.4 },
   tributary: { centre: 0.45, water: 1.4 }
 };

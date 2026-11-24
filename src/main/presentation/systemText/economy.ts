@@ -41,5 +41,12 @@ export const economyLines: ReportLines<EconomyTurnOutcome> = {
     const cut = amountText(scenario, outcome.cut, " and ");
     const raids = cut === "nothing" ? "" : `, after raids cut ${cut}`;
     return `${factionLabel(scenario, outcome.factionId)}'s income from territories held whole: ${signedAmountText(scenario, outcome.paid)}${raids}.`;
+  },
+  upkeep: (outcome, { scenario }) => {
+    const due = `${factionLabel(scenario, outcome.factionId)}'s units cost ${amountText(scenario, outcome.due, " and ")} in upkeep.`;
+    const short = amountText(scenario, outcome.short, " and ");
+    if (short === "nothing") return due;
+    const men = outcome.left.reduce((sum, entry) => sum + entry.men, 0);
+    return `${due} ${short} could not be paid, and ${men === 0 ? "no more men could leave" : `${String(men)} men left their units`}.`;
   }
 };

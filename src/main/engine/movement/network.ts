@@ -37,7 +37,7 @@ export function subTerritoriesOf(scenario: Scenario, territoryId: TerritoryId): 
 }
 
 /** The holder of a sub-territory in the given state. */
-export function holderOf(state: GameState, subTerritoryId: SubTerritoryId): FactionId | undefined {
+function holderOf(state: GameState, subTerritoryId: SubTerritoryId): FactionId | undefined {
   return state.subTerritories[subTerritoryId]?.holder;
 }
 
@@ -74,14 +74,10 @@ export function landNeighbors(scenario: Scenario, territoryId: TerritoryId): rea
   return neighborsOf(scenario, territoryId).filter((neighbor) => neighbor.kind === "land").map((neighbor) => neighbor.territoryId);
 }
 
-export function seaNeighbors(scenario: Scenario, territoryId: TerritoryId): readonly TerritoryId[] {
-  return neighborsOf(scenario, territoryId).filter((neighbor) => neighbor.kind === "sea").map((neighbor) => neighbor.territoryId);
-}
-
 /* ---------------------------------------------------------------- rail (M3) */
 
-/** M3, D3: a station's level now: its departures, lowered by damage ($8) and raised by repairs, never above its best link. */
-export function railLevel(state: GameState, subTerritoryId: SubTerritoryId): number {
+/** M3, D3: a station's level now: it sets its rail capacity, lowered by damage ($8) and raised by repairs, never above its best link. */
+function railLevel(state: GameState, subTerritoryId: SubTerritoryId): number {
   return state.subTerritories[subTerritoryId]?.rail ?? 0;
 }
 
@@ -90,13 +86,26 @@ export function capitalOf(scenario: Scenario, territoryId: TerritoryId): SubTerr
   return scenario.index.territories.get(territoryId)?.capitalSubTerritoryId;
 }
 
-/** M3, D7: armies that may board at a capital per turn: its rail level, plus each building's `rail-departures`. */
-export function railDepartures(scenario: Scenario, state: GameState, capital: SubTerritoryId): number {
+/**
+ * M3, D5: units that may board at a capital per turn: the scenario's `unitsPerLevel` for each of
+ * its station's levels, plus each building's `rail-capacity`. A closed station, or a scenario with
+ * no rail rules, boards none.
+ */
+export function railCapacity(scenario: Scenario, state: GameState, capital: SubTerritoryId): number {
   const sub = state.subTerritories[capital];
-  if (sub === undefined || sub.rail <= 0) return 0;
+  const rail = scenario.linkModifiers.rail;
+  if (sub === undefined || sub.rail <= 0 || rail === undefined) return 0;
   const extra = sub.buildings.reduce((sum, buildingId) => sum + (scenario.index.buildings.get(buildingId)?.effects ?? [])
-    .reduce((inner, effect) => inner + (effect.kind === "rail-departures" ? effect.extra : 0), 0), 0);
-  return sub.rail + extra;
+    .reduce((inner, effect) => inner + (effect.kind === "rail-capacity" ? effect.units : 0), 0), 0);
+  return sub.rail * rail.unitsPerLevel + extra;
+}
+
+/**
+ * D5: the places an army takes on a train: one for each of its ground units, trucks and cavalry
+ * included. Generals ride with their army and aircraft never march (AG-3), so neither takes one.
+ */
+export function railPlaces(scenario: Scenario, state: GameState, unitIds: readonly UnitId[]): number {
+  return unitIds.filter((unitId) => isArmyUnit(scenario, state, unitId)).length;
 }
 
 /** One rail ride from a territory's capital to another's (M3, R5). */
@@ -224,7 +233,7 @@ export function rideableNetwork(scenario: Scenario, state: GameState, factionId:
 /* ---------------------------------------------------------------- sea (M5) */
 
 /** M5: the faction's best port in a territory: the highest level among the sub-territories it holds (for connections that name no ports). */
-export function friendlyPort(scenario: Scenario, state: GameState, factionId: FactionId, territoryId: TerritoryId): { readonly level: number; readonly subTerritoryId: SubTerritoryId } | undefined {
+function friendlyPort(scenario: Scenario, state: GameState, factionId: FactionId, territoryId: TerritoryId): { readonly level: number; readonly subTerritoryId: SubTerritoryId } | undefined {
   let best: { readonly level: number; readonly subTerritoryId: SubTerritoryId } | undefined;
   for (const id of subTerritoriesOf(scenario, territoryId)) {
     const sub = state.subTerritories[id];

@@ -14,6 +14,7 @@ import type {
   UnitId
 } from "../../engine/types";
 import type { Draft } from "../session";
+import { unitOrdersWithout } from "./recruitment";
 import type { PlanningSession } from "./selection";
 
 /**
@@ -80,7 +81,7 @@ export function setAirMission(scenario: Scenario, session: PlanningSession, unit
   const order: AirMissionOrder = { factionId: session.factionId, kind: "air-mission", mission, unitId };
   const validation = validateAirMission(scenario, session.game.state, order);
   if (!validation.ok) return { ...session, draft: { ...session.draft, feedback: validation.reason } };
-  return withAirOrders(session, [...others, order]);
+  return withAirOrders({ ...session, draft: { ...session.draft, ...unitOrdersWithout(session.draft, [unitId]) } }, [...others, order]);
 }
 
 /** U5: Sack is a free order; it replaces the general's move, and choosing it again withdraws it. */

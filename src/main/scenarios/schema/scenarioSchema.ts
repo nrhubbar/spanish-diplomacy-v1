@@ -12,7 +12,6 @@ import {
   territoryShape,
   textSchema,
   unitSchema,
-  unitTypeShape,
   victorySchema
 } from "./coreSchema.ts";
 import {
@@ -25,6 +24,7 @@ import {
   modularUnitTypeSchema,
   movementSchema,
   recruitmentSchema,
+  upkeepSchema,
   rulesSchema,
   subTerritoryBordersSchema,
   subTerritorySchema
@@ -34,41 +34,22 @@ import { aiSchema, airSchema, calendarSchema, d20Schema, generalsSchema, weather
 /**
  * Scenario package schema (spec version 2). These files are the single source of truth for the
  * published `scenario.schema.json`; they import nothing but zod so the schema generator can
- * run them directly under Node. The two rulesets are separate variants, so the JSON Schema
- * states which blocks each one takes.
+ * run them directly under Node.
  */
 
-export { battleResultSchema, slugSchema } from "./coreSchema.ts";
 
-const sharedShape = {
-  $schema: z.string().optional(),
-  specVersion: z.literal(2),
-  id: slugSchema,
-  name: textSchema,
-  snapshotLabel: textSchema.meta({ description: "Starting date or moment, shown on setup and turn 1." }),
-  map: textSchema.meta({ description: "Path to the map package, relative to this file." }),
-  victory: victorySchema,
-  combat: combatSchema,
-  ai: aiSchema,
-  sources: z.array(sourceSchema)
-};
-
-const m2StrengthSchema = z
+export const scenarioSchema = z
   .strictObject({
-    ...sharedShape,
-    ruleset: z.literal("m2-strength").meta({ description: "The Milestone 2 preset: the d6 table and none of the Milestone 3 systems." }),
-    units: z.array(unitSchema),
-    unitTypes: z.array(z.strictObject(unitTypeShape)).min(1),
-    factions: z.array(z.strictObject(factionShape)).min(2),
-    territories: z.array(z.strictObject(territoryShape)).min(2),
-    connections: z.array(connectionSchema({})),
-    cities: z.array(z.strictObject(cityShape))
-  })
-  .meta({ title: "m2-strength scenario" });
-
-const m3ModularSchema = z
-  .strictObject({
-    ...sharedShape,
+    $schema: z.string().optional(),
+    specVersion: z.literal(2),
+    id: slugSchema,
+    name: textSchema,
+    snapshotLabel: textSchema.meta({ description: "Starting date or moment, shown on setup and turn 1." }),
+    map: textSchema.meta({ description: "Path to the map package, relative to this file." }),
+    victory: victorySchema,
+    combat: combatSchema,
+    ai: aiSchema,
+    sources: z.array(sourceSchema).default([]),
     ruleset: z.literal("m3-modular").meta({ description: "Rules chosen per area by the rules object." }),
     rules: rulesSchema,
     units: z.array(
@@ -134,18 +115,14 @@ const m3ModularSchema = z
     buildings: z.array(buildingSchema).default([]),
     improvements: improvementsSchema.optional(),
     recruitment: recruitmentSchema.optional(),
+    upkeep: upkeepSchema.optional().meta({ description: "D1: what happens when upkeep cannot be paid. Required when a unit type has upkeep." }),
     movement: movementSchema.optional(),
-    d20: d20Schema.optional(),
+    d20: d20Schema,
     weather: weatherSchema.optional(),
     calendar: calendarSchema.optional(),
     air: airSchema.optional(),
     generals: generalsSchema.optional()
   })
-  .meta({ title: "m3-modular scenario" });
-
-export const scenarioSchema = z
-  .discriminatedUnion("ruleset", [m2StrengthSchema, m3ModularSchema])
   .meta({ title: "Spanish Diplomacy scenario package", description: "Rules data interpreted by the game engine." });
 
 export type ScenarioDocument = z.infer<typeof scenarioSchema>;
-export type ModularScenarioDocument = z.infer<typeof m3ModularSchema>;

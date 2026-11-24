@@ -1,6 +1,13 @@
+import { type ConnectionHint, savingData } from "../connection";
 import type { MapRect } from "../scenarios/loader";
 
 export const terrainRenderingConfig = {
+  /** How long the detailed picture takes to fade in over the one beneath it. */
+  detailFadeMs: 300,
+  /** Quiet time on the map before the detailed picture loads by itself. */
+  detailIdleMs: 4000,
+  /** The view is zoomed in once it spans less than this share of the detailed picture's width. */
+  detailViewShare: 0.5,
   maxAnisotropy: 8,
   maxPixelRatio: 2,
   /** Wait after the first relief layer is drawn before loading the finer, larger layers. */
@@ -37,4 +44,17 @@ export function terrainRenderMetrics(
  */
 export function terrainFrustum(visible: MapRect): { bottom: number; left: number; right: number; top: number } {
   return { bottom: -(visible.y + visible.height), left: visible.x, right: visible.x + visible.width, top: -visible.y };
+}
+
+/** How solid a picture is that began to fade in so long ago. A frame's own time can be before the moment it was asked for. */
+export function fadeOpacity(elapsedMs: number): number {
+  return Math.min(1, Math.max(0, elapsedMs / terrainRenderingConfig.detailFadeMs));
+}
+
+/**
+ * The finest relief picture is most of a campaign's download, so it waits until it is of use: when
+ * the player zooms in on it, or after a quiet moment unless the browser asks to save data.
+ */
+export function wantsDetail(visible: MapRect, detail: MapRect, idle: boolean, connection: ConnectionHint | undefined): boolean {
+  return visible.width < detail.width * terrainRenderingConfig.detailViewShare || (idle && !savingData(connection));
 }

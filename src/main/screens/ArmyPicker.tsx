@@ -10,6 +10,7 @@ import { replenishDetail } from "../presentation/recruitment";
 import { territoryName } from "../presentation/text";
 import { ArmyLine } from "./ArmyLine";
 import { GeneralControls } from "./pane/AirPane";
+import { DisbandControls } from "./pane/DisbandControls";
 
 interface ArmyPickerProps {
   readonly own: readonly UnitState[];
@@ -63,6 +64,7 @@ export function ArmyPicker({ own, scenario, session }: ArmyPickerProps): JSX.Ele
                   : null}
                 <ArmyLine factionColor={requireFaction(scenario, unit.factionId).color} figures={armyFigures(scenario, game.state, unit)} />
               </button>
+              <DisbandControls scenario={scenario} session={session} unit={unit} />
               <GeneralControls scenario={scenario} session={session} unit={unit} />
             </li>
           );

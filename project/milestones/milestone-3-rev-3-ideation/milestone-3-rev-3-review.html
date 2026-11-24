@@ -1,0 +1,2029 @@
+<title>Milestone 3 Rev 3 Review</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,500;8..60,700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a design-review dossier. Sticky index on the left (top bar on phones), one reading column, widgets and questions as set-off "cards on the table". */
+:root {
+  --bg: #e6dfcd;          /* table canvas, from the app's --canvas */
+  --paper: #fbf6ea;       /* reading sheet, the app's --paper */
+  --surface: #f4eddc;     /* widget card */
+  --surface-2: #ebe2cc;   /* inset rows, table heads */
+  --ink: #241d18;
+  --ink-soft: #5b4d40;
+  --line: #c9bba0;
+  --accent: #7d2f2a;      /* oxblood, the app's --accent */
+  --accent-ink: #fbf6ea;
+  --gold: #b8891a;
+  --route: #1f3550;
+  --good: #2f7d4f;
+  --bad: #9e2b2b;
+  --warn: #b5730f;
+  --rep: #b1493f;
+  --nic: #a3841f;
+  --sic: #665089;
+  --c1: #7a1f1a; --c2: #b5483c; --c3: #d99a6c; --c4: #cbbf9f; --c5: #7d9bb5; --c6: #3f6a90; --c7: #1f3550;
+  --serif: "Source Serif 4", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --shadow: 0 1px 0 rgb(36 29 24 / 8%), 0 6px 18px rgb(36 29 24 / 8%);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #17120e; --paper: #221a14; --surface: #2b221a; --surface-2: #352a20;
+    --ink: #efe5d2; --ink-soft: #c2b29b; --line: #4d3f31; --accent: #d9897e; --accent-ink: #1b1410;
+    --gold: #e0b54a; --route: #9cb7d6; --good: #6fc08f; --bad: #e07a72; --warn: #e5a54a;
+    --rep: #d9786d; --nic: #d9b84a; --sic: #a88fd1;
+    --c1: #e07a72; --c2: #c9665b; --c3: #b98a63; --c4: #6f6555; --c5: #5f86a8; --c6: #7fa6cc; --c7: #b5cfe8;
+    --shadow: 0 1px 0 rgb(0 0 0 / 30%), 0 6px 18px rgb(0 0 0 / 30%);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #17120e; --paper: #221a14; --surface: #2b221a; --surface-2: #352a20;
+  --ink: #efe5d2; --ink-soft: #c2b29b; --line: #4d3f31; --accent: #d9897e; --accent-ink: #1b1410;
+  --gold: #e0b54a; --route: #9cb7d6; --good: #6fc08f; --bad: #e07a72; --warn: #e5a54a;
+  --rep: #d9786d; --nic: #d9b84a; --sic: #a88fd1;
+  --c1: #e07a72; --c2: #c9665b; --c3: #b98a63; --c4: #6f6555; --c5: #5f86a8; --c6: #7fa6cc; --c7: #b5cfe8;
+  --shadow: 0 1px 0 rgb(0 0 0 / 30%), 0 6px 18px rgb(0 0 0 / 30%);
+  color-scheme: dark;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 72px; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 var(--sans); -webkit-font-smoothing: antialiased; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+a { color: var(--route); text-underline-offset: 2px; }
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+h1, h2, h3, h4 { font-family: var(--serif); line-height: 1.2; text-wrap: balance; margin: 0; }
+code, kbd { font-family: var(--mono); font-size: 0.86em; background: var(--surface-2); padding: 0.05em 0.3em; border-radius: 3px; }
+
+.shell { display: grid; grid-template-columns: 270px minmax(0, 1fr); gap: 28px; max-width: 1180px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 24px 64px; }
+.toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); align-self: start; max-height: calc(100vh - 32px); overflow: auto;
+  background: var(--paper); border: 1px solid var(--line); border-radius: 6px; padding: 14px 14px 16px; font-size: 0.86rem; }
+.toc h2 { font-size: 1rem; margin-bottom: 6px; }
+.toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; }
+.toc li.group { margin-top: 10px; font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-soft); font-weight: 600; }
+.toc a { display: flex; justify-content: space-between; gap: 8px; padding: 3px 6px; border-radius: 4px; text-decoration: none; color: var(--ink); }
+.toc a:hover { background: var(--surface-2); }
+.toc a.active { background: var(--surface-2); box-shadow: inset 2px 0 0 var(--accent); }
+.toc .count { font-family: var(--mono); font-size: 0.72rem; color: var(--ink-soft); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.answerbox { display: grid; gap: 8px; padding-bottom: 12px; margin-bottom: 10px; border-bottom: 1px solid var(--line); }
+.progress-text { font-family: var(--mono); font-size: 0.8rem; font-variant-numeric: tabular-nums; }
+.progress-track { height: 6px; background: var(--surface-2); border-radius: 3px; overflow: hidden; }
+.progress-fill { height: 100%; width: 0; background: var(--accent); transition: width 0.2s; }
+.btn { font: 600 0.86rem var(--sans); border: 1px solid var(--ink); background: var(--accent); color: var(--accent-ink); border-radius: 5px; padding: 8px 12px; cursor: pointer; min-height: 38px; }
+.btn.secondary { background: transparent; color: var(--ink); border-color: var(--line); font-weight: 500; }
+.btn-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.copy-status { font-size: 0.78rem; color: var(--good); min-height: 1.1em; }
+.copy-fallback { width: 100%; min-height: 140px; font: 0.75rem/1.4 var(--mono); }
+.mobile-bar { display: none; }
+
+main { min-width: 0; display: grid; gap: 22px; }
+.sheet { background: var(--paper); border: 1px solid var(--line); border-radius: 6px; padding: 28px clamp(16px, 4vw, 44px) 32px; box-shadow: var(--shadow); min-width: 0; }
+.sheet > * + * { margin-top: 0.9rem; }
+.masthead .eyebrow, .eyebrow { font: 600 0.72rem var(--sans); letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
+.masthead h1 { font-size: clamp(1.9rem, 4.5vw, 2.7rem); }
+.masthead .meta { font-family: var(--mono); font-size: 0.8rem; color: var(--ink-soft); display: flex; flex-wrap: wrap; gap: 6px 18px; }
+.group-head { padding: 6px 4px 0; }
+.group-head h2 { font-size: 1.05rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-soft); font-family: var(--sans); font-weight: 600; }
+.group-head p { color: var(--ink-soft); font-size: 0.92rem; max-width: 70ch; }
+.sheet h2 { font-size: clamp(1.4rem, 3vw, 1.8rem); }
+.sheet h2 .idea-no { font-family: var(--mono); font-size: 0.8em; color: var(--accent); margin-right: 0.4em; }
+.sheet h3 { font-size: 1.12rem; margin-top: 1.6rem; padding-top: 0.9rem; border-top: 1px solid var(--line); }
+.sheet h4 { font-size: 1rem; margin-top: 1.2rem; }
+.sheet p, .sheet li { max-width: 72ch; }
+.sheet ul, .sheet ol { padding-left: 1.25rem; }
+.sheet li + li { margin-top: 0.25rem; }
+.sheet blockquote { margin: 0; padding: 8px 14px; border-left: 3px solid var(--gold); background: var(--surface); font-family: var(--serif); font-style: italic; }
+.summary-line { font-family: var(--serif); font-size: 1.12rem; }
+.table-wrap, .w-scroll { overflow-x: auto; max-width: 100%; -webkit-overflow-scrolling: touch; }
+.sheet table, .w-table { border-collapse: collapse; width: 100%; font-size: 0.88rem; }
+.sheet th, .sheet td, .w-table th, .w-table td { border-bottom: 1px solid var(--line); padding: 6px 8px; text-align: left; vertical-align: top; }
+.sheet th, .w-table th { background: var(--surface-2); font-weight: 600; }
+.sheet td:first-child { min-width: 9rem; }
+.recommend { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--good); padding: 10px 14px; border-radius: 4px; }
+
+figure.mockup { margin: 1rem 0 0; }
+figure.mockup img { display: block; width: 100%; height: auto; border: 1px solid var(--line); border-radius: 4px; background: var(--surface-2); }
+figure.mockup figcaption { font-size: 0.8rem; color: var(--ink-soft); margin-top: 6px; }
+.missing { font-size: 0.85rem; color: var(--ink-soft); background: var(--surface-2); padding: 10px 12px; border-radius: 4px; border: 1px dashed var(--line); }
+
+/* Widgets */
+.widget { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 14px 16px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; font-size: 0.9rem; min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
+.widget > *, .w-row > *, .w-grid > * { min-width: 0; max-width: 100%; }
+.widget svg, .widget canvas { max-width: 100%; height: auto; }
+.widget h4, .widget h5 { margin: 0; font-family: var(--serif); }
+.w-row { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
+.w-label { font-weight: 600; font-size: 0.82rem; color: var(--ink-soft); }
+.w-out { font-family: var(--mono); font-weight: 500; background: var(--paper); border: 1px solid var(--line); border-radius: 4px; padding: 1px 7px; font-variant-numeric: tabular-nums; }
+.w-note { font-size: 0.78rem; color: var(--ink-soft); }
+.w-bar-track { background: var(--surface-2); border-radius: 3px; height: 14px; overflow: hidden; min-width: 60px; flex: 1; }
+.w-bar { height: 100%; background: var(--accent); min-width: 1px; }
+.w-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+.w-card { background: var(--paper); border: 1px solid var(--line); border-radius: 4px; padding: 8px 10px; min-width: 0; }
+.widget select, .widget input[type=number], .widget input[type=text] { font: inherit; color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 4px; padding: 4px 6px; min-height: 34px; max-width: 100%; }
+.widget input[type=range] { accent-color: var(--accent); max-width: 100%; }
+.widget button { font: 500 0.84rem var(--sans); color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 4px; padding: 5px 10px; cursor: pointer; min-height: 34px; }
+.widget button[aria-pressed="true"], .widget button.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.widget label { display: inline-flex; align-items: center; gap: 6px; }
+.widget-error { color: var(--bad); font-size: 0.85rem; }
+
+/* Questions */
+.questions { display: grid; gap: 12px; }
+.q { border: 1px solid var(--line); border-radius: 6px; background: var(--surface); padding: 12px 14px 14px; margin: 0; min-width: 0; }
+.q.answered { border-left: 4px solid var(--good); }
+.q legend { display: contents; }
+.q .q-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; margin-bottom: 8px; }
+.q .q-id { font-family: var(--mono); font-size: 0.74rem; background: var(--paper); border: 1px solid var(--line); border-radius: 3px; padding: 0 6px; color: var(--ink-soft); }
+.q .q-text { font-weight: 600; flex: 1 1 260px; }
+.q .q-ctx { font-size: 0.84rem; color: var(--ink-soft); margin: 0 0 8px; max-width: 72ch; }
+.q .opt > span { min-width: 0; overflow-wrap: anywhere; }
+figure.mockup img { cursor: zoom-in; }
+.sheet audio { max-width: 100%; }
+.sheet h2 + .questions, .questions { margin-top: 1.4rem; }
+.q .q-multi { font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--route); border: 1px solid currentColor; border-radius: 3px; padding: 0 5px; }
+.q .opt { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; align-items: start; padding: 6px 8px; border-radius: 4px; cursor: pointer; }
+.q .opt:hover { background: var(--surface-2); }
+.q .opt input { margin-top: 4px; accent-color: var(--accent); width: 17px; height: 17px; }
+.q .opt .rec { color: var(--good); font-weight: 600; font-size: 0.82rem; margin-left: 4px; }
+.q .opt .why { grid-column: 2; font-size: 0.8rem; color: var(--ink-soft); }
+.q textarea { width: 100%; margin-top: 8px; min-height: 2.4rem; font: 0.86rem var(--sans); color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 4px; padding: 6px 8px; resize: vertical; }
+.q .notes-label { font-size: 0.76rem; color: var(--ink-soft); display: block; margin-top: 6px; }
+
+.sources ol { font-size: 0.82rem; overflow-wrap: anywhere; }
+.diagram { overflow-x: auto; }
+.diagram svg { display: block; min-width: 640px; width: 100%; height: auto; }
+.diagram svg text { fill: var(--ink); font-family: var(--sans); font-size: 12px; }
+.diagram .node { fill: var(--paper); stroke: var(--good); stroke-width: 1.2; }
+.diagram .node.later { fill: var(--surface-2); stroke: var(--ink-soft); stroke-dasharray: 4 3; }
+.diagram .edge { fill: none; stroke: var(--ink-soft); stroke-width: 1.4; }
+.diagram .arrowhead { fill: var(--ink-soft); }
+.diagram .band { fill: var(--surface-2); stroke: var(--line); }
+.diagram svg text.col { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; fill: var(--ink-soft); }
+.pill { display: inline-block; font: 600 0.72rem var(--sans); letter-spacing: 0.04em; padding: 1px 7px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface-2); }
+.pill.m3 { background: var(--good); color: var(--paper); border-color: var(--good); }
+.pill.later { background: var(--surface-2); }
+.pill.drop { color: var(--bad); border-color: var(--bad); }
+
+@media (max-width: 900px) {
+  html { scroll-padding-top: 64px; }
+  .shell { grid-template-columns: minmax(0, 1fr); gap: 16px; padding-block: 0 48px; }
+  .toc { position: static; max-height: none; display: none; }
+  .toc.open { display: block; position: fixed; inset: calc(env(safe-area-inset-top, 0px) + 56px) 0 0; z-index: 20; border-radius: 0; overflow: auto;
+    padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .mobile-bar { display: flex; position: sticky; top: env(safe-area-inset-top, 0px); z-index: 15; align-items: center; justify-content: space-between; gap: 10px;
+    background: var(--paper); border-bottom: 1px solid var(--line); margin: 0 calc(-1 * max(16px, env(safe-area-inset-left, 0px))); padding: 8px max(16px, env(safe-area-inset-right, 0px)) 8px max(16px, env(safe-area-inset-left, 0px)); }
+  .mobile-bar .progress-text { font-size: 0.75rem; }
+  .sheet { padding: 20px 16px 24px; }
+}
+</style>
+
+<div class="shell">
+  <div class="mobile-bar">
+    <button class="btn secondary" id="toc-toggle" type="button" aria-expanded="false" aria-controls="toc">Contents</button>
+    <span class="progress-text" data-progress-text>0 of 0 answered</span>
+    <button class="btn" type="button" data-copy>Copy my answers</button>
+  </div>
+  <nav class="toc" id="toc" aria-label="Contents">
+    <div class="answerbox">
+      <h2>Your answers</h2>
+      <span class="progress-text" data-progress-text>0 of 0 answered</span>
+      <div class="progress-track" aria-hidden="true"><div class="progress-fill" id="progress-fill"></div></div>
+      <div class="btn-row">
+        <button class="btn" type="button" data-copy>Copy my answers</button>
+        <button class="btn secondary" type="button" id="fill-rec">Use recommended for blanks</button>
+      </div>
+      <div class="btn-row">
+        <button class="btn secondary" type="button" id="clear-all">Clear all</button>
+        <button class="btn secondary" type="button" id="clear-confirm" hidden>Yes, clear every answer</button>
+      </div>
+      <div class="copy-status" id="copy-status" role="status" aria-live="polite"></div>
+      <div class="w-note" id="remote-status">Answers save in this browser. Use Copy my answers to send them to the team.</div>
+      <textarea class="copy-fallback" id="copy-fallback" hidden readonly aria-label="Your answers as Markdown"></textarea>
+    </div>
+    <h2>Contents</h2>
+    <ol>
+<li><a href="#verdicts"><span>Verdicts at a glance</span><span class="count"></span></a></li>
+<li><a href="#why"><span>Why the economy plays this way</span><span class="count"></span></a></li>
+<li><a href="#tenets"><span>Twelve provisional tenets</span><span class="count"></span></a></li>
+<li><a href="#upkeep"><span>Note 6: upkeep</span><span class="count" data-toc-idea="upkeep"></span></a></li>
+<li><a href="#values"><span>Notes 6 and 12: troop values</span><span class="count" data-toc-idea="values"></span></a></li>
+<li><a href="#payback"><span>Note 7: builds worth ordering</span><span class="count" data-toc-idea="payback"></span></a></li>
+<li><a href="#republic"><span>Note 11: Popular Resistance</span><span class="count" data-toc-idea="republic"></span></a></li>
+<li><a href="#ai"><span>Note 10: stopping a rival one step short</span><span class="count" data-toc-idea="ai"></span></a></li>
+<li><a href="#music"><span>Note 3: music</span><span class="count" data-toc-idea="music"></span></a></li>
+<li><a href="#sfx"><span>Note 3: sound effects</span><span class="count" data-toc-idea="sfx"></span></a></li>
+<li><a href="#bandwidth"><span>Note 3.a: bandwidth</span><span class="count" data-toc-idea="bandwidth"></span></a></li>
+<li><a href="#pane"><span>Note 1: resizable pane</span><span class="count"></span></a></li>
+<li><a href="#markers"><span>Note 2: aircraft markers</span><span class="count" data-toc-idea="markers"></span></a></li>
+<li><a href="#recruit"><span>Note 4: Recruit effects and overflow</span><span class="count" data-toc-idea="recruit"></span></a></li>
+<li><a href="#battle"><span>Note 5: battle balance sheet</span><span class="count" data-toc-idea="battle"></span></a></li>
+<li><a href="#invade"><span>Note 8: Invasion pane</span><span class="count" data-toc-idea="invade"></span></a></li>
+<li><a href="#casualties"><span>Note 9: casualties</span><span class="count" data-toc-idea="casualties"></span></a></li>
+<li><a href="#pruning"><span>Code and data pruning</span><span class="count" data-toc-idea="pruning"></span></a></li>
+<li><a href="#carry"><span>Left open from Rev 2</span><span class="count" data-toc-idea="carry"></span></a></li>
+<li><a href="#settled"><span>Settled unless you object</span><span class="count"></span></a></li>
+<li><a href="#plan"><span>How Rev 3 would run</span><span class="count" data-toc-idea="plan"></span></a></li>
+<li><a href="#unverified"><span>What nobody has checked</span><span class="count"></span></a></li>
+</ol>
+  </nav>
+  <main id="main">
+    <section class="sheet masthead-sheet" id="intro">
+<header class="masthead">
+<p class="eyebrow">Milestone 3 · Revision 3 · Design review</p>
+<h1>Milestone 3 Rev 3 Review</h1>
+<p class="meta"><span>22 Nov 2026</span><span>Mockups drawn over the live Rev 2 build</span><span>Research: <code>milestone-3-rev-3-ideation/research/</code>, branch <code>m3r3-ideation</code></span></p>
+</header>
+
+<p class="summary-line">Your 12 notes hold up. The economy ones share a single cause: Funds are scarce, Manpower is almost free, and militia is priced in the free one. Two notes have complications: the South can't pay any upkeep without an allowance, and Popular Resistance is worth three points on the die, so removing it needs something in its place.</p>
+
+<p><strong>How to use this page.</strong> There are 29 questions, each with a recommended answer. <strong>Use recommended for blanks</strong> fills the rest, and <strong>Copy my answers</strong> gives Markdown to paste back. Choices I think are clear-cut are listed under &quot;Settled unless you object&quot; near the end.</p>
+<p><strong>What the numbers are.</strong> No simulations were run. Economy figures come from the scenario data, the engine&#39;s own income and price functions, and a ten-turn projection with no battles in it. They compare prices well. They can&#39;t predict who wins.</p>
+
+</section>
+<section class="sheet" id="verdicts">
+<h2>Verdicts at a glance</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>#</th>
+<th>Note</th>
+<th>Verdict</th>
+<th>Size</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Resizable right pane</td>
+<td><strong>Yes.</strong> Grip on the left edge; sheet height on phones</td>
+<td>M</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Aircraft markers</td>
+<td><strong>Yes.</strong> They never got the card. Also a bug: fighters are tagged BOMB</td>
+<td>M</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Music and sound effects</td>
+<td><strong>Yes, with strict limits.</strong> Music split into four files</td>
+<td>L</td>
+</tr>
+<tr>
+<td>3.a</td>
+<td>Bandwidth</td>
+<td><strong>Yes.</strong> 83% of a first visit is three map pictures</td>
+<td>M</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Recruit page effects</td>
+<td><strong>Yes.</strong> Nothing shows them today</td>
+<td>S</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Battle balance sheet</td>
+<td><strong>Yes.</strong> Every roll bonus is already recorded; unit strength inputs are not</td>
+<td>M</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Troop costs and upkeep</td>
+<td><strong>Yes.</strong> Upkeep by a unit type&#39;s size, which makes militia pay most without a special rule</td>
+<td>L</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Mines and Industry payback</td>
+<td><strong>Yes.</strong> Mines 10 turns to 6, Industry 13 to 7</td>
+<td>S</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Invasion pane</td>
+<td><strong>Partly my regression.</strong> Zero of 12 unit cards are visible today; the fix shows 4</td>
+<td>M</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Casualties by the turn counter</td>
+<td><strong>Yes,</strong> once surrendered and disbanded men are counted and the top bar fits</td>
+<td>M</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Computer stops a rival one step short</td>
+<td><strong>Yes.</strong> It guards on purpose today; it should strike</td>
+<td>M</td>
+</tr>
+<tr>
+<td>11</td>
+<td>Remove Popular Resistance</td>
+<td><strong>Yes, with a replacement.</strong> It is worth 10 to 15 points of success chance in city fights</td>
+<td>S</td>
+</tr>
+<tr>
+<td>12</td>
+<td>Right resources, adjust the values</td>
+<td><strong>Agreed.</strong> Incomes are left alone</td>
+<td>–</td>
+</tr>
+<tr>
+<td>+</td>
+<td>Code pruning</td>
+<td><strong>Yes.</strong> Cleaner than it feels, with one large decision</td>
+<td>M</td>
+</tr>
+</tbody></table></div>
+
+</section>
+<section class="sheet" id="why">
+<h2>Why the economy plays this way</h2>
+<p>The Republic earns 14 Funds and 27 Manpower a turn. Militia costs 2 Funds and 3 Manpower, so Funds are the limit: seven columns a turn, every turn. Recruit slots never bind (the Republic has 17).</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Per Fund spent, today</th>
+<th>Attack</th>
+<th>Defence</th>
+<th>Training</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Militia column</td>
+<td><strong>1.50</strong></td>
+<td><strong>2.00</strong></td>
+<td><strong>1 turn</strong></td>
+</tr>
+<tr>
+<td>Colonial veterans</td>
+<td>0.75</td>
+<td>0.63</td>
+<td>2</td>
+</tr>
+<tr>
+<td>Infantry regiment</td>
+<td>0.67</td>
+<td>1.00</td>
+<td>2</td>
+</tr>
+<tr>
+<td>Security forces, cavalry</td>
+<td>0.50</td>
+<td>0.83, 0.50</td>
+<td>2</td>
+</tr>
+</tbody></table></div>
+<p>Over ten turns, spending everything on militia adds <strong>208%</strong> of the attack that infantry would for the Republic, 252% for the North and 167% for the South.</p>
+<p><strong>Your claims, checked.</strong></p>
+<ul>
+<li><strong>Security forces:</strong> worse than you said. Infantry beats them on every number at the same price. Their 2,000 men buy nothing, because strength, losses and Replenish all work by share, not by head count.</li>
+<li><strong>Mines, 11 turns:</strong> right. A mine ordered on turn 1 breaks even at the end of turn 10 and profits from turn 11.</li>
+<li><strong>Industry, 12 turns:</strong> I get later. It breaks even on turn 13 and profits from turn 14.</li>
+</ul>
+
+</section>
+<section class="sheet" id="tenets">
+<h2>Twelve provisional tenets</h2>
+<p>These are tests for any set of values, and each can be recomputed from the scenario file. Today&#39;s game passes 2 of 12. The <strong>Moderate</strong> package passes 11 and <strong>Bold</strong> passes 10. Moderate was tuned against these tests, so a pass means it does what it was designed to do; only play shows whether it is balanced.</p>
+<div class="widget" data-widget="tenets"></div>
+
+
+
+<ul>
+<li><strong>The one every package fails</strong> is &quot;Manpower is scarce enough to plan around&quot;. The North earns 27 to 31 Manpower but only 5 to 7 Funds, so it can&#39;t employ its men. Paying for labour works partly in Manpower helps; fixing it fully means changing incomes, which you like.</li>
+<li><strong>The thinnest pass</strong> is the North&#39;s militia, at 92% of what its regulars add against a limit of 95%. If the North still spams in playtests, that is the first number to move.</li>
+<li><strong>Where they come from:</strong> Schreiber on cost curves and game length; Axis &amp; Allies&#39; cheap-infantry problem; Warcraft III&#39;s stepped upkeep and Company of Heroes 2&#39;s gradual one; Sirlin on slippery slopes. Links are in <code>research/economy.md</code>, which marks what was read in full and what was only a search extract.</li>
+</ul>
+
+</section>
+<section class="sheet" id="upkeep">
+<h2>Note 6: upkeep</h2>
+<p>Four shapes were worked through for all three sides. A flat cost per army bankrupts the South at the end of turn 1, because its opening income is <strong>zero</strong> Manpower. Charging by literal men punishes the Republic&#39;s historical 10,000-man column, which fights like a 2,500-man one.</p>
+<div class="recommend"><strong>Recommended:</strong> each turn a unit costs half a Manpower per 1,000 men of its type's full size, scaled by its current strength. The first 6 are free to every side. Militia pays 1.25 and infantry 0.35. At the start the bill is about 5 of the Republic's 27, and nothing for the North and South.</div>
+
+<p><strong>When a side can&#39;t pay,</strong> it can&#39;t recruit or Replenish, and the missing men leave: at most 10% of a unit a turn and never below half. A smaller army costs less, so the bill shrinks to fit and no unit starves to death.</p>
+<p>Try other shapes and rates:</p>
+<div class="widget" data-widget="upkeep-lab"></div>
+
+
+
+<p>The lab assumes no battles and no lost ground.</p>
+<div class="questions" data-idea="upkeep"></div>
+</section>
+<section class="sheet" id="values">
+<h2>Notes 6 and 12: troop values</h2>
+<p>Militia holds ground and regulars take it. Security forces become a quick garrison. Machines get cheaper, so trucks, tanks and aircraft appear before the game is over.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Unit</th>
+<th>Funds</th>
+<th>Manpower</th>
+<th>Attack/defence</th>
+<th>Training</th>
+<th>Upkeep a turn</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Infantry regiment</td>
+<td>6 → <strong>5</strong></td>
+<td>1</td>
+<td>4/6</td>
+<td>2</td>
+<td>0.35</td>
+</tr>
+<tr>
+<td>Militia column</td>
+<td>2 → <strong>3</strong></td>
+<td>3</td>
+<td>3/4 → <strong>2/4</strong></td>
+<td>1</td>
+<td>1.25</td>
+</tr>
+<tr>
+<td>Colonial veterans</td>
+<td>8 → <strong>7</strong></td>
+<td>2</td>
+<td>6/5</td>
+<td>2</td>
+<td>0.9</td>
+</tr>
+<tr>
+<td>Security forces</td>
+<td>6 → <strong>4</strong></td>
+<td>2 → <strong>1</strong></td>
+<td>3/5</td>
+<td>2 → <strong>1</strong></td>
+<td>0.5</td>
+</tr>
+<tr>
+<td>Artillery group</td>
+<td>8 → <strong>7</strong></td>
+<td>1</td>
+<td>3/3</td>
+<td>3 → <strong>2</strong></td>
+<td>0.3</td>
+</tr>
+<tr>
+<td>Cavalry regiment</td>
+<td>6 → <strong>4</strong></td>
+<td>1</td>
+<td>3/3</td>
+<td>2</td>
+<td>0.3</td>
+</tr>
+<tr>
+<td>Tank company</td>
+<td>12 → <strong>10</strong></td>
+<td>1</td>
+<td>3/2 → <strong>5/3</strong></td>
+<td>4 → <strong>3</strong></td>
+<td>0.15</td>
+</tr>
+<tr>
+<td>Truck column</td>
+<td>5 → <strong>4</strong></td>
+<td>1</td>
+<td>0/0</td>
+<td>2</td>
+<td>0.1</td>
+</tr>
+<tr>
+<td>Anti-air battery</td>
+<td>7 → <strong>5</strong></td>
+<td>1</td>
+<td>0/1</td>
+<td>2</td>
+<td>0.15</td>
+</tr>
+<tr>
+<td>Reconnaissance flight</td>
+<td>8 → <strong>5</strong></td>
+<td>1</td>
+<td>0/1</td>
+<td>3 → <strong>2</strong></td>
+<td>0.05</td>
+</tr>
+<tr>
+<td>Fighter squadron</td>
+<td>10 → <strong>8</strong></td>
+<td>1</td>
+<td>0/1</td>
+<td>3</td>
+<td>0.05</td>
+</tr>
+<tr>
+<td>Bomber squadron</td>
+<td>12 → <strong>10</strong></td>
+<td>1</td>
+<td>0/1</td>
+<td>3</td>
+<td>0.05</td>
+</tr>
+</tbody></table></div>
+<p>Edit any value and see which units become pointless:</p>
+<div class="widget" data-widget="unit-value"></div>
+
+
+
+<p>The same money, spent two ways:</p>
+<div class="widget" data-widget="militia-vs-mixed"></div>
+
+
+
+<p><strong>Side effect.</strong> Cutting militia attack from 3 to 2 takes 5 of the Republic&#39;s 64 opening attack and 1 of the North&#39;s 48. No source gave a price per regiment, so unit prices are judgement.</p>
+<p>Your answers to 6d, 6e, 7a and 7b override the package you pick in 6c. Pick C there and the prices in this table stay as they are today.</p>
+<div class="questions" data-idea="values"></div>
+</section>
+<section class="sheet" id="payback">
+<h2>Note 7: builds worth ordering</h2>
+<p>Past computer games ran a median of 12 to 15 turns on older builds. Yours end before 10, partly because the spam ends them. A ten-turn game wants builds that pay back in five to seven.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Build</th>
+<th>Price</th>
+<th>Build time</th>
+<th>Pays back on turn</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Farms</td>
+<td>6 → <strong>3</strong> Funds</td>
+<td>3 → <strong>2</strong></td>
+<td>pays Manpower</td>
+</tr>
+<tr>
+<td>Mines</td>
+<td>8 → <strong>5</strong> Funds</td>
+<td>3 → <strong>2</strong></td>
+<td>10 → <strong>6</strong></td>
+</tr>
+<tr>
+<td>Industry</td>
+<td>10 → <strong>6</strong> Funds</td>
+<td>4 → <strong>2</strong></td>
+<td>13 → <strong>7</strong></td>
+</tr>
+<tr>
+<td>Factory</td>
+<td>12 F + 6 M → <strong>10 F + 4 M</strong></td>
+<td>4 → <strong>3</strong></td>
+<td>unlocks units</td>
+</tr>
+<tr>
+<td>Fortifications</td>
+<td>6 F → <strong>3 F + 2 M</strong>, worth 2 on the die</td>
+<td>2</td>
+<td>–</td>
+</tr>
+<tr>
+<td>New rail line</td>
+<td>24 F → <strong>10 F + 6 M</strong></td>
+<td>8 → <strong>5</strong></td>
+<td>–</td>
+</tr>
+<tr>
+<td>Road upgrade</td>
+<td>6 F → <strong>3 F + 2 M</strong></td>
+<td>2</td>
+<td>–</td>
+</tr>
+</tbody></table></div>
+<p>The full list is in <code>research/economy.md</code>. Under these prices, spending half the Republic&#39;s opening Funds on mines and Industry leaves it 6% behind in army value on turn 5 and 4% ahead on turn 10. Today it is behind on both.</p>
+<div class="widget" data-widget="payback"></div>
+
+
+
+<p><strong>Realism.</strong> Catalan industry was organised for war from 7 August 1936 and delivered within a few months. Two turns is one month, so this is quick. The other route, a bigger yield per level, also doubles the industry already standing and hands the Republic 10 Funds a turn.</p>
+<div class="questions" data-idea="payback"></div>
+</section>
+<section class="sheet" id="republic">
+<h2>Note 11: Popular Resistance</h2>
+<p>It takes <strong>3 off every attacker&#39;s roll</strong> in a city the Republic holds. That is one whole odds column. A separate bonus, barricades, gives −1 to the attacker in any side&#39;s city, and it stays.</p>
+<div class="widget" data-widget="city-defence"></div>
+
+
+
+<p>Where the attacker has the numbers (Asturias, País Vasco, Extremadura), taking the place becomes 10 to 15 points likelier. Madrid, Cataluña and Valencia stay near 0% at the start.</p>
+<p><strong>Combined with upkeep.</strong> In the projection, the Republic&#39;s best army on turn 10 falls from 115% of both rivals&#39; attack together to 99%. That is the lost spam advantage. It won 10 to 16% of past computer games <em>with</em> Popular Resistance, so some compensation looks wise.</p>
+<div class="questions" data-idea="republic"></div>
+</section>
+<section class="sheet" id="ai">
+<h2>Note 10: stopping a rival one step short</h2>
+<p>The computer does see a human leader. It responds by guarding, and that was on purpose: its own deciding ground counts ×4, the leader&#39;s ×2.5, and the last army on deciding ground may never leave. When the leader can win through any one of several territories, guarding can&#39;t stop it.</p>
+<p>Main gaps found in the code (nine in <code>research/economy.md</code>, eight with a change proposed):</p>
+<ul>
+<li>Only ground the leader holds <strong>whole</strong> raises the alarm. Ground it is contesting counts for nothing.</li>
+<li>Ground a third side holds is ignored, even if the leader would win with it.</li>
+<li>It looks one territory ahead. You take two or three a turn.</li>
+<li>Gaining a foothold counts half, though one foothold takes the territory off the leader&#39;s count.</li>
+<li>Recruiting and building ignore the alarm completely.</li>
+<li>Generals and trucks next door count as threats, which pins armies against nothing.</li>
+</ul>
+<p>Each change comes with a test, including one where a human leader and a computer leader produce the same orders.</p>
+<div class="questions" data-idea="ai"></div>
+</section>
+<section class="sheet" id="music">
+<h2>Note 3: music</h2>
+<p>Your mix is at a good level already (−18 LUFS). Delivery is the problem. On a fast local link, <strong>Firefox and Safari&#39;s engine downloaded all 16 MB within 20 seconds</strong> of pressing play; Chrome took 6 MB. Splitting by track is what limits that.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Delivery</th>
+<th>First listen</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>One file</td>
+<td>6 to 16 MB</td>
+<td>Always opens with the same 6:47 of &quot;Shadows and Dust&quot;</td>
+</tr>
+<tr>
+<td><strong>Four files, fades built in</strong></td>
+<td>1.4 to 3.4 MB</td>
+<td>Can open on any track; small change to your mix script, not yet tried</td>
+</tr>
+<tr>
+<td>Decoded into memory</td>
+<td>16 MB, then about 500 MB of RAM</td>
+<td>Crashes phones</td>
+</tr>
+</tbody></table></div>
+<p><strong>Listen before you answer 3b.</strong> Twenty seconds of &quot;Unraveling&quot;, encoded straight from your original MP3. Use headphones. The Opus samples need a recent Safari.</p>
+<div class="table-wrap"><table>
+<tr><th>Opus 64 (10.8 MB in all)</th><td><audio controls preload="none" src="audio-samples/unraveling-opus-64.ogg"></audio></td></tr>
+<tr><th>Opus 96 (16.3 MB in all)</th><td><audio controls preload="none" src="audio-samples/unraveling-opus-96.ogg"></audio></td></tr>
+<tr><th>AAC 96, for iPhone (16.2 MB)</th><td><audio controls preload="none" src="audio-samples/unraveling-aac-96.mp4"></audio></td></tr>
+</table></div>
+
+<p><small>'Unraveling-' by Scott Buckley, released under <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>. www.scottbuckley.com.au. Excerpted and re-encoded.</small></p>
+
+<p><strong>Credits are required.</strong> The licence needs credit players can see, so Settings gets a Credits section, linked from the start screen.</p>
+<p><strong>Volume.</strong> Three independent sliders (Master, Music, Effects) and a mute button, in Settings and in the game menu. Music at zero also stops downloading.</p>
+<figure class="mockup"><a href="images/r3-3-volume.webp" target="_blank" rel="noopener" title="Open full size"><img src="images/r3-3-volume.webp" alt="Volume sliders in Settings and in the game menu, on desktop and phone"></a><figcaption>Sound controls in Settings and in the game menu, desktop and phone.</figcaption></figure>
+
+<div class="questions" data-idea="music"></div>
+</section>
+<section class="sheet" id="sfx">
+<h2>Note 3: sound effects</h2>
+<p>I found no earlier sound-effects notes in the project beyond one line about a sound at 10 seconds. Fourteen clips total 216 kB. Their licence pages were checked on 22 Nov 2026 (one was made for the game). <strong>No one has listened to them,</strong> so your ears decide. Some are public previews, and the originals must be fetched before shipping.</p>
+<div class="widget" data-widget="sfx-board"></div>
+
+
+
+<p><strong>How they stay out of each other&#39;s way:</strong></p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Rule</th>
+<th>Detail</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>One action, one sound</td>
+<td>Ordering ten armies at once plays once</td>
+</tr>
+<tr>
+<td>Cooldowns</td>
+<td>A special sound at most every 4 s; in between, a quiet tick</td>
+</tr>
+<tr>
+<td>At most four at once</td>
+<td>A more important sound replaces a lesser one; nothing queues up late</td>
+</tr>
+<tr>
+<td>Always fade</td>
+<td>Short fades in and out, so nothing clicks</td>
+</tr>
+<tr>
+<td>Frequent means short and soft</td>
+<td>Only End Turn and special moves last 2 s</td>
+</tr>
+<tr>
+<td>Small variation</td>
+<td>Slight pitch and volume changes, so repeats don&#39;t grate</td>
+</tr>
+<tr>
+<td>Music dips</td>
+<td>Only for End Turn and the battle report</td>
+</tr>
+<tr>
+<td>Shared device</td>
+<td>Every order plays the same tick, so a train whistle doesn&#39;t reveal a plan</td>
+</tr>
+<tr>
+<td>Silent on purpose</td>
+<td>Hover, scroll, zoom, select, panels, the computer&#39;s orders</td>
+</tr>
+<tr>
+<td>Never the only signal</td>
+<td>Anything you hear is also shown</td>
+</tr>
+</tbody></table></div>
+<p>Hear the difference. Ten rail orders at once peak about 5 dB over the maximum without the rules, and 15 dB under it with them (estimated):</p>
+<div class="widget" data-widget="mix-lab"></div>
+
+
+
+<div class="questions" data-idea="sfx"></div>
+</section>
+<section class="sheet" id="bandwidth">
+<h2>Note 3.a: bandwidth</h2>
+<p>Measured on the live site with an empty cache:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Step</th>
+<th>Downloaded</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Start screen</td>
+<td>244 kB</td>
+</tr>
+<tr>
+<td>Create Game</td>
+<td>67 kB</td>
+</tr>
+<tr>
+<td>Start Campaign</td>
+<td>2,748 kB, of which 2,531 kB is three map pictures</td>
+</tr>
+<tr>
+<td><strong>First visit</strong></td>
+<td><strong>3.06 MB</strong></td>
+</tr>
+</tbody></table></div>
+<p><strong>Already right:</strong> compression, year-long caching of hashed files, and partial downloads. Streaming music needs no infrastructure change.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Change</th>
+<th>Saves on a first visit</th>
+<th>Where</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Load the detailed map picture on zoom</td>
+<td>up to 1.8 MB</td>
+<td>App</td>
+</tr>
+<tr>
+<td>Split music by track</td>
+<td>5 to 13 MB against one file</td>
+<td>Build, app</td>
+</tr>
+<tr>
+<td>Re-encode the map pictures</td>
+<td>about 0.8 MB, once you&#39;ve looked at them</td>
+<td>Build</td>
+</tr>
+<tr>
+<td>Move the rules and computer player out of the first script</td>
+<td>about 50 kB from the start screen (estimate)</td>
+<td>App</td>
+</tr>
+<tr>
+<td>Check the scenario at build time, not in the browser</td>
+<td>about 40 kB (estimate)</td>
+<td>Build</td>
+</tr>
+<tr>
+<td>Leave historical notes out of the download</td>
+<td>11 kB</td>
+<td>Build</td>
+</tr>
+<tr>
+<td>Stop publishing source maps</td>
+<td>nothing for players; 7 MB a release</td>
+<td>Build</td>
+</tr>
+</tbody></table></div>
+<p><strong>A size limit already exists and is already missed:</strong> 159.4 kB against 155 kB for the first script. Nothing runs the check.</p>
+<p><strong>Publishing traps to fix first:</strong> iPhone music may get the wrong file type, and the guard that stops placeholder files being published covers only images.</p>
+<p><strong>Cost:</strong> $0 a month at 10,000 players inside CloudFront&#39;s free terabyte, which your other sites share; about $16 without it. Assumptions are in <code>research/bandwidth.md</code>.</p>
+<div class="questions" data-idea="bandwidth"></div>
+</section>
+<section class="sheet" id="pane">
+<h2>Note 1: resizable pane</h2>
+<p>A grip runs down the pane&#39;s left edge. Drag it, use the arrow keys, or double-click to reset. The pane goes from 300 px up to 640 px, and the map always keeps at least 720 px. The width is remembered in the browser. On phones, the sheet has three heights: bar, half and nearly full.</p>
+<figure class="mockup"><a href="images/r3-1-resize.webp" target="_blank" rel="noopener" title="Open full size"><img src="images/r3-1-resize.webp" alt="The pane at its default, at 640 px, and at its limits on a 1280 px screen"></a><figcaption>Default and dragged wide at 1440; the minimum and maximum at 1280.</figcaption></figure>
+<figure class="mockup"><a href="images/r3-1-phone.webp" target="_blank" rel="noopener" title="Open full size"><img src="images/r3-1-phone.webp" alt="The phone sheet at its three heights"></a><figcaption>Phone sheet heights.</figcaption></figure>
+</section>
+<section class="sheet" id="markers">
+<h2>Note 2: aircraft markers</h2>
+<p>Rev 1 drew the NATO symbol itself as the aircraft marker, at one fixed size, and it never got the card. Aircraft now use the same card as every other unit, at all three zooms. Their attack is always 0 and their defence 1, so the card prints what the squadron does. <strong>Bug found:</strong> fighters are tagged BOMB.</p>
+<figure class="mockup"><a href="images/r3-2-air-cards.webp" target="_blank" rel="noopener" title="Open full size"><img src="images/r3-2-air-cards.webp" alt="Aircraft markers today and as cards, at three zooms"></a><figcaption>Today on the left, the card on the right, at each zoom.</figcaption></figure>
+<figure class="mockup"><a href="images/r3-2-air-states.webp" target="_blank" rel="noopener" title="Open full size"><img src="images/r3-2-air-states.webp" alt="Every aircraft card state"></a><figcaption>Every state: idle, planned, selected, grounded, stacked, enemy.</figcaption></figure>
+
+<div class="questions" data-idea="markers"></div>
+</section>
+<section class="sheet" id="recruit">
+<h2>Note 4: Recruit effects and overflow</h2>
+<p>No recruit row shows a unit&#39;s special effects today, and the hover card doesn&#39;t include them. The mock builds the wording from the scenario data. I couldn&#39;t reproduce overflowing text in the rows at normal size; what overflows is the tab strip, by 32 px at the default width. If you saw something else, a screenshot would help.</p>
+<figure class="mockup"><a href="images/r3-4-recruit-chips.webp" target="_blank" rel="noopener" title="Open full size"><img src="images/r3-4-recruit-chips.webp" alt="Recruit list today, with chips, and with fold-out lists"></a><figcaption>Today, chips (recommended), and the fold-out alternative.</figcaption></figure>
+<figure class="mockup"><a href="images/r3-4-recruit-narrow.webp" target="_blank" rel="noopener" title="Open full size"><img src="images/r3-4-recruit-narrow.webp" alt="Chips at 320 px, at 150% text, and on a phone"></a><figcaption>At 320 px, at 150% text, and on a phone. The Hide button covering the title is an existing bug, also on the fix list.</figcaption></figure>
+
+<div class="questions" data-idea="recruit"></div>
+</section>
+<section class="sheet" id="battle">
+<h2>Note 5: battle balance sheet</h2>
+<p>Units and totals, the odds, every effect with its sign, the modifier total, the die, the final number and the result. Signs are always from the attacker&#39;s side. These are three real battles; Popular Resistance still appears in one because it is still in the game.</p>
+<figure class="mockup"><a href="images/r3-5-ledger-busy.webp" target="_blank" rel="noopener" title="Open full size"><img src="images/r3-5-ledger-busy.webp" alt="Ledger for a busy fight with an air battle, and for a three-sided fight"></a><figcaption>A busy fight with an air battle, and one attacker's sheet from a three-sided fight.</figcaption></figure>
+<figure class="mockup"><a href="images/r3-5-ledger-options.webp" target="_blank" rel="noopener" title="Open full size"><img src="images/r3-5-ledger-options.webp" alt="Ledger for a simple fight beside the running-total alternative"></a><figcaption>The ledger on a simple fight, and the running-total alternative.</figcaption></figure>
+<figure class="mockup"><a href="images/r3-5-ledger-phone.webp" target="_blank" rel="noopener" title="Open full size"><img src="images/r3-5-ledger-phone.webp" alt="The ledger on a phone"></a><figcaption>On a phone.</figcaption></figure>
+
+<p>Every roll bonus is already recorded. Three names are vague and get fixed: which general, which aircraft, which building. What isn&#39;t recorded is why a unit&#39;s strength is what it is.</p>
+<div class="questions" data-idea="battle"></div>
+</section>
+<section class="sheet" id="invade">
+<h2>Note 8: Invasion pane</h2>
+<p>Reproduced on Andalucía, turn 3. My Rev 2 fix pinned the whole odds box to the top, and that box holds an unlimited list of defenders. Two more causes: each unit card repeats the reasons it can&#39;t march or drive, and the phone sheet opens too short. Unpinning the box alone doesn&#39;t fix it.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Whole unit cards visible, of 12 (top / scrolled)</th>
+<th>Desktop</th>
+<th>Phone</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Today</td>
+<td>0 / 0</td>
+<td>0 / 0</td>
+</tr>
+<tr>
+<td>Unpinned only</td>
+<td>0 / 1</td>
+<td>0 / 0</td>
+</tr>
+<tr>
+<td><strong>A. One-line odds bar, defenders folded (recommended)</strong></td>
+<td><strong>4 / 4</strong></td>
+<td><strong>2 / 3</strong></td>
+</tr>
+<tr>
+<td>B. Everything scrolls</td>
+<td>2 / 5</td>
+<td>0 / 4</td>
+</tr>
+<tr>
+<td>C. Two tabs</td>
+<td>4 / 5</td>
+<td>2 / 3</td>
+</tr>
+</tbody></table></div>
+<figure class="mockup"><a href="images/r3-8-invade-before.webp" target="_blank" rel="noopener" title="Open full size"><img src="images/r3-8-invade-before.webp" alt="The Invade pane today, with no unit cards visible"></a><figcaption>Today.</figcaption></figure>
+<figure class="mockup"><a href="images/r3-8-invade-recommended.webp" target="_blank" rel="noopener" title="Open full size"><img src="images/r3-8-invade-recommended.webp" alt="The recommended Invade pane on desktop and phone"></a><figcaption>Recommended. The defenders line folds out and scrolls away.</figcaption></figure>
+<figure class="mockup"><a href="images/r3-8-invade-options.webp" target="_blank" rel="noopener" title="Open full size"><img src="images/r3-8-invade-options.webp" alt="Options B and C"></a><figcaption>Options B and C.</figcaption></figure>
+
+<div class="questions" data-idea="invade"></div>
+</section>
+<section class="sheet" id="casualties">
+<h2>Note 9: casualties</h2>
+<p>One running total of men lost by all sides, with the split by side on tap. Battles are public to every player, so the total gives nothing away. Today the game records men lost in battle and to the cold, but not when a unit surrenders or is disbanded, so a counter would read low until that is added.</p>
+<p><strong>The top bar has to be fixed first.</strong> It is 1,354 px wide, so at 1280 and 1024 the whole page scrolls sideways.</p>
+<figure class="mockup"><a href="images/r3-9-casualties.webp" target="_blank" rel="noopener" title="Open full size"><img src="images/r3-9-casualties.webp" alt="The casualty chip at several screen widths"></a><figcaption>The chip at each width. The numbers are examples.</figcaption></figure>
+
+<div class="questions" data-idea="casualties"></div>
+</section>
+<section class="sheet" id="pruning">
+<h2>Code and data pruning</h2>
+<p>The code is in better shape than it feels: no unused npm packages, 0.17% duplicated lines, and no leftover blunder rules in the engine or the shipped scenario. All of the duplication is between the old dice code and the new.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Remove now</th>
+<th>Saves</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Historical notes and source lists in the download (kept in the source)</td>
+<td>67.6 kB raw, 11.4 kB compressed: half the scenario file</td>
+</tr>
+<tr>
+<td>59 unused exports and 43 unused exported types, after checking the tests</td>
+<td>about 100 lines</td>
+</tr>
+<tr>
+<td>8 unused styles, 2 unused unit icons, 1 unused screen, 4 uncited sources</td>
+<td>small</td>
+</tr>
+<tr>
+<td>Stale TODO comments, duplicate and unreferenced scripts</td>
+<td>small</td>
+</tr>
+</tbody></table></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Your decision</th>
+<th>Size</th>
+<th>Why it&#39;s a decision</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>The old six-sided-die battle rules</td>
+<td>about 1,000 lines at most</td>
+<td>The shipped game uses the twenty-sided die, but the test helper for the Spanish map, used 205 times, still runs on the old one</td>
+</tr>
+<tr>
+<td>Superseded mockups and images</td>
+<td>about 14.7 MB of image storage</td>
+<td>History only</td>
+</tr>
+</tbody></table></div>
+<p><strong>To stop it growing back:</strong> run the unused-code check in CI, fail a test when a scenario field has no reader, and put a size limit on the scenario file.</p>
+<p><strong>Kept:</strong> the rule options other eras would use, the published schemas and the map topology file. Of these, only the rule options are in a player&#39;s download. <strong>Not audited:</strong> whether some tests only cover behaviour Rev 2 removed, and the old capture scripts, which the CI work overlaps with.</p>
+<div class="questions" data-idea="pruning"></div>
+</section>
+<section class="sheet" id="carry">
+<h2>Left open from Rev 2</h2>
+<p>Rail hubs stay at level 2 and the Barbastro garrison stays, with its source checked during Rev 3, unless you say otherwise.</p>
+<div class="questions" data-idea="carry"></div>
+</section>
+<section class="sheet" id="settled">
+<h2>Settled unless you object</h2>
+<ul>
+<li><strong>Pane:</strong> left-edge grip, 300 to 640 px; three sheet heights on phones; Invade, Reinforce and Recruit open tall.</li>
+<li><strong>Aircraft</strong> at the same airfield combine into one card at the far zoom, like ground units.</li>
+<li><strong>Battle sheet</strong> starts closed on fights with no effects and open on the rest.</li>
+<li><strong>Shared-device games</strong> use one plain tick for every order.</li>
+<li><strong>Popular Resistance</strong> goes from the data; the mechanism stays for other eras.</li>
+<li><strong>Historical notes</strong> leave the player&#39;s download and stay in the source.</li>
+<li><strong>Sound files</strong> go in Git LFS, with a credits list players can see.</li>
+<li><strong>Bugs fixed on the way:</strong> sideways page scroll at 1280 and 1024, fighters tagged BOMB, the overflowing tab strip, the Hide button covering titles, cards showing under the pinned Order button.</li>
+</ul>
+
+</section>
+<section class="sheet" id="plan">
+<h2>How Rev 3 would run</h2>
+<ol>
+<li><strong>CI first.</strong> Several items change the Linux screenshots, so Rev 3 should start from the branch that makes the browser tests pass. That work is still running.</li>
+<li><strong>Safe pruning,</strong> if you agree above.</li>
+<li><strong>Engine:</strong> upkeep, values, Popular Resistance, casualties, battle record, with the tenets as unit tests.</li>
+<li><strong>In parallel after that:</strong> computer player; sound; downloads; pane and Invade; aircraft markers and Recruit; battle sheet and top bar.</li>
+<li><strong>Your playtest,</strong> and sims only if you allow them.</li>
+</ol>
+<p>Expected cost is 2.5 to 3M tokens, a judgement from Rev 2&#39;s 3.11M for nine streams.</p>
+<div class="questions" data-idea="plan"></div>
+</section>
+<section class="sheet" id="unverified">
+<h2>What nobody has checked</h2>
+<ul>
+<li><strong>Win rates.</strong> Nothing here predicts them, and the Rev 2 build has never had a balance run.</li>
+<li><strong>How any effect sounds,</strong> and anything on a real iPhone.</li>
+<li><strong>Music files with built-in fades.</strong> The script change hasn&#39;t been tried.</li>
+<li><strong>Download savings marked as estimates.</strong></li>
+<li><strong>Screen readers, and aircraft cards on phones or a crowded front.</strong></li>
+<li><strong>Some sources</strong> (players&#39; Hearts of Iron rules of thumb, militia pay, some sound-design articles) were seen only as search extracts.</li>
+</ul>
+
+</section>
+
+  </main>
+</div>
+
+<script id="questions-data" type="application/json">[{"id":"Q-R3-6a","idea":"upkeep","text":"What shape should upkeep take?","context":"Today armies cost nothing to keep. The South earns no Manpower at the start, so any upkeep needs an allowance or it goes broke in its first turns.","options":[{"label":"A. Each unit costs Manpower every turn by its full size (half a point per 1,000 men); each side's depots feed the first 6","recommended":true,"rationale":"Militia pays 1.25 a turn and an infantry regiment 0.35, with no special rule. At the start only the Republic pays: 5 to 7 of its 27, depending on the size of security forces."},{"label":"B. Every army costs 1 Manpower a turn","rationale":"Simplest, but the South is broke at the end of turn 1 and a truck column costs as much as a militia column."},{"label":"C. Option A, plus half a Fund a turn for each gun, tank, truck and aircraft","rationale":"More realistic, and one more number to read."},{"label":"D. A supply limit: each whole territory feeds three armies, each one over costs 1 Manpower","rationale":"Easy to see, but losing ground raises the bill at once."}],"groupTitle":"Upkeep"},{"id":"Q-R3-6b","idea":"upkeep","text":"What happens when a side can't feed its armies?","context":"It should hurt without ending the game. Units cost less to feed as they lose men, so the bill shrinks.","options":[{"label":"A. No recruiting or Replenish, and the missing Manpower leaves as men, at most 10% of a unit a turn and never below half","recommended":true,"rationale":"No unit is ever lost to hunger, and it needs no new order."},{"label":"B. No recruiting or Replenish, and nothing else","rationale":"Gentlest; a side can sit on a large unpaid army."},{"label":"C. Let players disband units","rationale":"More control, but a new order the computer player must learn too."}],"groupTitle":"Upkeep"},{"id":"Q-R3-6c","idea":"values","text":"Which value package should we build?","context":"Both make armies cost something to keep, builds pay back sooner and regulars cheaper. Moderate passes 11 of 12 economy tests, Bold 10 and today 2. The tests were used to tune Moderate, so a pass isn't proof of balance.","options":[{"label":"A. Moderate","recommended":true,"rationale":"The same units, prices and incomes you know, moved. By arithmetic, a Republic raising only militia reaches 91 attack on turn 10 instead of 318."},{"label":"B. Bold: twice the upkeep, plus Funds upkeep for machines","rationale":"Makes Manpower a real limit for everyone, but a large Republican army outgrows its income."},{"label":"C. Upkeep only; leave prices and builds alone","rationale":"Smallest change. Mines still pay back on turn 10, and the North's militia still adds 77 percent more attack than its regulars."}],"groupTitle":"Troop values"},{"id":"Q-R3-6d","idea":"values","text":"How should militia change?","context":"Today it has the most attack and defence for its price and trains fastest. It holds and storms equally well.","options":[{"label":"A. 3 Funds (from 2), attack 2 (from 3), defence stays 4","recommended":true,"rationale":"Militia holds ground, regulars take it: militia alone adds less attack than regulars for every side (the North is closest, at 92 percent). The Republic loses 5 of its 64 starting attack."},{"label":"B. 3 Funds, attack and defence unchanged","rationale":"Easier to accept, but the North's militia still adds 38 percent more attack than its regulars."},{"label":"C. 4 Funds, values unchanged","rationale":"Militia becomes an emergency buy, and the North's still adds 4 percent more attack than its regulars."}],"groupTitle":"Troop values"},{"id":"Q-R3-6e","idea":"values","text":"What should security forces be for?","context":"Infantry beats them on every number at the same price, as you noticed.","options":[{"label":"A. A quick garrison: 4 Funds, 1 Manpower, 1,000 men, trained in 1 turn","recommended":true,"rationale":"Cheaper and faster than infantry, and weaker."},{"label":"B. Keep the price and make them 4/6, like infantry","rationale":"Then they duplicate infantry."},{"label":"C. A city specialist: a bonus when defending a city","rationale":"More flavour, but a new kind of unit effect."}],"groupTitle":"Troop values"},{"id":"Q-R3-7a","idea":"payback","text":"How fast should mines and industry pay back?","context":"A mine started on turn 1 pays back on turn 10 and Industry on turn 13. Past simulations ended at a median of 12 to 15 turns; your games end before turn 10.","options":[{"label":"A. Cheaper and 2 turns to build: mines back by turn 6, industry by turn 7","recommended":true,"rationale":"A turn-3 build still profits in a 10-turn game. Building in a month is quicker than history."},{"label":"B. Keep the build times and cut prices further","rationale":"Truer to history, and the first payment still comes late."},{"label":"C. Make each industry level pay 2","rationale":"Doubles the industry already standing: the Republic gains 10 Funds a turn at once."}],"groupTitle":"Payback"},{"id":"Q-R3-7b","idea":"payback","text":"Should some building cost Manpower as well as Funds?","context":"The North has 27 Manpower a turn but only 5 Funds, so it can't spend its men. No number in either package fixes that without touching incomes.","options":[{"label":"A. Yes: fortifications, roads and rail take part of their price in Manpower","recommended":true,"rationale":"Labour battalions did this work, and men become useful to a poor side."},{"label":"B. No, but give the North more Funds","rationale":"Simple, and it makes the strongest computer side stronger."},{"label":"C. No, but trim the farms","rationale":"Less Manpower for everyone; you said the incomes feel right."}],"groupTitle":"Payback"},{"id":"Q-R3-11","idea":"republic","text":"When Popular Resistance goes, what should replace it?","context":"It takes 3 off the attacker's die in Republican cities, worth 15 points of success chance in a contested city fight. Past simulations gave the Republic 10 to 16 percent of wins even with it, so removing it and adding upkeep both hurt the Republic.","options":[{"label":"A. Barricades worth 2 in any city, for every side","recommended":true,"rationale":"Gives back 5 of the 15 points evenly, and city fighting stays hard for all."},{"label":"B. Nothing","rationale":"Cleanest; expect the Republic to win less."},{"label":"C. Barricades worth 2, and Madrid and Barcelona start fortified","rationale":"Gives those two capitals 10 more points."},{"label":"D. Barricades worth 2, and 10 more starting Funds for the Republic","rationale":"Two more regiments from the Bank of Spain's reserves."}],"groupTitle":"Popular Resistance"},{"id":"Q-R3-10a","idea":"ai","text":"When a rival is one step from winning, what should the computer players do?","context":"Today a rival one step short makes them value guarding their own ground more (4 times) than attacking the leader's (2.5 times), and the last army on such ground never leaves. They see a human leader as well as a computer one.","options":[{"label":"A. Attack the leader as readily as they guard, accept worse odds, and count a foothold that spoils a territory as a full success","recommended":true,"rationale":"One foothold takes a territory off the leader's count, which is the cheapest way to stop a win."},{"label":"B. Attack the leader only, and stop guarding","rationale":"Aggressive, but an easily led army leaves its own ground open."},{"label":"C. Keep the present balance and only fix what it overlooks: a leader needing a third side's ground, or two territories at once","rationale":"Smaller change, but still defensive."}],"groupTitle":"Computer player"},{"id":"Q-R3-10b","idea":"ai","text":"Should the computer players change how they spend when a rival is close to winning?","context":"Today their recruiting and building ignore it. They set aside 30 percent of Funds for builds.","options":[{"label":"A. Yes: at 2 steps or fewer, no saving for builds, and prefer units that train in one turn","recommended":true,"rationale":"New units arrive in time to matter."},{"label":"B. Yes, but only at one step","rationale":"Later, and often too late for a 2-turn unit."},{"label":"C. No","rationale":"Keeps the economy steady, at the cost of losing the game first."}],"groupTitle":"Computer player"},{"id":"Q-R3-3a","idea":"music","text":"How should the music be delivered?","context":"One 16 MB file is downloaded whole within seconds by Firefox and Safari on a fast connection, even if the player leaves after a minute. Chrome takes about 6 MB.","options":[{"label":"Four files, one per track, with the fades built in","recommended":true,"rationale":"A first listen costs 1.4 to 3.4 MB, a session can start on a different track, and no fading script is needed on iPhone. Needs a small change to the mix script."},{"label":"One file, the mix as it is","rationale":"Simplest and exactly your mix, but 6 to 16 MB on a first listen and it always opens the same way."},{"label":"Music only as a download the player asks for","rationale":"Cheapest, but most players would never hear it."}],"groupTitle":"Music"},{"id":"Q-R3-3b","idea":"music","text":"Which quality should the music ship at?","context":"All four tracks: Opus 64 is 10.8 MB, Opus 96 is 16.3 MB. iPhones use a separate AAC copy (16.2 MB at 96). Listen to the samples above in headphones first.","options":[{"label":"Opus 64 and AAC 96, after you listen","recommended":true,"rationale":"A third smaller. Best if you cannot tell the difference in headphones; please compare on Unraveling."},{"label":"Opus 96 and AAC 96","rationale":"Closer to the usual guideline, 5.5 MB more in total."},{"label":"Opus 96 and AAC 128","rationale":"Nearest to your current files, 16 to 21 MB."}],"groupTitle":"Music"},{"id":"Q-R3-3c","idea":"music","text":"What should happen with sound on a first visit?","context":"Browsers do not allow sound before a click.","options":[{"label":"Music starts with the first campaign, at a modest level, with a notice and a mute button","recommended":true,"rationale":"Players hear it, and one press stops it."},{"label":"Everything starts off until the player turns it on","rationale":"Never annoys, but most players will not find it."},{"label":"Effects on, music off","rationale":"A middle path that hides the music."}],"groupTitle":"Music"},{"id":"Q-R3-3d","idea":"sfx","text":"Which sounds should we make now?","context":"Fourteen candidates are in the audition board. Every licence was checked; none has been listened to by us.","options":[{"label":"Your eight, plus a soft refused tick and one distant-guns sound when the battle report opens","recommended":true,"rationale":"Covers your list and gives the report some weight, about 0.1 MB in all."},{"label":"Only your eight","rationale":"Fewest sounds to tire of."},{"label":"Your eight plus victory, defeat and weather","rationale":"More atmosphere, and more to license and tune."}],"groupTitle":"Sound effects"},{"id":"Q-R3-3e","idea":"sfx","multi":true,"text":"Which candidate sounds do you like? Tick every one to keep.","context":"Play them in the board above. The ticks for the recommended set are a starting guess: no one on the research team could listen. Leave out anything that sounds wrong and I'll find another.","options":[{"label":"Create order: Typewriter burst"},{"label":"Create order: Marker set down","recommended":true},{"label":"Recruit: Snare drum roll","recommended":true},{"label":"Recruit: Rubber stamp"},{"label":"Build: Two anvil strikes","recommended":true},{"label":"Air mission: Fighter flyover","recommended":true},{"label":"Air mission: Twin-propeller flyover"},{"label":"Rail move: Whistle, then train on rails","recommended":true},{"label":"Truck move: Diesel pulls away","recommended":true},{"label":"Reinforce on foot: Squad marching","recommended":true},{"label":"End turn: Orchestral hit with horns","recommended":true},{"label":"End turn: Two drum strikes (made for this game)"},{"label":"Battle report opens: Distant cannon","recommended":true},{"label":"Order refused: Soft double tick","recommended":true}],"groupTitle":"Sound effects"},{"id":"Q-R3-3f","idea":"sfx","text":"How strict should the limits on repeated sounds be?","context":"Ten rail orders at once would be ten whistles and about 5 dB over the maximum, which crackles. Try both in the mix lab.","options":[{"label":"Strict: one sound per action, a special sound at most every four seconds, then a quiet tick","recommended":true,"rationale":"Special sounds stay special. Four seconds is a starting value to tune by ear."},{"label":"Looser: special sounds every second or so","rationale":"Livelier, and tires faster."},{"label":"Special sounds only for the first order of each kind each turn","rationale":"Calmest, and the player may wonder why a later train is silent."}],"groupTitle":"Sound effects"},{"id":"Q-R3-3.a-1","idea":"bandwidth","text":"When should the detailed map picture load?","context":"It is 1.8 MB of the 3.1 MB a new player downloads, and it loads before anyone zooms in.","options":[{"label":"Only when the player zooms in, or when idle on a fast connection","recommended":true,"rationale":"Cuts up to 59% for players who do not zoom. A zoom may be soft for a moment."},{"label":"As now, at the start of the campaign","rationale":"Sharp at once, and the largest cost in the game."},{"label":"On zoom, and re-encode it smaller","rationale":"A further 0.8 MB or so in all, but the map must be looked at and the visual tests refreshed."}],"groupTitle":"Bandwidth"},{"id":"Q-R3-3.a-2","idea":"bandwidth","text":"Should a download size limit stop a build?","context":"A limit exists and is already missed (159.4 kB against 155 kB for the first script), but nothing runs the check.","options":[{"label":"Yes, after moving the rules and computer player out of the first script, and cover audio and images too","recommended":true,"rationale":"Keeps growth visible, and the limit stays where you set it."},{"label":"Yes, from today, blocking","rationale":"Nothing else can merge until the miss is fixed."},{"label":"Report only","rationale":"Easy, and easily ignored, as now."}],"groupTitle":"Bandwidth"},{"id":"Q-R3-2","idea":"markers","text":"What should an aircraft card print?","context":"Aircraft attack and defence are 0 and 1 for every type, so they say nothing.","options":[{"label":"The role (FTR, BOMB, RCN), with the bonus at the closest zoom","recommended":true,"rationale":"Says what the squadron is for."},{"label":"Attack-defence like other units","rationale":"Consistent, but always 0-1."},{"label":"Symbol only","rationale":"Clean, but less information."}],"groupTitle":"Aircraft markers"},{"id":"Q-R3-4","idea":"recruit","text":"How should Recruit show a unit's special effects?","context":"The list shows none of them today.","options":[{"label":"Small chips under the price, tap for the detail","recommended":true,"rationale":"Visible on a phone and wraps in a narrow pane."},{"label":"A fold-out line per unit","rationale":"Shorter rows, hidden until opened."},{"label":"A comparison table","rationale":"Useful later; too wide for a narrow pane."}],"groupTitle":"Recruit page"},{"id":"Q-R3-5","idea":"battle","text":"Should the battle sheet show why a unit's strength is what it is (men, morale), not just the total?","context":"The game does not record this per unit today, so showing it needs a small change to what each battle saves.","options":[{"label":"Yes, show men and morale per unit","recommended":true,"rationale":"Players can see why a unit counted for less; small engine change."},{"label":"No, total strength only","rationale":"No engine change, but less explanation."}],"groupTitle":"Battle sheet"},{"id":"Q-R3-8","idea":"invade","text":"On Invade, keep the odds pinned while you scroll the units?","context":"Today the pinned box fills the pane. You asked for the details at the top; a thin one-line odds bar could stay.","options":[{"label":"Keep a one-line odds bar, scroll the defenders away","recommended":true,"rationale":"Shows 4 units instead of 0, and the odds stay in view."},{"label":"Scroll everything","rationale":"Most room once scrolled; only 2 units at the top."},{"label":"Two tabs: Your units and Defenders","rationale":"Same room as the first, one more tap."}],"groupTitle":"Invasion pane"},{"id":"Q-R3-9a","idea":"casualties","text":"What should the casualty counter count?","context":"The game records battle losses and frostbite. Units that surrender or are disbanded don't record their men yet.","options":[{"label":"All men lost: battles, surrenders, disbanded units and cold","recommended":true,"rationale":"Matches what players expect from casualties; needs men added to surrender records."},{"label":"Battle losses only","rationale":"Simplest, but a surrendered army counts as no loss."},{"label":"Battle losses and surrenders only","rationale":"Leaves out cold losses, which are small."}],"groupTitle":"Casualties"},{"id":"Q-R3-9b","idea":"casualties","text":"Where should the casualty total sit, and how long can it be?","context":"The top bar already overflows at 1280 px. At 1440 the long form does not fit beside the name.","options":[{"label":"Beside the faction name, as 12.4k, tapping shows the split by side","recommended":true,"rationale":"Fits and is nearest the turn counter."},{"label":"In full in the turn row, replacing the readiness chips when narrow","rationale":"Closest, but crowds the row."},{"label":"In the menu","rationale":"No room problem, harder to see."}],"groupTitle":"Casualties"},{"id":"Q-R3-P1","idea":"pruning","text":"The game no longer uses the old six-sided-die battle rules, but most tests still run on them. Remove them?","context":"About 1,000 lines of code and many tests pin the map to the old rules. Removing them simplifies the code, but a future era could use them.","options":[{"label":"Keep the old rules for now, and move the tests that should follow the real game to the current dice","recommended":true,"rationale":"Tests then check what players play; deleting code can follow later."},{"label":"Remove them completely","rationale":"Simplest code, most test work, and no old-rules option for other eras."},{"label":"Leave everything as it is","rationale":"No cost, but the cruft and wrong-rules tests remain."}],"groupTitle":"Pruning"},{"id":"Q-R3-P2","idea":"pruning","text":"When should the pruning happen?","context":"The safe removals are small and touch many files, so they collide with feature work if both run at once.","options":[{"label":"Safe removals first, before the feature work starts","recommended":true,"rationale":"Everyone builds on the smaller code, and the unused-code check then stops regrowth."},{"label":"A pass at the end","rationale":"Also catches what Rev 3 leaves behind, but merges are harder."},{"label":"Both","rationale":"Cleanest result, and about twice the pruning cost."}],"groupTitle":"Pruning"},{"id":"Q-R3-C1","idea":"carry","text":"Should a paved airfield still let aircraft fly in rain and snow?","context":"Open since Rev 2. You chose \"rain and snow ground all air\", but the building has no other use.","options":[{"label":"Yes, keep the exception","recommended":true,"rationale":"Gives the upgrade a purpose, and it costs only 4 Funds in the Moderate package."},{"label":"No: ground everything and remove the building","rationale":"Simpler, and one more thing pruned."}],"groupTitle":"Left open from Rev 2"},{"id":"Q-R3-C2","idea":"carry","text":"Should trucks move on any road, not only main roads?","context":"Open since Rev 2. On the opening map only Madrid to Valencia is main road all the way, and the Republic has no trucks. You also asked for a truck sound, which would almost never play.","options":[{"label":"Yes, any road, but still not across a mountain pass","recommended":true,"rationale":"Trucks become worth buying at the new price."},{"label":"No, leave it rare","rationale":"Truer to 1936; trucks stay a niche."}],"groupTitle":"Left open from Rev 2"},{"id":"Q-R3-S1","idea":"plan","text":"May I run balance sims on the finished economy?","context":"Nothing here predicts win rates. A 400-game run would take roughly half an hour of this Mac's time (estimated from the 10-game unit test) and few tokens. Sims only show computer against computer, so they can't prove that a person's militia spam is beaten; your playtest does that.","options":[{"label":"Yes: one run on the finished build, and one more after a single correction","recommended":true,"rationale":"Removing Popular Resistance and adding upkeep both push the Republic down from 10 to 16 percent of wins, by an unknown amount."},{"label":"Only after I've playtested","rationale":"Your feel first, numbers second."},{"label":"No sims in Rev 3","rationale":"Playtests and the tenet checks only."}],"groupTitle":"How Rev 3 runs"}]</script>
+<script>
+window.M3W = window.M3W || {};
+window.M3W_DATA = {"source":"src/scenarios/spanish-civil-war-1936/scenario.json","victory":{"territoryShare":0.51,"cityShare":0.75,"territories":18,"cities":25},"alarm":{"critical":3,"perStep":0.5,"steps":4},"aiBuilds":{"spendShare":0.6,"reserveShare":0.3,"developmentProjects":1,"developmentShare":0.5,"maxOrdersPerTurn":3,"itemsPerEmptyQueue":1},"recruitment":{"maxPerTerritory":2,"replenishCostShare":0.5,"replenishShare":0.5},"d20":{"worksPerTurn":2,"worksMax":6,"barricades":1,"belowOneToOnePenalty":3,"popularResistance":3,"table":[[0,0,2,2,2,3,3,3,4,4,4,5,5,5,6,6,6,7,7,7,8],[0,0,3,3,3,4,4,4,5,5,5,6,6,6,7,7,7,8,8,8,9],[3,3,4,4,4,5,5,5,6,6,6,7,7,7,8,8,8,9,9,9,10],[4,4,5,5,5,6,6,6,7,7,7,8,8,8,9,9,9,10,10,10,11],[5,5,6,6,6,7,7,7,8,8,8,9,9,9,10,10,10,11,11,11,12],[6,6,7,7,7,8,8,8,9,9,9,10,10,10,11,11,11,12,12,12,12],[7,7,8,8,8,9,9,9,10,10,10,11,11,11,12,12,12,12,12,12,12]],"grades":[{"name":"Attacker destroyed","take":false,"gain":false,"attackerLoss":100,"defenderLoss":0},{"name":"Attacker routed","take":false,"gain":false,"attackerLoss":35,"defenderLoss":0},{"name":"Attacker repulsed","take":false,"gain":false,"attackerLoss":20,"defenderLoss":0},{"name":"Attack checked","take":false,"gain":false,"attackerLoss":10,"defenderLoss":0},{"name":"Bloody stalemate","take":false,"gain":false,"attackerLoss":20,"defenderLoss":20},{"name":"Stalemate","take":false,"gain":false,"attackerLoss":10,"defenderLoss":10},{"name":"Defender gives ground","take":false,"gain":true,"attackerLoss":10,"defenderLoss":10},{"name":"Defender pushed back","take":false,"gain":true,"attackerLoss":10,"defenderLoss":20},{"name":"Costly victory","take":true,"gain":true,"attackerLoss":35,"defenderLoss":35},{"name":"Defender driven out","take":true,"gain":true,"attackerLoss":10,"defenderLoss":20},{"name":"Defender routed","take":true,"gain":true,"attackerLoss":10,"defenderLoss":35},{"name":"Defender broken","take":true,"gain":true,"attackerLoss":0,"defenderLoss":35},{"name":"Defender destroyed","take":true,"gain":true,"attackerLoss":10,"defenderLoss":100}]},"development":[{"id":"farms","yieldPerLevel":1,"maxLevel":3},{"id":"mines","yieldPerLevel":1,"maxLevel":3},{"id":"industry","yieldPerLevel":1,"maxLevel":3}],"territories":[{"id":"galicia","name":"Galicia","holders":{"north":4},"contested":false,"holder":"north","settledHolder":"north","yield":{"funds":1,"manpower":7},"levels":{"farms":7,"industry":1},"capitalHolder":"north","capitalBuildings":["barracks","depot","airfield"],"slots":2,"cities":1},{"id":"asturias","name":"Asturias","holders":{"north":1,"republic":1},"contested":true,"holder":null,"settledHolder":null,"yield":{"funds":7,"manpower":1},"levels":{"mines":4,"industry":3,"farms":1},"capitalHolder":"north","capitalBuildings":["barracks","factory"],"slots":3,"cities":2},{"id":"cantabria","name":"Cantabria","holders":{"republic":1},"contested":false,"holder":"republic","settledHolder":"republic","yield":{"funds":2,"manpower":1},"levels":{"farms":1,"mines":1,"industry":1},"capitalHolder":"republic","capitalBuildings":["barracks"],"slots":2,"cities":1},{"id":"pais-vasco","name":"País Vasco","holders":{"republic":2,"north":1},"contested":true,"holder":null,"settledHolder":"republic","yield":{"funds":6,"manpower":1},"levels":{"mines":2,"industry":4,"farms":1},"capitalHolder":"republic","capitalBuildings":["barracks","factory","depot"],"slots":3,"cities":2},{"id":"navarra","name":"Navarra","holders":{"north":1},"contested":false,"holder":"north","settledHolder":"north","yield":{"funds":0,"manpower":2},"levels":{"farms":2},"capitalHolder":"north","capitalBuildings":["barracks","depot"],"slots":2,"cities":1},{"id":"la-rioja","name":"La Rioja","holders":{"north":1},"contested":false,"holder":"north","settledHolder":"north","yield":{"funds":0,"manpower":2},"levels":{"farms":2},"capitalHolder":"north","capitalBuildings":[],"slots":2,"cities":0},{"id":"aragon","name":"Aragón","holders":{"north":2,"republic":1},"contested":true,"holder":null,"settledHolder":"north","yield":{"funds":2,"manpower":4},"levels":{"farms":4,"industry":1,"mines":1},"capitalHolder":"north","capitalBuildings":["barracks","depot","airfield","rail-yard"],"slots":2,"cities":2},{"id":"madrid","name":"Madrid","holders":{"republic":3},"contested":false,"holder":"republic","settledHolder":"republic","yield":{"funds":2,"manpower":2},"levels":{"farms":2,"industry":2},"capitalHolder":"republic","capitalBuildings":["barracks","depot","factory","hospital","airfield","rail-yard"],"slots":3,"cities":1},{"id":"castilla-y-leon","name":"Castilla y León","holders":{"north":9},"contested":false,"holder":"north","settledHolder":"north","yield":{"funds":4,"manpower":16},"levels":{"farms":16,"industry":1,"mines":3},"capitalHolder":"north","capitalBuildings":["barracks","depot","rail-yard"],"slots":2,"cities":3},{"id":"castilla-la-mancha","name":"Castilla-La Mancha","holders":{"republic":5},"contested":false,"holder":"republic","settledHolder":"republic","yield":{"funds":2,"manpower":9},"levels":{"farms":9,"mines":2},"capitalHolder":"republic","capitalBuildings":["barracks","factory","rail-yard"],"slots":3,"cities":2},{"id":"extremadura","name":"Extremadura","holders":{"republic":1,"north":1},"contested":true,"holder":null,"settledHolder":null,"yield":{"funds":0,"manpower":5},"levels":{"farms":5},"capitalHolder":"republic","capitalBuildings":["barracks"],"slots":2,"cities":1},{"id":"catalunya","name":"Cataluña","holders":{"republic":4},"contested":false,"holder":"republic","settledHolder":"republic","yield":{"funds":3,"manpower":6},"levels":{"farms":6,"industry":3},"capitalHolder":"republic","capitalBuildings":["barracks","depot","factory","hospital","airfield","rail-yard"],"slots":3,"cities":1},{"id":"valencia","name":"Valencia","holders":{"republic":3},"contested":false,"holder":"republic","settledHolder":"republic","yield":{"funds":3,"manpower":7},"levels":{"farms":7,"industry":3},"capitalHolder":"republic","capitalBuildings":["barracks","depot","factory","airfield","rail-yard"],"slots":3,"cities":2},{"id":"islas-baleares","name":"Islas Baleares","holders":{"south":2,"republic":1},"contested":true,"holder":null,"settledHolder":"south","yield":{"funds":0,"manpower":1},"levels":{"farms":1},"capitalHolder":"south","capitalBuildings":["barracks","airfield"],"slots":2,"cities":0},{"id":"andalucia","name":"Andalucía","holders":{"south":5,"republic":3},"contested":true,"holder":null,"settledHolder":"south","yield":{"funds":10,"manpower":15},"levels":{"farms":15,"industry":3,"mines":7},"capitalHolder":"south","capitalBuildings":["barracks","depot","airfield","rail-yard"],"slots":2,"cities":5},{"id":"murcia","name":"Murcia","holders":{"republic":1},"contested":false,"holder":"republic","settledHolder":"republic","yield":{"funds":2,"manpower":2},"levels":{"farms":2,"mines":1,"industry":1},"capitalHolder":"republic","capitalBuildings":["barracks","factory"],"slots":3,"cities":1},{"id":"ceuta","name":"Ceuta","holders":{"south":1},"contested":false,"holder":"south","settledHolder":"south","yield":{"funds":0,"manpower":0},"levels":{},"capitalHolder":"south","capitalBuildings":["barracks"],"slots":2,"cities":0},{"id":"melilla","name":"Melilla","holders":{"south":1},"contested":false,"holder":"south","settledHolder":"south","yield":{"funds":1,"manpower":0},"levels":{"mines":1},"capitalHolder":"south","capitalBuildings":["barracks","airfield"],"slots":2,"cities":0}],"factions":[{"id":"republic","name":"Republican Government","abbreviation":"REP","stock":{"funds":40,"manpower":10},"income":{"funds":14,"manpower":27},"incomeSettled":{"funds":20,"manpower":28},"territories":["cantabria","madrid","castilla-la-mancha","catalunya","valencia","murcia"],"cities":13,"slots":17,"slotsWithBarracks":17,"army":{"infantry-regiment":{"count":9,"men":6285},"security-forces":{"count":3,"men":8600},"militia-column":{"count":5,"men":25500},"fighter-squadron":{"count":1,"men":100},"bomber-squadron":{"count":1,"men":100},"recon-flight":{"count":1,"men":100}},"men":40685,"upgrades":{"farms":15,"mines":17,"industry":7},"industryLevels":10,"industryLevelsSettled":14},{"id":"north","name":"Northern Insurgent Command","abbreviation":"NIC","stock":{"funds":15,"manpower":10},"income":{"funds":5,"manpower":27},"incomeSettled":{"funds":7,"manpower":31},"territories":["galicia","navarra","la-rioja","castilla-y-leon"],"cities":8,"slots":8,"slotsWithBarracks":6,"army":{"infantry-regiment":{"count":10,"men":6130},"security-forces":{"count":1,"men":1870},"militia-column":{"count":1,"men":5000},"recon-flight":{"count":1,"men":100}},"men":13100,"upgrades":{"farms":14,"mines":15,"industry":5},"industryLevels":2,"industryLevelsSettled":3},{"id":"south","name":"Southern Insurgent Command","abbreviation":"SIC","stock":{"funds":15,"manpower":5},"income":{"funds":1,"manpower":0},"incomeSettled":{"funds":11,"manpower":16},"territories":["ceuta","melilla"],"cities":4,"slots":4,"slotsWithBarracks":4,"army":{"infantry-regiment":{"count":4,"men":2749},"colonial-veterans":{"count":5,"men":14593},"bomber-squadron":{"count":1,"men":100}},"men":17442,"upgrades":{"farms":2,"mines":2,"industry":0},"industryLevels":0,"industryLevelsSettled":3}],"units":[{"id":"infantry-regiment","name":"Infantry regiment","kind":"ground","foot":true,"attack":4,"defence":6,"funds":6,"manpower":1,"establishment":700,"train":2,"requires":["barracks"],"factionIds":null,"abilities":[]},{"id":"militia-column","name":"Militia column","kind":"ground","foot":true,"attack":3,"defence":4,"funds":2,"manpower":3,"establishment":2500,"train":1,"requires":[],"factionIds":null,"abilities":["trains-in-contested"]},{"id":"colonial-veterans","name":"Colonial veterans","kind":"ground","foot":true,"attack":6,"defence":5,"funds":8,"manpower":2,"establishment":1800,"train":2,"requires":["barracks"],"factionIds":["north","south"],"abilities":[]},{"id":"security-forces","name":"Security forces","kind":"ground","foot":true,"attack":3,"defence":5,"funds":6,"manpower":2,"establishment":2000,"train":2,"requires":["barracks"],"factionIds":null,"abilities":[]},{"id":"artillery-group","name":"Artillery group","kind":"ground","foot":false,"attack":3,"defence":3,"funds":8,"manpower":1,"establishment":600,"train":3,"requires":["barracks","factory"],"factionIds":null,"abilities":["roll-bonus-per-points","cannot-attack-alone"]},{"id":"cavalry-regiment","name":"Cavalry regiment","kind":"ground","foot":true,"attack":3,"defence":3,"funds":6,"manpower":1,"establishment":600,"train":2,"requires":["barracks"],"factionIds":null,"abilities":["mobile"]},{"id":"tank-company","name":"Tank company","kind":"ground","foot":false,"attack":3,"defence":2,"funds":12,"manpower":1,"establishment":300,"train":4,"requires":["factory","depot"],"factionIds":null,"abilities":["roll-bonus-per-points"]},{"id":"truck-column","name":"Truck column","kind":"ground","foot":false,"attack":0,"defence":0,"funds":5,"manpower":1,"establishment":200,"train":2,"requires":["factory","depot"],"factionIds":null,"abilities":["transport"]},{"id":"anti-air-battery","name":"Anti-air battery","kind":"ground","foot":false,"attack":0,"defence":1,"funds":7,"manpower":1,"establishment":300,"train":2,"requires":["factory"],"factionIds":null,"abilities":["raid-defence"]},{"id":"recon-flight","name":"Reconnaissance flight","kind":"air","foot":false,"attack":0,"defence":1,"funds":8,"manpower":1,"establishment":100,"train":3,"requires":["airfield","factory"],"factionIds":null,"abilities":["mission:recon"]},{"id":"fighter-squadron","name":"Fighter squadron","kind":"air","foot":false,"attack":0,"defence":1,"funds":10,"manpower":1,"establishment":100,"train":3,"requires":["airfield","factory"],"factionIds":null,"abilities":["battle-support","air-battle","mission:patrol","mission:support"]},{"id":"bomber-squadron","name":"Bomber squadron","kind":"air","foot":false,"attack":0,"defence":1,"funds":12,"manpower":1,"establishment":100,"train":3,"requires":["airfield","factory"],"factionIds":null,"abilities":["battle-support","air-battle","mission:raid","mission:support"]}],"projects":[{"id":"farms","name":"Farms","group":"development","funds":6,"manpower":0,"turns":3,"resource":"manpower","yield":1,"cityOnly":false},{"id":"mines","name":"Mines","group":"development","funds":8,"manpower":0,"turns":3,"resource":"funds","yield":1,"cityOnly":false},{"id":"industry","name":"Industry","group":"development","funds":10,"manpower":0,"turns":4,"resource":"funds","yield":1,"cityOnly":true},{"id":"barracks","name":"Barracks","group":"building","funds":6,"manpower":0,"turns":2,"effect":"unlocks units","unlocks":["Infantry regiment","Colonial veterans","Security forces","Artillery group","Cavalry regiment"]},{"id":"factory","name":"Factory","group":"building","funds":12,"manpower":6,"turns":4,"effect":"+1 recruit a turn","unlocks":["Artillery group","Tank company","Truck column","Anti-air battery","Reconnaissance flight","Fighter squadron","Bomber squadron"]},{"id":"depot","name":"Depot","group":"building","funds":8,"manpower":0,"turns":2,"effect":"Replenish costs 25% less funds","unlocks":["Tank company","Truck column"]},{"id":"fortifications","name":"Fortifications","group":"building","funds":6,"manpower":0,"turns":2,"effect":"1 off the attacker's roll","unlocks":[]},{"id":"hospital","name":"Hospital","group":"building","funds":6,"manpower":0,"turns":2,"effect":"Replenish cap +25%","unlocks":[]},{"id":"airfield","name":"Airfield","group":"building","funds":8,"manpower":0,"turns":3,"effect":"aircraft can base here","unlocks":["Reconnaissance flight","Fighter squadron","Bomber squadron"]},{"id":"paved-airfield","name":"Paved airfield","group":"building","funds":6,"manpower":0,"turns":2,"effect":"flies in mud and snow","unlocks":[]},{"id":"rail-yard","name":"Rail yard","group":"building","funds":8,"manpower":0,"turns":3,"effect":"+1 army by rail a turn","unlocks":[]},{"id":"rail","name":"Rail repair","group":"improvement","funds":6,"manpower":0,"turns":3,"effect":"+1 station level"},{"id":"port","name":"Port","group":"improvement","funds":8,"manpower":0,"turns":3,"effect":"+1 port level"},{"id":"new-rail","name":"New rail line","group":"link","funds":24,"manpower":0,"turns":8,"effect":"one link"},{"id":"rail-upgrade","name":"Rail upgrade","group":"link","funds":10,"manpower":0,"turns":4,"effect":"one link"},{"id":"road-upgrade","name":"Road upgrade","group":"link","funds":6,"manpower":0,"turns":2,"effect":"one link"}],"gameLength":{"ownerMax":10,"medianLow":12,"medianHigh":15},"upkeepPresets":[{"id":"none","name":"No upkeep (today)","kind":"none","rate":0,"free":0},{"id":"flat","name":"Flat: 1 per ground unit","kind":"flat","rate":1,"free":0},{"id":"men","name":"By men actually under arms","kind":"men","rate":0.5,"free":0},{"id":"share","name":"By full size of the unit type, first 6 free (recommended)","kind":"share","rate":0.5,"free":6},{"id":"split","name":"Manpower by size, Funds for machines","kind":"split","rate":0.5,"free":6,"machineFunds":0.5},{"id":"softcap","name":"Supply limit: 3 units per whole territory, then 1 each","kind":"softcap","rate":1,"perTerritory":3,"free":0}],"proposals":{"measured":{"name":"Moderate","note":"Numbers only, plus one upkeep rule. Recommended.","upkeep":{"share":0.5,"free":6,"machineFunds":0,"lossCap":0.1,"floor":0.5},"barricades":2,"popularResistance":0,"alarm":{"critical":3,"perStep":1.5,"steps":3},"units":{"infantry-regiment":{"funds":5},"militia-column":{"funds":3,"attack":2},"colonial-veterans":{"funds":7},"security-forces":{"funds":4,"manpower":1,"establishment":1000,"train":1},"artillery-group":{"funds":7,"train":2},"cavalry-regiment":{"funds":4},"tank-company":{"funds":10,"attack":5,"defence":3,"train":3},"truck-column":{"funds":4},"anti-air-battery":{"funds":5},"recon-flight":{"funds":5,"train":2},"fighter-squadron":{"funds":8},"bomber-squadron":{"funds":10}},"projects":{"farms":{"funds":3,"turns":2},"mines":{"funds":5,"turns":2},"industry":{"funds":6,"turns":2},"barracks":{"funds":5},"factory":{"funds":10,"manpower":4,"turns":3},"depot":{"funds":6},"hospital":{"funds":5},"airfield":{"funds":6,"turns":2},"paved-airfield":{"funds":4},"rail-yard":{"funds":6,"turns":2},"port":{"funds":6,"turns":2},"fortifications":{"funds":3,"manpower":2,"effect":"2 off the attacker's roll"},"rail":{"funds":3,"manpower":1,"turns":2},"road-upgrade":{"funds":3,"manpower":2},"rail-upgrade":{"funds":5,"manpower":3,"turns":3},"new-rail":{"funds":10,"manpower":6,"turns":5}}},"bold":{"name":"Bold","note":"Moderate, with double the upkeep rate and a Funds upkeep for machines, so Manpower runs short for everyone.","upkeep":{"share":1,"free":12,"machineFunds":0.5,"lossCap":0.1,"floor":0.5},"barricades":2,"popularResistance":0,"alarm":{"critical":3,"perStep":1.5,"steps":3},"units":{"infantry-regiment":{"funds":5},"militia-column":{"funds":3,"attack":2},"colonial-veterans":{"funds":7},"security-forces":{"funds":4,"manpower":1,"establishment":1000,"train":1},"artillery-group":{"funds":6,"train":2},"cavalry-regiment":{"funds":4},"tank-company":{"funds":10,"attack":5,"defence":3,"train":3},"truck-column":{"funds":4},"anti-air-battery":{"funds":5},"recon-flight":{"funds":5,"train":2},"fighter-squadron":{"funds":8,"train":2},"bomber-squadron":{"funds":10,"train":2}},"projects":{"farms":{"funds":3,"turns":2},"mines":{"funds":5,"turns":2},"industry":{"funds":6,"turns":2},"barracks":{"funds":5,"turns":1},"factory":{"funds":10,"manpower":4,"turns":3},"depot":{"funds":6},"hospital":{"funds":5},"airfield":{"funds":6,"turns":2},"paved-airfield":{"funds":4},"rail-yard":{"funds":6,"turns":2},"port":{"funds":6,"turns":2},"fortifications":{"funds":3,"manpower":2,"effect":"2 off the attacker's roll"},"rail":{"funds":3,"manpower":1,"turns":2},"road-upgrade":{"funds":3,"manpower":2},"rail-upgrade":{"funds":5,"manpower":3,"turns":3},"new-rail":{"funds":10,"manpower":6,"turns":5}}}}};
+window.M3W_AUDIO = [{"id":"order-a","label":"Typewriter burst","action":"Create order","file":"order-a.mp3","seconds":0.55,"source":"WWS Typewriter (1940 Erika 5)","author":"Work With Sounds / Konrad Gutkowski","licence":"CC BY 4.0","licenceUrl":"https://creativecommons.org/licenses/by/4.0/","url":"https://commons.wikimedia.org/wiki/File:WWS_Typewriter.ogg","checked":"2026-11-22","modified":"trimmed, mixed to mono, faded, levelled"},{"id":"order-b","label":"Marker set down","action":"Create order (quieter option)","file":"order-b.mp3","seconds":0.24,"source":"Interface Sounds, drop_003","author":"Kenney (kenney.nl)","licence":"CC0","licenceUrl":"https://creativecommons.org/publicdomain/zero/1.0/","url":"https://opengameart.org/content/interface-sounds","checked":"2026-11-22","modified":"trimmed, mixed to mono, faded, levelled"},{"id":"recruit-a","label":"Snare drum roll","action":"Recruit","file":"recruit-a.mp3","seconds":0.95,"source":"Military Snaredrum","author":"aUREa","licence":"CC0","licenceUrl":"https://creativecommons.org/publicdomain/zero/1.0/","url":"https://freesound.org/people/aUREa/sounds/475246/","checked":"2026-11-22","modified":"trimmed, mixed to mono, faded, levelled"},{"id":"recruit-b","label":"Rubber stamp","action":"Recruit (quieter option)","file":"recruit-b.mp3","seconds":0.5,"source":"traditional stamp.wav","author":"I.fekry","licence":"CC0","licenceUrl":"https://creativecommons.org/publicdomain/zero/1.0/","url":"https://freesound.org/people/I.fekry/sounds/470710/","checked":"2026-11-22","modified":"trimmed, mixed to mono, faded, levelled"},{"id":"build-a","label":"Two anvil strikes","action":"Build","file":"build-a.mp3","seconds":1.15,"source":"Anvil Hit 2","author":"michorvath","licence":"CC0","licenceUrl":"https://creativecommons.org/publicdomain/zero/1.0/","url":"https://freesound.org/people/michorvath/sounds/270588/","checked":"2026-11-22","modified":"trimmed, mixed to mono, faded, levelled"},{"id":"air-a","label":"Fighter flyover","action":"Air mission","file":"air-a.mp3","seconds":2.4,"source":"WW2AirplaneFlyover.wav","author":"daveincamas","licence":"CC BY 4.0","licenceUrl":"https://creativecommons.org/licenses/by/4.0/","url":"https://freesound.org/people/daveincamas/sounds/43807/","checked":"2026-11-22","modified":"trimmed, mixed to mono, faded, levelled"},{"id":"air-b","label":"Twin-propeller flyover","action":"Air mission (alternative)","file":"air-b.mp3","seconds":2.2,"source":"propeller plane.wav","author":"Blahoslav","licence":"CC0","licenceUrl":"https://creativecommons.org/publicdomain/zero/1.0/","url":"https://freesound.org/people/Blahoslav/sounds/276492/","checked":"2026-11-22","modified":"trimmed, mixed to mono, faded, levelled"},{"id":"rail-a","label":"Whistle, then train on rails","action":"Rail move","file":"rail-a.mp3","seconds":2.7,"source":"WWS SteamWhistle (1918 Prussian P 8) + Steam train passing by.wav","author":"Work With Sounds / Konrad Gutkowski; Stek59","licence":"CC BY 4.0 (whistle) + CC0 (train)","licenceUrl":"https://creativecommons.org/licenses/by/4.0/","url":"https://commons.wikimedia.org/wiki/File:WWS_SteamWhistle.ogg","checked":"2026-11-22","modified":"trimmed, mixed to mono, faded, levelled","url2":"https://freesound.org/people/Stek59/sounds/578759/"},{"id":"truck-a","label":"Diesel pulls away","action":"Truck move","file":"truck-a.mp3","seconds":2.2,"source":"truck big diesel water tank start back up short beep pull away","author":"kyles","licence":"CC0","licenceUrl":"https://creativecommons.org/publicdomain/zero/1.0/","url":"https://freesound.org/people/kyles/sounds/406886/","checked":"2026-11-22","modified":"trimmed, mixed to mono, faded, levelled"},{"id":"march-a","label":"Squad marching","action":"Reinforce on foot","file":"march-a.mp3","seconds":2,"source":"squad march.wav","author":"martian","licence":"CC0","licenceUrl":"https://creativecommons.org/publicdomain/zero/1.0/","url":"https://freesound.org/people/martian/sounds/333907/","checked":"2026-11-22","modified":"trimmed, mixed to mono, faded, levelled"},{"id":"end-a","label":"Orchestral hit with horns","action":"End turn","file":"end-a.mp3","seconds":2,"source":"Cinematic Hit With Horns.wav","author":"DeVern","licence":"CC0","licenceUrl":"https://creativecommons.org/publicdomain/zero/1.0/","url":"https://freesound.org/people/DeVern/sounds/427803/","checked":"2026-11-22","modified":"trimmed, mixed to mono, faded, levelled"},{"id":"end-b","label":"Two drum strikes (made for this game)","action":"End turn (synthesised)","file":"end-b.mp3","seconds":2,"source":"Synthesised with ffmpeg","author":"Made for Spanish Diplomacy","licence":"No third-party material","licenceUrl":"","url":"","checked":"2026-11-22","modified":""},{"id":"battle-a","label":"Distant cannon","action":"Battle report opens","file":"battle-a.mp3","seconds":1.6,"source":"Cannon artillery - distant gunshots.wav","author":"Aegersum","licence":"CC BY 3.0","licenceUrl":"https://creativecommons.org/licenses/by/3.0/","url":"https://freesound.org/people/Aegersum/sounds/345844/","checked":"2026-11-22","modified":"trimmed, mixed to mono, faded, levelled"},{"id":"blocked-a","label":"Soft double tick","action":"Order refused","file":"blocked-a.mp3","seconds":0.15,"source":"Interface Sounds, error_004","author":"Kenney (kenney.nl)","licence":"CC0","licenceUrl":"https://creativecommons.org/publicdomain/zero/1.0/","url":"https://opengameart.org/content/interface-sounds","checked":"2026-11-22","modified":"trimmed, mixed to mono, faded, levelled"}];
+/* Milestone 3 Rev 3, economy widgets. Plain browser JS, no libraries. Numbers come from window.M3W_DATA (tools/econ-data.json). */
+(function () {
+  "use strict";
+  var W = (window.M3W = window.M3W || {});
+
+  /* ================= model: pure arithmetic, no battles ================= */
+  var M = (window.M3W_ECON = {});
+  var NEGATIVE = { "cannot-attack-alone": true };
+
+  function clone(x) { return JSON.parse(JSON.stringify(x)); }
+  function data() { return window.M3W_DATA; }
+  M.faction = function (id) { return data().factions.filter(function (f) { return f.id === id; })[0]; };
+
+  /** The rules of a package: units, projects, upkeep and roll modifiers, today's with the package's changes on top. */
+  M.rules = function (pkg) {
+    var D = data(), p = D.proposals[pkg] || null;
+    var units = {}, projects = {};
+    D.units.forEach(function (u) { units[u.id] = Object.assign(clone(u), p && p.units[u.id] ? p.units[u.id] : {}); });
+    D.projects.forEach(function (x) { projects[x.id] = Object.assign(clone(x), p && p.projects[x.id] ? p.projects[x.id] : {}); });
+    return {
+      id: p ? pkg : "today", name: p ? p.name : "Today", units: units, projects: projects,
+      upkeep: p ? { kind: "share", rate: p.upkeep.share, free: p.upkeep.free, machineFunds: p.upkeep.machineFunds } : { kind: "none", rate: 0, free: 0, machineFunds: 0 },
+      popularResistance: p ? p.popularResistance : D.d20.popularResistance,
+      barricades: p ? p.barricades : D.d20.barricades
+    };
+  };
+
+  M.isMachine = function (u) { return !u.foot; };
+
+  /** One full-strength unit's Manpower and Funds upkeep a turn. "men" reads the unit's actual men (opening columns). */
+  M.unitUpkeep = function (u, up, men) {
+    var m = 0;
+    if (u.upkeepM !== undefined) return { manpower: u.upkeepM, funds: M.isMachine(u) ? (up.machineFunds || 0) : 0 };
+    if (up.kind === "flat") m = u.kind === "ground" ? up.rate : 0;
+    else if (up.kind === "share" || up.kind === "split") m = up.rate * u.establishment / 1000;
+    else if (up.kind === "men") m = up.rate * (men === undefined ? u.establishment : men) / 1000;
+    return { manpower: m, funds: M.isMachine(u) ? (up.machineFunds || 0) : 0 };
+  };
+
+  /** A whole army's upkeep. counts: {unitId: n}. openingMen: {unitId: men} adds actual men for the "men" model. */
+  M.armyUpkeep = function (rules, counts, faction, fill) {
+    var up = rules.upkeep, m = 0, f = 0, ground = 0;
+    fill = fill === undefined ? 1 : fill;
+    Object.keys(counts).forEach(function (id) {
+      var u = rules.units[id], n = counts[id];
+      var open = faction.army[id];
+      if (u.kind === "ground") ground += n;
+      if (up.kind === "men" && open) {
+        var early = Math.min(n, open.count);
+        m += up.rate * (open.men * early / open.count + (n - early) * u.establishment) / 1000;
+      } else m += n * M.unitUpkeep(u, up).manpower;
+      f += n * M.unitUpkeep(u, up).funds;
+    });
+    if (up.kind === "softcap") m = Math.max(0, ground - up.perTerritory * faction.territories.length) * up.rate;
+    return { manpower: Math.max(0, m * fill - (up.free || 0)), funds: f, gross: m * fill };
+  };
+
+  M.openingCounts = function (faction) {
+    var c = {};
+    Object.keys(faction.army).forEach(function (id) { c[id] = faction.army[id].count; });
+    return c;
+  };
+  M.value = function (rules, counts) {
+    var a = 0, d = 0, n = 0;
+    Object.keys(counts).forEach(function (id) { var u = rules.units[id]; if (u.kind !== "ground") return; a += counts[id] * u.attack; d += counts[id] * u.defence; n += counts[id]; });
+    return { attack: a, defence: d, units: n };
+  };
+
+  /** Income a turn, with the rules' industry yield on every level already standing. */
+  M.income = function (rules, faction, settled) {
+    var base = settled ? faction.incomeSettled : faction.income;
+    var levels = settled ? faction.industryLevelsSettled : faction.industryLevels;
+    return { funds: base.funds + levels * ((rules.projects.industry["yield"] || 1) - 1), manpower: base.manpower };
+  };
+
+  /** Engine timing: a build ordered on turn t with n turns pays first at the end of turn t+n-1. */
+  M.payback = function (order, turns, cost, yields) {
+    var first = order + turns - 1;
+    return { first: first, even: first + Math.ceil(cost / yields) - 1, netBy: function (T) { return Math.max(0, T - first + 1) * yields - cost; } };
+  };
+
+  /**
+   * A deterministic projection of one side that never fights. strategy: "militia" | "infantry" | "mix" | "none".
+   * A mix raises militia up to opts.cap, then spends what is left on infantry. opts: turns, settleFrom (the turn from
+   * which contested ground pays its majority holder; 0 = never), eco (share of opening Funds put into mines and
+   * industry on turn 1), prudent (default true: never raises an army its income and stock cannot feed to the end).
+   */
+  M.project = function (rules, factionId, strategy, opts) {
+    var f = M.faction(factionId), turns = opts.turns || 12, rows = [], D = data();
+    var F = f.stock.funds, P = f.stock.manpower, counts = M.openingCounts(f), raised = {}, training = [], upgrades = [];
+    var fill = 1, prudent = opts.prudent !== false, t, k;
+    var mil = rules.units["militia-column"], inf = rules.units["infantry-regiment"];
+    var cap = strategy === "militia" ? 999 : strategy === "mix" ? (opts.cap === undefined ? 10 : opts.cap) : 0;
+    var incomeAt = function (x) { return M.income(rules, f, !!opts.settleFrom && x >= opts.settleFrom); };
+    for (t = 1; t <= turns; t += 1) {
+      var inc = incomeAt(t), ahead = 0, bought = { m: 0, i: 0, up: 0 };
+      for (k = t; k <= turns; k += 1) ahead += incomeAt(k).manpower;
+      if (t === 1 && opts.eco) {
+        var purse = f.stock.funds * opts.eco;
+        ["mines", "industry"].forEach(function (id) {
+          var pr = rules.projects[id], sites = f.upgrades[id];
+          while (sites > 0 && purse >= pr.funds) { purse -= pr.funds; F -= pr.funds; sites -= 1; bought.up += 1; upgrades.push({ from: t + pr.turns - 1, y: pr["yield"] || 1 }); }
+        });
+      }
+      if (strategy !== "none") {
+        var later = Object.assign({}, counts);
+        training.forEach(function (x) { later[x.id] = (later[x.id] || 0) + 1; });
+        var buy = function (u) {
+          if (bought.m + bought.i >= f.slots || F < u.funds || P < u.manpower) return false;
+          later[u.id] = (later[u.id] || 0) + 1;
+          if (prudent) {
+            var bill = M.armyUpkeep(rules, later, f, fill).manpower * (turns - t + 1);
+            if (bill > P - u.manpower + ahead) { later[u.id] -= 1; return false; }
+          }
+          F -= u.funds; P -= u.manpower;
+          training.push({ id: u.id, at: t + u.train - 1 });
+          return true;
+        };
+        var pendingMil = training.filter(function (x) { return x.id === mil.id; }).length;
+        while ((raised[mil.id] || 0) + pendingMil + bought.m < cap && buy(mil)) bought.m += 1;
+        if (strategy !== "militia") while (buy(inf)) bought.i += 1;
+      }
+      training = training.filter(function (x) {
+        if (x.at > t) return true;
+        counts[x.id] = (counts[x.id] || 0) + 1; raised[x.id] = (raised[x.id] || 0) + 1;
+        return false;
+      });
+      var extra = upgrades.reduce(function (s, u) { return s + (t >= u.from ? u.y : 0); }, 0);
+      var up = M.armyUpkeep(rules, counts, f, fill), short = 0;
+      F += inc.funds + extra - up.funds;
+      P += inc.manpower - up.manpower;
+      if (P < -1e-9) {
+        short = -P; P = 0;
+        var men = 0;
+        Object.keys(counts).forEach(function (id) { men += counts[id] * rules.units[id].establishment / 1000; });
+        fill = Math.max(0.5, fill - Math.min(0.1, short / Math.max(1, men)));
+      }
+      var fShort = F < -1e-9; if (F < 0) F = 0;
+      var v = M.value(rules, counts);
+      rows.push({ turn: t, funds: F, manpower: P, income: { funds: inc.funds + extra, manpower: inc.manpower }, upkeep: up, short: short, fundsShort: fShort, counts: Object.assign({}, counts), raised: Object.assign({}, raised), value: { attack: v.attack * fill, defence: v.defence * fill, units: v.units }, fill: fill, bought: bought });
+    }
+    return rows;
+  };
+
+  /** The militia cap whose mix has the most attack plus defence on the last turn. */
+  M.bestMix = function (rules, factionId, opts) {
+    var best = null;
+    for (var cap = 0; cap <= 90; cap += 3) {
+      var rows = M.project(rules, factionId, "mix", Object.assign({}, opts, { cap: cap }));
+      var v = rows[rows.length - 1].value, score = v.attack + v.defence;
+      if (!best || score > best.score + 1e-9) best = { cap: cap, score: score, rows: rows };
+    }
+    return best;
+  };
+
+  /** Unit types another type beats or matches on price, upkeep, training, combat and abilities, with no harder requirement. */
+  M.dominated = function (rules, up) {
+    var list = Object.keys(rules.units).map(function (k) { return rules.units[k]; });
+    var out = [];
+    list.forEach(function (a) {
+      list.forEach(function (b) {
+        if (a === b || a.kind !== b.kind) return;
+        var ua = M.unitUpkeep(a, up || rules.upkeep), ub = M.unitUpkeep(b, up || rules.upkeep);
+        var skills = a.abilities.every(function (x) { return NEGATIVE[x] || b.abilities.indexOf(x) >= 0; }) && !(b.abilities.some(function (x) { return NEGATIVE[x]; }) && !a.abilities.some(function (x) { return NEGATIVE[x]; }));
+        var reach = b.requires.every(function (x) { return a.requires.indexOf(x) >= 0; }) && (!b.factionIds || (a.factionIds && a.factionIds.every(function (x) { return b.factionIds.indexOf(x) >= 0; })));
+        if (!skills || !reach) return;
+        var pairs = [[b.funds, a.funds], [b.manpower, a.manpower], [b.train, a.train], [ub.manpower, ua.manpower], [ub.funds, ua.funds], [-b.attack, -a.attack], [-b.defence, -a.defence]];
+        if (pairs.every(function (p) { return p[0] <= p[1]; }) && pairs.some(function (p) { return p[0] < p[1]; })) out.push({ unit: a, by: b });
+      });
+    });
+    return out;
+  };
+
+  /** The d20 table: take and gain chances for an odds column and a roll modifier. */
+  M.odds = function (column, modifier) {
+    var D = data().d20, take = 0, gain = 0;
+    for (var die = 1; die <= 20; die += 1) {
+      var g = D.grades[D.table[column][Math.min(20, Math.max(0, die + modifier))]];
+      if (g.take) take += 0.05; if (g.gain) gain += 0.05;
+    }
+    return { take: take, gain: gain };
+  };
+  /* ---------------- tenets: each computed from the data ---------------- */
+  var FACTIONS = ["republic", "north", "south"];
+  function pct(x) { return Math.round(x * 100) + "%"; }
+  function r1(x) { return Math.round(x * 10) / 10; }
+  M.OPTS = { turns: 10, settleFrom: 3 };
+  M.added = function (rules, id, rows) {
+    var v = rows[rows.length - 1].value, o = M.value(rules, M.openingCounts(M.faction(id)));
+    return { attack: v.attack - o.attack, defence: v.defence - o.defence };
+  };
+  M.tenets = function (rules) {
+    var D = data(), out = [], mines = rules.projects.mines, ind = rules.projects.industry;
+    var add = function (id, name, target, shown, ok) { out.push({ id: id, name: name, target: target, shown: shown, ok: ok }); };
+    var even = [mines, ind].map(function (p) { return M.payback(1, p.turns, p.funds, p["yield"]).even; });
+    add("payback", "A build started on turn 1 pays back by turn 7", "7 or sooner", "Mines turn " + even[0] + ", Industry turn " + even[1], Math.max.apply(null, even) <= 7);
+    var late = [mines, ind].map(function (p) { return M.payback(3, p.turns, p.funds, p["yield"]).netBy(10); });
+    add("late", "A build started on turn 3 still profits in a 10-turn game", "above 0 Funds by turn 10", "Mines " + signed(late[0]) + ", Industry " + signed(late[1]), Math.min.apply(null, late) > 0);
+    // Economy opening against an army opening, the Republic, infantry with what is left.
+    var army = M.project(rules, "republic", "infantry", M.OPTS), eco = M.project(rules, "republic", "infantry", Object.assign({ eco: 0.5 }, M.OPTS));
+    var sum = function (rows, t) { var v = rows[t - 1].value; return v.attack + v.defence; };
+    var lag = sum(eco, 5) / sum(army, 5) - 1, lead = sum(eco, 10) / sum(army, 10) - 1;
+    add("tempo", "An economy opening is behind at turn 5 and ahead by turn 10", "behind, then at least 2% ahead", "turn 5 " + signed(Math.round(lag * 100)) + "%, turn 10 " + signed(Math.round(lead * 100)) + "%", lag < 0 && lead >= 0.02);
+    var dom = M.dominated(rules);
+    add("dominated", "No unit is strictly worse than another", "none", dom.length ? dom.map(function (x) { return x.unit.name + " (worse than " + x.by.name + ")"; }).join(", ") : "none", dom.length === 0);
+    var champ = M.champion(rules);
+    add("champion", "No foot unit leads on more than two of five measures", "2 or fewer", champ.name + " leads " + champ.wins + " (" + champ.on.join(", ") + ")", champ.wins <= 2);
+    var ratios = FACTIONS.map(function (id) { return M.added(rules, id, M.project(rules, id, "militia", M.OPTS)).attack / M.added(rules, id, M.project(rules, id, "infantry", M.OPTS)).attack; });
+    add("militia", "Militia alone adds less attack than regulars on the same income", "95% or less for every side", FACTIONS.map(function (id, i) { return short(id) + " " + pct(ratios[i]); }).join(", "), Math.max.apply(null, ratios) <= 0.95);
+    var mixes = FACTIONS.map(function (id) { return M.bestMix(rules, id, M.OPTS); });
+    var bite = mixes.map(function (m) { var last = m.rows[m.rows.length - 1]; return last.upkeep.manpower / last.income.manpower; });
+    add("bite", "By turn 10 a full-size army eats at least 30% of its Manpower income", "30% to 100% for every side", FACTIONS.map(function (id, i) { return short(id) + " " + pct(bite[i]); }).join(", "), Math.min.apply(null, bite) >= 0.3 && Math.max.apply(null, bite) <= 1);
+    var start = FACTIONS.map(function (id) { var f = M.faction(id), u = M.armyUpkeep(rules, M.openingCounts(f), f), rows = M.project(rules, id, "none", { turns: 4 }); return { share: u.manpower / Math.max(1, f.income.manpower), short: rows.some(function (x) { return x.short > 0; }) }; });
+    add("broke", "Nobody starts broke", "opening upkeep under 40% of Manpower income, no shortage in 4 idle turns", rules.upkeep.kind === "none" ? "no upkeep to pay" : FACTIONS.map(function (id, i) { return short(id) + " " + pct(start[i].share) + (start[i].short ? " and runs short" : ""); }).join(", "), start.every(function (x) { return x.share <= 0.4 && !x.short; }));
+    var p = D.proposals[rules.id];
+    add("slope", "A shortage costs men gradually and can be undone", "at most 10% of strength a turn, never below half", p ? "cap " + pct(p.upkeep.lossCap) + " a turn, floor " + pct(p.upkeep.floor) : "no upkeep, so no shortage", p ? p.upkeep.lossCap <= 0.1 && p.upkeep.floor >= 0.5 : true);
+    var used = FACTIONS.map(function (id) { var rows = M.project(rules, id, "infantry", M.OPTS), f = M.faction(id), total = f.stock.manpower; rows.forEach(function (x) { total += x.income.manpower; }); return 1 - rows[rows.length - 1].manpower / Math.max(1, total); });
+    add("scarce", "Manpower is scarce enough to plan around", "a regular army uses at least 40% of it", FACTIONS.map(function (id, i) { return short(id) + " " + pct(used[i]); }).join(", "), Math.min.apply(null, used) >= 0.4);
+    add("equal", "Sides differ by armies and land, not by a permanent die bonus", "0 off the enemy roll for one side only", rules.popularResistance ? "Republic " + rules.popularResistance + " (one odds column)" : "none", rules.popularResistance === 0);
+    var al = p ? p.alarm : D.alarm, gap1 = 1 + Math.max(0, al.steps - 1) * al.perStep;
+    add("leader", "The side one step from winning draws the fire", "attacking it is valued at least as much as guarding own ground (x" + (1 + al.critical) + ")", "x" + gap1, gap1 >= 1 + al.critical);
+    return out;
+  };
+  function signed(n) { return (n > 0 ? "+" : n < 0 ? "\u2212" : "") + Math.abs(n); }
+  function short(id) { return { republic: "Republic", north: "North", south: "South" }[id]; }
+  M.signed = signed;
+
+  /** Foot units measured on five axes; which type leads the most (ties share the lead). */
+  M.champion = function (rules) {
+    var up = rules.upkeep;
+    var foot = Object.keys(rules.units).map(function (k) { return rules.units[k]; }).filter(function (u) { return u.kind === "ground" && u.foot; });
+    var axes = {
+      "attack per Fund": function (u) { return u.attack / u.funds; },
+      "defence per Fund": function (u) { return u.defence / u.funds; },
+      "attack per Manpower over 10 turns": function (u) { return u.attack / (u.manpower + 10 * M.unitUpkeep(u, up).manpower); },
+      "defence per Manpower over 10 turns": function (u) { return u.defence / (u.manpower + 10 * M.unitUpkeep(u, up).manpower); },
+      "training speed": function (u) { return 1 / u.train; }
+    };
+    var wins = {};
+    Object.keys(axes).forEach(function (k) {
+      var top = Math.max.apply(null, foot.map(axes[k]));
+      var leaders = foot.filter(function (u) { return axes[k](u) >= top - 1e-9; });
+      leaders.forEach(function (u) { (wins[u.id] = wins[u.id] || []).push(k); });
+    });
+    var best = Object.keys(wins).sort(function (a, b) { return wins[b].length - wins[a].length; })[0];
+    return { name: rules.units[best].name, wins: wins[best].length, on: wins[best] };
+  };
+  /* ================= shared UI helpers ================= */
+  var uid = 0;
+  function el(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined && text !== null) n.textContent = String(text); return n; }
+  function put(parent) { for (var i = 1; i < arguments.length; i += 1) parent.appendChild(arguments[i]); return parent; }
+  function field(text, control) { var l = el("label"); var s = el("span", "w-label", text); uid += 1; control.id = control.id || "econ-" + uid; l.htmlFor = control.id; return put(l, s, control); }
+  function number(value, min, max, step, onChange) {
+    var n = el("input"); n.type = "number"; n.value = value; n.min = min; n.max = max; n.step = step; n.style.width = "5.2em";
+    n.addEventListener("input", function () { var v = parseFloat(n.value); if (!isNaN(v)) onChange(Math.min(max, Math.max(min, v))); });
+    return n;
+  }
+  function choose(options, value, onChange) {
+    var s = el("select");
+    options.forEach(function (o) { var x = el("option", null, o[1]); x.value = o[0]; s.appendChild(x); });
+    s.value = value;
+    s.addEventListener("change", function () { onChange(s.value); });
+    return s;
+  }
+  function table(head, rows, caption) {
+    var wrap = el("div", "w-scroll"), t = el("table", "w-table"), tr = el("tr"), thead = el("thead"), body = el("tbody");
+    wrap.tabIndex = 0; wrap.setAttribute("role", "region"); wrap.setAttribute("aria-label", caption || "Table");
+    if (caption) { var c = el("caption", "w-note", caption); c.style.textAlign = "left"; c.style.padding = "0 0 4px"; t.appendChild(c); }
+    t.style.overflowWrap = "normal"; t.style.wordBreak = "normal";
+    head.forEach(function (h) { var th = el("th", null, h); th.scope = "col"; tr.appendChild(th); });
+    thead.appendChild(tr); t.appendChild(thead);
+    rows.forEach(function (r) {
+      var row = el("tr");
+      r.forEach(function (cell, i) {
+        var td = el(i === 0 ? "th" : "td"); if (i === 0) { td.scope = "row"; td.style.background = "transparent"; }
+        if (cell && cell.nodeType) td.appendChild(cell); else td.textContent = String(cell);
+        if (i > 0) td.style.fontVariantNumeric = "tabular-nums";
+        row.appendChild(td);
+      });
+      body.appendChild(row);
+    });
+    t.appendChild(body); wrap.appendChild(t);
+    return wrap;
+  }
+  function badge(ok, text) { var b = el("strong", null, (ok ? "✓ " : "✗ ") + text); b.style.color = ok ? "var(--good)" : "var(--bad)"; return b; }
+  function svg(tag, attrs, text) { var n = document.createElementNS("http://www.w3.org/2000/svg", tag); Object.keys(attrs || {}).forEach(function (k) { n.setAttribute(k, attrs[k]); }); if (text !== undefined) n.textContent = text; return n; }
+  /** Lines over turns 1..n, on one axis, direct-labelled, with a focusable readout per turn. series: {name, color, dash, values}. */
+  function lines(root, series, opts) {
+    var w = Math.max(260, Math.min(720, (root.clientWidth || 600) - 34)), h = 210, left = 40, right = 92, top = 10, bottom = 30;
+    var n = series[0].values.length, all = [0];
+    series.forEach(function (s) { all = all.concat(s.values); });
+    var lo = Math.min.apply(null, all), hi = Math.max.apply(null, all); if (hi === lo) hi = lo + 1;
+    var X = function (i) { return left + (n < 2 ? 0 : i * (w - left - right) / (n - 1)); };
+    var Y = function (v) { return top + (hi - v) * (h - top - bottom) / (hi - lo); };
+    var g = svg("svg", { viewBox: "0 0 " + w + " " + h, width: w, height: h, role: "img", "aria-label": opts.title });
+    [lo, (lo + hi) / 2, hi].concat(lo < 0 ? [0] : []).forEach(function (v) {
+      g.appendChild(svg("line", { x1: left, x2: w - right, y1: Y(v), y2: Y(v), stroke: "var(--line)", "stroke-width": v === 0 ? 1.5 : 1 }));
+      g.appendChild(svg("text", { x: left - 5, y: Y(v) + 4, "text-anchor": "end", "font-size": 11, fill: "var(--ink-soft)" }, String(Math.round(v))));
+    });
+    for (var i = 0; i < n; i += 1) if (i === 0 || i === n - 1 || (i + 1) % Math.ceil(n / 6) === 0) g.appendChild(svg("text", { x: X(i), y: h - 12, "text-anchor": "middle", "font-size": 11, fill: "var(--ink-soft)" }, (i === 0 ? "Turn " : "") + (i + 1)));
+    var ends = series.map(function (s, k) { return { k: k, y: Y(s.values[n - 1]) }; }).sort(function (a, b) { return a.y - b.y; });
+    for (i = 1; i < ends.length; i += 1) if (ends[i].y - ends[i - 1].y < 13) ends[i].y = ends[i - 1].y + 13;
+    series.forEach(function (s, k) {
+      g.appendChild(svg("polyline", { points: s.values.map(function (v, j) { return X(j) + "," + Y(v); }).join(" "), fill: "none", stroke: s.color, "stroke-width": 2, "stroke-dasharray": s.dash || "", "stroke-linejoin": "round" }));
+      s.values.forEach(function (v, j) { var dot = svg("circle", { cx: X(j), cy: Y(v), r: s.mark && s.mark[j] ? 5 : 3, fill: s.mark && s.mark[j] ? "var(--bad)" : s.color, stroke: "var(--surface)", "stroke-width": 1.5 }); dot.appendChild(svg("title", {}, s.name + ", turn " + (j + 1) + ": " + r1(v))); g.appendChild(dot); });
+      var end = ends.filter(function (e) { return e.k === k; })[0];
+      g.appendChild(svg("text", { x: X(n - 1) + 8, y: end.y + 4, "font-size": 11.5, fill: "var(--ink)" }, s.name));
+    });
+    var box = el("div"), read = el("div", "w-note"); read.setAttribute("aria-live", "polite");
+    var slider = el("input"); slider.type = "range"; slider.min = 1; slider.max = n; slider.value = opts.at || n;
+    var show = function () { var j = slider.value - 1; read.textContent = "Turn " + slider.value + ": " + series.map(function (s) { return s.name + " " + r1(s.values[j]); }).join("; ") + "."; };
+    slider.addEventListener("input", show); show();
+    var head = el("div", "w-label", opts.title);
+    return put(box, head, g, put(el("div", "w-row"), field("Read turn", slider)), read);
+  }
+  function live(root, build) {
+    var draw = function () { build(); }, width = root.clientWidth, timer;
+    draw();
+    window.addEventListener("resize", function () { clearTimeout(timer); timer = setTimeout(function () { if (root.clientWidth !== width) { width = root.clientWidth; draw(); } }, 150); });
+    return draw;
+  }
+  var COLOR = { republic: "var(--rep)", north: "var(--nic)", south: "var(--sic)" };
+  var PACKAGES = function () { return [["today", "Today"], ["measured", "Moderate (recommended)"], ["bold", "Bold"]]; };
+  function fixed(n, d) { return n === Infinity || isNaN(n) ? "–" : n.toFixed(d === undefined ? 2 : d); }
+
+  /* ================= upkeep-lab ================= */
+  W["upkeep-lab"] = function (root) {
+    if (!root) return;
+    root.textContent = "";
+    var D = data(), st = { pkg: "measured", preset: "share", rate: 0.5, free: 6, funds: 0, plan: "mix", settle: 3 };
+    var controls = el("div", "w-row"), out = el("div");
+    out.style.display = "grid"; out.style.gap = "10px"; out.style.minWidth = "0"; out.style.gridTemplateColumns = "minmax(0,1fr)";
+    var rateIn = number(st.rate, 0, 3, 0.05, function (v) { st.rate = v; draw(); });
+    var freeIn = number(st.free, 0, 30, 1, function (v) { st.free = v; draw(); });
+    var fundsIn = number(st.funds, 0, 3, 0.25, function (v) { st.funds = v; draw(); });
+    var preset = choose(D.upkeepPresets.map(function (p) { return [p.id, p.name]; }), st.preset, function (v) {
+      var p = D.upkeepPresets.filter(function (x) { return x.id === v; })[0];
+      st.preset = v; st.rate = p.rate; st.free = p.free || 0; st.funds = p.machineFunds || 0;
+      rateIn.value = st.rate; freeIn.value = st.free; fundsIn.value = st.funds; draw();
+    });
+    put(controls,
+      field("Upkeep model", preset), field("Rate", rateIn), field("Free Manpower a turn", freeIn), field("Funds per machine", fundsIn),
+      field("Prices", choose(PACKAGES(), st.pkg, function (v) { st.pkg = v; draw(); })),
+      field("Army", choose([["none", "Opening army, no recruits"], ["mix", "Best mix"], ["militia", "Militia only"], ["infantry", "Infantry only"]], st.plan, function (v) { st.plan = v; draw(); })),
+      field("Contested ground pays", choose([["0", "Nobody"], ["3", "Its main holder, from turn 3"], ["5", "Its main holder, from turn 5"]], String(st.settle), function (v) { st.settle = Number(v); draw(); })));
+    put(root, controls, out);
+    var draw = live(root, function () {
+      var rules = M.rules(st.pkg), p = D.upkeepPresets.filter(function (x) { return x.id === st.preset; })[0];
+      rules.upkeep = { kind: p.kind, rate: st.rate, free: st.free, machineFunds: st.funds, perTerritory: p.perTerritory || 0 };
+      var opts = { turns: 12, settleFrom: st.settle }, series = [], rows = [];
+      FACTIONS.forEach(function (id) {
+        var f = M.faction(id), run = st.plan === "mix" ? M.bestMix(rules, id, opts).rows : M.project(rules, id, st.plan, opts);
+        var open = M.armyUpkeep(rules, M.openingCounts(f), f), zero = run.filter(function (x) { return x.short > 0; })[0], a = run[5], b = run[9];
+        var eats = function (x) { return r1(x.upkeep.manpower) + " of " + r1(x.income.manpower) + (x.upkeep.funds ? ", " + r1(x.upkeep.funds) + " Funds" : ""); };
+        rows.push([short(id), f.stock.funds + " F, " + f.stock.manpower + " M", f.income.funds + " F, " + f.income.manpower + " M", r1(open.manpower) + " M" + (open.funds ? ", " + r1(open.funds) + " F" : ""), signed(r1(f.income.manpower - open.manpower)) + " M", a.value.units + " units, " + eats(a), b.value.units + " units, " + eats(b), zero ? badge(false, "turn " + zero.turn) : badge(true, "never")]);
+        series.push({ name: short(id), color: COLOR[id], dash: id === "north" ? "6 4" : id === "south" ? "2 4" : "", values: run.map(function (x) { return x.manpower; }), mark: run.map(function (x) { return x.short > 0; }) });
+      });
+      out.textContent = "";
+      put(out, table(["Side", "Opening stock", "Opening income", "Opening upkeep", "Opening net", "Turn 6: upkeep of income", "Turn 10: upkeep of income", "Stock runs out"], rows, "F is Funds, M is Manpower (1 is about 1,000 men)."),
+        lines(root, series, { title: "Manpower in stock at the end of each turn", at: 10 }),
+        el("p", "w-note", "Red dots are turns when the stock runs out. This is arithmetic, not a game: nobody fights, loses men, replenishes or takes ground, and contested ground pays at most its main holder. The unit count leaves out aircraft and generals."));
+    });
+  };
+
+  /* ================= unit-value ================= */
+  W["unit-value"] = function (root) {
+    if (!root) return;
+    root.textContent = "";
+    var pkg = "measured", rules, controls = el("div", "w-row"), out = el("div"), warn = el("div");
+    out.style.minWidth = "0"; warn.setAttribute("aria-live", "polite");
+    var metrics = {};
+    function reset() {
+      rules = M.rules(pkg);
+      Object.keys(rules.units).forEach(function (k) { rules.units[k].upkeepM = r1(M.unitUpkeep(rules.units[k], rules.upkeep).manpower * 100) / 100; });
+    }
+    function update() {
+      var list = Object.keys(rules.units).map(function (k) { return rules.units[k]; });
+      list.forEach(function (u) {
+        var ten = u.manpower + 10 * u.upkeepM;
+        var cells = [fixed(u.attack / u.funds), fixed(u.defence / u.funds), fixed((u.attack + u.defence) / ten), fixed((u.attack + u.defence) / u.train, 1)];
+        cells.forEach(function (c, i) { metrics[u.id][i].textContent = c; });
+      });
+      var dom = M.dominated(rules), champ = M.champion(rules);
+      warn.textContent = "";
+      if (!dom.length) put(warn, badge(true, "No unit is strictly worse than another."));
+      dom.forEach(function (x) { put(warn, put(el("div"), badge(false, x.unit.name + " is never worth buying: " + x.by.name + " matches or beats it on everything."))); });
+      put(warn, put(el("div"), badge(champ.wins <= 2, champ.name + " leads " + champ.wins + " of 5 foot-unit measures: " + champ.on.join(", ") + ".")));
+    }
+    function draw() {
+      out.textContent = ""; metrics = {};
+      var rows = Object.keys(rules.units).map(function (k) {
+        var u = rules.units[k];
+        var input = function (key, max, step) { var n = number(u[key], key === "train" || key === "funds" ? 1 : 0, max, step, function (v) { u[key] = v; update(); }); n.setAttribute("aria-label", u.name + " " + key); n.style.width = "4.4em"; return n; };
+        metrics[u.id] = [0, 1, 2, 3].map(function () { var s = el("span", "w-out", ""); s.style.whiteSpace = "nowrap"; return s; });
+        return [u.name, input("funds", 40, 1), input("manpower", 10, 1), input("upkeepM", 5, 0.05), input("attack", 12, 1), input("defence", 12, 1), input("train", 8, 1)].concat(metrics[u.id]);
+      });
+      put(out, table(["Unit", "Funds", "Man­power", "Upkeep a turn", "Attack", "Defence", "Turns to train", "Attack per Fund", "Defence per Fund", "Strength per Manpower, 10 turns", "Strength per training turn"], rows, "Edit any number. Upkeep is in Manpower (0.25 is about 250 men)."));
+      update();
+    }
+    put(controls, field("Start from", choose(PACKAGES(), pkg, function (v) { pkg = v; reset(); draw(); })));
+    put(root, controls, warn, out, el("p", "w-note", "Strength is attack plus defence. The figures leave out special effects: artillery and tanks add to the attack roll, trucks carry, aircraft fly missions, and cavalry marches further."));
+    reset(); draw();
+  };
+
+  /* ================= payback ================= */
+  W.payback = function (root) {
+    if (!root) return;
+    root.textContent = "";
+    var D = data(), st = { cost: 8, turns: 3, yield: 1, order: 1, length: 13 }, out = el("div"), presets = el("div", "w-row"), controls = el("div", "w-row"), ins = {};
+    out.style.minWidth = "0";
+    [["cost", "Cost", 1, 40, 1], ["turns", "Turns to build", 1, 10, 1], ["yield", "Pays a turn", 1, 5, 1], ["order", "Ordered on turn", 1, 20, 1], ["length", "Game length", 4, 30, 1]].forEach(function (c) {
+      ins[c[0]] = number(st[c[0]], c[2], c[3], c[4], function (v) { st[c[0]] = Math.round(v); draw(); });
+      put(controls, field(c[1], ins[c[0]]));
+    });
+    [["today", "today"], ["measured", "proposed"]].forEach(function (k) {
+      ["farms", "mines", "industry"].forEach(function (id) {
+        var p = M.rules(k[0]).projects[id], b = el("button", null, p.name + ", " + k[1]); b.type = "button";
+        b.addEventListener("click", function () { st.cost = p.funds; st.turns = p.turns; st.yield = p["yield"] || 1; ["cost", "turns", "yield"].forEach(function (x) { ins[x].value = st[x]; }); draw(); });
+        presets.appendChild(b);
+      });
+    });
+    put(root, presets, controls, out);
+    var draw = live(root, function () {
+      var p = M.payback(st.order, st.turns, st.cost, st.yield), values = [];
+      for (var t = 1; t <= st.length; t += 1) values.push(t < st.order ? 0 : p.netBy(t));
+      var net = values[st.length - 1];
+      out.textContent = "";
+      var grid = el("div", "w-grid");
+      [["First pays", "end of turn " + p.first], ["Pays back", "end of turn " + p.even], ["Ahead by the last turn", signed(net)]].forEach(function (x, i) {
+        var c = el("div", "w-card"); put(c, el("div", "w-label", x[0]));
+        put(c, i === 1 ? badge(p.even <= st.length / 2 + 0.5, x[1]) : i === 2 ? badge(net > 0, x[1]) : el("strong", null, x[1])); grid.appendChild(c);
+      });
+      put(out, grid, lines(root, [{ name: "Running total", color: "var(--accent)", values: values }], { title: "What it has paid, less its cost, by turn" }),
+        el("p", "w-note", "A tick on Pays back means by the middle of the game. Timing follows the engine: a build makes its first progress on the turn it is ordered, and pays on the turn it finishes. It assumes the site stays yours and uncontested. Farms cost Funds and pay Manpower, so read their result as how many Manpower the Funds bought."));
+    });
+  };
+
+  /* ================= militia-vs-mixed ================= */
+  W["militia-vs-mixed"] = function (root) {
+    if (!root) return;
+    root.textContent = "";
+    var st = { side: "republic", turns: 10, settle: 3, show: "attack", pkg: "today" }, out = el("div"), controls = el("div", "w-row");
+    out.style.display = "grid"; out.style.gap = "10px"; out.style.gridTemplateColumns = "minmax(0,1fr)"; out.style.minWidth = "0";
+    put(controls,
+      field("Side", choose([["republic", "Republic"], ["north", "North"], ["south", "South"]], st.side, function (v) { st.side = v; draw(); })),
+      field("Rules", choose(PACKAGES(), st.pkg, function (v) { st.pkg = v; draw(); })),
+      field("Turns", number(st.turns, 4, 16, 1, function (v) { st.turns = Math.round(v); draw(); })),
+      field("Chart", choose([["attack", "Attack"], ["defence", "Defence"]], st.show, function (v) { st.show = v; draw(); })),
+      field("Contested ground pays", choose([["0", "Nobody"], ["3", "Its main holder, from turn 3"]], "3", function (v) { st.settle = Number(v); draw(); })));
+    put(root, controls, out);
+    var draw = live(root, function () {
+      var rules = M.rules(st.pkg), opts = { turns: st.turns, settleFrom: st.settle };
+      var runs = [["Militia only", M.project(rules, st.side, "militia", opts), "var(--rep)", ""], ["Infantry only", M.project(rules, st.side, "infantry", opts), "var(--route)", "6 4"], ["Best mix", M.bestMix(rules, st.side, opts).rows, "var(--good)", "2 3"]];
+      var rows = runs.map(function (r) {
+        var x = r[1][r[1].length - 1];
+        return [r[0], (x.raised["militia-column"] || 0) + " + " + (x.raised["infantry-regiment"] || 0), Math.round(x.value.attack), Math.round(x.value.defence), r1(x.upkeep.manpower) + " of " + r1(x.income.manpower), Math.round(x.funds) + " F, " + Math.round(x.manpower) + " M"];
+      });
+      out.textContent = "";
+      put(out, table(["Plan", "Militia + infantry raised", "Attack", "Defence", "Upkeep of Manpower income", "Left unspent"], rows, "The whole army on turn " + st.turns + ", opening units included. Same income, same opening stock."),
+        lines(root, runs.map(function (r) { return { name: r[0], color: r[2], dash: r[3], values: r[1].map(function (x) { return x.value[st.show]; }) }; }), { title: (st.show === "attack" ? "Attack" : "Defence") + " on the board at the end of each turn" }),
+        el("p", "w-note", "Not modelled: battles, losses, Replenish, ground won or lost, where units stand, weather, artillery, tanks and aircraft. Each plan buys every unit it can afford and feed to the last turn. The best mix is the number of militia, in steps of 3, with the most attack plus defence at the end. A real game rewards having the army early, which this does not score."));
+    });
+  };
+
+  /* ================= tenets ================= */
+  W.tenets = function (root) {
+    if (!root) return;
+    root.textContent = "";
+    var sets = PACKAGES().map(function (p) { return { id: p[0], name: p[0] === "measured" ? "Moderate" : p[1], list: M.tenets(M.rules(p[0])) }; });
+    var score = el("div", "w-grid");
+    sets.forEach(function (s) {
+      var c = el("div", "w-card"), n = s.list.filter(function (t) { return t.ok; }).length;
+      put(c, el("div", "w-label", s.name), el("strong", null, n + " of " + s.list.length + " pass")); score.appendChild(c);
+    });
+    var rows = sets[0].list.map(function (t, i) {
+      var first = el("div"); first.style.minWidth = "8.5em"; first.style.fontWeight = "400"; put(first, el("strong", null, (i + 1) + ". " + t.name), el("div", "w-note", "Target: " + t.target));
+      return [first].concat(sets.map(function (s) { var d = el("div"); d.style.minWidth = "6.5em"; put(d, badge(s.list[i].ok, s.list[i].ok ? "Pass" : "Fail"), el("div", "w-note", s.list[i].shown)); return d; }));
+    });
+    put(root, score, table(["Tenet"].concat(sets.map(function (s) { return s.name; })), rows, "Each result is computed from the scenario numbers. Passing is not proof of balance: the Moderate package was tuned against these tests."),
+      el("p", "w-note", "Projections run 10 turns with no fighting; contested ground pays its main holder from turn 3. Today passes two upkeep tests only because it has no upkeep."));
+  };
+
+  /* ================= city-defence ================= */
+  W["city-defence"] = function (root) {
+    if (!root) return;
+    root.textContent = "";
+    var D = data().d20, st = { col: 2, works: 0, other: 0 }, controls = el("div", "w-row"), out = el("div");
+    out.style.minWidth = "0";
+    put(controls,
+      field("Attack to defence", choose([1, 2, 3, 4, 5, 6].map(function (c) { return [String(c), c + ":1"]; }), "2", function (v) { st.col = Number(v); draw(); })),
+      field("Dug-in turns", choose([0, 1, 2, 3].map(function (c) { return [String(c), String(c)]; }), "0", function (v) { st.works = Number(v); draw(); })),
+      field("Other modifiers", number(0, -10, 10, 1, function (v) { st.other = Math.round(v); draw(); })));
+    put(root, controls, out);
+    function draw() {
+      var base = st.other - Math.min(D.worksMax, st.works * D.worksPerTurn);
+      var cases = [["Republic today: Popular Resistance and barricades", base - D.popularResistance - D.barricades], ["Any other side today: barricades only", base - D.barricades], ["Republic without Popular Resistance", base - D.barricades], ["Every side, barricades worth 2", base - 2], ["No city bonus at all", base]];
+      out.textContent = "";
+      var rows = cases.map(function (c) {
+        var o = M.odds(st.col, c[1]);
+        var bar = el("div", "w-bar-track"), fill = el("div", "w-bar"); fill.style.width = Math.round(o.take * 100) + "%"; bar.style.minWidth = "80px"; bar.title = Math.round(o.take * 100) + "%"; bar.appendChild(fill);
+        return [c[0], signed(c[1]) || "0", Math.round(o.take * 100) + "%", bar, Math.round(o.gain * 100) + "%"];
+      });
+      put(out, table(["Defender in a city", "On the attacker’s die", "Attacker takes the territory", "", "Attacker gains some ground"], rows, "From the game’s own result table. Each 3 on the die is one odds column."));
+    }
+    draw();
+  };
+})();
+
+/* Sound widgets for the Revision 3 plan: "sfx-board" (listen to the candidates) and "mix-lab"
+   (three volume sliders, and ten quick orders with and without the sound rules).
+   Vanilla JS. Nothing plays until a button is pressed. Uses window.M3W_AUDIO when the page
+   embeds the manifest (an entry may carry `src`, for example a data URL); otherwise it reads
+   audio-candidates/manifest.json, and the lab falls back to made-up tones. */
+(function () {
+  "use strict";
+  window.M3W = window.M3W || {};
+
+  function el(tag, attrs, text) {
+    var node = document.createElement(tag);
+    Object.keys(attrs || {}).forEach(function (key) {
+      if (key === "class") node.className = attrs[key];
+      else if (key.slice(0, 2) === "on") node.addEventListener(key.slice(2), attrs[key]);
+      else node.setAttribute(key, attrs[key]);
+    });
+    if (text !== undefined) node.textContent = text;
+    return node;
+  }
+  function srcOf(entry) { return entry.src || "audio-candidates/" + entry.file; }
+  var manifestPromise;
+  function manifest() {
+    if (window.M3W_AUDIO) return Promise.resolve(window.M3W_AUDIO);
+    if (!manifestPromise) {
+      manifestPromise = fetch("audio-candidates/manifest.json").then(function (r) {
+        if (!r.ok) throw new Error("no manifest");
+        return r.json();
+      }).catch(function () { return []; });
+    }
+    return manifestPromise;
+  }
+  /* Every slider in the plan uses one curve: loudness feels roughly even, so half way is -12 dB. */
+  function curve(percent) { var v = percent / 100; return v * v; }
+  function db(gain) { return gain <= 0.00001 ? "silent" : (20 * Math.log10(gain)).toFixed(0) + " dB"; }
+  var uid = 0;
+  function slider(label, value, onInput) {
+    var id = "m3w-audio-" + (uid += 1);
+    var out = el("output", { class: "w-out", for: id }, value + "%");
+    var input = el("input", { id: id, type: "range", min: "0", max: "100", step: "5", value: String(value), style: "flex:1 1 140px;min-width:120px;accent-color:var(--accent)" });
+    input.addEventListener("input", function () { out.textContent = input.value + "%"; onInput(Number(input.value)); });
+    var row = el("div", { class: "w-row" });
+    row.append(el("label", { class: "w-label", for: id, style: "flex:0 0 72px" }, label), input, out);
+    return { input: input, row: row };
+  }
+
+  /* ---------------------------------------------------------------- sfx-board */
+  window.M3W["sfx-board"] = function (root) {
+    root.append(el("h4", {}, "Listen to the candidate sounds"));
+    root.append(el("p", { class: "w-note" }, "Each one is trimmed, mono and levelled to the same peak. Loudness in the game is set by the mix, not by these files. Nothing plays until you press a button."));
+    var volume = 0.36, playing;
+    var vol = slider("Volume", 60, function (v) { volume = curve(v); if (playing) playing.audio.volume = volume; });
+    root.append(vol.row);
+    var status = el("p", { class: "w-note", role: "status", "aria-live": "polite" }, "Loading the list.");
+    var list = el("div", { role: "list", style: "display:grid;gap:8px" });
+    root.append(list, status);
+
+    function stop() {
+      if (!playing) return;
+      playing.audio.pause();
+      playing.button.textContent = "Play";
+      playing.button.setAttribute("aria-label", "Play " + playing.label);
+      playing = undefined;
+    }
+    manifest().then(function (entries) {
+      status.textContent = entries.length ? entries.length + " sounds. One plays at a time." : "The audition files are not next to this page, so there is nothing to play here.";
+      entries.forEach(function (entry) {
+        var row = el("div", { role: "listitem", class: "w-row", style: "border-top:1px solid var(--line);padding-top:8px" });
+        var button = el("button", { type: "button", class: "btn secondary", "aria-label": "Play " + entry.label, style: "min-width:72px;min-height:40px" }, "Play");
+        button.addEventListener("click", function () {
+          var wasThis = playing && playing.button === button;
+          stop();
+          if (wasThis) return;
+          var audio = new Audio(srcOf(entry));
+          audio.volume = volume;
+          playing = { audio: audio, button: button, label: entry.label };
+          button.textContent = "Stop";
+          button.setAttribute("aria-label", "Stop " + entry.label);
+          audio.addEventListener("ended", function () { if (playing && playing.audio === audio) stop(); });
+          audio.play().then(function () { status.textContent = "Playing: " + entry.label; }, function () {
+            if (playing && playing.audio === audio) { stop(); status.textContent = "Could not load " + entry.label + "."; }
+          });
+        });
+        var text = el("div", { style: "flex:1 1 220px" });
+        text.append(el("div", { style: "font-weight:600" }, entry.action + ": " + entry.label));
+        var credit = el("div", { class: "w-note" }, entry.seconds.toFixed(1) + " s. " + entry.author + ", " + entry.licence + ". ");
+        if (entry.licenceUrl) credit.append(el("a", { href: entry.licenceUrl, target: "_blank", rel: "noreferrer" }, "Licence"), " ");
+        if (entry.modified) credit.append("Changed: " + entry.modified + ". ");
+        if (entry.url2) credit.append(el("a", { href: entry.url2, target: "_blank", rel: "noreferrer" }, "Second source"), " ");
+        if (entry.url) credit.append(el("a", { href: entry.url, target: "_blank", rel: "noreferrer" }, "Source"));
+        text.append(credit);
+        row.append(button, text);
+        list.append(row);
+      });
+    });
+  };
+
+  /* ------------------------------------------------------------------ mix-lab */
+  /* The sound table and the decision are plain data and a pure function, the shape the game would use. */
+  var SOUNDS = {
+    order:   { label: "Order tick", file: "order-a",   group: "tick", priority: 1, cooldown: 150,  gain: -14, length: 0.5 },
+    recruit: { label: "Recruit",    file: "recruit-a", group: "action", priority: 2, cooldown: 1200, gain: -10, length: 0.9 },
+    build:   { label: "Build",      file: "build-a",   group: "action", priority: 2, cooldown: 1200, gain: -10, length: 1.1 },
+    air:     { label: "Aircraft",   file: "air-a",     group: "action", priority: 3, cooldown: 4000, gain: -9,  length: 2.4 },
+    rail:    { label: "Train",      file: "rail-a",    group: "action", priority: 3, cooldown: 4000, gain: -12, length: 2.7 },
+    truck:   { label: "Truck",      file: "truck-a",   group: "action", priority: 3, cooldown: 4000, gain: -10, length: 2.2 },
+    march:   { label: "Marching",   file: "march-a",   group: "action", priority: 3, cooldown: 4000, gain: -6,  length: 2.0 },
+    endTurn: { label: "End turn",   file: "end-a",     group: "event", priority: 5, cooldown: 2000, gain: -6,  length: 2.0 }
+  };
+  var LIMITS = { coalesceMs: 120, total: 4, perGroup: { tick: 1, action: 2, event: 1 } };
+  function dbGain(value) { return Math.pow(10, value / 20); }
+
+  /* events: [{at, kind}] in ms. Returns one line per event: what plays, and why not. */
+  function decide(events, limited) {
+    var last = {}, seen = {}, voices = [];
+    return events.map(function (event) {
+      var sound = SOUNDS[event.kind];
+      if (!limited) return { at: event.at, kind: event.kind, plays: event.kind, gain: sound.gain, why: "" };
+      voices = voices.filter(function (v) { return v.ends > event.at; });
+      var lastAt = last[event.kind], seenAt = seen[event.kind];
+      seen[event.kind] = event.at;
+      if (seenAt !== undefined && event.at - seenAt < LIMITS.coalesceMs) return { at: event.at, kind: event.kind, plays: null, why: "joined with the one before" };
+      var kind = event.kind, why = "";
+      if (lastAt !== undefined && event.at - lastAt < sound.cooldown) { kind = "order"; why = "heard recently, so a tick instead"; }
+      var use = SOUNDS[kind];
+      if (kind !== event.kind && last.order !== undefined && event.at - last.order < SOUNDS.order.cooldown) return { at: event.at, kind: event.kind, plays: null, why: "heard recently" };
+      var same = voices.filter(function (v) { return v.group === use.group; });
+      if (same.length >= LIMITS.perGroup[use.group]) {
+        var weakest = same.slice().sort(function (a, b) { return a.priority - b.priority || a.ends - b.ends; })[0];
+        if (weakest.priority >= use.priority) {
+          if (use.group === "tick") return { at: event.at, kind: event.kind, plays: null, why: "a tick is already playing" };
+          return { at: event.at, kind: event.kind, plays: null, why: "two action sounds already playing" };
+        }
+        voices.splice(voices.indexOf(weakest), 1);
+        weakest.line.cutAt = event.at + 60; /* the quieter-ranked sound fades out in 60 ms */
+      }
+      if (voices.length >= LIMITS.total) return { at: event.at, kind: event.kind, plays: null, why: "four sounds already playing" };
+      last[kind] = event.at;
+      var line = { at: event.at, kind: event.kind, plays: kind, gain: use.gain, why: why };
+      voices.push({ group: use.group, line: line, priority: use.priority, ends: event.at + use.length * 1000 });
+      return line;
+    });
+  }
+  function lengthOf(line) { return line.cutAt === undefined ? SOUNDS[line.plays].length * 1000 : line.cutAt - line.at; }
+  function stats(lines) {
+    var played = lines.filter(function (l) { return l.plays; }), most = 0, peak = 0;
+    played.forEach(function (line) {
+      var now = played.filter(function (o) { return o.at <= line.at && o.at + lengthOf(o) > line.at; });
+      most = Math.max(most, now.length);
+      peak = Math.max(peak, now.reduce(function (sum, o) { return sum + dbGain(o.gain) * 0.7; }, 0));
+    });
+    return { played: played.length, most: most, peak: peak };
+  }
+  window.M3W_AUDIO_LAB = { decide: decide, stats: stats };
+
+  var BURSTS = {
+    group: { label: "Order ten armies at once (all by rail)", events: ["rail", "rail", "rail", "rail", "rail", "rail", "rail", "rail", "rail", "rail"], gap: 60 },
+    ticks: { label: "Give ten plain orders quickly", events: ["order", "order", "order", "order", "order", "order", "order", "order", "order", "order"], gap: 90 },
+    mixed: { label: "Ten mixed actions in three seconds", events: ["recruit", "recruit", "build", "march", "march", "rail", "truck", "air", "air", "order"], gap: 300 }
+  };
+
+  window.M3W["mix-lab"] = function (root) {
+    root.append(el("h4", {}, "Mix lab: three volumes, and ten orders at once"));
+    root.append(el("p", { class: "w-note" }, "Start with your device volume low. The version without limits is loud on purpose."));
+    var levels = { master: 80, music: 60, sfx: 80 };
+    var ctx, master, music, sfx, duck, pad, buffers = {}, live = [], timers = [];
+    var sum = el("p", { class: "w-note" });
+    function effective() {
+      var m = curve(levels.master);
+      sum.textContent = "Music plays at " + db(m * curve(levels.music)) + ", effects at " + db(m * curve(levels.sfx)) + ". Each slider works on its own; Master multiplies both.";
+      if (!ctx) return;
+      var t = ctx.currentTime;
+      master.gain.setTargetAtTime(m, t, 0.02);
+      music.gain.setTargetAtTime(curve(levels.music), t, 0.02);
+      sfx.gain.setTargetAtTime(curve(levels.sfx), t, 0.02);
+    }
+    [["Master", "master"], ["Music", "music"], ["Effects", "sfx"]].forEach(function (pair) {
+      root.append(slider(pair[0], levels[pair[1]], function (v) { levels[pair[1]] = v; effective(); }).row);
+    });
+    root.append(sum);
+
+    var pickId = "m3w-audio-" + (uid += 1);
+    var pick = el("select", { id: pickId, style: "max-width:100%;min-height:40px" });
+    Object.keys(BURSTS).forEach(function (key) { pick.append(el("option", { value: key }, BURSTS[key].label)); });
+    var pickRow = el("div", { class: "w-row" });
+    pickRow.append(el("label", { class: "w-label", for: pickId }, "Test"), pick);
+    var buttons = el("div", { class: "w-row" });
+    var bMusic = el("button", { type: "button", class: "btn secondary", "aria-pressed": "false" }, "Start music");
+    var bRaw = el("button", { type: "button", class: "btn secondary" }, "Trigger 10 orders: no limits");
+    var bLim = el("button", { type: "button", class: "btn" }, "Trigger 10 orders: with the rules");
+    var bEnd = el("button", { type: "button", class: "btn secondary" }, "End turn (ducks the music)");
+    buttons.append(bMusic, bRaw, bLim, bEnd);
+    var chart = el("div", {});
+    var result = el("p", { class: "w-note", role: "status", "aria-live": "polite" });
+    root.append(pickRow, buttons, chart, result);
+
+    function ready() {
+      if (!ctx) {
+        var AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) { result.textContent = "This browser has no Web Audio, so only the picture works."; return Promise.resolve(false); }
+        ctx = new AC();
+        master = ctx.createGain(); music = ctx.createGain(); sfx = ctx.createGain(); duck = ctx.createGain();
+        music.connect(duck); duck.connect(master); sfx.connect(master); master.connect(ctx.destination);
+        master.gain.value = 0; music.gain.value = curve(levels.music); sfx.gain.value = curve(levels.sfx);
+        effective();
+        manifest().then(function (entries) {
+          entries.forEach(function (entry) {
+            var src = srcOf(entry), data = /^data:[^,]*;base64,/.exec(src), bytes;
+            if (data) {
+              var bin = atob(src.slice(data[0].length)), array = new Uint8Array(bin.length);
+              for (var i = 0; i < bin.length; i += 1) array[i] = bin.charCodeAt(i);
+              bytes = Promise.resolve(array.buffer);
+            } else bytes = fetch(src).then(function (r) { if (!r.ok) throw new Error("missing"); return r.arrayBuffer(); });
+            bytes.then(function (b) { return ctx.decodeAudioData(b); }).then(function (buffer) { buffers[entry.id] = buffer; }).catch(function () { /* the tone stands in */ });
+          });
+        });
+      }
+      return ctx.resume().then(function () { return true; }, function () { return false; });
+    }
+    var TONES = { order: [880, "square", 0.08], recruit: [196, "triangle", 0.5], build: [1320, "triangle", 0.5], air: [92, "sawtooth", 2.2], rail: [622, "sine", 1.6], truck: [58, "sawtooth", 2.0], march: [110, "square", 0.18], endTurn: [55, "triangle", 1.9] };
+    function start(kind, gainDb, maxMs) {
+      var t = ctx.currentTime, sound = SOUNDS[kind], gain = ctx.createGain(), source, length;
+      var buffer = buffers[sound.file];
+      if (buffer) {
+        source = ctx.createBufferSource(); source.buffer = buffer; length = buffer.duration;
+        source.playbackRate.value = 0.97 + Math.random() * 0.06;
+      } else {
+        var tone = TONES[kind];
+        source = ctx.createOscillator(); source.type = tone[1]; source.frequency.value = tone[0] * (0.97 + Math.random() * 0.06); length = tone[2];
+      }
+      if (maxMs !== undefined) length = Math.min(length, maxMs / 1000);
+      var level = dbGain(gainDb) * (buffer ? 1 : 0.5);
+      gain.gain.setValueAtTime(0.0001, t);
+      gain.gain.linearRampToValueAtTime(level, t + 0.006);
+      gain.gain.setValueAtTime(level, t + Math.max(0.01, length - 0.06));
+      gain.gain.linearRampToValueAtTime(0.0001, t + length);
+      source.connect(gain); gain.connect(sfx);
+      source.start(t); source.stop(t + length + 0.02);
+      live.push({ gain: gain, source: source, ends: t + length });
+    }
+    function silence() {
+      timers.forEach(clearTimeout); timers = [];
+      var t = ctx ? ctx.currentTime : 0;
+      live.forEach(function (v) {
+        if (v.ends < t) return;
+        v.gain.gain.cancelScheduledValues(t);
+        v.gain.gain.setTargetAtTime(0, t, 0.02);
+        try { v.source.stop(t + 0.1); } catch (e) { /* already stopped */ }
+      });
+      live = [];
+    }
+    function duckMusic() {
+      var t = ctx.currentTime;
+      duck.gain.cancelScheduledValues(t);
+      duck.gain.setTargetAtTime(0.4, t, 0.06);
+      duck.gain.setTargetAtTime(1, t + 1.8, 0.5);
+    }
+    function draw(lines) {
+      var total = Math.max.apply(null, lines.map(function (l) { return l.at + (l.plays ? lengthOf(l) : 0); })) + 100;
+      var h = lines.length * 18 + 6, ns = "http://www.w3.org/2000/svg";
+      var svg = document.createElementNS(ns, "svg");
+      svg.setAttribute("viewBox", "0 0 600 " + h); svg.setAttribute("role", "img"); svg.setAttribute("width", "100%");
+      svg.setAttribute("aria-label", "Timeline of ten actions. Filled bars are sounds that play; outlined dots are actions that stay silent.");
+      lines.forEach(function (line, i) {
+        var x = 96 + line.at / total * 496, y = i * 18 + 4;
+        var label = document.createElementNS(ns, "text");
+        label.setAttribute("x", "0"); label.setAttribute("y", String(y + 11)); label.setAttribute("font-size", "12"); label.setAttribute("fill", "var(--ink)");
+        label.textContent = SOUNDS[line.kind].label;
+        svg.append(label);
+        if (line.plays) {
+          var bar = document.createElementNS(ns, "rect");
+          bar.setAttribute("x", String(x)); bar.setAttribute("y", String(y)); bar.setAttribute("height", "13"); bar.setAttribute("rx", "2");
+          bar.setAttribute("width", String(Math.max(4, lengthOf(line) / total * 496)));
+          bar.setAttribute("fill", "var(--accent)"); if (line.plays !== line.kind) bar.setAttribute("opacity", "0.55");
+          svg.append(bar);
+        } else {
+          var dot = document.createElementNS(ns, "circle");
+          dot.setAttribute("cx", String(x + 4)); dot.setAttribute("cy", String(y + 7)); dot.setAttribute("r", "4");
+          dot.setAttribute("fill", "none"); dot.setAttribute("stroke", "var(--line)"); dot.setAttribute("stroke-width", "2");
+          var why = document.createElementNS(ns, "text");
+          why.setAttribute("x", String(x + 14)); why.setAttribute("y", String(y + 11)); why.setAttribute("font-size", "11"); why.setAttribute("fill", "var(--ink-soft, var(--ink))");
+          why.textContent = line.why;
+          svg.append(dot, why);
+          if (x > 420) { why.setAttribute("x", String(x - 8)); why.setAttribute("text-anchor", "end"); }
+        }
+      });
+      chart.replaceChildren(svg);
+    }
+    function run(limited) {
+      var burst = BURSTS[pick.value];
+      var lines = decide(burst.events.map(function (kind, i) { return { at: i * burst.gap, kind: kind }; }), limited);
+      var s = stats(lines), loud = 20 * Math.log10(s.peak);
+      draw(lines);
+      result.textContent = s.played + " of " + lines.length + " sounds play, at most " + s.most + " together. Estimated worst peak " + (loud > 0 ? "+" : "") + loud.toFixed(0) + " dB at full volume" + (loud > 0 ? ", which clips and crackles." : ", below clipping.");
+      ready().then(function (ok) {
+        if (!ok) return;
+        silence();
+        lines.forEach(function (line) { if (line.plays) timers.push(setTimeout(function () { start(line.plays, line.gain, line.cutAt === undefined ? undefined : lengthOf(line)); }, line.at)); });
+      });
+    }
+    bRaw.addEventListener("click", function () { run(false); });
+    bLim.addEventListener("click", function () { run(true); });
+    bEnd.addEventListener("click", function () { ready().then(function (ok) { if (ok) { silence(); start("endTurn", SOUNDS.endTurn.gain); duckMusic(); result.textContent = "End turn plays once and the music dips by 8 dB for about two seconds."; } }); });
+    bMusic.addEventListener("click", function () {
+      ready().then(function (ok) {
+        if (!ok) return;
+        if (pad) {
+          pad.gain.gain.setTargetAtTime(0, ctx.currentTime, 0.15);
+          pad.voices.forEach(function (v) { v.stop(ctx.currentTime + 1); });
+          pad = undefined; bMusic.textContent = "Start music"; bMusic.setAttribute("aria-pressed", "false");
+          return;
+        }
+        var gain = ctx.createGain(); gain.gain.value = 0; gain.connect(music);
+        var voices = [110, 164.8, 220, 277.2].map(function (f, i) {
+          var o = ctx.createOscillator(); o.type = "sine"; o.frequency.value = f; o.detune.value = i * 3 - 4; o.connect(gain); o.start(); return o;
+        });
+        gain.gain.setTargetAtTime(0.09, ctx.currentTime, 0.8);
+        pad = { gain: gain, voices: voices }; bMusic.textContent = "Stop music"; bMusic.setAttribute("aria-pressed", "true");
+      });
+    });
+    effective();
+    run0();
+    function run0() {
+      var burst = BURSTS.group;
+      draw(decide(burst.events.map(function (kind, i) { return { at: i * burst.gap, kind: kind }; }), true));
+      result.textContent = "Shown: ten rail orders with the rules on. Press a button to hear it.";
+    }
+  };
+})();
+
+</script>
+<script>
+(function () {
+  "use strict";
+  var KEY = "m3r3-review-answers-v1";
+  var questions = [];
+  try { questions = JSON.parse(document.getElementById("questions-data").textContent); } catch (e) { questions = []; }
+  var byId = {};
+  questions.forEach(function (q) { byId[q.id] = q; });
+  var answers = {};
+  try { var raw = window.localStorage.getItem(KEY); if (raw) answers = JSON.parse(raw) || {}; } catch (e) { answers = {}; }
+  var remote = null, remoteTimer = null;
+  function remoteStatus(text) { var s = document.getElementById("remote-status"); if (s) s.textContent = text; }
+  function pushRemote() {
+    if (!remote) return;
+    clearTimeout(remoteTimer);
+    remoteTimer = setTimeout(function () {
+      var n = 0; questions.forEach(function (q) { if (isAnswered(q.id)) n += 1; });
+      remote.set({ answers: answers, answered: n, total: questions.length, updatedAt: new Date().toISOString() }).then(
+        function () { remoteStatus("Saved to this artifact for the team."); },
+        function (e) { if (e && (e.code === "invalid_argument" || e.code === "revoked" || e.code === "not_granted")) { remote = null; remoteStatus("Saved in this browser only. Use Copy my answers to send them."); } });
+    }, 1200);
+  }
+  function save() { try { window.localStorage.setItem(KEY, JSON.stringify(answers)); } catch (e) { /* storage unavailable: answers live in the page only */ } pushRemote(); }
+  function isAnswered(id) { var a = answers[id]; return !!(a && a.choices && a.choices.length); }
+
+  function el(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
+
+  function renderQuestion(q) {
+    var fs = el("fieldset", "q"); fs.id = q.id; fs.setAttribute("data-qid", q.id);
+    var lg = el("legend"); var head = el("div", "q-head");
+    head.appendChild(el("span", "q-id", q.id));
+    head.appendChild(el("span", "q-text", q.text));
+    if (q.multi) head.appendChild(el("span", "q-multi", "Choose all that apply"));
+    lg.appendChild(head); if (q.context) lg.appendChild(el("p", "q-ctx", q.context)); fs.appendChild(lg);
+    var type = q.multi ? "checkbox" : "radio";
+    (q.options || []).forEach(function (o, i) {
+      var lab = el("label", "opt");
+      var inp = document.createElement("input"); inp.type = type; inp.name = q.id; inp.value = String(i); inp.id = q.id + "-o" + i;
+      var txt = el("span"); txt.appendChild(document.createTextNode(o.label));
+      if (o.recommended) txt.appendChild(el("span", "rec", "(Recommended)"));
+      lab.appendChild(inp); lab.appendChild(txt);
+      if (o.rationale) lab.appendChild(el("span", "why", o.rationale));
+      fs.appendChild(lab);
+      inp.addEventListener("change", function () { readQuestion(fs, q); });
+    });
+    var nl = el("label", "notes-label", "Other / notes"); nl.htmlFor = q.id + "-notes";
+    var ta = document.createElement("textarea"); ta.id = q.id + "-notes"; ta.rows = 1; ta.placeholder = "Optional: another option, a condition, or a reason";
+    ta.addEventListener("input", function () { readQuestion(fs, q); });
+    fs.appendChild(nl); fs.appendChild(ta);
+    applyAnswer(fs, q);
+    return fs;
+  }
+  function applyAnswer(fs, q) {
+    var a = answers[q.id] || {};
+    var chosen = (a.choices || []).map(String);
+    Array.prototype.forEach.call(fs.querySelectorAll("input"), function (inp) { inp.checked = chosen.indexOf(inp.value) >= 0; });
+    var ta = fs.querySelector("textarea"); if (ta) ta.value = a.notes || "";
+    fs.classList.toggle("answered", isAnswered(q.id));
+  }
+  function readQuestion(fs, q) {
+    var choices = [];
+    Array.prototype.forEach.call(fs.querySelectorAll("input"), function (inp) { if (inp.checked) choices.push(Number(inp.value)); });
+    var notes = fs.querySelector("textarea").value;
+    if (!choices.length && !notes.trim()) delete answers[q.id]; else answers[q.id] = { choices: choices, notes: notes };
+    fs.classList.toggle("answered", isAnswered(q.id));
+    save(); updateProgress();
+  }
+
+  var groups = {};
+  questions.forEach(function (q) { var k = String(q.idea); (groups[k] = groups[k] || []).push(q); });
+  Array.prototype.forEach.call(document.querySelectorAll(".questions[data-idea]"), function (box) {
+    var list = groups[box.getAttribute("data-idea")] || [];
+    if (!list.length) { box.appendChild(el("p", "missing", "No questions were drafted for this item.")); return; }
+    list.forEach(function (q) { box.appendChild(renderQuestion(q)); });
+  });
+
+  function updateProgress() {
+    var n = 0; questions.forEach(function (q) { if (isAnswered(q.id)) n += 1; });
+    var label = n + " of " + questions.length + " answered";
+    Array.prototype.forEach.call(document.querySelectorAll("[data-progress-text]"), function (s) { s.textContent = label; });
+    var fill = document.getElementById("progress-fill"); if (fill) fill.style.width = (questions.length ? (100 * n / questions.length) : 0) + "%";
+    Array.prototype.forEach.call(document.querySelectorAll("[data-toc-idea]"), function (c) {
+      var list = [];
+      c.getAttribute("data-toc-idea").split(",").forEach(function (k) { list = list.concat(groups[k] || []); });
+      var m = 0; list.forEach(function (q) { if (isAnswered(q.id)) m += 1; });
+      c.textContent = list.length ? (m + "/" + list.length) : "";
+    });
+  }
+
+  function answersMarkdown() {
+    var lines = ["# Milestone 3 Rev 3 review answers", ""];
+    var n = 0; questions.forEach(function (q) { if (isAnswered(q.id) || (answers[q.id] && answers[q.id].notes)) n += 1; });
+    lines.push("Answered " + n + " of " + questions.length + " questions. Copied " + new Date().toISOString().slice(0, 10) + ".", "");
+    var currentIdea = null;
+    questions.forEach(function (q) {
+      var a = answers[q.id]; if (!a) return;
+      if (q.idea !== currentIdea) { currentIdea = q.idea; lines.push("## " + (q.groupTitle || ("Idea " + q.idea)), ""); }
+      var picked = (a.choices || []).map(function (i) { var o = q.options[i]; return o ? o.label + (o.recommended ? " (Recommended)" : "") : "?"; });
+      lines.push("- **" + q.id + "** " + q.text);
+      lines.push("  - Answer: " + (picked.length ? picked.join("; ") : "(no option chosen)"));
+      if (a.notes && a.notes.trim()) lines.push("  - Notes: " + a.notes.trim().replace(/\s*\n\s*/g, " / "));
+    });
+    var blanks = questions.filter(function (q) { return !answers[q.id]; }).map(function (q) { return q.id; });
+    if (blanks.length) { lines.push("", "## Unanswered", "", blanks.join(", ")); }
+    return lines.join("\n") + "\n";
+  }
+  var status = document.getElementById("copy-status");
+  var fallback = document.getElementById("copy-fallback");
+  function showFallback(text) {
+    fallback.hidden = false; fallback.value = text; fallback.focus(); fallback.select();
+    status.textContent = "Copying is blocked here. The answers are selected below: copy them by hand.";
+  }
+  Array.prototype.forEach.call(document.querySelectorAll("[data-copy]"), function (b) {
+    b.addEventListener("click", function () {
+      var text = answersMarkdown();
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(function () { status.textContent = "Copied as Markdown. Paste it into the chat or the tasks doc."; fallback.hidden = true; },
+            function () { showFallback(text); });
+        } else { showFallback(text); }
+      } catch (e) { showFallback(text); }
+      if (window.matchMedia("(max-width: 900px)").matches) { document.getElementById("toc").classList.add("open"); document.getElementById("toc-toggle").setAttribute("aria-expanded", "true"); }
+    });
+  });
+  document.getElementById("fill-rec").addEventListener("click", function () {
+    var filled = 0;
+    questions.forEach(function (q) {
+      if (isAnswered(q.id)) return;
+      var picks = []; (q.options || []).forEach(function (o, i) { if (o.recommended && (q.multi || picks.length === 0)) picks.push(i); });
+      if (!picks.length) return;
+      var prev = answers[q.id] || { notes: "" };
+      answers[q.id] = { choices: picks, notes: prev.notes || "" }; filled += 1;
+    });
+    save();
+    Array.prototype.forEach.call(document.querySelectorAll("fieldset.q"), function (fs) { applyAnswer(fs, byId[fs.getAttribute("data-qid")]); });
+    updateProgress(); status.textContent = filled + " blank questions set to the recommended option. Review and change any you disagree with.";
+  });
+  var clearAll = document.getElementById("clear-all"), clearConfirm = document.getElementById("clear-confirm");
+  clearAll.addEventListener("click", function () { clearConfirm.hidden = !clearConfirm.hidden; });
+  clearConfirm.addEventListener("click", function () {
+    answers = {}; save(); clearConfirm.hidden = true;
+    Array.prototype.forEach.call(document.querySelectorAll("fieldset.q"), function (fs) { applyAnswer(fs, byId[fs.getAttribute("data-qid")]); });
+    updateProgress(); status.textContent = "All answers cleared.";
+  });
+  var toggle = document.getElementById("toc-toggle"), toc = document.getElementById("toc");
+  toggle.addEventListener("click", function () { var open = toc.classList.toggle("open"); toggle.setAttribute("aria-expanded", open ? "true" : "false"); });
+  Array.prototype.forEach.call(toc.querySelectorAll("ol a"), function (a) { a.addEventListener("click", function () { toc.classList.remove("open"); toggle.setAttribute("aria-expanded", "false"); }); });
+
+  // Widgets
+  Array.prototype.forEach.call(document.querySelectorAll(".widget[data-widget]"), function (w) {
+    var fn = window.M3W && window.M3W[w.getAttribute("data-widget")];
+    if (typeof fn !== "function") { w.appendChild(el("p", "widget-error", "This widget is not available.")); return; }
+    try { fn(w); } catch (e) { w.appendChild(el("p", "widget-error", "This widget failed to start: " + (e && e.message))); }
+  });
+
+  // Active section in the contents
+  var links = Array.prototype.slice.call(toc.querySelectorAll("ol a[href^='#']"));
+  if ("IntersectionObserver" in window) {
+    var map = {}; links.forEach(function (a) { map[a.getAttribute("href").slice(1)] = a; });
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) { if (en.isIntersecting && map[en.target.id]) { links.forEach(function (l) { l.classList.remove("active"); }); map[en.target.id].classList.add("active"); } });
+    }, { rootMargin: "-10% 0px -80% 0px" });
+    Object.keys(map).forEach(function (id) { var t = document.getElementById(id); if (t) io.observe(t); });
+  }
+  updateProgress();
+
+  // Optional: when this page runs as a claude.ai Artifact with storage, also keep answers there.
+  try {
+    if (window.claude && typeof window.claude.use === "function") {
+      Promise.all([window.claude.use("db"), window.claude.use("user")]).then(function (r) {
+        var db = r[0], user = r[1];
+        if (!db || !user) return null;
+        return user.id().then(function (uid) {
+          if (!uid) return null;
+          var ref; try { ref = db.doc("answers/" + uid); } catch (e) { return null; }
+          return ref.get().then(function (snap) {
+            remote = ref;
+            var d = snap.exists ? snap.data() : null;
+            if (d && d.answers && !Object.keys(answers).length) {
+              answers = d.answers;
+              try { window.localStorage.setItem(KEY, JSON.stringify(answers)); } catch (e) { /* ignore */ }
+              Array.prototype.forEach.call(document.querySelectorAll("fieldset.q"), function (fs) { applyAnswer(fs, byId[fs.getAttribute("data-qid")]); });
+              updateProgress();
+            }
+            remoteStatus("Answers save to this artifact for the team, and to this browser.");
+          });
+        });
+      }).catch(function () { /* no shared storage: browser only */ });
+    }
+  } catch (e) { /* no runtime */ }
+})();
+</script>

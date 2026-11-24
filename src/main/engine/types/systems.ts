@@ -180,14 +180,26 @@ export interface AiProfile {
     readonly stallStep: number;
     readonly staging: number;
   };
+  readonly recruits: {
+    /** Turns of upkeep, at today's income, that Recruit orders leave in stock. */
+    readonly upkeepTurns: number;
+  };
   readonly stakes: { readonly city: number; readonly objective: number; readonly territory: number };
   /**
    * `steps` and `perStep` raise the stakes of a rival's territories as it nears victory, so the
    * faction attacks the leader. `critical` raises, by stake times (1 + critical), a territory whose
-   * change of hands alone would decide the game (D23): own ground a rival in reach would win by
-   * taking, and ground the faction itself would win by taking.
+   * change of hands alone would decide the game (D23): ground, whoever holds it, that a rival in
+   * reach or the faction itself would win by taking.
    */
-  readonly victoryAlarm: { readonly critical: number; readonly perStep: number; readonly steps: number };
+  readonly victoryAlarm: {
+    readonly critical: number;
+    readonly perStep: number;
+    /** The least share of own losses and of the danger at home that count when attacking a rival near victory. */
+    readonly riskFloor: number;
+    /** A rival this many steps short of victory, or fewer, is spent against at once (`ai/alarm.ts`). */
+    readonly spendSteps: number;
+    readonly steps: number;
+  };
   /**
    * C1, D24: when to Withdraw from contested ground, by the chance (from the engine's odds for
    * the standing battle) that the enemy takes the territory whole this turn. `lastStandTakeChance`

@@ -45,7 +45,7 @@ export const outcomeGroups: readonly OutcomeGroupSpec[] = [
   { icon: { medallion: "recovered" }, kinds: ["recovered"], label: outcomeText.recovered.title, open: true },
   // U2-U5 (m3r1-air-generals): raids, recon, interceptions and support; generals' changes and rallies.
   { icon: { economy: "plane" }, kinds: ["air-battle", "raid", "recon", "interception", "air-support", "grounded", "aircraft-rebased", "aircraft-lost"], label: "Air missions", open: true },
-  { icon: { economy: "star" }, kinds: ["general-died", "general-sacked", "replacement-due", "replacement-arrived", "rallied", "general-moved"], label: "Generals", open: true },
+  { icon: { economy: "star" }, kinds: ["general-died", "general-sacked", "replacement-due", "replacement-arrived", "rallied"], label: "Generals", open: true },
   { icon: { medallion: "reinforcement-arrived" }, kinds: ["reinforcement-arrived"], label: outcomeText["reinforcement-arrived"].title, open: false },
   { icon: { tone: "moved" }, kinds: ["successful-move"], label: "Completed moves", open: false },
   { icon: { site: "rail" }, kinds: ["move-transit"], label: "By rail and sea", open: false },
@@ -54,7 +54,7 @@ export const outcomeGroups: readonly OutcomeGroupSpec[] = [
   // R2-R7, C8: open when training paused, or a recruit or replenishment was refunded or cancelled.
   {
     icon: { economy: "flag" },
-    kinds: ["training-completed", "training-started", "replenish-applied", "training-paused", "training-refunded", "replenish-cancelled"],
+    kinds: ["training-completed", "training-started", "replenish-applied", "training-paused", "training-refunded", "replenish-cancelled", "unit-disbanded"],
     label: "Recruitment",
     open: any(["training-paused", "training-refunded", "replenish-cancelled"])
   },
@@ -69,7 +69,7 @@ export const outcomeGroups: readonly OutcomeGroupSpec[] = [
 ];
 
 /** The kinds with sections of their own: battle cards, the turn's conditions, the treasury, and holds. */
-export const sectionKinds: readonly OutcomeKind[] = ["battle", "no-move", "weather-rolled", "frostbite", "time-ran-out", "income"];
+export const sectionKinds: readonly OutcomeKind[] = ["battle", "no-move", "weather-rolled", "frostbite", "time-ran-out", "income", "upkeep"];
 
 /** A group's outcomes, in the order of its kinds (stable within a kind). */
 export function groupMembers(group: OutcomeGroupSpec, outcomes: readonly TurnOutcome[]): readonly TurnOutcome[] {

@@ -1,4 +1,5 @@
 import { hookedIncome } from "../hooks";
+import { toThousandth } from "../resources";
 import type { FactionId, GameState, ResourceId, Resources, Scenario, SubTerritoryId, SubTerritoryState } from "../types";
 import { subTerritoriesOf, territoriesHeldWhole } from "./holdings";
 import { sumResources, subtractResources } from "./resources";
@@ -14,7 +15,7 @@ export function subTerritoryYield(scenario: Scenario, site: Pick<SubTerritorySta
   const total: Record<ResourceId, number> = {};
   for (const track of scenario.development) {
     const level = site.development[track.id] ?? 0;
-    if (level > 0) total[track.resource] = (total[track.resource] ?? 0) + level * track.yieldPerLevel;
+    if (level > 0) total[track.resource] = toThousandth((total[track.resource] ?? 0) + level * track.yieldPerLevel);
   }
   return total;
 }

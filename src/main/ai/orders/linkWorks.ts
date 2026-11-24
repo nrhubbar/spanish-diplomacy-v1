@@ -105,7 +105,7 @@ function armyTerritories(scenario: Scenario, state: GameState, factionId: Factio
  * modifiers, and each end's station raised by what its cap gained.
  */
 export function afterLinkWork(scenario: Scenario, state: GameState, link: LinkDefinition, work: LinkWork): GameState {
-  const modifiers = afterWork(linkModifiers(link, state), work) ?? linkModifiers(link, state);
+  const modifiers = afterWork(linkModifiers(link, state), work, scenario.linkModifiers.road) ?? linkModifiers(link, state);
   const built: GameState = { ...state, builtLinks: { ...state.builtLinks, [linkKey(link.a, link.b)]: modifiers } };
   const subTerritories = { ...state.subTerritories };
   for (const end of [link.a, link.b]) {

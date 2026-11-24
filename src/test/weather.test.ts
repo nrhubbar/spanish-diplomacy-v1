@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { dateLabel, turnDate } from "../main/engine/calendar";
 import { hookedAllowanceDelta, hookedCanDigIn, hookedCombatModifiers, hookedGrounded } from "../main/engine/hooks";
 import { initialGameState, resolveTurn } from "../main/engine/resolution";
-import { isD6Battle } from "../main/engine/types";
+import { isBattle } from "../main/presentation/grades";
 import type { BuildingId, GameState, Scenario, SubTerritoryId, WeatherId, WeatherState, WeatherZoneId } from "../main/engine/types";
 import { beforePlanning, forecast, isSeaRouteClosed, rollWeather, weatherIn } from "../main/engine/weather";
 import { destinationEstimates, modifierName, modifierPhrase } from "../main/presentation/odds";
@@ -10,6 +10,7 @@ import { turnLabel } from "../main/presentation/turn";
 import { forecastEntries } from "../main/presentation/weatherText";
 import { advance } from "../main/state/coordinator";
 import { faction, move, spain, territory, tiny, unit, withUnits } from "./support";
+import { unfortified } from "./pinned";
 
 const zones = ["cantabrian", "meseta", "mediterranean", "south"] as const;
 
@@ -20,11 +21,6 @@ function weatherOf(outcomes: Partial<Record<(typeof zones)[number], string>>): W
 function withWeather(state: GameState, outcomes: Partial<Record<(typeof zones)[number], string>>, turnNumber = state.turnNumber): GameState {
   return { ...state, turnNumber, weather: weatherOf(outcomes) };
 }
-
-const d20Spain = (): Scenario => {
-  const scenario = spain();
-  return { ...scenario, rules: { ...scenario.rules, dice: "d20-graded" } };
-};
 
 describe("the calendar (T1)", () => {
   const calendar = { start: { half: "late", month: 7, year: 1936 }, turnsPerYear: 24 } as const;
@@ -120,38 +116,37 @@ describe("the weather's effects (T4)", () => {
   const madrid = territory("madrid");
   const base = () => withUnits(spain(), [["r1", "republic", "madrid"], ["n1", "north", "castilla-y-leon"]]);
 
-  it("puts the soft attack modifier on battles, a third of it on the d6 table (D7, Q-WX-6)", () => {
+  it("puts the soft attack modifier on battles (D7)", () => {
     const context = (scenario: Scenario, state: GameState) => ({ attackerFactionId: faction("north"), defenderFactionIds: [faction("republic")], diggingIn: false, scenario, state, territoryId: madrid });
-    const severe = withWeather(base(), { meseta: "severe-cold" });
-    expect(hookedCombatModifiers(context(d20Spain(), severe))).toEqual([{ kind: "weather", roll: -6, weatherId: "severe-cold" }]);
-    expect(hookedCombatModifiers(context(spain(), severe))).toEqual([{ kind: "weather", roll: -2, weatherId: "severe-cold" }]);
-    expect(hookedCombatModifiers(context(spain(), withWeather(base(), { meseta: "mud" })))).toEqual([{ kind: "weather", roll: -1, weatherId: "mud" }]);
-    expect(hookedCombatModifiers(context(d20Spain(), withWeather(base(), { meseta: "rain" })))).toEqual([]);
-    expect(hookedCombatModifiers(context(d20Spain(), base()))).toEqual([]);
+    const severe = withWeather(unfortified(base()), { meseta: "severe-cold" });
+    expect(hookedCombatModifiers(context(spain(), severe))).toEqual([{ kind: "weather", roll: -6, weatherId: "severe-cold" }]);
+    expect(hookedCombatModifiers(context(spain(), withWeather(unfortified(base()), { meseta: "mud" })))).toEqual([{ kind: "weather", roll: -3, weatherId: "mud" }]);
+    expect(hookedCombatModifiers(context(spain(), withWeather(unfortified(base()), { meseta: "rain" })))).toEqual([]);
+    expect(hookedCombatModifiers(context(spain(), unfortified(base())))).toEqual([]);
   });
 
   it("stops digging in during Snow and Severe cold", () => {
     const at = (state: GameState) => hookedCanDigIn({ factionId: faction("republic"), scenario: spain(), state, territoryId: madrid });
-    expect(at(withWeather(base(), { meseta: "snow" }))).toBe(false);
-    expect(at(withWeather(base(), { meseta: "severe-cold" }))).toBe(false);
-    expect(at(withWeather(base(), { meseta: "mud" }))).toBe(true);
+    expect(at(withWeather(unfortified(base()), { meseta: "snow" }))).toBe(false);
+    expect(at(withWeather(unfortified(base()), { meseta: "severe-cold" }))).toBe(false);
+    expect(at(withWeather(unfortified(base()), { meseta: "mud" }))).toBe(true);
     expect(at(base())).toBe(true);
   });
 
   it("takes a move off the allowance in Mud and Snow", () => {
     const delta = (state: GameState) => hookedAllowanceDelta({ factionId: faction("republic"), from: madrid, scenario: spain(), state, unitIds: [unit("r1")] });
-    expect(delta(withWeather(base(), { meseta: "mud" }))).toBe(-1);
-    expect(delta(withWeather(base(), { meseta: "snow" }))).toBe(-1);
-    expect(delta(withWeather(base(), { meseta: "severe-cold" }))).toBe(0);
+    expect(delta(withWeather(unfortified(base()), { meseta: "mud" }))).toBe(-1);
+    expect(delta(withWeather(unfortified(base()), { meseta: "snow" }))).toBe(-1);
+    expect(delta(withWeather(unfortified(base()), { meseta: "severe-cold" }))).toBe(0);
   });
 
   it("grounds aircraft in Rain, Mud and Snow unless their airfield is paved (R10)", () => {
-    const muddy = withWeather(base(), { meseta: "mud" });
+    const muddy = withWeather(unfortified(base()), { meseta: "mud" });
     const grounded = (state: GameState) => hookedGrounded({ scenario: spain(), state, territoryId: madrid, unitId: unit("r1") });
     expect(grounded(muddy)).toBe(true);
-    expect(grounded(withWeather(base(), { meseta: "rain" }))).toBe(true);
-    expect(grounded(withWeather(base(), { meseta: "snow" }))).toBe(true);
-    expect(grounded(withWeather(base(), { meseta: "clear" }))).toBe(false);
+    expect(grounded(withWeather(unfortified(base()), { meseta: "rain" }))).toBe(true);
+    expect(grounded(withWeather(unfortified(base()), { meseta: "snow" }))).toBe(true);
+    expect(grounded(withWeather(unfortified(base()), { meseta: "clear" }))).toBe(false);
     const site = "madrid" as SubTerritoryId;
     const current = muddy.subTerritories[site];
     if (current === undefined) throw new Error("Madrid has no sub-territory state.");
@@ -160,15 +155,15 @@ describe("the weather's effects (T4)", () => {
   });
 
   it("closes the sea when a coastal zone touching it has Rain in December to February", () => {
-    const january = withWeather(base(), { mediterranean: "rain", south: "clear" }, 12);
+    const january = withWeather(unfortified(base()), { mediterranean: "rain", south: "clear" }, 12);
     expect(isSeaRouteClosed(spain(), january, territory("catalunya"), territory("islas-baleares"))).toBe(true);
     expect(isSeaRouteClosed(spain(), january, territory("andalucia"), territory("ceuta"))).toBe(false);
-    expect(isSeaRouteClosed(spain(), withWeather(base(), { mediterranean: "rain" }, 7), territory("catalunya"), territory("islas-baleares"))).toBe(false);
+    expect(isSeaRouteClosed(spain(), withWeather(unfortified(base()), { mediterranean: "rain" }, 7), territory("catalunya"), territory("islas-baleares"))).toBe(false);
     expect(isSeaRouteClosed(spain(), january, territory("madrid"), territory("castilla-la-mancha"))).toBe(false);
   });
 
   it("costs units that move in Severe cold 5 percent of their men", () => {
-    const state = withWeather(base(), { meseta: "severe-cold" });
+    const state = withWeather(unfortified(base()), { meseta: "severe-cold" });
     const result = resolveTurn(spain(), state, [{ factionId: faction("republic"), orders: [move("republic", "r1", "madrid", "castilla-la-mancha")] }], 1);
     expect(result.outcomes).toContainEqual({ factionId: "republic", kind: "frostbite", men: 5, territoryId: "castilla-la-mancha", unitId: "r1" });
     expect(result.finalState.units[unit("r1")]?.strength).toBe(95);
@@ -204,11 +199,11 @@ describe("the weather modifier in the odds and battle text (D7)", () => {
     const state = withWeather(initialGameState(spain()), { meseta: "mud" });
     const attackers = Object.values(state.units).filter((candidate) => candidate.factionId === faction("north") && candidate.territoryId === territory("castilla-y-leon"));
     const estimate = destinationEstimates(spain(), state, faction("north"), attackers.map((candidate) => candidate.id), [territory("madrid")]).get(territory("madrid"));
-    expect(estimate?.kind === "battle" ? estimate.modifiers.map(modifierPhrase) : []).toContain("Mud \u22121");
+    expect(estimate?.kind === "battle" ? estimate.modifiers.map(modifierPhrase) : []).toContain("Mud \u22123");
     const orders = attackers.map((candidate) => move("north", candidate.id, "castilla-y-leon", "madrid"));
     const result = resolveTurn(spain(), state, [{ factionId: faction("north"), orders }], 1);
-    const battle = result.outcomes.filter(isD6Battle)[0];
-    expect(battle?.modifiers).toContainEqual({ kind: "weather", roll: -1, weatherId: "mud" });
+    const battle = result.outcomes.filter(isBattle)[0];
+    expect(battle?.modifiers).toContainEqual({ kind: "weather", roll: -3, weatherId: "mud" });
     expect(modifierName({ kind: "weather", roll: -6, weatherId: "severe-cold" as WeatherId })).toBe("Severe cold");
   });
 });

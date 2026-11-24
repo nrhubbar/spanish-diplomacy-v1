@@ -1,19 +1,19 @@
 import { describe, expect, it } from "vitest";
 import { initialGameState, resolveTurn } from "../main/engine/resolution";
 import type { GameState, PlayerSubmission, Resources, Scenario, TurnOutcome, WeatherId, WeatherZoneId } from "../main/engine/types";
-import { faction, spain, spainD20, territory, unit } from "./support";
+import { faction, spain, spainWithAir, territory, unit, withoutUpkeep } from "./support";
+import { pinned } from "./pinned";
 
 /**
- * Whole turns through `resolveTurn` under both dice modules: a replenishing holder does not dig
- * in (R5, Q-RECR-5), and Snow stops the works growing (T4), the d6 preset's morale part and the
- * d20's alike.
+ * Whole turns through `resolveTurn`, with the ground forces only and with aircraft and generals: a
+ * replenishing holder does not dig in (R5, Q-RECR-5), and Snow stops the works growing (T4).
  */
 
 const republic = faction("republic");
 const murcia = territory("murcia");
 const regiment = unit("rep-sevilla-34");
 
-const dice: readonly (readonly [string, () => Scenario])[] = [["d6-table", spain], ["d20-graded", spainD20]];
+const boards: readonly (readonly [string, () => Scenario])[] = [["ground forces only", spain], ["every force", spainWithAir]];
 
 /** Murcia with its lone regiment at a third of its men, and nobody else on the board. */
 function loneHolder(scenario: Scenario, weather?: WeatherId): GameState {
@@ -31,7 +31,7 @@ const submissions = (orders: PlayerSubmission["orders"]): readonly PlayerSubmiss
 const ofKind = <Kind extends TurnOutcome["kind"]>(outcomes: readonly TurnOutcome[], kind: Kind) =>
   outcomes.filter((outcome): outcome is Extract<TurnOutcome, { kind: Kind }> => outcome.kind === kind);
 
-describe.each(dice)("a whole turn on %s", (_name, scenarioOf) => {
+describe.each(boards)("a whole turn with %s", (_name, scenarioOf) => {
   const scenario = scenarioOf();
 
   it("a holder that rests entrenches; one that replenishes holds without entrenching (Q-RECR-5)", () => {
@@ -57,7 +57,7 @@ describe.each(dice)("a whole turn on %s", (_name, scenarioOf) => {
 });
 
 describe("a capital that falls with purchases in it (M4, $5, U3)", () => {
-  const scenario = spainD20();
+  const scenario = withoutUpkeep(pinned(spainWithAir()));
   const north = faction("north");
   const murciaSub = "murcia" as never;
   const ofKindAll = <Kind extends TurnOutcome["kind"]>(outcomes: readonly TurnOutcome[], kind: Kind) =>
@@ -109,6 +109,6 @@ describe("a capital that falls with purchases in it (M4, $5, U3)", () => {
     expect(northIncome.cut).toEqual({});
     // The books balance: what the Republic paid at reveal all came back but the forfeited head.
     const republicIncome = ofKindAll(result.outcomes, "income").find((outcome) => outcome.factionId === republic)!.paid as Record<string, number>;
-    expect(result.finalState.treasuries[republic]).toEqual({ funds: 20 + 6 + (republicIncome["funds"] ?? 0), manpower: 10 + (republicIncome["manpower"] ?? 0) });
+    expect(result.finalState.treasuries[republic]).toEqual({ funds: Math.floor(20 + 6 + (republicIncome["funds"] ?? 0)), manpower: 10 + (republicIncome["manpower"] ?? 0) });
   });
 });

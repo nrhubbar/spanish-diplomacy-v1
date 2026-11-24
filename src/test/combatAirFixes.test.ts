@@ -4,7 +4,7 @@ import { movePlanningView } from "../main/ai/computerPlayer";
 import { raidIncomeDelta } from "../main/engine/air/hooks";
 import { estimateAttack } from "../main/engine/combat";
 import { applyGradeSide } from "../main/engine/d20/grades";
-import { gradedSide } from "../main/engine/d20/modifiers";
+import { fightingSide } from "../main/engine/d20/modifiers";
 import type { BattleDice } from "../main/engine/dice";
 import { bestGeneral } from "../main/engine/generals/command";
 import { generalUnitDefinition } from "../main/engine/generals/identity";
@@ -13,7 +13,7 @@ import { initialGameState, resolveTurn } from "../main/engine/resolution";
 import type {
   AirMission,
   AirMissionOrder,
-  D20BattleOutcome,
+  BattleOutcome,
   GameState,
   MoveOrder,
   PlayerSubmission,
@@ -26,14 +26,15 @@ import type {
   UnitTypeId
 } from "../main/engine/types";
 import { canFight } from "../main/engine/units/fighting";
-import { type ArmySpec, battlefield, faction, move, onD6Dice, spainD20, territory, unit } from "./support";
+import { type ArmySpec, battlefield, faction, move, spainWithAir, territory, unit } from "./support";
+import { lightBarricades, pinned, popularResistance } from "./pinned";
 
 /**
  * Regression tests for the combat and air review (B1-B4, M1, M2, M5-M9) and the integrator's
  * defaults D27.1-D27.7, on Spain as shipped (the d20, aircraft and generals).
  */
 
-const scenario = spainD20();
+const scenario = lightBarricades(popularResistance(pinned(spainWithAir())));
 const opening = initialGameState(scenario);
 
 /** Loaded d20s: battle `i` rolls `faces[i]` (else 10); later draws (tie-breaks) return 0. */
@@ -56,8 +57,8 @@ function mission(factionId: string, unitId: string, flown: AirMission): AirMissi
   return { factionId: faction(factionId), kind: "air-mission", mission: flown, unitId: unit(unitId) };
 }
 
-const battles = (result: TurnResolutionResult): readonly D20BattleOutcome[] =>
-  result.outcomes.flatMap((outcome) => (outcome.kind === "battle" && outcome.dice === "d20" ? [outcome] : []));
+const battles = (result: TurnResolutionResult): readonly BattleOutcome[] =>
+  result.outcomes.flatMap((outcome) => (outcome.kind === "battle" ? [outcome] : []));
 
 const ofKind = <Kind extends TurnOutcome["kind"]>(result: TurnResolutionResult, kind: Kind) =>
   result.outcomes.filter((outcome): outcome is Extract<TurnOutcome, { kind: Kind }> => outcome.kind === kind);
@@ -198,7 +199,7 @@ describe("B2, D27.4: the top of the fatigue track", () => {
 describe("B3: a raid cut falls on the faction raided", () => {
   it("cuts the raided faction only while it holds the ground, never the raider who took it", () => {
     const cut: GameState = { ...opening, raidCuts: [{ factionId: faction("north"), subTerritoryId: "valladolid" as SubTerritoryId, turnNumber: 1 }] };
-    expect(raidIncomeDelta({ factionId: faction("north"), income: {}, scenario, state: cut })).toEqual({ funds: -1, manpower: -3 });
+    expect(raidIncomeDelta({ factionId: faction("north"), income: {}, scenario, state: cut })).toEqual({ funds: -1.5, manpower: -3 });
     const taken = holdWhole(scenario, cut, territory("castilla-y-leon"), faction("republic"));
     expect(raidIncomeDelta({ factionId: faction("republic"), income: {}, scenario, state: taken })).toEqual({});
     expect(raidIncomeDelta({ factionId: faction("north"), income: {}, scenario, state: taken })).toEqual({});
@@ -229,12 +230,11 @@ describe("B4, M2, D17: what counts as an army staying in a territory", () => {
     expect(battles(result)[0]?.site.kind).toBe("assault");
   });
 
-  it("counts a general as staying under the d20, but not under the d6 table, where he is set aside", () => {
+  it("counts a general as an army that stays", () => {
     const state = without(opening, ...southGround, "south-ju52-bombers");
     const placed = changed(state, "south-general-yague", { territoryId: territory("andalucia") });
     const order = move("south", "south-legion", "ceuta", "andalucia");
     expect(classifyMoves(scenario, placed, placed.units, [order]).reinforcements).toEqual([order]);
-    expect(classifyMoves(onD6Dice(scenario), placed, placed.units, [order]).advances).toEqual([order]);
   });
 
   it("reads a territory held by an enemy general alone as defended, and one's own lone general as joining", () => {
@@ -271,7 +271,7 @@ describe("M5, D5: one best general for the roll and the rally", () => {
     // Pozas is cautious (-1 on attack), Asensio uninspiring (no rally, no roll).
     expect(bestGeneral(scenario, both.raised, [pozas, asensio], "attack")?.unitId).toBe(asensio);
     expect(bestGeneral(scenario, both.raised, [pozas, asensio], "defence")?.unitId).toBe(pozas);
-    const side = gradedSide(scenario, both, [pozas, asensio].map((id) => ({ from: territory("andalucia"), unit: both.units[id]! })), "attack");
+    const side = fightingSide(scenario, both, [pozas, asensio].map((id) => ({ from: territory("andalucia"), unit: both.units[id]! })), "attack");
     expect(side.value).toBe(0);
   });
 
@@ -300,7 +300,7 @@ describe("M6: a general's death roll reads what the battles did", () => {
     ], { "rep-general-miaja": "madrid" });
     const fielded: Scenario = { ...deadly, index: field.index, unitTypes: field.unitTypes, units: field.units };
     const attack = submit(move("north", "n1", "castilla-y-leon", "madrid"));
-    const grades = new Map<string, (typeof scenario.d20 & object)["grades"][number]>(scenario.d20!.grades.map((grade) => [grade.id, grade]));
+    const grades = new Map<string, (typeof scenario.d20 & object)["grades"][number]>(scenario.d20.grades.map((grade) => [grade.id, grade]));
     let checked = false;
     for (let face = 1; face <= 20; face += 1) {
       const result = resolveTurn(fielded, state, attack, 3, loadedD20([face]));
@@ -436,7 +436,7 @@ describe("D27.6: demoralization takes combat units first", () => {
       { faction: "republic", id: "flak", territory: "madrid", type: "anti-air-battery" },
       { faction: "republic", id: "foot", territory: "madrid", type: "infantry-regiment" }
     ]);
-    const side = gradedSide(field, state, Object.values(state.units).map((value) => ({ from: value.territoryId, unit: value })), "defence");
+    const side = fightingSide(field, state, Object.values(state.units).map((value) => ({ from: value.territoryId, unit: value })), "defence");
     const casualties = applyGradeSide(field, state, { demoralized: "half", lossPercent: 0 }, side, state.units, 0.1);
     expect(casualties.demoralized).toEqual(["foot"]);
   });
@@ -451,13 +451,11 @@ describe("M8: frostbite and break-up", () => {
     const cold = weatherIn(state, "meseta", "severe-cold");
     const result = resolveTurn(field, cold, submit(move("republic", "worn", "madrid", "castilla-la-mancha"), move("republic", "fresh", "madrid", "castilla-la-mancha")), 3);
     expect(ofKind(result, "frostbite")).toEqual([
-      { destroyed: true, factionId: "republic", kind: "frostbite", men: 5, territoryId: "castilla-la-mancha", unitId: "worn" },
+      { destroyed: true, factionId: "republic", kind: "frostbite", men: 104, territoryId: "castilla-la-mancha", unitId: "worn" },
       { factionId: "republic", kind: "frostbite", men: 50, territoryId: "castilla-la-mancha", unitId: "fresh" }
     ]);
+    expect(result.finalState.casualties).toEqual({ republic: 154 });
     expect(result.finalState.units[unit("worn")]).toBeUndefined();
     expect(result.finalState.units[unit("fresh")]?.strength).toBe(950);
-    // The d6 table has no break-up (D6 is a d20 rule).
-    const d6 = resolveTurn(onD6Dice(field), cold, submit(move("republic", "worn", "madrid", "castilla-la-mancha")), 3);
-    expect(d6.finalState.units[unit("worn")]?.strength).toBe(99);
   });
 });

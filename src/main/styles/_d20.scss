@@ -3,30 +3,98 @@
 // Fatigue pill on units (X7).
 // ---------------------------------------------------------------------------------------------
 
-.battle-score {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 0.5rem;
-  align-items: center;
-  margin: 0;
-  font-variant-numeric: tabular-nums;
-}
-
 // A d20 drawn as a small faceted badge; the number beside it carries the value for readers.
 .d20-face {
   display: inline-grid;
   place-items: center;
-  width: 1.9rem;
-  height: 1.9rem;
+  width: 2.9rem;
+  height: 2.9rem;
   clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
   background: var(--ink);
   color: var(--paper);
-  font-size: 0.8rem;
+  font-size: 1.1rem;
   font-weight: 800;
 }
 
-.battle-score-clamp {
+.battle-die,
+.battle-outcome {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.battle-outcome {
+  margin: 0.35rem 0 0.5rem;
+  font-weight: 700;
+}
+
+.battle-outcome-score {
+  font-family: var(--serif);
+  font-size: 1.35rem;
+}
+
+.battle-outcome-clamp {
   color: var(--ink-soft);
+  font-weight: 400;
+  font-size: 0.85rem;
+}
+
+// D7: the units behind each side's strength, below the bands.
+.who-fought {
+  margin-top: 0.6rem;
+  overflow: hidden;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  font-size: 0.82rem;
+
+  summary {
+    padding: 0.45rem 0.6rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  th,
+  td {
+    padding: 0.35rem 0.6rem;
+    border-top: 1px solid rgb(36 29 24 / 12%);
+    overflow-wrap: anywhere;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  tbody th {
+    font-weight: 500;
+  }
+
+  td,
+  thead th:last-child {
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  td {
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.who-fought .who-fought-side th {
+  background: var(--paper-deep);
+  font-weight: 700;
+}
+
+.who-fought-detail {
+  display: block;
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+
+  strong {
+    color: var(--accent-dark);
+  }
 }
 
 .battle-bands {

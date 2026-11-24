@@ -2,7 +2,7 @@ import { neighborsOf } from "../lookup";
 import type { ConnectionDefinition, FactionId, GameState, Scenario, SubTerritoryId, TerritoryId, UnitId } from "../types";
 import { isSeaConnectionClosed } from "../weather";
 import { subTerritoryGraph } from "./flips";
-import { heldBy, holderOf, holdsWhole, isContested, subTerritoriesOf } from "./holders";
+import { heldBy, holdsWhole, isContested, subTerritoriesOf } from "./holders";
 import { pocketOfUnit } from "./pockets";
 
 /**
@@ -111,9 +111,4 @@ export function withdrawRoutes(scenario: Scenario, state: GameState, factionId: 
 /** The sub-territory names along a route, for the order menu and reports. */
 export function routeNames(scenario: Scenario, route: WithdrawRoute): readonly string[] {
   return route.through.map((id) => scenario.index.subTerritories.get(id)?.name ?? id);
-}
-
-/** True when the faction holds at least one sub-territory of the territory (start of turn). */
-export function holdsAny(scenario: Scenario, holdings: GameState["subTerritories"], factionId: FactionId, territoryId: TerritoryId): boolean {
-  return subTerritoriesOf(scenario, territoryId).some((sub) => holderOf(scenario, holdings, sub.id) === factionId);
 }

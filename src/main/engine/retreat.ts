@@ -25,7 +25,8 @@ export interface Leaving {
 export type Settled =
   | { readonly kind: "home"; readonly leaving: Leaving }
   | { readonly kind: "retreated"; readonly leaving: Leaving; readonly takenBy?: FactionId; readonly to: TerritoryId }
-  | { readonly kind: "surrendered"; readonly leaving: Leaving; readonly takenBy?: FactionId };
+  /** `men`: the army's men when it surrendered, after any battle losses. */
+  | { readonly kind: "surrendered"; readonly leaving: Leaving; readonly men: number; readonly takenBy?: FactionId };
 
 export interface Departures {
   readonly armies: Armies;
@@ -57,7 +58,7 @@ export function settleDepartures(scenario: Scenario, start: GameState, armies: A
     const unit = requireArmy(armies, entry.unitId);
     const to = retreatDestination(scenario, start, staying, unit.factionId, entry.from, unit.id);
     const taken = takenBy === undefined ? {} : { takenBy };
-    return to === undefined ? { kind: "surrendered", leaving: entry, ...taken } : { kind: "retreated", leaving: entry, to, ...taken };
+    return to === undefined ? { kind: "surrendered", leaving: entry, men: unit.strength, ...taken } : { kind: "retreated", leaving: entry, to, ...taken };
   });
 
   const moved: UnitState[] = [];

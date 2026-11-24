@@ -4,25 +4,39 @@
   "id": "tiny-front",
   "name": "Tiny Front (test fixture)",
   "snapshotLabel": "Day 1",
-  "ruleset": "m2-strength",
+  "ruleset": "m3-modular",
+  "rules": { "economy": "none", "recruitment": "none", "weather": "none", "movement": "single-step", "partition": "none", "air": "none" },
   "map": "./map.json",
   "victory": { "territoryShare": 0.6, "cityShare": 1, "tieBreak": ["territories", "cities"] },
-  "combat": {
-    "table": [
-      ["attacker-eliminated", "attacker-eliminated", "attacker-attrition", "attacker-demoralized", "both-demoralized", "both-demoralized", "defender-demoralized"],
-      ["attacker-eliminated", "attacker-attrition", "attacker-demoralized", "both-demoralized", "both-demoralized", "defender-demoralized", "defender-exchange"],
-      ["attacker-attrition", "attacker-demoralized", "both-demoralized", "both-demoralized", "defender-demoralized", "defender-exchange", "defender-eliminated"],
-      ["attacker-demoralized", "both-demoralized", "both-demoralized", "defender-demoralized", "defender-exchange", "defender-eliminated", "defender-eliminated"],
-      ["both-demoralized", "both-demoralized", "defender-demoralized", "defender-exchange", "defender-eliminated", "defender-eliminated", "defender-eliminated"],
-      ["both-demoralized", "defender-demoralized", "defender-exchange", "defender-eliminated", "defender-eliminated", "defender-eliminated", "defender-eliminated"],
-      ["defender-demoralized", "defender-exchange", "defender-eliminated", "defender-eliminated", "defender-eliminated", "defender-eliminated", "defender-eliminated"]
+  "d20": {
+    "grades": [
+      { "id": "attacker-destroyed", "name": "Attacker destroyed", "attacker": { "lossPercent": 100, "demoralized": "none" }, "defender": { "lossPercent": 0, "demoralized": "none" }, "ground": 0 },
+      { "id": "attack-checked", "name": "Attack checked", "attacker": { "lossPercent": 20, "demoralized": "none" }, "defender": { "lossPercent": 0, "demoralized": "none" }, "ground": 0 },
+      { "id": "attacker-repulsed", "name": "Attacker repulsed", "attacker": { "lossPercent": 0, "demoralized": "half" }, "defender": { "lossPercent": 0, "demoralized": "none" }, "ground": 0 },
+      { "id": "stalemate", "name": "Stalemate", "attacker": { "lossPercent": 10, "demoralized": "half" }, "defender": { "lossPercent": 10, "demoralized": "half" }, "ground": 0 },
+      { "id": "driven-out", "name": "Defender driven out", "attacker": { "lossPercent": 0, "demoralized": "none" }, "defender": { "lossPercent": 0, "demoralized": "half" }, "ground": "all" },
+      { "id": "costly-victory", "name": "Costly victory", "attacker": { "lossPercent": 20, "demoralized": "none" }, "defender": { "lossPercent": 100, "demoralized": "none" }, "ground": "all" },
+      { "id": "defender-destroyed", "name": "Defender destroyed", "attacker": { "lossPercent": 0, "demoralized": "none" }, "defender": { "lossPercent": 100, "demoralized": "none" }, "ground": "all" }
     ],
-    "belowOneToOne": { "@type": "halving", "@data": { "rollPenalty": 1 } },
-    "diggingIn": { "perTurn": 1, "max": 2 },
-    "demoralizationFactor": 0.5,
+    "table": [
+      ["attacker-destroyed", "attacker-destroyed", "attacker-destroyed", "attacker-destroyed", "attacker-destroyed", "attack-checked", "attack-checked", "attack-checked", "attacker-repulsed", "attacker-repulsed", "attacker-repulsed", "stalemate", "stalemate", "stalemate", "stalemate", "stalemate", "stalemate", "driven-out", "driven-out", "driven-out", "driven-out"],
+      ["attacker-destroyed", "attacker-destroyed", "attack-checked", "attack-checked", "attack-checked", "attacker-repulsed", "attacker-repulsed", "attacker-repulsed", "stalemate", "stalemate", "stalemate", "stalemate", "stalemate", "stalemate", "driven-out", "driven-out", "driven-out", "costly-victory", "costly-victory", "costly-victory", "costly-victory"],
+      ["attack-checked", "attack-checked", "attacker-repulsed", "attacker-repulsed", "attacker-repulsed", "stalemate", "stalemate", "stalemate", "stalemate", "stalemate", "stalemate", "driven-out", "driven-out", "driven-out", "costly-victory", "costly-victory", "costly-victory", "defender-destroyed", "defender-destroyed", "defender-destroyed", "defender-destroyed"],
+      ["attacker-repulsed", "attacker-repulsed", "stalemate", "stalemate", "stalemate", "stalemate", "stalemate", "stalemate", "driven-out", "driven-out", "driven-out", "costly-victory", "costly-victory", "costly-victory", "defender-destroyed", "defender-destroyed", "defender-destroyed", "defender-destroyed", "defender-destroyed", "defender-destroyed", "defender-destroyed"],
+      ["stalemate", "stalemate", "stalemate", "stalemate", "stalemate", "driven-out", "driven-out", "driven-out", "costly-victory", "costly-victory", "costly-victory", "defender-destroyed", "defender-destroyed", "defender-destroyed", "defender-destroyed", "defender-destroyed", "defender-destroyed", "defender-destroyed", "defender-destroyed", "defender-destroyed", "defender-destroyed"],
+      ["stalemate", "stalemate", "driven-out", "driven-out", "driven-out", "costly-victory", "costly-victory", "costly-victory", "defender-destroyed", "defender-destroyed", "defender-destroyed", "defender-destroyed", "defender-destroyed", "defender-destroyed", "defender-destroyed", "defender-destroyed", "defender-destroyed", "defender-destroyed", "defender-destroyed", "defender-destroyed", "defender-destroyed"],
+      ["driven-out", "driven-out", "costly-victory", "costly-victory", "costly-victory", "defender-destroyed", "defender-destroyed", "defender-destroyed", "defender-destroyed", "defender-destroyed", "defender-destroyed", "defender-destroyed", "defender-destroyed", "defender-destroyed", "defender-destroyed", "defender-destroyed", "defender-destroyed", "defender-destroyed", "defender-destroyed", "defender-destroyed", "defender-destroyed"]
+    ],
+    "modifiers": { "worksPerTurn": 3, "worksMax": 6, "belowOneToOnePenalty": 3, "barricades": 0, "fatigued": -2, "amphibious": -4 },
+    "fatigue": { "fatiguedLevel": 2, "demoralizedLevel": 3 },
+    "breakUpShare": 0.1,
     "factionModifiers": [
-      { "id": "harbor-batteries", "name": "Harbor batteries", "factionId": "blue", "when": "holds-controlled-city", "defence": 1 }
+      { "id": "harbor-batteries", "name": "Harbor batteries", "factionId": "blue", "when": "holds-controlled-city", "defence": 3 }
     ]
+  },
+  "combat": {
+    "diggingIn": { "perTurn": 1, "max": 2 },
+    "demoralizationFactor": 0.5
   },
   "ai": {
     "profiles": {
@@ -30,20 +44,22 @@
         "computer": { "approachObjective": 1.5, "bouncedLastTurn": -4, "caution": 0.5, "demoralizedShare": 0.25, "enemyLoss": 0.5, "ownLoss": 0.75 },
         "offensive": { "reach": 3, "oddsTieBreak": 0.02, "staging": 2, "focus": 1, "stallStep": 1, "stallCap": 4 },
         "stakes": { "city": 2, "objective": 5, "territory": 4 },
-        "victoryAlarm": { "critical": 3, "perStep": 0.5, "steps": 4 },
+        "recruits": { "upkeepTurns": 1 },
+        "victoryAlarm": { "critical": 3, "perStep": 1.5, "riskFloor": 0.25, "spendSteps": 2, "steps": 3 },
         "withdraw": { "hopelessTakeChance": 0.5, "lastStandTakeChance": 0.75 }
       },
       "blue": {
         "computer": { "approachObjective": 1.5, "bouncedLastTurn": -4, "caution": 0.5, "demoralizedShare": 0.25, "enemyLoss": 0.5, "ownLoss": 0.75 },
         "offensive": { "reach": 3, "oddsTieBreak": 0.02, "staging": 2, "focus": 1, "stallStep": 1, "stallCap": 4 },
         "stakes": { "city": 2, "objective": 5, "territory": 4 },
-        "victoryAlarm": { "critical": 3, "perStep": 0.5, "steps": 4 },
+        "recruits": { "upkeepTurns": 1 },
+        "victoryAlarm": { "critical": 3, "perStep": 1.5, "riskFloor": 0.25, "spendSteps": 2, "steps": 3 },
         "withdraw": { "hopelessTakeChance": 0.5, "lastStandTakeChance": 0.75 }
       }
     },
     "note": "Fixture values: the Revision 7 computer player's constants, one profile per faction, and no blunders."
   },
-  "unitTypes": [{ "id": "foot", "name": "Foot", "attack": 4, "defence": 5 }],
+  "unitTypes": [{ "id": "foot", "name": "Foot", "attack": 4, "defence": 5, "kind": "ground", "symbol": "infantry", "orders": ["move"] }],
   "factions": [
     {
       "id": "red", "name": "Red League", "abbreviation": "RED", "color": "#b03a2e",

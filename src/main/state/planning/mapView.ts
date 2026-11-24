@@ -1,4 +1,4 @@
-import { isMoveOrder, type MoveOrder, type Scenario, type SubTerritoryId, type TerritoryId } from "../../engine/types";
+import { isMoveOrder, type MoveOrder, type Scenario, type SubTerritoryId, type TerritoryId, type UnitId } from "../../engine/types";
 import type { MapView } from "../../map/view";
 import type { DestinationEstimate } from "../../presentation/odds";
 import type { Draft } from "../session";
@@ -9,13 +9,15 @@ export type PlanningMapView = Omit<MapView, "onSelectNothing" | "onSelectSubTerr
 
 /**
  * The planning map: the destinations being chosen and their odds, the selection, the planned
- * moves (a Withdraw drawn as the move it makes, C1) and air missions (U2), and each own unit's order.
+ * moves (a Withdraw drawn as the move it makes, C1) and air missions (U2), each own unit's order,
+ * and the units ticked in the Invade or Reinforce pane.
  */
 export function planningMapView(
   scenario: Scenario,
   session: PlanningSession,
   destinations: readonly TerritoryId[],
-  estimates: ReadonlyMap<TerritoryId, DestinationEstimate>
+  estimates: ReadonlyMap<TerritoryId, DestinationEstimate>,
+  ticked: ReadonlySet<UnitId> = new Set()
 ): PlanningMapView {
   const { draft, factionId, game } = session;
   return {
@@ -29,6 +31,7 @@ export function planningMapView(
     plannedOrders: draft.orders.map((order): MoveOrder => (isMoveOrder(order) ? order : { ...order, kind: "move" })),
     ...(draft.selectedAircraftId === undefined ? {} : { selectedAircraftId: draft.selectedAircraftId }),
     selectedUnitIds: new Set(draft.selectedUnitIds),
+    ...(ticked.size === 0 ? {} : { tickedUnitIds: ticked }),
     ...(draft.selectedTerritoryId === undefined ? {} : { selectedTerritoryId: draft.selectedTerritoryId }),
     unitOrders: new Map(Object.values(game.state.units)
       .filter((unit) => unit.factionId === factionId)

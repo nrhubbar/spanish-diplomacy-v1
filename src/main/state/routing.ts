@@ -1,6 +1,7 @@
 import type { Phase, Session } from "./session";
 
 export const paths = {
+  credits: "/credits",
   gameOver: "/game-over",
   handoff: "/handoff",
   home: "/",
@@ -24,7 +25,7 @@ export function routeForSession(session: Session): string {
   return phaseRoutes[session.phase];
 }
 
-/** Settings is reachable at any time (U1: from the game's menu too); every other path must match the session. */
+/** Settings and Credits are reachable at any time (U1: Settings from the game's menu too); every other path must match the session. */
 export function isPathAllowed(session: Session, pathname: string): boolean {
-  return pathname === paths.settings || pathname === routeForSession(session);
+  return pathname === paths.settings || pathname === paths.credits || pathname === routeForSession(session);
 }

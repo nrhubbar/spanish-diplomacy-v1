@@ -5,15 +5,20 @@ import type { FactionId, GameState, ResourceId, Resources } from "./types";
  * treasury at step 1 (builds, recruits, replenishment). A missing id is zero.
  */
 
+/** An amount kept to thousandths of a point, the finest the scenario data gives, so sums of fractions never drift. */
+export function toThousandth(value: number): number {
+  return Math.round(value * 1000) / 1000;
+}
+
 export function addResources(left: Resources, right: Resources): Resources {
   const total: Record<ResourceId, number> = { ...left };
-  for (const [id, amount] of Object.entries(right) as [ResourceId, number][]) total[id] = (total[id] ?? 0) + amount;
+  for (const [id, amount] of Object.entries(right) as [ResourceId, number][]) total[id] = toThousandth((total[id] ?? 0) + amount);
   return total;
 }
 
 export function subtractResources(left: Resources, right: Resources): Resources {
   const total: Record<ResourceId, number> = { ...left };
-  for (const [id, amount] of Object.entries(right) as [ResourceId, number][]) total[id] = (total[id] ?? 0) - amount;
+  for (const [id, amount] of Object.entries(right) as [ResourceId, number][]) total[id] = toThousandth((total[id] ?? 0) - amount);
   return total;
 }
 
@@ -27,10 +32,6 @@ export function scaleResources(amount: Resources, factor: number): Resources {
 /** True when `balance` covers every amount in `price`. */
 export function canAfford(balance: Resources, price: Resources): boolean {
   return (Object.entries(price) as [ResourceId, number][]).every(([id, amount]) => amount <= (balance[id] ?? 0));
-}
-
-export function isFree(price: Resources): boolean {
-  return Object.values(price).every((amount) => amount <= 0);
 }
 
 /** A faction's balance in a state (zero when it has no treasury). */

@@ -11,7 +11,7 @@ import { SelectionBar } from "../../main/screens/shell/SelectionBar";
 import { BattleBasics } from "../../main/screens/BattleBasics";
 import type { PlanningSession } from "../../main/state/planning";
 import type { Draft } from "../../main/state/session";
-import { faction, move, shippedRegistry, spain, spainD20, spainId, spainM2, spainWithAir, territory, testRegistry, testStore, unit } from "../support";
+import { faction, move, shippedRegistry, spain, spainId, spainM2, spainWithAir, territory, testRegistry, testStore, unit } from "../support";
 
 afterEach(cleanup);
 
@@ -128,15 +128,15 @@ describe("the selection bar in contested ground (C1, Q-UX-14)", () => {
 
   it("joins the standing battle by default, and withdraws to the one way out", () => {
     const menu = open(spain(), "republic", "asturias");
-    expect(menu.textContent).toContain("Default here. Joins the standing battle for Asturias.");
+    expect(menu.textContent).toContain("Default here. Joins the standing battle for Asturias; +1 fatigue.");
     expect(menu.textContent).toMatch(/To Cantabria, through your own sub-territories \(.+\)\./u);
     expect(menu.textContent).toContain("Not in contested ground: units here attack or withdraw.");
     expect(within(menu).getByRole("button", { name: "Replenish" })).toBeDisabled();
     expect(within(menu).getByRole("button", { name: "Attack" })).toBeEnabled();
   });
 
-  it("adds the fatigue to the standing battle on the d20, and lists the sea lane as the way out", () => {
-    const menu = open(spainD20(), "republic", "andalucia");
+  it("lists the sea lane as the way out", () => {
+    const menu = open(spainWithAir(), "republic", "andalucia");
     expect(menu.textContent).toContain("Joins the standing battle for Andaluc\u00eda; +1 fatigue.");
     expect(menu.textContent).toMatch(/To Murcia, through/u);
   });
@@ -168,21 +168,20 @@ describe("the selection bar in contested ground (C1, Q-UX-14)", () => {
 });
 
 describe("How battles work (B2)", () => {
-  it("explains the d6 rules with a worked example", () => {
+  it("explains the rules with a worked example", () => {
     render(<BattleBasics scenario={spain()} />);
     const section = screen.getByRole("region", { name: "How battles work" });
-    expect(section.textContent).not.toMatch(/roll a d20/u);
     expect(section.textContent).toContain("fights at half its values");
     expect(section.querySelector(".pane-hint")?.textContent).toMatch(/^Example: two .+ (armies|units) attack with \d+ against one with defence \d+, dug in level \d+ \(\+\d+\)\. That is .+ odds: \d+% to take the territory\. A third (army|unit) makes it \d+ against \d+, .+ odds: \d+%\.$/u);
   });
 
-  it("adds the d20 and its fatigue on the d20", () => {
-    const scenario = spainD20();
+  it("states the d20, its fatigue and the works in the scenario's numbers", () => {
+    const scenario = spainWithAir();
     render(<BattleBasics scenario={scenario} />);
     const section = screen.getByRole("region", { name: "How battles work" });
     expect(section.textContent).toContain(`Battles roll a d20.`);
-    expect(section.textContent).toContain(`at fatigue ${String(scenario.d20!.fatigue.fatiguedLevel)} it fights Fatigued (${String(scenario.d20!.modifiers.fatigued)})`);
-    expect(section.textContent).toContain(`up to three, and each level shifts the die ${String(scenario.d20!.modifiers.worksPerTurn)} in the defenders' favour`);
+    expect(section.textContent).toContain(`at fatigue ${String(scenario.d20.fatigue.fatiguedLevel)} it fights Fatigued (${String(scenario.d20.modifiers.fatigued)})`);
+    expect(section.textContent).toContain(`up to three, and each level shifts the die ${String(scenario.d20.modifiers.worksPerTurn)} in the defenders' favour`);
   });
 
   it("states another demoralization factor as a percentage, and leaves the example out without unit types", () => {

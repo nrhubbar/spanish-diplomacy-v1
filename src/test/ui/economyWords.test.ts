@@ -17,6 +17,7 @@ import {
   turnsLeftText
 } from "../../main/presentation/economy";
 import { spain } from "../support";
+import { pinned } from "../pinned";
 
 const minus = "\u2212";
 const dot = "\u00b7";
@@ -29,7 +30,7 @@ const rail: BuildProject = { improvement: "rail", kind: "improvement" };
 const port: BuildProject = { improvement: "port", kind: "improvement" };
 
 describe("resource amounts (EB-12)", () => {
-  const scenario = spain();
+  const scenario = pinned(spain());
 
   it("reads amounts through each resource's display", () => {
     expect(resourceAmount(scenario, funds, 42)).toBe("42");
@@ -56,12 +57,12 @@ describe("resource amounts (EB-12)", () => {
 });
 
 describe("projects in words ($3-$5)", () => {
-  const scenario = spain();
+  const scenario = pinned(spain());
   const state = initialGameState(scenario);
   const madrid = state.subTerritories["madrid" as SubTerritoryId]!;
 
   it("names each kind of project, or falls back to its id", () => {
-    expect(projectBaseName(scenario, building("factory"))).toBe("Factory");
+    expect(projectBaseName(scenario, development("factory"))).toBe("Factory");
     expect(projectBaseName(scenario, building("mystery"))).toBe("mystery");
     expect(projectBaseName(scenario, development("farms"))).toBe("Farms");
     expect(projectBaseName(scenario, development("orchards"))).toBe("orchards");
@@ -70,7 +71,7 @@ describe("projects in words ($3-$5)", () => {
   });
 
   it("names levelled projects with the step they make, after any queued ahead", () => {
-    expect(projectName(scenario, madrid, building("factory"))).toBe("Factory");
+    expect(projectName(scenario, madrid, building("barracks"))).toBe("Barracks");
     expect(projectName(scenario, undefined, development("farms"))).toBe("Farms");
     expect(projectName(scenario, madrid, development("farms"))).toBe("Farms 1 \u2192 2");
     expect(projectName(scenario, madrid, development("mines"))).toBe("Mines 0 \u2192 1");
@@ -83,10 +84,10 @@ describe("projects in words ($3-$5)", () => {
 
   it("says what every building effect does", () => {
     const cases: readonly (readonly [BuildingEffect, string])[] = [
-      [{ extra: 1, kind: "recruit-slots" }, "+1 recruit a turn"],
       [{ kind: "replenish-cap", share: 0.25 }, "replenishes 25% more men a turn"],
       [{ kind: "replenish-discount", resource: "funds" as never, share: 0.25 }, "replenishing costs 25% less Funds"],
-      [{ extra: 1, kind: "rail-departures" }, "+1 rail departure"],
+      [{ kind: "rail-capacity", units: 2 }, "+2 units a turn by rail"],
+      [{ kind: "rail-capacity", units: 1 }, "+1 unit a turn by rail"],
       [{ kind: "airbase" }, "bases aircraft"],
       [{ kind: "all-weather-airbase" }, "flies in Mud and Snow"],
       [{ kind: "defence-roll", roll: 1 }, "+1 defence"]
@@ -102,9 +103,9 @@ describe("projects in words ($3-$5)", () => {
     expect(projectEffectText(scenario, port)).toMatch(/^lands more (armies|units)$/u);
     expect(projectEffectText(scenario, building("mystery"))).toBeUndefined();
     // Effects first, then what it unlocks, at most three types named.
-    expect(projectEffectText(scenario, building("factory"))).toMatch(/^\+1 recruit a turn, recruits Artillery group, Tank company, Truck column\u2026$/u);
-    expect(projectEffectText(scenario, building("depot"))).toBe("replenishing costs 25% less Funds, recruits Tank company, Truck column");
-    expect(projectEffectText(scenario, building("fortifications"))).toBe("+1 defence");
+    expect(projectEffectText(scenario, development("factory"))).toBe("+1.5 Funds a turn, +1 Recruit order a turn, recruits Artillery group, Tank company");
+    expect(projectEffectText(scenario, building("depot"))).toBe("replenishing costs 25% less Funds, recruits Tank company, Truck column, Anti-air battery");
+    expect(projectEffectText(scenario, building("fortifications"))).toBe("+2 defence");
     expect(projectEffectText(scenario, building("barracks"))).toMatch(/^recruits Infantry regiment, Colonial veterans, Security forces\u2026$/u);
   });
 
@@ -126,7 +127,7 @@ describe("projects in words ($3-$5)", () => {
 
   it("gives levels for pips and turns left", () => {
     expect(levelsOf(scenario, madrid, development("farms"))).toEqual({ level: 1, max: 3 });
-    expect(levelsOf(scenario, madrid, building("factory"))).toEqual({ level: 1, max: 1 });
+    expect(levelsOf(scenario, madrid, building("barracks"))).toEqual({ level: 1, max: 1 });
     expect(levelsOf(scenario, madrid, building("fortifications"))).toEqual({ level: 0, max: 1 });
     expect(levelsOf(scenario, madrid, development("orchards"))).toEqual({ level: 0, max: 0 });
     expect(levelsOf(scenario, madrid, rail).level).toBe(2);

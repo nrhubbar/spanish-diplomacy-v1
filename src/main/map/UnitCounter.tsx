@@ -1,4 +1,5 @@
 import type { JSX } from "react";
+import { CloudIcon } from "../components/weather/WeatherIcon";
 import type { UnitState } from "../engine/types";
 import { type ArmyFigures, menLabel, strengthShare, valuesLabel } from "../presentation/army";
 import { glyphs } from "../presentation/glyphs";
@@ -10,6 +11,8 @@ import type { MapPoint } from "../scenarios/loader";
 import { WorksBadge } from "./WorksBadge";
 
 export interface UnitCounterProps {
+  /** Set on an aircraft's card: whether its base's weather keeps it on the ground. */
+  readonly air?: { readonly grounded: boolean };
   readonly factionColor: string;
   readonly figures: ArmyFigures;
   /** Accessible name: the army, its faction, its figures in words, and its order state. */
@@ -23,6 +26,8 @@ export interface UnitCounterProps {
   readonly ordered: boolean;
   readonly position: MapPoint;
   readonly selected: boolean;
+  /** Ticked in the Invade or Reinforce pane: it glows like a selected one, but is not pressed. */
+  readonly ticked: boolean;
   readonly symbol: string;
   readonly unit: UnitState;
   /** The scenario's deepest works level, so the badge shows "2 of 3". */
@@ -36,7 +41,7 @@ export interface UnitCounterProps {
  * bottom right, a planned order top right. Every badge is decorative; the accessible name says
  * it in words.
  */
-export function UnitCounter({ designation, factionColor, figures, label, metrics, name, onSelect, ordered, position, selected, symbol, unit, worksMax }: UnitCounterProps): JSX.Element {
+export function UnitCounter({ air, designation, factionColor, figures, label, metrics, name, onSelect, ordered, position, selected, symbol, ticked, unit, worksMax }: UnitCounterProps): JSX.Element {
   const style = cssVariables(
     { "--faction-color": factionColor, "--strength-share": strengthShare(figures).toFixed(3) },
     { height: metrics.height, left: position.x, top: position.y, width: metrics.width }
@@ -44,11 +49,12 @@ export function UnitCounter({ designation, factionColor, figures, label, metrics
   return (
     <button
       aria-pressed={onSelect === undefined ? undefined : selected}
-      className="unit-counter"
+      className={air === undefined ? "unit-counter" : "unit-counter air-counter"}
       data-demoralized={figures.demoralized}
+      data-grounded={air?.grounded}
       data-ordered={ordered}
       data-reduced={figures.reduced}
-      data-selected={selected}
+      data-selected={selected || ticked}
       data-unit-id={unit.id}
       onClick={(event) => {
         event.stopPropagation();
@@ -75,6 +81,7 @@ export function UnitCounter({ designation, factionColor, figures, label, metrics
         <span aria-hidden="true" className="unit-counter-demoralized" dangerouslySetInnerHTML={{ __html: medallionMarkup("demoralized", factionColor) }} />
       ) : null}
       {figures.dugIn === undefined ? null : <WorksBadge level={figures.dugIn} max={worksMax} />}
+      {air?.grounded === true ? <span aria-hidden="true" className="unit-counter-grounded"><CloudIcon /></span> : null}
       {ordered ? <span aria-hidden="true" className="unit-counter-badge">{glyphs.check}</span> : null}
     </button>
   );

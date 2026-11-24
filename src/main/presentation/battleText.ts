@@ -1,6 +1,6 @@
 import { citiesIn } from "../engine/lookup";
 import { deriveSeed } from "../engine/random";
-import type { BattleOutcome, D6BattleOutcome, Scenario, TerritoryId, UnitId } from "../engine/types";
+import type { BattleOutcome, Scenario, TerritoryId, UnitId } from "../engine/types";
 import { resultKeyOf } from "./grades";
 import { type BattleGroup, changedHands, menLost, sideFactions, sideLosses } from "./battle";
 import { glyphs } from "./glyphs";
@@ -58,11 +58,6 @@ export function sentenceCase(text: string): string {
 /** "8:1" for odds, but the table column caps at 6:1 and column 0 is everything below 1:1. */
 export function columnLabel(column: number): string {
   return column === 0 ? "below 1:1" : `${String(column)}:1`;
-}
-
-/** The unclamped table row, so the breakdown can say when the 0..6 limit applied. */
-export function rawRow(battle: D6BattleOutcome): number {
-  return battle.modifiers.reduce((sum, modifier) => sum + modifier.roll, battle.die);
 }
 
 /** Who holds the place now, in one line. */

@@ -34,6 +34,19 @@ export function useSession(): Session {
   }, [registry, session]);
 }
 
+const viewed = new WeakMap<Session, Session>();
+
+/** The same for code outside React (sound): the session as its viewer may see it, from a state. */
+export function viewedSession(registry: Pick<ScenarioRegistry, "require">, state: RootState): Session {
+  const { session } = state.game;
+  if (!isInGame(session)) return session;
+  const known = viewed.get(session);
+  if (known !== undefined) return known;
+  const seen = visibleSession(registry.require(session.game.scenarioId).scenario, session);
+  viewed.set(session, seen);
+  return seen;
+}
+
 function inPhase<P extends Phase>(session: Session, phases: readonly P[]): session is Extract<Session, { readonly phase: P }> {
   const allowed: readonly Phase[] = phases;
   return allowed.includes(session.phase);

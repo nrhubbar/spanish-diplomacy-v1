@@ -46,8 +46,8 @@ describe("the turn pipeline (section 2)", () => {
     const draft = startDraft({ dice: () => seededRandom(1), scenario, seed: 1, start: initialGameState(scenario), streams: seededRollStreams(1, 1), submissions: [] });
     for (const phase of [weatherStep, airStep, trainingStep, incomeStep]) expect(phase(draft)).toBe(draft);
     const presets = new Set(ruleAreas.flatMap((area) => Object.values(builtInModuleRegistry.require(area, builtInModules[area][0]).steps)));
-    // Landed slices are no longer skeletons: dice (m3r1-d20-combat), movement (`allowance`), partition `provinces` (m3r1-sub-territories) and air (m3r1-air-generals).
-    const skeletons = ruleAreas.filter((area) => area !== "dice" && area !== "air" && area !== "movement").flatMap((area) => Object.values(builtInModuleRegistry.require(area, builtInModules[area][1]).steps)).filter((part) => !presets.has(part))
+    // Landed slices are no longer skeletons: movement (`allowance`), partition `provinces` (m3r1-sub-territories) and air (m3r1-air-generals).
+    const skeletons = ruleAreas.filter((area) => area !== "air" && area !== "movement").flatMap((area) => Object.values(builtInModuleRegistry.require(area, builtInModules[area][1]).steps)).filter((part) => !presets.has(part))
       .filter((part) => !Object.values(builtInModuleRegistry.require("partition", "provinces").steps).includes(part));
     expect(skeletons.length).toBeGreaterThan(2);
     for (const part of skeletons) expect(part(draft)).toBe(draft);
@@ -74,7 +74,7 @@ describe("the module registry and plugins (E2, E3, E5)", () => {
   });
 
   it("refuses a module registered twice, as a package problem", () => {
-    const clash = { modules: [{ area: "dice", blocks: [], id: "d6-table", steps: {} } satisfies RuleModule] };
+    const clash = { modules: [{ area: "air", blocks: [], id: "missions", steps: {} } satisfies RuleModule] };
     expect(() => createModuleRegistry([clash])).toThrow("registered twice");
     const registry = createScenarioRegistry({
       maps: { "/x/map.json": modularMap() },
@@ -83,7 +83,7 @@ describe("the module registry and plugins (E2, E3, E5)", () => {
       scenarios: { "/x/scenario.json": modularScenario() },
       urlAssets: {}
     });
-    expect(registry.problems.map((problem) => problem.message).join("")).toContain("plugin: The dice module \"d6-table\" is registered twice.");
+    expect(registry.problems.map((problem) => problem.message).join("")).toContain("plugin: The air module \"missions\" is registered twice.");
   });
 });
 

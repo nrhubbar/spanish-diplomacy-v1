@@ -87,7 +87,7 @@ export function hiddenLayers(shown: readonly LayerId[]): string {
 }
 
 /** Note 4: every sub-territory's border and name show past this zoom (250%). */
-export const subTerritoryBorderZoom = 2.5;
+const subTerritoryBorderZoom = 2.5;
 
 export function showsSubTerritoryBorders(zoom: number, layers: readonly LayerId[]): boolean {
   return layers.includes("sub-territories") && zoom > subTerritoryBorderZoom;

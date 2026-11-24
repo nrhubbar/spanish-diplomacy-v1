@@ -15,8 +15,8 @@ import { OddsInfo } from "./OddsInfo";
 /** X5: under the `allowance` module, each destination's route and what the selected army can do. */
 export interface DestinationRoutes {
   readonly allowance: number;
-  /** Armies already boarding at each capital this turn, for "uses 1 of 3 boarding places". */
-  readonly departuresUsed: (route: MoveRoute) => number;
+  /** D5: the train places used at a ride's boarding capital this turn with these units aboard, for "uses 3 of 4 train places". */
+  readonly placesUsed: (route: MoveRoute) => number;
   readonly routes: ReadonlyMap<TerritoryId, MoveRoute>;
   readonly state: GameState;
   readonly units: readonly UnitState[];
@@ -51,7 +51,7 @@ export function DestinationChoices({ estimates, moves, scenario }: DestinationCh
           const summary = oddsSummary(estimate);
           const route = moves?.routes.get(territoryId);
           const detail = estimateDetail(estimate);
-          const routeLine = route === undefined || moves === undefined ? undefined : routeDetail(scenario, moves.state, route, moves.departuresUsed(route));
+          const routeLine = route === undefined || moves === undefined ? undefined : routeDetail(scenario, moves.state, route, moves.placesUsed(route));
           const chips = route === undefined || moves === undefined ? [] : routeChips(scenario, route, moves.units, moves.allowance, estimate);
           const describedBy = moves === undefined ? undefined : `${listId}-${territoryId}`;
           return (

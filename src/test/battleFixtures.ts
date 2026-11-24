@@ -1,22 +1,23 @@
 import type {
   ArmyLoss,
   BattleArmy,
-  D6BattleOutcome,
-  BattleResult,
+  BattleOutcome,
   BattleSite,
   CombatModifier,
+  GradeId,
   Retreat,
   TurnOutcome
 } from "../main/engine/types";
 import { faction, move, territory, unit } from "./support";
 
 /**
- * Hand-built battle outcomes for presentation tests. They follow the D6BattleOutcome contract but
- * are not produced by the resolver, so their numbers are illustrative, not engine-exact.
+ * Hand-built battle outcomes for presentation tests. They follow the BattleOutcome contract but
+ * are not produced by the resolver, so their numbers are illustrative, not engine-exact. Grades are
+ * the Spain catalogue's.
  */
 
-export function army(unitId: string, factionId: string, from: string, value: number): BattleArmy {
-  return { factionId: faction(factionId), from: territory(from), unitId: unit(unitId), value };
+export function army(unitId: string, factionId: string, from: string, value: number, condition: Partial<Pick<BattleArmy, "demoralized" | "fullMen" | "men">> = {}): BattleArmy {
+  return { demoralized: false, factionId: faction(factionId), from: territory(from), fullMen: 700, men: 700, unitId: unit(unitId), value, ...condition };
 }
 
 export function side(...armies: readonly BattleArmy[]) {
@@ -49,33 +50,34 @@ interface BattleInput {
   readonly defender: ReturnType<typeof side>;
   readonly demoralized?: readonly string[];
   readonly die: number;
+  readonly grade: string;
+  readonly ground?: BattleOutcome["ground"];
   readonly losses?: readonly ArmyLoss[];
   readonly modifiers?: readonly CombatModifier[];
   readonly oddsLabel: string;
-  readonly result: BattleResult;
   readonly retreats?: readonly Retreat[];
   readonly site: BattleSite;
   readonly surrendered?: readonly string[];
 }
 
-export function battle(input: BattleInput): D6BattleOutcome {
+export function battle(input: BattleInput): BattleOutcome {
   const modifiers = input.modifiers ?? [];
   const raw = modifiers.reduce((sum, modifier) => sum + modifier.roll, input.die);
   return {
-    dice: "d6",
     attacker: input.attacker,
     attackerFactionId: faction(input.attackerFactionId),
     column: input.column,
     defender: input.defender,
     demoralizedUnitIds: (input.demoralized ?? []).map(unit),
     die: input.die,
+    grade: input.grade as GradeId,
+    ground: input.ground ?? 0,
     kind: "battle",
     losses: input.losses ?? [],
     modifiers,
     oddsLabel: input.oddsLabel,
-    result: input.result,
     retreats: input.retreats ?? [],
-    row: Math.min(6, Math.max(0, raw)),
+    score: Math.min(20, Math.max(0, raw)),
     site: input.site,
     surrenderedUnitIds: (input.surrendered ?? []).map(unit)
   };
@@ -85,17 +87,17 @@ const clmDefenders = side(army("rep-wad-ras-1", "republic", "castilla-la-mancha"
 const clmTaken: BattleSite = { kind: "assault", occupation: { factionId: faction("south"), kind: "taken" }, territoryId: territory("castilla-la-mancha") };
 
 /** Section 1.6: two factions attack Castilla-La Mancha at once; only the south succeeds. */
-export const threeSidedAssault: readonly D6BattleOutcome[] = [
+export const threeSidedAssault: readonly BattleOutcome[] = [
   battle({
     attacker: side(army("north-san-quintin-25", "north", "castilla-y-leon", 4)),
     attackerFactionId: "north",
     column: 0,
     defender: clmDefenders,
     demoralized: ["north-san-quintin-25"],
-    die: 5,
+    die: 6,
+    grade: "attacker-repulsed",
     modifiers: [dugIn(1), resistance, { halvings: 1, kind: "odds-halving", roll: -1 }],
     oddsLabel: "1:2",
-    result: "attacker-demoralized",
     site: clmTaken
   }),
   battle({
@@ -103,80 +105,83 @@ export const threeSidedAssault: readonly D6BattleOutcome[] = [
     attackerFactionId: "south",
     column: 1,
     defender: clmDefenders,
-    die: 6,
+    die: 20,
+    grade: "costly-victory",
+    ground: "all",
     losses: [loss("rep-wad-ras-1", 550, true), loss("south-granada-6", 450)],
     modifiers: [dugIn(1), resistance],
     oddsLabel: "1:1",
-    result: "defender-exchange",
     site: clmTaken
   })
 ];
 
 /** An ordinary two-sided assault on dug-in, defended Madrid that costs the attacker men. */
-export const madridRepulsed: D6BattleOutcome = battle({
+export const madridRepulsed: BattleOutcome = battle({
   attacker: side(army("north-san-marcial-22", "north", "castilla-y-leon", 4), army("north-argel-27", "north", "castilla-y-leon", 4)),
   attackerFactionId: "north",
   column: 1,
   defender: side(army("rep-covadonga-4", "republic", "madrid", 6)),
-  die: 2,
+  die: 6,
+  grade: "attack-checked",
   losses: [loss("north-san-marcial-22", 700, true), loss("north-argel-27", 350)],
   modifiers: [dugIn(2), resistance],
   oddsLabel: "1:1",
-  result: "attacker-attrition",
   site: { kind: "assault", occupation: { kind: "held" }, territoryId: territory("madrid") }
 });
 
 /** C9: a head-on swap between Navarra and the Basque Country. */
-export const roadMeeting: D6BattleOutcome = battle({
+export const roadMeeting: BattleOutcome = battle({
   attacker: side(army("north-america-23", "north", "navarra", 4)),
   attackerFactionId: "north",
   column: 1,
   defender: side(army("rep-basque-column", "republic", "pais-vasco", 4)),
   demoralized: ["rep-basque-column"],
-  die: 4,
+  die: 20,
+  grade: "defender-driven-out",
+  ground: "all",
   oddsLabel: "1:1",
-  result: "defender-demoralized",
   site: { between: [territory("navarra"), territory("pais-vasco")], kind: "meeting", winner: faction("north") }
 });
 
 /** M27: armies of two factions still in Asturias fight where they stand. */
-export const standingBattle: D6BattleOutcome = battle({
+export const standingBattle: BattleOutcome = battle({
   attacker: side(army("north-milan-32", "north", "asturias", 4), army("north-simancas-40", "north", "asturias", 4)),
   attackerFactionId: "north",
   column: 2,
   defender: side(army("rep-asturian-militia", "republic", "asturias", 4)),
   demoralized: ["rep-asturian-militia", "north-simancas-40"],
-  die: 3,
+  die: 4,
+  grade: "bloody-stalemate",
   modifiers: [resistance],
   oddsLabel: "2:1",
-  result: "both-demoralized",
   site: { kind: "assault", occupation: { kind: "held" }, territoryId: territory("asturias") }
 });
 
 /** Section 1.6 step 3: two factions enter empty Extremadura; the stronger stands as defender. */
-export const contestedEntry: D6BattleOutcome = battle({
+export const contestedEntry: BattleOutcome = battle({
   attacker: side(army("rep-vitoria-8", "republic", "andalucia", 4)),
   attackerFactionId: "republic",
   column: 1,
   defender: side(army("south-cadiz-33", "south", "andalucia", 4)),
   die: 1,
+  grade: "attacker-destroyed",
   losses: [loss("rep-vitoria-8", 785, true)],
   oddsLabel: "1:1",
-  result: "attacker-eliminated",
   site: { kind: "entry", occupation: { factionId: faction("south"), kind: "taken" }, territoryId: territory("extremadura") }
 });
 
 /** A surrender after a lost battle: the defenders had nowhere to go. */
-export const surrenderAfterBattle: D6BattleOutcome = battle({
+export const surrenderAfterBattle: BattleOutcome = battle({
   attacker: side(army("south-legion", "south", "andalucia", 6), army("south-regulares", "south", "andalucia", 6)),
   attackerFactionId: "south",
   column: 3,
   defender: side(army("rep-sevilla-34", "republic", "murcia", 3)),
   demoralized: ["rep-sevilla-34"],
-  die: 5,
+  die: 16,
+  grade: "defender-driven-out",
+  ground: "all",
   modifiers: [resistance],
   oddsLabel: "4:1",
-  result: "defender-demoralized",
   site: { kind: "assault", occupation: { factionId: faction("south"), kind: "taken" }, territoryId: territory("murcia") },
   surrendered: ["rep-sevilla-34"]
 });

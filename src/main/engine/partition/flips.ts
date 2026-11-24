@@ -39,7 +39,7 @@ export function subTerritoryGraph(scenario: Scenario): ReadonlyMap<SubTerritoryI
 /** Sub-territory adjacency over land only: the borders, plus each land connection's entry pair. */
 const landGraphs = new WeakMap<Scenario, ReadonlyMap<SubTerritoryId, readonly SubTerritoryId[]>>();
 
-export function landGraph(scenario: Scenario): ReadonlyMap<SubTerritoryId, readonly SubTerritoryId[]> {
+function landGraph(scenario: Scenario): ReadonlyMap<SubTerritoryId, readonly SubTerritoryId[]> {
   const cached = landGraphs.get(scenario);
   if (cached !== undefined) return cached;
   const graph = new Map<SubTerritoryId, SubTerritoryId[]>();

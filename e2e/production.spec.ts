@@ -17,9 +17,9 @@ test("the production build plays without test fixtures or console errors", async
   await page.getByRole("button", { name: "Start Campaign" }).click();
   await expect(page.locator(".map-vector")).toBeVisible();
   await expect(page.locator(".terrain-layer")).toHaveAttribute("data-renderer", "webgl", { timeout: 15000 });
-  // Every army and general shows its own counter from 125% zoom (Z1); the five aircraft have theirs in the air layer.
+  // Every army, general and aircraft shows its own counter from 125% zoom (Z1): 41 on the ground and five in the air.
   await page.getByRole("button", { name: "Zoom in" }).click();
-  await expect(page.locator(".unit-counter")).toHaveCount(41);
+  await expect(page.locator(".unit-counter")).toHaveCount(46);
   await endTurnAnyway(page);
   await expect(page.getByRole("heading", { level: 1, name: "Turn resolution" })).toBeVisible();
   expect(errors).toEqual([]);

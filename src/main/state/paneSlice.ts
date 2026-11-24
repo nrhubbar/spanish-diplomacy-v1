@@ -1,5 +1,6 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { SubTerritoryId, TerritoryId } from "../engine/types";
+import type { MoveMode } from "../engine/network/reach";
+import type { SubTerritoryId, TerritoryId, UnitId } from "../engine/types";
 import { beginPlanning, endTurn, exitGame, startGame, startNextTurn } from "./gameSlice";
 import { timeRanOut } from "./timeout";
 
@@ -23,14 +24,30 @@ export type PaneView =
 
 export type PaneViewKind = PaneView["kind"];
 
+/** U6: what the player changed in the Invade or Reinforce pane since it opened. */
+export interface MusterChoices {
+  readonly modes: Readonly<Partial<Record<UnitId, MoveMode>>>;
+  /** Units and aircraft ticked or unticked; the rest are ticked when already ordered there. */
+  readonly ticks: Readonly<Partial<Record<UnitId, boolean>>>;
+}
+
+export const noMusterChoices: MusterChoices = { modes: {}, ticks: {} };
+
 export interface PaneState {
+  /** Choices in the view shown; any change of view starts afresh. */
+  readonly muster: MusterChoices;
   /** Never empty: the root is always This turn. The last entry is the view shown. */
   readonly stack: readonly PaneView[];
 }
 
 export const rootView: PaneView = { kind: "thisTurn" };
 
-const initialState: PaneState = { stack: [rootView] };
+const initialState: PaneState = { muster: noMusterChoices, stack: [rootView] };
+
+/** A change of view, which drops the choices made in the one before. */
+function showing(stack: readonly PaneView[]): PaneState {
+  return { ...initialState, stack };
+}
 
 /**
  * Pushes a view. A view of the same kind already in the stack is taken out first, so the stack
@@ -48,7 +65,7 @@ export function popped(stack: readonly PaneView[]): readonly PaneView[] {
 }
 
 /** A view opened from the top bar: straight on top of This turn, so back returns there. */
-export function opened(view: PaneView): readonly PaneView[] {
+function opened(view: PaneView): readonly PaneView[] {
   return view.kind === "thisTurn" ? [rootView] : [rootView, view];
 }
 
@@ -60,6 +77,11 @@ export function topView(stack: readonly PaneView[]): PaneView {
 /** U3: the view a map click opens: Territory Info, unless the click picks a destination. */
 export function viewForMapClick(choosingDestination: boolean, territoryId: TerritoryId): PaneView | undefined {
   return choosingDestination ? undefined : { id: territoryId, kind: "territory" };
+}
+
+/** On a phone, views with a long list to work through open tall. */
+export function opensTall(view: PaneView): boolean {
+  return view.kind === "invade" || view.kind === "reinforce" || view.kind === "recruit" || (view.kind === "territory" && view.tab === "recruit");
 }
 
 /** A stable key for a view, so a newly shown view can open a collapsed pane. */
@@ -93,12 +115,16 @@ export const paneSlice = createSlice({
   initialState,
   name: "pane",
   reducers: {
+    musterModeChosen: (state, { payload }: PayloadAction<{ readonly mode: MoveMode; readonly unitId: UnitId }>) =>
+      ({ ...state, muster: { ...state.muster, modes: { ...state.muster.modes, [payload.unitId]: payload.mode } } }),
+    musterTicked: (state, { payload }: PayloadAction<{ readonly ticked: boolean; readonly unitId: UnitId }>) =>
+      ({ ...state, muster: { ...state.muster, ticks: { ...state.muster.ticks, [payload.unitId]: payload.ticked } } }),
     /** Opens a view on top of This turn, as the top bar's buttons do. */
-    openView: (_state, { payload }: PayloadAction<PaneView>) => ({ stack: opened(payload) }),
-    popView: (state) => ({ stack: popped(state.stack) }),
-    pushView: (state, { payload }: PayloadAction<PaneView>) => ({ stack: pushed(state.stack, payload) }),
+    openView: (_state, { payload }: PayloadAction<PaneView>) => showing(opened(payload)),
+    popView: (state) => showing(popped(state.stack)),
+    pushView: (state, { payload }: PayloadAction<PaneView>) => showing(pushed(state.stack, payload)),
     resetPane: () => initialState
   }
 });
 
-export const { openView, popView, pushView, resetPane } = paneSlice.actions;
+export const { musterModeChosen, musterTicked, openView, popView, pushView, resetPane } = paneSlice.actions;

@@ -47,6 +47,15 @@ const shapes: Readonly<Record<string, JSX.Element>> = {
   )
 };
 
+/** The plain cloud, for a badge that stands for any weather. */
+export function CloudIcon(): JSX.Element {
+  return (
+    <svg aria-hidden="true" className="weather-icon" fill="none" focusable="false" height="1em" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="1em">
+      <path d={cloud} />
+    </svg>
+  );
+}
+
 export function WeatherIcon({ weatherId }: { readonly weatherId: WeatherId }): JSX.Element {
   return (
     <svg aria-hidden="true" className="weather-icon" data-weather={weatherId} fill="none" focusable="false" height="1em" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="1em">

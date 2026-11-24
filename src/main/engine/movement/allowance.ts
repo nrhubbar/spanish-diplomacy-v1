@@ -10,7 +10,10 @@ import { unitTypeOf } from "./network";
  */
 
 /** The base allowance before any hook (M1). */
-export const baseAllowance = 1;
+const baseAllowance = 1;
+
+/** M1: the territories an army moves further when its transport carries every unit that needs it. */
+export const transportBonus = 1;
 
 /** What the army's units need and carry (M1, Q-MR-20): one truck per `carries` other units; mobile units need none. */
 export interface Transport {
@@ -49,11 +52,11 @@ export function transportOf(scenario: Scenario, state: GameState, unitIds: reado
   return { allMobile: counted > 0 && mobile === counted, capacity, needing, transports };
 }
 
-/** M1: +1 when the army's transport carries every unit that needs it (an all-cavalry army needs none). */
+/** M1: the transport bonus when the army's transport carries every unit that needs it (an all-cavalry army needs none). */
 export function truckBonus(scenario: Scenario, state: GameState, unitIds: readonly UnitId[]): number {
   const transport = transportOf(scenario, state, unitIds);
   if (transport.needing + transport.transports === 0 && !transport.allMobile) return 0;
-  return transport.capacity >= transport.needing && (transport.transports > 0 || transport.needing === 0) ? 1 : 0;
+  return transport.capacity >= transport.needing && (transport.transports > 0 || transport.needing === 0) ? transportBonus : 0;
 }
 
 /** The movement module's `allowanceDelta` hook: the truck bonus. */

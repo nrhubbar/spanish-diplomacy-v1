@@ -11,7 +11,7 @@ import { GroupCounter } from "./GroupCounter";
 import { type CounterMetrics, placeCounterStacks, type ScreenRect } from "./placement";
 import { markupForSymbols } from "./symbols";
 import { UnitCounter } from "./UnitCounter";
-import type { MapView } from "./view";
+import { glows, type MapView } from "./view";
 
 /**
  * Counter sizes per zoom level, in screen pixels. Overview counters print the values and the
@@ -46,6 +46,13 @@ export function crowdedDisplacement(metrics: CounterMetrics): number {
  * territory share one summed counter, whatever the room on screen.
  */
 export const individualCountersFromZoom = 1.25;
+
+/** The compact counters this zoom always uses, whatever the room on screen; undefined where armies may show one by one. */
+export function compactMetricsAt(zoom: number, narrow: boolean): CounterMetrics | undefined {
+  const level = semanticLevel(zoom);
+  if (level === "detail") return undefined;
+  return zoom < individualCountersFromZoom || (narrow && level === "overview") ? compactMetrics[level] : undefined;
+}
 
 export interface CounterLayout {
   readonly compact: boolean;
@@ -93,7 +100,7 @@ export function layoutCounters(
   const individual = armyItems(game);
   const metrics = counterMetrics[level];
   if (level === "detail") return { compact: false, items: individual, metrics, positions: place(individual, metrics, false).positions };
-  const spread = zoom < individualCountersFromZoom || (narrow && level === "overview") ? undefined : place(individual, metrics, false);
+  const spread = compactMetricsAt(zoom, narrow) !== undefined ? undefined : place(individual, metrics, false);
   if (spread !== undefined && spread.maxDisplacement <= crowdedDisplacement(metrics)) {
     return { compact: false, items: individual, metrics, positions: spread.positions };
   }
@@ -138,6 +145,7 @@ export function CounterLayer({ game, layout, level, scenario, unitSymbols, view 
               label={orders === "" ? label : `${label}, ${orders}`}
               metrics={metrics}
               onSelect={onSelectTerritory === undefined ? undefined : () => { onSelectTerritory(item.territoryId); }}
+              selected={item.units.some((unit) => glows(view, unit.id))}
               ordered={ordered === item.units.length}
               position={position}
               worksMax={worksMax}
@@ -161,6 +169,7 @@ export function CounterLayer({ game, layout, level, scenario, unitSymbols, view 
             ordered={ordered}
             position={position}
             selected={view.selectedUnitIds.has(unit.id)}
+            ticked={view.tickedUnitIds?.has(unit.id) === true}
             symbol={symbols.get(`${unit.factionId}:${definition.type}`) ?? ""}
             unit={unit}
             worksMax={worksMax}

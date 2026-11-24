@@ -1,5 +1,4 @@
 import { removeArmies } from "../board";
-import { requireD20, usesD20 } from "../d20/rules";
 import type { RuleHooks } from "../hooks";
 import type { RuleModule } from "../modules";
 import type { Phase } from "../phases/draft";
@@ -12,9 +11,6 @@ import { weatherEffectsIn, weatherIn } from "../weather";
  * Step 0 here records it in the turn report, the hooks give its effects to the other areas,
  * and the step-9 part takes frostbite.
  */
-
-/** Q-WX-6, D3: the d20 modifiers are the d6 ones times 3, so the d6 table takes a third. */
-const d6Scale = 3;
 
 /** T2, T3: the turn's weather in the report, as the players saw it before planning. */
 const recordWeather: Phase = (draft) => {
@@ -49,10 +45,10 @@ const takeFrostbite: Phase = (draft) => {
     if (men <= 0) continue;
     const left = Math.max(0, unit.strength - men);
     const fullStrength = (scenario.index.units.get(unit.id) ?? start.raised[unit.id])?.fullStrength ?? unit.strength;
-    const breaksUp = left <= 0 || (usesD20(scenario) && left < requireD20(scenario).breakUpShare * fullStrength);
+    const breaksUp = left <= 0 || left < scenario.d20.breakUpShare * fullStrength;
     if (breaksUp) brokenUp.push(unit.id);
     else armies[unitId] = { ...unit, strength: left };
-    events.push({ factionId: unit.factionId, kind: "frostbite", men, territoryId: unit.territoryId, unitId: unit.id, ...(breaksUp ? { destroyed: true as const } : {}) });
+    events.push({ factionId: unit.factionId, kind: "frostbite", men: breaksUp ? unit.strength : men, territoryId: unit.territoryId, unitId: unit.id, ...(breaksUp ? { destroyed: true as const } : {}) });
   }
   return events.length === 0 ? draft : { ...draft, armies: removeArmies(armies, brokenUp), events: [...draft.events, ...events] };
 };
@@ -61,8 +57,7 @@ const takeFrostbite: Phase = (draft) => {
 function weatherModifiers(scenario: Scenario, state: GameState, territoryId: TerritoryId): readonly CombatModifier[] {
   const weather = weatherIn(scenario, state, territoryId);
   if (weather === undefined || weather.attackRoll === 0) return [];
-  const roll = scenario.rules.dice === "d6-table" ? Math.trunc(weather.attackRoll / d6Scale) : weather.attackRoll;
-  return roll === 0 ? [] : [{ kind: "weather", roll, weatherId: weather.id }];
+  return [{ kind: "weather", roll: weather.attackRoll, weatherId: weather.id }];
 }
 
 /** U2: an all-weather (paved) airfield in a sub-territory of the territory that the faction holds. */
@@ -75,7 +70,7 @@ function hasAllWeatherAirbase(scenario: Scenario, state: GameState, territoryId:
 }
 
 /** T4: the weather's effects on the other areas, read from the start-of-turn state (CT-44). */
-export const weatherHooks: RuleHooks = {
+const weatherHooks: RuleHooks = {
   allowanceDelta: ({ from, scenario, state }) => -weatherEffectsIn(scenario, state, from, "movement-penalty").reduce((sum, effect) => sum + effect.amount, 0),
   canDigIn: ({ scenario, state, territoryId }) => weatherEffectsIn(scenario, state, territoryId, "blocks-digging-in").length === 0,
   combatModifiers: ({ scenario, state, territoryId }) => weatherModifiers(scenario, state, territoryId),

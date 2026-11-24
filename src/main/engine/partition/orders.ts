@@ -22,12 +22,6 @@ export const contestedReasons = {
   withdrawTarget: "Withdraw to a neighbouring territory you hold whole."
 } as const;
 
-/** True when the unit stands in contested ground at the start of the turn. */
-export function inContestedGround(scenario: Scenario, state: GameState, unitId: UnitId): boolean {
-  const unit = state.units[unitId];
-  return unit !== undefined && isPartitioned(scenario) && isContested(scenario, state, unit.territoryId);
-}
-
 /** W5: whether the unit's type takes Withdraw orders (aircraft do not); a type without a list allows it. */
 export function canWithdraw(scenario: Scenario, state: GameState, unitId: UnitId): boolean {
   const definition = scenario.index.units.get(unitId) ?? state.raised[unitId];

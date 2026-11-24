@@ -1,0 +1,220 @@
+[
+ {
+  "id": "Q-R3-EC1",
+  "idea": "economy",
+  "text": "What shape should upkeep take?",
+  "context": "Today armies cost nothing to keep. The South earns no Manpower at the start, so any upkeep needs an allowance or it goes broke in its first turns.",
+  "options": [
+   {
+    "label": "A. Each unit costs Manpower every turn by its full size (half a point per 1,000 men); each side's depots feed the first 6",
+    "recommended": true,
+    "rationale": "Militia pays 1.25 a turn and an infantry regiment 0.35, with no special rule. At the start only the Republic pays: 5 to 7 of its 27, depending on the size of security forces."
+   },
+   {
+    "label": "B. Every army costs 1 Manpower a turn",
+    "rationale": "Simplest, but the South is broke at the end of turn 1 and a truck column costs as much as a militia column."
+   },
+   {
+    "label": "C. Option A, plus half a Fund a turn for each gun, tank, truck and aircraft",
+    "rationale": "More realistic, and one more number to read."
+   },
+   {
+    "label": "D. A supply limit: each whole territory feeds three armies, each one over costs 1 Manpower",
+    "rationale": "Easy to see, but losing ground raises the bill at once."
+   }
+  ]
+ },
+ {
+  "id": "Q-R3-EC2",
+  "idea": "economy",
+  "text": "What happens when a side can't feed its armies?",
+  "context": "It should hurt without ending the game. Units cost less to feed as they lose men, so the bill shrinks.",
+  "options": [
+   {
+    "label": "A. No recruiting or Replenish, and the missing Manpower leaves as men, at most 10% of a unit a turn and never below half",
+    "recommended": true,
+    "rationale": "No unit is ever lost to hunger, and it needs no new order."
+   },
+   {
+    "label": "B. No recruiting or Replenish, and nothing else",
+    "rationale": "Gentlest; a side can sit on a large unpaid army."
+   },
+   {
+    "label": "C. Let players disband units",
+    "rationale": "More control, but a new order the computer player must learn too."
+   }
+  ]
+ },
+ {
+  "id": "Q-R3-EC3",
+  "idea": "economy",
+  "text": "Which value package should we build?",
+  "context": "Both make armies cost something to keep, builds pay back sooner and regulars cheaper. Moderate passes 11 of 12 economy tests, Bold 10 and today 2. The tests were used to tune Moderate, so a pass isn't proof of balance.",
+  "options": [
+   {
+    "label": "A. Moderate",
+    "recommended": true,
+    "rationale": "The same units, prices and incomes you know, moved. By arithmetic, a Republic raising only militia reaches 91 attack on turn 10 instead of 318."
+   },
+   {
+    "label": "B. Bold: twice the upkeep, plus Funds upkeep for machines",
+    "rationale": "Makes Manpower a real limit for everyone, but a large Republican army outgrows its income."
+   },
+   {
+    "label": "C. Upkeep only; leave prices and builds alone",
+    "rationale": "Smallest change. Mines still pay back on turn 10, and the North's militia still adds 77 percent more attack than its regulars."
+   }
+  ]
+ },
+ {
+  "id": "Q-R3-EC4",
+  "idea": "economy",
+  "text": "How should militia change?",
+  "context": "Today it has the most attack and defence for its price and trains fastest. It holds and storms equally well.",
+  "options": [
+   {
+    "label": "A. 3 Funds (from 2), attack 2 (from 3), defence stays 4",
+    "recommended": true,
+    "rationale": "Militia holds ground, regulars take it: militia alone adds less attack than regulars for every side (the North is closest, at 92 percent). The Republic loses 5 of its 64 starting attack."
+   },
+   {
+    "label": "B. 3 Funds, attack and defence unchanged",
+    "rationale": "Easier to accept, but the North's militia still adds 38 percent more attack than its regulars."
+   },
+   {
+    "label": "C. 4 Funds, values unchanged",
+    "rationale": "Militia becomes an emergency buy, and the North's still adds 4 percent more attack than its regulars."
+   }
+  ]
+ },
+ {
+  "id": "Q-R3-EC5",
+  "idea": "economy",
+  "text": "What should security forces be for?",
+  "context": "Infantry beats them on every number at the same price, as you noticed.",
+  "options": [
+   {
+    "label": "A. A quick garrison: 4 Funds, 1 Manpower, 1,000 men, trained in 1 turn",
+    "recommended": true,
+    "rationale": "Cheaper and faster than infantry, and weaker."
+   },
+   {
+    "label": "B. Keep the price and make them 4/6, like infantry",
+    "rationale": "Then they duplicate infantry."
+   },
+   {
+    "label": "C. A city specialist: a bonus when defending a city",
+    "rationale": "More flavour, but a new kind of unit effect."
+   }
+  ]
+ },
+ {
+  "id": "Q-R3-EC6",
+  "idea": "economy",
+  "text": "How fast should mines and industry pay back?",
+  "context": "A mine started on turn 1 pays back on turn 10 and Industry on turn 13. Past simulations ended at a median of 12 to 15 turns; your games end before turn 10.",
+  "options": [
+   {
+    "label": "A. Cheaper and 2 turns to build: mines back by turn 6, industry by turn 7",
+    "recommended": true,
+    "rationale": "A turn-3 build still profits in a 10-turn game. Building in a month is quicker than history."
+   },
+   {
+    "label": "B. Keep the build times and cut prices further",
+    "rationale": "Truer to history, and the first payment still comes late."
+   },
+   {
+    "label": "C. Make each industry level pay 2",
+    "rationale": "Doubles the industry already standing: the Republic gains 10 Funds a turn at once."
+   }
+  ]
+ },
+ {
+  "id": "Q-R3-EC7",
+  "idea": "economy",
+  "text": "Should some building cost Manpower as well as Funds?",
+  "context": "The North has 27 Manpower a turn but only 5 Funds, so it can't spend its men. No number in either package fixes that without touching incomes.",
+  "options": [
+   {
+    "label": "A. Yes: fortifications, roads and rail take part of their price in Manpower",
+    "recommended": true,
+    "rationale": "Labour battalions did this work, and men become useful to a poor side."
+   },
+   {
+    "label": "B. No, but give the North more Funds",
+    "rationale": "Simple, and it makes the strongest computer side stronger."
+   },
+   {
+    "label": "C. No, but trim the farms",
+    "rationale": "Less Manpower for everyone; you said the incomes feel right."
+   }
+  ]
+ },
+ {
+  "id": "Q-R3-EC8",
+  "idea": "economy",
+  "text": "When Popular Resistance goes, what should replace it?",
+  "context": "It takes 3 off the attacker's die in Republican cities, worth 15 points of success chance in a contested city fight. Past simulations gave the Republic 10 to 16 percent of wins even with it, so removing it and adding upkeep both hurt the Republic.",
+  "options": [
+   {
+    "label": "A. Barricades worth 2 in any city, for every side",
+    "recommended": true,
+    "rationale": "Gives back 5 of the 15 points evenly, and city fighting stays hard for all."
+   },
+   {
+    "label": "B. Nothing",
+    "rationale": "Cleanest; expect the Republic to win less."
+   },
+   {
+    "label": "C. Barricades worth 2, and Madrid and Barcelona start fortified",
+    "rationale": "Gives those two capitals 10 more points."
+   },
+   {
+    "label": "D. Barricades worth 2, and 10 more starting Funds for the Republic",
+    "rationale": "Two more regiments from the Bank of Spain's reserves."
+   }
+  ]
+ },
+ {
+  "id": "Q-R3-AI1",
+  "idea": "ai",
+  "text": "When a rival is one step from winning, what should the computer players do?",
+  "context": "Today a rival one step short makes them value guarding their own ground more (4 times) than attacking the leader's (2.5 times), and the last army on such ground never leaves. They see a human leader as well as a computer one.",
+  "options": [
+   {
+    "label": "A. Attack the leader as readily as they guard, accept worse odds, and count a foothold that spoils a territory as a full success",
+    "recommended": true,
+    "rationale": "One foothold takes a territory off the leader's count, which is the cheapest way to stop a win."
+   },
+   {
+    "label": "B. Attack the leader only, and stop guarding",
+    "rationale": "Aggressive, but an easily led army leaves its own ground open."
+   },
+   {
+    "label": "C. Keep the present balance and only fix what it overlooks: a leader needing a third side's ground, or two territories at once",
+    "rationale": "Smaller change, but still defensive."
+   }
+  ]
+ },
+ {
+  "id": "Q-R3-AI2",
+  "idea": "ai",
+  "text": "Should the computer players change how they spend when a rival is close to winning?",
+  "context": "Today their recruiting and building ignore it. They set aside 30 percent of Funds for builds.",
+  "options": [
+   {
+    "label": "A. Yes: at 2 steps or fewer, no saving for builds, and prefer units that train in one turn",
+    "recommended": true,
+    "rationale": "New units arrive in time to matter."
+   },
+   {
+    "label": "B. Yes, but only at one step",
+    "rationale": "Later, and often too late for a 2-turn unit."
+   },
+   {
+    "label": "C. No",
+    "rationale": "Keeps the economy steady, at the cost of losing the game first."
+   }
+  ]
+ }
+]

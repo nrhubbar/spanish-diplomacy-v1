@@ -1,12 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { holdWhole } from "./holdWhole";
-import { generalModifiers } from "../../main/engine/generals/command";
 import { generalUnitDefinition } from "../../main/engine/generals/identity";
 import { nextOnRoster } from "../../main/engine/generals/roster";
-import { estimateAttack } from "../../main/engine/combat";
+import { type AttackEstimate, estimateAttack } from "../../main/engine/combat";
 import { requireUnitDefinition } from "../../main/engine/lookup";
 import { initialGameState, resolveTurn } from "../../main/engine/resolution";
-import type { GameState, GeneralId, Scenario, SackOrder, TurnOutcome, UnitId, UnitState } from "../../main/engine/types";
+import type { CombatModifier, GameState, GeneralId, Scenario, SackOrder, TurnOutcome, UnitId, UnitState } from "../../main/engine/types";
 import { faction, move, spainWithAir, territory, tiny, unit } from "../support";
 
 const seed = 3;
@@ -23,28 +22,32 @@ function without(state: GameState, ...ids: readonly string[]): GameState {
   return { ...state, units: Object.fromEntries(Object.entries(state.units).filter(([id]) => !ids.includes(id))) };
 }
 
+/** The general and trait modifiers an estimate predicts. */
+function ledBy(estimate: AttackEstimate): readonly CombatModifier[] {
+  return estimate.kind === "battle" ? estimate.modifiers.filter((modifier) => modifier.kind === "general" || modifier.kind === "trait") : [];
+}
+
 describe("a general's command bonus and trait (D4, U5, U6)", () => {
   const scenario = spainWithAir();
   const state = initialGameState(scenario);
+  const attackers = ["north-san-marcial-22", "north-san-quintin-25"].map(unit);
 
   it("gives the defender's best general his +1 and his trait", () => {
-    const modifiers = generalModifiers({ attackerFactionId: faction("north"), defenderFactionIds: [faction("republic")], diggingIn: true, scenario, state, territoryId: territory("madrid") });
-    expect(modifiers).toEqual([
+    expect(ledBy(estimateAttack(scenario, state, faction("north"), attackers, territory("madrid")))).toEqual([
       { factionId: "republic", generalId: "jose-miaja", kind: "general", role: "defence", roll: -1 },
       { generalId: "jose-miaja", kind: "trait", role: "defence", roll: -1, traitId: "tenacious" }
     ]);
   });
 
   it("gives an attacking general his +1 and his trait when he moves with the attack", () => {
-    const attack = estimateAttack(scenario, state, faction("north"), [unit("north-navarre-requetes"), unit("north-general-mola")], territory("aragon"));
-    expect(attack.kind === "battle" ? attack.modifiers.filter((modifier) => modifier.kind === "general" || modifier.kind === "trait") : []).toEqual([]);
+    expect(ledBy(estimateAttack(scenario, state, faction("north"), [unit("north-navarre-requetes"), unit("north-general-mola")], territory("aragon")))).toEqual([]);
     const intoMadrid = estimateAttack(scenario, withUnitAt(state, "north-general-mola", { territoryId: territory("castilla-y-leon") }), faction("north"),
       [unit("north-san-marcial-22"), unit("north-general-mola")], territory("madrid"));
     if (intoMadrid.kind !== "battle") throw new Error("expected a battle");
     expect(intoMadrid.modifiers).toContainEqual({ factionId: "north", generalId: "emilio-mola", kind: "general", role: "attack", roll: 1 });
     expect(intoMadrid.modifiers).toContainEqual({ generalId: "emilio-mola", kind: "trait", role: "attack", roll: 1, traitId: "aggressive" });
-    // A general never adds to the side's value: only ground units fight.
-    expect(intoMadrid.attacker.armies.map((army) => army.unitId)).toEqual(["north-san-marcial-22"]);
+    // A general never adds to the side's value.
+    expect(intoMadrid.attacker.armies.map((army) => [army.unitId, army.value])).toEqual([["north-san-marcial-22", intoMadrid.attack], ["north-general-mola", 0]]);
   });
 
   it("counts only the best single general on a side (declog D5)", () => {
@@ -55,12 +58,12 @@ describe("a general's command bonus and trait (D4, U5, U6)", () => {
       raised: { ...state.raised, [rojo.id]: rojo },
       units: { ...state.units, [rojo.id]: { factionId: faction("republic"), fatigue: 0, id: rojo.id, morale: { demoralized: false, quietTurns: 0 }, strength: 100, territoryId: territory("madrid") } }
     };
-    const modifiers = generalModifiers({ attackerFactionId: faction("north"), defenderFactionIds: [faction("republic")], diggingIn: true, scenario, state: twoGenerals, territoryId: territory("madrid") });
+    const modifiers = ledBy(estimateAttack(scenario, twoGenerals, faction("north"), attackers, territory("madrid")));
     expect(modifiers.filter((modifier) => modifier.kind === "general")).toHaveLength(1);
     expect(modifiers[0]).toMatchObject({ generalId: "jose-miaja" });
   });
 
-  it("applies the general's +1 in the turn's battles through the combatModifiers hook", () => {
+  it("applies the general's +1 in the turn's battles", () => {
     const attack = ["north-san-marcial-22", "north-san-quintin-25"].map((id) => move("north", id, "castilla-y-leon", "madrid"));
     const result = resolveTurn(scenario, state, [{ factionId: faction("north"), orders: attack }], seed);
     const battle = result.outcomes.find((outcome) => outcome.kind === "battle");
@@ -109,7 +112,6 @@ describe("rallies and deaths (C5, U5, D7)", () => {
     expect(result.outcomes).toContainEqual({ factionId: "north", generalId: "emilio-mola", kind: "rallied", territoryId: "la-rioja", unitIds: ["north-navarre-requetes"] });
     expect(result.finalState.units[unit("north-navarre-requetes")]?.morale.demoralized).toBe(false);
     expect(result.finalState.units[unit("north-general-mola")]?.territoryId).toBe("la-rioja");
-    expect(kinds(result.outcomes)).toContain("general-moved");
   });
 
   it("does not rally under an uninspiring general", () => {
@@ -143,8 +145,8 @@ describe("rallies and deaths (C5, U5, D7)", () => {
   });
 });
 
-describe("the d6 preset (CT-21)", () => {
-  it("has no generals and no air, so Milestone 2 play is unchanged", () => {
+describe("a scenario without generals or air (CT-21)", () => {
+  it("has no generals and no air, and starts with none", () => {
     const scenario = tiny();
     expect(scenario.generals).toEqual([]);
     expect(scenario.rules.air).toBe("none");

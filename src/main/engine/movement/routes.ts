@@ -4,7 +4,7 @@ import { hasLinks } from "../network/links";
 import { allFoot, marchCrossing, motorPath, startSubTerritories } from "../network/paths";
 import type { LinkStep, MoveMode, UnreachableCode } from "../network/reach";
 import { isContested } from "../partition/holders";
-import type { FactionId, GameState, MoveLeg, MoveOrder, Scenario, SubTerritoryId, TerritoryId, UnitId } from "../types";
+import type { FactionId, GameState, MoveLeg, MoveOrder, RailShortage, Scenario, SubTerritoryId, TerritoryId, UnitId } from "../types";
 import { hasFighter } from "../units/fighting";
 import { armyAllowance, fitsAllowance, transportOf } from "./allowance";
 import {
@@ -17,9 +17,10 @@ import {
   landingAt,
   landNeighbors,
   portLandings,
-  type RailRide,
-  railDepartures,
+  railCapacity,
+  railPlaces,
   railReach,
+  type RailRide,
   seaClosed,
   seaEndPort,
   subTerritoriesOf
@@ -32,7 +33,7 @@ import {
  *
  * - `step`: one land step, anywhere (it may attack): R5's March, across a link with a road or,
  *   for foot units, any link.
- * - `march`: two or more land steps within the allowance (M1): R5's Motor, along main roads,
+ * - `march`: two or more land steps within the allowance (M1): R5's Motor, along roads trucks may use,
  *   never over a pass or into contested ground, at most the road rules' `motorRange`, with no
  *   rough-ground cost on the roads; every step but the last ends in friendly ground (M2).
  * - `rail`: a ride from the territory's capital to another capital in friendly ground (M3).
@@ -246,9 +247,9 @@ export function describeRoute(
     subs = linked ? subTerritoriesOf(scenario, leg.to) : [];
   }
   if (shape === "march" && linked) {
-    // R5: Motor never enters contested ground, and runs along main roads the whole way.
+    // R5: Motor never enters contested ground, and runs along roads trucks may use the whole way.
     if (isContested(scenario, state, last.to)) return refuse("contested", "Motor can't enter contested ground.");
-    // Declog D13: a main road crosses mountain and swamp, so Motor pays no rough-ground step (P8).
+    // Declog D13: a road crosses mountain and swamp, so Motor pays no rough-ground step (P8).
     const motor = motorPath(scenario, state, start, legs.map((leg) => leg.to));
     if (!motor.ok) return motor;
     path.push(...motor.path.map(({ step }) => step));
@@ -274,15 +275,14 @@ export function describeRoute(
   };
 }
 
-/** What the faction's planned moves already use this turn (M3, M5), by army. */
+/** What the faction's planned moves already use this turn (M3, M5): train places by unit (D5), the rest by army. */
 export interface RouteUsage {
   readonly amphibious: ReadonlyMap<string, ReadonlySet<string>>;
-  readonly departures: ReadonlyMap<SubTerritoryId, ReadonlySet<string>>;
+  /** D5: train places taken at each boarding capital. */
+  readonly departures: ReadonlyMap<SubTerritoryId, number>;
   /** Port landings by landing port. */
   readonly landings: ReadonlyMap<SubTerritoryId, ReadonlySet<string>>;
 }
-
-export const noUsage: RouteUsage = { amphibious: new Map(), departures: new Map(), landings: new Map() };
 
 function addTo<Key>(map: Map<Key, Set<string>>, key: Key, army: string): void {
   const set = map.get(key) ?? new Set<string>();
@@ -290,7 +290,7 @@ function addTo<Key>(map: Map<Key, Set<string>>, key: Key, army: string): void {
   map.set(key, set);
 }
 
-/** The capacity each route takes: a rail departure at its boarding capital, a landing in a port, or an amphibious lane. */
+/** The capacity each route takes: train places at its boarding capital, a landing in a port, or an amphibious lane. */
 export function routeClaims(route: MoveRoute): { readonly amphibious?: string; readonly departure?: SubTerritoryId; readonly landing?: SubTerritoryId } {
   return {
     ...(route.rail === undefined ? {} : { departure: route.rail.boarding }),
@@ -299,27 +299,56 @@ export function routeClaims(route: MoveRoute): { readonly amphibious?: string; r
   };
 }
 
-/** M3, M5: the capacity a set of planned routes uses, one claim per army. */
-export function usageOf(routes: readonly { readonly army: string; readonly route: MoveRoute }[]): RouteUsage {
+/** Units taking a route together: their army (W4) and the train places they need (`railPlaces`, D5). */
+export interface RouteParty {
+  readonly army: string;
+  readonly places: number;
+  readonly route: MoveRoute;
+}
+
+/** M3, M5, D5: the capacity a set of planned routes uses: a train place per unit, and one landing or lane per army. */
+export function usageOf(routes: readonly RouteParty[]): RouteUsage {
   const amphibious = new Map<string, Set<string>>();
-  const departures = new Map<SubTerritoryId, Set<string>>();
+  const departures = new Map<SubTerritoryId, number>();
   const landings = new Map<SubTerritoryId, Set<string>>();
-  for (const { army, route } of routes) {
+  for (const { army, places, route } of routes) {
     const claims = routeClaims(route);
-    if (claims.departure !== undefined) addTo(departures, claims.departure, army);
+    if (claims.departure !== undefined) departures.set(claims.departure, (departures.get(claims.departure) ?? 0) + places);
     if (claims.landing !== undefined) addTo(landings, claims.landing, army);
     if (claims.amphibious !== undefined) addTo(amphibious, claims.amphibious, army);
   }
   return { amphibious, departures, landings };
 }
 
-/** M3, M5: room left for one more army on the route, given what is used (an army already counted is free). */
-export function hasRoom(scenario: Scenario, state: GameState, route: MoveRoute, army: string, usage: RouteUsage): boolean {
+/** D5: the places still free on the trains at a boarding capital, given what is used. */
+export function railPlacesLeft(scenario: Scenario, state: GameState, boarding: SubTerritoryId, usage: Pick<RouteUsage, "departures">): number {
+  return Math.max(0, railCapacity(scenario, state, boarding) - (usage.departures.get(boarding) ?? 0));
+}
+
+/** D5: units that need `places` on the trains at `boarding` board whole or not at all: how few are left, when they don't fit. */
+function shortageAt(scenario: Scenario, state: GameState, boarding: SubTerritoryId, places: number, usage: Pick<RouteUsage, "departures">): RailShortage | undefined {
+  const left = railPlacesLeft(scenario, state, boarding, usage);
+  return places > left ? { boarding, left, places } : undefined;
+}
+
+/** D5: why the route's trains can't take the party whole, or undefined when they can or it takes none. */
+export function railShortage(scenario: Scenario, state: GameState, { places, route }: Pick<RouteParty, "places" | "route">, usage: Pick<RouteUsage, "departures">): RailShortage | undefined {
+  const { departure } = routeClaims(route);
+  return departure === undefined ? undefined : shortageAt(scenario, state, departure, places, usage);
+}
+
+/** D5: the refusal of an army its trains can't take whole, with the places left. */
+export function railShortageText(scenario: Scenario, { boarding, left, places }: RailShortage): string {
+  const station = scenario.index.subTerritories.get(boarding)?.name ?? "the station";
+  if (left === 0) return `Rail has no places left at ${station} this turn.`;
+  return `Rail has only ${String(left)} ${left === 1 ? "place" : "places"} left at ${station} this turn, and ${String(places)} units would board.`;
+}
+
+/** M3, M5, D5: room left on the route for the party, given what is used (a landing or lane its army already has is free). */
+export function hasRoom(scenario: Scenario, state: GameState, party: RouteParty, usage: RouteUsage): boolean {
+  const { army, route } = party;
+  if (railShortage(scenario, state, party, usage) !== undefined) return false;
   const claims = routeClaims(route);
-  if (claims.departure !== undefined) {
-    const used = usage.departures.get(claims.departure);
-    if (!(used?.has(army) ?? false) && (used?.size ?? 0) >= railDepartures(scenario, state, claims.departure)) return false;
-  }
   if (claims.landing !== undefined) {
     const used = usage.landings.get(claims.landing);
     if (!(used?.has(army) ?? false) && (used?.size ?? 0) >= portLandings(scenario, route.sea?.level ?? 0)) return false;
@@ -332,24 +361,41 @@ export function hasRoom(scenario: Scenario, state: GameState, route: MoveRoute, 
 }
 
 /** The planned moves of a faction as routes, for `usageOf`. Orders whose legs no longer describe a route are left out. */
-export function plannedRoutes(scenario: Scenario, state: GameState, orders: readonly MoveOrder[]): readonly { readonly army: string; readonly route: MoveRoute }[] {
+export function plannedRoutes(scenario: Scenario, state: GameState, orders: readonly MoveOrder[]): readonly RouteParty[] {
   return orders.flatMap((order) => {
     const check = describeRoute(scenario, state, order.factionId, order.from, legsOf(scenario, order), true, undefined, [order.unitId]);
-    return check.ok ? [{ army: armyKey(scenario, order), route: check.route }] : [];
+    return check.ok ? [{ army: armyKey(scenario, order), places: railPlaces(scenario, state, [order.unitId]), route: check.route }] : [];
   });
+}
+
+/**
+ * D5: why moves about to be given can't all board, given the faction's other planned moves: the
+ * first boarding capital with too few places left for the units that would board there together.
+ */
+export function boardingRefusal(scenario: Scenario, state: GameState, moves: readonly MoveOrder[], others: readonly MoveOrder[]): string | undefined {
+  const { departures } = usageOf(plannedRoutes(scenario, state, moves));
+  if (departures.size === 0) return undefined;
+  const usage = usageOf(plannedRoutes(scenario, state, others));
+  for (const [boarding, places] of departures) {
+    const shortage = shortageAt(scenario, state, boarding, places, usage);
+    if (shortage !== undefined) return railShortageText(scenario, shortage);
+  }
+  return undefined;
 }
 
 /** The selected army's allowance and transport, as the planning screen summarizes them (X5). */
 export interface ArmyMovement {
   readonly allMobile: boolean;
   readonly allowance: number;
+  /** Units the army's transport can carry. */
+  readonly capacity: number;
   readonly needing: number;
   readonly transports: number;
 }
 
 export function armyMovement(scenario: Scenario, state: GameState, factionId: FactionId, from: TerritoryId, unitIds: readonly UnitId[]): ArmyMovement {
   const transport = transportOf(scenario, state, unitIds);
-  return { allMobile: transport.allMobile, allowance: armyAllowance(scenario, state, factionId, from, unitIds), needing: transport.needing, transports: transport.transports };
+  return { allMobile: transport.allMobile, allowance: armyAllowance(scenario, state, factionId, from, unitIds), capacity: transport.capacity, needing: transport.needing, transports: transport.transports };
 }
 
 /**
@@ -367,11 +413,32 @@ export function moveRoutes(
   unitIds: readonly UnitId[],
   planned: readonly MoveOrder[] = []
 ): ReadonlyMap<TerritoryId, MoveRoute> {
+  return routeOffers(scenario, state, factionId, from, unitIds, planned).routes;
+}
+
+/** What the game offers units setting out together: `moveRoutes`, and the destinations only full trains keep them from. */
+export interface RouteOffers {
+  /** D5: the destinations with no route because their trains can't take the units whole, with the places left. */
+  readonly full: ReadonlyMap<TerritoryId, RailShortage>;
+  readonly routes: ReadonlyMap<TerritoryId, MoveRoute>;
+}
+
+/** `moveRoutes`, with the refusals the trains' places give (D5). */
+export function routeOffers(
+  scenario: Scenario,
+  state: GameState,
+  factionId: FactionId,
+  from: TerritoryId,
+  unitIds: readonly UnitId[],
+  planned: readonly MoveOrder[]
+): RouteOffers {
   const movement = armyMovement(scenario, state, factionId, from, unitIds);
   const rides = ridesFor(scenario, state, factionId);
   const ordered = new Set(unitIds);
   const usage = usageOf(plannedRoutes(scenario, state, planned.filter((order) => order.factionId === factionId && !ordered.has(order.unitId))));
+  const places = railPlaces(scenario, state, unitIds);
   const found = new Map<TerritoryId, MoveRoute>();
+  const full = new Map<TerritoryId, RailShortage>();
   // M23: a demoralized unit cannot attack, so it may not enter where another faction stands.
   const demoralized = unitIds.some((unitId) => state.units[unitId]?.morale.demoralized === true);
   // D27.1: units that cannot fight only reinforce their own side (M11), as step 1 holds them back otherwise.
@@ -386,8 +453,14 @@ export function moveRoutes(
     if (probe !== undefined && hookedOrderVerdict({ order: { factionId, from, kind: "move", legs, to, unitId: probe }, scenario, state })?.ok === false) return;
     const check = describeRoute(scenario, state, factionId, from, legs, movement.allMobile, rides, unitIds);
     if (!check.ok || !fitsAllowance(check.route.cost, check.route.steps, movement.allowance)) return;
-    if (!hasRoom(scenario, state, check.route, armyKey(scenario, { factionId, from, legs, to }), usage)) return;
-    found.set(to, check.route);
+    const party: RouteParty = { army: armyKey(scenario, { factionId, from, legs, to }), places, route: check.route };
+    if (hasRoom(scenario, state, party, usage)) {
+      found.set(to, check.route);
+      return;
+    }
+    const shortage = railShortage(scenario, state, party, usage);
+    // The first ride tried is the one to name, as it is the one the game would have offered.
+    if (shortage !== undefined && !full.has(to)) full.set(to, shortage);
   };
 
   for (const neighbor of neighborsOf(scenario, from)) offer([{ kind: neighbor.kind, to: neighbor.territoryId }]);
@@ -400,7 +473,7 @@ export function moveRoutes(
   for (const end of rides(from).keys()) {
     for (const next of landNeighbors(scenario, end)) offer([{ kind: "rail", to: end }, { kind: "land", to: next }]);
   }
-  return found;
+  return { full: new Map([...full].filter(([to]) => !found.has(to))), routes: found };
 }
 
 /** M11: a move into ground the faction controls, or where its units that are not moving stand, is a reinforcement. */

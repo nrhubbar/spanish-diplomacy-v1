@@ -20,42 +20,20 @@ import type {
   UnitId,
   UnitState
 } from "../types";
-import { generalsSetAside, unitKindIn, unitTypeIn } from "./pieces";
+import { unitKindIn, unitTypeIn } from "./pieces";
 import { airScratch, validOrdersOf } from "./scratch";
 import { missionTerritory } from "./validation";
 
 /**
- * Step 1, after the engine's reveal (AG-3, AG-4): sackings take effect, then aircraft and
- * generals leave the board until step 9, so only ground units march, fight and hold ground.
- * A general's move is kept aside too: he goes where his army arrives. His army is the ground
- * units of his faction moving with him (same origin and destination) or holding with him.
+ * Step 1, after the engine's reveal (AG-3, AG-4): sackings take effect, then aircraft
+ * are taken off the board until step 9, so they never march, fight on the ground or hold it (D17).
  */
 export const setAside: Phase = (input) => {
   const draft = sackGenerals(input, validOrdersOf(input, "sack"));
   const { scenario, start } = draft.input;
   const aside: Record<UnitId, UnitState> = {};
   for (const unit of Object.values(draft.armies)) {
-    const kind = unitKindIn(scenario, start.raised, unit.id);
-    // D17: aircraft are never ground combatants; generals leave the ground steps only under the d6 table (AG-2).
-    if (kind === "air" || (kind === "general" && generalsSetAside(scenario))) aside[unit.id] = unit;
-  }
-  // C1: a set-aside general's Withdraw goes where his withdrawing army goes, like a move (d6 table only).
-  const moves = [...draft.orders.valid, ...validOrdersOf(draft, "withdraw")];
-  const generalMoves: Record<UnitId, TerritoryId> = {};
-  for (const order of moves) if (aside[order.unitId] !== undefined && unitKindIn(scenario, start.raised, order.unitId) === "general") generalMoves[order.unitId] = order.to;
-  const moving = new Map(moves.map((order) => [order.unitId, order]));
-  const armies: Record<UnitId, readonly UnitId[]> = {};
-  for (const general of Object.values(aside)) {
-    if (unitKindIn(scenario, start.raised, general.id) !== "general") continue;
-    const to = generalMoves[general.id];
-    armies[general.id] = Object.values(draft.armies)
-      .filter((unit) => unit.factionId === general.factionId && aside[unit.id] === undefined && unit.territoryId === general.territoryId)
-      .filter((unit) => {
-        const order = moving.get(unit.id);
-        return to === undefined ? order === undefined : order?.to === to;
-      })
-      .map((unit) => unit.id)
-      .sort(compareIds);
+    if (unitKindIn(scenario, start.raised, unit.id) === "air") aside[unit.id] = unit;
   }
   const keep = (order: { readonly unitId: UnitId }): boolean => aside[order.unitId] === undefined;
   const origins = new Map([...draft.orders.origins].filter(([id]) => aside[id] === undefined));
@@ -69,7 +47,7 @@ export const setAside: Phase = (input) => {
       reinforcements: draft.orders.reinforcements.filter(keep),
       valid: draft.orders.valid.filter(keep)
     },
-    scratch: { ...draft.scratch, air: { ...airScratch(draft), armies, aside, generalMoves } }
+    scratch: { ...draft.scratch, air: { ...airScratch(draft), aside } }
   };
 };
 

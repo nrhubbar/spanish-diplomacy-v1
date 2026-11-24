@@ -1,4 +1,5 @@
 import type {
+  RoadRules,
   GameState,
   LinkDefinition,
   LinkModifier,
@@ -95,8 +96,12 @@ export function stationCap(scenario: Scenario, state: LinkState, subTerritoryId:
   return Math.min(best, scenario.improvements?.rail.maxLevel ?? best);
 }
 
-/** R7: the link's modifiers once a work is done; undefined when the work does not fit the link. */
-export function afterWork(modifiers: readonly LinkModifier[], work: LinkWork): readonly LinkModifier[] | undefined {
+/**
+ * R7: the link's modifiers once a work is done; undefined when the work does not fit the link. A
+ * road that trucks may use already (the scenario's `motorLevel`) is not upgraded: a better one
+ * would give nothing.
+ */
+export function afterWork(modifiers: readonly LinkModifier[], work: LinkWork, roads: RoadRules | undefined): readonly LinkModifier[] | undefined {
   const rail = modifiers.find((modifier) => modifier.kind === "rail");
   const road = modifiers.find((modifier) => modifier.kind === "road");
   const others = (kind: LinkModifier["kind"]): readonly LinkModifier[] => modifiers.filter((modifier) => modifier.kind !== kind);
@@ -106,20 +111,20 @@ export function afterWork(modifiers: readonly LinkModifier[], work: LinkWork): r
     case "rail-upgrade":
       return rail?.level === "single" ? [...others("rail"), { kind: "rail", level: "main" }] : undefined;
     case "road-upgrade":
-      if (road?.level === "main") return undefined;
+      if (road !== undefined && roadRank(road.level) >= roadRank(roads?.motorLevel ?? "main")) return undefined;
       return [...others("road"), { kind: "road", level: road === undefined ? "track" : "main" }];
   }
 }
 
 /** R7: why a work does not fit the link as it stands; undefined when it does. */
-export function workMisfit(modifiers: readonly LinkModifier[], work: LinkWork): string | undefined {
-  if (afterWork(modifiers, work) !== undefined) return undefined;
+export function workMisfit(modifiers: readonly LinkModifier[], work: LinkWork, roads: RoadRules | undefined): string | undefined {
+  if (afterWork(modifiers, work, roads) !== undefined) return undefined;
   switch (work) {
     case "new-rail":
       return "There is a railway here already.";
     case "rail-upgrade":
       return modifiers.some((modifier) => modifier.kind === "rail") ? "This is a main line already." : "Needs a railway first.";
     case "road-upgrade":
-      return "This is a main road already.";
+      return "Trucks can use this road already.";
   }
 }

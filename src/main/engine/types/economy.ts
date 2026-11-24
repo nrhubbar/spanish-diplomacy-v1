@@ -7,7 +7,7 @@ import type {
   SubTerritoryId,
   TerritoryId
 } from "../ids";
-import type { BuildingEffect } from "./effects";
+import type { BuildingEffect, DevelopmentEffect } from "./effects";
 import type { TerrainKind } from "./rules";
 import type { SourceCitation } from "./scenario";
 
@@ -31,10 +31,12 @@ export interface ResourceDefinition {
   readonly name: string;
 }
 
-/** $3: one development track (Farms, Mines, Industry), levels 0 to `maxLevel`. */
+/** $3: one development track (Farms, Mines, Factory), levels 0 to `maxLevel`. */
 export interface DevelopmentDefinition {
-  /** Industry may be developed only in a sub-territory with a city. */
+  /** The Factory may be developed only in a sub-territory with a city. */
   readonly cityOnly: boolean;
+  /** What each level does beyond its yield. */
+  readonly effects: readonly DevelopmentEffect[];
   readonly id: DevelopmentId;
   readonly maxLevel: number;
   readonly name: string;
@@ -62,6 +64,14 @@ export interface BuildingDefinition extends BuildCost {
   /** An upgrade (the paved airfield) needs this building first. */
   readonly upgradeOf?: BuildingId;
 }
+
+/**
+ * R3: what recruiting a type needs: a building in the territory's capital, or level 1 of a
+ * development track anywhere in the territory the recruiter holds.
+ */
+export type RecruitRequirement =
+  | { readonly buildingId: BuildingId; readonly kind: "building" }
+  | { readonly developmentId: DevelopmentId; readonly kind: "development" };
 
 /** $4: the levelled improvements every sub-territory has. Rail 0-3, port 0-2. */
 export interface ImprovementRules {
@@ -94,7 +104,7 @@ export interface SubTerritoryDefinition {
   /**
    * The starting station level, read from the sub-territory's links (D3, declog D6): 2 when any
    * of them has main rail, 1 when any has single rail, else 0. Rail range and connectivity are
-   * the links' (R5); the station level sets departures and takes damage (`engine/network/links.ts`).
+   * the links' (R5); the station level sets its rail capacity and takes damage (`engine/network/links.ts`).
    */
   readonly rail: number;
   /** P1: the holder on the scenario's start date, whatever the territory's controller. */
@@ -105,12 +115,20 @@ export interface SubTerritoryDefinition {
 
 /** R2, R5, D7: the numbers of the Recruit and Replenish orders. */
 export interface RecruitmentRules {
-  /** Recruit orders a territory may take per turn, before building bonuses. */
+  /** Recruit orders a territory may take per turn, before a Factory's bonus. */
   readonly maxPerTerritory: number;
   /** Replenish price per value point, as a share of the Recruit price per point. */
   readonly replenishCostShare: number;
   /** Most men a Replenish order restores per turn, as a share of establishment. */
   readonly replenishShare: number;
+}
+
+/** D1: what happens when upkeep cannot be paid. */
+export interface UpkeepRules {
+  /** Most men a unit loses in a turn, as a share of full strength. */
+  readonly maxLossShare: number;
+  /** No unit falls below this share of full strength. */
+  readonly minStrengthShare: number;
 }
 
 /** M1-M5, D7: the numbers of the movement module. */

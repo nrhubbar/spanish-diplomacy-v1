@@ -55,7 +55,7 @@ function nextTab(tabs: readonly TerritoryTab[], current: TerritoryTab, key: stri
 }
 
 /** The tabs a scenario offers: Buildings and Production with an economy, Recruit with recruitment. */
-export function territoryTabs(scenario: Scenario): readonly TerritoryTab[] {
+function territoryTabs(scenario: Scenario): readonly TerritoryTab[] {
   const { rules } = scenario;
   return [
     "units",

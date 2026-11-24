@@ -11,10 +11,11 @@ import type { PaneView } from "../../main/state/paneSlice";
 import type { PlanningSession } from "../../main/state/planning";
 import { emptyDraft, type Draft } from "../../main/state/session";
 import { faction, spain, spainId, territory, testRegistry, testStore } from "../support";
+import { pinned } from "../pinned";
 
 afterEach(cleanup);
 
-const scenario = spain();
+const scenario = pinned(spain());
 const start = initialGameState(scenario);
 const republic = faction("republic");
 const north = faction("north");
@@ -135,7 +136,7 @@ describe("the Production tab (U9)", () => {
     const table = screen.getByRole("table");
     expect(within(table).getAllByRole("columnheader").map((cell) => cell.textContent)).toEqual(["Sub-territory", ...scenario.resources.map((resource) => resource.name)]);
     const rows = within(table).getAllByRole("row");
-    expect(rows[1]?.textContent).toMatch(/^★ MadridFarms 1 · Industry 2/u);
+    expect(rows[1]?.textContent).toMatch(/^★ MadridFarms 1 · Factory 1/u);
     expect(rows[2]?.textContent).toMatch(/^Sierra de GuadarramaNo development−−$/u);
     expect(rows[3]?.textContent).toContain("raided this turn");
     expect(rows.at(-1)?.textContent).toMatch(/^Held whole: pays\+/u);

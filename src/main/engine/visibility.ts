@@ -5,7 +5,7 @@ import type { FactionId, GameState, Order, Scenario, SubTerritoryId, SubTerritor
  * items and units in training are hidden, except where the viewer's recon reveals them this
  * turn: a revealed territory shows its holders' balances and its queues and training. The
  * viewer's own reveals stay; other factions' reveals are dropped. Everything on the board
- * (units, control, buildings, development) stays public. Under `m2-strength` nothing is hidden.
+ * (units, control, buildings, development) stays public.
  * With no viewer (a report several local players share) only public information is left.
  */
 export function viewFor(scenario: Scenario, state: GameState, viewer: FactionId | undefined): GameState {
@@ -26,8 +26,8 @@ export function viewFor(scenario: Scenario, state: GameState, viewer: FactionId 
     subTerritories,
     training: state.training.filter((item) => item.factionId === viewer || revealed.has(item.territoryId)),
     treasuries: Object.fromEntries(Object.entries(state.treasuries).filter(([factionId]) => visibleFactions.has(factionId as FactionId))),
-    // B2: the Replenish carry is the viewer's own bookkeeping; nobody else's shows.
-    ...(state.replenishCarry === undefined ? {} : { replenishCarry: Object.fromEntries(Object.entries(state.replenishCarry).filter(([factionId]) => factionId === viewer)) })
+    // The carry is the viewer's own bookkeeping; nobody else's shows.
+    ...(state.carry === undefined ? {} : { carry: Object.fromEntries(Object.entries(state.carry).filter(([factionId]) => factionId === viewer)) })
   };
 }
 
@@ -53,6 +53,8 @@ function located(factionIds: readonly FactionId[], territoryId: TerritoryId | un
 function privacyOf(scenario: Scenario, state: GameState, outcome: TurnOutcome): Privacy | undefined {
   const at = (subTerritoryId: SubTerritoryId): TerritoryId | undefined => scenario.index.subTerritories.get(subTerritoryId)?.territoryId;
   switch (outcome.kind) {
+    case "upkeep":
+      return { factionIds: [outcome.factionId], scope: "owner" };
     case "income":
       return { factionIds: [outcome.factionId], scope: "holders" };
     case "build-queued":
@@ -90,7 +92,6 @@ function privacyOf(scenario: Scenario, state: GameState, outcome: TurnOutcome): 
     case "fatigue":
     case "frostbite":
     case "general-died":
-    case "general-moved":
     case "general-sacked":
     case "invalid-order":
     case "move-held-back":
@@ -110,6 +111,7 @@ function privacyOf(scenario: Scenario, state: GameState, outcome: TurnOutcome): 
     case "territory-flipped":
     case "time-ran-out":
     case "training-completed":
+    case "unit-disbanded":
     case "weather-rolled":
     case "withdrew":
       return undefined;
@@ -158,7 +160,7 @@ function orderPrivacy(scenario: Scenario, state: GameState, order: Order): Priva
       // m6: a unit that died this turn has no place left, so its Replenish stays its owner's.
       return located(factionIds, state.units[order.unitId]?.territoryId);
     default:
-      // Recon: its target is the flier's alone, whatever the viewer's own recon reveals.
+      // A Disband until it resolves, and recon: its target is the flier's alone, whatever the viewer's own recon reveals.
       return { factionIds, scope: "owner" };
   }
 }
@@ -173,6 +175,7 @@ export function isPublicOrder(order: Order): boolean {
     case "recruit":
     case "build":
     case "replenish":
+    case "disband":
       return false;
     case "air-mission":
       return order.mission.kind !== "recon";

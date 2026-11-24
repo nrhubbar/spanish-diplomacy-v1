@@ -10,7 +10,7 @@ export interface GradeBand {
 }
 
 /** D1-D3: everything about a d20 battle that is known before the die is rolled. */
-export interface GradedOdds {
+export interface BattleOdds {
   readonly attack: number;
   /** The column's bands, lowest score first. */
   readonly bands: readonly GradeBand[];
@@ -18,7 +18,6 @@ export interface GradedOdds {
   readonly chances: ReadonlyMap<GradeId, number>;
   readonly column: number;
   readonly defence: number;
-  readonly dice: "d20";
   /**
    * Expected shares of each side's value lost to men (losses) and to morale (demoralized), from
    * the grade catalogue (D2). The computer player weighs these (C15).
@@ -42,7 +41,7 @@ export interface GradedOdds {
 const demoralizedShare = { all: 1, half: 0.5, none: 0 } as const;
 
 /** D3: the odds' own modifiers on the d20: below 1:1 and above 6:1, each step x the d20 penalty. */
-export function gradedOddsModifiers(rules: D20Rules, attack: number, defence: number): readonly CombatModifier[] {
+function oddsModifiers(rules: D20Rules, attack: number, defence: number): readonly CombatModifier[] {
   const odds = oddsFor(Math.max(1, attack), Math.max(1, defence));
   const step = rules.modifiers.belowOneToOnePenalty;
   const modifiers: CombatModifier[] = [];
@@ -56,7 +55,7 @@ export function scoreFor(die: number, modifier: number): number {
   return Math.min(lastScore, Math.max(0, die + modifier));
 }
 
-export function requireGrade(rules: D20Rules, id: GradeId): GradeDefinition {
+function requireGrade(rules: D20Rules, id: GradeId): GradeDefinition {
   const grade = rules.grades.find((candidate) => candidate.id === id);
   if (grade === undefined) throw new Error(`Invariant violated: unknown grade "${id}".`);
   return grade;
@@ -82,42 +81,37 @@ export function columnBands(rules: D20Rules, column: number): readonly GradeBand
 }
 
 /** D1-D3: odds, modifiers and the grade distribution for given side values. */
-export function gradedOdds(rules: D20Rules, attack: number, defence: number, situational: readonly CombatModifier[]): GradedOdds {
+export function battleOdds(rules: D20Rules, attack: number, defence: number, situational: readonly CombatModifier[]): BattleOdds {
   const odds = oddsFor(Math.max(1, attack), Math.max(1, defence));
-  const modifiers = [...situational, ...gradedOddsModifiers(rules, attack, defence)];
+  const modifiers = [...situational, ...oddsModifiers(rules, attack, defence)];
   const rollModifier = modifiers.reduce((sum, modifier) => sum + modifier.roll, 0);
-  const chances = new Map<GradeId, number>();
+  // Faces are counted before dividing, so ten faces of twenty are exactly one half.
+  const faces = new Map<GradeId, number>();
   const expected = { attackerDemoralized: 0, attackerLoss: 0, defenderDemoralized: 0, defenderLoss: 0 };
-  let takeChance = 0;
-  let gainChance = 0;
+  let takeFaces = 0;
+  let gainFaces = 0;
   const share = 1 / d20Faces.length;
   for (const die of d20Faces) {
     const grade = gradeAt(rules, odds.column, scoreFor(die, rollModifier));
-    chances.set(grade.id, (chances.get(grade.id) ?? 0) + share);
+    faces.set(grade.id, (faces.get(grade.id) ?? 0) + 1);
     expected.attackerLoss += share * grade.attacker.lossPercent / 100;
     expected.defenderLoss += share * Math.min(1, grade.defender.lossPercent / 100 + (grade.defender.weakestDestroyed ? 0.15 : 0));
     expected.attackerDemoralized += share * demoralizedShare[grade.attacker.demoralized];
     expected.defenderDemoralized += share * demoralizedShare[grade.defender.demoralized];
-    if (grade.ground === "all") takeChance += share;
-    if (grade.ground !== 0) gainChance += share;
+    if (grade.ground === "all") takeFaces += 1;
+    if (grade.ground !== 0) gainFaces += 1;
   }
   return {
     attack,
     bands: columnBands(rules, odds.column),
-    chances,
+    chances: new Map([...faces].map(([id, count]) => [id, count / d20Faces.length])),
     column: odds.column,
     defence,
-    dice: "d20",
     expected,
-    gainChance,
+    gainChance: gainFaces / d20Faces.length,
     modifiers,
     oddsLabel: odds.label,
     rollModifier,
-    takeChance
+    takeChance: takeFaces / d20Faces.length
   };
-}
-
-/** Whether odds came from the d20 rather than the d6 table. */
-export function isGradedOdds(odds: { readonly takeChance: number }): odds is GradedOdds {
-  return "dice" in odds && odds.dice === "d20";
 }

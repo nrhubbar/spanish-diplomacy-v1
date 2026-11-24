@@ -1,4 +1,4 @@
-import type { FactionId, SubTerritoryId } from "../../ids";
+import type { FactionId, SubTerritoryId, UnitId } from "../../ids";
 import type { Resources } from "../economy";
 import type { BuildOrder } from "../orders";
 import type { BuildProject } from "../state";
@@ -62,6 +62,21 @@ export interface IncomeOutcome {
   readonly cutSubTerritoryIds: readonly SubTerritoryId[];
 }
 
+/** D1: men who left a unit because its upkeep could not be paid. */
+export interface MenLeft {
+  readonly men: number;
+  readonly unitId: UnitId;
+}
+
+/** D1: a faction's upkeep for the turn, in points; what it could not pay, and the men who left over it. */
+export interface UpkeepOutcome {
+  readonly due: Resources;
+  readonly factionId: FactionId;
+  readonly kind: "upkeep";
+  readonly left: readonly MenLeft[];
+  readonly short: Resources;
+}
+
 /** Every outcome of this area. Adding a kind here is all the union needs. */
 export type EconomyTurnOutcome =
   | BuildQueuedOutcome
@@ -69,4 +84,5 @@ export type EconomyTurnOutcome =
   | BuildCompletedOutcome
   | BuildForfeitedOutcome
   | BuildRefundedOutcome
-  | IncomeOutcome;
+  | IncomeOutcome
+  | UpkeepOutcome;
