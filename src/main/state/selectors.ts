@@ -19,7 +19,7 @@ export function selectSubmissionStatus(scenario: Scenario, session: Session): re
     ready: session.phase !== "planning" && session.phase !== "handoff"
       ? true
       // T6: a local computer player is always ready.
-      : session.game.locked[faction.id] !== undefined || session.game.assignments[faction.id] === "computer"
+      : session.game.ready.includes(faction.id) || session.game.assignments[faction.id] === "computer"
   }));
 }
 
@@ -32,7 +32,7 @@ export interface RevealedOrders {
 export function selectRevealedOrders(session: Session): readonly RevealedOrders[] {
   if (session.phase !== "resolution" && session.phase !== "game-over") return [];
   const byFaction = new Map<FactionId, MoveOrder[]>();
-  for (const submission of Object.values(session.game.locked)) byFaction.set(submission.factionId, []);
+  for (const factionId of Object.keys(session.game.assignments) as FactionId[]) byFaction.set(factionId, []);
   for (const order of session.result.submittedOrders.filter(isMoveOrder)) {
     byFaction.set(order.factionId, [...(byFaction.get(order.factionId) ?? []), order]);
   }

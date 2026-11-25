@@ -44,7 +44,7 @@ function raise(state: GameState, factionId: string, type: string, territoryId: s
   const id = raisedUnitId(faction(factionId), type as never, serial);
   return {
     ...state,
-    raised: { ...state.raised, [id]: { factionId: faction(factionId), fullStrength: 300, id, name: type, type: type as never } },
+    raised: { ...state.raised, [id]: { factionId: faction(factionId), fullStrength: 300, id, type: type as never } },
     units: { ...state.units, [id]: { factionId: faction(factionId), fatigue: 0, id, morale: { demoralized: false, quietTurns: 0 }, strength: 300, territoryId: territory(territoryId) } }
   };
 }

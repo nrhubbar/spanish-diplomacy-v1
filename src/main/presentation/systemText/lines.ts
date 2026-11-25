@@ -1,5 +1,6 @@
-import { requireUnitDefinition } from "../../engine/lookup";
+import { requireFaction, requireSubTerritory, requireTerritory, requireUnitType } from "../../engine/lookup";
 import type { FactionId, GameState, Scenario, SubTerritoryId, TerritoryId, UnitId, UnitTypeId } from "../../engine/types";
+import { unitName } from "../unitName";
 
 /**
  * The report-line API for the Milestone 3 outcomes. Each area under `systemText/` exports one
@@ -31,26 +32,26 @@ export function listNames(names: readonly string[]): string {
 }
 
 export function factionLabel(scenario: Scenario, id: FactionId): string {
-  return scenario.index.factions.get(id)?.name ?? id;
+  return requireFaction(scenario, id).name;
 }
 
 export function territoryLabel(scenario: Scenario, id: TerritoryId): string {
-  return scenario.index.territories.get(id)?.name ?? id;
+  return requireTerritory(scenario, id).name;
 }
 
 export function subTerritoryLabel(scenario: Scenario, id: SubTerritoryId): string {
-  return scenario.index.subTerritories.get(id)?.name ?? id;
+  return requireSubTerritory(scenario, id).name;
 }
 
 /** W3: where a territory recruits: its capital sub-territory ("Barcelona"), else the territory. */
 export function capitalLabel(scenario: Scenario, id: TerritoryId): string {
-  const capital = scenario.index.territories.get(id)?.capitalSubTerritoryId;
+  const capital = requireTerritory(scenario, id).capitalSubTerritoryId;
   return capital === undefined ? territoryLabel(scenario, id) : subTerritoryLabel(scenario, capital);
 }
 
 /** A scenario, recruited (R6) or replacement (D7) unit's name. */
 export function unitLabel(scenario: Scenario, id: UnitId): string {
-  return requireUnitDefinition(scenario, id).name;
+  return unitName(scenario, id);
 }
 
 export function unitsLabel(scenario: Scenario, ids: readonly UnitId[]): string {
@@ -58,7 +59,7 @@ export function unitsLabel(scenario: Scenario, ids: readonly UnitId[]): string {
 }
 
 export function typeLabel(scenario: Scenario, id: UnitTypeId): string {
-  return scenario.index.unitTypes.get(id)?.name ?? id;
+  return requireUnitType(scenario, id).name;
 }
 
 /** The singular or plural word for a count: `plural(n, "unit", "units")`. */

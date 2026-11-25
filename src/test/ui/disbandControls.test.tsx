@@ -16,8 +16,7 @@ import { ShortageWarning } from "../../main/screens/pane/ShortageWarning";
 import type { PlanningSession } from "../../main/state/planning";
 import { SelectionBar } from "../../main/screens/shell/SelectionBar";
 import { type Draft, emptyDraft } from "../../main/state/session";
-import { createAppStore } from "../../main/state/store";
-import { faction, shippedRegistry, spainId, spainWithAir, withoutUpkeep } from "../support";
+import { faction, shippedRegistry, spainId, spainWithAir, withoutUpkeep, testGame, testStore, told } from "../support";
 
 afterEach(cleanup);
 
@@ -28,7 +27,7 @@ const kindOf = (unit: UnitState): string | undefined => scenario.index.unitTypes
 const unitOf = (kind: string): UnitState => Object.values(initial.units).find((unit) => unit.factionId === republic && kindOf(unit) === kind)!;
 const infantry = unitOf("ground");
 const planning = (state: GameState = initial): PlanningSession => ({
-  draft: emptyDraft, factionId: republic, game: { assignments: { [republic]: "local-human" }, history: [], locked: {}, scenarioId: spainId, seed: 1, state }, phase: "planning"
+  draft: emptyDraft, factionId: republic, game: { assignments: { [republic]: "local-human" }, history: [], ready: [], scenarioId: spainId, gameId: testGame, state }, phase: "planning"
 });
 
 const general = unitOf("general");
@@ -41,7 +40,7 @@ function Live({ children }: { readonly children: (session: PlanningSession) => R
 
 function renderLive(children: (session: PlanningSession) => ReactNode, selected: readonly UnitState[] = []) {
   const draft: Draft = { ...emptyDraft, selectedTerritoryId: infantry.territoryId, selectedUnitIds: selected.map(({ id }) => id) };
-  const store = createAppStore({ preloadedState: { game: { session: { ...planning(), draft } } }, registry: shippedRegistry() });
+  const store = testStore({ game: { session: { ...planning(), draft } } }, shippedRegistry());
   render(<Provider store={store}><RegistryContext value={shippedRegistry()}><Live>{children}</Live></RegistryContext></Provider>);
   const current = () => { const { session } = store.getState().game; return session.phase === "planning" ? session.draft : emptyDraft; };
   return { draft: current, store, user: userEvent.setup() };
@@ -66,7 +65,7 @@ describe("Disband for the selected units (D1, N1)", () => {
     await user.click(screen.getByRole("button", { name: "Disband" }));
     await user.click(screen.getByRole("button", { name: "Disband" }));
     expect(draft().disbands).toEqual(units.map(({ id }) => ({ factionId: republic, kind: "disband", unitId: id })));
-    expect(draft().feedback).toBe("3 units will disband at the end of the turn.");
+    expect(told(scenario, draft().feedback)).toBe("3 units will disband at the end of the turn.");
     const waiting = screen.getByRole("button", { name: "Select units first" });
     expect(document.activeElement).toBe(waiting);
     expect(waiting.getAttribute("aria-disabled")).toBe("true");

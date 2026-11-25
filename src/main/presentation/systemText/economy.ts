@@ -1,6 +1,7 @@
 import { currentLevel } from "../../engine/economy/catalogue";
 import type { BuildProject, EconomyTurnOutcome, SubTerritoryId } from "../../engine/types";
 import { amountText, projectBaseName, signedAmountText } from "../economy";
+import { refusalText } from "../refusals";
 import { factionLabel, type ReportLineContext, type ReportLines, subTerritoryLabel } from "./lines";
 
 /**
@@ -32,10 +33,8 @@ export const economyLines: ReportLines<EconomyTurnOutcome> = {
     return `${projectBaseName(scenario, outcome.project)} at ${subTerritoryLabel(scenario, outcome.subTerritoryId)} passed, unfinished, from ${factionLabel(scenario, outcome.previousHolder)} to ${factionLabel(scenario, outcome.newHolder)}${lost}.`;
   },
   "build-refunded": (outcome, { scenario }) => {
-    // $5: "captured" is the queue hand-over's code; other reasons are the order's refusal, in words.
-    const reason = outcome.reason === "captured" ? "The sub-territory changed hands before work began." : outcome.reason;
     const refund = amountText(scenario, outcome.refund, " and ");
-    return `${projectBaseName(scenario, outcome.project)} at ${subTerritoryLabel(scenario, outcome.subTerritoryId)} was not built. ${reason}${refund === "nothing" ? "" : ` ${refund} refunded.`}`;
+    return `${projectBaseName(scenario, outcome.project)} at ${subTerritoryLabel(scenario, outcome.subTerritoryId)} was not built. ${refusalText(scenario, outcome.refusal)}${refund === "nothing" ? "" : ` ${refund} refunded.`}`;
   },
   income: (outcome, { scenario }) => {
     const cut = amountText(scenario, outcome.cut, " and ");

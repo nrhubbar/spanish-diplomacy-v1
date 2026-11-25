@@ -4,7 +4,7 @@ import { requireUnitType } from "../lookup";
 import { draftState, type Phase, type SystemState } from "../phases/draft";
 import { replenishQuote, trainsOn, unitBasics } from "../recruitment/rules";
 import { addResources, subtractResources } from "../resources";
-import type { EconomyTurnOutcome, FactionId, GameState, MenLeft, Order, ResourceId, Resources, Scenario, UnitId, UnitState, UnitTypeDefinition, UpkeepRules } from "../types";
+import type { EconomyTurnOutcome, FactionId, GameState, MenLeft, Order, RecruitmentRefusal, ResourceId, Resources, Scenario, UnitId, UnitState, UnitTypeDefinition, UpkeepRules } from "../types";
 import { projectCost } from "./catalogue";
 import { incomeFor } from "./income";
 
@@ -93,10 +93,10 @@ export function upkeepShortfall(scenario: Scenario, state: GameState, factionId:
 }
 
 /** Why a Recruit or Replenish order is refused, its price and upkeep counted in `planned`, or undefined when next turn's stock covers it. */
-export function upkeepProblem(scenario: Scenario, state: GameState, factionId: FactionId, planned: readonly Order[]): string | undefined {
+export function upkeepProblem(scenario: Scenario, state: GameState, factionId: FactionId, planned: readonly Order[]): RecruitmentRefusal | undefined {
   const short = upkeepShortfall(scenario, state, factionId, planned);
-  const names = scenario.resources.filter((resource) => short[resource.id] !== undefined).map((resource) => resource.name);
-  return names.length === 0 ? undefined : `Next turn's upkeep would leave you short of ${names.join(" and ")}.`;
+  const resourceIds = scenario.resources.map((resource) => resource.id).filter((id) => short[id] !== undefined);
+  return resourceIds.length === 0 ? undefined : { code: "upkeep-short", resourceIds };
 }
 
 /**

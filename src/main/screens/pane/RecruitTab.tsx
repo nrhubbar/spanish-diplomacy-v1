@@ -1,30 +1,18 @@
 import { type JSX, useId } from "react";
-import {
-  capitalBuildings,
-  recruitSiteProblem,
-  recruitSlots,
-  recruitableTypes,
-  typeLock
-} from "../../engine/recruitment/rules";
-import { canAfford } from "../../engine/resources";
-import type { FactionId, Scenario, UnitTypeDefinition } from "../../engine/types";
+import type { FactionId, Scenario, UnitTypeDefinition, UnitTypeId } from "../../engine/types";
 import { buildingIcon, developmentIcon, EconomyIcon } from "../../components/economy/EconomyIcon";
 import { useAppDispatch } from "../../hooks";
 import { glyphs } from "../../presentation/glyphs";
-import { trainingEntries } from "../../presentation/queues";
+import { recruitTab, type RecruitTypeRow } from "../../presentation/recruitTab";
 import {
   recruitAddNote,
   recruitAddReason,
-  recruitRequirements,
-  recruitSiteName,
-  recruitsWith,
   recruitTerms,
   resourceCells,
   resourcesLabel,
-  shortfallLabel,
   termsLine
 } from "../../presentation/recruitment";
-import { unitEffectLines } from "../../presentation/unitEffects";
+import { refusalText } from "../../presentation/refusals";
 import { cancelRecruitOrder, changeRecruitQuantity } from "../../state/gameSlice";
 import { balanceAfterBasket, basketCost, recruitQuantity, recruitUpkeepProblem } from "../../state/planning";
 import { OrderLedger } from "../queues/OrderLedger";
@@ -43,35 +31,30 @@ import type { TerritoryTabProps } from "./TerritoryTabs";
  */
 export function RecruitTab({ scenario, session, territoryId }: TerritoryTabProps): JSX.Element {
   const dispatch = useAppDispatch();
-  const { factionId, game } = session;
-  const state = game.state;
-  const capitalName = recruitSiteName(scenario, territoryId);
-  const site = recruitSiteProblem(scenario, state, factionId, territoryId);
-  const means = recruitsWith(scenario, state, factionId, territoryId, capitalBuildings(scenario, state, territoryId));
-  const slots = recruitSlots(scenario, state, territoryId);
+  const { factionId } = session;
   const here = (session.draft.recruits ?? []).filter((order) => order.territoryId === territoryId);
   const left = balanceAfterBasket(scenario, session);
   const spent = basketCost(scenario, session);
-  const training = trainingEntries(scenario, state, territoryId, [], factionId, false);
-  const paused = state.training.some((item) => item.territoryId === territoryId && item.paused);
-  const rows = recruitableTypes(scenario).map((type) => ({
-    locked: site === undefined ? typeLock(scenario, state, factionId, territoryId, type).reasons : [site],
-    type
-  }));
-  const row = ({ locked, type }: (typeof rows)[number]): JSX.Element => (
+  const view = recruitTab(scenario, session.game.state, territoryId, factionId, left);
+  const { capitalName, means, paused, siteNote, slots, training } = view;
+  const upkeepReason = (typeId: UnitTypeId): string | undefined => {
+    const refusal = recruitUpkeepProblem(scenario, session, territoryId, typeId);
+    return refusal === undefined ? undefined : refusalText(scenario, refusal);
+  };
+  const row = ({ effects, locked, requirements, shortfall, type }: RecruitTypeRow): JSX.Element => (
     <UnitRow
-      effects={unitEffectLines(scenario, type)}
+      effects={effects}
       factionId={factionId}
       key={type.id}
       locked={locked}
       onChange={(quantity) => dispatch(changeRecruitQuantity({ quantity, territoryId, unitTypeId: type.id }))}
       quantity={recruitQuantity(session.draft, territoryId, type.id)}
-      requirements={recruitRequirements(scenario, state, factionId, territoryId, type)}
+      requirements={requirements}
       scenario={scenario}
-      shortfall={type.recruit === undefined || canAfford(left, type.recruit.cost) ? "" : shortfallLabel(scenario, left, type.recruit.cost)}
+      shortfall={shortfall}
       slotsFull={here.length >= slots}
       type={type}
-      upkeep={recruitUpkeepProblem(scenario, session, territoryId, type.id)}
+      upkeep={upkeepReason(type.id)}
     />
   );
   return (
@@ -89,9 +72,9 @@ export function RecruitTab({ scenario, session, territoryId }: TerritoryTabProps
             ))}
           </ul>
         )}
-        {site === undefined ? null : <p className="pane-note recruit-site-note" role="note">{site}</p>}
+        {siteNote === undefined ? null : <p className="pane-note recruit-site-note" role="note">{siteNote}</p>}
       </div>
-      {site === undefined || here.length > 0 ? (
+      {siteNote === undefined || here.length > 0 ? (
         <section aria-label="Recruit orders" className="muster-box recruit-orders">
           <p className="roll-ledger-title">{`${String(here.length)} of ${String(slots)} Recruit orders here this turn`}</p>
           <OrderLedger
@@ -117,8 +100,8 @@ export function RecruitTab({ scenario, session, territoryId }: TerritoryTabProps
           ))}
         </div>
       </div>
-      <RowSection rows={rows.filter(({ locked }) => locked.length === 0).map(row)} title="Can recruit now" />
-      <RowSection rows={rows.filter(({ locked }) => locked.length > 0).map(row)} title="Locked here" />
+      <RowSection rows={view.open.map(row)} title="Can recruit now" />
+      <RowSection rows={view.locked.map(row)} title="Locked here" />
       <section aria-label="In training" className="recruit-queue">
         <div className="build-tab-head">
           <h4>In training</h4>

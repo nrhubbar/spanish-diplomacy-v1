@@ -1,39 +1,34 @@
 import { type JSX, useId } from "react";
-import { generalOf, isAllWeatherAirbaseFor, unitDefinitionIn, unitKindIn, unitTypeIn } from "../../engine/air/pieces";
-import { type AirMission, type Scenario, type UnitId, type UnitState } from "../../engine/types";
+import type { Scenario, UnitId, UnitState } from "../../engine/types";
 import { WeatherChip } from "../../components/weather/WeatherChip";
 import { WeatherIcon } from "../../components/weather/WeatherIcon";
 import { useAppDispatch } from "../../hooks";
+import { feedbackText } from "../../presentation/feedback";
 import { glyphs } from "../../presentation/glyphs";
 import {
   aircraftLine,
-  aircraftMeta,
-  allowedMissions,
+  aircraftView,
+  antiAirHeading,
   antiAirLabel,
   baseWeather,
   fightersLabel,
-  generalPill,
+  generalView,
   missionHints,
-  missionButtonOrder,
   missionNames,
-  missionTitle
+  sameMission
 } from "../../presentation/airPane";
 import { raidResultNames } from "../../presentation/systemText/air";
+import { unitName } from "../../presentation/text";
 import { chooseAirMission, clickMapUnit, closeAircraftPane, planAirMission, toggleSackOrder } from "../../state/gameSlice";
 import {
   type AirTarget,
   airTargets,
   isSackPlanned,
-  missionTerritoryId,
   plannedMission,
   type PlanningSession,
   raidPreview
 } from "../../state/planning";
 import { AircraftDisband } from "./DisbandControls";
-
-function sameMission(a: AirMission | undefined, b: AirMission): boolean {
-  return a !== undefined && JSON.stringify(a) === JSON.stringify(b);
-}
 
 interface AirPaneProps {
   readonly scenario: Scenario;
@@ -53,22 +48,16 @@ export function AirPane({ scenario, session, unitId }: AirPaneProps): JSX.Elemen
   const unit = state.units[unitId];
   const planned = plannedMission(session.draft, unitId);
   if (unit === undefined) return null;
-  const type = unitTypeIn(scenario, state.raised, unitId);
-  const name = unitDefinitionIn(scenario, state.raised, unitId)?.name ?? unitId;
-  const allowed = allowedMissions(type);
-  const base = scenario.index.territories.get(unit.territoryId)?.name ?? unit.territoryId;
-  const paved = isAllWeatherAirbaseFor(scenario, state, unit.territoryId, unit.factionId);
+  const { base, meta, missions, name, others, range } = aircraftView(scenario, state, unit);
   const { stage } = session.draft;
   const shown = stage?.step === "choose-target" ? stage.mission : planned?.mission.kind;
   const chosen = planned !== undefined && planned.mission.kind === shown ? airTargets(scenario, state, unitId, shown).find((target) => sameMission(planned.mission, target.mission)) : undefined;
-  const others = Object.values(state.units).filter((other) => other.id !== unitId && other.factionId === unit.factionId && other.territoryId === unit.territoryId
-    && unitKindIn(scenario, state.raised, other.id) === "air");
 
   return (
     <section aria-labelledby={headingId} className="air-pane">
       <h3 id={headingId}>{name}</h3>
       <p className="pane-meta">
-        {aircraftMeta(type, base, paved)}
+        {meta}
       </p>
       <div className="territory-meta">
         <WeatherChip scenario={scenario} state={state} territoryId={unit.territoryId} />
@@ -76,14 +65,14 @@ export function AirPane({ scenario, session, unitId }: AirPaneProps): JSX.Elemen
       </div>
       <h4>Mission</h4>
       <div aria-label="Mission" className="air-missions" role="group">
-        {missionButtonOrder.map((mission) => (
+        {missions.map(({ allowed, kind: mission, title }) => (
           <button
             aria-pressed={shown === mission}
             className="air-mission-button"
-            disabled={!allowed.includes(mission)}
+            disabled={!allowed}
             key={mission}
             onClick={() => dispatch(chooseAirMission({ mission, unitId }))}
-            title={missionTitle(type, mission)}
+            title={title}
             type="button"
           >
             {missionNames[mission]}
@@ -102,10 +91,10 @@ export function AirPane({ scenario, session, unitId }: AirPaneProps): JSX.Elemen
       {shown === undefined ? <p className="pane-hint">Choose a mission, then its target on the map.</p> : (
         <>
           <p className="pane-hint">{missionHints[shown]}</p>
-          {chosen === undefined ? null : <TargetCard range={type?.air?.range ?? 0} scenario={scenario} session={session} target={chosen} unit={unit} />}
+          {chosen === undefined ? null : <TargetCard range={range} scenario={scenario} session={session} target={chosen} unit={unit} />}
         </>
       )}
-      {session.draft.feedback === undefined ? null : <p className="inline-feedback" role="status">{session.draft.feedback}</p>}
+      {session.draft.feedback === undefined ? null : <p className="inline-feedback" role="status">{feedbackText(scenario, session.draft.feedback)}</p>}
       {others.length === 0 ? null : (
         <>
           <h4>{`Other aircraft at ${base}`}</h4>
@@ -114,7 +103,7 @@ export function AirPane({ scenario, session, unitId }: AirPaneProps): JSX.Elemen
               const mission = plannedMission(session.draft, other.id);
               return (
                 <li key={other.id}>
-                  {aircraftLine(unitDefinitionIn(scenario, state.raised, other.id)?.name ?? other.id, mission?.mission.kind)}
+                  {aircraftLine(unitName(scenario, other.id), mission?.mission.kind)}
                 </li>
               );
             })}
@@ -135,7 +124,6 @@ function TargetCard({ range, scenario, session, target, unit }: {
 }): JSX.Element {
   const state = session.game.state;
   const raid = target.mission.kind === "raid" ? raidPreview(scenario, state, unit.id, target.mission.subTerritoryId) : undefined;
-  const territoryId = missionTerritoryId(scenario, target.mission);
   return (
     <div className="air-target-card">
       <strong>{`${missionNames[target.mission.kind]} ${target.name}`}</strong>
@@ -145,7 +133,7 @@ function TargetCard({ range, scenario, session, target, unit }: {
         <BaseWeather scenario={scenario} session={session} unit={unit} />
         {raid === undefined ? null : (
           <>
-            <dt>{`Anti-air in ${territoryId === undefined ? target.name : scenario.index.territories.get(territoryId)?.name ?? target.name}`}</dt>
+            <dt>{antiAirHeading(scenario, target.mission, target.name)}</dt>
             <dd>{antiAirLabel(raid.antiAir)}</dd>
             <dt>Enemy fighters in range</dt>
             <dd>{fightersLabel(raid.fightersInReach)}</dd>
@@ -192,7 +180,7 @@ export function AircraftHere({ aircraft, scenario, session }: { readonly aircraf
       <ul className="plain-list">
         {aircraft.map((unit) => {
           const mission = plannedMission(session.draft, unit.id);
-          const name = unitDefinitionIn(scenario, session.game.state.raised, unit.id)?.name ?? unit.id;
+          const name = unitName(scenario, unit.id);
           return (
             <li key={unit.id}>
               <button className="text-button" onClick={() => dispatch(clickMapUnit(unit.id))} type="button">
@@ -209,18 +197,16 @@ export function AircraftHere({ aircraft, scenario, session }: { readonly aircraf
 /** U5 (`ux-pane-a-units.webp`): a general's pill (name and trait) and his Sack order. */
 export function GeneralControls({ scenario, session, unit }: { readonly scenario: Scenario; readonly session: PlanningSession; readonly unit: UnitState }): JSX.Element | null {
   const dispatch = useAppDispatch();
-  const general = generalOf(scenario, session.game.state.raised, unit.id);
+  const general = generalView(scenario, session.game.state, unit.id);
   if (general === undefined) return null;
-  const pill = generalPill(general, scenario.generalTraits.find((candidate) => candidate.id === general.traitId));
   const sacking = isSackPlanned(session.draft, unit.id);
-  const canSack = unitTypeIn(scenario, session.game.state.raised, unit.id)?.orders.includes("sack") ?? false;
   return (
     <div className="general-controls">
-      <span className="general-pill" title={pill.title}>
+      <span className="general-pill" title={general.title}>
         <span aria-hidden="true">{glyphs.star}</span>
-        {pill.text}
+        {general.text}
       </span>
-      {canSack ? (
+      {general.canSack ? (
         <button aria-pressed={sacking} className="text-button" onClick={() => dispatch(toggleSackOrder(unit.id))} type="button">
           {sacking ? "Keep him" : "Sack"}
         </button>

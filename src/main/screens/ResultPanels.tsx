@@ -1,17 +1,17 @@
 import { type JSX, useEffect, useId, useRef } from "react";
-import { unitKindIn } from "../engine/air/pieces";
 import { requireFaction } from "../engine/lookup";
 import type { FactionId, Scenario, TerritoryId, TurnOutcome, TurnResolutionResult } from "../engine/types";
 import { glyphs } from "../presentation/glyphs";
-import { medallionMarkup } from "../presentation/outcomeArt";
+import { holdCount } from "../presentation/outcomes";
+import { medallionMarkup } from "../assets/outcomes/outcomeArt";
 import { EconomyIcon } from "../components/economy/EconomyIcon";
-import { cssVariables } from "../presentation/style";
+import { cssVariables } from "../components/style";
 import { controllerName, describeOutcomeGroup, factionName, groupOutcomes, type ReportView, route, territoryName, unitName } from "../presentation/text";
 import type { RevealedOrders } from "../state/selectors";
 import { eventsAt, revealInPane } from "./report/focus";
 import { eventCount, type FactionReport, factionReportTitle, outcomesByFaction } from "./report/factions";
 import { groupMembers, groupOpen, type OutcomeGroupIcon, outcomeGroups } from "./report/groups";
-import { SiteIcon } from "./pane/SiteIcons";
+import { SiteIcon } from "../components/SiteIcons";
 import { SubTerritoryChanges } from "./report/SubTerritoryChanges";
 
 /** U5: which territories changed hands this turn. */
@@ -92,9 +92,7 @@ export type ReportSource = Pick<TurnResolutionResult, "finalState" | "outcomes">
 export function OutcomeSummary({ result, scenario, viewer }: { readonly result: ReportSource; readonly scenario: Scenario; readonly viewer?: FactionId | undefined }): JSX.Element {
   // The Milestone 3 lines read the viewer's board (development) and keep other factions' numbers private.
   const view = { state: result.finalState, ...(viewer === undefined ? {} : { viewer }) };
-  // Armies only: aircraft and generals have no order to hold on ($6: holds come from public orders, T6).
-  const holds = result.outcomes.filter((outcome) => outcome.kind === "no-move" && outcome.unitId !== undefined
-    && unitKindIn(scenario, result.finalState.raised, outcome.unitId) === "ground").length;
+  const holds = holdCount(scenario, result);
   const bounced = result.outcomes.some((outcome) => outcome.kind === "bounced-move" || outcome.kind === "disbanded-move");
   return (
     <section aria-labelledby="outcomes-title" className="pane-section">

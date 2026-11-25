@@ -62,7 +62,7 @@ function withTruck(state: GameState, territoryId: string): GameState {
   const id = raisedUnitId(republic, "truck-column" as never, 1);
   return {
     ...state,
-    raised: { ...state.raised, [id]: { factionId: republic, fullStrength: 300, id, name: "Trucks", type: "truck-column" as never } },
+    raised: { ...state.raised, [id]: { factionId: republic, fullStrength: 300, id, type: "truck-column" as never } },
     units: { ...state.units, [id]: { factionId: republic, fatigue: 0, id, morale: { demoralized: false, quietTurns: 0 }, strength: 300, territoryId: territory(territoryId) } }
   };
 }

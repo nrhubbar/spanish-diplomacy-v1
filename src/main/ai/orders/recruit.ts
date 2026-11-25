@@ -134,7 +134,7 @@ export const planRecruits: OrderPlanner<RecruitOrder> = (context) => {
 
   const orders: RecruitOrder[] = [];
   const order = (type: UnitTypeDefinition, territoryId: TerritoryId): RecruitOrder => ({ factionId, kind: "recruit", territoryId, unitTypeId: type.id });
-  const open = (type: UnitTypeDefinition, territoryId: TerritoryId): boolean => typeLock(scenario, state, factionId, territoryId, type).reasons.length === 0;
+  const open = (type: UnitTypeDefinition, territoryId: TerritoryId): boolean => typeLock(scenario, state, factionId, territoryId, type).refusals.length === 0;
   // D1: never into a shortage: next turn's stock must cover its price, and its upkeep once it is trained.
   const spendable = (type: UnitTypeDefinition, territoryId: TerritoryId): boolean =>
     type.recruit !== undefined && fighters < (profile.recruits.maxUnits ?? Number.POSITIVE_INFINITY) && canAfford(subtractResources(balance, floor), type.recruit.cost)

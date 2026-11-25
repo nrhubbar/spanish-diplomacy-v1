@@ -387,7 +387,7 @@ describe("D27.3: fighters intercept any mission over their territory", () => {
   it("reports recon shot down by several fighters as one interception per fighters' faction", () => {
     const raise = (state: GameState, id: string, factionId: string, type: string, territoryId: string): GameState => ({
       ...state,
-      raised: { ...state.raised, [id]: { factionId: faction(factionId), fullStrength: 100, id: unit(id), name: id, type: type as UnitTypeId } },
+      raised: { ...state.raised, [id]: { factionId: faction(factionId), fullStrength: 100, id: unit(id), type: type as UnitTypeId } },
       units: { ...state.units, [id]: { factionId: faction(factionId), fatigue: 0, id: unit(id), morale: { demoralized: false, quietTurns: 0 }, strength: 100, territoryId: territory(territoryId) } }
     });
     const crowded = raise(raise(opening, "rep-f2", "republic", "fighter-squadron", "madrid"), "north-r2", "north", "recon-flight", "castilla-y-leon");

@@ -2,7 +2,7 @@ import { type JSX, useEffect, useId, useRef } from "react";
 import type { PointerInput } from "../../map/view";
 import { actionName, type QuickActionKind, type QuickActionMenu as Menu } from "../../presentation/quickActions";
 import type { MapPoint } from "../../scenarios/loader";
-import { cssVariables } from "../../presentation/style";
+import { cssVariables } from "../../components/style";
 import { ActionIcon } from "./ActionIcon";
 
 interface QuickActionMenuProps {

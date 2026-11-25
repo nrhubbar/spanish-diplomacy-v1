@@ -5,18 +5,17 @@ import { afterEach, describe, expect, it } from "vitest";
 import { initialGameState } from "../../main/engine/resolution";
 import type { GameState, Scenario, TerritoryId, UnitId, UnitState, UnitTypeId } from "../../main/engine/types";
 import { RegistryContext } from "../../main/hooks";
-import { createAppStore } from "../../main/state/store";
 import { ArmyPicker } from "../../main/screens/ArmyPicker";
 import { SelectionBar } from "../../main/screens/shell/SelectionBar";
 import { BattleBasics } from "../../main/screens/BattleBasics";
 import type { PlanningSession } from "../../main/state/planning";
 import type { Draft } from "../../main/state/session";
-import { faction, move, shippedRegistry, spain, spainId, spainM2, spainWithAir, territory, testRegistry, testStore, unit } from "../support";
+import { faction, move, shippedRegistry, spain, spainId, spainM2, spainWithAir, territory, testRegistry, testStore, unit, testGame } from "../support";
 
 afterEach(cleanup);
 
 function planning(state: GameState, factionId: string, draft: Draft): PlanningSession {
-  return { draft, factionId: faction(factionId), game: { assignments: { [faction(factionId)]: "local-human" }, history: [], locked: {}, scenarioId: spainId, seed: 1, state }, phase: "planning" };
+  return { draft, factionId: faction(factionId), game: { assignments: { [faction(factionId)]: "local-human" }, history: [], ready: [], scenarioId: spainId, gameId: testGame, state }, phase: "planning" };
 }
 
 const ownIn = (scenario: Scenario, state: GameState, factionId: string, territoryId: string): readonly UnitState[] =>
@@ -211,7 +210,7 @@ describe("a general's pill and Sack order in the army list (U5, `ux-pane-a-units
 
   /** The Sack order is validated against the shipped Spain, which has its generals. */
   function renderWithGenerals(target: Scenario, session: PlanningSession) {
-    const store = createAppStore({ preloadedState: { game: { session } }, registry: shippedRegistry() });
+    const store = testStore({ game: { session } }, shippedRegistry());
     render(
       <Provider store={store}>
         <RegistryContext value={shippedRegistry()}>

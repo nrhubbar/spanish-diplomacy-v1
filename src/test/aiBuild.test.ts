@@ -112,7 +112,7 @@ describe("computer Build orders (H5)", () => {
       for (const submission of submissions) expect(validateSubmission(target, state, submission.factionId, submission)).toEqual({ ok: true });
       const result = resolveTurn(target, state, submissions, 5);
       built += result.outcomes.filter((outcome) => outcome.kind === "build-queued").length;
-      expect(result.outcomes.filter((outcome) => (outcome.kind === "rejected-order" && outcome.order.kind === "build") || (outcome.kind === "build-refunded" && outcome.reason !== "captured"))).toEqual([]);
+      expect(result.outcomes.filter((outcome) => (outcome.kind === "rejected-order" && outcome.order.kind === "build") || (outcome.kind === "build-refunded" && outcome.refusal.code !== "site-captured"))).toEqual([]);
       state = { ...result.finalState, turnNumber: state.turnNumber + 1 };
     }
     expect(built).toBeGreaterThan(0);

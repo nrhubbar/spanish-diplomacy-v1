@@ -1,7 +1,7 @@
 import { upkeepShortfall } from "../../engine/economy/upkeep";
 import { disbandProblem, validateDisbandOrder } from "../../engine/recruitment/disband";
 import type { DisbandOrder, Resources, Scenario, UnitId, UnitState } from "../../engine/types";
-import { unitsNamed } from "../../presentation/recruitment";
+import { refusedFeedback } from "../../presentation/feedback";
 import type { Draft } from "../session";
 import { stayWithout } from "./orders";
 import { draftOrders, unitOrdersWithout } from "./recruitment";
@@ -32,7 +32,7 @@ export function planDisband(scenario: Scenario, session: PlanningSession, unitId
   const planned = unitIds.map((unitId): DisbandOrder => ({ factionId: session.factionId, kind: "disband", unitId }));
   for (const order of planned) {
     const validation = validateDisbandOrder(scenario, session.game.state, order);
-    if (!validation.ok) return feedback(session, validation.reason);
+    if (!validation.ok) return feedback(session, refusedFeedback(validation.refusal));
   }
   const { draft } = session;
   const others = unitOrdersWithout(draft, unitIds);
@@ -42,7 +42,7 @@ export function planDisband(scenario: Scenario, session: PlanningSession, unitId
     ...stayWithout(draft, unitIds),
     ...(draft.airOrders === undefined ? {} : { airOrders: draft.airOrders.filter((each) => !unitIds.includes(each.unitId)) }),
     disbands: [...others.disbands ?? [], ...planned],
-    feedback: `${unitsNamed(scenario, unitIds)} will disband at the end of the turn.`,
+    feedback: { code: "disband-planned", unitIds },
     orders: draft.orders.filter((each) => !unitIds.includes(each.unitId)),
     selectedUnitIds: draft.selectedUnitIds.filter((id) => !unitIds.includes(id))
   };

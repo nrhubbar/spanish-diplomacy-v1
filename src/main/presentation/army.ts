@@ -3,6 +3,7 @@ import { requireFaction, requireUnitDefinition, requireUnitType } from "../engin
 import type { StandingOrder } from "../engine/orders";
 import { worksRoll } from "../engine/works";
 import type { CombatRole, DisbandOrder, GameState, MoveOrder, ReplenishOrder, Scenario, UnitState, WithdrawOrder } from "../engine/types";
+import { unitName } from "./unitName";
 
 /**
  * An army's one order this turn (O1): a move or Replenish, or the standing order it follows
@@ -129,7 +130,7 @@ export function figuresDescription(figures: ArmyFigures): string {
  */
 export function counterLabel(scenario: Scenario, figures: ArmyFigures, unit: UnitState, order: ArmyOrder | undefined): string {
   return [
-    requireUnitDefinition(scenario, unit.id).name,
+    unitName(scenario, unit.id),
     requireFaction(scenario, unit.factionId).name,
     figuresDescription(figures),
     ...(order === undefined ? [] : [orderStatus[order].toLowerCase()])

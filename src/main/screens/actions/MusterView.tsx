@@ -1,6 +1,7 @@
 import { type JSX, useMemo, useState } from "react";
 import type { Scenario, TerritoryId, UnitId } from "../../engine/types";
 import { useAppDispatch, useAppSelector } from "../../hooks";
+import { feedbackText } from "../../presentation/feedback";
 import { defendersCount, groupModes, musterButton, type MusterGroup, type MusterKind, musterList, supportBlocked, supportCount } from "../../presentation/muster";
 import { allSelected, fitMuster, selectAll } from "../../presentation/musterFit";
 import { orderFromMuster } from "../../state/gameSlice";
@@ -48,7 +49,7 @@ export function MusterView({ kind, scenario, session, target }: MusterViewProps)
   const give = (): void => {
     // A refused order keeps the pane and its ticks, and says why.
     const reason = musterRefusal(scenario, session, order);
-    setRefused(reason);
+    setRefused(reason === undefined ? undefined : feedbackText(scenario, reason));
     if (reason !== undefined) return;
     dispatch(orderFromMuster(order));
     dispatch(popView());

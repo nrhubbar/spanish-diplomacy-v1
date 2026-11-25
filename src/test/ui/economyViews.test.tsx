@@ -10,7 +10,7 @@ import { PaneViewBody } from "../../main/screens/shell/PaneViewBody";
 import type { PaneView } from "../../main/state/paneSlice";
 import type { PlanningSession } from "../../main/state/planning";
 import { emptyDraft, type Draft } from "../../main/state/session";
-import { faction, spain, spainId, territory, testRegistry, testStore } from "../support";
+import { faction, spain, spainId, territory, testRegistry, testStore, testGame } from "../support";
 import { pinned } from "../pinned";
 
 afterEach(cleanup);
@@ -28,7 +28,7 @@ function withSite(state: GameState, id: string, change: Partial<SubTerritoryStat
 }
 
 function show(view: PaneView, state: GameState = start, draft: Draft = emptyDraft, given: Scenario = scenario) {
-  const session: PlanningSession = { draft, factionId: republic, game: { assignments: { [republic]: "local-human" }, history: [], locked: {}, scenarioId: spainId, seed: 1, state }, phase: "planning" };
+  const session: PlanningSession = { draft, factionId: republic, game: { assignments: { [republic]: "local-human" }, history: [], ready: [], scenarioId: spainId, gameId: testGame, state }, phase: "planning" };
   const store = testStore({ game: { session } });
   const user = userEvent.setup();
   const node = () => {
@@ -137,7 +137,7 @@ describe("Build and Recruit views (U9)", () => {
 
 describe("the Production tab (U9)", () => {
   const tab = (state: GameState, where: string) => {
-    const session: PlanningSession = { draft: emptyDraft, factionId: republic, game: { assignments: {}, history: [], locked: {}, scenarioId: spainId, seed: 1, state }, phase: "planning" };
+    const session: PlanningSession = { draft: emptyDraft, factionId: republic, game: { assignments: {}, history: [], ready: [], scenarioId: spainId, gameId: testGame, state }, phase: "planning" };
     return render(<Provider store={testStore({ game: { session } })}><ProductionTab scenario={scenario} session={session} territoryId={territory(where)} /></Provider>);
   };
 

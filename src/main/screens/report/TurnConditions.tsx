@@ -1,7 +1,7 @@
 import type { JSX } from "react";
 import { WeatherIcon } from "../../components/weather/WeatherIcon";
-import type { FrostbiteOutcome, Scenario, TimeRanOutOutcome, TurnResolutionResult, WeatherId, WeatherRolledOutcome } from "../../engine/types";
-import { weatherOutcome, weatherRules } from "../../engine/weather";
+import type { FrostbiteOutcome, Scenario, TimeRanOutOutcome, TurnResolutionResult, WeatherRolledOutcome } from "../../engine/types";
+import { rolledWeather } from "../../presentation/weather";
 import { describeFrostbite, describeTimeRanOut } from "../../presentation/weatherText";
 
 /**
@@ -12,7 +12,6 @@ export function TurnConditions({ result, scenario }: { readonly result: TurnReso
   const ranOut = result.outcomes.filter((outcome): outcome is TimeRanOutOutcome => outcome.kind === "time-ran-out");
   const frostbite = result.outcomes.filter((outcome): outcome is FrostbiteOutcome => outcome.kind === "frostbite");
   const rolled = result.outcomes.find((outcome): outcome is WeatherRolledOutcome => outcome.kind === "weather-rolled");
-  const zones = weatherRules(scenario)?.zones ?? [];
   if (ranOut.length === 0 && frostbite.length === 0 && rolled === undefined) return null;
   return (
     <section aria-labelledby="conditions-title" className="pane-section turn-conditions">
@@ -24,16 +23,12 @@ export function TurnConditions({ result, scenario }: { readonly result: TurnReso
       )}
       {rolled === undefined ? null : (
         <ul aria-label="Weather this turn" className="weather-report">
-          {zones.map((zone) => {
-            const id: WeatherId | undefined = rolled.weather.outcomes[zone.id];
-            const weather = id === undefined ? undefined : weatherOutcome(scenario, id);
-            return weather === undefined ? null : (
-              <li data-weather={weather.id} key={zone.id}>
-                <WeatherIcon weatherId={weather.id} />
-                <span>{`${zone.name}: ${weather.name}`}</span>
-              </li>
-            );
-          })}
+          {rolledWeather(scenario, rolled).map(({ text, weatherId, zoneId }) => (
+            <li data-weather={weatherId} key={zoneId}>
+              <WeatherIcon weatherId={weatherId} />
+              <span>{text}</span>
+            </li>
+          ))}
         </ul>
       )}
       {frostbite.length === 0 ? null : (

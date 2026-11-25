@@ -1,13 +1,25 @@
 import { generalUnitDefinition } from "./generals/identity";
+import { linkBetween, passName } from "./network/links";
 import { raisedDefinition } from "./recruitment/rules";
 import type {
   AiProfile,
+  BuildingDefinition,
+  BuildingId,
   CityDefinition,
+  DevelopmentDefinition,
+  DevelopmentId,
   FactionDefinition,
   FactionId,
   GameState,
+  GeneralDefinition,
+  GeneralId,
   Neighbor,
+  RaisedUnitDefinition,
+  ResourceDefinition,
+  ResourceId,
   Scenario,
+  SubTerritoryDefinition,
+  SubTerritoryId,
   TerritoryDefinition,
   TerritoryId,
   UnitDefinition,
@@ -29,8 +41,34 @@ export function requireTerritory(scenario: Scenario, id: TerritoryId): Territory
   return required(scenario.index.territories.get(id), "territory", id);
 }
 
+export function requireSubTerritory(scenario: Scenario, id: SubTerritoryId): SubTerritoryDefinition {
+  return required(scenario.index.subTerritories.get(id), "sub-territory", id);
+}
+
+export function requireBuilding(scenario: Scenario, id: BuildingId): BuildingDefinition {
+  return required(scenario.index.buildings.get(id), "building", id);
+}
+
+export function requireDevelopment(scenario: Scenario, id: DevelopmentId): DevelopmentDefinition {
+  return required(scenario.index.development.get(id), "development", id);
+}
+
+export function requireResource(scenario: Scenario, id: ResourceId): ResourceDefinition {
+  return required(scenario.resources.find((resource) => resource.id === id), "resource", id);
+}
+
+export function requireGeneral(scenario: Scenario, id: GeneralId): GeneralDefinition {
+  return required(scenario.index.generals.get(id), "general", id);
+}
+
+/** R6: the name of the pass the link between two sub-territories crosses. */
+export function requirePassName(scenario: Scenario, a: SubTerritoryId, b: SubTerritoryId): string {
+  const link = linkBetween(scenario, a, b);
+  return required(link === undefined ? undefined : passName(link), "pass", `${a}|${b}`);
+}
+
 /** What every unit in play has a definition for: scenario units and units raised in play (R6, D7). */
-export type UnitIdentity = Pick<UnitDefinition, "designation" | "factionId" | "fullStrength" | "generalId" | "id" | "name" | "type">;
+export type UnitIdentity = Pick<UnitDefinition, "designation" | "factionId" | "fullStrength" | "generalId" | "id" | "type"> & Pick<RaisedUnitDefinition, "serial">;
 
 /** A scenario unit's definition, a recruited unit's (R6), or a replacement general's (D7), derived from its id. */
 export function requireUnitDefinition(scenario: Scenario, id: UnitId): UnitIdentity {
@@ -43,11 +81,11 @@ export function requireUnitType(scenario: Scenario, id: UnitTypeId): UnitTypeDef
 
 /** E7: the computer player's weights for a faction; the loader gives every faction one (L23). */
 export function requireAiProfile(scenario: Scenario, id: FactionId): AiProfile {
-  return required(scenario.ai.profiles[id], "AI profile for faction", id);
+  return required(scenario.ai.profiles[id], "AI profile", id);
 }
 
 export function requireUnitState(state: GameState, id: UnitId): UnitState {
-  return required(state.units[id], "army in play", id);
+  return required(state.units[id], "army", id);
 }
 
 export function neighborsOf(scenario: Scenario, id: TerritoryId): readonly Neighbor[] {

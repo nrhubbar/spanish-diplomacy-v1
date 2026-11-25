@@ -1,9 +1,11 @@
-import type { JSX } from "react";
+import { type JSX, useId, useState } from "react";
 import type { ActorKind } from "../engine/types";
 import { TimerChoice } from "../components/timer/TimerChoice";
+import { givenSeed, maxSeedLength } from "../game/client";
 import { useAppDispatch, useRegistry, useSessionIn } from "../hooks";
+import { feedbackText } from "../presentation/feedback";
 import { glyphs } from "../presentation/glyphs";
-import { cssVariables } from "../presentation/style";
+import { cssVariables } from "../components/style";
 import { chooseScenario, returnHome, setActorKind, startGame } from "../state/gameSlice";
 
 /** M2 section 3 labels (OD-4). */
@@ -19,6 +21,8 @@ export function SetupScreen(): JSX.Element {
   const session = useSessionIn("setup");
   const { scenario } = registry.require(session.scenarioId);
   const scenarios = registry.list();
+  const [seed, setSeed] = useState("");
+  const seedHint = useId();
 
   return (
     <main className="screen card-screen setup-screen" aria-labelledby="setup-title">
@@ -39,6 +43,11 @@ export function SetupScreen(): JSX.Element {
         </label>
       ) : null}
       <TimerChoice />
+      <label className="scenario-picker">
+        Game seed (optional)
+        <input aria-describedby={seedHint} autoComplete="off" maxLength={maxSeedLength} onChange={(event) => { setSeed(event.target.value); }} type="text" value={seed} />
+      </label>
+      <p className="pane-hint" id={seedHint}>The same seed gives the same dice. Leave it empty for a secret one, shown when the game ends. Whoever chooses a seed could work out the dice.</p>
       <p className="screen-copy">Assign each command to someone at this device or to a computer player.</p>
       <div className="faction-grid">
         {scenario.factions.map((faction) => (
@@ -62,10 +71,10 @@ export function SetupScreen(): JSX.Element {
           </article>
         ))}
       </div>
-      {session.feedback === undefined ? null : <p className="inline-feedback" role="alert">{session.feedback}</p>}
+      {session.feedback === undefined ? null : <p className="inline-feedback" role="alert">{feedbackText(scenario, session.feedback)}</p>}
       <div className="action-row">
         <button className="secondary-button" onClick={() => { dispatch(returnHome()); }} type="button">Back</button>
-        <button onClick={() => { dispatch(startGame()); }} type="button">Start Campaign</button>
+        <button onClick={() => { dispatch(startGame(givenSeed(seed))); }} type="button">Start Campaign</button>
       </div>
     </main>
   );

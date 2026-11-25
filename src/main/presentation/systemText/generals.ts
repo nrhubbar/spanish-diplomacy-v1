@@ -1,10 +1,11 @@
+import { requireGeneral } from "../../engine/lookup";
 import type { GeneralId, GeneralsTurnOutcome, Scenario } from "../../engine/types";
 import { factionLabel, type ReportLines, territoryLabel } from "./lines";
 
 /** U5, D7: the generals outcomes as report sentences. All are public: generals show on the board. */
 
 function general(scenario: Scenario, id: GeneralId): string {
-  return scenario.index.generals.get(id)?.name ?? id;
+  return requireGeneral(scenario, id).name;
 }
 
 export const generalsLines: ReportLines<GeneralsTurnOutcome> = {

@@ -1,3 +1,5 @@
+import { refusedFeedback } from "../../main/presentation/feedback";
+import { skippedText } from "../../main/presentation/replenish";
 import { describe, expect, it } from "vitest";
 import { inPoints, inThousandths } from "../../main/engine/carry";
 import { projectedHoldings } from "../../main/engine/economy/upkeep";
@@ -9,12 +11,11 @@ import { unitName } from "../../main/presentation/text";
 import { groupThisTurn, thisTurnEntries } from "../../main/presentation/thisTurn";
 import {
   armiesWithoutOrders, availableUnitIds, canDisband, chooseOrder, chooseReplenish, draftOrders, isDisbandPlanned, orderCounts, orderKindsFor, orderMuster, orderOf,
-  disbandableSelection, planDisband, plannedShortfall, type PlanningSession, recruitUpkeepProblem, removeOrder, replenishPlan, setAirMission, setRecruitQuantity, unitOrdersWithout
+  disbandableSelection, planDisband, plannedShortfall, type PlanningSession, recruitUpkeepProblem, removeOrder, replenishPlan, setAirMission, setRecruitQuantity, submittedDraftOrders, unitOrdersWithout
 } from "../../main/state/planning";
 import { type Draft, emptyDraft } from "../../main/state/session";
-import { submitOnTimeout } from "../../main/state/timeout";
 import { withoutFundsUpkeep } from "../pinned";
-import { faction, spainWithAir } from "../support";
+import { endedWith, faction, recordOf, spainWithAir, testGame, timedOutWith, told } from "../support";
 
 /** D1: Disband, the upkeep refusals and the Upkeep row on the planning screen. */
 
@@ -36,7 +37,7 @@ const [first, second] = inMadrid as [UnitState, UnitState];
 const plane = own("air")[0]!;
 const stock = (funds: number, men: number): GameState => ({ ...initial, treasuries: { ...initial.treasuries, [republic]: { ["funds" as ResourceId]: funds, [manpower]: men } } });
 const planning = (state: GameState = stock(80, 80), draft: Draft = emptyDraft): PlanningSession => ({
-  draft, factionId: republic, game: { assignments: {}, history: [], locked: {}, scenarioId: scenario.id, seed: 1, state }, phase: "planning"
+  draft, factionId: republic, game: { assignments: {}, history: [], ready: [], scenarioId: scenario.id, gameId: testGame, state }, phase: "planning"
 });
 /** Next turn's stock is exactly `points` when nothing is planned. */
 const leaving = (points: number): GameState => {
@@ -54,7 +55,7 @@ describe("planning a Disband (D1)", () => {
     expect(canDisband(scenario, session, general)).toBe(false);
     const refused = planDisband(scenario, planning(initial, emptyDraft), [Object.values(initial.units).find((unit) => unit.factionId !== republic)!.id]);
     expect(refused.draft.disbands).toBeUndefined();
-    expect(refused.draft.feedback).toBe("Selected unit belongs to another player.");
+    expect(told(scenario, refused.draft.feedback)).toBe("Selected unit belongs to another player.");
   });
 
   it("is an order for the whole selection, offered last while one of them is not going yet (N1)", () => {
@@ -72,7 +73,7 @@ describe("planning a Disband (D1)", () => {
     const ordered = chooseOrder(scenario, select(first, second), "disband");
     expect(ordered.draft.disbands?.map(({ unitId }) => unitId)).toEqual([first.id, second.id]);
     expect(ordered.draft.selectedUnitIds).toEqual([]);
-    expect(ordered.draft.feedback).toBe(`${unitName(scenario, first.id)} and ${unitName(scenario, second.id)} will disband at the end of the turn.`);
+    expect(told(scenario, ordered.draft.feedback)).toBe(`${unitName(scenario, first.id)} and ${unitName(scenario, second.id)} will disband at the end of the turn.`);
     const again = { ...ordered, draft: { ...ordered.draft, selectedUnitIds: [first.id] } };
     expect(orderKindsFor(again, scenario)).not.toContain("disband");
     expect(orderKindsFor({ ...again, draft: { ...again.draft, selectedUnitIds: [first.id, inMadrid[2]!.id] } }, scenario)).toContain("disband");
@@ -80,7 +81,7 @@ describe("planning a Disband (D1)", () => {
     expect(removeOrder(ordered, first.id).draft.disbands?.map(({ unitId }) => unitId)).toEqual([second.id]);
     const refused = planDisband(scenario, select(first, general), [first.id, general.id]);
     expect(refused.draft.disbands).toBeUndefined();
-    expect(refused.draft.feedback).toBe("General units cannot disband.");
+    expect(told(scenario, refused.draft.feedback)).toBe("General units cannot disband.");
   });
 
   it("replaces the unit's other order, leaves the selection and closes a destination choice", () => {
@@ -96,7 +97,7 @@ describe("planning a Disband (D1)", () => {
     expect(draft.selectedUnitIds).toEqual([second.id]);
     expect(draft.stage).toBeUndefined();
     expect(draft.disbands).toEqual([{ factionId: republic, kind: "disband", unitId: first.id }]);
-    expect(draft.feedback).toContain("will disband at the end of the turn.");
+    expect(told(scenario, draft.feedback)).toContain("will disband at the end of the turn.");
     expect(isDisbandPlanned(draft, first.id)).toBe(true);
     expect(isDisbandPlanned(emptyDraft, first.id)).toBe(false);
   });
@@ -139,8 +140,10 @@ describe("planning a Disband (D1)", () => {
   it("is submitted at End Turn and when time runs out", () => {
     const session = planDisband(scenario, planning(), [first.id]);
     expect(draftOrders(session.draft)).toEqual([{ factionId: republic, kind: "disband", unitId: first.id }]);
-    const after = submitOnTimeout(scenario, { ...session, game: { ...session.game, assignments: Object.fromEntries(scenario.factions.map(({ id }) => [id, "local-human"])) } as never });
-    expect("game" in after ? after.game.locked[republic]?.orders : undefined).toEqual([{ factionId: republic, kind: "disband", unitId: first.id }]);
+    const record = recordOf({ ...session, game: { ...session.game, assignments: Object.fromEntries(scenario.factions.map(({ id }) => [id, "local-human"])) } }, scenario, 5);
+    const orders = [{ factionId: republic, kind: "disband", unitId: first.id }];
+    expect(endedWith(scenario, record, republic, submittedDraftOrders(session.draft)).orders[republic]).toEqual({ ended: true, orders, revision: 1 });
+    expect(timedOutWith(scenario, record, republic, submittedDraftOrders(session.draft)).orders[republic]).toEqual({ ended: true, orders, revision: 1, timedOut: true });
   });
 });
 
@@ -150,10 +153,10 @@ describe("upkeep refusals while planning (D1)", () => {
   it("refuses a recruit that next turn's stock cannot cover, unless a planned Disband makes room", () => {
     const price = (scenario.index.unitTypes.get(militiaType)!.recruit!.cost[manpower] ?? 0) + (scenario.index.unitTypes.get(militiaType)!.upkeep[manpower] ?? 0);
     const session = planning(leaving(price - 0.1));
-    expect(recruitUpkeepProblem(scenario, session, madrid, militiaType)).toBe(reason);
+    expect(told(scenario, refusedFeedback(recruitUpkeepProblem(scenario, session, madrid, militiaType)!))).toBe(reason);
     const refused = setRecruitQuantity(scenario, session, madrid, militiaType, 1);
     expect(refused.draft.recruits).toBeUndefined();
-    expect(refused.draft.feedback).toBe(reason);
+    expect(told(scenario, refused.draft.feedback)).toBe(reason);
     const roomy = planDisband(scenario, session, [inMadrid.find((unit) => (scenario.index.unitTypes.get(typeIdOf(unit) as UnitTypeId)!.upkeep[manpower] ?? 0) >= 0.25)!.id]);
     const accepted = setRecruitQuantity(scenario, roomy, madrid, militiaType, 1);
     expect(accepted.draft.recruits).toHaveLength(1);
@@ -171,10 +174,11 @@ describe("upkeep refusals while planning (D1)", () => {
     const rich = planning(worn({ ...stock(80, 80), training: Array.from({ length: 100 }, () => item) }), selected);
     const plan = replenishPlan(scenario, rich);
     expect(plan.ready).toEqual([]);
-    expect(plan.skipped.map((skip) => skip.reason)).toEqual(["upkeep leaves too little next turn", "upkeep leaves too little next turn"]);
+    expect(plan.skipped.map((skip) => skip.reason)).toEqual([{ code: "upkeep" }, { code: "upkeep" }]);
+    expect(skippedText(scenario, plan.skipped)).toMatch(/ \(upkeep leaves too little next turn\)\.$/u);
     const refused = chooseReplenish(scenario, rich);
     expect(refused.draft.replenishments).toBeUndefined();
-    expect(refused.draft.feedback).toMatch(/^No selected unit can replenish\. Skips /u);
+    expect(told(scenario, refused.draft.feedback)).toMatch(/^No selected unit can replenish\. Skips /u);
   });
 
   it("warns of the shortage with the scenario's shares", () => {

@@ -3,11 +3,12 @@ import type { RuleModule } from "../main/engine/modules";
 import { initialGameState, resolveTurn } from "../main/engine/resolution";
 import { raisedDefinition, raisedUnitId, trainingUnitId } from "../main/engine/recruitment/rules";
 import type { AirMissionOrder, BuildOrder, GameState, Order, PlayerSubmission, RecruitOrder, ReplenishOrder, Scenario, TrainingItem, TurnOutcome, UnitTypeId } from "../main/engine/types";
+import { beforePlanning } from "../main/engine/weather";
 import { isPublicOrder, ordersFor, outcomesFor } from "../main/engine/visibility";
+import { unitName } from "../main/presentation/text";
 import { emptyDraft, type Draft } from "../main/state/session";
-import { submitDraft, submittedDraftOrders } from "../main/state/submit";
-import { submitOnTimeout } from "../main/state/timeout";
-import { faction, spain, spainId, spainWithAir, territory, unit } from "./support";
+import { submittedDraftOrders } from "../main/state/planning";
+import { endedWith, faction, recordOf, spain, spainId, spainWithAir, territory, timedOutWith, unit, testGame } from "./support";
 
 const scenario = spainWithAir();
 const start = initialGameState(scenario);
@@ -51,7 +52,7 @@ describe("recon stays its flier's own (B1, B2)", () => {
 
   it("agrees with ordersFor on every order kind", () => {
     for (const order of [recon, raid, recruit, build, replenish]) {
-      const outcome: TurnOutcome = { kind: "rejected-order", order: order as Exclude<Order, { kind: "move" }>, reason: "test" };
+      const outcome: TurnOutcome = { kind: "rejected-order", order: order as Exclude<Order, { kind: "move" }>, refusal: { code: "order-unavailable" } };
       for (const state of [start, northSeesMadrid(start), { ...start, reveals: [{ territoryId: territory("catalunya"), untilTurn: 1, viewerFactionId: north }] }]) {
         for (const viewer of [north, undefined, republic]) {
           expect(outcomesFor(scenario, state, [outcome], viewer).length, `${order.kind} to ${String(viewer)}`).toBe(ordersFor(scenario, state, [order], viewer).length);
@@ -63,7 +64,7 @@ describe("recon stays its flier's own (B1, B2)", () => {
 
 describe("rejected orders and replenishment of the dead (m1, m6)", () => {
   it("keeps a rejected order as private as the order", () => {
-    const refused = (order: Order): TurnOutcome => ({ kind: "rejected-order", order: order as Exclude<Order, { kind: "move" }>, reason: "test" });
+    const refused = (order: Order): TurnOutcome => ({ kind: "rejected-order", order: order as Exclude<Order, { kind: "move" }>, refusal: { code: "order-unavailable" } });
     expect(outcomesFor(scenario, start, [refused(recruit), refused(build), refused(replenish), refused(recon)], north)).toEqual([]);
     expect(outcomesFor(scenario, start, [refused(raid)], undefined)).toHaveLength(1);
     const catalunya: GameState = { ...start, reveals: [{ territoryId: territory("catalunya"), untilTurn: 1, viewerFactionId: north }] };
@@ -73,7 +74,7 @@ describe("rejected orders and replenishment of the dead (m1, m6)", () => {
   it("keeps a Replenish for a unit that died this turn its owner's, whatever the viewer reveals", () => {
     const units = Object.fromEntries(Object.entries(start.units).filter(([id]) => id !== "rep-otumba-9")) as GameState["units"];
     const after = northSeesMadrid({ ...start, units, reveals: [{ territoryId: territory("valencia"), untilTurn: 1, viewerFactionId: north }] });
-    const cancelled: TurnOutcome = { kind: "replenish-cancelled", order: replenish, reason: "battle", refund: {} };
+    const cancelled: TurnOutcome = { kind: "replenish-cancelled", order: replenish, refusal: { code: "unit-fought" }, refund: {} };
     expect(outcomesFor(scenario, after, [cancelled], north)).toEqual([]);
     expect(outcomesFor(scenario, after, [cancelled], republic)).toEqual([cancelled]);
     // A living unit's Replenish is opened by a reveal of its territory.
@@ -112,27 +113,33 @@ describe("time running out submits the whole draft (T5, T6)", () => {
     recruits: [recruit],
     replenishments: [replenish]
   };
-  const planning = { draft, factionId: republic, game: { assignments, history: [], locked: {}, scenarioId: spainId, seed: 3, state: worn }, phase: "planning" as const };
+  const planning = { draft, factionId: republic, game: { assignments, history: [], ready: [], scenarioId: spainId, gameId: testGame, state: beforePlanning(scenario, worn, 1) }, phase: "planning" as const };
+  const record = recordOf(planning, scenario, 5);
+  const reportOf = (game: typeof record) => {
+    if (game.report === undefined) throw new Error("Not resolved.");
+    return game.report;
+  };
 
   it("submits exactly the orders End Turn submits, every basket included", () => {
-    const timedOut = submitOnTimeout(scenario, planning);
-    const ended = submitDraft(scenario, planning);
-    if (timedOut.phase !== "resolution" || ended.phase !== "resolution") throw new Error("Not resolved.");
+    const timedOut = reportOf(timedOutWith(scenario, record, republic, submittedDraftOrders(draft)));
+    const ended = reportOf(endedWith(scenario, record, republic, submittedDraftOrders(draft)));
     const own = (orders: readonly Order[]) => orders.filter((order) => order.factionId === republic);
-    expect(own(timedOut.result.submittedOrders)).toEqual(own(ended.result.submittedOrders));
-    expect(own(timedOut.result.submittedOrders)).toEqual(submittedDraftOrders(draft));
+    expect(own(timedOut.submittedOrders)).toEqual(own(ended.submittedOrders));
+    expect(own(timedOut.submittedOrders)).toEqual(submittedDraftOrders(draft));
     expect(new Set(submittedDraftOrders(draft).map((order) => order.kind))).toEqual(new Set(["move", "withdraw", "recruit", "replenish", "build", "air-mission", "sack"]));
-    const ranOut = timedOut.result.outcomes.find((outcome) => outcome.kind === "time-ran-out");
+    const ranOut = timedOut.outcomes.find((outcome) => outcome.kind === "time-ran-out");
     // Ground units only, less the two with public orders (the move and the withdrawal); the Replenish is hidden, so its unit counts as held.
     const ground = Object.values(worn.units).filter((entry) => entry.factionId === republic && !["rep-ni52-fighters", "rep-breguet-bombers", "rep-catalan-recon", "rep-general-miaja"].includes(entry.id)).length;
     expect(ranOut).toEqual({ factionId: republic, heldUnitCount: ground - 2, kind: "time-ran-out" });
-    expect(ended.result.outcomes.some((outcome) => outcome.kind === "time-ran-out")).toBe(false);
+    expect(ended.outcomes.some((outcome) => outcome.kind === "time-ran-out")).toBe(false);
   });
 
   it("counts the same holds whether the hidden orders went in or not", () => {
-    const hiddenOnly = submitOnTimeout(scenario, { ...planning, draft: { ...emptyDraft, airOrders: [recon], recruits: [recruit], replenishments: [replenish] } });
-    const nothing = submitOnTimeout(scenario, { ...planning, draft: emptyDraft });
-    const count = (session: typeof nothing) => (session.phase === "resolution" ? session.result.outcomes.find((outcome) => outcome.kind === "time-ran-out") : undefined);
+    const timedOut = (planned: Draft) => reportOf(timedOutWith(scenario, record, republic, submittedDraftOrders(planned)));
+    const hiddenOnly = timedOut({ ...emptyDraft, airOrders: [recon], recruits: [recruit], replenishments: [replenish] });
+    const nothing = timedOut(emptyDraft);
+    const count = ({ outcomes }: typeof nothing) => outcomes.find((outcome) => outcome.kind === "time-ran-out");
+    expect(count(hiddenOnly)).toBeDefined();
     expect(count(hiddenOnly)).toEqual(count(nothing));
   });
 });
@@ -149,10 +156,12 @@ describe("raised units are numbered as they appear (m7)", () => {
     const result = resolveTurn(ground, { ...base, training: [slow, fast] }, [], 4);
     const completed = result.outcomes.filter((outcome) => outcome.kind === "training-completed");
     expect(completed.map((outcome) => outcome.unitId)).toEqual([raisedUnitId(republic, infantry, 1)]);
-    expect(result.finalState.raised[raisedUnitId(republic, infantry, 1)]?.name).toBe("Infantry regiment No. 1");
+    expect(result.finalState.raised[raisedUnitId(republic, infantry, 1)]?.serial).toBe(1);
+    expect(unitName(ground, raisedUnitId(republic, infantry, 1))).toBe("Infantry regiment No. 1");
     expect(result.finalState.training.map((entry) => entry.unitId)).toEqual([slow.unitId]);
     // In training it has no number: "Infantry regiment (new)".
-    expect(raisedDefinition(ground, slow.unitId)?.name).toBe("Infantry regiment (new)");
+    expect(raisedDefinition(ground, slow.unitId)).not.toHaveProperty("serial");
+    expect(unitName(ground, slow.unitId)).toBe("Infantry regiment (new)");
     expect(outcomesFor(ground, result.finalState, completed, north)).toEqual(completed);
   });
 });

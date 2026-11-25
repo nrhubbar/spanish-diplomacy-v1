@@ -1,8 +1,8 @@
 import { isPartitioned } from "../partition/holders";
 import { pocketOfArmy, pocketsOf } from "../partition/pockets";
 import { subTerritoriesOf, unitTypeOf } from "../movement/network";
-import type { FactionId, GameState, LinkDefinition, Scenario, SubTerritoryId, TerritoryId, UnitId } from "../types";
-import { isPass, linksOf, passName, roadOn, roadRank, territoryOfSub } from "./links";
+import type { FactionId, GameState, LinkDefinition, MovementRefusal, Scenario, SubTerritoryId, TerritoryId, UnitId } from "../types";
+import { isPass, linksOf, roadOn, roadRank, territoryOfSub } from "./links";
 import type { LinkStep, UnreachableCode } from "./reach";
 
 /**
@@ -16,11 +16,11 @@ import type { LinkStep, UnreachableCode } from "./reach";
  * pass bonus (R6) all read the same crossing.
  */
 
-/** A land path's failure, as a code and a plain sentence. */
+/** A land path's failure: what kind it is, and the refusal. */
 export interface PathRefusal {
   readonly code: UnreachableCode;
   readonly ok: false;
-  readonly reason: string;
+  readonly refusal: MovementRefusal;
 }
 
 /** One border crossing: the step and the link it crosses. */
@@ -75,8 +75,8 @@ export function marchCrossing(scenario: Scenario, state: GameState, fromSubs: re
   }
   if (best !== undefined) return { ok: true, ...best };
   return any
-    ? { code: "not-foot", ok: false, reason: "Only foot units can cross where there is no road." }
-    : { code: "not-connected", ok: false, reason: "Your ground there does not border it." };
+    ? { code: "not-foot", ok: false, refusal: { code: "foot-only" } }
+    : { code: "not-connected", ok: false, refusal: { code: "no-border-from-pocket" } };
 }
 
 /** R5: a link Motor may use: a road of at least the scenario's motor level, and no pass the pass rules close to Motor. */
@@ -123,8 +123,8 @@ export function motorPath(scenario: Scenario, state: GameState, fromSubs: readon
   const path = searchMotor(scenario, state, fromSubs, territories, false);
   if (path !== undefined) return { ok: true, path };
   const overPass = searchMotor(scenario, state, fromSubs, territories, true);
-  const pass = overPass?.map(({ link }) => passName(link)).find((name) => name !== undefined);
+  const pass = overPass?.map(({ link }) => link).find(isPass);
   return pass === undefined
-    ? { code: "no-road", ok: false, reason: `Motor needs a ${scenario.linkModifiers.road?.motorLevel === "main" ? "main road" : "road"} all the way.` }
-    : { code: "pass-blocks-motor", ok: false, reason: `Motor can't cross the ${pass} pass.` };
+    ? { code: "no-road", ok: false, refusal: { code: "motor-needs-road" } }
+    : { code: "pass-blocks-motor", ok: false, refusal: { code: "motor-pass-closed", link: [pass.a, pass.b] } };
 }

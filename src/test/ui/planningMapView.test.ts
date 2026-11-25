@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
+import { planningMapView } from "../../main/screens/planningMapView";
 import { initialGameState } from "../../main/engine/resolution";
 import type { AirMissionOrder, SackOrder, SubTerritoryId, TerritoryId } from "../../main/engine/types";
 import type { DestinationEstimate } from "../../main/presentation/odds";
-import { focusesOnClick, oddsDestinations, type PlanningSession, planningMapView } from "../../main/state/planning";
+import { focusesOnClick, oddsDestinations, type PlanningSession } from "../../main/state/planning";
 import { type Draft, emptyDraft } from "../../main/state/session";
-import { faction, move, spainId, spainWithAir, territory, unit } from "../support";
+import { faction, move, spainId, spainWithAir, territory, unit, testGame } from "../support";
 
 const scenario = spainWithAir();
 const start = initialGameState(scenario);
@@ -12,7 +13,7 @@ const republic = faction("republic");
 const sub = (id: string): SubTerritoryId => id as SubTerritoryId;
 
 function session(draft: Partial<Draft> = {}): PlanningSession {
-  return { draft: { ...emptyDraft, ...draft }, factionId: republic, game: { assignments: {}, history: [], locked: {}, scenarioId: spainId, seed: 1, state: start }, phase: "planning" };
+  return { draft: { ...emptyDraft, ...draft }, factionId: republic, game: { assignments: {}, history: [], ready: [], scenarioId: spainId, gameId: testGame, state: start }, phase: "planning" };
 }
 
 describe("the planning map's view (O1, C1, U2, X3)", () => {

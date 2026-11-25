@@ -2,7 +2,7 @@ import { type JSX, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useAppDispatch, useAppSelector, useSession } from "../../hooks";
 import { timeRanOut } from "../../state/timeout";
-import { clockWarned, pauseClock, planningBudgetMs, remainingMs, resumeClock, startClock, type PlanningClock } from "../../state/timerSlice";
+import { clockKey, clockWarned, pauseClock, planningBudgetMs, remainingMs, resumeClock, startClock, type PlanningClock } from "../../state/timerSlice";
 import type { HeaderSlotProps } from "./slots";
 
 /**
@@ -16,16 +16,13 @@ const warnings = [
 ] as const;
 
 const tickMs = 250;
+/** How long to wait for the host to end the turn before asking again. */
+const askAgainMs = 2000;
 
 /** "4:12". */
 export function clockText(ms: number): string {
   const seconds = Math.ceil(ms / 1000);
   return `${String(Math.floor(seconds / 60))}:${String(seconds % 60).padStart(2, "0")}`;
-}
-
-/** The clock's identity: the game, the turn and the planning faction. */
-function clockKey(seed: number, turnNumber: number, factionId: string): string {
-  return `${String(seed)}:${String(turnNumber)}:${factionId}`;
 }
 
 /**
@@ -45,7 +42,7 @@ export function TimerChip(_props: HeaderSlotProps): JSX.Element | null {
     <RunningClock
       budgetMs={planningBudgetMs(timer.minutes, game.state.turnNumber)}
       clock={timer.clock}
-      clockId={clockKey(game.seed, game.state.turnNumber, session.factionId)}
+      clockId={clockKey(game.gameId, game.state.turnNumber, session.factionId)}
       pausable={local}
     />
   );
@@ -61,7 +58,7 @@ interface RunningClockProps {
 function RunningClock({ budgetMs, clock, clockId, pausable }: RunningClockProps): JSX.Element {
   const dispatch = useAppDispatch();
   const [now, setNow] = useState(() => Date.now());
-  const fired = useRef<string | undefined>(undefined);
+  const fired = useRef<{ readonly at: number; readonly clockId: string } | undefined>(undefined);
   const current = clock?.key === clockId ? clock : undefined;
   const running = current?.runningSince !== undefined;
 
@@ -84,11 +81,12 @@ function RunningClock({ budgetMs, clock, clockId, pausable }: RunningClockProps)
         dispatch(clockWarned(warning.seconds));
       }
     }
-    if (left <= 0 && fired.current !== clockId) {
-      fired.current = clockId;
+    // The host decides when time is up; until it ends the turn, it is asked now and then.
+    if (left <= 0 && (fired.current?.clockId !== clockId || now - fired.current.at >= askAgainMs)) {
+      fired.current = { at: now, clockId };
       dispatch(timeRanOut());
     }
-  }, [budgetMs, clockId, current, dispatch, left, running]);
+  }, [budgetMs, clockId, current, dispatch, left, now, running]);
 
   const level = left <= 10_000 ? "urgent" : left <= 60_000 ? "warning" : "calm";
   const lastWarning = current?.warned.at(-1);

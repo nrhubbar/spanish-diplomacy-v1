@@ -107,7 +107,7 @@ describe("d20 grades in words (D1, D2, D8)", () => {
     const hit = bands.find((band) => band.hit);
     expect(hit?.band.from).toBeLessThanOrEqual(12);
     expect(hit?.band.to).toBeGreaterThanOrEqual(12);
-    expect(bands.every((band) => band.grade !== undefined)).toBe(true);
+    expect(bands.every((band) => band.grade.id === band.band.gradeId)).toBe(true);
     for (const band of bands) expect(band.range).toBe(band.band.from === band.band.to ? String(band.band.from) : `${String(band.band.from)}\u2013${String(band.band.to)}`);
   });
 });

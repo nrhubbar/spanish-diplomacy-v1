@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { planningMapView } from "../../main/screens/planningMapView";
 import { unitKindIn } from "../../main/engine/air/pieces";
 import { estimateAttack } from "../../main/engine/combat";
 import { type MoveRoute, moveRoutes } from "../../main/engine/movement/routes";
@@ -9,14 +10,15 @@ import { initialGameState } from "../../main/engine/resolution";
 import type { AirMissionOrder, GameState, MoveLeg, RaisedUnitDefinition, TerritoryId, UnitId, UnitTypeId, WithdrawOrder } from "../../main/engine/types";
 import { glows } from "../../main/map/view";
 import { modeChips, orderLegs } from "../../main/presentation/moveModes";
-import { defendersCount, groundOf, groupModes, type InvadeOdds, invadeOdds, modeLabel, muster, musterButton, type MusterCard, type MusterDraft, nameOf, reachingUnits, reinforceDefence, subName, supportBlocked, supportCount, typeNameOf } from "../../main/presentation/muster";
+import { defendersCount, groundOf, groupModes, type InvadeOdds, invadeOdds, modeLabel, muster, musterButton, type MusterCard, type MusterDraft, reachingUnits, reinforceDefence, subName, supportBlocked, supportCount, typeNameOf } from "../../main/presentation/muster";
+import { unitName } from "../../main/presentation/text";
 import { plannedSupport } from "../../main/presentation/odds";
 import { actionName, quickActions } from "../../main/presentation/quickActions";
 import { reachNote } from "../../main/presentation/reachNote";
-import { musterOrderFrom, musterPicks, musterRefusal, orderMuster, type PlanningSession, planningMapView, tickedOnMap } from "../../main/state/planning";
+import { musterOrderFrom, musterPicks, musterRefusal, orderMuster, type PlanningSession, tickedOnMap } from "../../main/state/planning";
 import { type MusterChoices, noMusterChoices } from "../../main/state/paneSlice";
 import type { Draft } from "../../main/state/session";
-import { faction, move, spainWithAir, territory, unit, withUnits } from "../support";
+import { faction, move, spainWithAir, territory, unit, withUnits, testGame, told } from "../support";
 
 const scenario = spainWithAir();
 const start = initialGameState(scenario);
@@ -26,7 +28,7 @@ const madrid = territory("madrid");
 const empty = { orders: [] };
 
 function raise(state: GameState, id: string, factionId: string, type: string, territoryId: string): GameState {
-  const definition: RaisedUnitDefinition = { factionId: faction(factionId), fullStrength: 300, id: unit(id), name: id, type: type as UnitTypeId };
+  const definition: RaisedUnitDefinition = { factionId: faction(factionId), fullStrength: 300, id: unit(id), type: type as UnitTypeId };
   return {
     ...state,
     raised: { ...state.raised, [id]: definition },
@@ -59,7 +61,7 @@ function session(draft: Partial<Draft> = {}, state: GameState = start): Planning
   return {
     draft: { orders: [], selectedUnitIds: [], ...draft },
     factionId: republic,
-    game: { assignments: {}, history: [], locked: {}, scenarioId: scenario.id, seed: 1, state },
+    game: { assignments: {}, history: [], ready: [], scenarioId: scenario.id, gameId: testGame, state },
     phase: "planning"
   };
 }
@@ -100,7 +102,8 @@ describe("U6: move-mode chips", () => {
     expect(sailing.map((chip) => chip.mode)).toEqual(["march", "motor", "rail", "sea"]);
     expect(modeLabel("sea")).toBe("Sea");
     const roadless: typeof scenario = { ...scenario, linkModifiers: { ...scenario.linkModifiers, road: undefined as never } };
-    expect(modeChips(roadless, valencia, republic, unit("rep-wad-ras-1"), offered)[1]).toMatchObject({ reason: "Motor reaches at most 2 territories." });
+    // Without road rules the scenario gives no range to name.
+    expect(modeChips(roadless, valencia, republic, unit("rep-wad-ras-1"), offered)[1]).toMatchObject({ reason: "Out of reach this turn." });
   });
 });
 
@@ -202,10 +205,10 @@ describe("U6: the Invade and Reinforce panes' units", () => {
     expect(supportBlocked(open, new Set([unit("a"), unit("b"), unit("c")]), unit("d"))).toBeUndefined();
   });
 
-  it("names units, types and places it can't find plainly", () => {
-    expect(nameOf(scenario, start, unit("nobody"))).toBe("Unit");
+  it("names types it can't find plainly, and trusts the scenario for units and places", () => {
+    expect(() => unitName(scenario, unit("nobody"))).toThrow(/unknown unit/u);
     expect(typeNameOf(scenario, start, unit("nobody"))).toBe("Unit");
-    expect(subName(scenario, "nowhere" as never)).toBe("its ground");
+    expect(() => subName(scenario, "nowhere" as never)).toThrow(/unknown sub-territory/u);
     expect(typeNameOf(scenario, start, unit("rep-wad-ras-1"))).toBe("Infantry regiment");
   });
 
@@ -451,7 +454,7 @@ describe("U5: quick actions", () => {
 
 describe("U7: why a territory is out of reach", () => {
   it("lists the reasons, each led by its mode", () => {
-    const reach: Reach = { ok: false, reasons: [{ code: "too-far", text: "March reaches only a neighbouring territory." }, { code: "not-connected", text: "Out of reach this turn." }] };
+    const reach: Reach = { ok: false, reasons: [{ code: "too-far", refusal: { code: "march-neighbours-only" } }, { code: "not-connected", refusal: { code: "out-of-reach" } }] };
     expect(reachNote(scenario, castile, reach)).toEqual({
       lines: [{ mode: "march", text: "March reaches only a neighbouring territory." }, { text: "Out of reach this turn." }],
       status: "Out of reach this turn",
@@ -483,16 +486,16 @@ describe("U6: ordering from the pane", () => {
     expect(after.draft.replenishments).toEqual([]);
     expect(after.draft.orderedToStay).toEqual([]);
     expect(after.draft.selectedUnitIds).toEqual([]);
-    expect(after.draft.feedback).toBe("2 units and 1 aircraft ordered to invade Castilla y León.");
+    expect(told(scenario, after.draft.feedback)).toBe("2 units and 1 aircraft ordered to invade Castilla y León.");
     // A pane that doesn't list a unit or aircraft leaves its order there alone (Reinforce lists no aircraft).
     const kept = orderMuster(scenario, after, { kind: "reinforce", moves: [], shown: [unit("rep-madrid-security")], support: [], target: castile });
     expect(kept.draft.orders.map((order) => order.unitId)).toEqual(["rep-wad-ras-1"]);
     expect(kept.draft.airOrders?.map((order) => order.unitId)).toEqual(["rep-ni52-fighters"]);
     const cleared = orderMuster(scenario, after, { kind: "invade", moves: [], shown, support: [], target: castile });
     expect(cleared.draft.orders).toEqual([]);
-    expect(cleared.draft.feedback).toBe("No units are ordered to invade Castilla y León.");
+    expect(told(scenario, cleared.draft.feedback)).toBe("No units are ordered to invade Castilla y León.");
     const one = orderMuster(scenario, session(), { kind: "reinforce", moves: [{ unitId: unit("rep-wad-ras-1") }], shown: [], support: [], target: territory("castilla-la-mancha") });
-    expect(one.draft.feedback).toBe("1 unit ordered to reinforce Castilla-La Mancha.");
+    expect(told(scenario, one.draft.feedback)).toBe("1 unit ordered to reinforce Castilla-La Mancha.");
     expect(one.draft).not.toHaveProperty("selectedTerritoryId");
   });
 

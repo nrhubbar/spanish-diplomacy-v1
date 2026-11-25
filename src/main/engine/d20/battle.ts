@@ -1,13 +1,12 @@
 import { type AirOverBattle, airOverHookedBattle } from "../air/groundSupport";
 import type { Armies, Combatant } from "../board";
-import { pick } from "../dice";
+import { dieFaces, pick } from "../dice";
 import type { TurnScratch } from "../phases/draft";
 import type { RandomSource } from "../random";
 import type { ArmyLoss, BattleOutcome, BattleSide, BattleSite, CombatRole, FactionId, GameState, GradeDefinition, Retreat, Scenario, UnitId, WeatherState } from "../types";
 import { applyGradeSide, type Casualties } from "./grades";
 import { type ModifierContext, battleModifiers, fightingSide } from "./modifiers";
 import { type BattleOdds, gradeAt, battleOdds, scoreFor } from "./odds";
-import { d20Faces } from "./rules";
 
 /** What a battle reads besides its sides: the start of the turn and the turn's weather. */
 export interface BattleInput {
@@ -62,7 +61,7 @@ export interface PendingBattle {
 
 /** D1: a face of the d20. */
 export function rollD20(random: RandomSource): number {
-  return pick(random, d20Faces.length);
+  return pick(random, dieFaces);
 }
 
 /**

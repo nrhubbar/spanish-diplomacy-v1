@@ -104,15 +104,15 @@ describe("report-line helpers", () => {
     expect(listNames(["A", "B", "C"])).toBe("A, B and C");
   });
 
-  it("names factions, territories, sub-territories and types, or falls back to the id", () => {
+  it("names factions, territories, sub-territories and types, and trusts the scenario to have them", () => {
     expect(factionLabel(scenario, faction("republic"))).toMatch(/Republic/u);
-    expect(factionLabel(scenario, faction("nobody"))).toBe("nobody");
+    expect(() => factionLabel(scenario, faction("nobody"))).toThrow(/unknown faction/u);
     expect(territoryLabel(scenario, territory("madrid"))).toBe("Madrid");
-    expect(territoryLabel(scenario, territory("atlantis"))).toBe("atlantis");
+    expect(() => territoryLabel(scenario, territory("atlantis"))).toThrow(/unknown territory/u);
     expect(subTerritoryLabel(scenario, "henares" as SubTerritoryId)).toBe("Henares");
-    expect(subTerritoryLabel(scenario, "atlantis" as SubTerritoryId)).toBe("atlantis");
+    expect(() => subTerritoryLabel(scenario, "atlantis" as SubTerritoryId)).toThrow(/unknown sub-territory/u);
     expect(typeLabel(scenario, "militia-column" as UnitTypeId)).toBe("Militia column");
-    expect(typeLabel(scenario, "dragon" as UnitTypeId)).toBe("dragon");
+    expect(() => typeLabel(scenario, "dragon" as UnitTypeId)).toThrow(/unknown unit type/u);
   });
 
   it("names where a territory recruits: its capital, else the territory", () => {

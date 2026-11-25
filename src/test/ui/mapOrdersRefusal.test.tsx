@@ -5,10 +5,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { initialGameState } from "../../main/engine/resolution";
 import { MusterView } from "../../main/screens/actions/MusterView";
 import type { PlanningSession } from "../../main/state/planning";
-import { faction, spainWithAir, spainId, territory, testStore } from "../support";
+import { faction, spainWithAir, spainId, territory, testStore, testGame } from "../support";
 
 // The engine takes back a move between drawing the pane and ordering it (the board changed).
-vi.mock("../../main/state/planning", async (original) => ({ ...await original<typeof import("../../main/state/planning")>(), musterRefusal: () => "That route is closed now." }));
+vi.mock("../../main/state/planning", async (original) => ({ ...await original<typeof import("../../main/state/planning")>(), musterRefusal: () => ({ code: "nothing-to-hit" }) }));
 
 afterEach(cleanup);
 
@@ -18,7 +18,7 @@ describe("U6: a refused order", () => {
     const session: PlanningSession = {
       draft: { orders: [], selectedUnitIds: [] },
       factionId: faction("republic"),
-      game: { assignments: {}, history: [], locked: {}, scenarioId: spainId, seed: 1, state: initialGameState(scenario) },
+      game: { assignments: {}, history: [], ready: [], scenarioId: spainId, gameId: testGame, state: initialGameState(scenario) },
       phase: "planning"
     };
     const store = testStore();
@@ -29,7 +29,7 @@ describe("U6: a refused order", () => {
     const [first] = within(pane).getAllByRole("checkbox");
     await user.click(first!);
     await user.click(within(pane).getByRole("button", { name: /^Order 1 unit to reinforce/ }));
-    expect(screen.getByRole("alert")).toHaveTextContent("That route is closed now.");
+    expect(screen.getByRole("alert")).toHaveTextContent("Nothing to hit there.");
     expect(first).toBeChecked();
     expect(dispatched).not.toHaveBeenCalledWith(expect.objectContaining({ type: "game/orderFromMuster" }));
   });

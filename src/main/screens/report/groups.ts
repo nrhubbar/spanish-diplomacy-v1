@@ -2,7 +2,7 @@ import type { TurnOutcome } from "../../engine/types";
 import type { EconomyIconName } from "../../components/economy/EconomyIcon";
 import type { OutcomeKey } from "../../presentation/outcomes";
 import { outcomeText } from "../../presentation/outcomeText";
-import type { SiteIconKind } from "../pane/SiteIcons";
+import type { SiteIconKind } from "../../components/SiteIcons";
 
 type OutcomeKind = TurnOutcome["kind"];
 

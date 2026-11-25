@@ -2,7 +2,7 @@ import { type JSX, useId } from "react";
 import { MapControlsHelp } from "../components/MapControlsHelp";
 import { requireFaction } from "../engine/lookup";
 import type { FactionId, GameState, Scenario } from "../engine/types";
-import { cssVariables } from "../presentation/style";
+import { cssVariables } from "../components/style";
 import { selectVictoryStanding, type VictoryMeasure } from "../state/selectors";
 import { BattleBasics } from "./BattleBasics";
 

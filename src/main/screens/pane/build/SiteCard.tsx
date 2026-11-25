@@ -1,19 +1,11 @@
 import { type JSX, useId } from "react";
-import { isCapital } from "../../../engine/economy/catalogue";
-import { subTerritoryYield } from "../../../engine/economy/income";
-import { isContested } from "../../../engine/partition/holders";
-import type { BuildOrder, FactionId, GameState, Scenario, SubTerritoryId, TerrainKind } from "../../../engine/types";
-import { isRevealed } from "../../../engine/visibility";
-import { signedAmountText } from "../../../presentation/economy";
+import type { BuildOrder, FactionId, GameState, Scenario, SubTerritoryId } from "../../../engine/types";
 import { glyphs } from "../../../presentation/glyphs";
-import { buildEntries } from "../../../presentation/queues";
-import { factionName } from "../../../presentation/text";
+import { siteCard } from "../../../presentation/siteCard";
 import { buildingIcon, developmentIcon, EconomyIcon } from "../../../components/economy/EconomyIcon";
 import { QueueList } from "../../queues/QueueList";
-import { SiteIcon } from "../SiteIcons";
+import { SiteIcon } from "../../../components/SiteIcons";
 import { BuildOptions } from "./BuildOptions";
-
-const terrainNames: Readonly<Record<TerrainKind, string>> = { mountain: "Mountains", open: "Open ground", swamp: "Marsh" };
 
 interface SiteCardProps {
   readonly expanded: boolean;
@@ -44,78 +36,60 @@ export function Pips({ label, level, max }: { readonly label: string; readonly l
  */
 export function SiteCard({ expanded, onToggle, planned, scenario, state, subTerritoryId, viewer }: SiteCardProps): JSX.Element | null {
   const bodyId = useId();
-  const sub = scenario.index.subTerritories.get(subTerritoryId);
-  const site = state.subTerritories[subTerritoryId];
-  if (sub === undefined || site === undefined) return null;
-  const own = site.holder === viewer;
-  const capital = isCapital(scenario, sub);
-  const contested = isContested(scenario, state, sub.territoryId);
-  const entries = buildEntries(scenario, site, planned, contested);
-  const head = entries[0];
-  const tracks = scenario.development.filter((track) => !track.cityOnly || sub.cityIds.length > 0);
-  const improvements = scenario.improvements;
-  const hidden = !own && entries.length === 0;
+  const card = siteCard(scenario, state, subTerritoryId, viewer, planned);
+  if (card === undefined) return null;
+  const { capital, contested, entries, holder, own, port, queueNote, rail, summary } = card;
 
   return (
-    <article aria-label={sub.name} className={`site-card${own ? " site-card-own" : ""}`} data-expanded={expanded}>
+    <article aria-label={card.name} className={`site-card${own ? " site-card-own" : ""}`} data-expanded={expanded}>
       <h4 className="site-card-head">
         <button aria-controls={bodyId} aria-expanded={expanded} className="site-card-toggle" onClick={onToggle} type="button">
           <span aria-hidden="true" className="site-card-caret">{expanded ? glyphs.caretDown : glyphs.caretRight}</span>
           {capital ? <EconomyIcon className="site-capital" name="star" /> : null}
-          <span className="site-name">{sub.name}</span>
+          <span className="site-name">{card.name}</span>
           {capital ? <span className="visually-hidden"> (capital)</span> : null}
-          <span className="site-yield">{yieldText(signedAmountText(scenario, subTerritoryYield(scenario, site)))}</span>
+          <span className="site-yield">{card.yieldText}</span>
         </button>
       </h4>
-      {expanded || head === undefined ? null : (
+      {expanded || summary === undefined ? null : (
         <p className="site-summary">
-          <span>{head.name}</span>
-          <span className="queue-status">{`${head.status}${entries.length > 1 ? ` ${glyphs.dot} +${String(entries.length - 1)} queued` : ""}`}</span>
+          <span>{summary.name}</span>
+          <span className="queue-status">{summary.status}</span>
         </p>
       )}
-      {own ? null : <p className="site-holder">{`Held by ${factionName(scenario, site.holder)}`}</p>}
+      {holder === undefined ? null : <p className="site-holder">{holder}</p>}
       {expanded ? (
         <div className="site-card-body" id={bodyId}>
           <ul aria-label="About this sub-territory" className="site-chips">
-            <li className="site-chip"><SiteIcon kind={sub.terrain} />{terrainNames[sub.terrain]}</li>
-            {site.port > 0 ? <li className="site-chip"><SiteIcon kind="port" />{`Port ${String(site.port)}`}</li> : null}
-            {site.rail > 0 ? <li className="site-chip"><SiteIcon kind="rail" />{`Rail ${String(site.rail)}`}</li> : null}
+            <li className="site-chip"><SiteIcon kind={card.terrain.kind} />{card.terrain.name}</li>
+            {card.portLevel > 0 ? <li className="site-chip"><SiteIcon kind="port" />{`Port ${String(card.portLevel)}`}</li> : null}
+            {card.railLevel > 0 ? <li className="site-chip"><SiteIcon kind="rail" />{`Rail ${String(card.railLevel)}`}</li> : null}
             {contested ? <li className="site-chip" data-tone="contested"><SiteIcon kind="contested" />Contested ground</li> : null}
           </ul>
-          {sub.cityIds.length === 0 ? null : <p className="site-cities">{`Cities: ${sub.cityIds.map((id) => scenario.index.cities.get(id)?.name ?? id).join(", ")}`}</p>}
+          {card.cities.length === 0 ? null : <p className="site-cities">{`Cities: ${card.cities.join(", ")}`}</p>}
           <ul aria-label="Development and improvements" className="site-levels">
-            {tracks.map((track) => (
+            {card.tracks.map(({ level, max, track }) => (
               <li key={track.id}>
                 <EconomyIcon name={developmentIcon(scenario, track)} />
                 <span>{track.name}</span>
-                <Pips label={track.name} level={site.development[track.id] ?? 0} max={track.maxLevel} />
+                <Pips label={track.name} level={level} max={max} />
               </li>
             ))}
-            {improvements === undefined ? null : (
-              <>
-                <li><EconomyIcon name="rail" /><span>Rail</span><Pips label="Rail" level={site.rail} max={improvements.rail.maxLevel} /></li>
-                {site.port > 0 || sub.port > 0 ? <li><EconomyIcon name="anchor" /><span>Port</span><Pips label="Port" level={site.port} max={improvements.port.maxLevel} /></li> : null}
-              </>
-            )}
+            {rail === undefined ? null : <li><EconomyIcon name="rail" /><span>Rail</span><Pips label="Rail" level={rail.level} max={rail.max} /></li>}
+            {port === undefined ? null : <li><EconomyIcon name="anchor" /><span>Port</span><Pips label="Port" level={port.level} max={port.max} /></li>}
           </ul>
-          {site.buildings.length === 0 ? null : (
+          {card.buildings.length === 0 ? null : (
             <ul aria-label="Buildings" className="site-buildings">
-              {site.buildings.map((id) => {
-                const building = scenario.index.buildings.get(id);
-                return building === undefined ? null : <li key={id}><EconomyIcon name={buildingIcon(building)} />{building.name}</li>;
-              })}
+              {card.buildings.map((building) => <li key={building.id}><EconomyIcon name={buildingIcon(building)} />{building.name}</li>)}
             </ul>
           )}
           {entries.length === 0 ? null : <QueueList entries={entries} label="Build queue" paused={contested} scenario={scenario} />}
-          {hidden ? (
-            // U4: the viewer's recon shows this territory's queues, so an empty one reads empty.
-            <p className="site-hidden"><EconomyIcon name="flag" />{isRevealed(state, viewer, sub.territoryId) ? "Queue empty (recon)" : "Queue hidden"}</p>
-          ) : null}
+          {queueNote === undefined ? null : (
+            <p className="site-hidden"><EconomyIcon name="flag" />{queueNote}</p>
+          )}
           <BuildOptions scenario={scenario} state={state} subTerritoryId={subTerritoryId} viewer={viewer} />
         </div>
       ) : null}
     </article>
   );
 }
-
-const yieldText = (text: string): string => (text === "nothing" ? "no yield" : text);

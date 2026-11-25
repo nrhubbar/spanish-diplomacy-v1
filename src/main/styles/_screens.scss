@@ -42,6 +42,19 @@
   font-weight: 700;
 }
 
+.scenario-picker input {
+  padding: 0.5rem 0.6rem;
+  border: 1px solid currentcolor;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+
+.game-seed {
+  overflow-wrap: anywhere;
+}
+
 .faction-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));

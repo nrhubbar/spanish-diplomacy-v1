@@ -1,7 +1,9 @@
+import { requireBuilding, requireDevelopment } from "../../engine/lookup";
 import { subTerritoryYield } from "../../engine/economy/income";
 import { holdsWhole } from "../../engine/partition/holders";
 import type { AirBattleAircraft, AirBattleOutcome, AirMissionOrder, AirTurnOutcome, RaidFlownOutcome, RaidOutcome } from "../../engine/types";
 import { amountText } from "../economy";
+import { refusalText } from "../refusals";
 import { factionLabel, listNames, type ReportLineContext, type ReportLines, subTerritoryLabel, territoryLabel, unitLabel } from "./lines";
 
 /**
@@ -41,8 +43,8 @@ function raidEffect(context: ReportLineContext, outcome: RaidFlownOutcome): stri
       return cut === "nothing" ? "no income to cut there" : `income cut by ${cut} next turn`;
     }
     case "building-hit":
-      if (outcome.buildingId !== undefined) return `${scenario.index.buildings.get(outcome.buildingId)?.name ?? outcome.buildingId} hit`;
-      if (outcome.developmentId !== undefined) return `${scenario.index.development.get(outcome.developmentId)?.name ?? outcome.developmentId} down a level`;
+      if (outcome.buildingId !== undefined) return `${requireBuilding(scenario, outcome.buildingId).name} hit`;
+      if (outcome.developmentId !== undefined) return `${requireDevelopment(scenario, outcome.developmentId).name} down a level`;
       return "nothing worth hitting";
   }
 }
@@ -92,9 +94,9 @@ export const airLines: ReportLines<AirTurnOutcome> = {
       ? `${flier(context, outcome.order)} flew Ground Support for the battle for ${where}, but its support did not count.`
       : `${flier(context, outcome.order)} gave Ground Support in the battle for ${where}.`;
   },
-  // U2: "weather" is the mission step's code for Rain, Mud and Snow without a paved airfield.
+  // U2: the weather is Rain, Mud or Snow at a base without a paved airfield.
   grounded: (outcome, context) =>
-    outcome.reason === "weather" ? `${flier(context, outcome.order)} was grounded by the weather.` : `${flier(context, outcome.order)} did not fly: ${outcome.reason}`,
+    outcome.refusal.code === "grounded-by-weather" ? `${flier(context, outcome.order)} was grounded by the weather.` : `${flier(context, outcome.order)} did not fly: ${refusalText(context.scenario, outcome.refusal)}`,
   "aircraft-rebased": (outcome, context) =>
     `${flier(context, outcome)} lost its airfield in ${territoryLabel(context.scenario, outcome.from)} and flew to ${territoryLabel(context.scenario, outcome.to)}.`,
   "aircraft-lost": (outcome, context) =>

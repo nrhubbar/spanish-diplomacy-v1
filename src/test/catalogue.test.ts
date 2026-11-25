@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { applyBuildOrder, maxLevel, plannedSpend, siteRefusal, validateBuildOrder, withBuildOrders } from "../main/engine/economy/catalogue";
 import { initialGameState } from "../main/engine/resolution";
 import type { BuildOrder, BuildProject, BuildingId, DevelopmentId, GameState, Order, Resources, SubTerritoryId, UnitTypeId } from "../main/engine/types";
-import { faction, spainWithAir, territory } from "./support";
+import { faction, said, spainWithAir, territory, verdictText } from "./support";
 import { pinned } from "./pinned";
 
 /** $3-$5, D28.4: the build catalogue's limits on the Spanish board. */
@@ -23,11 +23,11 @@ describe("where a building may go (D28.4, L18)", () => {
   const state = rich();
 
   it("Barracks only in a capital sub-territory, the only place it unlocks anything", () => {
-    expect(siteRefusal(scenario, state, republic, sub("girona"), building("barracks"))).toBe("Capital sub-territory only.");
+    expect(said(scenario, siteRefusal(scenario, state, republic, sub("girona"), building("barracks")))).toBe("Capital sub-territory only.");
     // Alicante is not a capital, but has a city, so a Factory may be built there.
     expect(siteRefusal(scenario, state, republic, sub("alicante"), develop("factory"))).toBeUndefined();
     // Valencia's capital has both already; Murcia's capital may take a Depot.
-    expect(siteRefusal(scenario, state, republic, sub("valencia"), building("barracks"))).toBe("Already built.");
+    expect(said(scenario, siteRefusal(scenario, state, republic, sub("valencia"), building("barracks")))).toBe("Already built.");
     expect(siteRefusal(scenario, state, republic, sub("murcia"), building("depot"))).toBeUndefined();
     const capitals = new Set(scenario.territories.map((entry) => entry.capitalSubTerritoryId));
     for (const site of scenario.subTerritories) {
@@ -36,13 +36,13 @@ describe("where a building may go (D28.4, L18)", () => {
   });
 
   it("a Factory needs a city, an upgrade needs its base, and other buildings go anywhere held", () => {
-    expect(siteRefusal(scenario, state, republic, sub("girona"), develop("factory"))).toBe("Needs a city.");
-    expect(siteRefusal(scenario, state, republic, sub("girona"), building("paved-airfield"))).toBe("Needs Airfield first.");
+    expect(said(scenario, siteRefusal(scenario, state, republic, sub("girona"), develop("factory")))).toBe("Needs a city.");
+    expect(said(scenario, siteRefusal(scenario, state, republic, sub("girona"), building("paved-airfield")))).toBe("Needs Airfield first.");
     expect(siteRefusal(scenario, state, republic, sub("girona"), building("hospital"))).toBeUndefined();
-    expect(siteRefusal(scenario, state, republic, sub("girona"), develop("factory"))).toBe("Needs a city.");
-    expect(siteRefusal(scenario, state, republic, sub("girona"), building("no-such-thing"))).toBe("Not available in this scenario.");
-    expect(siteRefusal(scenario, state, republic, sub("nowhere"), building("hospital"))).toBe("Unknown sub-territory.");
-    expect(siteRefusal(scenario, state, faction("north"), sub("girona"), building("hospital"))).toMatch(/is not yours/u);
+    expect(said(scenario, siteRefusal(scenario, state, republic, sub("girona"), develop("factory")))).toBe("Needs a city.");
+    expect(said(scenario, siteRefusal(scenario, state, republic, sub("girona"), building("no-such-thing")))).toBe("Not available in this scenario.");
+    expect(said(scenario, siteRefusal(scenario, state, republic, sub("nowhere"), building("hospital")))).toBe("Unknown sub-territory.");
+    expect(said(scenario, siteRefusal(scenario, state, faction("north"), sub("girona"), building("hospital")))).toMatch(/is not yours/u);
   });
 
   it("levels stop at their maximum, rail and port included", () => {
@@ -50,9 +50,9 @@ describe("where a building may go (D28.4, L18)", () => {
     expect(maxLevel(scenario, { improvement: "port", kind: "improvement" })).toBe(2);
     expect(maxLevel(scenario, develop("unknown"))).toBe(0);
     // D3, declog D12: Barcelona starts at rail 2, its main lines' level, so a repair has nothing to raise.
-    expect(siteRefusal(scenario, state, republic, sub("barcelona"), { improvement: "rail", kind: "improvement" })).toBe("Max level is 2.");
+    expect(said(scenario, siteRefusal(scenario, state, republic, sub("barcelona"), { improvement: "rail", kind: "improvement" }))).toBe("Max level is 2.");
     // D4: Madrid lists no port.
-    expect(siteRefusal(scenario, state, republic, sub("madrid"), { improvement: "port", kind: "improvement" })).toBe("Can't be built in Madrid.");
+    expect(said(scenario, siteRefusal(scenario, state, republic, sub("madrid"), { improvement: "port", kind: "improvement" }))).toBe("Can't be built in Madrid.");
     expect(siteRefusal(scenario, state, republic, sub("barcelona"), develop("factory"))).toBeUndefined();
     expect(maxLevel(scenario, develop("factory"))).toBe(3);
   });
@@ -63,7 +63,8 @@ describe("queuing and pricing builds ($5)", () => {
     const base = initialGameState(scenario);
     const poor: GameState = { ...base, treasuries: { ...base.treasuries, [republic]: { funds: 1 } as Resources } };
     const failed = applyBuildOrder(scenario, poor, order("girona", building("hospital")));
-    expect(failed).toEqual({ ok: false, reason: "Needs 5 more Funds." });
+    expect(failed).toEqual({ ok: false, refusal: { code: "resources-short", short: [{ amount: 5, resourceId: "funds" }] } });
+    expect(verdictText(scenario, failed.ok ? { ok: true } : failed)).toBe("Needs 5 more Funds.");
     expect(withBuildOrders(scenario, poor, [order("girona", building("hospital"))])).toBe(poor);
     const queued = applyBuildOrder(scenario, rich(), order("girona", building("hospital")));
     expect(queued.ok && queued.state.subTerritories[sub("girona")]?.queue).toHaveLength(1);
@@ -96,7 +97,7 @@ describe("the Factory's Manpower (D3)", () => {
   });
 
   it("refuses the order when the Manpower is short", () => {
-    expect(applyBuildOrder(scenario, short(3), cantabria())).toEqual({ ok: false, reason: "Needs 1 more Manpower." });
-    expect(validateBuildOrder(scenario, short(3), cantabria())).toEqual({ ok: false, reason: "Needs 1 more Manpower." });
+    expect(applyBuildOrder(scenario, short(3), cantabria())).toEqual({ ok: false, refusal: { code: "resources-short", short: [{ amount: 1, resourceId: "manpower" }] } });
+    expect(validateBuildOrder(scenario, short(3), cantabria())).toEqual({ ok: false, refusal: { code: "resources-short", short: [{ amount: 1, resourceId: "manpower" }] } });
   });
 });

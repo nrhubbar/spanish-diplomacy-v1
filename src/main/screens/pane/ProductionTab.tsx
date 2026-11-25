@@ -1,10 +1,8 @@
 import type { JSX } from "react";
-import { amountOf } from "../../engine/economy/resources";
-import type { ResourceId } from "../../engine/types";
 import { glyphs } from "../../presentation/glyphs";
-import { signedResourceAmount } from "../../presentation/economy";
+import { yieldCell } from "../../presentation/economy";
 import { productionOf, yieldSources } from "../../presentation/ledger";
-import { factionName } from "../../presentation/text";
+import { factionName, territoryName } from "../../presentation/text";
 import { previewState } from "../../state/planning";
 import type { TerritoryTabProps } from "./TerritoryTabs";
 
@@ -15,8 +13,7 @@ import type { TerritoryTabProps } from "./TerritoryTabs";
  */
 export function ProductionTab({ scenario, session, territoryId }: TerritoryTabProps): JSX.Element {
   const production = productionOf(scenario, previewState(scenario, session), territoryId);
-  const name = scenario.index.territories.get(territoryId)?.name ?? "";
-  const cell = (value: number, resourceId: ResourceId): string => (value === 0 ? glyphs.minus : signedResourceAmount(scenario, resourceId, value));
+  const name = territoryName(scenario, territoryId);
   return (
     <div className="production-tab">
       <div className="build-tab-head">
@@ -41,7 +38,7 @@ export function ProductionTab({ scenario, session, territoryId }: TerritoryTabPr
                   {row.raided ? ` ${glyphs.dot} raided this turn` : ""}
                 </span>
               </th>
-              {scenario.resources.map((resource) => <td key={resource.id}>{cell(amountOf(row.yield, resource.id), resource.id)}</td>)}
+              {scenario.resources.map((resource) => <td key={resource.id}>{yieldCell(scenario, row.yield, resource.id)}</td>)}
             </tr>
           ))}
         </tbody>
@@ -49,8 +46,8 @@ export function ProductionTab({ scenario, session, territoryId }: TerritoryTabPr
           <tr data-contested={production.contested}>
             <th scope="row">{production.contested ? "Contested: pays nothing" : "Held whole: pays"}</th>
             {scenario.resources.map((resource) => {
-              const total = amountOf(production.total, resource.id);
-              return <td key={resource.id}>{production.contested ? <s>{cell(total, resource.id)}</s> : cell(total, resource.id)}</td>;
+              const total = yieldCell(scenario, production.total, resource.id);
+              return <td key={resource.id}>{production.contested ? <s>{total}</s> : total}</td>;
             })}
           </tr>
         </tfoot>

@@ -45,6 +45,11 @@ export function flavorValues(scenario: Scenario, battle: BattleOutcome): Outcome
   };
 }
 
+/** A game's public id as a number, so its battle lines read the same on every screen. Nothing to do with its dice. */
+export function flavorKey(gameId: string): number {
+  return [...Array(gameId.length).keys()].reduce((hash, index) => (Math.imul(hash, 31) + gameId.charCodeAt(index)) >>> 0, 7);
+}
+
 /** A stable seed for a battle's flavor line, so a replay of the same game reads the same. */
 export function flavorSeed(gameSeed: number, turnNumber: number, index: number): number {
   return deriveSeed(gameSeed, turnNumber, index);

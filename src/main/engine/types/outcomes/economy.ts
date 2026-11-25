@@ -1,6 +1,7 @@
 import type { FactionId, SubTerritoryId, UnitId } from "../../ids";
 import type { Resources } from "../economy";
 import type { BuildOrder } from "../orders";
+import type { Refusal } from "../refusals";
 import type { BuildProject } from "../state";
 
 /** Build queue and income outcomes ($1-$8, U3 cuts), owned by `m3r1-economy-builds` (phases 1, 10, 11). */
@@ -47,7 +48,7 @@ export interface BuildRefundedOutcome {
   readonly factionId: FactionId;
   readonly kind: "build-refunded";
   readonly project: BuildProject;
-  readonly reason: string;
+  readonly refusal: Refusal;
   readonly refund: Resources;
   readonly subTerritoryId: SubTerritoryId;
 }

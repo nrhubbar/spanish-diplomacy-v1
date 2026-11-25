@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { incomeFor } from "../main/engine/economy/income";
-import { meetsRequirement, recruitSlots, requirementName, typeLock } from "../main/engine/recruitment/rules";
+import { meetsRequirement, recruitSlots, typeLock } from "../main/engine/recruitment/rules";
+import { requirementName } from "../main/presentation/refusals";
 import { initialGameState } from "../main/engine/resolution";
 import type { BuildingId, DevelopmentId, FactionId, GameState, RecruitRequirement, ResourceId, SubTerritoryId, UnitTypeId } from "../main/engine/types";
 import { loadPackage } from "../main/scenarios/loader";
 import { projectEffectText } from "../main/presentation/economy";
-import { faction, spain, territory } from "./support";
+import { faction, said, spain, territory } from "./support";
 import { modularMap, modularScenario } from "./modularFixture";
 
 type Json = Record<string, unknown>;
@@ -75,9 +76,9 @@ describe("a requirement that names a development track (D3, R3)", () => {
     if (artillery === undefined) return;
     const lock = typeLock(scenario, withSites(heldWhole("asturias", faction("republic"), {}), (_, site) => ({ ...site, buildings: [] })), faction("republic"), asturias, artillery);
     expect(lock.missing).toEqual([{ buildingId: "barracks", kind: "building" }, factory]);
-    expect(lock.reasons[0]).toBe("Needs a Barracks in Oviedo and a Factory in Asturias.");
+    expect(said(scenario, lock.refusals[0])).toBe("Needs a Barracks in Oviedo and a Factory in Asturias.");
     const only = typeLock(scenario, withSites(heldWhole("asturias", faction("republic"), { asturias: 1 }), (_, site) => ({ ...site, buildings: [] })), faction("republic"), asturias, artillery);
-    expect(only.reasons[0]).toBe("Needs a Barracks in Oviedo.");
+    expect(said(scenario, only.refusals[0])).toBe("Needs a Barracks in Oviedo.");
   });
 
   it("gives one more Recruit order for every level in the territory", () => {

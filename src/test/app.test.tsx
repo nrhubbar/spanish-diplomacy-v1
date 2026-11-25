@@ -244,7 +244,7 @@ describe("application flow", () => {
 
     const store = testStore();
     store.dispatch(openSetup());
-    store.dispatch(startGame(11));
+    store.dispatch(startGame("11"));
     renderApp("/reveal", store);
     // Planning on turn 1 opens on the Briefing (B4); the redirect lands on the planning screen.
     expect(await screen.findByRole("complementary", { name: "Briefing" })).toBeVisible();

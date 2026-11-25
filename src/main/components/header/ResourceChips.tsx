@@ -1,9 +1,8 @@
 import { type JSX, memo, useId, useMemo, useState } from "react";
-import { amountOf } from "../../engine/economy/resources";
 import type { ResourceId } from "../../engine/types";
 import { useSession } from "../../hooks";
 import { isInGame } from "../../state/session";
-import { resourceAmount, resourceAmountInFull, signedResourceAmount } from "../../presentation/economy";
+import { amountHeld, resourceAmount, resourceAmountInFull, signedResourceAmount } from "../../presentation/economy";
 import { glyphs } from "../../presentation/glyphs";
 import { ledgersFor } from "../../presentation/ledger";
 import { Ledger } from "./Ledger";
@@ -81,7 +80,7 @@ function Chips({ scenario, state, viewer }: HeaderSlotProps): JSX.Element | null
                       <li key={faction.id}>
                         <span>{faction.name}</span>
                         <span className={theirs === undefined ? "resource-hidden" : "resource-revealed"}>
-                          {theirs === undefined ? "hidden" : `${shown(amountOf(theirs, resource.id))} (recon)`}
+                          {theirs === undefined ? "hidden" : `${amountHeld(scenario, theirs, resource.id)} (recon)`}
                         </span>
                       </li>
                     );

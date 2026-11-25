@@ -6,8 +6,10 @@ import type {
   GameState,
   Order,
   RaisedUnitDefinition,
+  RecruitmentRefusal,
   RecruitOrder,
   RecruitmentTurnOutcome,
+  Refusal,
   ReplenishOrder,
   Resources,
   TerritoryId,
@@ -40,7 +42,7 @@ function carried(carries: GameState["carry"]): Pick<GameState, "carry"> {
   return carries === undefined ? {} : { carry: carries };
 }
 
-const notEnough = "Not enough Funds or Manpower when the orders were revealed.";
+const notEnough: RecruitmentRefusal = { code: "payment-short-at-reveal" };
 
 /** The orders of this area that passed validation at reveal, in submission order. */
 function validOrders(draft: TurnDraft): readonly (RecruitOrder | ReplenishOrder)[] {
@@ -70,7 +72,7 @@ export const payForRecruits: Phase = (draft) => {
   // D1: each order is refused if it leaves next turn's stock below zero, after this side's Disband orders and what it was already granted.
   const before = draftState(draft);
   const granted: Order[] = [...validDisbands(draft)];
-  const upkeepReason = (order: RecruitOrder | ReplenishOrder): string | undefined =>
+  const upkeepRefusal = (order: RecruitOrder | ReplenishOrder): Refusal | undefined =>
     upkeepProblem(scenario, before, order.factionId, [...granted.filter((other) => other.factionId === order.factionId), order]);
 
   for (const order of orders) {
@@ -81,19 +83,20 @@ export const payForRecruits: Phase = (draft) => {
       if (recruit === undefined) continue;
       const slotKey = `${order.factionId}|${order.territoryId}`;
       const count = used.get(slotKey) ?? 0;
-      const refund = (reason: string): void => {
+      const refund = (refusal: Refusal): void => {
         // RR-5, m1: nothing was taken, so nothing comes back (like `build-refunded` at step 1).
-        events.push({ factionId: order.factionId, kind: "training-refunded", reason, refund: {}, territoryId: order.territoryId, typeId: order.unitTypeId });
+        events.push({ factionId: order.factionId, kind: "training-refunded", refusal, refund: {}, territoryId: order.territoryId, typeId: order.unitTypeId });
       };
-      if (count >= recruitSlots(scenario, start, order.territoryId)) {
-        refund(`At most ${String(recruitSlots(scenario, start, order.territoryId))} new units a turn can be recruited there.`);
+      const slots = recruitSlots(scenario, start, order.territoryId);
+      if (count >= slots) {
+        refund({ code: "recruit-slots-full", slots });
         continue;
       }
       if (!canAfford(balance, recruit.cost)) {
         refund(notEnough);
         continue;
       }
-      const short = upkeepReason(order);
+      const short = upkeepRefusal(order);
       if (short !== undefined) {
         refund(short);
         continue;
@@ -112,12 +115,12 @@ export const payForRecruits: Phase = (draft) => {
       // B2: priced against the carry so far this reveal, not the start of the turn's.
       const charge = chargeReplenish(carryOf(carried(carries), order.factionId), quote.owed);
       if (!canAfford(balance, charge.paid)) {
-        events.push({ kind: "replenish-cancelled", order, reason: notEnough, refund: {} });
+        events.push({ kind: "replenish-cancelled", order, refusal: notEnough, refund: {} });
         continue;
       }
-      const short = upkeepReason(order);
+      const short = upkeepRefusal(order);
       if (short !== undefined) {
-        events.push({ kind: "replenish-cancelled", order, reason: short, refund: {} });
+        events.push({ kind: "replenish-cancelled", order, refusal: short, refund: {} });
         continue;
       }
       granted.push(order);
@@ -143,6 +146,13 @@ function unitsInBattle(draft: TurnDraft): ReadonlySet<UnitId> {
   return new Set(sides.flatMap((side) => side.armies.map((army) => army.unitId)));
 }
 
+/** Q-MR-05: the unit a paid Replenish reaches at step 9, or why its men do not join it. */
+function arrival(paid: PaidReplenishment, unit: UnitState | undefined, fought: ReadonlySet<UnitId>): { readonly ok: true; readonly unit: UnitState } | { readonly ok: false; readonly refusal: RecruitmentRefusal } {
+  if (unit === undefined) return { ok: false, refusal: { code: "unit-lost" } };
+  if (fought.has(unit.id)) return { ok: false, refusal: { code: "unit-fought" } };
+  return unit.territoryId === paid.territoryId ? { ok: true, unit } : { ok: false, refusal: { code: "unit-fell-back" } };
+}
+
 /**
  * Section 2 step 9 (R5, C5, Q-MR-05): replenished men arrive after battles and control. Any
  * battle the unit fought, or its retreat or loss, cancels the order with a full refund.
@@ -158,16 +168,14 @@ export const replenish: Phase = (draft) => {
   const armies: Record<UnitId, UnitState> = { ...draft.armies };
   const events: RecruitmentTurnOutcome[] = [];
   for (const entry of paid) {
-    const unit = armies[entry.order.unitId];
-    const reason = unit === undefined
-      ? "The unit was lost before the men arrived."
-      : fought.has(unit.id) ? "The unit fought a battle." : unit.territoryId === entry.territoryId ? undefined : "The unit fell back.";
-    if (unit === undefined || reason !== undefined) {
+    const reached = arrival(entry, armies[entry.order.unitId], fought);
+    if (!reached.ok) {
       treasuries = adjustTreasury(treasuries, entry.order.factionId, entry.paid);
       carries = withCarry(carries, entry.order.factionId, uncharge(carryOf(carried(carries), entry.order.factionId), entry.owed, entry.paid)).carry;
-      events.push({ kind: "replenish-cancelled", order: entry.order, reason: reason ?? "", refund: entry.paid });
+      events.push({ kind: "replenish-cancelled", order: entry.order, refusal: reached.refusal, refund: entry.paid });
       continue;
     }
+    const { unit } = reached;
     const full = (draft.systems.raised[unit.id] ?? scenario.index.units.get(unit.id) ?? raisedDefinition(scenario, unit.id))?.fullStrength ?? unit.strength;
     const men = Math.max(0, Math.min(entry.men, full - unit.strength));
     armies[unit.id] = { ...unit, morale: { demoralized: false, quietTurns: 0 }, strength: unit.strength + men };
@@ -209,8 +217,8 @@ export const advanceTraining: Phase = (draft) => {
       const started = item.turnsLeft < (scenario.index.unitTypes.get(item.typeId)?.recruit?.trainingTurns ?? item.turnsLeft);
       if (!started) treasuries = adjustTreasury(treasuries, item.factionId, item.paid);
       events.push(started
-        ? { factionId: item.factionId, kind: "training-refunded", reason: "The capital fell while the unit was training; its payment is lost.", refund: {}, territoryId: item.territoryId, typeId: item.typeId }
-        : { factionId: item.factionId, kind: "training-refunded", reason: "The capital fell before training began.", refund: item.paid, territoryId: item.territoryId, typeId: item.typeId });
+        ? { factionId: item.factionId, kind: "training-refunded", refusal: { code: "capital-fell-in-training" }, refund: {}, territoryId: item.territoryId, typeId: item.typeId }
+        : { factionId: item.factionId, kind: "training-refunded", refusal: { code: "capital-fell-before-training" }, refund: item.paid, territoryId: item.territoryId, typeId: item.typeId });
       continue;
     }
     if (!trainsOn(scenario, state, item)) {

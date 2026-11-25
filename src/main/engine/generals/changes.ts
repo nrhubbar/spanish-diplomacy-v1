@@ -2,7 +2,7 @@ import { holdsWhole } from "../partition/holders";
 import { heldWholeByAnother, isAirbaseFor, territoriesWithin, unitDefinitionIn, unitKindIn, unitTypeIn } from "../air/pieces";
 import { airScratch } from "../air/scratch";
 import { compareIds, removeArmies, replaceArmies } from "../board";
-import { pick } from "../dice";
+import { dieFaces, pick } from "../dice";
 import type { Phase, TurnDraft } from "../phases/draft";
 import type {
   BattleSide,
@@ -181,7 +181,7 @@ export const commandChanges: Phase = (draft) => {
     const alone = !ownGround && (lostGround
       || Object.values(armies).some((other) => other.territoryId === unit.territoryId && other.factionId !== unit.factionId));
     if (!broken.has(unit.id) && !alone) continue;
-    const roll = pick(streams("general-death", deathIndex), 20);
+    const roll = pick(streams("general-death", deathIndex), dieFaces);
     deathIndex += 1;
     const removed = armies[unit.id] === undefined;
     const safe = alone || removed ? fallbackTerritory(scenario, { control, subTerritories: draft.systems.subTerritories }, unit.factionId) : unit.territoryId;

@@ -1,5 +1,5 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import { defaultLayers, type LayerId } from "../map/layers/layerChoice";
+import { defaultLayers, type LayerId } from "../presentation/mapLayers";
 
 export interface MapLayersState {
   /** U13: the player's choice of map layers, kept while the map screens come and go. */

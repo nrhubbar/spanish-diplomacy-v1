@@ -1,4 +1,5 @@
 import { type JSX, useMemo } from "react";
+import { planningMapView } from "./planningMapView";
 import { requireFaction } from "../engine/lookup";
 import type { Scenario } from "../engine/types";
 import { GameHeader } from "../components/GameHeader";
@@ -6,12 +7,13 @@ import { EndTurnButton } from "../components/header/EndTurnButton";
 import { TurnNav } from "../components/header/TurnNav";
 import { useAppDispatch, useAppSelector, useRegistry, useSessionIn } from "../hooks";
 import type { MapView } from "../map/view";
+import { feedbackText } from "../presentation/feedback";
 import { glyphs } from "../presentation/glyphs";
 import { queueCounts } from "../presentation/thisTurn";
 import { turnLabel } from "../presentation/turn";
 import { cancelOrderStage } from "../state/gameSlice";
 import { opensTall, popView, topView, viewKey } from "../state/paneSlice";
-import { type PlanningSession, planningMapView, selectedDestinations, selectedEstimates, tickedOnMap } from "../state/planning";
+import { type PlanningSession, selectedDestinations, selectedEstimates, tickedOnMap } from "../state/planning";
 import { selectSubmissionStatus } from "../state/selectors";
 import { useMapActions } from "./actions/useMapActions";
 import { MapScreenFrame } from "./MapScreenFrame";
@@ -80,7 +82,7 @@ function Orders({ scenario, session }: { readonly scenario: Scenario; readonly s
       )}
       label={`${faction.name} orders`}
       pane={{
-        attentionKey: [draft.selectedTerritoryId, draft.feedback, draft.orders.length, viewKey(shown)].join("|"),
+        attentionKey: [draft.selectedTerritoryId, draft.feedback === undefined ? "" : feedbackText(scenario, draft.feedback), draft.orders.length, viewKey(shown)].join("|"),
         ...(previous === undefined ? {} : { back: { label: paneViewTitle(scenario, previous), onBack: () => dispatch(popView()) } }),
         barAction: endTurnButton,
         ...(choosing

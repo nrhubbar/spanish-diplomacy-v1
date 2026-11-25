@@ -207,7 +207,7 @@ describe("attack estimates (C15)", () => {
   it("refuses an attack with no armies or with another faction's armies", () => {
     expect(() => estimateAttack(scenario, start, faction("red"), [], territory("harbor"))).toThrow("one or more armies");
     expect(() => estimateAttack(scenario, start, faction("red"), [unit("blue-marines")], territory("lowlands"))).toThrow("one or more armies");
-    expect(() => estimateAttack(scenario, start, faction("red"), [unit("ghost")], territory("harbor"))).toThrow("unknown army in play");
+    expect(() => estimateAttack(scenario, start, faction("red"), [unit("ghost")], territory("harbor"))).toThrow("unknown army");
   });
 });
 

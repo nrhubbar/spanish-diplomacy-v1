@@ -14,7 +14,7 @@ import { projectIcon } from "../main/components/economy/EconomyIcon";
 import { projectBaseName, projectEffectText, projectName } from "../main/presentation/economy";
 import { airLines } from "../main/presentation/systemText/air";
 import { contestedLines } from "../main/presentation/systemText/contested";
-import { faction, spain, territory, unit, withUnits } from "./support";
+import { faction, said, spain, territory, unit, withUnits } from "./support";
 
 const scenario = spain();
 const start = initialGameState(scenario);
@@ -106,7 +106,7 @@ describe("link works (R7; the rules are in networkEngine.test.ts)", () => {
     const madrid = start.subTerritories[sub("madrid")];
     expect(madrid === undefined ? undefined : currentLevel(madrid, link("rail-upgrade"))).toBe(0);
     expect(maxLevel(scenario, link("rail-upgrade"))).toBe(0);
-    expect(siteRefusal(scenario, start, faction("republic"), sub("madrid"), link("road-upgrade"))).toBe("Trucks can use this road already.");
+    expect(said(scenario, siteRefusal(scenario, start, faction("republic"), sub("madrid"), link("road-upgrade")))).toBe("Trucks can use this road already.");
   });
 
   it("leaves the site as it was when one finishes in its queue", () => {

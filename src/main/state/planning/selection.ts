@@ -2,6 +2,7 @@ import { standingOrder } from "../../engine/orders";
 import { isMoveOrder, type ReplenishOrder, type Scenario, type TerritoryId, type UnitId, type UnitState } from "../../engine/types";
 import type { MoveRoute } from "../../engine/movement/routes";
 import { legalDestinations } from "../../engine/validation";
+import type { Feedback } from "../../presentation/feedback";
 import { selectionRoutes } from "../../presentation/movement";
 import type { Draft, OrderKind, PlannedOrder, Session } from "../session";
 import { chooseTarget, isAircraft, keepAirOrders, selectAircraft, targetTerritories } from "./air";
@@ -77,8 +78,8 @@ function keepOrderedToStay(draft: Draft): Pick<Draft, "orderedToStay"> {
   return draft.orderedToStay === undefined ? {} : { orderedToStay: draft.orderedToStay };
 }
 
-export function feedback(session: PlanningSession, message: string): PlanningSession {
-  return withDraft(session, { ...session.draft, feedback: message });
+export function feedback(session: PlanningSession, note: Feedback): PlanningSession {
+  return withDraft(session, { ...session.draft, feedback: note });
 }
 
 /** A draft with a territory and armies selected, no order stage, and no feedback. */
@@ -160,12 +161,12 @@ export function clickUnit(scenario: Scenario, session: PlanningSession, unitId: 
 export function selectTerritory(session: PlanningSession, territoryId: TerritoryId, scenario?: Scenario): PlanningSession {
   const own = ownUnitIdsIn(session, territoryId, scenario);
   const available = availableUnitIds(session, territoryId, session.draft.orders, undefined, scenario);
-  const message = own.length === 0
-    ? "None of your units are in this territory."
-    : available.length === 0 ? "Every unit here is moving. Select one to change its order." : undefined;
+  const note: Feedback | undefined = own.length === 0
+    ? { code: "no-units-here" }
+    : available.length === 0 ? { code: "every-unit-moving" } : undefined;
   return withDraft(session, {
     ...selecting(territoryId, available, session.draft.orders),
-    ...(message === undefined ? {} : { feedback: message })
+    ...(note === undefined ? {} : { feedback: note })
   });
 }
 
@@ -173,7 +174,7 @@ export function selectTerritory(session: PlanningSession, territoryId: Territory
 export function toggleUnit(session: PlanningSession, unitId: UnitId, scenario?: Scenario): PlanningSession {
   const unit = session.game.state.units[unitId];
   if (unit?.factionId !== session.factionId) {
-    return feedback(session, "Select one of your own units.");
+    return feedback(session, { code: "not-your-unit" });
   }
   if (session.draft.selectedTerritoryId !== unit.territoryId) {
     return selectTerritory(session, unit.territoryId, scenario);
@@ -189,7 +190,7 @@ export function toggleUnit(session: PlanningSession, unitId: UnitId, scenario?: 
 export function selectAllAvailable(session: PlanningSession, scenario?: Scenario): PlanningSession {
   const territoryId = session.draft.selectedTerritoryId;
   return territoryId === undefined
-    ? feedback(session, "Select a territory first.")
+    ? feedback(session, { code: "no-territory-selected" })
     : selectTerritory(session, territoryId, scenario);
 }
 

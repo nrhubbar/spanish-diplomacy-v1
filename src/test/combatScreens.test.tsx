@@ -5,20 +5,19 @@ import { MemoryRouter } from "react-router";
 import { afterEach, describe, expect, it } from "vitest";
 import { App } from "../main/app";
 import { initialGameState } from "../main/engine/resolution";
-import type { GameState, TurnOutcome, TurnResolutionResult } from "../main/engine/types";
+import type { GameState, TurnOutcome } from "../main/engine/types";
 import { victoryProgress } from "../main/engine/victory";
 import { RegistryContext } from "../main/hooks";
-import type { GameRecord, Session } from "../main/state/session";
+import type { GameView, TurnReport } from "../main/game/types";
+import type { Session } from "../main/state/session";
 import { spainShowcaseOutcomes } from "./battleFixtures";
-import { armyIn, faction, move, spain, spainId, territory, testRegistry, testStore } from "./support";
+import { armyIn, faction, move, spain, spainId, territory, testRegistry, testStore, testGame } from "./support";
 
-function record(state: GameState): GameRecord {
+function record(state: GameState): GameView {
   return {
     assignments: { [faction("republic")]: "local-human", [faction("north")]: "computer", [faction("south")]: "computer" },
     history: [],
-    locked: {},
-    scenarioId: spainId,
-    seed: 1936,
+    ready: [], scenarioId: spainId, gameId: testGame,
     state
   };
 }
@@ -41,14 +40,15 @@ function renderSession(session: Session, path: string) {
 function resolution(outcomes: readonly TurnOutcome[]): Session {
   const scenario = spain();
   const state = initialGameState(scenario);
-  const result: TurnResolutionResult = {
+  const result: TurnReport = {
     cityChanges: [],
     controlChanges: [],
     subTerritoryChanges: [],
     finalState: state,
     outcomes,
     progress: victoryProgress(scenario, state),
-    submittedOrders: []
+    submittedOrders: [],
+    turnNumber: state.turnNumber
   };
   return { game: record(state), phase: "resolution", result };
 }

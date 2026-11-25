@@ -1,6 +1,7 @@
 import { compareIds } from "../board";
 import { scoreFor } from "../d20/odds";
 import { d20Faces } from "../d20/rules";
+import { dieFaces } from "../dice";
 import type { AirBattleAircraft, AirBattleInput, AirBattleResult, AirBattleRow, AirBattleSide, GroundSupportApplied, UnitId } from "../types";
 
 /**
@@ -37,7 +38,7 @@ export function airBattle(table: readonly AirBattleRow[], input: AirBattleInput,
 /** The chance of every row of the table over the d20's faces, so the estimate always matches the rule. */
 export function airBattleOdds(table: readonly AirBattleRow[], input: AirBattleInput): readonly AirBattleChance[] {
   const rows = d20Faces.map((die) => airBattle(table, input, die).row);
-  return table.map((row) => ({ chance: rows.filter((hit) => hit === row).length / d20Faces.length, row }));
+  return table.map((row) => ({ chance: rows.filter((hit) => hit === row).length / dieFaces, row }));
 }
 
 /**

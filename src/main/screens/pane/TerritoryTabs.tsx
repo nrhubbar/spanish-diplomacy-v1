@@ -1,5 +1,5 @@
 import { type JSX, type KeyboardEvent, type ReactNode, useId, useRef, useState } from "react";
-import { subTerritoriesOf } from "../../engine/partition/holders";
+import { subTerritoriesIn } from "../../presentation/holdings";
 import type { Scenario, SubTerritoryId, TerritoryId } from "../../engine/types";
 import type { TerritoryTab } from "../../state/paneSlice";
 import { isAircraft, plannedBuilds } from "../../state/planning";
@@ -31,7 +31,7 @@ export function tabCount(tab: TerritoryTab, { scenario, session, territoryId }: 
     case "buildings": {
       // Cheap on every render: the board's queues and this turn's planned builds, not a full preview.
       const planned = new Set(plannedBuilds(session).map((order) => order.subTerritoryId));
-      return subTerritoriesOf(scenario, territoryId).filter((sub) => {
+      return subTerritoriesIn(scenario, territoryId).filter((sub) => {
         const site = state.subTerritories[sub.id];
         return site?.holder === viewer && (site.queue.some((item) => item.factionId === viewer) || planned.has(sub.id));
       }).length;

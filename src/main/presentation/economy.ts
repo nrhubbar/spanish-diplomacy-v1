@@ -1,4 +1,5 @@
 import { currentLevel, maxLevel, projectCost, queuedLevel, sameProject } from "../engine/economy/catalogue";
+import { amountOf } from "../engine/economy/resources";
 import type { BuildingEffect, BuildProject, DevelopmentEffect, LinkWork, RecruitRequirement, ResourceId, Resources, Scenario, SubTerritoryState } from "../engine/types";
 import { glyphs } from "./glyphs";
 import { signedTenths, tenths } from "./numbers";
@@ -143,4 +144,15 @@ export function levelsOf(scenario: Scenario, site: SubTerritoryState, project: B
 /** "2 turns left" for a queue item. */
 export function turnsLeftText(turnsLeft: number): string {
   return `${String(turnsLeft)} ${turnsLeft === 1 ? "turn" : "turns"} left`;
+}
+
+/** How much of one resource an amount holds, as the header shows it. */
+export function amountHeld(scenario: Scenario, amount: Resources, resourceId: ResourceId): string {
+  return resourceAmount(scenario, resourceId, amountOf(amount, resourceId));
+}
+
+/** A production table's cell: one resource of a yield, a dash for none. */
+export function yieldCell(scenario: Scenario, amount: Resources, resourceId: ResourceId): string {
+  const value = amountOf(amount, resourceId);
+  return value === 0 ? glyphs.minus : signedResourceAmount(scenario, resourceId, value);
 }

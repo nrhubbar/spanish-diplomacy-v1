@@ -3,12 +3,14 @@ import type {
   BuildCost,
   BuildOrder,
   BuildProject,
+  BuildRefusal,
   FactionId,
   GameState,
   LinkModifier,
   LinkProject,
   Order,
   QueueItem,
+  ResourceId,
   Resources,
   Scenario,
   SiteProject,
@@ -145,28 +147,24 @@ function queuedLink(scenario: Scenario, state: EconomyState, project: LinkProjec
  * must join it to a bordering sub-territory, the faction must hold that end too, uncontested,
  * the work must fit the link as it stands, and no other work on it may be queued.
  */
-function linkRefusal(scenario: Scenario, state: EconomyState, factionId: FactionId, subTerritoryId: SubTerritoryId, project: LinkProject): string | undefined {
-  if (project.a !== subTerritoryId && project.b !== subTerritoryId) return "Queue link works at one end of the link.";
+function linkRefusal(scenario: Scenario, state: EconomyState, factionId: FactionId, subTerritoryId: SubTerritoryId, project: LinkProject): BuildRefusal | undefined {
+  if (project.a !== subTerritoryId && project.b !== subTerritoryId) return { code: "link-not-at-end" };
   const links = queuedLink(scenario, state, project);
   const otherId = project.a === subTerritoryId ? project.b : project.a;
   const other = scenario.index.subTerritories.get(otherId);
-  if (links === undefined || other === undefined) return "Those sub-territories don't border each other.";
-  if (state.subTerritories[otherId]?.holder !== factionId) return `${other.name} is not yours.`;
-  if (isContested(scenario, state.subTerritories, other.territoryId)) return "Contested: building waits until the territory is held whole.";
+  if (links === undefined || other === undefined) return { code: "link-not-bordering" };
+  if (state.subTerritories[otherId]?.holder !== factionId) return { code: "site-not-held", subTerritoryId: otherId };
+  if (isContested(scenario, state.subTerritories, other.territoryId)) return { code: "build-contested" };
   const now = workMisfit(links.current, project.work, scenario.linkModifiers.road);
   if (now !== undefined) return now;
   // One work at a time on a link, so a later one never finishes before the one it needs.
-  return links.queued ? "Another work on this link is in the queue." : undefined;
+  return links.queued ? { code: "link-busy" } : undefined;
 }
 
-function resourceName(scenario: Scenario, id: string): string {
-  return scenario.resources.find((resource) => resource.id === id)?.name ?? id;
-}
-
-/** "Needs 4 more Funds", for a cost the balance cannot cover. */
-function shortfallReason(scenario: Scenario, balance: Resources, cost: Resources): string {
-  const missing = Object.entries(shortfall(balance, cost)).map(([id, value]) => `${String(value)} more ${resourceName(scenario, id)}`);
-  return `Needs ${missing.join(" and ")}.`;
+/** What a balance lacks of a cost it cannot cover, resource by resource. */
+function shortfallRefusal(balance: Resources, cost: Resources): BuildRefusal {
+  const missing = Object.entries(shortfall(balance, cost)) as [ResourceId, number][];
+  return { code: "resources-short", short: missing.map(([resourceId, amount]) => ({ amount, resourceId })) };
 }
 
 /**
@@ -174,65 +172,65 @@ function shortfallReason(scenario: Scenario, balance: Resources, cost: Resources
  * site allows it. Covers holding, contested ground ($5), the catalogue's limits (L18's rules:
  * capital only, city only, upgrade of, max level) and what is already built or queued.
  */
-export function siteRefusal(scenario: Scenario, state: EconomyState, factionId: FactionId, subTerritoryId: SubTerritoryId, project: BuildProject): string | undefined {
+export function siteRefusal(scenario: Scenario, state: EconomyState, factionId: FactionId, subTerritoryId: SubTerritoryId, project: BuildProject): BuildRefusal | undefined {
   const sub = scenario.index.subTerritories.get(subTerritoryId);
   const site = state.subTerritories[subTerritoryId];
-  if (sub === undefined || site === undefined) return "Unknown sub-territory.";
-  if (site.holder !== factionId) return `${sub.name} is not yours.`;
-  if (isContested(scenario, state.subTerritories, sub.territoryId)) return "Contested: building waits until the territory is held whole.";
-  if (projectCost(scenario, project) === undefined) return "Not available in this scenario.";
+  if (sub === undefined || site === undefined) return { code: "unknown-site" };
+  if (site.holder !== factionId) return { code: "site-not-held", subTerritoryId };
+  if (isContested(scenario, state.subTerritories, sub.territoryId)) return { code: "build-contested" };
+  if (projectCost(scenario, project) === undefined) return { code: "project-unavailable" };
   if (project.kind === "link") return linkRefusal(scenario, state, factionId, subTerritoryId, project);
-  // D4: the sub-territory's own list, after the catalogue's reasons, which say more.
+  // D4: the sub-territory's own list, after the catalogue's refusals, which say more.
   const id = buildableId(project);
-  const unlisted = id === undefined || !sub.buildable.includes(id) ? `Can't be built in ${sub.name}.` : undefined;
+  const unlisted: BuildRefusal | undefined = id === undefined || !sub.buildable.includes(id) ? { code: "not-buildable-here", subTerritoryId } : undefined;
   const max = levelCap(scenario, state, subTerritoryId, project);
   if (project.kind === "building") {
     const building = scenario.index.buildings.get(project.buildingId);
-    if (building === undefined) return "Not available in this scenario.";
-    if (site.buildings.includes(building.id)) return "Already built.";
-    if (site.queue.some((item) => sameProject(item.project, project))) return "Already in the queue.";
-    if (building.capitalOnly && !isCapital(scenario, sub)) return "Capital sub-territory only.";
-    if (building.cityOnly && sub.cityIds.length === 0) return "Needs a city.";
+    if (building === undefined) return { code: "project-unavailable" };
+    if (site.buildings.includes(building.id)) return { code: "already-built" };
+    if (site.queue.some((item) => sameProject(item.project, project))) return { code: "already-queued" };
+    if (building.capitalOnly && !isCapital(scenario, sub)) return { code: "needs-capital" };
+    if (building.cityOnly && sub.cityIds.length === 0) return { code: "needs-city" };
     if (unlisted !== undefined) return unlisted;
     if (building.upgradeOf !== undefined) {
       const base: BuildProject = { buildingId: building.upgradeOf, kind: "building" };
-      if (queuedLevel(site, base) === 0) return `Needs ${scenario.index.buildings.get(building.upgradeOf)?.name ?? building.upgradeOf} first.`;
+      if (queuedLevel(site, base) === 0) return { buildingId: building.upgradeOf, code: "needs-building" };
     }
     return undefined;
   }
-  if (project.kind === "development" && scenario.index.development.get(project.developmentId)?.cityOnly === true && sub.cityIds.length === 0) return "Needs a city.";
+  if (project.kind === "development" && scenario.index.development.get(project.developmentId)?.cityOnly === true && sub.cityIds.length === 0) return { code: "needs-city" };
   if (unlisted !== undefined) return unlisted;
-  if (project.kind === "improvement" && project.improvement === "rail" && max === 0) return "No railway runs here.";
-  if (queuedLevel(site, project) >= max) return `Max level is ${String(max)}.`;
+  if (project.kind === "improvement" && project.improvement === "rail" && max === 0) return { code: "no-railway" };
+  if (queuedLevel(site, project) >= max) return { code: "max-level", level: max };
   return undefined;
 }
 
 /** $5: why a Build order fails against a state, or undefined when it may be queued and paid. */
-export function buildRefusal(scenario: Scenario, state: EconomyState, order: BuildOrder): string | undefined {
+export function buildRefusal(scenario: Scenario, state: EconomyState, order: BuildOrder): BuildRefusal | undefined {
   const site = siteRefusal(scenario, state, order.factionId, order.subTerritoryId, order.project);
   if (site !== undefined) return site;
   const cost = projectCost(scenario, order.project);
   const balance = state.treasuries[order.factionId] ?? {};
-  return cost === undefined || canAfford(balance, cost.cost) ? undefined : shortfallReason(scenario, balance, cost.cost);
+  return cost === undefined || canAfford(balance, cost.cost) ? undefined : shortfallRefusal(balance, cost.cost);
 }
 
 /** M1, $5: a Build order against the start-of-turn state, on its own. The engine's validation gateway calls this. */
 export function validateBuildOrder(scenario: Scenario, state: GameState, order: BuildOrder): ValidationResult {
-  if (scenario.rules.economy === "none") return { ok: false, reason: "This order is not available in this scenario." };
-  const reason = buildRefusal(scenario, state, order);
-  return reason === undefined ? { ok: true } : { ok: false, reason };
+  if (scenario.rules.economy === "none") return { ok: false, refusal: { code: "order-unavailable" } };
+  const refusal = buildRefusal(scenario, state, order);
+  return refusal === undefined ? { ok: true } : { ok: false, refusal };
 }
 
 /**
  * $5: queues a Build order: pays its full price and appends it to the sub-territory's queue.
- * Returns the new state and the queue position, or the reason it fails. Applying a turn's
+ * Returns the new state and the queue position, or the refusal. Applying a turn's
  * orders one by one is the running ledger of step 1, and the planning screen's preview.
  */
-export function applyBuildOrder<S extends EconomyState>(scenario: Scenario, state: S, order: BuildOrder): { readonly ok: true; readonly position: number; readonly state: S; readonly paid: Resources } | { readonly ok: false; readonly reason: string } {
-  const reason = buildRefusal(scenario, state, order);
+export function applyBuildOrder<S extends EconomyState>(scenario: Scenario, state: S, order: BuildOrder): { readonly ok: true; readonly position: number; readonly state: S; readonly paid: Resources } | { readonly ok: false; readonly refusal: BuildRefusal } {
+  const refusal = buildRefusal(scenario, state, order);
   const cost = projectCost(scenario, order.project);
   const site = state.subTerritories[order.subTerritoryId];
-  if (reason !== undefined || cost === undefined || site === undefined) return { ok: false, reason: reason ?? "Not available in this scenario." };
+  if (refusal !== undefined || cost === undefined || site === undefined) return { ok: false, refusal: refusal ?? { code: "project-unavailable" } };
   const item: QueueItem = { factionId: order.factionId, paid: cost.cost, progress: 0, project: order.project };
   const balance = state.treasuries[order.factionId] ?? {};
   const treasuries = { ...state.treasuries, [order.factionId]: subtractResources(balance, cost.cost) };

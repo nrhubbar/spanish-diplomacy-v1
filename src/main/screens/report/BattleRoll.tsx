@@ -39,10 +39,10 @@ export function BattleRoll({ battle, scenario }: { readonly battle: BattleOutcom
         </thead>
         <tbody>
           {bands.map(({ band, grade, hit, range }) => (
-            <tr aria-current={hit ? "true" : undefined} className={hit ? "battle-band battle-band-hit" : "battle-band"} data-ground={String(grade?.ground ?? 0)} key={band.from}>
+            <tr aria-current={hit ? "true" : undefined} className={hit ? "battle-band battle-band-hit" : "battle-band"} data-ground={String(grade.ground)} key={band.from}>
               <td className="battle-band-range">{range}</td>
-              <th className="battle-band-grade" scope="row">{grade?.name ?? band.gradeId}</th>
-              <td className="battle-band-effect">{grade === undefined ? "" : gradeEffect(grade)}</td>
+              <th className="battle-band-grade" scope="row">{grade.name}</th>
+              <td className="battle-band-effect">{gradeEffect(grade)}</td>
             </tr>
           ))}
         </tbody>

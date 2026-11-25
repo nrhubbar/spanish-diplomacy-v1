@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { ActorKind, ScenarioId } from "../main/engine/types";
 import { createScenarioRegistry } from "../main/scenarios/registry";
-import { advance } from "../main/state/coordinator";
+import { applyCommand, createGame } from "../main/game/service";
+import type { PlayerId, Seat } from "../main/game/types";
 import {
   beginPlanning,
   cancelOrderStage,
@@ -25,10 +26,10 @@ import { loadMapAssets } from "../main/state/mapAssetsSlice";
 import { isPathAllowed, paths, routeForSession } from "../main/state/routing";
 import { selectRevealedOrders, selectSubmissionStatus } from "../main/state/selectors";
 import { chooseOrder, orderCounts, orderKindsFor, orderOf, type PlanningSession } from "../main/state/planning";
-import type { GameRecord, Session } from "../main/state/session";
+import type { Session } from "../main/state/session";
 import { createAppStore } from "../main/state/store";
 import { initialGameState } from "../main/engine/resolution";
-import { armyIn, faction, spain, spainId, territory, testRegistry, testStore, tiny, tinyId, unit } from "./support";
+import { armyIn, faction, spain, spainId, territory, testRegistry, testStore, tiny, tinyId, unit, testGame, testPlayer, told } from "./support";
 
 function startWith(assignments: Record<string, ActorKind>, scenarioId: ScenarioId = spainId, seed = 11) {
   const store = testStore();
@@ -37,7 +38,7 @@ function startWith(assignments: Record<string, ActorKind>, scenarioId: ScenarioI
   for (const [factionId, kind] of Object.entries(assignments)) {
     store.dispatch(setActorKind({ factionId: faction(factionId), kind }));
   }
-  store.dispatch(startGame(seed));
+  store.dispatch(startGame(String(seed)));
   return store;
 }
 
@@ -56,7 +57,7 @@ describe("setup", () => {
 
   it("refuses unsupported actors with inline feedback (B12)", () => {
     const store = startWith({ north: "online-human" });
-    expect(session(store)).toMatchObject({ feedback: expect.stringContaining("Online play is coming later"), phase: "setup" });
+    expect(session(store)).toMatchObject({ feedback: { code: "player-needed", factionId: expect.anything() as unknown }, phase: "setup" });
   });
 
   it("ignores game commands outside their phase", () => {
@@ -66,7 +67,7 @@ describe("setup", () => {
     store.dispatch(startNextTurn());
     store.dispatch(setActorKind({ factionId: faction("north"), kind: "computer" }));
     store.dispatch(chooseScenario(tinyId));
-    store.dispatch(startGame(1));
+    store.dispatch(startGame("1"));
     store.dispatch(clickMapTerritory(territory("madrid")));
     expect(session(store)).toEqual({ phase: "idle" });
   });
@@ -162,17 +163,15 @@ describe("turn coordination", () => {
     for (const seed of [1, 2]) expect(run(seed)).toEqual(run(seed));
   });
 
-  it("rejects an advance for an unsupported actor kind", () => {
+  it("never plans or skips a seat somebody else plays, and refuses a game with a seat missing", () => {
     const scenario = tiny();
-    const game: GameRecord = {
-      assignments: { [faction("red")]: "online-human", [faction("blue")]: "computer" },
-      history: [],
-      locked: {},
-      scenarioId: tinyId,
-      seed: 1,
-      state: initialGameState(scenario)
-    };
-    expect(() => advance(scenario, game)).toThrow("no supported actor");
+    const game = (seats: Readonly<Record<string, Seat>>) => createGame(scenario, { gameId: testGame, rollScheme: "numeric-1", scenarioVersion: "test", seats, seed: "1", seedChosen: true, timerMinutes: 0 }, 0);
+    const online = game({ blue: { kind: "computer" }, red: { kind: "human", playerId: "somebody-else" as PlayerId } });
+    expect(online.orders[faction("red")]).toEqual({ ended: false, orders: [], revision: 0 });
+    for (const command of [{ kind: "advance" as const, turnNumber: 1 }, { factionId: faction("red"), kind: "end-turn" as const, orders: [], revision: 1, turnNumber: 1 }]) {
+      expect(applyCommand(scenario, online, testPlayer, command, 0)).toEqual({ ok: false, refusal: { code: "not-your-seat" } });
+    }
+    expect(() => game({ blue: { kind: "computer" } })).toThrow("has no seat");
   });
 });
 
@@ -204,7 +203,7 @@ describe("planning drafts", () => {
     store.dispatch(clickMapUnit(unit("rep-guadalajara-10")));
     expect(draftOf(store).selectedUnitIds).toEqual(["rep-otumba-9"]);
     store.dispatch(clickMapUnit(unit("north-zamora-29")));
-    expect(draftOf(store)).toMatchObject({ feedback: expect.stringContaining("None of your units"), selectedTerritoryId: "galicia", selectedUnitIds: [] });
+    expect(draftOf(store)).toMatchObject({ feedback: { code: "no-units-here" }, selectedTerritoryId: "galicia", selectedUnitIds: [] });
     store.dispatch(toggleUnitSelection(unit("rep-otumba-9")));
     expect(draftOf(store)).toMatchObject({ selectedTerritoryId: "valencia", selectedUnitIds: ["rep-otumba-9", "rep-guadalajara-10"] });
     store.dispatch(clickMapUnit(unit("no-such-unit")));
@@ -252,14 +251,14 @@ describe("planning drafts", () => {
     store.dispatch(clickMapTerritory(territory("madrid")));
     store.dispatch(chooseOrderKind("move"));
     store.dispatch(clickMapUnit(unit("north-zamora-29")));
-    expect(draftOf(store).feedback).toContain("Galicia is not connected to Madrid");
+    expect(told(spain(), draftOf(store).feedback)).toContain("Galicia is not connected to Madrid");
     store.dispatch(clickMapUnit(unit("rep-wad-ras-1")));
-    expect(draftOf(store).feedback).toContain("different territory");
+    expect(told(spain(), draftOf(store).feedback)).toContain("different territory");
   });
 
   it("gives one inline message for each invalid step (B8)", () => {
     const store = startWith({});
-    const feedback = () => draftOf(store).feedback;
+    const feedback = () => told(spain(), draftOf(store).feedback);
     store.dispatch(selectAllAvailableUnits());
     expect(feedback()).toContain("Select a territory");
     store.dispatch(chooseOrderKind("move"));
@@ -292,7 +291,7 @@ describe("planning drafts", () => {
     store.dispatch(chooseOrderKind("move"));
     expect(draftOf(store).stage).toEqual({ orderKind: "move", step: "choose-destination" });
     store.dispatch(clickMapTerritory(territory("isle")));
-    expect(draftOf(store).feedback).toContain("not connected");
+    expect(told(tiny(), draftOf(store).feedback)).toContain("not connected");
   });
 });
 
@@ -329,7 +328,7 @@ describe("standing orders: Entrench and Rest (O1-O5)", () => {
     const planning = planningOf(store);
     expect(planning.draft.selectedUnitIds).toEqual(["rep-otumba-9", "rep-guadalajara-10"]);
     expect(orderKindsFor(planning)).toEqual(["move", "entrench"]);
-    expect(chooseOrder(scenario, planning, "rest").draft.feedback).toBe("Only demoralized units rest.");
+    expect(told(scenario, chooseOrder(scenario, planning, "rest").draft.feedback)).toBe("Only demoralized units rest.");
   });
 
   it("offers Rest to demoralized armies only, and never lets them entrench", () => {
@@ -340,8 +339,8 @@ describe("standing orders: Entrench and Rest (O1-O5)", () => {
     expect(orderKindsFor(tired)).toEqual(["move"]);
     const restOnly = { ...tired, draft: { ...tired.draft, selectedUnitIds: [unit("rep-otumba-9")] } };
     expect(orderKindsFor(restOnly)).toEqual(["move", "rest"]);
-    expect(chooseOrder(scenario, restOnly, "entrench").draft.feedback).toContain("Demoralized units cannot entrench");
-    expect(chooseOrder(scenario, restOnly, "rest").draft).toMatchObject({ feedback: "1 unit will rest.", orders: [] });
+    expect(told(scenario, chooseOrder(scenario, restOnly, "entrench").draft.feedback)).toContain("Demoralized units cannot entrench");
+    expect(chooseOrder(scenario, restOnly, "rest").draft).toMatchObject({ feedback: { code: "stay-planned", order: "rest", units: 1 }, orders: [] });
   });
 
   it("cancels a move with Entrench, replaces it with another Move, and returns to Entrench when cleared", () => {
@@ -363,7 +362,7 @@ describe("standing orders: Entrench and Rest (O1-O5)", () => {
     store.dispatch(toggleUnitSelection(unit("rep-otumba-9")));
     store.dispatch(chooseOrderKind("entrench"));
     expect(planningOf(store).draft).toEqual({
-      feedback: "1 unit will entrench.",
+      feedback: { code: "stay-planned", order: "entrench", units: 1 },
       orderedToStay: ["rep-otumba-9"],
       orders: [{ factionId: "republic", from: "valencia", kind: "move", to: "castilla-la-mancha", unitId: "rep-guadalajara-10" }],
       selectedTerritoryId: "valencia",

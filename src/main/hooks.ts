@@ -1,11 +1,10 @@
-import { createContext, useContext, useEffect, useMemo } from "react";
+import { createContext, useContext, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { ScenarioId } from "./engine/types";
 import type { ScenarioPackage } from "./scenarios/loader";
 import type { MapAssets, ScenarioRegistry } from "./scenarios/registry";
 import { loadMapAssets } from "./state/mapAssetsSlice";
-import { isInGame, type Phase, type Session } from "./state/session";
-import { visibleSession } from "./state/visible";
+import type { Phase, Session } from "./state/session";
 import type { AppDispatch, RootState } from "./state/store";
 
 export const useAppDispatch = useDispatch.withTypes<AppDispatch>();
@@ -20,31 +19,11 @@ export function useRegistry(): ScenarioRegistry {
 }
 
 /**
- * The session as the player at the screen may see it (`visibleSession`): every screen reads
- * state through here, so no screen sees another faction's hidden information.
+ * The session as the player at the screen may see it. The host already left out what they may not
+ * (`game/projection.ts`), so nothing hidden is on this device to filter.
  */
 export function useSession(): Session {
-  const session = useAppSelector((state) => state.game.session);
-  // Outside a game there is nothing to filter, so no registry is needed (a header on its own).
-  const registry = useContext(RegistryContext);
-  return useMemo(() => {
-    if (!isInGame(session)) return session;
-    if (registry === undefined) throw new Error("RegistryContext is missing.");
-    return visibleSession(registry.require(session.game.scenarioId).scenario, session);
-  }, [registry, session]);
-}
-
-const viewed = new WeakMap<Session, Session>();
-
-/** The same for code outside React (sound): the session as its viewer may see it, from a state. */
-export function viewedSession(registry: Pick<ScenarioRegistry, "require">, state: RootState): Session {
-  const { session } = state.game;
-  if (!isInGame(session)) return session;
-  const known = viewed.get(session);
-  if (known !== undefined) return known;
-  const seen = visibleSession(registry.require(session.game.scenarioId).scenario, session);
-  viewed.set(session, seen);
-  return seen;
+  return useAppSelector((state) => state.game.session);
 }
 
 function inPhase<P extends Phase>(session: Session, phases: readonly P[]): session is Extract<Session, { readonly phase: P }> {

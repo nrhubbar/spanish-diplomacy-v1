@@ -1,5 +1,8 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import { exitGame, startGame } from "./gameSlice";
+import { clockKey } from "../game/clock";
+import { exitGame, startGame, viewReceived } from "./gameSlice";
+
+export { clockKey, planningBudgetMs, remainingMs } from "../game/clock";
 
 /** T5 (Q-TIMER-1): the setup choices. 30 minutes and 1 hour wait for online play. */
 export const timerChoices = [0, 1, 5, 10] as const;
@@ -26,26 +29,20 @@ export interface TimerState {
 
 const initialState: TimerState = { minutes: 0 };
 
-/** T5 (Q-TIMER-5, Q-TIMER-6): every turn gets the full time again, and turn 1 gets double. */
-export function planningBudgetMs(minutes: number, turnNumber: number): number {
-  return minutes * 60_000 * (turnNumber === 1 ? 2 : 1);
-}
-
-/** Time left at `now`, never below zero. */
-export function remainingMs(clock: PlanningClock, now: number): number {
-  const running = clock.runningSince === undefined ? 0 : Math.max(0, now - clock.runningSince);
-  return Math.max(0, clock.budgetMs - clock.spentMs - running);
-}
-
 /**
- * The turn timer (T5, T6). Reducers stay pure: every time arrives in the action, read from the
- * clock by the chip that dispatches it. The engine never sees any of it.
+ * The turn timer (T5, T6) as this screen shows it. The host keeps the real clocks and decides when
+ * time is up (`game/clock.ts`); this copy starts at once and takes the host's times when they come.
  */
 export const timerSlice = createSlice({
   extraReducers: (builder) => {
     builder
       .addCase(startGame, (state) => ({ minutes: state.minutes }))
-      .addCase(exitGame, (state) => ({ minutes: state.minutes }));
+      .addCase(exitGame, (state) => ({ minutes: state.minutes }))
+      .addCase(viewReceived, (state, { payload: view }) => {
+        const { clock } = state;
+        if (clock === undefined || view.clock === undefined || view.viewer === undefined || clock.key !== clockKey(view.gameId, view.state.turnNumber, view.viewer)) return state;
+        return { ...state, clock: { key: clock.key, warned: clock.warned, ...view.clock } };
+      });
   },
   initialState,
   name: "timer",

@@ -3,7 +3,7 @@ import { initialGameState } from "../../main/engine/resolution";
 import type { GameState } from "../../main/engine/types";
 import { chooseDestination, chooseOrder, clearSelection, type PlanningSession, removeOrder, selectAircraft, selectTerritory, toggleUnit } from "../../main/state/planning";
 import { emptyDraft } from "../../main/state/session";
-import { faction, spain, spainId, spainWithAir, territory, unit } from "../support";
+import { faction, spain, spainId, spainWithAir, territory, unit, testGame } from "../support";
 
 /**
  * Note 11 (copied from the m3r2-probe acceptance tests): after an order the selection goes to
@@ -14,7 +14,7 @@ function planning(state: GameState): PlanningSession {
   return {
     draft: emptyDraft,
     factionId: faction("republic"),
-    game: { assignments: {}, history: [], locked: {}, scenarioId: spainId, seed: 1, state },
+    game: { assignments: {}, history: [], ready: [], scenarioId: spainId, gameId: testGame, state },
     phase: "planning"
   };
 }

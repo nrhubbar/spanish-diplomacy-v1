@@ -5,10 +5,10 @@ import { deriveSeed, seededRandom } from "../main/engine/random";
 import { standingOrder } from "../main/engine/orders";
 import { initialGameState, resolveTurn } from "../main/engine/resolution";
 import { type GameState, isMoveOrder, type Scenario, type TurnResolutionResult } from "../main/engine/types";
-import { demoralizedAttackReason, legalDestinations, validateMoveOrder } from "../main/engine/validation";
-import { advance, nextTurn } from "../main/state/coordinator";
-import type { GameRecord, Session } from "../main/state/session";
-import { type ArmySpec, armyIn, battlefield, battlesOf, city, faction, loadedDice, move, play, spainM2, territory, tiny, unit } from "./support";
+import { legalDestinations, validateMoveOrder } from "../main/engine/validation";
+import { createGame } from "../main/game/service";
+import type { Seat } from "../main/game/types";
+import { type ArmySpec, armyIn, battlefield, battlesOf, city, commanded, faction, loadedDice, move, play, spainM2, territory, testGame, tiny, unit } from "./support";
 import { pinned, popularResistance, unfortified } from "./pinned";
 
 const a = (id: string, factionId: string, where: string, extra: Partial<ArmySpec> = {}): ArmySpec => ({ faction: factionId, id, territory: where, ...extra });
@@ -118,7 +118,7 @@ describe("M23 morale (C6)", () => {
 
   it("cannot attack: it may enter only where no other faction stands, even beside its own armies", () => {
     const { scenario, state } = demoralizedRed;
-    expect(validateMoveOrder(scenario, state, move("red", "r1", "westfold", "lowlands"))).toEqual({ ok: false, reason: demoralizedAttackReason });
+    expect(validateMoveOrder(scenario, state, move("red", "r1", "westfold", "lowlands"))).toEqual({ ok: false, refusal: { code: "demoralized-attack" } });
     expect(validateMoveOrder(scenario, state, move("red", "r1", "westfold", "highlands"))).toEqual({ ok: true });
     expect(legalDestinations(scenario, state, faction("red"), [unit("r1")])).toEqual(["highlands"]);
     const nearIsle = battlefield(tiny(), [a("r1", "red", "harbor", { demoralized: true }), a("r0", "red", "isle"), a("b0", "blue", "isle")]);
@@ -128,7 +128,7 @@ describe("M23 morale (C6)", () => {
   it("treats a demoralized army's attack order as impossible (M9)", () => {
     const { scenario, state } = demoralizedRed;
     const result = play(scenario, state, [move("red", "r1", "westfold", "lowlands")], loadedDice([2]));
-    expect(result.outcomes.find((outcome) => outcome.kind === "invalid-order")).toMatchObject({ reason: demoralizedAttackReason });
+    expect(result.outcomes.find((outcome) => outcome.kind === "invalid-order")).toMatchObject({ refusal: { code: "demoralized-attack" } });
     expect(result.finalState.units[unit("r1")]).toBeUndefined();
   });
 
@@ -342,18 +342,17 @@ describe("M7 control after battles", () => {
   });
 });
 
-/** Plays an all-computer game through the real coordinator, keeping each turn's start state. */
+/** Plays an all-computer game through the real game service, keeping each turn's start state. */
 function playGame(scenario: Scenario, seed: number, turns: number): readonly { readonly result: TurnResolutionResult; readonly start: GameState }[] {
-  const assignments = Object.fromEntries(scenario.factions.map((entry) => [entry.id, "computer" as const]));
-  let record: GameRecord = { assignments, history: [], locked: {}, scenarioId: scenario.id, seed, state: initialGameState(scenario) };
-  let session: Session = advance(scenario, record);
+  const seats = Object.fromEntries(scenario.factions.map((entry): [string, Seat] => [entry.id, { kind: "computer" }]));
+  let record = createGame(scenario, { gameId: testGame, rollScheme: "numeric-1", scenarioVersion: "test", seats, seed: String(seed), seedChosen: true, timerMinutes: 0 }, 0);
   const played: { readonly result: TurnResolutionResult; readonly start: GameState }[] = [];
   for (let turn = 1; turn <= turns; turn += 1) {
-    if (session.phase !== "resolution" && session.phase !== "game-over") throw new Error(`Unexpected ${session.phase}`);
-    played.push({ result: session.result, start: record.state });
-    if (session.phase === "game-over") break;
-    record = { ...session.game, state: { ...session.game.state, turnNumber: session.game.state.turnNumber + 1 } };
-    session = nextTurn(scenario, session.game, session.result.outcomes);
+    const start = record.state;
+    record = commanded(scenario, record, { kind: "advance", turnNumber: turn });
+    if (record.report?.turnNumber !== turn) throw new Error(`Turn ${String(turn)} did not resolve.`);
+    played.push({ result: record.report, start });
+    if (record.status === "ended") break;
   }
   return played;
 }

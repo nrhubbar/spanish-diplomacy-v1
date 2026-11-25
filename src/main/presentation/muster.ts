@@ -1,6 +1,7 @@
-import { isGroundUnit, territoriesWithin, unitDefinitionIn, unitKindIn, unitTypeIn } from "../engine/air/pieces";
+import { isGroundUnit, territoriesWithin, unitKindIn, unitTypeIn } from "../engine/air/pieces";
 import { validateAirMission } from "../engine/air/validation";
 import { compareIds } from "../engine/board";
+import { requireSubTerritory } from "../engine/lookup";
 import { estimateAttack } from "../engine/combat";
 import { landNeighbors } from "../engine/movement/network";
 import { bestGeneral } from "../engine/generals/command";
@@ -17,7 +18,7 @@ import { type ModeChip, modeNames, type ModeOption, modeOptions } from "./moveMo
 import { fitMuster } from "./musterFit";
 import { attackEstimate, chanceTone, movesInto, moveTo, type OddsTone, percent, plannedSupport, signed } from "./odds";
 import { type RollLedgerData, rollLedger, withPlannedAir } from "./rollLedger";
-import { factionName, listNames, territoryName } from "./text";
+import { factionName, listNames, territoryName, unitName } from "./text";
 
 /**
  * U6: the Invade and Reinforce panes as data: every unit that can reach the target, grouped by
@@ -138,11 +139,6 @@ export interface Muster {
   readonly target: TerritoryId;
 }
 
-/** A unit's name, raised in play or not. */
-export function nameOf(scenario: Scenario, state: Pick<GameState, "raised">, unitId: UnitId): string {
-  return unitDefinitionIn(scenario, state.raised, unitId)?.name ?? "Unit";
-}
-
 /** A unit's type name, raised in play or not. */
 export function typeNameOf(scenario: Scenario, state: Pick<GameState, "raised">, unitId: UnitId): string {
   return unitTypeIn(scenario, state.raised, unitId)?.name ?? "Unit";
@@ -150,7 +146,7 @@ export function typeNameOf(scenario: Scenario, state: Pick<GameState, "raised">,
 
 /** A sub-territory's name. */
 export function subName(scenario: Scenario, id: SubTerritoryId): string {
-  return scenario.index.subTerritories.get(id)?.name ?? "its ground";
+  return requireSubTerritory(scenario, id).name;
 }
 
 /**
@@ -284,7 +280,7 @@ function unitFigures(scenario: Scenario, state: GameState, unit: UnitState): Uni
   return {
     ...(works === undefined ? {} : { dugIn: `Dug in ${String(works.dugIn)} ${glyphs.dot} ${signed(-works.dugInRoll)}` }),
     men: `${menLabel(figures)} men`,
-    name: nameOf(scenario, state, unit.id),
+    name: unitName(scenario, unit.id),
     share: strengthShare(figures),
     unitId: unit.id,
     values: valuesLabel(figures.attack, figures.defence)
@@ -364,7 +360,7 @@ function hereCards(scenario: Scenario, state: GameState, factionId: FactionId, t
       const pocket = pocketOfArmy(scenario, state, unit.id);
       const place = pocket === undefined ? "" : `In ${listNames(pocket.subTerritoryIds.map((id) => subName(scenario, id)))}. `;
       const stays = ground === "contested" ? "Attacks where it stands, after the battle for the ground." : "Stays and defends.";
-      return { name: nameOf(scenario, state, unit.id), note: `${place}${stays}`, unitId: unit.id, values: valuesLabel(figures.attack, figures.defence) };
+      return { name: unitName(scenario, unit.id), note: `${place}${stays}`, unitId: unit.id, values: valuesLabel(figures.attack, figures.defence) };
     });
 }
 
@@ -390,7 +386,7 @@ function supportCards(scenario: Scenario, state: GameState, factionId: FactionId
       const ordered = mission?.mission.kind === "support" && mission.mission.territoryId === target;
       return {
         base: `From ${territoryName(scenario, unit.territoryId)}`,
-        name: nameOf(scenario, state, unit.id),
+        name: unitName(scenario, unit.id),
         ...(mission === undefined || ordered ? {} : { otherMission: missionName(scenario, mission) }),
         ordered,
         typeName: typeNameOf(scenario, state, unit.id),

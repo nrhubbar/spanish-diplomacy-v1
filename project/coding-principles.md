@@ -5,7 +5,7 @@
 - Build a browser-based simultaneous-orders strategy game inspired by Diplomacy and board wargames.
 - Prioritize a small playable vertical slice over broad simulation scope.
 - Keep the rules engine as the source of truth; UI collects and explains decisions.
-- Prefer deterministic resolution before adding randomness, fog of war, or hidden unit systems.
+- Keep resolution deterministic for a given game seed: every roll comes from the injected `RollSource`.
 - Treat scenario data as explicit, readable source material for maps, factions, units, victory, and special rules.
 
 ## Architecture
@@ -33,6 +33,10 @@
 ## Engine And Game Logic
 
 - Keep rules logic pure and independently testable outside React, browser APIs, and persistence.
+- Layers, lowest first: `engine`, `ai` and `scenarios`, `game`, `presentation`, `assets`, `state`, `components`, `map`, `screens`. A layer imports only itself and layers below it; ESLint enforces this. `tsconfig.core.json` compiles the layers a server runs without browser types.
+- The engine, the game service and Redux state explain in codes, never in sentences; `presentation` words them.
+- `src/main/game` is the authority on a game: who may order what, when a turn resolves, and what each player is sent. Screens reach it only through `GameClient`. A player's copy holds no seed, no hidden balances and no one else's orders.
+- Parse what players send once, where it arrives (`game/commandSchema.ts`); past there, trust its shape.
 - Prefer functions, discriminated unions, explicit data structures, and immutable inputs.
 - Avoid premature generic abstractions.
 - Validate orders through the engine, not the UI.
@@ -43,7 +47,7 @@
 
 ## Testing And Quality
 
-- Maintain at least 90 percent coverage for statements, branches, functions, and lines.
+- Maintain the coverage gate in `vitest.config.ts`: 93 percent for branches, 92 for functions, lines, and statements.
 - Add unit tests for core logic and integration tests for user-visible flows.
 - Use Playwright for browser behavior and routing smoke tests.
 - Keep Playwright screenshots and traces under `build/e2e`.

@@ -1,6 +1,7 @@
 import type { FactionId, TerritoryId, UnitId, UnitTypeId } from "../../ids";
 import type { Resources } from "../economy";
 import type { DisbandOrder, RecruitOrder, ReplenishOrder } from "../orders";
+import type { Refusal } from "../refusals";
 
 /** Recruit, training and Replenish outcomes (R1-R7, C8), owned by `m3r1-recruit-replenish` (phases 1, 9, 10). */
 
@@ -35,7 +36,7 @@ export interface TrainingCompletedOutcome {
 export interface TrainingRefundedOutcome {
   readonly factionId: FactionId;
   readonly kind: "training-refunded";
-  readonly reason: string;
+  readonly refusal: Refusal;
   readonly refund: Resources;
   readonly territoryId: TerritoryId;
   readonly typeId: UnitTypeId;
@@ -55,7 +56,7 @@ export interface ReplenishAppliedOutcome {
 export interface ReplenishCancelledOutcome {
   readonly kind: "replenish-cancelled";
   readonly order: ReplenishOrder;
-  readonly reason: string;
+  readonly refusal: Refusal;
   readonly refund: Resources;
 }
 

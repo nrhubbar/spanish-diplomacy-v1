@@ -19,7 +19,7 @@ import {
 } from "../main/engine/recruitment/rules";
 import { initialGameState } from "../main/engine/resolution";
 import type { GameState, PlayerSubmission, Resources, Scenario, TerritoryId, UnitId, UnitState, UnitTypeId } from "../main/engine/types";
-import { faction, spainWithAir, territory, tiny, unit } from "./support";
+import { faction, said, spainWithAir, territory, tiny, unit } from "./support";
 import { pinned } from "./pinned";
 
 /** The recruitment module's rules and engine parts, branch by branch (R2-R7, C8). */
@@ -46,8 +46,8 @@ describe("recruiting sites and types (R2, R3, D7)", () => {
   const start = initialGameState(scenario);
 
   it("says when recruiting is not part of the scenario, or the site is not held", () => {
-    expect(recruitSiteProblem(tiny(), initialGameState(tiny()), faction("red"), territory("westfold"))).toMatch(/not part of this scenario/u);
-    expect(recruitSiteProblem(scenario, start, north, murcia)).toBe("You must hold Murcia to recruit there.");
+    expect(said(tiny(), recruitSiteProblem(tiny(), initialGameState(tiny()), faction("red"), territory("westfold")))).toMatch(/not part of this scenario/u);
+    expect(said(scenario, recruitSiteProblem(scenario, start, north, murcia))).toBe("You must hold Murcia to recruit there.");
     expect(holdsTerritory(scenario, start, republic, murcia)).toBe(true);
     // A territory whose capital another faction holds is not held for recruiting.
     const lost: GameState = { ...start, subTerritories: { ...start.subTerritories, ["murcia" as never]: { ...start.subTerritories["murcia" as never]!, holder: north } } };
@@ -55,12 +55,12 @@ describe("recruiting sites and types (R2, R3, D7)", () => {
   });
 
   it("locks a type that cannot be recruited, and names the territory when it has no capital", () => {
-    expect(typeLock(scenario, start, republic, murcia, typeOf("general")).reasons).toEqual(["General cannot be recruited."]);
+    expect(typeLock(scenario, start, republic, murcia, typeOf("general")).refusals.map((refusal) => said(scenario, refusal))).toEqual(["General cannot be recruited."]);
     const capitalless = withoutCapital(scenario, murcia);
     expect(capitalOf(capitalless, murcia)).toBeUndefined();
     expect(holdsTerritory(capitalless, start, republic, murcia)).toBe(true);
     // No capital: no capital buildings, so a Barracks is missing "in Murcia" (the territory).
-    expect(typeLock(capitalless, start, republic, murcia, typeOf("infantry-regiment")).reasons).toEqual(["Needs a Barracks in Murcia."]);
+    expect(typeLock(capitalless, start, republic, murcia, typeOf("infantry-regiment")).refusals.map((refusal) => said(capitalless, refusal))).toEqual(["Needs a Barracks in Murcia."]);
     expect(recruitSlots(capitalless, start, murcia)).toBe(3);
   });
 
@@ -70,8 +70,8 @@ describe("recruiting sites and types (R2, R3, D7)", () => {
   });
 
   it("refuses unknown types and territories", () => {
-    expect(validateRecruitOrder(scenario, start, { factionId: republic, kind: "recruit", territoryId: murcia, unitTypeId: type("dragoons") })).toEqual({ ok: false, reason: "Unknown unit type." });
-    expect(validateRecruitOrder(scenario, start, { factionId: republic, kind: "recruit", territoryId: territory("atlantis"), unitTypeId: type("militia-column") })).toEqual({ ok: false, reason: "Unknown territory." });
+    expect(validateRecruitOrder(scenario, start, { factionId: republic, kind: "recruit", territoryId: murcia, unitTypeId: type("dragoons") })).toEqual({ ok: false, refusal: { code: "unknown-unit-type" } });
+    expect(validateRecruitOrder(scenario, start, { factionId: republic, kind: "recruit", territoryId: territory("atlantis"), unitTypeId: type("militia-column") })).toEqual({ ok: false, refusal: { code: "unknown-territory" } });
     expect(validateRecruitOrder(scenario, start, { factionId: republic, kind: "recruit", territoryId: murcia, unitTypeId: type("militia-column") })).toEqual({ ok: true });
   });
 });
@@ -95,15 +95,15 @@ describe("who may replenish (R5, RR-12)", () => {
   const regiment = start.units[regimentId]!;
 
   it("names every reason a unit cannot", () => {
-    expect(validateReplenishOrder(scenario, start, { factionId: republic, kind: "replenish", unitId: unit("ghost") })).toEqual({ ok: false, reason: "Unknown unit." });
-    expect(validateReplenishOrder(scenario, start, { factionId: north, kind: "replenish", unitId: regimentId })).toEqual({ ok: false, reason: "Selected unit belongs to another player." });
-    expect(replenishProblem(scenario, start, { ...regiment, id: unit("ghost") })).toBe("Replenishing is not part of this scenario.");
-    expect(replenishProblem(tiny(), initialGameState(tiny()), Object.values(initialGameState(tiny()).units)[0]!)).toBe("Replenishing is not part of this scenario.");
+    expect(validateReplenishOrder(scenario, start, { factionId: republic, kind: "replenish", unitId: unit("ghost") })).toEqual({ ok: false, refusal: { code: "unknown-unit" } });
+    expect(validateReplenishOrder(scenario, start, { factionId: north, kind: "replenish", unitId: regimentId })).toEqual({ ok: false, refusal: { code: "unit-of-another-faction" } });
+    expect(said(scenario, replenishProblem(scenario, start, { ...regiment, id: unit("ghost") }))).toBe("Replenishing is not part of this scenario.");
+    expect(said(tiny(), replenishProblem(tiny(), initialGameState(tiny()), Object.values(initialGameState(tiny()).units)[0]!))).toBe("Replenishing is not part of this scenario.");
     const fighters = start.units[unit("rep-ni52-fighters")]!;
-    expect(replenishProblem(scenario, start, { ...fighters, strength: 1 })).toBe("Fighter squadron units cannot replenish.");
-    expect(replenishProblem(scenario, start, { ...regiment, strength: 100, territoryId: territory("navarra") })).toBe("Units replenish only in territory you hold.");
-    expect(replenishProblem(scenario, start, regiment)).toBe("This unit is at full strength and in good order.");
-    expect(replenishProblem(scenario, start, { ...regiment, morale: { demoralized: true, quietTurns: 0 } })).toMatch(/recovers its morale by resting/u);
+    expect(said(scenario, replenishProblem(scenario, start, { ...fighters, strength: 1 }))).toBe("Fighter squadron units cannot replenish.");
+    expect(said(scenario, replenishProblem(scenario, start, { ...regiment, strength: 100, territoryId: territory("navarra") }))).toBe("Units replenish only in territory you hold.");
+    expect(said(scenario, replenishProblem(scenario, start, regiment))).toBe("This unit is at full strength and in good order.");
+    expect(said(scenario, replenishProblem(scenario, start, { ...regiment, morale: { demoralized: true, quietTurns: 0 } }))).toMatch(/recovers its morale by resting/u);
     expect(validateReplenishOrder(scenario, { ...start, units: { ...start.units, [regimentId]: { ...regiment, strength: 100 } } }, { factionId: republic, kind: "replenish", unitId: regimentId })).toEqual({ ok: true });
   });
 
@@ -120,7 +120,7 @@ describe("who may replenish (R5, RR-12)", () => {
 describe("the recruitment engine parts, on their own (RR4-RR8)", () => {
   const start = funded(initialGameState(scenario));
   const draftOf = (state: GameState, submissions: readonly PlayerSubmission[] = []) =>
-    startDraft({ dice: seededBattleDice(1, 1), scenario, seed: 1, start: state, streams: seededRollStreams(1, state.turnNumber), submissions });
+    startDraft({ dice: seededBattleDice(1, 1), scenario, start: state, streams: seededRollStreams(1, state.turnNumber), submissions });
 
   it("pays nothing, and changes nothing, without orders or training", () => {
     const draft = draftOf(start);
@@ -146,7 +146,7 @@ describe("the recruitment engine parts, on their own (RR4-RR8)", () => {
     const charged = paid.scratch.recruitment!.replenishing[0]!.paid;
     // The unit ends the turn elsewhere (a retreat with no battle of its own).
     const fell = replenish({ ...paid, armies: { ...paid.armies, [regimentId]: { ...paid.armies[regimentId]!, territoryId: territory("valencia") } } });
-    expect(fell.events.at(-1)).toEqual({ kind: "replenish-cancelled", order, reason: "The unit fell back.", refund: charged });
+    expect(fell.events.at(-1)).toEqual({ kind: "replenish-cancelled", order, refusal: { code: "unit-fell-back" }, refund: charged });
     expect(fell.systems.treasuries[republic]).toEqual(worn.treasuries[republic]);
     // It took men from elsewhere meanwhile: only what is still missing joins.
     const topped = replenish({ ...paid, armies: { ...paid.armies, [regimentId]: { ...paid.armies[regimentId]!, strength: 700 } } });
@@ -157,7 +157,7 @@ describe("the recruitment engine parts, on their own (RR4-RR8)", () => {
   it("keeps training in a territory without a capital while its faction controls it, and loses it otherwise", () => {
     const capitalless = withoutCapital(scenario, murcia);
     const item = { factionId: republic, paid: {}, paused: false, territoryId: murcia, turnsLeft: 2, typeId: type("infantry-regiment"), unitId: raisedUnitId(republic, type("infantry-regiment"), 1) };
-    const draft = { ...startDraft({ dice: seededBattleDice(1, 1), scenario: capitalless, seed: 1, start, streams: seededRollStreams(1, 1), submissions: [] }) };
+    const draft = { ...startDraft({ dice: seededBattleDice(1, 1), scenario: capitalless, start, streams: seededRollStreams(1, 1), submissions: [] }) };
     const training = { ...draft, systems: { ...draft.systems, training: [item] } };
     expect(advanceTraining(training).systems.training).toEqual([{ ...item, turnsLeft: 1 }]);
     const lost = { ...training, control: { ...training.control, control: { ...training.control.control, [murcia]: { factionId: north, kind: "controlled" as const } } } };

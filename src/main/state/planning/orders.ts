@@ -1,14 +1,13 @@
-import { isNeighbor, requireTerritory } from "../../engine/lookup";
+import { isNeighbor } from "../../engine/lookup";
 import { type StandingOrder, standingOrder } from "../../engine/orders";
-import { boardingRefusal, railShortageText } from "../../engine/movement/routes";
+import { boardingRefusal, railFullRefusal } from "../../engine/movement/routes";
 import { judgePlannedMoves } from "../../engine/movement/transit";
 import { type AirMissionOrder, type GameState, isMoveOrder, type MoveOrder, type SackOrder, type Scenario, type TerritoryId, type UnitId, type WithdrawOrder } from "../../engine/types";
 import { validateMoveOrder } from "../../engine/validation";
+import { type Feedback, refusedFeedback } from "../../presentation/feedback";
 import { selectionFullTrains } from "../../presentation/movement";
 import { orderLegs } from "../../presentation/moveModes";
-import { heldBackRefusal } from "../../presentation/musterFit";
 import { moveTo } from "../../presentation/odds";
-import { listNames, territoryName } from "../../presentation/text";
 import type { Draft, OrderKind, PlannedOrder } from "../session";
 import { isAircraft, leaveTargets } from "./air";
 import { selectedWithdrawRoutes } from "./contested";
@@ -23,7 +22,7 @@ import { type PlanningSession, feedback, selectedDestinations, selectedRoutes, s
  */
 export function chooseOrder(scenario: Scenario, session: PlanningSession, orderKind: OrderKind): PlanningSession {
   if (session.draft.selectedUnitIds.length === 0) {
-    return feedback(session, "Select at least one unit first.");
+    return feedback(session, { code: "no-units-selected" });
   }
   switch (orderKind) {
     case "move":
@@ -54,15 +53,14 @@ function chooseDefault(session: PlanningSession, kind: "attack" | "hold"): Plann
   const chosen = new Set(session.draft.selectedUnitIds);
   const orders = session.draft.orders.filter((order) => !chosen.has(order.unitId));
   const draft = afterOrder(session.draft.selectedTerritoryId, orders);
-  const who = chosen.size === 1 ? "1 unit" : `${String(chosen.size)} units`;
-  return withDraft(session, { ...draft, ...unitOrdersWithout(session.draft, chosen), ...toldToStay(session.draft, chosen), feedback: `${who} will ${kind === "attack" ? "attack where they stand" : "hold"}.` });
+  return withDraft(session, { ...draft, ...unitOrdersWithout(session.draft, chosen), ...toldToStay(session.draft, chosen), feedback: { code: "stay-planned", order: kind, units: chosen.size } });
 }
 
 /** C1, P6: Withdraw. With one way out it is planned at once; with several, the player picks a highlighted territory. */
 function chooseWithdraw(scenario: Scenario, session: PlanningSession): PlanningSession {
   const routes = selectedWithdrawRoutes(scenario, session);
   const [only] = routes;
-  if (only === undefined) return feedback(session, "These units have no way out through your own sub-territories.");
+  if (only === undefined) return feedback(session, { code: "no-way-out" });
   const choosing = withDraft(session, { ...selectionOf(session.draft), stage: { orderKind: "withdraw", step: "choose-destination" } });
   return routes.length === 1 ? chooseDestination(scenario, choosing, only.to) : choosing;
 }
@@ -70,18 +68,17 @@ function chooseWithdraw(scenario: Scenario, session: PlanningSession): PlanningS
 function chooseStanding(session: PlanningSession, kind: StandingOrder): PlanningSession {
   const fitting = new Set(selectedUnits(session).filter((unit) => standingOrder(unit) === kind).map((unit) => unit.id));
   if (fitting.size === 0) {
-    return feedback(session, kind === "entrench" ? "Demoralized units cannot entrench. They rest instead." : "Only demoralized units rest.");
+    return feedback(session, { code: kind === "entrench" ? "cannot-entrench" : "cannot-rest" });
   }
   const orders = session.draft.orders.filter((order) => !fitting.has(order.unitId));
   const draft = { ...afterOrder(session.draft.selectedTerritoryId, orders), ...unitOrdersWithout(session.draft, fitting), ...toldToStay(session.draft, fitting) };
-  const who = fitting.size === 1 ? "1 unit" : `${String(fitting.size)} units`;
-  return withDraft(session, { ...draft, feedback: `${who} will ${kind === "entrench" ? "entrench" : "rest"}.` });
+  return withDraft(session, { ...draft, feedback: { code: "stay-planned", order: kind, units: fitting.size } });
 }
 
 function chooseMove(scenario: Scenario, session: PlanningSession): PlanningSession {
   const choosing = withDraft(session, { ...selectionOf(session.draft), stage: { orderKind: "move", step: "choose-destination" } });
   return selectedDestinations(scenario, choosing).length === 0
-    ? feedback(session, "These units cannot move anywhere together this turn.")
+    ? feedback(session, { code: "cannot-move-together" })
     : choosing;
 }
 
@@ -99,14 +96,14 @@ export function cancelOrder(session: PlanningSession): PlanningSession {
 export function chooseDestination(scenario: Scenario, session: PlanningSession, territoryId: TerritoryId): PlanningSession {
   const origin = session.draft.selectedTerritoryId;
   if (session.draft.stage?.step !== "choose-destination" || origin === undefined) {
-    return feedback(session, "Select units and choose Move first.");
+    return feedback(session, { code: "move-not-chosen" });
   }
   if (territoryId === origin) {
-    return feedback(session, "Choose a different territory as the destination.");
+    return feedback(session, { code: "same-destination" });
   }
   const withdrawing = session.draft.stage.orderKind === "withdraw";
   if (!selectedDestinations(scenario, session).includes(territoryId)) {
-    return feedback(session, withdrawing ? "Withdraw to a highlighted territory: one you hold whole, reached through your own sub-territories." : refusal(scenario, session, origin, territoryId));
+    return feedback(session, withdrawing ? { code: "withdraw-target" } : refusal(scenario, session, origin, territoryId));
   }
   // CT-6: a plain land step keeps no legs; rail, sea and marches carry theirs (M4).
   const route = withdrawing ? undefined : selectedRoutes(scenario, session)?.get(territoryId);
@@ -128,17 +125,17 @@ export function chooseDestination(scenario: Scenario, session: PlanningSession, 
  * landings, and an army with no unit that can fight). Move and the Invade and Reinforce panes both
  * ask here, and give their orders with `draftWithMoves`.
  */
-export function movesRefusal(scenario: Scenario, state: GameState, moves: readonly MoveOrder[], kept: readonly PlannedOrder[]): string | undefined {
+export function movesRefusal(scenario: Scenario, state: GameState, moves: readonly MoveOrder[], kept: readonly PlannedOrder[]): Feedback | undefined {
   for (const move of moves) {
     const verdict = validateMoveOrder(scenario, state, move);
-    if (!verdict.ok) return verdict.reason;
+    if (!verdict.ok) return refusedFeedback(verdict.refusal);
   }
   const others = kept.filter(isMoveOrder);
   const full = boardingRefusal(scenario, state, moves, others);
-  if (full !== undefined) return full;
+  if (full !== undefined) return refusedFeedback(full);
   const given = new Set(moves.map((move) => move.unitId));
   const held = judgePlannedMoves(scenario, state, [...others, ...moves]).find(({ army, cause }) => cause !== undefined && army.orders.some((order) => given.has(order.unitId)));
-  return held?.cause === undefined ? undefined : heldBackRefusal(scenario, held.cause, held.army.orders[0].from, held.army.orders[0].to);
+  return held?.cause === undefined ? undefined : { cause: held.cause, code: "held-back", from: held.army.orders[0].from, to: held.army.orders[0].to };
 }
 
 /** N3: the draft once these orders are given: they replace the units' Replenish, Disband and stay orders (U2), and nothing stays selected. */
@@ -166,7 +163,7 @@ export function stayWithout(draft: Draft, unitIds: readonly UnitId[]): Pick<Draf
 export function removeOrder(session: PlanningSession, unitId: UnitId): PlanningSession {
   // The feedback was about the order being cleared, so it goes too.
   const draft: Draft = { ...session.draft };
-  delete (draft as { feedback?: string }).feedback;
+  delete (draft as { feedback?: unknown }).feedback;
   return withDraft(session, {
     ...draft,
     orders: session.draft.orders.filter((order) => order.unitId !== unitId),
@@ -200,28 +197,28 @@ export function cancelIdleSupport(scenario: Scenario, before: PlanningSession, a
       && flying.has(`${order.unitId}|${order.mission.territoryId}`) ? order.mission.territoryId : undefined);
   const places = new Set(planned.flatMap((order) => idleAt(order) ?? []));
   if (places.size === 0) return after;
-  const note = `Ground Support over ${listNames([...places].map((id) => territoryName(scenario, id)))} is cancelled too: none of your units go there now.`;
+  const { feedback: told } = after.draft;
   return {
     ...after,
     draft: {
       ...after.draft,
       airOrders: planned.filter((order) => idleAt(order) === undefined),
-      feedback: after.draft.feedback === undefined ? note : `${after.draft.feedback} ${note}`
+      feedback: { ...(told === undefined ? {} : { before: told }), code: "support-cancelled", territoryIds: [...places] }
     }
   };
 }
 
 /** Why the selected armies cannot move to `to`: full trains, no connection, or the engine's own reason. */
-function refusal(scenario: Scenario, session: PlanningSession, from: TerritoryId, to: TerritoryId): string {
+function refusal(scenario: Scenario, session: PlanningSession, from: TerritoryId, to: TerritoryId): Feedback {
   // D5: a ride is there, but its trains can't take the units whole.
   const full = selectionFullTrains(scenario, session.game.state, session.factionId, from, session.draft.selectedUnitIds, session.draft.orders.filter(isMoveOrder)).get(to);
-  if (full !== undefined) return railShortageText(scenario, full);
+  if (full !== undefined) return refusedFeedback(railFullRefusal(full));
   if (!isNeighbor(scenario, from, to)) {
-    return `${requireTerritory(scenario, to).name} is not connected to ${requireTerritory(scenario, from).name}. Choose a highlighted territory.`;
+    return { code: "not-connected", from, to };
   }
   const reasons = session.draft.selectedUnitIds.flatMap((unitId) => {
     const validation = validateMoveOrder(scenario, session.game.state, { factionId: session.factionId, from, kind: "move", to, unitId });
-    return validation.ok ? [] : [validation.reason];
+    return validation.ok ? [] : [refusedFeedback(validation.refusal)];
   });
-  return reasons[0] ?? "These units cannot move there together. Choose a highlighted territory.";
+  return reasons[0] ?? { code: "unreachable-together" };
 }

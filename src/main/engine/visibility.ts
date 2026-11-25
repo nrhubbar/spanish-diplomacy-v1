@@ -20,16 +20,31 @@ export function viewFor(scenario: Scenario, state: GameState, viewer: FactionId 
     const open = territoryId !== undefined && revealed.has(territoryId);
     subTerritories[id] = open ? site : { ...site, queue: site.queue.filter((item) => item.factionId === viewer) };
   }
-  return {
-    ...state,
+  const { carry } = state;
+  const visible: VisibleFields = {
+    builtLinks: state.builtLinks,
+    // The carry is the viewer's own bookkeeping; nobody else's shows.
+    carry: carry === undefined ? undefined : Object.fromEntries(Object.entries(carry).filter(([factionId]) => factionId === viewer)),
+    casualties: state.casualties,
+    cityControl: state.cityControl,
+    control: state.control,
+    fortification: state.fortification,
+    generals: state.generals,
+    raidCuts: state.raidCuts,
+    raised: state.raised,
     reveals,
     subTerritories,
     training: state.training.filter((item) => item.factionId === viewer || revealed.has(item.territoryId)),
     treasuries: Object.fromEntries(Object.entries(state.treasuries).filter(([factionId]) => visibleFactions.has(factionId as FactionId))),
-    // The carry is the viewer's own bookkeeping; nobody else's shows.
-    ...(state.carry === undefined ? {} : { carry: Object.fromEntries(Object.entries(state.carry).filter(([factionId]) => factionId === viewer)) })
+    turnNumber: state.turnNumber,
+    units: state.units,
+    weather: state.weather
   };
+  return Object.fromEntries(Object.entries(visible).filter(([, value]) => value !== undefined)) as unknown as GameState;
 }
+
+/** Every part of the state, named one by one, so a new part cannot be added without deciding who sees it. */
+type VisibleFields = { readonly [K in keyof Required<GameState>]: GameState[K] | undefined };
 
 function activeReveals(state: GameState, viewer: FactionId | undefined): GameState["reveals"] {
   return state.reveals.filter((reveal) => reveal.viewerFactionId === viewer && reveal.untilTurn >= state.turnNumber);

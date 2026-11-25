@@ -9,7 +9,7 @@ import { generalWords } from "../../main/presentation/generals";
 import { ArmyPicker } from "../../main/screens/ArmyPicker";
 import type { PlanningSession } from "../../main/state/planning";
 import { emptyDraft } from "../../main/state/session";
-import { faction, shippedRegistry, spainId, spainWithAir, testStore } from "../support";
+import { faction, shippedRegistry, spainId, spainWithAir, testStore, testGame } from "../support";
 
 /** N10: a general's die effect in words, from the scenario's effects. */
 
@@ -48,7 +48,7 @@ describe("a general in words (N10)", () => {
 
   it("is on his unit card, described and in view", () => {
     const session: PlanningSession = {
-      draft: { ...emptyDraft, selectedTerritoryId: miaja.territoryId }, factionId: faction("republic"), game: { assignments: {}, history: [], locked: {}, scenarioId: spainId, seed: 1, state: initial }, phase: "planning"
+      draft: { ...emptyDraft, selectedTerritoryId: miaja.territoryId }, factionId: faction("republic"), game: { assignments: {}, history: [], ready: [], scenarioId: spainId, gameId: testGame, state: initial }, phase: "planning"
     };
     render(<Provider store={testStore()}><ArmyPicker own={[miaja]} scenario={scenario} session={session} /></Provider>);
     expect(screen.getByText("+1 on the battle roll of his army; +1 more when defending.")).toBeVisible();

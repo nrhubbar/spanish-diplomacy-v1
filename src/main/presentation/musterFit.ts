@@ -1,6 +1,6 @@
 import { carrierCapacity } from "../engine/movement/allowance";
 import { railCapacity } from "../engine/movement/network";
-import { armyKey, plannedRoutes, railShortageText, usageOf } from "../engine/movement/routes";
+import { armyKey, plannedRoutes, railFullRefusal, usageOf } from "../engine/movement/routes";
 import { armyRoute, judgePlannedMoves } from "../engine/movement/transit";
 import type { MoveMode } from "../engine/network/reach";
 import { type FactionId, type GameState, type HeldBackCause, isMoveOrder, type MoveLeg, type MoveOrder, type Scenario, type TerritoryId, type UnitId } from "../engine/types";
@@ -8,6 +8,7 @@ import type { ModeChip } from "./moveModes";
 import type { Muster, MusterCard, MusterDraft, MusterGroup, MusterPicks } from "./muster";
 import { moveTo } from "./odds";
 import { subTerritoryName } from "./movement";
+import { refusalText } from "./refusals";
 import { territoryName } from "./text";
 
 /**
@@ -52,7 +53,7 @@ export function heldBackRefusal(scenario: Scenario, cause: HeldBackCause, from: 
     case "allowance":
       return `${territoryName(scenario, to)} is further than these units can move this turn. By Motor, their trucks must carry every unit on foot.`;
     case "rail-full":
-      return railShortageText(scenario, cause.rail);
+      return refusalText(scenario, railFullRefusal(cause.rail));
     case "port-landings":
       return `The port at ${territoryName(scenario, to)} has no room for another landing this turn.`;
     case "amphibious-lane":

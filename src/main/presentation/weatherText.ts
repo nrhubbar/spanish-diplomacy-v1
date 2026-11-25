@@ -1,8 +1,7 @@
-import { raisedDefinition } from "../engine/recruitment/rules";
 import type { FrostbiteOutcome, GameState, Scenario, TerritoryId, TimeRanOutOutcome, WeatherId } from "../engine/types";
 import { forecast, zoneOf } from "../engine/weather";
 import { glyphs } from "./glyphs";
-import { factionName, territoryName } from "./text";
+import { factionName, territoryName, unitName } from "./text";
 
 /** T6: "Republican Government's time ran out: 3 units held." */
 export function describeTimeRanOut(scenario: Scenario, outcome: TimeRanOutOutcome): string {
@@ -13,8 +12,7 @@ export function describeTimeRanOut(scenario: Scenario, outcome: TimeRanOutOutcom
 
 /** T4: "Durruti Column lost 125 men to frostbite in Arag\u00f3n." */
 export function describeFrostbite(scenario: Scenario, outcome: FrostbiteOutcome): string {
-  // Recruited units (R6) are named from their ids, as scenario units are.
-  const name = scenario.index.units.get(outcome.unitId)?.name ?? raisedDefinition(scenario, outcome.unitId)?.name ?? "A unit";
+  const name = unitName(scenario, outcome.unitId);
   const where = territoryName(scenario, outcome.territoryId);
   return outcome.destroyed === true
     ? `${name} lost ${String(outcome.men)} men to frostbite in ${where} and broke up.`

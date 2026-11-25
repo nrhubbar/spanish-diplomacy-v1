@@ -1,4 +1,5 @@
 import { oddsFor } from "../combat/odds";
+import { dieFaces } from "../dice";
 import type { CombatModifier, D20Rules, GradeDefinition, GradeId } from "../types";
 import { d20Faces, lastScore } from "./rules";
 
@@ -90,7 +91,7 @@ export function battleOdds(rules: D20Rules, attack: number, defence: number, sit
   const expected = { attackerDemoralized: 0, attackerLoss: 0, defenderDemoralized: 0, defenderLoss: 0 };
   let takeFaces = 0;
   let gainFaces = 0;
-  const share = 1 / d20Faces.length;
+  const share = 1 / dieFaces;
   for (const die of d20Faces) {
     const grade = gradeAt(rules, odds.column, scoreFor(die, rollModifier));
     faces.set(grade.id, (faces.get(grade.id) ?? 0) + 1);
@@ -104,14 +105,14 @@ export function battleOdds(rules: D20Rules, attack: number, defence: number, sit
   return {
     attack,
     bands: columnBands(rules, odds.column),
-    chances: new Map([...faces].map(([id, count]) => [id, count / d20Faces.length])),
+    chances: new Map([...faces].map(([id, count]) => [id, count / dieFaces])),
     column: odds.column,
     defence,
     expected,
-    gainChance: gainFaces / d20Faces.length,
+    gainChance: gainFaces / dieFaces,
     modifiers,
     oddsLabel: odds.label,
     rollModifier,
-    takeChance: takeFaces / d20Faces.length
+    takeChance: takeFaces / dieFaces
   };
 }

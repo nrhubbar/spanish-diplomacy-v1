@@ -4,7 +4,7 @@ import { hasLinks } from "../network/links";
 import { allFoot, marchCrossing, motorPath, startSubTerritories } from "../network/paths";
 import type { LinkStep, MoveMode, UnreachableCode } from "../network/reach";
 import { isContested } from "../partition/holders";
-import type { FactionId, GameState, MoveLeg, MoveOrder, RailShortage, Scenario, SubTerritoryId, TerritoryId, UnitId } from "../types";
+import type { FactionId, GameState, MoveLeg, MovementRefusal, MoveOrder, RailShortage, Scenario, SubTerritoryId, TerritoryId, UnitId } from "../types";
 import { hasFighter } from "../units/fighting";
 import { armyAllowance, fitsAllowance, transportOf } from "./allowance";
 import {
@@ -85,10 +85,10 @@ export interface MoveRoute {
   readonly transit: readonly TerritoryId[];
 }
 
-export type RouteCheck = { readonly ok: true; readonly route: MoveRoute } | { readonly code: UnreachableCode; readonly ok: false; readonly reason: string };
+export type RouteCheck = { readonly ok: true; readonly route: MoveRoute } | { readonly code: UnreachableCode; readonly ok: false; readonly refusal: MovementRefusal };
 
-function refuse(code: UnreachableCode, reason: string): RouteCheck {
-  return { code, ok: false, reason };
+function refuse(code: UnreachableCode, refusal: MovementRefusal): RouteCheck {
+  return { code, ok: false, refusal };
 }
 
 /** R5: the move mode a route shape is. */
@@ -170,12 +170,12 @@ export function describeRoute(
 ): RouteCheck {
   const shape = shapeOf(legs);
   const last = legs[legs.length - 1];
-  if (shape === undefined || last === undefined) return refuse("not-connected", "That route is not one of the allowed shapes of move.");
+  if (shape === undefined || last === undefined) return refuse("not-connected", { code: "route-shape" });
   const linked = hasLinks(scenario);
   const foot = allFoot(scenario, state, unitIds);
   const start = linked ? startSubTerritories(scenario, state, factionId, from, unitIds) : [];
   const roads = scenario.linkModifiers.road;
-  if (shape === "march" && linked && roads !== undefined && legs.length > roads.motorRange) return refuse("too-far", `Motor reaches at most ${String(roads.motorRange)} territories.`);
+  if (shape === "march" && linked && roads !== undefined && legs.length > roads.motorRange) return refuse("too-far", { code: "motor-too-far", territories: roads.motorRange });
   let at = from;
   let subs = start;
   let cost = 0;
@@ -195,20 +195,20 @@ export function describeRoute(
   };
   for (const [index, leg] of legs.entries()) {
     const final = index === legs.length - 1;
-    if (visited.has(leg.to)) return refuse("not-connected", "A route may not enter the same territory twice.");
+    if (visited.has(leg.to)) return refuse("not-connected", { code: "route-repeats-territory" });
     if (leg.kind === "rail") {
       const ride = rides(at).get(leg.to);
-      if (ride === undefined) return refuse("no-rail", "No rail line your side holds reaches that capital this turn.");
+      if (ride === undefined) return refuse("no-rail", { code: "no-rail-to-capital" });
       rail = ride;
       for (const [stop, station] of ride.stations.slice(1).entries()) path.push({ from: ride.stations[stop] as SubTerritoryId, mode: "rail", to: station });
       // M2, Q-MR-16: the territories the train passes are on the way too; an enemy entering one stops it there.
       for (const passed of ride.through) {
-        if (visited.has(passed)) return refuse("not-connected", "A route may not enter the same territory twice.");
+        if (visited.has(passed)) return refuse("not-connected", { code: "route-repeats-territory" });
         visited.add(passed);
         transit.push(passed);
       }
     } else if (leg.kind === "land") {
-      if (connectionBetween(scenario, at, leg.to, "land") === undefined) return refuse("not-connected", "Destination is not connected to the unit's territory.");
+      if (connectionBetween(scenario, at, leg.to, "land") === undefined) return refuse("not-connected", { code: "not-connected" });
       if (linked && shape === "march") {
         // R5: Motor's links are found for the whole route below; count the step here.
         cost += 1;
@@ -222,10 +222,10 @@ export function describeRoute(
         enter(entrySubTerritory(scenario, at, leg.to, "land"));
       }
     } else {
-      if (connectionBetween(scenario, at, leg.to, "sea") === undefined) return refuse("not-connected", "No sea lane joins those territories.");
+      if (connectionBetween(scenario, at, leg.to, "sea") === undefined) return refuse("not-connected", { code: "no-sea-lane" });
       const departure = departurePort(scenario, state, factionId, at, leg.to);
-      if (departure === undefined) return refuse("no-port", "An army can sail only from the lane's port, and your side must hold it.");
-      if (seaClosed(scenario, state, at, leg.to)) return refuse("sea-closed", "The sea is closed by winter storms this turn.");
+      if (departure === undefined) return refuse("no-port", { code: "lane-port-not-held" });
+      if (seaClosed(scenario, state, at, leg.to)) return refuse("sea-closed", { code: "sea-closed" });
       const landing = landingAt(scenario, state, factionId, at, leg.to);
       sea = landing.kind === "port"
         ? { departure: departure.subTerritoryId, kind: "port", level: landing.level, port: landing.subTerritoryId }
@@ -237,7 +237,7 @@ export function describeRoute(
     }
     if (!final) {
       // M2: only the last leg may enter enemy or contested ground.
-      if (!isFriendlyGround(scenario, state, factionId, leg.to)) return refuse("enemy-ground", "Only the last step of a move may enter enemy or contested ground.");
+      if (!isFriendlyGround(scenario, state, factionId, leg.to)) return refuse("enemy-ground", { code: "enemy-ground-on-the-way" });
       transit.push(leg.to);
     }
     visited.add(leg.to);
@@ -248,7 +248,7 @@ export function describeRoute(
   }
   if (shape === "march" && linked) {
     // R5: Motor never enters contested ground, and runs along roads trucks may use the whole way.
-    if (isContested(scenario, state, last.to)) return refuse("contested", "Motor can't enter contested ground.");
+    if (isContested(scenario, state, last.to)) return refuse("contested", { code: "motor-contested-ground" });
     // Declog D13: a road crosses mountain and swamp, so Motor pays no rough-ground step (P8).
     const motor = motorPath(scenario, state, start, legs.map((leg) => leg.to));
     if (!motor.ok) return motor;
@@ -337,11 +337,9 @@ export function railShortage(scenario: Scenario, state: GameState, { places, rou
   return departure === undefined ? undefined : shortageAt(scenario, state, departure, places, usage);
 }
 
-/** D5: the refusal of an army its trains can't take whole, with the places left. */
-export function railShortageText(scenario: Scenario, { boarding, left, places }: RailShortage): string {
-  const station = scenario.index.subTerritories.get(boarding)?.name ?? "the station";
-  if (left === 0) return `Rail has no places left at ${station} this turn.`;
-  return `Rail has only ${String(left)} ${left === 1 ? "place" : "places"} left at ${station} this turn, and ${String(places)} units would board.`;
+/** D5: the refusal of an army its trains can't take whole. */
+export function railFullRefusal(shortage: RailShortage): MovementRefusal {
+  return { code: "rail-full", ...shortage };
 }
 
 /** M3, M5, D5: room left on the route for the party, given what is used (a landing or lane its army already has is free). */
@@ -372,13 +370,13 @@ export function plannedRoutes(scenario: Scenario, state: GameState, orders: read
  * D5: why moves about to be given can't all board, given the faction's other planned moves: the
  * first boarding capital with too few places left for the units that would board there together.
  */
-export function boardingRefusal(scenario: Scenario, state: GameState, moves: readonly MoveOrder[], others: readonly MoveOrder[]): string | undefined {
+export function boardingRefusal(scenario: Scenario, state: GameState, moves: readonly MoveOrder[], others: readonly MoveOrder[]): MovementRefusal | undefined {
   const { departures } = usageOf(plannedRoutes(scenario, state, moves));
   if (departures.size === 0) return undefined;
   const usage = usageOf(plannedRoutes(scenario, state, others));
   for (const [boarding, places] of departures) {
     const shortage = shortageAt(scenario, state, boarding, places, usage);
-    if (shortage !== undefined) return railShortageText(scenario, shortage);
+    if (shortage !== undefined) return railFullRefusal(shortage);
   }
   return undefined;
 }
@@ -506,9 +504,9 @@ function marches(scenario: Scenario, state: GameState, factionId: FactionId, fro
 /** M1-M5: the per-order check of a move's legs against the start-of-turn state, under the `allowance` module. */
 export function validateRoute(scenario: Scenario, state: GameState, order: MoveOrder): RouteCheck {
   const legs = legsOf(scenario, order);
-  if (legs[legs.length - 1]?.to !== order.to) return refuse("not-connected", "The route does not end at the destination.");
+  if (legs[legs.length - 1]?.to !== order.to) return refuse("not-connected", { code: "route-ends-elsewhere" });
   if (legs.length === 1 && legs[0]?.kind !== "rail" && !isNeighbor(scenario, order.from, order.to)) {
-    return refuse("not-connected", "Destination is not connected to the unit's territory.");
+    return refuse("not-connected", { code: "not-connected" });
   }
   return describeRoute(scenario, state, order.factionId, order.from, legs, true, undefined, [order.unitId]);
 }

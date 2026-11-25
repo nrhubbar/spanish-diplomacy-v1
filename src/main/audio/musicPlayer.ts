@@ -1,6 +1,6 @@
 import { firstTrack, joinStep, type MusicSource, nextTrack, type Track } from "./playlist";
 import { ducking } from "./sounds";
-import { dbGain } from "./levels";
+import { dbGain } from "../state/soundLevels";
 
 /** What the player uses of an `<audio>` element. */
 export interface MusicElement {

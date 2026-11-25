@@ -9,7 +9,7 @@ import { BuildOptions } from "../../main/screens/pane/build/BuildOptions";
 import { Pips, SiteCard } from "../../main/screens/pane/build/SiteCard";
 import type { PlanningSession } from "../../main/state/planning";
 import { emptyDraft, type Draft } from "../../main/state/session";
-import { faction, spain, spainId, spainM2, testRegistry, testStore } from "../support";
+import { faction, spain, spainId, spainM2, testRegistry, testStore, testGame } from "../support";
 import { pinned } from "../pinned";
 
 afterEach(cleanup);
@@ -21,7 +21,7 @@ const development = (id: string): BuildProject => ({ developmentId: id as Develo
 const item = (project: BuildProject, progress = 0, paid: Readonly<Record<string, number>> = { funds: 6 }): QueueItem => ({ factionId: republic, paid: paid, project, progress });
 
 function planning(state: GameState, draft: Draft = emptyDraft): PlanningSession {
-  return { draft, factionId: republic, game: { assignments: { [republic]: "local-human" }, history: [], locked: {}, scenarioId: spainId, seed: 1, state }, phase: "planning" };
+  return { draft, factionId: republic, game: { assignments: { [republic]: "local-human" }, history: [], ready: [], scenarioId: spainId, gameId: testGame, state }, phase: "planning" };
 }
 
 function withSite(state: GameState, id: string, change: Partial<SubTerritoryState>): GameState {
@@ -129,8 +129,8 @@ describe("the site card (X7)", () => {
     expect(within(article).queryByRole("list", { name: "Buildings" })).toBeNull();
   });
 
-  it("skips unknown buildings, and draws no improvements without them", () => {
-    const state = withSite(start, "madrid", { buildings: ["barracks", "mystery"] as BuildingId[] });
+  it("lists the buildings, and draws no improvements without them", () => {
+    const state = withSite(start, "madrid", { buildings: ["barracks"] as BuildingId[] });
     const bare = { ...scenario };
     delete (bare as { improvements?: unknown }).improvements;
     card(state, "madrid", { scenario: bare });

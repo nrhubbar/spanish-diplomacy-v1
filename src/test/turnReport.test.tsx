@@ -18,7 +18,8 @@ import { systemOutcomeKinds } from "../main/presentation/systemText";
 import { FocusNote, OutcomeSummary } from "../main/screens/ResultPanels";
 import { eventsAt, systemOutcomePlaces } from "../main/screens/report/focus";
 import { groupOpen, outcomeGroups, sectionKinds } from "../main/screens/report/groups";
-import { spentBy, Treasury } from "../main/screens/report/Treasury";
+import { spentBy } from "../main/presentation/treasury";
+import { Treasury } from "../main/screens/report/Treasury";
 import { faction, spainWithAir, territory, tiny, unit } from "./support";
 
 afterEach(cleanup);
@@ -146,7 +147,7 @@ describe("focus notes for Milestone 3 outcomes (D25, F1)", () => {
     expect(systemOutcomePlaces(scenario, state, rail)).toEqual(["catalunya"]);
     const home = state.units[covadonga]!.territoryId;
     expect(systemOutcomePlaces(scenario, state, tired)).toEqual([home]);
-    expect(systemOutcomePlaces(scenario, state, { kind: "replenish-cancelled", order: { factionId: republic, kind: "replenish", unitId: covadonga }, reason: "x", refund: {} })).toEqual([home]);
+    expect(systemOutcomePlaces(scenario, state, { kind: "replenish-cancelled", order: { factionId: republic, kind: "replenish", unitId: covadonga }, refusal: { code: "unit-fought" }, refund: {} })).toEqual([home]);
     expect(systemOutcomePlaces(scenario, state, { kind: "replenish-applied", men: 1, order: { factionId: republic, kind: "replenish", unitId: militia }, paid: {}, recovered: false })).toEqual([]);
     expect(systemOutcomePlaces(scenario, state, { factionId: republic, kind: "fatigue", demoralized: false, fatigue: 1, unitId: militia })).toEqual([]);
     expect(systemOutcomePlaces(scenario, state, income)).toEqual([]);

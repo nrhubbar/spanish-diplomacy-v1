@@ -1,4 +1,5 @@
 import type {
+  BuildRefusal,
   RoadRules,
   GameState,
   LinkDefinition,
@@ -117,14 +118,14 @@ export function afterWork(modifiers: readonly LinkModifier[], work: LinkWork, ro
 }
 
 /** R7: why a work does not fit the link as it stands; undefined when it does. */
-export function workMisfit(modifiers: readonly LinkModifier[], work: LinkWork, roads: RoadRules | undefined): string | undefined {
+export function workMisfit(modifiers: readonly LinkModifier[], work: LinkWork, roads: RoadRules | undefined): BuildRefusal | undefined {
   if (afterWork(modifiers, work, roads) !== undefined) return undefined;
   switch (work) {
     case "new-rail":
-      return "There is a railway here already.";
+      return { code: "link-railway-already" };
     case "rail-upgrade":
-      return modifiers.some((modifier) => modifier.kind === "rail") ? "This is a main line already." : "Needs a railway first.";
+      return modifiers.some((modifier) => modifier.kind === "rail") ? { code: "link-main-line-already" } : { code: "link-needs-railway" };
     case "road-upgrade":
-      return "Trucks can use this road already.";
+      return { code: "link-road-serves" };
   }
 }

@@ -1,10 +1,11 @@
 import { unitTypeIn } from "../engine/air/pieces";
 import { sumResources } from "../engine/economy/resources";
-import { capitalOf, meetsRequirement, priceReplenishments, replenishQuote, requirementName } from "../engine/recruitment/rules";
+import { capitalOf, meetsRequirement, priceReplenishments, replenishQuote } from "../engine/recruitment/rules";
 import type { BuildingDefinition, BuildingId, DevelopmentDefinition, FactionId, GameState, ResourceId, Resources, Scenario, TerritoryId, TrainingItem, UnitId, UnitState, UnitTypeDefinition, UpkeepRules } from "../engine/types";
 import { amountText, resourceAmount } from "./economy";
 import { glyphs } from "./glyphs";
 import { tenths } from "./numbers";
+import { requirementName } from "./refusals";
 import { unitName } from "./text";
 
 /** Player-facing wording for recruiting and replenishing (X4, X7). */

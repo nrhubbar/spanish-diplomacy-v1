@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
+import { planningMapView } from "../../main/screens/planningMapView";
 import { initialGameState } from "../../main/engine/resolution";
 import type { AirMissionOrder, GameState, UnitId } from "../../main/engine/types";
 import type { MapPackage } from "../../main/scenarios/loader";
 import { createGameReducer, disbandUnit, orderFromMuster, planAirMission, removePlannedOrder } from "../../main/state/gameSlice";
-import { cancelIdleSupport, type PlanningSession, planningMapView } from "../../main/state/planning";
+import { cancelIdleSupport, type PlanningSession } from "../../main/state/planning";
 import type { Draft } from "../../main/state/session";
-import { faction, move, spainWithAir, territory, unit } from "../support";
+import { faction, move, spainWithAir, territory, unit, testGame, told } from "../support";
 
 /** N3: one planned attack, one planned move. */
 
@@ -26,12 +27,12 @@ function session(draft: Partial<Draft> = {}, state: GameState = start): Planning
   return {
     draft: { orders: [], selectedUnitIds: [], ...draft },
     factionId: republic,
-    game: { assignments: {}, history: [], locked: {}, scenarioId: scenario.id, seed: 1, state },
+    game: { assignments: {}, history: [], ready: [], scenarioId: scenario.id, gameId: testGame, state },
     phase: "planning"
   };
 }
 
-const reduce = createGameReducer({ registry: { list: () => [], require: () => ({ map: {} as MapPackage, scenario }) } });
+const reduce = createGameReducer({ registry: { list: () => [], require: () => ({ map: {} as MapPackage, scenario, version: "test" }) } });
 const after = (before: PlanningSession, action: Parameters<typeof reduce>[1]): Draft => {
   const next = reduce({ session: before }, action).session;
   if (next.phase !== "planning") throw new Error("still planning");
@@ -48,23 +49,23 @@ describe("N3: Ground Support goes with the attack it was planned for", () => {
     expect(one.feedback).toBeUndefined();
     const none = after(session(one), removePlannedOrder(security));
     expect(none.airOrders).toEqual([]);
-    expect(none.feedback).toBe(note);
+    expect(told(scenario, none.feedback)).toBe(note);
     expect(planningMapView(scenario, session(none), [], new Map()).plannedAirMissions).toEqual([]);
   });
 
   it("is cancelled by every other way the attack ends: Disband, and the pane sending its units nowhere", () => {
     const one = { ...attack, orders: marches("rep-wad-ras-1") };
-    expect(after(session(one), disbandUnit(wadRas))).toMatchObject({ airOrders: [], feedback: expect.stringMatching(/will disband.*Ground Support over/) as string });
+    expect(after(session(one), disbandUnit(wadRas))).toMatchObject({ airOrders: [], feedback: { before: { code: "disband-planned" }, code: "support-cancelled", territoryIds: [castile] } });
     const pane = after(session(one), orderFromMuster({ kind: "invade", moves: [], shown: [wadRas], support: [fighters], target: castile }));
     expect(pane.airOrders).toEqual([]);
-    expect(pane.feedback).toContain(note);
+    expect(told(scenario, pane.feedback)).toContain(note);
   });
 
   it("keeps a flight the same order gives, even with no units left to go", () => {
     const pane = after(session({ ...attack, airOrders: [], orders: marches("rep-wad-ras-1") }), orderFromMuster({ kind: "invade", moves: [], shown: [wadRas, fighters], support: [fighters], target: castile }));
     expect(pane.orders).toEqual([]);
     expect(pane.airOrders).toEqual([support(fighters)]);
-    expect(pane.feedback).not.toContain("cancelled too");
+    expect(told(scenario, pane.feedback)).not.toContain("cancelled too");
   });
 
   it("stays planned on its own, or over ground where the player's units stand", () => {

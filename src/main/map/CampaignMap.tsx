@@ -1,5 +1,5 @@
 import type { GameState } from "../engine/types";
-import { cssVariables } from "../presentation/style";
+import { cssVariables } from "../components/style";
 import { territoryName } from "../presentation/text";
 import type { ScenarioPackage } from "../scenarios/loader";
 import type { MapAssets } from "../scenarios/registry";

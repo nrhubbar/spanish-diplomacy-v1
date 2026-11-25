@@ -1,59 +1,27 @@
-import type { StandingOrder } from "../engine/orders";
+import type { GameView, TurnReport } from "../game/types";
 import type {
   AirMissionKind,
   ActorKind,
   BuildOrder,
   DisbandOrder,
   FactionId,
-  GameState,
   AirMissionOrder,
   MoveOrder,
-  PlayerSubmission,
   SackOrder,
   RecruitOrder,
   ReplenishOrder,
   ScenarioId,
   SubTerritoryId,
   TerritoryId,
-  TurnOutcome,
-  TurnResolutionResult,
   UnitId,
   WithdrawOrder
 } from "../engine/types";
+import type { Feedback } from "../presentation/feedback";
 
 export type Assignments = Readonly<Record<FactionId, ActorKind>>;
 
-export interface TurnHistoryEntry {
-  /** Every outcome of the turn. A visible session's entries hold only their viewer's. */
-  readonly outcomes: readonly TurnOutcome[];
-  /**
-   * $6, U4: what each faction, and a shared screen, saw of the turn, filtered when it was
-   * written (`state/history.ts`). Read history through `seenBy`, never by filtering again.
-   */
-  readonly seen: {
-    readonly byFaction: Readonly<Partial<Record<FactionId, readonly TurnOutcome[]>>>;
-    readonly shared: readonly TurnOutcome[];
-  };
-  readonly turnNumber: number;
-}
-
-/** Everything that persists across phases of one game. */
-export interface GameRecord {
-  readonly assignments: Assignments;
-  readonly history: readonly TurnHistoryEntry[];
-  /** Locked submissions for the current turn. Never exposed by planning selectors (M2 7.4). */
-  readonly locked: Readonly<Record<FactionId, PlayerSubmission>>;
-  readonly scenarioId: ScenarioId;
-  readonly seed: number;
-  readonly state: GameState;
-}
-
-/**
- * Every order an army can have (O1): a move, or the standing order it follows without one,
- * Entrench when healthy and Rest when demoralized (O5). In contested ground (C1) the choice is
- * Attack, the derived default (Hold for a demoralized army, C4), or a submitted Withdraw.
- */
-export type OrderKind = MoveOrder["kind"] | WithdrawOrder["kind"] | ReplenishOrder["kind"] | DisbandOrder["kind"] | StandingOrder | "attack" | "hold";
+/** What an army can be ordered to do. */
+export type { OrderKind } from "../presentation/orderMenu";
 
 /** The orders a player plans with a destination for armies: moves and withdrawals (C1). */
 export type PlannedOrder = MoveOrder | WithdrawOrder;
@@ -67,7 +35,7 @@ export type OrderStage =
   /** N6: the selected aircraft's mission, choosing its target on the map; `territoryId` is the territory whose sub-territory a raid is choosing. */
   | { readonly mission: AirMissionKind; readonly step: "choose-target"; readonly territoryId?: TerritoryId };
 
-/** The current local player's private working set. */
+/** The current local player's private working set: what `submittedDraftOrders` saves, and what is selected. */
 export interface Draft {
   /** U2, U5: air missions and Sack orders (m3r1-air-generals). Carried through selection changes by `withDraft`. */
   readonly airOrders?: readonly (AirMissionOrder | SackOrder)[];
@@ -75,7 +43,7 @@ export interface Draft {
   readonly builds?: readonly BuildOrder[];
   /** D1: Disband orders, one per unit, never alongside another order of that unit. Carried through selection changes by `keepBasket`. */
   readonly disbands?: readonly DisbandOrder[];
-  readonly feedback?: string;
+  readonly feedback?: Feedback;
   /** X3: the sub-territory the pane is focused on, inside the selected territory. */
   readonly focusedSubTerritoryId?: SubTerritoryId;
   readonly orders: readonly PlannedOrder[];
@@ -99,19 +67,19 @@ export type Session =
   | { readonly phase: "idle" }
   | {
       readonly assignments: Assignments;
-      readonly feedback?: string;
+      readonly feedback?: Feedback;
       readonly phase: "setup";
       readonly scenarioId: ScenarioId;
     }
   | {
       readonly factionId: FactionId;
       readonly fromFactionId?: FactionId;
-      readonly game: GameRecord;
+      readonly game: GameView;
       readonly phase: "handoff";
     }
-  | { readonly draft: Draft; readonly factionId: FactionId; readonly game: GameRecord; readonly phase: "planning" }
-  | { readonly game: GameRecord; readonly phase: "resolution"; readonly result: TurnResolutionResult }
-  | { readonly game: GameRecord; readonly phase: "game-over"; readonly result: TurnResolutionResult };
+  | { readonly draft: Draft; readonly factionId: FactionId; readonly game: GameView; readonly phase: "planning" }
+  | { readonly game: GameView; readonly phase: "resolution"; readonly result: TurnReport }
+  | { readonly game: GameView; readonly phase: "game-over"; readonly result: TurnReport };
 
 export type Phase = Session["phase"];
 export type InGameSession = Exclude<Session, { readonly phase: "idle" | "setup" }>;

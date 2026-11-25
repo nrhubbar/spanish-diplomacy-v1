@@ -1,8 +1,7 @@
 import type { JSX } from "react";
-import { allProjects, buildableId, buildRefusal, isCapital } from "../../../engine/economy/catalogue";
-import type { BuildOrder, BuildProject, FactionId, GameState, Scenario, SubTerritoryDefinition, SubTerritoryId } from "../../../engine/types";
+import type { FactionId, GameState, Scenario, SubTerritoryId } from "../../../engine/types";
 import { useAppDispatch } from "../../../hooks";
-import { projectName, projectTerms } from "../../../presentation/economy";
+import { buildOptions } from "../../../presentation/siteCard";
 import { EconomyIcon, projectIcon } from "../../../components/economy/EconomyIcon";
 import { queueBuildOrder } from "../../../state/gameSlice";
 
@@ -21,15 +20,9 @@ interface BuildOptionsProps {
  */
 export function BuildOptions({ scenario, state, subTerritoryId, viewer }: BuildOptionsProps): JSX.Element | null {
   const dispatch = useAppDispatch();
-  const site = state.subTerritories[subTerritoryId];
-  const sub = scenario.index.subTerritories.get(subTerritoryId);
-  if (site === undefined || sub === undefined || site.holder !== viewer) return null;
   // Projects that can be queued come first; locked ones follow, each saying why.
-  const options = allProjects(scenario).filter((project) => possibleHere(scenario, sub, project)).map((project) => {
-    const order: BuildOrder = { factionId: viewer, kind: "build", project, subTerritoryId };
-    return { order, project, reason: buildRefusal(scenario, state, order) };
-  });
-  options.sort((a, b) => Number(a.reason !== undefined) - Number(b.reason !== undefined));
+  const options = buildOptions(scenario, state, subTerritoryId, viewer);
+  if (options === undefined) return null;
   return (
     <section aria-labelledby={`${subTerritoryId}-add`} className="build-options">
       <div className="build-tab-head">
@@ -37,40 +30,19 @@ export function BuildOptions({ scenario, state, subTerritoryId, viewer }: BuildO
         <span className="pane-hint">Paid when queued</span>
       </div>
       <ul>
-        {options.map(({ order, project, reason }) => {
-          const name = projectName(scenario, site, project);
-          return (
-            <li className={reason === undefined ? "build-option" : "build-option build-option-locked"} key={name}>
-              <div>
-                <strong><EconomyIcon name={projectIcon(scenario, project)} />{name}</strong>
-                <span className="build-terms">{projectTerms(scenario, project)}</span>
-                {reason === undefined ? null : <span className="build-locked">{reason}</span>}
-              </div>
-              {reason === undefined ? (
-                <button aria-label={`Queue ${name}`} className="secondary-button compact-button" onClick={() => dispatch(queueBuildOrder(order))} type="button">Queue</button>
-              ) : null}
-            </li>
-          );
-        })}
+        {options.map(({ name, order, project, refusal, terms }) => (
+          <li className={refusal === undefined ? "build-option" : "build-option build-option-locked"} key={name}>
+            <div>
+              <strong><EconomyIcon name={projectIcon(scenario, project)} />{name}</strong>
+              <span className="build-terms">{terms}</span>
+              {refusal === undefined ? null : <span className="build-locked">{refusal}</span>}
+            </div>
+            {refusal === undefined ? (
+              <button aria-label={`Queue ${name}`} className="secondary-button compact-button" onClick={() => dispatch(queueBuildOrder(order))} type="button">Queue</button>
+            ) : null}
+          </li>
+        ))}
       </ul>
     </section>
   );
-}
-
-/** Projects this sub-territory can never take (a capital-only building elsewhere, a city-only one without a city) are left out. */
-function possibleHere(scenario: Scenario, sub: SubTerritoryDefinition, project: BuildProject): boolean {
-  const hasCity = sub.cityIds.length > 0;
-  const id = buildableId(project);
-  if (id === undefined || !sub.buildable.includes(id)) return false;
-  switch (project.kind) {
-    case "building": {
-      const building = scenario.index.buildings.get(project.buildingId);
-      return building !== undefined && (!building.capitalOnly || isCapital(scenario, sub)) && (!building.cityOnly || hasCity);
-    }
-    case "development":
-      return hasCity || scenario.index.development.get(project.developmentId)?.cityOnly !== true;
-    default:
-      // Improvements: the list decides. Link works never get here (they have no `buildable` id).
-      return true;
-  }
 }

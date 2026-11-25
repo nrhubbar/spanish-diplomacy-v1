@@ -8,7 +8,7 @@ import { glyphs } from "../presentation/glyphs";
 import { selectAllAvailableUnits, toggleUnitSelection } from "../state/gameSlice";
 import { orderOf, type PlanningSession } from "../state/planning";
 import { replenishDetail } from "../presentation/recruitment";
-import { territoryName } from "../presentation/text";
+import { territoryName, unitName } from "../presentation/text";
 import { ArmyLine } from "./ArmyLine";
 import { GeneralControls } from "./pane/AirPane";
 import { DisbandPlanned } from "./pane/DisbandControls";
@@ -59,7 +59,7 @@ export function ArmyPicker({ own, scenario, session }: ArmyPickerProps): JSX.Ele
                 type="button"
               >
                 <span aria-hidden="true" className="formation-check" />
-                <span className="formation-name">{definition.name}</span>
+                <span className="formation-name">{unitName(scenario, unit.id)}</span>
                 <span className="formation-meta">
                   {`${requireUnitType(scenario, definition.type).name} ${glyphs.dot} ${order}`}
                 </span>

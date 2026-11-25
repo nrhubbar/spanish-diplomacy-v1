@@ -2,9 +2,6 @@ import type { FactionId, AirMission, AirMissionOrder, GameState, SackOrder, Scen
 import { isContested } from "../partition/holders";
 import { generalOf, heldWholeByAnother, isAirbaseFor, territoriesWithin, unitTypeIn } from "./pieces";
 
-/** M9: shown when the scenario's air module is off. */
-const noAirReason = "This order is not available in this scenario.";
-
 /** U2-U4: the territory a mission flies to. */
 export function missionTerritory(scenario: Scenario, mission: AirMission): TerritoryId | undefined {
   return mission.kind === "raid" ? scenario.index.subTerritories.get(mission.subTerritoryId)?.territoryId : mission.territoryId;
@@ -16,22 +13,22 @@ export function missionTerritory(scenario: Scenario, mission: AirMission): Terri
  * recon looks at a territory another faction holds some of. Weather is checked when it flies.
  */
 export function validateAirMission(scenario: Scenario, state: GameState, order: AirMissionOrder): ValidationResult {
-  if (scenario.air === undefined || scenario.rules.air === "none") return { ok: false, reason: noAirReason };
+  if (scenario.air === undefined || scenario.rules.air === "none") return { ok: false, refusal: { code: "order-unavailable" } };
   const unit = state.units[order.unitId];
-  if (unit === undefined) return { ok: false, reason: "Unknown unit." };
-  if (unit.factionId !== order.factionId) return { ok: false, reason: "Selected unit belongs to another player." };
+  if (unit === undefined) return { ok: false, refusal: { code: "unknown-unit" } };
+  if (unit.factionId !== order.factionId) return { ok: false, refusal: { code: "unit-of-another-faction" } };
   const type = unitTypeIn(scenario, state.raised, unit.id);
-  if (type?.air === undefined || !type.orders.includes("air-mission")) return { ok: false, reason: "Only aircraft fly missions." };
-  if (!type.air.missions.includes(order.mission.kind)) return { ok: false, reason: `A ${type.name} cannot fly that mission.` };
-  if (!isAirbaseFor(scenario, state, unit.territoryId, unit.factionId)) return { ok: false, reason: "The aircraft has no airfield to fly from." };
+  if (type?.air === undefined || !type.orders.includes("air-mission")) return { ok: false, refusal: { code: "mission-needs-aircraft" } };
+  if (!type.air.missions.includes(order.mission.kind)) return { ok: false, refusal: { code: "mission-not-flown", unitTypeId: type.id } };
+  if (!isAirbaseFor(scenario, state, unit.territoryId, unit.factionId)) return { ok: false, refusal: { code: "no-airfield" } };
   const target = missionTerritory(scenario, order.mission);
-  if (target === undefined) return { ok: false, reason: "Unknown target." };
-  if (!territoriesWithin(scenario, unit.territoryId, type.air.range).has(target)) return { ok: false, reason: "The target is out of range." };
+  if (target === undefined) return { ok: false, refusal: { code: "unknown-target" } };
+  if (!territoriesWithin(scenario, unit.territoryId, type.air.range).has(target)) return { ok: false, refusal: { code: "target-out-of-range" } };
   if (order.mission.kind === "raid" && state.subTerritories[order.mission.subTerritoryId]?.holder === unit.factionId) {
-    return { ok: false, reason: "Raids target ground another faction holds." };
+    return { ok: false, refusal: { code: "raid-own-ground" } };
   }
   if (order.mission.kind === "recon" && !othersHoldIn(scenario, state, target, unit.factionId)) {
-    return { ok: false, reason: "Recon looks at ground another faction holds." };
+    return { ok: false, refusal: { code: "recon-own-ground" } };
   }
   return { ok: true };
 }
@@ -44,11 +41,11 @@ function othersHoldIn(scenario: Scenario, state: GameState, territoryId: Territo
 /** U5: Sack is a free order for one of the faction's own generals. */
 export function validateSack(scenario: Scenario, state: GameState, order: SackOrder): ValidationResult {
   const unit = state.units[order.unitId];
-  if (unit === undefined) return { ok: false, reason: "Unknown unit." };
-  if (unit.factionId !== order.factionId) return { ok: false, reason: "Selected unit belongs to another player." };
+  if (unit === undefined) return { ok: false, refusal: { code: "unknown-unit" } };
+  if (unit.factionId !== order.factionId) return { ok: false, refusal: { code: "unit-of-another-faction" } };
   const type = unitTypeIn(scenario, state.raised, unit.id);
   if (type === undefined || !type.orders.includes("sack") || generalOf(scenario, state.raised, unit.id) === undefined) {
-    return { ok: false, reason: "Only a general can be sacked." };
+    return { ok: false, refusal: { code: "sack-needs-general" } };
   }
   return { ok: true };
 }

@@ -10,14 +10,14 @@ import type { GameState, UnitTypeId } from "../main/engine/types";
 import { RegistryContext } from "../main/hooks";
 import { paths } from "../main/state/routing";
 import { emptyDraft } from "../main/state/session";
-import { faction, spain, spainId, clickTerritoryIn, territory, testRegistry, testStore } from "./support";
+import { faction, spain, spainId, clickTerritoryIn, territory, testRegistry, testStore, testGame } from "./support";
 
 afterEach(cleanup);
 
 const republic = faction("republic");
 
 function renderPlanning(state: GameState) {
-  const game = { assignments: { [republic]: "local-human" as const }, history: [], locked: {}, scenarioId: spainId, seed: 1, state };
+  const game = { assignments: { [republic]: "local-human" as const }, history: [], ready: [], scenarioId: spainId, gameId: testGame, state };
   const store = testStore({ game: { session: { draft: emptyDraft, factionId: republic, game, phase: "planning" } } });
   const user = userEvent.setup();
   render(

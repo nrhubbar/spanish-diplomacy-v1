@@ -1,11 +1,12 @@
-import type { FactionId, SubTerritoryId, TerritoryId, UnitId } from "../../ids";
+import type { FactionId, TerritoryId, UnitId } from "../../ids";
 import type { MoveLeg, MoveOrder, Order } from "../orders";
+import type { RailShortage, Refusal } from "../refusals";
 
 /** Move outcomes (M1-M11, M19-M21) and order outcomes, owned by the movement and reveal phases. */
 
 export type ValidationResult =
   | { readonly ok: true }
-  | { readonly ok: false; readonly reason: string };
+  | { readonly ok: false; readonly refusal: Refusal };
 
 /** Why a move failed to enter its destination. */
 export type BounceCause =
@@ -42,7 +43,7 @@ export interface InvalidOrderOutcome {
   /** The men of the disbanded army. */
   readonly men: number;
   readonly order: MoveOrder;
-  readonly reason: string;
+  readonly refusal: Refusal;
 }
 
 /**
@@ -52,7 +53,7 @@ export interface InvalidOrderOutcome {
 export interface RejectedOrderOutcome {
   readonly kind: "rejected-order";
   readonly order: Exclude<Order, MoveOrder>;
-  readonly reason: string;
+  readonly refusal: Refusal;
 }
 
 export interface NoMoveOutcome {
@@ -65,15 +66,6 @@ export interface NoMoveOutcome {
 export interface ReinforcementArrivedOutcome {
   readonly kind: "reinforcement-arrived";
   readonly order: MoveOrder;
-}
-
-/** D5: a boarding capital whose trains have too few places left for an army. */
-export interface RailShortage {
-  readonly boarding: SubTerritoryId;
-  /** Places left, fewer than the army needs. */
-  readonly left: number;
-  /** Places the army needs. */
-  readonly places: number;
 }
 
 /** M1, M3, M5, D27.1: why an army's move could not go this turn. */

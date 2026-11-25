@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { missionTerritory } from "../../main/engine/air/validation";
 import { initialGameState } from "../../main/engine/resolution";
 import type { AirMission, GameState, RaisedUnitDefinition, Scenario, SubTerritoryId, UnitTypeId } from "../../main/engine/types";
 import {
@@ -8,7 +9,6 @@ import {
   isAircraft,
   isSackPlanned,
   keepAirOrders,
-  missionTerritoryId,
   type PlanningSession,
   plannedMission,
   raidPreview,
@@ -17,7 +17,7 @@ import {
   toggleSack
 } from "../../main/state/planning";
 import { emptyDraft } from "../../main/state/session";
-import { faction, move, spainId, spainWithAir, territory, unit } from "../support";
+import { faction, move, spainId, spainWithAir, territory, unit, testGame, told } from "../support";
 
 const sub = (id: string): SubTerritoryId => id as SubTerritoryId;
 
@@ -25,14 +25,14 @@ function planning(state: GameState, factionId = "republic"): PlanningSession {
   return {
     draft: emptyDraft,
     factionId: faction(factionId),
-    game: { assignments: {}, history: [], locked: {}, scenarioId: spainId, seed: 1, state },
+    game: { assignments: {}, history: [], ready: [], scenarioId: spainId, gameId: testGame, state },
     phase: "planning"
   };
 }
 
 /** Adds a unit raised in play, as `GameState.raised` carries it. */
 function withRaised(state: GameState, id: string, factionId: string, type: string, territoryId: string): GameState {
-  const definition: RaisedUnitDefinition = { factionId: faction(factionId), fullStrength: 300, id: unit(id), name: id, type: type as UnitTypeId };
+  const definition: RaisedUnitDefinition = { factionId: faction(factionId), fullStrength: 300, id: unit(id), type: type as UnitTypeId };
   return {
     ...state,
     raised: { ...state.raised, [id]: definition },
@@ -87,7 +87,7 @@ describe("air orders in the planning draft (U2, U5)", () => {
     expect(replaced.draft.airOrders).toHaveLength(1);
     expect(plannedMission(replaced.draft, unit("rep-breguet-bombers"))?.mission).toEqual(valladolid);
     const refused = setAirMission(scenario, replaced, unit("rep-breguet-bombers"), { kind: "raid", subTerritoryId: sub("madrid") });
-    expect(refused.draft.feedback).toMatch(/another faction holds/u);
+    expect(told(scenario, refused.draft.feedback)).toMatch(/another faction holds/u);
     expect(plannedMission(refused.draft, unit("rep-breguet-bombers"))?.mission).toEqual(valladolid);
     const down = setAirMission(scenario, replaced, unit("rep-breguet-bombers"), undefined);
     expect(down.draft.airOrders).toEqual([]);
@@ -105,7 +105,7 @@ describe("air orders in the planning draft (U2, U5)", () => {
     expect(isSackPlanned(withdrawn.draft, unit("rep-general-miaja"))).toBe(false);
     expect(withdrawn.draft.airOrders).toEqual([]);
     const refused = toggleSack(scenario, session, unit("rep-wad-ras-1"));
-    expect(refused.draft.feedback).toBe("Only a general can be sacked.");
+    expect(told(scenario, refused.draft.feedback)).toBe("Only a general can be sacked.");
     expect(refused.draft.airOrders).toBeUndefined();
   });
 
@@ -125,9 +125,9 @@ describe("air orders in the planning draft (U2, U5)", () => {
   });
 
   it("names the territory a mission flies to", () => {
-    expect(missionTerritoryId(scenario, raidBurgos)).toBe("castilla-y-leon");
-    expect(missionTerritoryId(scenario, { kind: "raid", subTerritoryId: sub("atlantis") })).toBeUndefined();
-    expect(missionTerritoryId(scenario, { kind: "recon", territoryId: territory("aragon") })).toBe("aragon");
+    expect(missionTerritory(scenario, raidBurgos)).toBe("castilla-y-leon");
+    expect(missionTerritory(scenario, { kind: "raid", subTerritoryId: sub("atlantis") })).toBeUndefined();
+    expect(missionTerritory(scenario, { kind: "recon", territoryId: territory("aragon") })).toBe("aragon");
   });
 });
 

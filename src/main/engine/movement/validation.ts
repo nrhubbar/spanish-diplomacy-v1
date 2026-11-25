@@ -1,5 +1,5 @@
 import { unitTypeIn } from "../air/pieces";
-import { type OrderValidationContext, unavailableOrderReason } from "../hooks";
+import type { OrderValidationContext } from "../hooks";
 import { isNeighbor } from "../lookup";
 import type { MoveOrder, ValidationResult } from "../types";
 import { validateRoute } from "./routes";
@@ -11,20 +11,17 @@ import { validateRoute } from "./routes";
  * demoralized rule. A module's `orderVerdict` (C1) is applied afterwards by the engine.
  */
 
-/** M23 (C6): why a demoralized army may not enter where another faction stands. */
-export const demoralizedAttackReason = "A demoralized unit cannot attack. It can move only into empty or friendly territory.";
-
 type MoveContext = OrderValidationContext<"move">;
 
 /** M1, M9: the unit exists, is the faction's, stands at the origin, may move, and goes somewhere else. */
 function moveBasics({ order, scenario, state }: MoveContext): ValidationResult {
   const unit = state.units[order.unitId];
-  if (unit === undefined) return { ok: false, reason: "Unknown unit." };
-  if (unit.factionId !== order.factionId) return { ok: false, reason: "Selected unit belongs to another player." };
-  if (unit.territoryId !== order.from) return { ok: false, reason: "Selected unit is no longer in that territory." };
+  if (unit === undefined) return { ok: false, refusal: { code: "unknown-unit" } };
+  if (unit.factionId !== order.factionId) return { ok: false, refusal: { code: "unit-of-another-faction" } };
+  if (unit.territoryId !== order.from) return { ok: false, refusal: { code: "unit-elsewhere" } };
   // W5: a unit takes only the order kinds its type allows (aircraft fly missions, they do not march).
-  if (!(unitTypeIn(scenario, state.raised, unit.id)?.orders.includes("move") ?? true)) return { ok: false, reason: "This unit cannot move." };
-  if (order.from === order.to) return { ok: false, reason: "Choose a different territory as the destination." };
+  if (!(unitTypeIn(scenario, state.raised, unit.id)?.orders.includes("move") ?? true)) return { ok: false, refusal: { code: "unit-cannot-move" } };
+  if (order.from === order.to) return { ok: false, refusal: { code: "same-destination" } };
   return { ok: true };
 }
 
@@ -33,7 +30,7 @@ function demoralizedRule({ order, state }: MoveContext): ValidationResult {
   const unit = state.units[order.unitId];
   const blocked = unit?.morale.demoralized === true
     && Object.values(state.units).some((other) => other.territoryId === order.to && other.factionId !== unit.factionId);
-  return blocked ? { ok: false, reason: demoralizedAttackReason } : { ok: true };
+  return blocked ? { ok: false, refusal: { code: "demoralized-attack" } } : { ok: true };
 }
 
 function withLegRule(legs: (context: MoveContext) => ValidationResult): (context: MoveContext) => ValidationResult {
@@ -48,9 +45,9 @@ function withLegRule(legs: (context: MoveContext) => ValidationResult): (context
 
 /** M2: one step along a connection under `single-step`; rail and multi-leg routes are not part of it. */
 export const validateSingleStepMove = withLegRule(({ order, scenario }: MoveContext): ValidationResult => {
-  if (!isNeighbor(scenario, order.from, order.to)) return { ok: false, reason: "Destination is not connected to the unit's territory." };
+  if (!isNeighbor(scenario, order.from, order.to)) return { ok: false, refusal: { code: "not-connected" } };
   if (order.legs !== undefined && !(order.legs.length === 1 && order.legs[0]?.kind !== "rail" && order.legs[0]?.to === order.to)) {
-    return { ok: false, reason: unavailableOrderReason };
+    return { ok: false, refusal: { code: "order-unavailable" } };
   }
   return { ok: true };
 });
@@ -58,5 +55,5 @@ export const validateSingleStepMove = withLegRule(({ order, scenario }: MoveCont
 /** M1-M5: multi-leg routes (rail, sea, marches) under `allowance`. */
 export const validateAllowanceMove = withLegRule(({ order, scenario, state }: MoveContext): ValidationResult => {
   const route = validateRoute(scenario, state, order satisfies MoveOrder);
-  return route.ok ? { ok: true } : { ok: false, reason: route.reason };
+  return route.ok ? { ok: true } : { ok: false, refusal: route.refusal };
 });

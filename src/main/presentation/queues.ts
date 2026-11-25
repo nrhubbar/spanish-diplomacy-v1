@@ -1,6 +1,7 @@
 import { currentLevel, isCapital, projectCost, sameProject } from "../engine/economy/catalogue";
 import { isContested, subTerritoriesOf } from "../engine/economy/holdings";
 import { addResources } from "../engine/resources";
+import { recruitSlots } from "../engine/recruitment/rules";
 import type {
   BuildOrder,
   BuildProject,
@@ -153,6 +154,11 @@ export interface RecruitmentGroup {
   /** Some unit here is paused: the territory is contested. */
   readonly paused: boolean;
   readonly territoryId: TerritoryId;
+}
+
+/** How many Recruit orders a territory takes in a turn, as Global Recruitment says it. */
+export function recruitSlotsText(scenario: Scenario, state: GameState, territoryId: TerritoryId): string {
+  return `${countOf(recruitSlots(scenario, state, territoryId), "Recruit order", "Recruit orders")} a turn`;
 }
 
 /** U9: Global Recruitment, by territory in scenario order: the viewer's units in training and this turn's Recruit orders. */

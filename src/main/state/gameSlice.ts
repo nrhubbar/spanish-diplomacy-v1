@@ -1,8 +1,8 @@
 import { createAction, createReducer } from "@reduxjs/toolkit";
-import { initialGameState } from "../engine/resolution";
 import type { ActorKind, AirMission, AirMissionKind, BuildOrder, FactionId, Scenario, ScenarioId, SubTerritoryId, TerritoryId, UnitId, UnitTypeId } from "../engine/types";
+import type { GameRefusal, PlayerView } from "../game/types";
+import { refusedFeedback } from "../presentation/feedback";
 import type { ScenarioRegistry } from "../scenarios/registry";
-import { advance, nextTurn } from "./coordinator";
 import {
   cancelBuild,
   cancelIdleSupport,
@@ -29,20 +29,19 @@ import {
   type PlanningSession,
   unfocus
 } from "./planning";
-import { type Assignments, emptyDraft, type OrderKind, type Session } from "./session";
-import { submitDraft } from "./submit";
-import { submitOnTimeout, timeRanOut } from "./timeout";
+import type { Assignments, OrderKind, Session } from "./session";
+import { sessionFromView } from "./sessionView";
 
 export interface GameState {
+  /** The turn whose report the player has read and moved on from. */
+  readonly readTurn?: number;
   readonly session: Session;
+  /** The last view the game's host sent; the session is drawn from it. Absent outside a game. */
+  readonly view?: PlayerView;
 }
 
 export interface GameReducerDependencies {
   readonly registry: Pick<ScenarioRegistry, "list" | "require">;
-}
-
-function randomSeed(): number {
-  return Math.floor(Math.random() * 0x100000000);
 }
 
 export const openSetup = createAction("game/openSetup");
@@ -50,8 +49,12 @@ export const chooseScenario = createAction<ScenarioId>("game/chooseScenario");
 export const setActorKind = createAction<{ readonly factionId: FactionId; readonly kind: ActorKind }>("game/setActorKind");
 export const returnHome = createAction("game/returnHome");
 export const exitGame = createAction("game/exitGame");
-/** The seed is created here, outside the reducer, so reducers stay pure and games replay. */
-export const startGame = createAction("game/startGame", (seed?: number) => ({ payload: { seed: seed ?? randomSeed() } }));
+/** Asks the host for a game, on the player's own seed when they gave one (`clientMiddleware`). */
+export const startGame = createAction("game/startGame", (seed?: string) => ({ payload: seed === undefined ? {} : { seed } }));
+/** A view from the game's host. */
+export const viewReceived = createAction<PlayerView>("game/viewReceived");
+/** The host refused a command, and why. */
+export const commandRefused = createAction<{ readonly refusal: GameRefusal; readonly turnNumber?: number }>("game/commandRefused");
 export const beginPlanning = createAction("game/beginPlanning");
 export const clickMapTerritory = createAction<TerritoryId>("game/clickMapTerritory");
 export const clickMapUnit = createAction<UnitId>("game/clickMapUnit");
@@ -106,6 +109,10 @@ export function createGameReducer(dependencies: GameReducerDependencies) {
     return after.phase === "planning" ? cancelIdleSupport(scenario, session, after) : after;
   };
   const set = (session: Session): GameState => ({ session });
+  const planned = (state: GameState, transition: (scenario: Scenario, planning: PlanningSession) => Session): GameState => {
+    const session = inPlanning(state.session, transition);
+    return session === state.session ? state : { ...state, session };
+  };
   const initialState: GameState = { session: { phase: "idle" } };
 
   return createReducer<GameState>(initialState, (builder) => {
@@ -125,7 +132,7 @@ export function createGameReducer(dependencies: GameReducerDependencies) {
       })
       .addCase(returnHome, () => set({ phase: "idle" }))
       .addCase(exitGame, () => set({ phase: "idle" }))
-      .addCase(startGame, (state, { payload }) => {
+      .addCase(startGame, (state) => {
         const session = state.session;
         if (session.phase !== "setup") return state;
         const scenario = scenarioOf(session.scenarioId);
@@ -134,72 +141,66 @@ export function createGameReducer(dependencies: GameReducerDependencies) {
           return kind !== "local-human" && kind !== "computer";
         });
         if (unsupported !== undefined) {
-          return set({ ...session, feedback: `Choose a local or computer player for ${unsupported.name}. Online play is coming later.` });
+          return set({ ...session, feedback: { code: "player-needed", factionId: unsupported.id } });
         }
-        return set(advance(scenario, {
-          assignments: session.assignments,
-          history: [],
-          locked: {},
-          scenarioId: scenario.id,
-          seed: payload.seed,
-          state: initialGameState(scenario)
-        }));
-      })
-      .addCase(beginPlanning, (state) => {
-        const session = state.session;
-        return session.phase === "handoff"
-          ? set({ draft: emptyDraft, factionId: session.factionId, game: session.game, phase: "planning" })
-          : state;
+        return { ...state, session: { assignments: session.assignments, phase: "setup", scenarioId: session.scenarioId } };
       })
       .addCase(clickMapTerritory, (state, { payload }) =>
-        set(inPlanning(state.session, (scenario, planning) => clickTerritory(scenario, planning, payload))))
+        planned(state, (scenario, planning) => clickTerritory(scenario, planning, payload)))
       .addCase(clickMapUnit, (state, { payload }) =>
-        set(inPlanning(state.session, (scenario, planning) => clickUnit(scenario, planning, payload))))
+        planned(state, (scenario, planning) => clickUnit(scenario, planning, payload)))
       .addCase(toggleUnitSelection, (state, { payload }) =>
-        set(inPlanning(state.session, (_scenario, planning) => toggleUnit(planning, payload))))
+        planned(state, (_scenario, planning) => toggleUnit(planning, payload)))
       .addCase(selectAllAvailableUnits, (state) =>
-        set(inPlanning(state.session, (scenario, planning) => selectAllAvailable(planning, scenario))))
+        planned(state, (scenario, planning) => selectAllAvailable(planning, scenario)))
       .addCase(clearUnitSelection, (state) =>
-        set(inPlanning(state.session, (_scenario, planning) => clearSelection(planning))))
+        planned(state, (_scenario, planning) => clearSelection(planning)))
       .addCase(focusSubTerritory, (state, { payload }) =>
-        set(inPlanning(state.session, (scenario, planning) => (payload === undefined ? unfocus(planning) : focusOn(scenario, planning, payload)))))
+        planned(state, (scenario, planning) => (payload === undefined ? unfocus(planning) : focusOn(scenario, planning, payload))))
       .addCase(queueBuildOrder, (state, { payload }) =>
-        set(inPlanning(state.session, (scenario, planning) => planBuild(scenario, planning, payload))))
+        planned(state, (scenario, planning) => planBuild(scenario, planning, payload)))
       .addCase(cancelBuildOrder, (state, { payload }) =>
-        set(inPlanning(state.session, (scenario, planning) => cancelBuild(scenario, planning, payload))))
+        planned(state, (scenario, planning) => cancelBuild(scenario, planning, payload)))
       .addCase(chooseOrderKind, (state, { payload }) =>
-        set(inPlanning(state.session, (scenario, planning) => chooseOrder(scenario, planning, payload))))
+        planned(state, (scenario, planning) => chooseOrder(scenario, planning, payload)))
       .addCase(cancelOrderStage, (state) =>
-        set(inPlanning(state.session, (_scenario, planning) => cancelOrder(planning))))
+        planned(state, (_scenario, planning) => cancelOrder(planning)))
       .addCase(orderFromMuster, (state, { payload }) =>
-        set(inPlanning(state.session, (scenario, planning) => orderMuster(scenario, planning, payload))))
+        planned(state, (scenario, planning) => orderMuster(scenario, planning, payload)))
       .addCase(disbandUnit, (state, { payload }) =>
-        set(inPlanning(state.session, (scenario, planning) => planDisband(scenario, planning, [payload]))))
+        planned(state, (scenario, planning) => planDisband(scenario, planning, [payload])))
       .addCase(removePlannedOrder, (state, { payload }) =>
-        set(inPlanning(state.session, (_scenario, planning) => removeOrder(planning, payload))))
+        planned(state, (_scenario, planning) => removeOrder(planning, payload)))
       .addCase(planAirMission, (state, { payload }) =>
-        set(inPlanning(state.session, (scenario, planning) => setAirMission(scenario, planning, payload.unitId, payload.mission))))
+        planned(state, (scenario, planning) => setAirMission(scenario, planning, payload.unitId, payload.mission)))
       .addCase(chooseAirMission, (state, { payload }) =>
-        set(inPlanning(state.session, (scenario, planning) => chooseMission(scenario, planning, payload.unitId, payload.mission))))
+        planned(state, (scenario, planning) => chooseMission(scenario, planning, payload.unitId, payload.mission)))
       .addCase(chooseRaidSite, (state, { payload }) =>
-        set(inPlanning(state.session, (scenario, planning) => chooseTargetSite(scenario, planning, payload))))
+        planned(state, (scenario, planning) => chooseTargetSite(scenario, planning, payload)))
       .addCase(closeAircraftPane, (state) =>
-        set(inPlanning(state.session, (_scenario, planning) => closeAircraft(planning))))
+        planned(state, (_scenario, planning) => closeAircraft(planning)))
       .addCase(toggleSackOrder, (state, { payload }) =>
-        set(inPlanning(state.session, (scenario, planning) => toggleSack(scenario, planning, payload))))
+        planned(state, (scenario, planning) => toggleSack(scenario, planning, payload)))
       .addCase(changeRecruitQuantity, (state, { payload }) =>
-        set(inPlanning(state.session, (scenario, planning) => setRecruitQuantity(scenario, planning, payload.territoryId, payload.unitTypeId, payload.quantity))))
+        planned(state, (scenario, planning) => setRecruitQuantity(scenario, planning, payload.territoryId, payload.unitTypeId, payload.quantity)))
       .addCase(cancelRecruitOrder, (state, { payload }) =>
-        set(inPlanning(state.session, (_scenario, planning) => takeBackRecruit(planning, payload.territoryId, payload.at))))
-      .addCase(endTurn, (state) =>
-        set(inPlanning(state.session, (scenario, planning) => submitDraft(scenario, planning))))
-      .addCase(timeRanOut, (state) =>
-        set(inPlanning(state.session, (scenario, planning) => submitOnTimeout(scenario, planning))))
+        planned(state, (_scenario, planning) => takeBackRecruit(planning, payload.territoryId, payload.at)))
       .addCase(startNextTurn, (state) => {
-        const session = state.session;
-        return session.phase === "resolution"
-          ? set(nextTurn(scenarioOf(session.game.scenarioId), session.game, session.result.outcomes))
-          : state;
-      });
+        const { session, view } = state;
+        if (session.phase !== "resolution" || view === undefined) return state;
+        const read: GameState = { ...state, readTurn: session.result.turnNumber };
+        return { ...read, session: sessionFromView(read, view) };
+      })
+      .addCase(viewReceived, (state, { payload: view }) => {
+        // The player left while the host was answering.
+        if (state.session.phase === "idle") return state;
+        const same = state.view?.gameId === view.gameId;
+        // Answers can overtake each other; an older one never undoes a newer.
+        if (same && (state.view?.version ?? 0) > view.version) return state;
+        const next: GameState = { session: state.session, view, ...(same && state.readTurn !== undefined ? { readTurn: state.readTurn } : {}) };
+        return { ...next, session: sessionFromView(next, view) };
+      })
+      .addCase(commandRefused, (state, { payload: { refusal, turnNumber } }) => planned(state, (_scenario, planning) =>
+        (refusal.code === "bad-orders" && (turnNumber ?? planning.game.state.turnNumber) === planning.game.state.turnNumber ? { ...planning, draft: { ...planning.draft, feedback: refusedFeedback(refusal.refusal) } } : planning)));
   });
 }

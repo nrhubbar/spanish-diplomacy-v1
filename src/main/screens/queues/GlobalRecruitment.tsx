@@ -1,7 +1,6 @@
 import type { JSX } from "react";
 import { amountText } from "../../presentation/economy";
-import { countOf, recruitmentGroups, recruitmentSummary } from "../../presentation/queues";
-import { recruitSlots } from "../../engine/recruitment/rules";
+import { recruitmentGroups, recruitmentSummary, recruitSlotsText } from "../../presentation/queues";
 import { useAppDispatch } from "../../hooks";
 import { pushView } from "../../state/paneSlice";
 import type { PaneViewProps } from "../shell/views/types";
@@ -31,12 +30,11 @@ export function GlobalRecruitment({ scenario, session }: Omit<PaneViewProps, "vi
       {groups.length === 0 ? <p className="pane-hint">Nothing is training. Recruit from a territory's Recruit tab.</p> : (
         <ul className="queue-groups">
           {groups.map((group) => {
-            const slots = recruitSlots(scenario, game.state, group.territoryId);
             return (
               <li className="queue-group" data-paused={group.paused} key={group.territoryId}>
                 <header className="queue-group-head">
                   <button className="queue-group-name" onClick={() => dispatch(pushView({ kind: "recruit", territory: group.territoryId }))} type="button">{group.name}</button>
-                  {group.paused ? <PausedChip /> : <span className="pane-hint">{`${countOf(slots, "Recruit order", "Recruit orders")} a turn`}</span>}
+                  {group.paused ? <PausedChip /> : <span className="pane-hint">{recruitSlotsText(scenario, game.state, group.territoryId)}</span>}
                 </header>
                 <TrainingList entries={group.entries} label={`${group.name} training`} paused={group.paused} scenario={scenario} />
                 {group.paused ? <p className="queue-paused-note">{`Training pauses while ${group.name} is contested; progress is kept.`}</p> : null}

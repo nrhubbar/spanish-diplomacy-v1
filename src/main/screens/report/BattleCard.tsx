@@ -2,7 +2,7 @@ import { Fragment, type JSX, useEffect, useRef } from "react";
 import type { GameState, Scenario } from "../../engine/types";
 import { type BattleGroup, type BattleKind, decisiveBattle } from "../../presentation/battle";
 import { cardFlavor, flavorSeed, occupationLine, placeName } from "../../presentation/battleText";
-import { emblemMarkup } from "../../presentation/outcomeArt";
+import { emblemMarkup } from "../../assets/outcomes/outcomeArt";
 import { battleTitle, resultKeyOf } from "../../presentation/grades";
 import { BattleAir } from "./BattleAir";
 import { BattleEngagement } from "./BattleEngagement";

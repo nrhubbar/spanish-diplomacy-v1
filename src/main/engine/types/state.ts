@@ -102,8 +102,12 @@ export interface TrainingItem {
   readonly unitId: UnitId;
 }
 
-/** R6: a unit raised in play has no scenario definition, so the state carries it. */
-export type RaisedUnitDefinition = Pick<UnitDefinition, "factionId" | "fullStrength" | "generalId" | "id" | "name" | "type">;
+/**
+ * R6: a unit raised in play has no scenario definition, so the state carries it, with what its
+ * name is made from: a recruited unit's number among its side's units of the type (none while it
+ * trains, m7), or the general a replacement is (D7). `presentation/text.ts` writes the name.
+ */
+export type RaisedUnitDefinition = Pick<UnitDefinition, "factionId" | "fullStrength" | "generalId" | "id" | "type"> & { readonly serial?: number };
 
 /** T2: this turn's weather. The forecast (T3) is derived from next turn's season tables. */
 export interface WeatherState {

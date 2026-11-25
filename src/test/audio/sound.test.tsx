@@ -5,7 +5,7 @@ import { MemoryRouter } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { App } from "../../main/app";
 import type { SoundOutput } from "../../main/audio/director";
-import { storageKey } from "../../main/audio/levels";
+import { storageKey } from "../../main/state/soundLevels";
 import { startSound } from "../../main/audio/start";
 import { storedSound } from "../../main/audio/stored";
 import { GameMenu } from "../../main/components/header/GameMenu";
@@ -24,7 +24,7 @@ import { faction, testRegistry, testStore } from "../support";
 function sound(connection?: ConnectionHint, stored: Record<string, string> = {}, betweenMs = 5000) {
   const output = { duckMusic: vi.fn(), play: vi.fn<SoundOutput["play"]>(() => true), setEffectsGain: vi.fn(), setMusic: vi.fn(), stop: vi.fn(), unlock: vi.fn() } satisfies SoundOutput;
   const storage = () => ({ getItem: (key: string) => stored[key] ?? null, setItem: (key: string, value: string) => { stored[key] = value; } });
-  const store = createAppStore({ preloadedState: { audio: storedSound(storage, connection) }, registry: testRegistry() });
+  const store = testStore({ audio: storedSound(storage, connection) });
   let now = 0;
   const stop = startSound({
     document,
@@ -42,7 +42,7 @@ function sound(connection?: ConnectionHint, stored: Record<string, string> = {},
 function campaign(store: AppStore, humans: readonly string[] = ["republic"]): void {
   store.dispatch(openSetup());
   for (const id of ["republic", "north", "south"]) store.dispatch(setActorKind({ factionId: faction(id), kind: humans.includes(id) ? "local-human" : "computer" }));
-  store.dispatch(startGame(7));
+  store.dispatch(startGame("7"));
   store.dispatch(beginPlanning());
 }
 

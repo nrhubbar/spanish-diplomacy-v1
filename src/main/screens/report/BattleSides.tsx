@@ -3,7 +3,7 @@ import { requireFaction } from "../../engine/lookup";
 import type { BattleOutcome, BattleSide, Scenario, TerritoryId } from "../../engine/types";
 import { sideFactions } from "../../presentation/battle";
 import { glyphs } from "../../presentation/glyphs";
-import { cssVariables } from "../../presentation/style";
+import { cssVariables } from "../../components/style";
 import { factionName, listNames, territoryName, unitName } from "../../presentation/text";
 
 /** Both sides of one battle: factions, each army with its value, and the side totals. */

@@ -14,7 +14,7 @@ import { quickActionView } from "../../main/screens/actions/useMapActions";
 import type { PlanningSession } from "../../main/state/planning";
 import { openView } from "../../main/state/paneSlice";
 import type { Draft, Session } from "../../main/state/session";
-import { faction, spain, spainWithAir, spainId, territory, testRegistry, testStore, unit, withUnits } from "../support";
+import { faction, spain, spainWithAir, spainId, territory, testRegistry, testStore, unit, withUnits, testGame, told } from "../support";
 
 afterEach(() => {
   cleanup();
@@ -28,9 +28,7 @@ function planningStore(state: GameState = initialGameState(scenario), draft: Dra
   const game = {
     assignments: { [faction("north")]: "computer" as const, [republic]: "local-human" as const, [faction("south")]: "computer" as const },
     history: [],
-    locked: {},
-    scenarioId: spainId,
-    seed: 1,
+    ready: [], scenarioId: spainId, gameId: testGame,
     state: { ...state, turnNumber: 2 }
   };
   const session: Session = { draft, factionId: republic, game, phase: "planning" };
@@ -222,7 +220,7 @@ describe("U6: the Invade pane", () => {
     expect(screen.getByRole("complementary", { name: "This turn" })).toBeVisible();
     const draft = draftOf(store);
     expect(draft.orders).toEqual([expect.objectContaining({ legs: expect.any(Array), to: "castilla-y-leon", unitId: unit("rep-wad-ras-1") })]);
-    expect(draft.feedback).toMatch(/ordered to invade Castilla y León\.$/);
+    expect(told(scenario, draft.feedback)).toMatch(/ordered to invade Castilla y León\.$/);
   });
 
   it("starts ticked with what is ordered there, says what a tick replaces, and can clear it", async () => {
@@ -273,7 +271,7 @@ describe("U6: the Reinforce pane", () => {
     const [first] = within(reinforce).getAllByRole("checkbox");
     await user.click(first!);
     await user.click(within(reinforce).getByRole("button", { name: /^Order 1 unit to reinforce/ }));
-    expect(draftOf(store).feedback).toBe("1 unit ordered to reinforce Castilla-La Mancha.");
+    expect(told(scenario, draftOf(store).feedback)).toBe("1 unit ordered to reinforce Castilla-La Mancha.");
     act(() => { store.dispatch(openView({ kind: "reinforce", target: territory("madrid") })); });
     expect(within(await screen.findByRole("region", { name: "Reinforce" })).getByRole("status")).toHaveTextContent("Strongest threat");
   });
@@ -344,7 +342,7 @@ describe("U6: Ground Support and the odds box, on the shipped scenario", () => {
   const session = (draft: Partial<Draft> = {}, state: GameState = initialGameState(shipped)): PlanningSession => ({
     draft: { orders: [], selectedUnitIds: [], ...draft },
     factionId: republic,
-    game: { assignments: {}, history: [], locked: {}, scenarioId: spainId, seed: 1, state },
+    game: { assignments: {}, history: [], ready: [], scenarioId: spainId, gameId: testGame, state },
     phase: "planning"
   });
 
@@ -377,7 +375,7 @@ describe("U6: Ground Support and the odds box, on the shipped scenario", () => {
     const start = initialGameState(shipped);
     const guarded: GameState = {
       ...start,
-      raised: { ...start.raised, [unit("aa-1")]: { factionId: faction("north"), fullStrength: 300, id: unit("aa-1"), name: "Battery", type: "anti-air-battery" as never } },
+      raised: { ...start.raised, [unit("aa-1")]: { factionId: faction("north"), fullStrength: 300, id: unit("aa-1"), type: "anti-air-battery" as never } },
       units: { ...start.units, [unit("aa-1")]: { factionId: faction("north"), fatigue: 0, id: unit("aa-1"), morale: { demoralized: false, quietTurns: 0 }, strength: 300, territoryId: territory("castilla-y-leon") } }
     };
     const box = (state: GameState) => (
@@ -403,7 +401,7 @@ describe("U6: Ground Support and the odds box, on the shipped scenario", () => {
     cleanup();
     const guns: GameState = {
       ...held,
-      raised: { ...held.raised, [unit("guns-1")]: { factionId: republic, fullStrength: 300, id: unit("guns-1"), name: "Guns", type: "artillery-group" as never } },
+      raised: { ...held.raised, [unit("guns-1")]: { factionId: republic, fullStrength: 300, id: unit("guns-1"), type: "artillery-group" as never } },
       units: { ...held.units, [unit("guns-1")]: { factionId: republic, fatigue: 0, id: unit("guns-1"), morale: { demoralized: false, quietTurns: 0 }, strength: 300, territoryId: territory("madrid") } }
     };
     render(<Provider store={store}><OddsBox action={null} draft={{ orders: [] }} scenario={shipped} session={session({}, guns)} support={[]} target={territory("castilla-y-leon")} moves={[{ unitId: unit("guns-1") }]} /></Provider>);

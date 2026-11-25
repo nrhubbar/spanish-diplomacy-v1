@@ -4,7 +4,7 @@ import { describeRoute, moveRoutes } from "../main/engine/movement/routes";
 import { initialGameState, resolveTurn } from "../main/engine/resolution";
 import type { GameState, MoveLeg, MoveOrder, SubTerritoryId } from "../main/engine/types";
 import { validateMoveOrder } from "../main/engine/validation";
-import { faction, move, spainWithAir, territory, unit, withUnits } from "./support";
+import { faction, move, said, spainWithAir, territory, unit, withUnits } from "./support";
 
 /**
  * Make-it-right regressions for the map and movement review on shipped Spain: M-1 (rail rides
@@ -87,7 +87,7 @@ describe("each sea lane names its ports (M-10, M5, Q-CITY-7)", () => {
     // Tarragona is a Republican port, but the Balearic lane sails from Barcelona.
     expect(state.subTerritories[sub("tarragona")]?.port).toBeGreaterThan(0);
     const order = routed("republic", "rep-durruti-column", "catalunya", toIslands);
-    expect(validateMoveOrder(scenario, state, order)).toEqual({ ok: false, reason: "An army can sail only from the lane's port, and your side must hold it." });
+    expect(validateMoveOrder(scenario, state, order)).toEqual({ ok: false, refusal: { code: "lane-port-not-held" } });
     expect(moveRoutes(scenario, base, faction("republic"), territory("catalunya"), [unit("rep-durruti-column")]).get(territory("islas-baleares"))?.shape).toBe("sea");
   });
 });
@@ -148,7 +148,7 @@ describe("capacity and route failures (M-8, M3, M5)", () => {
     const from = territory("madrid");
     const check = (legs: readonly MoveLeg[]) => {
       const result = describeRoute(scenario, state, faction("republic"), from, legs);
-      return result.ok ? "ok" : result.reason;
+      return result.ok ? "ok" : said(scenario, result.refusal);
     };
     expect(check([{ kind: "land", to: territory("castilla-la-mancha") }, { kind: "land", to: territory("madrid") }])).toBe("A route may not enter the same territory twice.");
     expect(check([{ kind: "rail", to: territory("galicia") }])).toBe("No rail line your side holds reaches that capital this turn.");
@@ -157,7 +157,7 @@ describe("capacity and route failures (M-8, M3, M5)", () => {
     expect(check([])).toBe("That route is not one of the allowed shapes of move.");
     expect(check([{ kind: "rail", to: territory("catalunya") }, { kind: "land", to: territory("castilla-la-mancha") }])).toBe("A route may not enter the same territory twice.");
     const astray = { ...routed("republic", "rep-wad-ras-1", "madrid", [{ kind: "land", to: territory("castilla-la-mancha") }]), to: territory("aragon") };
-    expect(validateMoveOrder(scenario, state, astray)).toEqual({ ok: false, reason: "The route does not end at the destination." });
+    expect(validateMoveOrder(scenario, state, astray)).toEqual({ ok: false, refusal: { code: "route-ends-elsewhere" } });
   });
 });
 

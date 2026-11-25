@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { attackDistances, flipOrder, groundTaken } from "../main/engine/partition/flips";
 import { applyGround } from "../main/engine/partition/steps";
 import { controlFromHolders, holdersIn, isContested } from "../main/engine/partition/holders";
-import { contestedReasons, partitionRetreatAllowed, validateWithdrawOrder } from "../main/engine/partition/orders";
+import { partitionRetreatAllowed, validateWithdrawOrder } from "../main/engine/partition/orders";
 import { withdrawRoutes } from "../main/engine/partition/paths";
 import { initialGameState, resolveTurn } from "../main/engine/resolution";
 import { settleDepartures } from "../main/engine/retreat";
@@ -140,7 +140,7 @@ describe("contested ground orders (C1) and the path rule (P6)", () => {
     const state = initialGameState(scenario);
     // R1, R5: Malaga's pocket has no land link to Murcia, so the route check refuses before C1 does.
     expect(validateMoveOrder(scenario, state, move("republic", "rep-vitoria-8", "andalucia", "murcia")).ok).toBe(false);
-    expect(validateMoveOrder(scenario, state, move("republic", "rep-asturian-militia", "asturias", "cantabria"))).toEqual({ ok: false, reason: contestedReasons.move });
+    expect(validateMoveOrder(scenario, state, move("republic", "rep-asturian-militia", "asturias", "cantabria"))).toEqual({ ok: false, refusal: { code: "move-in-contested-ground" } });
     expect(validateOrder(scenario, state, withdrawal("republic", "rep-vitoria-8", "andalucia", "murcia"))).toEqual({ ok: true });
     // R1, D5: the Malaga regiment's pocket is Malaga alone; its only way out is the sea lane.
     expect(withdrawRoutes(scenario, state, faction("republic"), territory("andalucia"))).toEqual([{ through: ["malaga"], to: "murcia" }]);
@@ -151,7 +151,7 @@ describe("contested ground orders (C1) and the path rule (P6)", () => {
     const scenario = spain();
     const state = initialGameState(scenario);
     expect(withdrawRoutes(scenario, state, faction("north"), territory("asturias"))).toEqual([]);
-    expect(validateWithdrawOrder(scenario, state, withdrawal("north", "north-milan-32", "asturias", "galicia"))).toEqual({ ok: false, reason: contestedReasons.withdrawNoPath });
+    expect(validateWithdrawOrder(scenario, state, withdrawal("north", "north-milan-32", "asturias", "galicia"))).toEqual({ ok: false, refusal: { code: "withdraw-no-way-out" } });
     expect(partitionRetreatAllowed({ factionId: faction("north"), from: territory("asturias"), scenario, state, to: territory("galicia") })).toBe(false);
     const settled = settleDepartures(scenario, state, state.units, [{ from: territory("asturias"), kind: "retreat", report: { battleIndex: 0 }, unitId: unit("north-milan-32") }]);
     expect(settled.settled[0]?.kind).toBe("surrendered");

@@ -1,10 +1,9 @@
 import type { UnknownAction } from "@reduxjs/toolkit";
 import { type JSX, useCallback, useMemo, useState } from "react";
-import { reachFor } from "../../engine/network/reach";
-import { isMoveOrder, type Scenario, type TerritoryId } from "../../engine/types";
+import type { Scenario, TerritoryId } from "../../engine/types";
 import type { MapView, PointerInput } from "../../map/view";
 import { quickActions, type QuickActionKind, type QuickActionMenu as Menu } from "../../presentation/quickActions";
-import { reachNote, targetNote } from "../../presentation/reachNote";
+import { reachNote, selectionReach, targetNote } from "../../presentation/reachNote";
 import type { MapPoint } from "../../scenarios/loader";
 import { cancelOrderStage } from "../../state/gameSlice";
 import { type PaneView, pushView } from "../../state/paneSlice";
@@ -50,7 +49,7 @@ export function useMapActions(scenario: Scenario, session: PlanningSession, disp
   // Both choices say why a territory is not one to choose (U7, N6).
   const explaining = moving || targeting;
   const reach = useMemo(
-    () => (moving ? reachFor(scenario, game.state, factionId, draft.selectedUnitIds, draft.orders.filter(isMoveOrder)) : undefined),
+    () => (moving ? selectionReach(scenario, game.state, factionId, draft.selectedUnitIds, draft.orders) : undefined),
     [draft.orders, draft.selectedUnitIds, factionId, game.state, moving, scenario]
   );
   const noteFor = useCallback(

@@ -2,7 +2,7 @@ import type { JSX } from "react";
 import { requireFaction } from "../../engine/lookup";
 import type { BattleOutcome, Scenario } from "../../engine/types";
 import { affectedFaction } from "../../presentation/battle";
-import { medallionMarkup } from "../../presentation/outcomeArt";
+import { medallionMarkup } from "../../assets/outcomes/outcomeArt";
 import { battleTitle, resultKeyOf } from "../../presentation/grades";
 import { factionName } from "../../presentation/text";
 import { BattleEffects } from "./BattleEffects";

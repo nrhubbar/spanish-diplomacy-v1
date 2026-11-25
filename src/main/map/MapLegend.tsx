@@ -1,15 +1,15 @@
 import type { JSX } from "react";
 import { battleResults, type GameState, type Scenario } from "../engine/types";
 import { isBattle, resultKeyOf } from "../presentation/grades";
-import { medallionMarkup } from "../presentation/outcomeArt";
+import { medallionMarkup } from "../assets/outcomes/outcomeArt";
+import { kindsOnBoard } from "../presentation/mapLayers";
 import { type OutcomeKey, outcomeKeys } from "../presentation/outcomes";
 import { outcomeText } from "../presentation/outcomeText";
 import type { MapView } from "./view";
 import { WorksBadge } from "./WorksBadge";
-import { unitKindIn } from "../engine/air/pieces";
 import { EconomyIcon } from "../components/economy/EconomyIcon";
 import { glyphs } from "../presentation/glyphs";
-import { SiteIcon } from "../screens/pane/SiteIcons";
+import { SiteIcon } from "../components/SiteIcons";
 import { defaultLayers, type LayerId } from "./layers/layerChoice";
 import { roadKinds } from "./layers/roads";
 
@@ -19,6 +19,7 @@ export function legendEntries(scenario: Scenario, game: GameState, view: MapView
   const routeKinds = new Set(view.outcomes.map((outcome) => outcome.kind));
   const results = new Set(view.outcomes.flatMap((outcome) => (isBattle(outcome) ? [resultKeyOf(scenario, outcome)] : [])));
   const units = Object.values(game.units);
+  const kinds = kindsOnBoard(scenario, game);
   const lines = layers.includes("order-lines");
   const roads = layers.includes("roads") ? roadKinds(scenario) : undefined;
   return [
@@ -38,8 +39,8 @@ export function legendEntries(scenario: Scenario, game: GameState, view: MapView
     ...(roads?.main === true ? ["main-road"] : []),
     ...(roads?.track === true ? ["track"] : []),
     ...(roads?.pass === true ? ["pass"] : []),
-    ...(units.some((unit) => unitKindIn(scenario, game.raised, unit.id) === "air") ? ["aircraft"] : []),
-    ...(units.some((unit) => unitKindIn(scenario, game.raised, unit.id) === "general") ? ["general"] : [])
+    ...(kinds.has("air") ? ["aircraft"] : []),
+    ...(kinds.has("general") ? ["general"] : [])
   ];
 }
 

@@ -38,11 +38,11 @@ describe("report lines carry the outcome's data (m3r1 contract follow-ups)", () 
     expect(line({ kind: "training-started", order: { factionId: republic, kind: "recruit", territoryId: territory("catalunya"), unitTypeId: "militia-column" as UnitTypeId }, paid: amount(2, 3), turnsLeft: 1, unitId: militia }))
       .toBe("Militia column No. 3 began training at Barcelona for 2 Funds and 3k Manpower; ready in 1 turn.");
     expect(line({ factionId: republic, kind: "training-paused", territoryId: territory("catalunya"), unitId: militia })).toContain("while Catalu\u00f1a is contested");
-    expect(line({ factionId: republic, kind: "training-refunded", reason: "The capital fell while the unit was training; its payment is lost.", refund: {}, territoryId: territory("catalunya"), typeId: "militia-column" as UnitTypeId }))
+    expect(line({ factionId: republic, kind: "training-refunded", refusal: { code: "capital-fell-in-training" }, refund: {}, territoryId: territory("catalunya"), typeId: "militia-column" as UnitTypeId }))
       .toBe("A Militia column at Barcelona was not raised. The capital fell while the unit was training; its payment is lost.");
     expect(line({ kind: "replenish-applied", men: 700, order: { factionId: republic, kind: "replenish", unitId: militia }, paid: amount(1, 1), recovered: true }))
       .toBe("Militia column No. 3 took in 700 men for 1 Funds and 1k Manpower and recovered its morale.");
-    expect(line({ kind: "replenish-cancelled", order: { factionId: republic, kind: "replenish", unitId: militia }, reason: "The unit fought a battle.", refund: amount(1) }))
+    expect(line({ kind: "replenish-cancelled", order: { factionId: republic, kind: "replenish", unitId: militia }, refusal: { code: "unit-fought" }, refund: amount(1) }))
       .toBe("Militia column No. 3 was not replenished: The unit fought a battle. 1 Funds refunded.");
   });
 
@@ -55,7 +55,7 @@ describe("report lines carry the outcome's data (m3r1 contract follow-ups)", () 
     const forfeit: SystemOutcome = { kind: "build-forfeited", lost: amount(6), newHolder: south, previousHolder: republic, project: hospital, subTerritoryId: sub("malaga") };
     expect(line(forfeit, republic)).toContain("; the 6 Funds paid for it is lost.");
     expect(line(forfeit, south)).toBe("Hospital at M\u00e1laga passed, unfinished, from Republican Government to Southern Insurgent Command.");
-    expect(line({ factionId: republic, kind: "build-refunded", project: hospital, reason: "captured", refund: amount(6), subTerritoryId: sub("malaga") }))
+    expect(line({ factionId: republic, kind: "build-refunded", project: hospital, refusal: { code: "site-captured" }, refund: amount(6), subTerritoryId: sub("malaga") }))
       .toBe("Hospital at M\u00e1laga was not built. The sub-territory changed hands before work began. 6 Funds refunded.");
     expect(line({ cut: amount(1, 3), cutSubTerritoryIds: [sub("barcelona")], factionId: republic, kind: "income", paid: amount(14, 27) }))
       .toBe("Republican Government's income from territories held whole: +14 Funds \u00b7 +27k Manpower, after raids cut 1 Funds and 3k Manpower.");
@@ -71,7 +71,7 @@ describe("report lines carry the outcome's data (m3r1 contract follow-ups)", () 
     expect(line({ ...raid, aircraftLost: [unit("rep-breguet-bombers")], result: "air-eliminated" })).toMatch(/: the raider was shot down\.$/u);
     expect(line({ ...raid, aircraftLost: [unit("rep-ni52-fighters")], result: "nothing-hit" })).toMatch(/: nothing hit; 1 aircraft lost to fighters\.$/u);
     expect(line({ ...raid, developmentId: "farms" as DevelopmentId, result: "building-hit" })).toMatch(/: Farms down a level\.$/u);
-    expect(line({ kind: "grounded", order: bomber, reason: "weather" })).toMatch(/was grounded by the weather\.$/u);
+    expect(line({ kind: "grounded", order: bomber, refusal: { code: "grounded-by-weather" } })).toMatch(/was grounded by the weather\.$/u);
     expect(line({ kind: "recon", order: bomber, territoryId: territory("andalucia"), untilTurn: 3 })).toMatch(/reconnaissance over Andaluc\u00eda; .* until turn 3\.$/u);
   });
 
@@ -108,14 +108,14 @@ describe("report lines carry the outcome's data (m3r1 contract follow-ups)", () 
     expect(line({ applied: true, battleIndex: 0, kind: "air-support", order: bomber, territoryId: territory("andalucia") })).toMatch(/ gave Ground Support in the battle for Andaluc\u00eda\.$/u);
     expect(line({ applied: false, battleIndex: 0, kind: "air-support", order: bomber, territoryId: territory("andalucia") })).toMatch(/ flew Ground Support for the battle for Andaluc\u00eda, but its support did not count\.$/u);
     expect(line({ kind: "air-support", order: bomber, territoryId: territory("andalucia") })).toMatch(/ flew Ground Support over Andaluc\u00eda, but no battle was fought there\.$/u);
-    expect(line({ kind: "grounded", order: bomber, reason: "Out of range." })).toMatch(/ did not fly: Out of range\.$/u);
+    expect(line({ kind: "grounded", order: bomber, refusal: { code: "target-out-of-range" } })).toMatch(/ did not fly: The target is out of range\.$/u);
     expect(line({ factionId: republic, from: territory("catalunya"), kind: "aircraft-rebased", to: territory("valencia"), unitId: unit("rep-breguet-bombers") })).toMatch(/ lost its airfield in Catalu\u00f1a and flew to Valencia\.$/u);
     expect(line({ factionId: republic, from: territory("catalunya"), kind: "aircraft-lost", unitId: unit("rep-breguet-bombers") })).toMatch(/ was destroyed on the ground\.$/u);
     expect(line({ factionId: republic, kind: "frostbite", men: 125, territoryId: territory("aragon"), unitId: militia })).toBe("Militia column No. 3 lost 125 men to frostbite in Arag\u00f3n.");
     expect(line({ factionId: republic, heldUnitCount: 3, kind: "time-ran-out" })).toBe("Republican Government's time ran out: 3 units held.");
     expect(line({ demoralized: true, factionId: republic, fatigue: 3, kind: "fatigue", unitId: militia })).toContain("is demoralized");
     expect(line({ demoralized: false, factionId: republic, fatigue: 0, kind: "fatigue", unitId: militia })).toBe("Militia column No. 3 rested and is no longer fatigued.");
-    expect(line({ factionId: republic, kind: "build-refunded", project: hospital, reason: "Not enough Funds.", refund: {}, subTerritoryId: sub("girona") })).toBe("Hospital at Girona was not built. Not enough Funds.");
+    expect(line({ factionId: republic, kind: "build-refunded", project: hospital, refusal: { code: "resources-short", short: [{ amount: 2, resourceId: "funds" as ResourceId }] }, refund: {}, subTerritoryId: sub("girona") })).toBe("Hospital at Girona was not built. Needs 2 more Funds.");
     expect(line({ cut: {}, cutSubTerritoryIds: [], factionId: republic, kind: "income", paid: amount(14) })).toBe("Republican Government's income from territories held whole: +14 Funds.");
     expect(describeSystemOutcome({ factionId: republic, kind: "build-completed", project: farms, subTerritoryId: sub("lleida") }, { scenario })).toBe("Republican Government raised Farms by a level at Lleida.");
     expect(line({ kind: "build-queued", order: { factionId: republic, kind: "build", project: farms, subTerritoryId: sub("girona") }, paid: amount(6), position: 2 })).toContain("; 2 ahead of it in the queue.");

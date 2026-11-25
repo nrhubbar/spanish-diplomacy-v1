@@ -209,13 +209,13 @@ describe("air missions (U2, U3)", () => {
   it("grounds aircraft in Mud without a paved airfield", () => {
     const muddy: GameState = { ...opening, weather: { outcomes: { meseta: "mud" } as never, roll: 10 } };
     const result = resolveTurn(scenario, muddy, submit(raid("burgos")), 3);
-    expect(ofKind(result, "grounded")).toEqual([{ kind: "grounded", order: raid("burgos"), reason: "weather" }]);
+    expect(ofKind(result, "grounded")).toEqual([{ kind: "grounded", order: raid("burgos"), refusal: { code: "grounded-by-weather" } }]);
     expect(ofKind(result, "raid")).toEqual([]);
     expect(result.finalState.units[unit("rep-breguet-bombers")]?.territoryId).toBe("madrid");
   });
 
   it("ignores the raider's own anti-air in the target territory", () => {
-    const definition: RaisedUnitDefinition = { factionId: faction("republic"), fullStrength: 300, id: unit("rep-flak"), name: "Flak", type: "anti-air-battery" as UnitTypeId };
+    const definition: RaisedUnitDefinition = { factionId: faction("republic"), fullStrength: 300, id: unit("rep-flak"), type: "anti-air-battery" as UnitTypeId };
     const own: GameState = {
       ...opening,
       raised: { ...opening.raised, [definition.id]: definition },
@@ -284,13 +284,13 @@ describe("air mission and sack validation (U2, U5)", () => {
     expect(validateAirMission(noAir, opening, raid("rep-breguet-bombers", "burgos")).ok).toBe(false);
     expect(validateAirMission(scenario, opening, raid("rep-nobody", "burgos")).ok).toBe(false);
     const grounded = withSite(withSite(opening, "madrid", { buildings: [] }), "henares", { buildings: [] });
-    expect(validateAirMission(scenario, grounded, raid("rep-breguet-bombers", "burgos"))).toEqual({ ok: false, reason: "The aircraft has no airfield to fly from." });
+    expect(validateAirMission(scenario, grounded, raid("rep-breguet-bombers", "burgos"))).toEqual({ ok: false, refusal: { code: "no-airfield" } });
     expect(validateAirMission(scenario, opening, raid("rep-breguet-bombers", "atlantis")).ok).toBe(false);
     const fighters = scenario.index.unitTypes.get("fighter-squadron" as UnitTypeId)!;
     const shortRange: Scenario = { ...scenario, index: { ...scenario.index, unitTypes: new Map([...scenario.index.unitTypes, [fighters.id, { ...fighters, air: { ...fighters.air!, range: 1 } }]]) } };
     const far = mission("republic", "rep-ni52-fighters", { kind: "patrol", territoryId: territory("valencia") });
     expect(validateAirMission(scenario, opening, far)).toEqual({ ok: true });
-    expect(validateAirMission(shortRange, opening, far)).toEqual({ ok: false, reason: "The target is out of range." });
+    expect(validateAirMission(shortRange, opening, far)).toEqual({ ok: false, refusal: { code: "target-out-of-range" } });
   });
 
   it("sacks only one's own general", () => {

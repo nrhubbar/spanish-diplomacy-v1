@@ -1,5 +1,5 @@
 import { createAction, createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import { type Channel, clampLevel, defaultSettings, type SoundLevels, type SoundSettings } from "../audio/levels";
+import { type Channel, clampLevel, defaultSettings, type SoundLevels, type SoundSettings } from "./soundLevels";
 import type { RootState } from "./store";
 
 export interface AudioState extends SoundSettings {

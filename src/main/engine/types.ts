@@ -27,6 +27,7 @@ export * from "./types/links";
 export * from "./types/orders";
 export * from "./types/outcomes";
 export * from "./types/package";
+export * from "./types/refusals";
 export * from "./types/rules";
 export * from "./types/scenario";
 export * from "./types/state";

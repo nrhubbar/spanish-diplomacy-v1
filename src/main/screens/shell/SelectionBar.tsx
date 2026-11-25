@@ -1,10 +1,12 @@
 import { type JSX, useRef } from "react";
 import type { Scenario } from "../../engine/types";
 import { useAppDispatch } from "../../hooks";
+import { feedbackText } from "../../presentation/feedback";
 import { glyphs } from "../../presentation/glyphs";
+import { selectionLabel } from "../../presentation/orderMenu";
 import { territoryName } from "../../presentation/text";
 import { clearUnitSelection } from "../../state/gameSlice";
-import { type PlanningSession, selectionLabel } from "../../state/planning";
+import type { PlanningSession } from "../../state/planning";
 import type { Draft } from "../../state/session";
 import { OrderMenu } from "./OrderMenu";
 
@@ -20,7 +22,7 @@ export function SelectionBar({ scenario, session }: { readonly scenario: Scenari
   return (
     // Takes focus when an order empties the menu, so it is not dropped.
     <div className="selection-bar" ref={bar} tabIndex={-1}>
-      {draft.feedback === undefined ? null : <p className="inline-feedback" role="status">{draft.feedback}</p>}
+      {draft.feedback === undefined ? null : <p className="inline-feedback" role="status">{feedbackText(scenario, draft.feedback)}</p>}
       {draft.stage !== undefined || count === 0 ? null : (
         <>
           <p className="selection-bar-summary">

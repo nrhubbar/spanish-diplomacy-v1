@@ -29,7 +29,7 @@ import {
   plannedEstimates,
   signed
 } from "../main/presentation/odds";
-import { artLevel } from "../main/presentation/outcomeArt";
+import { artLevel } from "../main/assets/outcomes/outcomeArt";
 import { outcomeKeys } from "../main/presentation/outcomes";
 import { outcomeLine } from "../main/presentation/outcomeText";
 import { territoryName } from "../main/presentation/text";

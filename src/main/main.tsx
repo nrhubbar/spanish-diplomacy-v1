@@ -22,7 +22,9 @@ async function bootstrap(): Promise<void> {
   // The packages, the loader and Zod load here, outside the initial chunk.
   const { loadBuiltInRegistry } = await import("./scenarios/lazySources");
   const registry = await loadBuiltInRegistry(...extraSources);
-  const store = createAppStore({ preloadedState: { audio: storedSound(() => window.localStorage, connectionHint()) }, registry });
+  const { createLocalHost, secureSeed } = await import("./game/localHost");
+  const client = createLocalHost({ randomSeed: () => secureSeed(window.crypto), scenario: (id) => registry.require(id) });
+  const store = createAppStore({ client, preloadedState: { audio: storedSound(() => window.localStorage, connectionHint()) }, registry });
   for (const problem of registry.problems) {
     console.error(problem);
     store.dispatch(addErrorNotification("A scenario package failed validation and is unavailable."));

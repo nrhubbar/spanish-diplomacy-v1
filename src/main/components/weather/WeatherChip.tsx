@@ -1,6 +1,6 @@
 import type { JSX } from "react";
 import type { GameState, Scenario, TerritoryId } from "../../engine/types";
-import { weatherIn } from "../../engine/weather";
+import { weatherAt } from "../../presentation/weather";
 import { WeatherIcon } from "./WeatherIcon";
 
 interface WeatherChipProps {
@@ -17,7 +17,7 @@ interface WeatherChipProps {
  * plaques.
  */
 export function WeatherChip({ iconOnly = false, scenario, state, territoryId }: WeatherChipProps): JSX.Element | null {
-  const weather = weatherIn(scenario, state, territoryId);
+  const weather = weatherAt(scenario, state, territoryId);
   if (weather === undefined) return null;
   return (
     <span className="weather-chip" data-icon-only={iconOnly} data-weather={weather.id} title={weather.name}>

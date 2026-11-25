@@ -23,7 +23,8 @@ import type {
   UnitTypeId
 } from "../main/engine/types";
 import { validateOrder } from "../main/engine/validation";
-import { faction, spain, territory, unit, withoutUpkeep } from "./support";
+import { unitName } from "../main/presentation/text";
+import { faction, said, spain, territory, unit, verdictText, withoutUpkeep } from "./support";
 import { pinned } from "./pinned";
 
 const scenario = withoutUpkeep(pinned(spain()));
@@ -70,14 +71,15 @@ describe("where and what a faction may recruit (R2, R3, D7)", () => {
     // Pais Vasco is controlled by the Republic but Alava is held by the North (P1).
     expect(isContested(scenario, start, territory("pais-vasco"))).toBe(true);
     const result = validateOrder(scenario, start, recruit("republic", "pais-vasco", "militia-column"));
-    expect(result).toEqual({ ok: false, reason: expect.stringContaining("contested") as string });
+    expect(result.ok).toBe(false);
+    expect(verdictText(scenario, result)).toContain("contested");
   });
 
   it("militia need no building; others need the capital's buildings, named inline", () => {
-    expect(typeLock(scenario, start, north, territory("la-rioja"), scenario.index.unitTypes.get(type("militia-column"))!).reasons).toEqual([]);
+    expect(typeLock(scenario, start, north, territory("la-rioja"), scenario.index.unitTypes.get(type("militia-column"))!).refusals).toEqual([]);
     const lock = typeLock(scenario, start, north, territory("la-rioja"), scenario.index.unitTypes.get(type("artillery-group"))!);
     expect(lock.missing.map((entry) => (entry.kind === "building" ? entry.buildingId : entry.developmentId))).toEqual(["barracks", "factory"]);
-    expect(lock.reasons[0]).toMatch(/^Needs a Barracks in .+ and a Factory in La Rioja\.$/u);
+    expect(said(scenario, lock.refusals[0])).toMatch(/^Needs a Barracks in .+ and a Factory in La Rioja\.$/u);
   });
 
   it("limits types to factions (colonial veterans are not Republican)", () => {
@@ -107,7 +109,8 @@ describe("Recruit orders through the turn (R4, R6, R7)", () => {
     // Militia (1 turn) appear at the end of the turn they were ordered; they can first move next turn.
     const militiaId = raisedUnitId(republic, type("militia-column"), 1);
     expect(turn1.finalState.units[militiaId]).toMatchObject({ strength: 2500, territoryId: "catalunya", fatigue: 0 });
-    expect(turn1.finalState.raised[militiaId]?.name).toBe("Militia column No. 1");
+    expect(turn1.finalState.raised[militiaId]).toEqual({ factionId: "republic", fullStrength: 2500, id: militiaId, serial: 1, type: "militia-column" });
+    expect(unitName(scenario, militiaId)).toBe("Militia column No. 1");
     // Paid 8 Funds and 4 Manpower, then step 11's income ($2, m3r1-economy-builds), on the ground
     // held after step 8 (the turn-1 flips take Alava and Caceres, R2).
     expect(turn1.finalState.treasuries[republic]).toEqual(whole(addResources({ funds: 22, manpower: 6 } as Resources, incomeFor(scenario, { ...start, subTerritories: turn1.finalState.subTerritories }, republic).paid)));
@@ -128,11 +131,11 @@ describe("Recruit orders through the turn (R4, R6, R7)", () => {
       recruit("republic", "madrid", "militia-column")
     ]);
     expect(ofKind(result.outcomes, "training-started")).toHaveLength(2);
-    expect(ofKind(result.outcomes, "training-refunded").map((outcome) => outcome.reason)).toEqual([expect.stringContaining("Not enough") as string]);
+    expect(ofKind(result.outcomes, "training-refunded").map((outcome) => said(scenario, outcome.refusal))).toEqual([expect.stringContaining("Not enough") as string]);
     // m1: nothing was taken, so the refusal refunds nothing.
     expect(ofKind(result.outcomes, "training-refunded").map((outcome) => outcome.refund)).toEqual([{}]);
     const crowded = play(funded(initialGameState(scenario), { funds: 99, manpower: 99 } as Resources), [1, 2, 3, 4].map(() => recruit("north", "castilla-y-leon", "militia-column")));
-    expect(ofKind(crowded.outcomes, "training-refunded").map((outcome) => outcome.reason)).toEqual([expect.stringContaining("At most 3") as string]);
+    expect(ofKind(crowded.outcomes, "training-refunded").map((outcome) => said(scenario, outcome.refusal))).toEqual([expect.stringContaining("At most 3") as string]);
   });
 
   it("C8: other types pause while their territory is contested; militia finish; a fallen capital loses it", () => {
@@ -177,7 +180,7 @@ describe("Recruit orders through the turn (R4, R6, R7)", () => {
     const result = play(fallen, []);
     const refunds = ofKind(result.outcomes, "training-refunded");
     expect(refunds.map((outcome) => outcome.refund)).toEqual([paid, {}]);
-    expect(refunds[0]!.reason).toMatch(/before training began/u);
+    expect(said(scenario, refunds[0]!.refusal)).toMatch(/before training began/u);
     expect(result.finalState.training).toEqual([]);
     const income = ofKind(result.outcomes, "income").find((outcome) => outcome.factionId === republic)!.paid;
     expect(result.finalState.treasuries[republic]).toEqual(whole(addResources(paid, income)));
@@ -210,17 +213,17 @@ describe("Replenish (R5)", () => {
   });
 
   it("is refused at full strength and in contested ground", () => {
-    expect(replenishProblem(scenario, base, base.units[durruti.id]!)).toMatch(/full strength/u);
+    expect(said(scenario, replenishProblem(scenario, base, base.units[durruti.id]!))).toMatch(/full strength/u);
     // RR-12: a demoralized unit at full strength cannot replenish for nothing; it rests or is rallied.
     const shaken = { ...base.units[durruti.id]!, morale: { ...base.units[durruti.id]!.morale, demoralized: true } };
     const shakenState: GameState = { ...base, units: { ...base.units, [durruti.id]: shaken } };
-    expect(replenishProblem(scenario, shakenState, shaken)).toMatch(/full strength\. It recovers its morale by resting, or with a general's rally\./u);
-    expect(validateOrder(scenario, shakenState, replenishOrder("republic", durruti.id))).toEqual({ ok: false, reason: replenishProblem(scenario, shakenState, shaken) });
+    expect(said(scenario, replenishProblem(scenario, shakenState, shaken))).toMatch(/full strength\. It recovers its morale by resting, or with a general's rally\./u);
+    expect(validateOrder(scenario, shakenState, replenishOrder("republic", durruti.id))).toEqual({ ok: false, refusal: replenishProblem(scenario, shakenState, shaken) });
     // Below strength, a demoralized unit still replenishes and recovers (C5).
     const short = { ...shaken, strength: shaken.strength - 100 };
     expect(replenishProblem(scenario, { ...shakenState, units: { ...shakenState.units, [durruti.id]: short } }, short)).toBeUndefined();
     const inAsturias = Object.values(base.units).find((entry) => entry.territoryId === "asturias")!;
-    expect(replenishProblem(scenario, base, { ...inAsturias, strength: 1 })).toMatch(/contested/u);
+    expect(said(scenario, replenishProblem(scenario, base, { ...inAsturias, strength: 1 }))).toMatch(/contested/u);
   });
 
   it("any battle cancels it with a refund", () => {
@@ -246,7 +249,8 @@ describe("Replenish (R5)", () => {
 describe("recruited units in the rest of the engine (R6)", () => {
   it("derive a definition from their id and fight like any unit", () => {
     const id = raisedUnitId(north, type("militia-column"), 4);
-    expect(raisedDefinition(scenario, id)).toEqual({ factionId: "north", fullStrength: 2500, id, name: "Militia column No. 4", type: "militia-column" });
+    expect(raisedDefinition(scenario, id)).toEqual({ factionId: "north", fullStrength: 2500, id, serial: 4, type: "militia-column" });
+    expect(unitName(scenario, id)).toBe("Militia column No. 4");
     expect(raisedDefinition(scenario, unit("rep-wad-ras-1"))).toBeUndefined();
     const base = initialGameState(scenario);
     const state: GameState = { ...base, units: { ...base.units, [id]: { factionId: north, fatigue: 0, id, morale: { demoralized: false, quietTurns: 0 }, strength: 2500, territoryId: territory("aragon") } } };

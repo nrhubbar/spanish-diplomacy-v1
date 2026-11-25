@@ -2,7 +2,7 @@ import { type JSX, memo, type ReactNode } from "react";
 import type { FactionId, GameState, Scenario, TerritoryId } from "../engine/types";
 import type { MapPackage, MapRect } from "../scenarios/loader";
 import { requireFaction } from "../engine/lookup";
-import { isPartitioned } from "../engine/partition/holders";
+import { hasSubTerritories } from "../presentation/holdings";
 import { territoryName } from "../presentation/text";
 import { territoryAnchor } from "./anchors";
 import type { SemanticLevel } from "./camera";
@@ -183,7 +183,7 @@ function Highlight({ geometry, kind, map, territoryId }: { readonly geometry: Pr
 /** Generated per-territory CSS: control wash and contested hatch. */
 function territoryStyles(scenario: Scenario, map: MapPackage, game: GameState, view: MapView, factionColor: (id: FactionId) => string): string {
   const rules: string[] = [];
-  const partitioned = isPartitioned(scenario) && map.subTerritories !== undefined;
+  const partitioned = hasSubTerritories(scenario) && map.subTerritories !== undefined;
   for (const territory of scenario.territories) {
     const control = game.control[territory.id];
     const selector = `[data-territory-id="${territory.id}"]`;

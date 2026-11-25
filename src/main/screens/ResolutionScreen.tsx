@@ -2,7 +2,7 @@ import { type JSX, useCallback, useMemo, useState } from "react";
 import type { Scenario, TerritoryId, UnitState } from "../engine/types";
 import { GameHeader } from "../components/GameHeader";
 import type { HeaderSlotProps } from "../components/header/slots";
-import { useAppDispatch, useRegistry, useSessionIn } from "../hooks";
+import { useAppDispatch, useAppSelector, useRegistry, useSessionIn } from "../hooks";
 import type { MapView } from "../map/view";
 import { glyphs } from "../presentation/glyphs";
 import { listNames, factionName } from "../presentation/text";
@@ -10,13 +10,14 @@ import { turnLabel } from "../presentation/turn";
 import { openSetup, startNextTurn } from "../state/gameSlice";
 import { selectRevealedOrders } from "../state/selectors";
 import type { Session } from "../state/session";
-import { sessionViewer } from "../state/visible";
+import { sessionViewer } from "../state/viewer";
 import { MapScreenFrame } from "./MapScreenFrame";
 import { BattleReport } from "./report/BattleReport";
 import { FocusNote, OutcomeSummary, RevealedOrdersPanel, TerritoryChanges, VictoryProgressPanel } from "./ResultPanels";
 import { battleKeysAt } from "./report/focus";
 import { TurnConditions } from "./report/TurnConditions";
 import { Treasury } from "./report/Treasury";
+import { flavorKey } from "../presentation/battleText";
 import { groupBattles } from "../presentation/battle";
 
 type ResultSession = Extract<Session, { readonly phase: "resolution" | "game-over" }>;
@@ -36,6 +37,7 @@ function Results({ session }: { readonly session: ResultSession }): JSX.Element 
   const dispatch = useAppDispatch();
   const { scenario } = useRegistry().require(session.game.scenarioId);
   const { game, result } = session;
+  const seed = useAppSelector((state) => state.game.view?.seed);
   // F1: local UI state, never game state. Clicking the focused place again, or empty map, clears it.
   const [focused, setFocused] = useState<TerritoryId | undefined>(undefined);
   const focus = useCallback((territoryId: TerritoryId) => {
@@ -80,10 +82,11 @@ function Results({ session }: { readonly session: ResultSession }): JSX.Element 
             {over && victory !== undefined ? (
               <section className="pane-section victory-callout">
                 <p>{`${winners} ${victory.factionIds.length > 1 ? "share the victory" : "won"} ${conditionText[victory.condition]}.`}</p>
+                {seed === undefined ? null : <p className="game-seed">{`Game seed: ${seed}`}</p>}
               </section>
             ) : null}
             <TerritoryChanges result={result} scenario={scenario} />
-            <BattleReport focusedTerritoryId={focused} result={result} scenario={scenario} seed={game.seed} />
+            <BattleReport focusedTerritoryId={focused} result={result} scenario={scenario} seed={flavorKey(game.gameId)} />
             <TurnConditions result={result} scenario={scenario} />
             <OutcomeSummary result={result} scenario={scenario} viewer={sessionViewer(session)} />
             <Treasury result={result} scenario={scenario} viewer={sessionViewer(session)} />

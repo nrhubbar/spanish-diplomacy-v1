@@ -228,7 +228,7 @@ Each turn follows this structure:
 * Persistence: Local JSON first
 * Multiplayer: Shared-PC first
 * AI: Local COM actors from early development
-* Cloud persistence: Firebase later
+* Cloud: AWS serverless (see `multiplayer-design.html`)
 * Hosting: TBD
 
 ### 5.2 Package Structure
@@ -803,11 +803,11 @@ AI vs AI vs AI
 
 Cloud asynchronous multiplayer comes later.
 
-Likely future stack:
+Stack (designed in `multiplayer-design.html`, not built):
 
-* Firebase Auth
-* Firestore
-* Cloud Functions
+* Cognito with Google sign-in and an allow list
+* DynamoDB
+* API Gateway (HTTP and WebSocket) and Lambda
 * Invite links
 * Private order submissions
 * Lock status
@@ -1023,7 +1023,7 @@ Goal: Allow friends to play remotely with minimal friction.
 
 ### Epics
 
-* Firebase project setup
+* AWS stacks
 * Authentication strategy
 * Game creation flow
 * Invite flow

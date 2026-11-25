@@ -1,5 +1,5 @@
-import { type DugInLevel, outcomeEmblem, outcomeMedallion } from "../assets/outcomes/art";
-import type { OutcomeKey } from "./outcomes";
+import { type DugInLevel, outcomeEmblem, outcomeMedallion } from "./art";
+import type { OutcomeKey } from "../../presentation/outcomes";
 
 /**
  * Memoized outcome art. Medallion and emblem markup is sanitized and serialized on first use;

@@ -21,7 +21,7 @@ export function TargetPanel({ scenario, session }: { readonly scenario: Scenario
   return (
     <section aria-label="Choosing a target" className="pane-section">
       <div className="pane-callout" role="status">
-        <p>{missionCallout(scenario, session.game.state, unitId, stage.mission, stage.territoryId)}</p>
+        <p>{missionCallout(scenario, unitId, stage.mission, stage.territoryId)}</p>
         <button className="text-button" onClick={() => dispatch(cancelOrderStage())} ref={focusWhenShown} type="button">Cancel mission</button>
       </div>
       {stage.territoryId === undefined ? (

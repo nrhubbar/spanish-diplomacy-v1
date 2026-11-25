@@ -1,7 +1,7 @@
 import type { JSX } from "react";
 import { TerritoryWeather } from "../../components/weather/TerritoryWeather";
 import { citiesIn } from "../../engine/lookup";
-import { subTerritoriesOf } from "../../engine/partition/holders";
+import { subTerritoriesIn } from "../../presentation/holdings";
 import type { Scenario } from "../../engine/types";
 import { holdingDescription, territoryName } from "../../presentation/text";
 import { ContestedChip } from "./ContestedChip";
@@ -23,7 +23,7 @@ function hasTerritoryMeta(scenario: Scenario): boolean {
  */
 export function TerritoryHeading(props: TerritoryTabProps): JSX.Element {
   const { scenario, session, territoryId } = props;
-  const subs = subTerritoriesOf(scenario, territoryId).length;
+  const subs = subTerritoriesIn(scenario, territoryId).length;
   const cities = subs === 0 ? citiesIn(scenario, territoryId) : [];
   return (
     <>

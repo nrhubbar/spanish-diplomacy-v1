@@ -1,7 +1,7 @@
 import type { JSX } from "react";
-import { heldBy, isContested, isPartitioned, subTerritoriesOf } from "../../engine/partition/holders";
 import { glyphs } from "../../presentation/glyphs";
-import { SiteIcon } from "./SiteIcons";
+import { SiteIcon } from "../../components/SiteIcons";
+import { contestedShare } from "../../presentation/holdings";
 import type { TerritoryTabProps } from "./TerritoryTabs";
 
 /**
@@ -11,15 +11,13 @@ import type { TerritoryTabProps } from "./TerritoryTabs";
  * chip "No recruiting". Renders nothing elsewhere.
  */
 export function ContestedChip({ scenario, session, territoryId }: TerritoryTabProps): JSX.Element | null {
-  const { state } = session.game;
-  if (!isPartitioned(scenario) || !isContested(scenario, state, territoryId)) return null;
-  const total = subTerritoriesOf(scenario, territoryId).length;
-  const own = heldBy(scenario, state.subTerritories, territoryId, session.factionId).length;
+  const share = contestedShare(scenario, session.game.state, territoryId, session.factionId);
+  if (share === undefined) return null;
   return (
     <>
       <span className="site-chip" data-tone="contested">
         <SiteIcon kind="contested" />
-        {`Contested ${glyphs.dot} you hold ${String(own)} of ${String(total)}`}
+        {`Contested ${glyphs.dot} you hold ${String(share.own)} of ${String(share.total)}`}
       </span>
       {scenario.rules.economy === "none" ? null : (
         <span className="site-chip" data-tone="paused">

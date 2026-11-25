@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { deriveControl } from "../main/engine/control";
 import { isContested, holdersIn } from "../main/engine/partition/holders";
-import { contestedReasons, validateWithdrawOrder } from "../main/engine/partition/orders";
+import { validateWithdrawOrder } from "../main/engine/partition/orders";
 import { exitGround, hasPath, withdrawRoutes } from "../main/engine/partition/paths";
 import { arrivalPocket, arrivalSite, pocketOfArmy, pocketsOf } from "../main/engine/partition/pockets";
 import { flipWhole, settlePockets, strandedDefenders } from "../main/engine/partition/steps";
@@ -88,7 +88,7 @@ describe("pockets (R1)", () => {
     const atJaen = anchored(start, "rep-vitoria-8", "jaen");
     expect(withdrawRoutes(scenario, atJaen, faction("republic"), territory("andalucia"))).toEqual([{ through: ["jaen"], to: "castilla-la-mancha" }]);
     expect(validateWithdrawOrder(scenario, atJaen, withdrawal("castilla-la-mancha"))).toEqual({ ok: true });
-    expect(validateWithdrawOrder(scenario, atJaen, withdrawal("murcia"))).toEqual({ ok: false, reason: contestedReasons.withdrawNoPath });
+    expect(validateWithdrawOrder(scenario, atJaen, withdrawal("murcia"))).toEqual({ ok: false, refusal: { code: "withdraw-no-way-out" } });
     // Two armies in different pockets share no way out.
     const two = { ...atJaen, units: { ...atJaen.units, [unit("rep-castilla-3")]: { ...(atJaen.units[unit("rep-vitoria-8")] as UnitState), id: unit("rep-castilla-3"), subTerritoryId: sub("almeria") } } };
     expect(exitGround(scenario, two, faction("republic"), territory("andalucia"), [unit("rep-vitoria-8"), unit("rep-castilla-3")])).toEqual([]);
@@ -110,9 +110,9 @@ describe("note 1: the Málaga regiment is cut off by land (R1, R3)", () => {
   });
 
   it("refuses a Withdraw through enemy ground, and by sea when the storms close it", () => {
-    expect(validateWithdrawOrder(scenario, state, withdrawal("castilla-la-mancha"))).toEqual({ ok: false, reason: contestedReasons.withdrawNoPath });
+    expect(validateWithdrawOrder(scenario, state, withdrawal("castilla-la-mancha"))).toEqual({ ok: false, refusal: { code: "withdraw-no-way-out" } });
     expect(validateWithdrawOrder(scenario, state, withdrawal("murcia"))).toEqual({ ok: true });
-    expect(validateWithdrawOrder(scenario, storm(state, scenario), withdrawal("murcia"))).toEqual({ ok: false, reason: contestedReasons.withdrawSeaClosed });
+    expect(validateWithdrawOrder(scenario, storm(state, scenario), withdrawal("murcia"))).toEqual({ ok: false, refusal: { code: "sea-closed" } });
   });
 
   it("retreats by sea to Murcia, and surrenders when the sea is closed", () => {

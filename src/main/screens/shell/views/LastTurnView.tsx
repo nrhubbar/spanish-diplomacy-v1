@@ -1,6 +1,6 @@
 import type { JSX } from "react";
+import { flavorKey } from "../../../presentation/battleText";
 import { glyphs } from "../../../presentation/glyphs";
-import { seenBy } from "../../../state/history";
 import { BattleReport } from "../../report/BattleReport";
 import { OutcomeSummary } from "../../ResultPanels";
 import type { PaneViewProps } from "./types";
@@ -19,12 +19,12 @@ export function LastTurnView({ scenario, session }: Pick<PaneViewProps, "scenari
       </section>
     );
   }
-  const result = { finalState: game.state, outcomes: seenBy(entry, factionId) };
+  const result = { finalState: game.state, outcomes: entry.outcomes };
   return (
     <>
       <p className="pane-meta last-turn-meta">{`Turn ${String(entry.turnNumber)} ${glyphs.dot} what happened, your faction first`}</p>
       <OutcomeSummary result={result} scenario={scenario} viewer={factionId} />
-      <BattleReport focusedTerritoryId={undefined} result={result} scenario={scenario} seed={game.seed} />
+      <BattleReport focusedTerritoryId={undefined} result={result} scenario={scenario} seed={flavorKey(game.gameId)} />
     </>
   );
 }

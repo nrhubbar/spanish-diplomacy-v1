@@ -10,7 +10,7 @@ export function generalUnitId(generalId: GeneralId): UnitId {
 
 /**
  * D7: a replacement general's definition, derived from his unit id alone, so every lookup that
- * has only the scenario can name him (as recruited units are, R6). His unit is of the scenario's
+ * has only the scenario can find him (as recruited units are, R6). His unit is of the scenario's
  * general type and as strong as the scenario's own general units. Undefined for other ids.
  */
 export function generalUnitDefinition(scenario: Scenario, id: UnitId): RaisedUnitDefinition | undefined {
@@ -19,7 +19,7 @@ export function generalUnitDefinition(scenario: Scenario, id: UnitId): RaisedUni
   const type = scenario.unitTypes.find((candidate) => candidate.kind === "general");
   if (general === undefined || type === undefined) return undefined;
   const model = scenario.units.find((unit) => unit.type === type.id);
-  return { factionId: general.factionId, fullStrength: model?.fullStrength ?? 1, generalId: general.id, id, name: general.name, type: type.id };
+  return { factionId: general.factionId, fullStrength: model?.fullStrength ?? 1, generalId: general.id, id, type: type.id };
 }
 
 /**

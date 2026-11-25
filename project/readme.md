@@ -11,6 +11,8 @@ Keep root-level docs short and player-facing. Keep deeper project reasoning here
 Primary docs:
 
 - [plan.md](./plan.md): product vision, architecture, phases, and open design questions.
+- [multiplayer-design.html](./multiplayer-design.html): the AWS design for multiplayer (components, API, contracts, storage, costs). Parked, not built.
+- [multiplayer-readiness-audit.md](./multiplayer-readiness-audit.md): the audit, rubric and plan behind the multiplayer foundation.
 - [coding-principles.md](./coding-principles.md): engineering rules for implementation work.
 - [milestones/milestone2.md](./milestones/milestone2.md): configurable local/computer players, computer order generation, and private player handoffs.
 - [milestones/milestone3.md](./milestones/milestone3.md): recruitment, reinforcements, and a scenario-driven income system.

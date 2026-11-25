@@ -3,7 +3,7 @@ import { legalMoves, planMoves, withRoutes } from "../main/ai/orders/move";
 import { unitRoutes } from "../main/ai/reach";
 import { createTrains, strongestAboard } from "../main/ai/trains";
 import { capitalOf, railCapacity, railPlaces } from "../main/engine/movement/network";
-import { boardingRefusal, moveRoutes, plannedRoutes, railPlacesLeft, railShortageText, routeOffers, usageOf } from "../main/engine/movement/routes";
+import { boardingRefusal, moveRoutes, plannedRoutes, railPlacesLeft, railFullRefusal, routeOffers, usageOf } from "../main/engine/movement/routes";
 import { reachFor } from "../main/engine/network/reach";
 import { seededRandom } from "../main/engine/random";
 import { raisedUnitId } from "../main/engine/recruitment/rules";
@@ -16,7 +16,7 @@ import { reachNote } from "../main/presentation/reachNote";
 import { destinationRoutes } from "../main/screens/movement/destinationRoutes";
 import type { Draft } from "../main/state/session";
 import { chooseDestination, musterOrderFrom, musterRefusal, orderMuster, type PlanningSession } from "../main/state/planning";
-import { faction, play, spainWithAir, territory, unit } from "./support";
+import { faction, play, said, spainWithAir, territory, testGame, unit, told } from "./support";
 
 /** D5: a station's trains take a number of units a turn, and an army whole or not at all. */
 
@@ -68,7 +68,7 @@ const full = [...pair.map((id): MoveOrder => ({ factionId: republic, from: madri
 const ride = (unitId: UnitId, to: TerritoryId = valencia): MoveOrder => ({ factionId: republic, from: madrid, kind: "move", legs: [{ kind: "rail", to }], to, unitId });
 
 function session(draft: Partial<Draft> = {}, state: GameState = start): PlanningSession {
-  return { draft: { orders: [], selectedUnitIds: [], ...draft }, factionId: republic, game: { assignments: {}, history: [], locked: {}, scenarioId: scenario.id, seed: 1, state }, phase: "planning" };
+  return { draft: { orders: [], selectedUnitIds: [], ...draft }, factionId: republic, game: { assignments: {}, history: [], ready: [], scenarioId: scenario.id, gameId: testGame, state }, phase: "planning" };
 }
 
 describe("the trains' places", () => {
@@ -89,15 +89,16 @@ describe("the trains' places", () => {
   });
 
   it("names the places left", () => {
-    expect(railShortageText(scenario, { boarding: station(madrid), left: 0, places: 2 })).toBe("Rail has no places left at Madrid this turn.");
-    expect(railShortageText(scenario, { boarding: station(madrid), left: 1, places: 2 })).toBe("Rail has only 1 place left at Madrid this turn, and 2 units would board.");
-    expect(railShortageText(scenario, { boarding: "nowhere" as SubTerritoryId, left: 2, places: 3 })).toBe("Rail has only 2 places left at the station this turn, and 3 units would board.");
+    expect(said(scenario, railFullRefusal({ boarding: station(madrid), left: 0, places: 2 }))).toBe("Rail has no places left at Madrid this turn.");
+    expect(said(scenario, railFullRefusal({ boarding: station(madrid), left: 1, places: 2 }))).toBe("Rail has only 1 place left at Madrid this turn, and 2 units would board.");
+    expect(said(scenario, railFullRefusal({ boarding: station(madrid), left: 2, places: 3 }))).toBe("Rail has only 2 places left at Madrid this turn, and 3 units would board.");
+    expect(() => said(scenario, railFullRefusal({ boarding: "nowhere" as SubTerritoryId, left: 2, places: 3 }))).toThrow(/unknown sub-territory/u);
   });
 
   it("refuses moves that don't board together beside the others planned", () => {
     expect(boardingRefusal(scenario, start, pair.map((id) => ride(id)), [])).toBeUndefined();
-    expect(boardingRefusal(scenario, start, regiments.map((id) => ride(id)), [])).toContain("only 2 places left");
-    expect(boardingRefusal(scenario, start, [ride(lastOne)], pair.map((id) => ride(id)))).toContain("no places left");
+    expect(said(scenario, boardingRefusal(scenario, start, regiments.map((id) => ride(id)), []))).toContain("only 2 places left");
+    expect(said(scenario, boardingRefusal(scenario, start, [ride(lastOne)], pair.map((id) => ride(id))))).toContain("no places left");
     const { legs, ...step } = ride(lastOne);
     expect(legs).toHaveLength(1);
     expect(boardingRefusal(scenario, start, [{ ...step, to: territory("castilla-la-mancha") }], pair.map((id) => ride(id)))).toBeUndefined();
@@ -135,7 +136,7 @@ describe("giving a rail order", () => {
     const choosing = session({ selectedTerritoryId: madrid, selectedUnitIds: regiments, stage: { orderKind: "move", step: "choose-destination" } });
     const refused = chooseDestination(scenario, choosing, valencia);
     expect(refused.draft.orders).toEqual([]);
-    expect(refused.draft.feedback).toBe("Rail has only 2 places left at Madrid this turn, and 3 units would board.");
+    expect(told(scenario, refused.draft.feedback)).toBe("Rail has only 2 places left at Madrid this turn, and 3 units would board.");
     const sent = chooseDestination(scenario, session({ ...choosing.draft, selectedUnitIds: pair }), valencia);
     expect(sent.draft.orders).toHaveLength(2);
   });
@@ -161,7 +162,7 @@ describe("the Invade and Reinforce panes", () => {
     expect(musterRefusal(scenario, session(), order(pair))).toBeUndefined();
     const refused = orderMuster(scenario, session(), order(regiments));
     expect(refused.draft.orders).toEqual([]);
-    expect(refused.draft.feedback).toBe("Rail has only 2 places left at Madrid this turn, and 3 units would board.");
+    expect(told(scenario, refused.draft.feedback)).toBe("Rail has only 2 places left at Madrid this turn, and 3 units would board.");
   });
 
   it("still lists a unit once the rides to the same place are full, so one can replace another", () => {

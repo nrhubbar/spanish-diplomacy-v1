@@ -1,6 +1,6 @@
 import { type JSX, memo } from "react";
 import { requireFaction } from "../../engine/lookup";
-import { isPartitioned } from "../../engine/partition/holders";
+import { hasSubTerritories } from "../../presentation/holdings";
 import type { FactionId, GameState, Scenario, SubTerritoryId, TerritoryId } from "../../engine/types";
 import { glyphs } from "../../presentation/glyphs";
 import type { MapPackage } from "../../scenarios/loader";
@@ -30,7 +30,7 @@ interface Partition {
 
 function partitionOf({ game, scenarioPackage }: MapLayerProps): Partition | undefined {
   const { map, scenario } = scenarioPackage;
-  if (map.subTerritories === undefined || !isPartitioned(scenario)) return undefined;
+  if (map.subTerritories === undefined || !hasSubTerritories(scenario)) return undefined;
   const contested = new Set(scenario.territories.filter((territory) => game.control[territory.id]?.kind === "contested").map((territory) => territory.id));
   return { contested, map, svgPath: map.subTerritories.svgPath };
 }

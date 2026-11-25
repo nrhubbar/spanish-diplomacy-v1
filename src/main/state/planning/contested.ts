@@ -25,19 +25,6 @@ export function withdrawDestinations(scenario: Scenario, session: PlanningSessio
   return selectedWithdrawRoutes(scenario, session).map((route) => route.to);
 }
 
-/** An order kind shown greyed out, and why. */
-export interface BlockedOrder {
-  readonly label: string;
-  readonly reason: string;
-}
-
-export function blockedOrders(scenario: Scenario): readonly BlockedOrder[] {
-  return [
-    { label: "Move, Entrench, Rest", reason: "Not in contested ground: units here attack or withdraw." },
-    ...(scenario.rules.recruitment === "none" ? [] : [{ label: "Replenish", reason: "Not in contested ground." }])
-  ];
-}
-
 /** True when another faction's army stands in the territory (the standing battle, M27); else the sweep (P3). */
 export function enemyPresent(session: PlanningSession, territoryId: TerritoryId): boolean {
   return Object.values(session.game.state.units).some((unit) => unit.territoryId === territoryId && unit.factionId !== session.factionId);

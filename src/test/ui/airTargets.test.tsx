@@ -13,8 +13,7 @@ import { useEscape } from "../../main/screens/shell/useEscape";
 import { cancelOrderStage, chooseAirMission, chooseRaidSite, clickMapTerritory, clickMapUnit, closeAircraftPane, planAirMission } from "../../main/state/gameSlice";
 import { chooseTarget, chooseTargetSite, oddsDestinations, type PlanningSession, selectedDestinations, stageTargets, targetRefusal } from "../../main/state/planning";
 import { emptyDraft } from "../../main/state/session";
-import { createAppStore } from "../../main/state/store";
-import { faction, shippedRegistry, spain, spainId, spainWithAir, territory, unit } from "../support";
+import { faction, shippedRegistry, spainId, spainWithAir, territory, unit, testGame, testStore, told } from "../support";
 
 /** N6: a mission's target is chosen on the map. */
 
@@ -30,11 +29,11 @@ const madrid = territory("madrid");
 const sub = (id: string): SubTerritoryId => id as SubTerritoryId;
 
 function planning(state: GameState = start): PlanningSession {
-  return { draft: emptyDraft, factionId: faction("republic"), game: { assignments: {}, history: [], locked: {}, scenarioId: spainId, seed: 1, state }, phase: "planning" };
+  return { draft: emptyDraft, factionId: faction("republic"), game: { assignments: {}, history: [], ready: [], scenarioId: spainId, gameId: testGame, state }, phase: "planning" };
 }
 
 function storeOf(session = planning()) {
-  const store = createAppStore({ preloadedState: { game: { session } }, registry: shippedRegistry() });
+  const store = testStore({ game: { session } }, shippedRegistry());
   const now = (): PlanningSession => {
     const { session: current } = store.getState().game;
     if (current.phase !== "planning") throw new Error("Expected planning.");
@@ -117,18 +116,18 @@ describe("choosing a mission's target on the map (N6)", () => {
     const { now, store } = storeOf();
     store.dispatch(chooseAirMission({ mission: "raid", unitId: bomber }));
     store.dispatch(clickMapTerritory(madrid));
-    expect(now().draft.feedback).toBe("Raids target ground another faction holds.");
-    expect(targetRefusal(scenario, now(), madrid)).toEqual({ inRange: true, reason: "Raids target ground another faction holds." });
+    expect(told(scenario, now().draft.feedback)).toBe("Raids target ground another faction holds.");
+    expect(targetRefusal(scenario, now(), madrid)).toEqual({ inRange: true, reason: { code: "refused", refusals: [{ code: "raid-own-ground" }] } });
     expect(targetRefusal(scenario, now(), castile)).toBeUndefined();
     expect(now().draft.stage).toBeDefined();
     store.dispatch(chooseAirMission({ mission: "recon", unitId: recon }));
-    expect(targetRefusal(scenario, now(), start.units[recon]!.territoryId)?.reason).toBe("Recon looks at ground another faction holds.");
+    expect(told(scenario, targetRefusal(scenario, now(), start.units[recon]!.territoryId)?.reason)).toBe("Recon looks at ground another faction holds.");
     const bare = { ...scenario, index: { ...scenario.index, subTerritoriesByTerritory: new Map() } };
     const raiding: PlanningSession = { ...now(), draft: { ...now().draft, selectedAircraftId: bomber, stage: { mission: "raid", step: "choose-target" } } };
-    expect(targetRefusal(bare, raiding, madrid)?.reason).toBe("Nothing to hit there.");
+    expect(told(bare, targetRefusal(bare, raiding, madrid)?.reason)).toBe("Nothing to hit there.");
     const ranged = (range: number) => ({ ...scenario, index: { ...scenario.index, unitTypes: new Map([...scenario.index.unitTypes].map(([id, type]) => [id, type.air === undefined ? type : { ...type, air: { ...type.air, range } }])) } });
-    expect(targetRefusal(ranged(1), raiding, territory("galicia"))).toEqual({ inRange: false, reason: "Out of range: it flies up to 1 territory from its airfield." });
-    expect(targetRefusal(ranged(0), raiding, territory("galicia"))?.reason).toBe("Out of range: it flies up to 0 territories from its airfield.");
+    expect(targetRefusal(ranged(1), raiding, territory("galicia"))).toEqual({ inRange: false, reason: { code: "out-of-range", range: 1 } });
+    expect(told(scenario, targetRefusal(ranged(0), raiding, territory("galicia"))?.reason)).toBe("Out of range: it flies up to 0 territories from its airfield.");
   });
 
   it("does nothing when no target is being chosen", () => {
@@ -139,14 +138,14 @@ describe("choosing a mission's target on the map (N6)", () => {
     expect(chooseTargetSite(scenario, idle, sub("burgos"))).toBe(idle);
     const { now, store } = storeOf();
     store.dispatch(chooseAirMission({ mission: "raid", unitId: fighter }));
-    expect(now().draft.feedback).toBe("Nothing in range for this mission.");
+    expect(told(scenario, now().draft.feedback)).toBe("Nothing in range for this mission.");
     expect(now().draft).not.toHaveProperty("stage");
   });
 
   it("notes a refusal like Move's", () => {
     expect(targetNote(scenario, madrid, undefined)).toBeUndefined();
-    expect(targetNote(scenario, madrid, { inRange: true, reason: "Why." })).toEqual({ lines: [{ text: "Why." }], status: "Not a target for this mission", title: "Madrid" });
-    expect(targetNote(scenario, madrid, { inRange: false, reason: "Far." })?.status).toBe("Out of reach this turn");
+    expect(targetNote(scenario, madrid, { inRange: true, reason: { code: "nothing-to-hit" } })).toEqual({ lines: [{ text: "Nothing to hit there." }], status: "Not a target for this mission", title: "Madrid" });
+    expect(targetNote(scenario, madrid, { inRange: false, reason: { code: "out-of-range", range: 2 } })?.status).toBe("Out of reach this turn");
   });
 
   it("names the sub-territory under a map click only while a raid chooses its target", () => {
@@ -188,8 +187,9 @@ describe("the target panel (N6)", () => {
     expect(now().draft).not.toHaveProperty("stage");
   });
 
-  it("words the callout for an aircraft the scenario does not name", () => {
-    expect(missionCallout(spain(), start, unit("nobody"), "patrol", undefined)).toBe("Aircraft: Patrol. Choose a highlighted territory on the map.");
+  it("words the callout for an aircraft, and only for one the scenario names", () => {
+    expect(missionCallout(scenario, unit("rep-ni52-fighters"), "patrol", undefined)).toMatch(/: Patrol\. Choose a highlighted territory on the map\.$/u);
+    expect(() => missionCallout(scenario, unit("nobody"), "patrol", undefined)).toThrow(/unknown unit/u);
   });
 });
 

@@ -12,7 +12,7 @@ import { oddsSummary, plannedEstimates } from "../../main/presentation/odds";
 import type { MusterChoices } from "../../main/state/paneSlice";
 import { chooseDestination, clickTerritory, musterOrderFrom, musterPicks, musterRefusal, orderMuster, type PlanningSession, selectedEstimates } from "../../main/state/planning";
 import type { Draft } from "../../main/state/session";
-import { faction, move, spainWithAir, territory, unit } from "../support";
+import { faction, move, spainWithAir, territory, unit, testGame, told } from "../support";
 
 /** Note 12 and N4: the Invade and Reinforce panes fitted to the units ticked. */
 
@@ -31,7 +31,7 @@ const footType = scenario.unitTypes.find((type) => type.foot === true && type.at
 /** The state with extra units of a type raised in Madrid. */
 function raised(type: string, count: number, state: GameState = start, territoryId = madrid): GameState {
   const ids = Array.from({ length: count }, (_, index) => raisedUnitId(republic, type as UnitTypeId, index + 1));
-  const definition = (id: UnitId): RaisedUnitDefinition => ({ factionId: republic, fullStrength: 300, id, name: String(id), type: type as UnitTypeId });
+  const definition = (id: UnitId): RaisedUnitDefinition => ({ factionId: republic, fullStrength: 300, id, type: type as UnitTypeId });
   return {
     ...state,
     raised: { ...state.raised, ...Object.fromEntries(ids.map((id) => [id, definition(id)])) },
@@ -57,7 +57,7 @@ function stations(state: GameState, places: number): GameState {
 }
 
 function session(state: GameState = start, draft: Partial<Draft> = {}): PlanningSession {
-  return { draft: { orders: [], selectedUnitIds: [], ...draft }, factionId: republic, game: { assignments: {}, history: [], locked: {}, scenarioId: scenario.id, seed: 1, state }, phase: "planning" };
+  return { draft: { orders: [], selectedUnitIds: [], ...draft }, factionId: republic, game: { assignments: {}, history: [], ready: [], scenarioId: scenario.id, gameId: testGame, state }, phase: "planning" };
 }
 
 const choices = (ticks: MusterChoices["ticks"], modes: MusterChoices["modes"] = {}): MusterChoices => ({ modes, ticks });
@@ -249,7 +249,7 @@ describe("N3: one planned move, one estimate", () => {
     const planning = session(withGeneral(), { selectedTerritoryId: madrid, selectedUnitIds: [generalId], stage: { orderKind: "move", step: "choose-destination" } });
     expect(chooseDestination(scenario, planning, castile).draft.orders).toEqual([]);
     const alone = { kind: "invade", moves: [{ unitId: generalId }], shown: [], support: [], target: castile } as const;
-    expect(musterRefusal(scenario, session(withGeneral()), alone)).toBe("It can't go alone: tick a unit in Madrid that can fight and goes the same way.");
+    expect(told(scenario, musterRefusal(scenario, session(withGeneral()), alone))).toBe("It can't go alone: tick a unit in Madrid that can fight and goes the same way.");
   });
 
   it("has words for every reason an army is held back", () => {

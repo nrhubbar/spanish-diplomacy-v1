@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { holdersIn, isContested } from "../main/engine/partition/holders";
-import { contestedReasons, validateWithdrawOrder } from "../main/engine/partition/orders";
+import { validateWithdrawOrder } from "../main/engine/partition/orders";
 import { withdrawRoutes } from "../main/engine/partition/paths";
 import { initialGameState, resolveTurn } from "../main/engine/resolution";
 import { retreatDestination, settleDepartures } from "../main/engine/retreat";
@@ -132,7 +132,7 @@ describe("Withdraw and retreats across the sea (B3, T4, M5, P6)", () => {
   it("refuses a Withdraw and a retreat over a sea the storms closed", () => {
     const closed = storm(islands, scenario);
     expect(isSeaRouteClosed(scenario, closed, territory("islas-baleares"), territory("catalunya"))).toBe(true);
-    expect(validateWithdrawOrder(scenario, closed, withdrawal("islas-baleares", "catalunya"))).toEqual({ ok: false, reason: contestedReasons.withdrawSeaClosed });
+    expect(validateWithdrawOrder(scenario, closed, withdrawal("islas-baleares", "catalunya"))).toEqual({ ok: false, refusal: { code: "sea-closed" } });
     expect(withdrawRoutes(scenario, closed, faction("republic"), territory("islas-baleares"))).toEqual([]);
     expect(retreatDestination(scenario, closed, Object.values(closed.units), faction("republic"), territory("islas-baleares"))).toBeUndefined();
     const settled = settleDepartures(scenario, closed, closed.units, [{ from: territory("islas-baleares"), kind: "retreat", report: { battleIndex: 0 }, unitId: unit("rep-castilla-3") }]);
@@ -151,7 +151,7 @@ describe("Withdraw and retreats across the sea (B3, T4, M5, P6)", () => {
     expect(withdrawRoutes(scenario, menorca, faction("republic"), territory("islas-baleares"))).toEqual([]);
     // Without a port in the sub-territory it sails from, a sea crossing is no path either.
     const noPort = { ...islands, subTerritories: { ...islands.subTerritories, [sub("mallorca")]: { ...islands.subTerritories[sub("mallorca")]!, port: 0 } } } as GameState;
-    expect(validateWithdrawOrder(scenario, noPort, withdrawal("islas-baleares", "catalunya"))).toEqual({ ok: false, reason: contestedReasons.withdrawNoPath });
+    expect(validateWithdrawOrder(scenario, noPort, withdrawal("islas-baleares", "catalunya"))).toEqual({ ok: false, refusal: { code: "withdraw-no-way-out" } });
   });
 });
 
@@ -161,26 +161,25 @@ describe("Withdraw refusals (M-7, C1, P6)", () => {
   const order = (factionId: string, unitId: string, from: string, to: string): WithdrawOrder => ({ factionId: faction(factionId), from: territory(from), kind: "withdraw", to: territory(to), unitId: unit(unitId) });
 
   it.each([
-    ["an unknown unit", order("republic", "nobody", "andalucia", "murcia"), "Unknown unit."],
-    ["another faction's unit", order("republic", "south-granada-6", "andalucia", "murcia"), "Selected unit belongs to another player."],
-    ["a unit that is elsewhere", order("republic", "rep-vitoria-8", "extremadura", "castilla-la-mancha"), "Selected unit is no longer in that territory."],
-    ["an aircraft", order("south", "south-ju52-bombers", "andalucia", "ceuta"), "This unit cannot withdraw."],
-    ["ground that is not contested", order("republic", "rep-wad-ras-1", "madrid", "castilla-la-mancha"), contestedReasons.withdrawNotContested],
-    ["a territory that is not next door", order("republic", "rep-vitoria-8", "andalucia", "catalunya"), contestedReasons.withdrawTarget],
-    ["a neighbour not held whole", order("republic", "rep-vitoria-8", "andalucia", "extremadura"), contestedReasons.withdrawTarget],
-    ["a pocket with no way out", order("north", "north-milan-32", "asturias", "galicia"), contestedReasons.withdrawNoPath]
-  ] as const)("refuses %s", (_name, withdrawal, reason) => {
-    expect(validateWithdrawOrder(scenario, start, withdrawal)).toEqual({ ok: false, reason });
+    ["an unknown unit", order("republic", "nobody", "andalucia", "murcia"), "unknown-unit"],
+    ["another faction's unit", order("republic", "south-granada-6", "andalucia", "murcia"), "unit-of-another-faction"],
+    ["a unit that is elsewhere", order("republic", "rep-vitoria-8", "extremadura", "castilla-la-mancha"), "unit-elsewhere"],
+    ["an aircraft", order("south", "south-ju52-bombers", "andalucia", "ceuta"), "unit-cannot-withdraw"],
+    ["ground that is not contested", order("republic", "rep-wad-ras-1", "madrid", "castilla-la-mancha"), "withdraw-not-contested"],
+    ["a territory that is not next door", order("republic", "rep-vitoria-8", "andalucia", "catalunya"), "withdraw-target"],
+    ["a neighbour not held whole", order("republic", "rep-vitoria-8", "andalucia", "extremadura"), "withdraw-target"],
+    ["a pocket with no way out", order("north", "north-milan-32", "asturias", "galicia"), "withdraw-no-way-out"]
+  ] as const)("refuses %s", (_name, withdrawal, code) => {
+    expect(validateWithdrawOrder(scenario, start, withdrawal)).toEqual({ ok: false, refusal: { code } });
   });
 
   it("is not an order at all without the provinces module, which then leaves moves, retreats and works alone", async () => {
     const { partitionCanDigIn, partitionOrderVerdict, partitionRetreatAllowed, partitionValidateWithdraw } = await import("../main/engine/partition/orders");
-    const { unavailableOrderReason } = await import("../main/engine/hooks");
     const { spainM2 } = await import("./support");
     const plain = spainM2();
     const state = initialGameState(plain);
     const withdrawal = order("republic", "rep-vitoria-8", "andalucia", "murcia");
-    expect(partitionValidateWithdraw({ order: withdrawal, scenario: plain, state })).toEqual({ ok: false, reason: unavailableOrderReason });
+    expect(partitionValidateWithdraw({ order: withdrawal, scenario: plain, state })).toEqual({ ok: false, refusal: { code: "order-unavailable" } });
     expect(partitionOrderVerdict({ order: move("republic", "rep-vitoria-8", "andalucia", "murcia"), scenario: plain, state })).toBeUndefined();
     expect(partitionRetreatAllowed({ factionId: faction("republic"), from: territory("andalucia"), scenario: plain, state, to: territory("murcia") })).toBe(true);
     expect(partitionCanDigIn(plain, state, territory("andalucia"))).toBe(true);
@@ -227,7 +226,7 @@ describe("partition helpers at their edges", () => {
     expect(withdrawRoutes(scenario, start, faction("republic"), territory("madrid"))).toEqual([]);
     const [route] = withdrawRoutes(scenario, start, faction("republic"), territory("andalucia"));
     expect(route === undefined ? [] : routeNames(scenario, route)).not.toHaveLength(0);
-    expect(routeNames(scenario, { through: [sub("nowhere")], to: territory("murcia") })).toEqual(["nowhere"]);
+    expect(() => routeNames(scenario, { through: [sub("nowhere")], to: territory("murcia") })).toThrow(/unknown sub-territory/u);
   });
 });
 

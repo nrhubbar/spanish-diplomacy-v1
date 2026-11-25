@@ -1,3 +1,4 @@
+import { requireGeneral } from "../../engine/lookup";
 import type { FatigueOutcome, MoraleTurnOutcome } from "../../engine/types";
 import { plural, type ReportLines, territoryLabel, unitLabel } from "./lines";
 
@@ -14,7 +15,7 @@ export const moraleLines: ReportLines<MoraleTurnOutcome> = {
   fatigue: (outcome, { scenario }) => fatigueSentence(outcome, unitLabel(scenario, outcome.unitId)),
   rallied: (outcome, { scenario }) => {
     const count = outcome.unitIds.length;
-    const general = scenario.index.generals.get(outcome.generalId)?.name ?? outcome.generalId;
+    const general = requireGeneral(scenario, outcome.generalId).name;
     return `${general} rallied ${String(count)} demoralized ${plural(count, "unit", "units")} in ${territoryLabel(scenario, outcome.territoryId)}.`;
   }
 };

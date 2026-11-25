@@ -5,6 +5,7 @@ import type {
   FactionId,
   GameState,
   Order,
+  Refusal,
   ResourceId,
   Resources,
   Scenario,
@@ -104,9 +105,6 @@ export type OrderValidators = {
   readonly [K in Order["kind"]]?: (context: OrderValidationContext<K>) => ValidationResult;
 };
 
-/** M9: an order kind no module of the scenario's ruleset handles. */
-export const unavailableOrderReason = "This order is not available in this scenario.";
-
 /** M21, P6: an army that must leave `from` for `to`, a territory its faction held at the start of the turn. */
 export interface RetreatContext extends HookContext {
   readonly factionId: FactionId;
@@ -137,8 +135,8 @@ export interface RuleHooks {
   readonly incomeDelta?: (context: IncomeContext) => Resources;
   /** R5, D28.1: a higher per-turn cap (Hospital) and a lower price (Depot). */
   readonly replenishBonus?: (context: ReplenishContext) => ReplenishBonus;
-  /** R2, R3: reasons the type is locked here; empty when nothing blocks it. */
-  readonly recruitRequirements?: (context: RecruitContext) => readonly string[];
+  /** R2, R3: what else locks the type here; empty when nothing does. */
+  readonly recruitRequirements?: (context: RecruitContext) => readonly Refusal[];
   /**
    * M1, M9: the module's own order kinds, validated against the start-of-turn state. The engine
    * runs the validators of every selected module that owns the order's kind, in area order.
@@ -190,7 +188,7 @@ export function hookedReplenishBonus(context: ReplenishContext): ReplenishBonus 
   }, { capShare: 0, discount: {} });
 }
 
-export function hookedRecruitRequirements(context: RecruitContext): readonly string[] {
+export function hookedRecruitRequirements(context: RecruitContext): readonly Refusal[] {
   return hooksOf(context.scenario).flatMap((hooks) => hooks.recruitRequirements?.(context) ?? []);
 }
 
@@ -201,7 +199,10 @@ export function hookedRecruitRequirements(context: RecruitContext): readonly str
 export function hookedValidateOrder(context: OrderHookContext): ValidationResult | undefined {
   // Each validator is typed for its own kind; the lookup by `order.kind` keeps them matched.
   const owners = hooksOf(context.scenario).flatMap((hooks) => {
-    const validate = hooks.validateOrder?.[context.order.kind] as ((owned: OrderHookContext) => ValidationResult) | undefined;
+    const { kind } = context.order;
+    // Own keys only: an order is untrusted, and its kind could name something every object has.
+    if (hooks.validateOrder === undefined || !Object.hasOwn(hooks.validateOrder, kind)) return [];
+    const validate = hooks.validateOrder[kind] as ((owned: OrderHookContext) => ValidationResult) | undefined;
     return validate === undefined ? [] : [validate];
   });
   if (owners.length === 0) return undefined;

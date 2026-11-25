@@ -1,0 +1,358 @@
+{
+ "distinctRefusals": [
+  "A Bomber squadron cannot fly that mission.",
+  "A Coruña is not yours.",
+  "A Fighter squadron cannot fly that mission.",
+  "A Reconnaissance flight cannot fly that mission.",
+  "A demoralized unit cannot attack. It can move only into empty or friendly territory.",
+  "Albacete is not yours.",
+  "Alicante is not yours.",
+  "Almería is not yours.",
+  "Already built.",
+  "An army can sail only from the lane's port, and your side must hold it.",
+  "Andalucía is contested. No new units can be recruited there.",
+  "Andalucía is contested. Units replenish only in uncontested ground.",
+  "Aragón is contested. No new units can be recruited there.",
+  "Aragón is contested. Units replenish only in uncontested ground.",
+  "Asturias is contested. No new units can be recruited there.",
+  "Asturias is contested. Units replenish only in uncontested ground.",
+  "Asturias is not yours.",
+  "Badajoz is not yours.",
+  "Barcelona is not yours.",
+  "Bizkaia is not yours.",
+  "Bomber squadron units cannot replenish.",
+  "Burgos is not yours.",
+  "Can't be built in Albacete.",
+  "Can't be built in Badajoz.",
+  "Can't be built in Burgos.",
+  "Can't be built in Ciudad Real.",
+  "Can't be built in Cuenca.",
+  "Can't be built in Cáceres.",
+  "Can't be built in Córdoba.",
+  "Can't be built in Guadalajara.",
+  "Can't be built in Henares.",
+  "Can't be built in Huesca.",
+  "Can't be built in Jaén.",
+  "Can't be built in La Rioja.",
+  "Can't be built in León.",
+  "Can't be built in Lleida.",
+  "Can't be built in Madrid.",
+  "Can't be built in Navarra.",
+  "Can't be built in Ourense.",
+  "Can't be built in Oviedo.",
+  "Can't be built in Palencia.",
+  "Can't be built in Salamanca.",
+  "Can't be built in Segovia.",
+  "Can't be built in Sierra de Guadarrama.",
+  "Can't be built in Soria.",
+  "Can't be built in Teruel.",
+  "Can't be built in Toledo.",
+  "Can't be built in Valladolid.",
+  "Can't be built in Zamora.",
+  "Can't be built in Zaragoza.",
+  "Can't be built in Álava.",
+  "Can't be built in Ávila.",
+  "Cantabria is not yours.",
+  "Capital sub-territory only.",
+  "Castellón is not yours.",
+  "Castilla-La Mancha is contested. No new units can be recruited there.",
+  "Castilla-La Mancha is contested. Units replenish only in uncontested ground.",
+  "Ceuta is not yours.",
+  "Choose a different territory as the destination.",
+  "Ciudad Real is not yours.",
+  "Contested: building waits until the territory is held whole.",
+  "Cuenca is not yours.",
+  "Cáceres is not yours.",
+  "Cádiz is not yours.",
+  "Córdoba is not yours.",
+  "Destination is not connected to the unit's territory.",
+  "Extremadura is contested. No new units can be recruited there.",
+  "Extremadura is contested. Units replenish only in uncontested ground.",
+  "Fighter squadron units cannot replenish.",
+  "General cannot be recruited.",
+  "General units cannot disband.",
+  "General units cannot replenish.",
+  "Gipuzkoa is not yours.",
+  "Girona is not yours.",
+  "Granada is not yours.",
+  "Guadalajara is not yours.",
+  "Henares is not yours.",
+  "Huelva is not yours.",
+  "Huesca is not yours.",
+  "Ibiza and Formentera is not yours.",
+  "Islas Baleares is contested. No new units can be recruited there.",
+  "Islas Baleares is contested. Units replenish only in uncontested ground.",
+  "Jaén is not yours.",
+  "La Rioja is not yours.",
+  "León is not yours.",
+  "Lleida is not yours.",
+  "Lugo is not yours.",
+  "Madrid is not yours.",
+  "Mallorca is not yours.",
+  "Max level is 1.",
+  "Max level is 2.",
+  "Max level is 3.",
+  "Melilla is not yours.",
+  "Menorca is not yours.",
+  "Murcia is not yours.",
+  "Málaga is not yours.",
+  "Navarra is not yours.",
+  "Needs 1 more Funds.",
+  "Needs 2 more Funds and 3 more Manpower.",
+  "Needs 5 more Funds.",
+  "Needs Airfield first.",
+  "Needs a Airfield in Badajoz.",
+  "Needs a Airfield in Bizkaia.",
+  "Needs a Airfield in Burgos.",
+  "Needs a Airfield in Cantabria.",
+  "Needs a Airfield in Ceuta.",
+  "Needs a Airfield in La Rioja.",
+  "Needs a Airfield in Murcia.",
+  "Needs a Airfield in Navarra.",
+  "Needs a Airfield in Oviedo.",
+  "Needs a Airfield in Toledo.",
+  "Needs a Barracks in La Rioja and a Factory in La Rioja.",
+  "Needs a Barracks in La Rioja.",
+  "Needs a Depot in Badajoz and a Factory in Extremadura.",
+  "Needs a Depot in Badajoz.",
+  "Needs a Depot in Cantabria.",
+  "Needs a Depot in Ceuta and a Factory in Ceuta.",
+  "Needs a Depot in Ceuta.",
+  "Needs a Depot in La Rioja and a Factory in La Rioja.",
+  "Needs a Depot in La Rioja.",
+  "Needs a Depot in Mallorca and a Factory in Islas Baleares.",
+  "Needs a Depot in Mallorca.",
+  "Needs a Depot in Melilla and a Factory in Melilla.",
+  "Needs a Depot in Melilla.",
+  "Needs a Depot in Murcia.",
+  "Needs a Depot in Oviedo.",
+  "Needs a Depot in Sevilla.",
+  "Needs a Depot in Toledo.",
+  "Needs a Factory in Ceuta.",
+  "Needs a Factory in Extremadura.",
+  "Needs a Factory in Islas Baleares.",
+  "Needs a Factory in La Rioja.",
+  "Needs a Factory in Melilla.",
+  "Needs a Factory in Navarra.",
+  "Needs a city.",
+  "Needs a railway first.",
+  "No rail line your side holds reaches that capital this turn.",
+  "No railway runs here.",
+  "No sea lane joins those territories.",
+  "No way out through your own sub-territories.",
+  "Not in contested ground: units here attack or withdraw.",
+  "Not raised by the Republican Government.",
+  "Not raised by the Republican Government. Needs a Barracks in La Rioja.",
+  "Only a general can be sacked.",
+  "Only aircraft fly missions.",
+  "Ourense is not yours.",
+  "Oviedo is not yours.",
+  "Palencia is not yours.",
+  "País Vasco is contested. No new units can be recruited there.",
+  "País Vasco is contested. Units replenish only in uncontested ground.",
+  "Pontevedra is not yours.",
+  "Recon looks at ground another faction holds.",
+  "Reconnaissance flight units cannot replenish.",
+  "Salamanca is not yours.",
+  "Segovia is not yours.",
+  "Selected unit belongs to another player.",
+  "Sevilla is not yours.",
+  "Sierra de Guadarrama is not yours.",
+  "Soria is not yours.",
+  "Tarragona is not yours.",
+  "Teruel is not yours.",
+  "The target is out of range.",
+  "There is a railway here already.",
+  "This is a main line already.",
+  "This unit cannot move.",
+  "This unit cannot withdraw.",
+  "This unit is at full strength and in good order.",
+  "Toledo is not yours.",
+  "Trucks can use this road already.",
+  "Valencia is not yours.",
+  "Valladolid is not yours.",
+  "Withdraw is only for contested ground. Use Move.",
+  "Withdraw to a neighbouring territory you hold whole.",
+  "You must hold Andalucía to recruit there.",
+  "You must hold Aragón to recruit there.",
+  "You must hold Asturias to recruit there.",
+  "You must hold Cantabria to recruit there.",
+  "You must hold Castilla y León to recruit there.",
+  "You must hold Castilla-La Mancha to recruit there.",
+  "You must hold Cataluña to recruit there.",
+  "You must hold Ceuta to recruit there.",
+  "You must hold Extremadura to recruit there.",
+  "You must hold Galicia to recruit there.",
+  "You must hold Islas Baleares to recruit there.",
+  "You must hold La Rioja to recruit there.",
+  "You must hold Madrid to recruit there.",
+  "You must hold Melilla to recruit there.",
+  "You must hold Murcia to recruit there.",
+  "You must hold Navarra to recruit there.",
+  "You must hold País Vasco to recruit there.",
+  "You must hold Valencia to recruit there.",
+  "Your ground there does not border it.",
+  "Zamora is not yours.",
+  "Zaragoza is not yours.",
+  "Álava is not yours.",
+  "Ávila is not yours."
+ ],
+ "games": {
+  "11": [
+   {
+    "board": "c725bcdb5d8c74b1",
+    "lines": "512815fd093eb169",
+    "refusals": "e65351a31897d1af"
+   },
+   {
+    "board": "934c5e6627792f38",
+    "lines": "9a4030eca45cfab3",
+    "refusals": ""
+   },
+   {
+    "board": "018af256d034853e",
+    "lines": "2741e80ed5337435",
+    "refusals": ""
+   },
+   {
+    "board": "4a10479ab2689b9a",
+    "lines": "5b42c296f87eeec7",
+    "refusals": ""
+   },
+   {
+    "board": "40d40da87994833a",
+    "lines": "d16e8eddbf633bd1",
+    "refusals": "082d0ad99087eb3a"
+   },
+   {
+    "board": "2e8044583e6d0cef",
+    "lines": "c1172d72de4a1c25",
+    "refusals": ""
+   },
+   {
+    "board": "58de5caab2d55658",
+    "lines": "8216776e4fb7b161",
+    "refusals": ""
+   },
+   {
+    "board": "df61fa71910468a5",
+    "lines": "45c46586313958d7",
+    "refusals": ""
+   },
+   {
+    "board": "20c879af3e6fec9f",
+    "lines": "04ca9a3070a66203",
+    "refusals": "93fe7b07fbefeaaf"
+   },
+   {
+    "board": "d8e3ab879639e69f",
+    "lines": "da5e63f40d7ae049",
+    "refusals": ""
+   }
+  ],
+  "1001": [
+   {
+    "board": "59eda5543661d7c8",
+    "lines": "878c47274f0ec04d",
+    "refusals": "7fad6aa3d463a8f0"
+   },
+   {
+    "board": "a019b2eb6a6d9871",
+    "lines": "f69df5cfe46ec969",
+    "refusals": ""
+   },
+   {
+    "board": "1f1c58d43131d398",
+    "lines": "33d6c4c43db3c886",
+    "refusals": ""
+   },
+   {
+    "board": "0cc61e19a959d87e",
+    "lines": "a5c4a470598b7a15",
+    "refusals": ""
+   },
+   {
+    "board": "6d57121502074297",
+    "lines": "73a0d84ae5daeca7",
+    "refusals": "0cdca6641481f6d5"
+   },
+   {
+    "board": "605b04ee70852b0c",
+    "lines": "290d92e8345ed3b2",
+    "refusals": ""
+   },
+   {
+    "board": "23c9fdaa6cb28ef0",
+    "lines": "28a887a5de0a6101",
+    "refusals": ""
+   },
+   {
+    "board": "20b455d6d5cbe1ea",
+    "lines": "284252518f7110af",
+    "refusals": ""
+   },
+   {
+    "board": "48091f41541a6f55",
+    "lines": "e443f320e705e665",
+    "refusals": "298045880a536aa2"
+   },
+   {
+    "board": "00ba22d0e0966a79",
+    "lines": "64b1c27cd72448ab",
+    "refusals": ""
+   }
+  ],
+  "1234": [
+   {
+    "board": "881216b886521048",
+    "lines": "f43b65d599fb5af3",
+    "refusals": "ca8c43c365f74386"
+   },
+   {
+    "board": "6fa505d904c455ba",
+    "lines": "29da0a53be9c11f1",
+    "refusals": ""
+   },
+   {
+    "board": "86775a63166fcb1e",
+    "lines": "98316c15a6dfddab",
+    "refusals": ""
+   },
+   {
+    "board": "6f4662005d00f173",
+    "lines": "dfd6946722d8f441",
+    "refusals": ""
+   },
+   {
+    "board": "3e1dd5cb4d1a160e",
+    "lines": "4a4bdef10485e456",
+    "refusals": "bd1debd7b58fab0a"
+   },
+   {
+    "board": "83212ab9b5a13e7b",
+    "lines": "a171a93dbf9662c7",
+    "refusals": ""
+   },
+   {
+    "board": "7e985f264dd42b02",
+    "lines": "de1aa10be754ce60",
+    "refusals": ""
+   },
+   {
+    "board": "4085799a4bbce2b2",
+    "lines": "a58042d497841ed4",
+    "refusals": ""
+   },
+   {
+    "board": "8ff3db37f8924a89",
+    "lines": "fed7292b786118a1",
+    "refusals": "370cbb09085ed3ac"
+   },
+   {
+    "board": "85f0ef69ad2b375a",
+    "lines": "596cb22210f79217",
+    "refusals": ""
+   }
+  ]
+ }
+}

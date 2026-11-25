@@ -10,7 +10,11 @@ test.beforeEach(async ({ browserName, page }) => {
   test.skip(browserName !== "chromium", "Baselines are Chromium-only.");
   test.skip(process.platform !== "linux", "Baselines are Linux renders; CI checks them.");
   // A fixed seed makes computer orders, and therefore resolution screens, deterministic.
-  await page.addInitScript(() => { Math.random = () => 0.4242; });
+  // A game's secret seed comes from the secure source, so it is pinned too.
+  await page.addInitScript(() => {
+    Math.random = () => 0.4242;
+    crypto.getRandomValues = (array) => { if (array instanceof Uint8Array) array.fill(0x42); return array; };
+  });
 });
 
 async function startGame(page: Page): Promise<void> {

@@ -1,14 +1,16 @@
 import { compareIds, removeArmies } from "../board";
-import { pick } from "../dice";
+import { d20Faces } from "../d20/rules";
+import { dieFaces, pick } from "../dice";
 import { sackGenerals } from "../generals/changes";
 import { hookedGrounded } from "../hooks";
-import type { Phase, TurnDraft } from "../phases/draft";
+import type { Phase } from "../phases/draft";
 import type {
   AirMissionOrder,
   AirTurnOutcome,
   BuildingId,
   DevelopmentId,
   FactionId,
+  GameState,
   RaidCut,
   RaidOutcome,
   ReconReveal,
@@ -20,7 +22,8 @@ import type {
   UnitId,
   UnitState
 } from "../types";
-import { unitKindIn, unitTypeIn } from "./pieces";
+import { antiAirOf } from "./groundSupport";
+import { unitKindIn } from "./pieces";
 import { airScratch, validOrdersOf } from "./scratch";
 import { missionTerritory } from "./validation";
 
@@ -51,24 +54,24 @@ export const setAside: Phase = (input) => {
   };
 };
 
-/** U3: the best (most negative) anti-air modifier among other factions' ground units in the territory. */
-function antiAirIn(draft: TurnDraft, territoryId: TerritoryId, raider: FactionId): number {
-  const { scenario, start } = draft.input;
-  let best = 0;
-  for (const unit of Object.values(draft.armies)) {
-    if (unit.territoryId !== territoryId || unit.factionId === raider) continue;
-    for (const effect of unitTypeIn(scenario, start.raised, unit.id)?.effects ?? []) {
-      if (effect.kind === "raid-defence") best = Math.min(best, effect.roll);
-    }
-  }
-  return best;
+/** U3: what anti-air does to a raid's roll in a territory: the best among other factions' units there, 0 or below. */
+export function raidDefence(scenario: Scenario, raised: GameState["raised"], units: readonly UnitState[], territoryId: TerritoryId, raider: FactionId): number {
+  const defenders = units.filter((unit) => unit.territoryId === territoryId && unit.factionId !== raider);
+  return 0 - antiAirOf(scenario, raised, defenders.map((unit) => unit.id));
 }
 
 /** U3: the band of the raid table a modified roll falls in. */
 export function raidResult(scenario: Scenario, roll: number): RaidOutcome {
   const table = scenario.air?.raidTable ?? [];
-  const clamped = Math.min(20, Math.max(1, roll));
+  const clamped = Math.min(dieFaces, Math.max(1, roll));
   return table.find((band) => clamped <= band.upTo)?.outcome ?? "nothing-hit";
+}
+
+/** U3: the chance of each outcome of a raid whose roll is changed by `modifier`. */
+export function raidChances(scenario: Scenario, modifier: number): Readonly<Record<RaidOutcome, number>> {
+  const chances: Record<RaidOutcome, number> = { "air-eliminated": 0, "building-hit": 0, "income-cut": 0, "nothing-hit": 0 };
+  for (const die of d20Faces) chances[raidResult(scenario, die + modifier)] += 1 / dieFaces;
+  return chances;
 }
 
 /** U3: "Building downgraded or destroyed": a paved airfield falls back to its airfield; any other building is destroyed. Without buildings, the highest development level drops. */
@@ -114,7 +117,7 @@ export const flyAirMissions: Phase = (draft) => {
     const unit = scratch.aside[order.unitId];
     if (unit === undefined) continue;
     if (hookedGrounded({ scenario, state: start, territoryId: unit.territoryId, unitId: unit.id })) {
-      events.push({ kind: "grounded", order, reason: "weather" });
+      events.push({ kind: "grounded", order, refusal: { code: "grounded-by-weather" } });
     } else {
       flying.push(order);
     }
@@ -133,9 +136,9 @@ export const flyAirMissions: Phase = (draft) => {
     if (territoryId === undefined) continue;
     const stream = streams("raid", raidIndex);
     raidIndex += 1;
-    const die = pick(stream, 20);
+    const die = pick(stream, dieFaces);
     const against = interceptors.filter((other) => other.factionId !== order.factionId && missionTerritory(scenario, other.mission) === territoryId);
-    const roll = die + antiAirIn(draft, territoryId, order.factionId) + against.length * air.interceptRoll;
+    const roll = die + raidDefence(scenario, start.raised, Object.values(draft.armies), territoryId, order.factionId) + against.length * air.interceptRoll;
     const result = raidResult(scenario, roll);
     const aircraftLost = result === "air-eliminated" ? [order.unitId] : [];
     for (const id of aircraftLost) lost.add(id);
@@ -168,7 +171,7 @@ export const flyAirMissions: Phase = (draft) => {
     const territoryId = order.mission.territoryId;
     const against = interceptors.filter((other) => other.factionId !== order.factionId && missionTerritory(scenario, other.mission) === territoryId);
     if (against.length === 0) continue;
-    const roll = pick(streams("raid", raidIndex), 20) + against.length * air.interceptRoll;
+    const roll = pick(streams("raid", raidIndex), dieFaces) + against.length * air.interceptRoll;
     raidIndex += 1;
     // CT-46: a recon flight is reported only when shot down, in an interception of its own that
     // only the fighters' faction and the flier see (`visibility.ts`): it names the recon's target.

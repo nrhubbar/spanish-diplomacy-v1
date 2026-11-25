@@ -17,7 +17,7 @@ import { selectVictoryStanding } from "../main/state/selectors";
 import { emptyDraft } from "../main/state/session";
 import tinyMap from "./fixtures/scenarios/tiny-front/map.json";
 import tinyScenario from "./fixtures/scenarios/tiny-front/scenario.json";
-import { city, faction, spain, spainId, territory, testRegistry, testStore, tiny } from "./support";
+import { city, faction, spain, spainId, territory, testRegistry, testStore, tiny, testGame } from "./support";
 
 describe("briefing data", () => {
   const assetPaths = new Set(["src/test/fixtures/scenarios/tiny-front/geometry.svg", "src/test/fixtures/scenarios/tiny-front/foot.svg"]);
@@ -105,7 +105,7 @@ describe("briefing slice (B4)", () => {
     expect(twice).toBe(once);
     const both = reduce(twice, briefingAutoOpened(faction("blue")));
     expect(both.autoOpenedFor).toEqual(["red", "blue"]);
-    expect(reduce(both, startGame(1)).autoOpenedFor).toEqual([]);
+    expect(reduce(both, startGame("1")).autoOpenedFor).toEqual([]);
     expect(reduce(both, exitGame()).autoOpenedFor).toEqual([]);
   });
 });
@@ -225,7 +225,7 @@ describe("Briefing view", () => {
 
   it("stays closed after turn 1 and leaves out the first-turn report", async () => {
     const state = { ...initialGameState(spain()), turnNumber: 2 };
-    const game = { assignments: { [faction("republic")]: "local-human" as const }, history: [], locked: {}, scenarioId: spainId, seed: 1, state };
+    const game = { assignments: { [faction("republic")]: "local-human" as const }, history: [], ready: [], scenarioId: spainId, gameId: testGame, state };
     const { user } = renderApp(testStore({ game: { session: { draft: emptyDraft, factionId: faction("republic"), game, phase: "planning" } } }), "/orders");
     expect(await screen.findByRole("complementary", { name: "This turn" })).toBeVisible();
     await user.click(screen.getByRole("button", { name: "Briefing" }));

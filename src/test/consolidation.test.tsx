@@ -11,7 +11,7 @@ import { describeOutcome, describeOutcomeGroup, groupOutcomes } from "../main/pr
 import { OutcomeSummary } from "../main/screens/ResultPanels";
 import { chooseOrderKind, clickMapTerritory, openSetup, startGame } from "../main/state/gameSlice";
 import { emptyDraft } from "../main/state/session";
-import { type ArmySpec, battlefield, battlesOf, faction, loadedDice, move, play as resolve, spainM2, spainId, territory, testStore, tiny, unit, withUnits } from "./support";
+import { type ArmySpec, battlefield, battlesOf, faction, loadedDice, move, play as resolve, spainM2, spainId, territory, testStore, tiny, unit, withUnits, testGame, told } from "./support";
 
 // Friendly consolidation: armies of one faction never block, bounce, fight, or disband each
 // other. Only other factions stop a move or fight it (M11, M17-M21).
@@ -239,7 +239,7 @@ describe("friendly consolidation (planning and computer players)", () => {
   it("plans moves into a territory friendly units hold or are already ordered into", () => {
     const store = testStore();
     store.dispatch(openSetup());
-    store.dispatch(startGame(11));
+    store.dispatch(startGame("11"));
     // Murcia -> Valencia, where two friendly regiments hold.
     // Selecting a territory selects all of its unordered armies, so each step is: select,
     // open the order menu, choose Move, pick the destination.
@@ -270,7 +270,7 @@ describe("friendly consolidation (planning and computer players)", () => {
     const start = initialGameState(scenario);
     const units = Object.fromEntries(Object.values(start.units).map((army) =>
       [army.id, army.territoryId === "madrid" ? { ...army, morale: { demoralized: true, quietTurns: 0 } } : army]));
-    const game = { assignments: { [faction("republic")]: "local-human" as const }, history: [], locked: {}, scenarioId: spainId, seed: 1, state: { ...start, units } };
+    const game = { assignments: { [faction("republic")]: "local-human" as const }, history: [], ready: [], scenarioId: spainId, gameId: testGame, state: { ...start, units } };
     const store = testStore({ game: { session: { draft: emptyDraft, factionId: faction("republic"), game, phase: "planning" } } });
     store.dispatch(clickMapTerritory(territory("madrid")));
     store.dispatch(chooseOrderKind("move"));
@@ -278,11 +278,11 @@ describe("friendly consolidation (planning and computer players)", () => {
     store.dispatch(clickMapTerritory(territory("castilla-y-leon")));
     const session = store.getState().game.session;
     expect(session.phase === "planning" && session.draft.orders).toEqual([]);
-    expect(session.phase === "planning" && session.draft.feedback).toBe("A demoralized unit cannot attack. It can move only into empty or friendly territory.");
+    expect(told(scenario, session.phase === "planning" ? session.draft.feedback : undefined)).toBe("A demoralized unit cannot attack. It can move only into empty or friendly territory.");
     // A territory that is not connected keeps its own explanation.
     store.dispatch(clickMapTerritory(territory("galicia")));
     const far = store.getState().game.session;
-    expect(far.phase === "planning" && far.draft.feedback).toMatch(/not connected to Madrid/);
+    expect(told(scenario, far.phase === "planning" ? far.draft.feedback : undefined)).toMatch(/not connected to Madrid/);
     store.dispatch(clickMapTerritory(territory("castilla-la-mancha")));
     const planned = store.getState().game.session;
     expect(planned.phase === "planning" && planned.draft.orders.map((order) => order.to)).toEqual(["castilla-la-mancha", "castilla-la-mancha", "castilla-la-mancha", "castilla-la-mancha"]);
@@ -392,7 +392,7 @@ describe("friendly consolidation (turn report)", () => {
       { factionId: faction("red"), kind: "no-move", unitId: unit("red-guard") },
       { factionId: faction("red"), kind: "no-move", unitId: unit("red-rangers") },
       { factionId: faction("blue"), kind: "no-move" },
-      { kind: "invalid-order", men: 500, order: move("red", "red-guard", "westfold", "harbor"), reason: "Destination is not connected to the unit's territory." }
+      { kind: "invalid-order", men: 500, order: move("red", "red-guard", "westfold", "harbor"), refusal: { code: "not-connected" } }
     ];
     expect(groupOutcomes(outcomes).map((group) => describeOutcomeGroup(scenario, group))).toEqual([
       "Red Guard held.",

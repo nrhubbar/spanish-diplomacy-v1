@@ -1,4 +1,4 @@
-import { neighborsOf } from "../lookup";
+import { neighborsOf, requireSubTerritory } from "../lookup";
 import type { ConnectionDefinition, FactionId, GameState, Scenario, SubTerritoryId, TerritoryId, UnitId } from "../types";
 import { isSeaConnectionClosed } from "../weather";
 import { subTerritoryGraph } from "./flips";
@@ -110,5 +110,5 @@ export function withdrawRoutes(scenario: Scenario, state: GameState, factionId: 
 
 /** The sub-territory names along a route, for the order menu and reports. */
 export function routeNames(scenario: Scenario, route: WithdrawRoute): readonly string[] {
-  return route.through.map((id) => scenario.index.subTerritories.get(id)?.name ?? id);
+  return route.through.map((id) => requireSubTerritory(scenario, id).name);
 }

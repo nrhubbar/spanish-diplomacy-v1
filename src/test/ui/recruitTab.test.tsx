@@ -9,7 +9,7 @@ import { RecruitTab } from "../../main/screens/pane/RecruitTab";
 import { OrderLedger } from "../../main/screens/queues/OrderLedger";
 import type { PlanningSession } from "../../main/state/planning";
 import { emptyDraft, type Draft } from "../../main/state/session";
-import { faction, spain, spainId, territory, testRegistry, testStore } from "../support";
+import { faction, spain, spainId, territory, testRegistry, testStore, testGame } from "../support";
 
 afterEach(cleanup);
 
@@ -17,7 +17,7 @@ const republic = faction("republic");
 const type = (id: string): UnitTypeId => id as UnitTypeId;
 
 function session(state: GameState, draft: Draft = emptyDraft): PlanningSession {
-  return { draft, factionId: republic, game: { assignments: { [republic]: "local-human" }, history: [], locked: {}, scenarioId: spainId, seed: 1, state }, phase: "planning" };
+  return { draft, factionId: republic, game: { assignments: { [republic]: "local-human" }, history: [], ready: [], scenarioId: spainId, gameId: testGame, state }, phase: "planning" };
 }
 
 function renderTab(planning: PlanningSession, territoryId: TerritoryId, scenario: Scenario = spain()) {
@@ -215,17 +215,17 @@ describe("the Recruit tab (X4)", () => {
     expect(after.phase === "planning" ? after.draft.recruits?.map((order) => [order.territoryId, order.unitTypeId]) : []).toEqual([["valencia", "militia-column"], ["madrid", "infantry-regiment"]]);
   });
 
-  it("never names an unknown type's line by its id, and counts orders beyond the territory's plainly", () => {
+  it("names each line by its type, and counts orders beyond the territory's plainly", () => {
     const planning = session(start);
     render(
       <Provider store={testStore({ game: { session: planning } })}>
         <RegistryContext value={testRegistry()}>
-          <OrderLedger label="Orders" onCancel={() => undefined} orders={[{ ...recruit("madrid", "zeppelin"), factionId: faction("nobody") }, recruit("madrid", "militia-column")]} scenario={spain()} slots={1} />
+          <OrderLedger label="Orders" onCancel={() => undefined} orders={[{ ...recruit("madrid", "infantry-regiment"), factionId: faction("nobody") }, recruit("madrid", "militia-column")]} scenario={spain()} slots={1} />
         </RegistryContext>
       </Provider>
     );
-    expect(screen.getByRole("button", { name: "Cancel this unit, order 1 of 1" })).toBeTruthy();
-    expect(screen.getByText("Unknown unit")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Cancel Infantry regiment, order 1 of 1" })).toBeTruthy();
+    expect(screen.getByText("Infantry regiment")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Cancel Militia column, order 2" })).toBeTruthy();
   });
 

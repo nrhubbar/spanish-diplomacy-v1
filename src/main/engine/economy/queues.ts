@@ -49,7 +49,7 @@ export const payForBuilds: Phase = (draft) => {
         ledger = applied.state;
         events.push({ kind: "build-queued", order, paid: applied.paid, position: applied.position });
       } else {
-        events.push({ factionId: order.factionId, kind: "build-refunded", project: order.project, reason: applied.reason, refund: {}, subTerritoryId: order.subTerritoryId });
+        events.push({ factionId: order.factionId, kind: "build-refunded", project: order.project, refusal: applied.refusal, refund: {}, subTerritoryId: order.subTerritoryId });
       }
     }
   }
@@ -82,7 +82,7 @@ export function handOverQueues(
     const inherited = head !== undefined && head.progress > 0 ? head : undefined;
     for (const item of inherited === undefined ? site.queue : rest) {
       treasuries = credit(treasuries, item.factionId, item.paid);
-      events.push({ factionId: item.factionId, kind: "build-refunded", project: item.project, reason: "captured", refund: item.paid, subTerritoryId: sub.id });
+      events.push({ factionId: item.factionId, kind: "build-refunded", project: item.project, refusal: { code: "site-captured" }, refund: item.paid, subTerritoryId: sub.id });
     }
     if (inherited !== undefined) {
       events.push({ kind: "build-forfeited", lost: inherited.paid, newHolder: site.holder, previousHolder: inherited.factionId, project: inherited.project, subTerritoryId: sub.id });

@@ -1,6 +1,6 @@
 import { type ConnectionHint, savingData } from "../connection";
 import type { AudioState } from "../state/audioSlice";
-import { parseSettings, type SoundSettings, storageKey } from "./levels";
+import { parseSettings, type SoundSettings, storageKey } from "../state/soundLevels";
 
 /** Reading the browser's storage can itself throw, so it is asked for each time. */
 export type SoundStorage = () => Pick<Storage, "getItem" | "setItem">;

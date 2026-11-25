@@ -11,7 +11,7 @@ import { TerritoryView } from "../main/screens/shell/views/TerritoryView";
 import { cancelBuildOrder, clickMapTerritory, endTurn, focusSubTerritory, queueBuildOrder } from "../main/state/gameSlice";
 import { plannedBuilds, type PlanningSession } from "../main/state/planning";
 import { emptyDraft } from "../main/state/session";
-import { faction, spain, spainId, territory, testRegistry, testStore } from "./support";
+import { faction, spain, spainId, territory, testRegistry, testStore, testGame, told } from "./support";
 import { unfortified } from "./pinned";
 
 afterEach(cleanup);
@@ -21,7 +21,7 @@ const fortify = (factionId = "republic"): BuildOrder => ({ factionId: faction(fa
 
 /** A Spain game with the Republic planning and the other two factions run by the computer. */
 function planning(state: GameState = unfortified(initialGameState(spain()))) {
-  const game = { assignments: { [faction("republic")]: "local-human" as const, [faction("north")]: "computer" as const, [faction("south")]: "computer" as const }, history: [], locked: {}, scenarioId: spainId, seed: 1, state };
+  const game = { assignments: { [faction("republic")]: "local-human" as const, [faction("north")]: "computer" as const, [faction("south")]: "computer" as const }, history: [], ready: [], scenarioId: spainId, gameId: testGame, state };
   return testStore({ game: { session: { draft: emptyDraft, factionId: faction("republic"), game, phase: "planning" } } });
 }
 
@@ -52,9 +52,9 @@ describe("planned Build orders ($5)", () => {
     store.dispatch(queueBuildOrder(fortify()));
     store.dispatch(queueBuildOrder(fortify()));
     expect(plannedBuilds(session(store))).toHaveLength(1);
-    expect(session(store).draft.feedback).toBe("Already in the queue.");
+    expect(told(spain(), session(store).draft.feedback)).toBe("Already in the queue.");
     store.dispatch(queueBuildOrder({ ...fortify(), subTerritoryId: "sevilla" as SubTerritoryId }));
-    expect(session(store).draft.feedback).toMatch(/not yours/);
+    expect(told(spain(), session(store).draft.feedback)).toMatch(/not yours/);
     store.dispatch(cancelBuildOrder(0));
     expect(plannedBuilds(session(store))).toEqual([]);
   });

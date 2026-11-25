@@ -1,6 +1,6 @@
 import { describeSystemOutcome, isSystemOutcome } from "./systemText";
 import { listNames } from "./systemText/lines";
-import { requireFaction, requireTerritory, requireUnitDefinition } from "../engine/lookup";
+import { requireFaction, requireTerritory } from "../engine/lookup";
 import type {
   BounceCause,
   FactionId,
@@ -15,6 +15,8 @@ import type {
 } from "../engine/types";
 import { battleTitle } from "./grades";
 import { glyphs } from "./glyphs";
+import { refusalText } from "./refusals";
+import { unitName } from "./unitName";
 
 /** Player-facing wording for engine data. The engine itself produces no prose. */
 
@@ -26,11 +28,7 @@ export function territoryName(scenario: Scenario, id: TerritoryId): string {
   return requireTerritory(scenario, id).name;
 }
 
-export function unitName(scenario: Scenario, id: UnitId): string {
-  return requireUnitDefinition(scenario, id).name;
-}
-
-export { listNames };
+export { listNames, unitName };
 
 /** "1 unit", "3 units". */
 export function armies(count: number): string {
@@ -201,7 +199,7 @@ export function describeOutcomeGroup(scenario: Scenario, group: OutcomeGroup, ou
       : `${unitName(scenario, outcome.unitId)} held.`;
   }
   if (outcome.kind === "rejected-order") {
-    return `${factionName(scenario, outcome.order.factionId)}: an order was not carried out: ${outcome.reason}`;
+    return `${factionName(scenario, outcome.order.factionId)}: an order was not carried out: ${refusalText(scenario, outcome.refusal)}`;
   }
   if (outcome.kind === "recovered") {
     return `${unitName(scenario, outcome.unitId)} recovered its morale in ${territoryName(scenario, outcome.territoryId)}.`;
@@ -232,7 +230,7 @@ export function describeOutcomeGroup(scenario: Scenario, group: OutcomeGroup, ou
     case "disbanded-move":
       return `${actor}: ${units} ${several ? "were" : "was"} lost. ${several ? "They" : "It"} tried to move${path} and bounced: ${bounceReason(scenario, outcome.cause, { order, outcomes })}. ${factionName(scenario, outcome.capturedByFactionId)} took ${territoryName(scenario, order.from)}.`;
     case "invalid-order":
-      return `${actor}: ${units} was disbanded after an impossible order: ${outcome.reason}`;
+      return `${actor}: ${units} was disbanded after an impossible order: ${refusalText(scenario, outcome.refusal)}`;
   }
 }
 

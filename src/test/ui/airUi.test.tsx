@@ -21,8 +21,7 @@ import { RecruitsAtChip } from "../../main/screens/pane/RecruitsAtChip";
 import { tabCount } from "../../main/screens/pane/TerritoryTabs";
 import type { PlanningSession } from "../../main/state/planning";
 import { emptyDraft } from "../../main/state/session";
-import { createAppStore } from "../../main/state/store";
-import { faction, shippedRegistry, spain, spainId, spainWithAir, territory, testStore, unit } from "../support";
+import { faction, shippedRegistry, spain, spainId, spainWithAir, territory, testStore, told, unit, testGame } from "../support";
 
 afterEach(cleanup);
 
@@ -35,7 +34,7 @@ function session(state: GameState, airOrders: readonly AirMissionOrder[] = []): 
   return {
     draft: { ...emptyDraft, airOrders },
     factionId: republic,
-    game: { assignments: {}, history: [], locked: {}, scenarioId: spainId, seed: 1, state },
+    game: { assignments: {}, history: [], ready: [], scenarioId: spainId, gameId: testGame, state },
     phase: "planning"
   };
 }
@@ -118,7 +117,7 @@ describe("the air pane (U2, M11, `ux-air-a`)", () => {
 
 /** A unit raised in play (R6), so a test can put a type the board does not start with where it needs one. */
 function withRaised(state: GameState, id: string, factionId: string, type: string, territoryId: string): GameState {
-  const definition: RaisedUnitDefinition = { factionId: faction(factionId), fullStrength: 300, id: unit(id), name: id, type: type as UnitTypeId };
+  const definition: RaisedUnitDefinition = { factionId: faction(factionId), fullStrength: 300, id: unit(id), type: type as UnitTypeId };
   return {
     ...state,
     raised: { ...state.raised, [id]: definition },
@@ -150,9 +149,9 @@ describe("the air pane's targets and cards (U2, U3)", () => {
 
   it("starts choosing the mission's target on the map, and shows the planner's feedback", async () => {
     const planning = session(start, [raid]);
-    const store = createAppStore({ preloadedState: { game: { session: planning } }, registry: shippedRegistry() });
+    const store = testStore({ game: { session: planning } }, shippedRegistry());
     const pane = (shown: PlanningSession) => <Provider store={store}><AirPane scenario={scenario} session={shown} unitId={bomber} /></Provider>;
-    const { rerender } = render(pane({ ...planning, draft: { ...planning.draft, feedback: "The target is out of range." } }));
+    const { rerender } = render(pane({ ...planning, draft: { ...planning.draft, feedback: { code: "refused", refusals: [{ code: "target-out-of-range" }] } } }));
     expect(screen.getByRole("status")).toHaveTextContent("The target is out of range.");
     expect(screen.queryByRole("combobox")).toBeNull();
     await userEvent.click(screen.getByRole("button", { name: "Ground Support" }));
@@ -173,11 +172,11 @@ describe("the air pane's targets and cards (U2, U3)", () => {
       ...start,
       subTerritories: Object.fromEntries(Object.entries(start.subTerritories).map(([id, site]) => [id, madridSubs.has(id as SubTerritoryId) ? { ...site, buildings: [] } : site]))
     };
-    const store = createAppStore({ preloadedState: { game: { session: session(unpaved) } }, registry: shippedRegistry() });
+    const store = testStore({ game: { session: session(unpaved) } }, shippedRegistry());
     render(<Provider store={store}><AirPane scenario={scenario} session={session(unpaved)} unitId={bomber} /></Provider>);
     await userEvent.click(screen.getByRole("button", { name: "Ground Support" }));
     const after = store.getState().game.session;
-    expect(after.phase === "planning" ? after.draft.feedback : undefined).toBe("Nothing in range for this mission.");
+    expect(after.phase === "planning" ? told(scenario, after.draft.feedback) : undefined).toBe("Nothing in range for this mission.");
   });
 
   it("lists the other aircraft at the base with their planned missions, and none for a lone flight", () => {

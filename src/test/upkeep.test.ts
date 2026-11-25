@@ -14,7 +14,7 @@ import type { FactionId, GameState, Order, ResourceId, Scenario, TerritoryId, Tr
 import { validateOrder } from "../main/engine/validation";
 import { isPublicOrder, ordersFor, outcomesFor } from "../main/engine/visibility";
 import { describeSystemOutcome } from "../main/presentation/systemText";
-import { faction, spainWithAir } from "./support";
+import { faction, said, spainWithAir, verdictText } from "./support";
 import { pinned, withoutFundsUpkeep } from "./pinned";
 
 /** D1: upkeep, shortage and Disband. */
@@ -42,7 +42,7 @@ const rich: GameState = { ...initial, treasuries: { ...initial.treasuries, [repu
 /** A hundred columns finishing training this turn: far more upkeep than the stock covers. */
 const drafted = (state: GameState): GameState => ({ ...state, training: Array.from({ length: 100 }, () => training({})) });
 const context = (state: GameState, planned: readonly Order[] = []): PlanningContext => ({ factionId: republic, memory: undefined, planned, random: () => 0.5, scenario, state }) as never;
-const charge = (state: GameState, at: Scenario = scenario) => chargeUpkeep(startDraft({ dice: undefined as never, scenario: at, seed: 1, start: state, streams: undefined as never, submissions: [] }));
+const charge = (state: GameState, at: Scenario = scenario) => chargeUpkeep(startDraft({ dice: undefined as never, scenario: at, start: state, streams: undefined as never, submissions: [] }));
 
 describe("the bill", () => {
   it("counts every unit on the map at any strength, not generals", () => {
@@ -111,9 +111,9 @@ describe("refusals at reveal", () => {
     const state: GameState = { ...rich, carry: { [republic]: { [manpower]: projectedHoldings(scenario, rich, republic, once)[manpower]! } } };
     expect(ofKind(submit(state, once).outcomes, "training-started")).toHaveLength(1);
     const { outcomes } = submit(drafted(rich), once);
-    expect(ofKind(outcomes, "training-refunded")[0]?.reason).toBe("Next turn's upkeep would leave you short of Manpower.");
+    expect(said(scenario, ofKind(outcomes, "training-refunded")[0]?.refusal)).toBe("Next turn's upkeep would leave you short of Manpower.");
     expect(ofKind(outcomes, "training-started")).toEqual([]);
-    expect(upkeepProblem(scenario, broke(), republic, [])).toContain("Manpower");
+    expect(said(scenario, upkeepProblem(scenario, broke(), republic, []))).toContain("Manpower");
   });
 
   it("lets a Disband in the same turn make room, and refuses a Replenish like a Recruit", () => {
@@ -125,7 +125,7 @@ describe("refusals at reveal", () => {
     const all = submit(withStock(3), [...own(initial, "militia-column").map(disband), ...own(initial, "security-forces").map(disband), recruit("militia-column")]);
     expect(ofKind(all.outcomes, "training-started")).toHaveLength(1);
     const refused = submit(drafted({ ...worn, treasuries: rich.treasuries }), [replenish]);
-    expect(ofKind(refused.outcomes, "replenish-cancelled")[0]).toMatchObject({ reason: "Next turn's upkeep would leave you short of Manpower.", refund: {} });
+    expect(ofKind(refused.outcomes, "replenish-cancelled")[0]).toMatchObject({ refund: {}, refusal: { code: "upkeep-short", resourceIds: ["manpower"] } });
   });
 });
 
@@ -205,7 +205,7 @@ describe("Disband", () => {
   });
 
   it("is for a side's own ground units and aircraft, anywhere, not generals", () => {
-    const check = (order: Order): string | undefined => { const verdict = validateOrder(scenario, initial, order); return verdict.ok ? undefined : verdict.reason; };
+    const check = (order: Order): string | undefined => { const verdict = validateOrder(scenario, initial, order); return verdict.ok ? undefined : verdictText(scenario, verdict); };
     const general = Object.values(initial.units).find((entry) => entry.factionId === republic && requireUnitDefinition(scenario, entry.id).type === "general")!;
     const aircraft = own(initial).find((entry) => typeOf(scenario.index.units.get(entry.id)?.type ?? "general").kind === "air")!;
     expect(check(disband(unit!))).toBeUndefined();

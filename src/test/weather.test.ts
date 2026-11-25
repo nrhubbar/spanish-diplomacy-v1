@@ -8,8 +8,9 @@ import { beforePlanning, forecast, isSeaRouteClosed, rollWeather, weatherIn } fr
 import { destinationEstimates, modifierName, modifierPhrase } from "../main/presentation/odds";
 import { turnLabel } from "../main/presentation/turn";
 import { forecastEntries } from "../main/presentation/weatherText";
-import { advance } from "../main/state/coordinator";
-import { faction, move, spain, territory, tiny, unit, withUnits } from "./support";
+import { createGame } from "../main/game/service";
+import { playerView } from "../main/game/projection";
+import { faction, move, spain, territory, tiny, unit, withUnits, testGame, testPlayer } from "./support";
 import { unfortified } from "./pinned";
 
 const zones = ["cantabrian", "meseta", "mediterranean", "south"] as const;
@@ -71,9 +72,9 @@ describe("the weather roll (T2)", () => {
     const ready = beforePlanning(spain(), start, 7);
     expect(ready.weather).toEqual(rollWeather(spain(), 7, 1));
     expect(beforePlanning(spain(), ready, 7)).toBe(ready);
-    const session = advance(spain(), { assignments: { [faction("republic")]: "local-human", [faction("north")]: "computer", [faction("south")]: "computer" }, history: [], locked: {}, scenarioId: spain().id, seed: 7, state: start });
-    expect(session.phase).toBe("planning");
-    if (session.phase === "planning") expect(session.game.state.weather).toEqual(ready.weather);
+    const game = createGame(spain(), { gameId: testGame, rollScheme: "numeric-1", scenarioVersion: "test", seats: { [faction("republic")]: { kind: "human", playerId: testPlayer }, [faction("north")]: { kind: "computer" }, [faction("south")]: { kind: "computer" } }, seed: "7", seedChosen: true, timerMinutes: 0 }, 0);
+    expect(game.status).toBe("planning");
+    expect(playerView(spain(), game, testPlayer).state.weather).toEqual(ready.weather);
   });
 
   it("forecasts a turn from its season's table, most likely first (T3)", () => {

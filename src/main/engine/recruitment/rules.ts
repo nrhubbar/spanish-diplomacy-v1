@@ -7,8 +7,10 @@ import type {
   FactionId,
   GameState,
   RaisedUnitDefinition,
+  RecruitmentRefusal,
   RecruitOrder,
   RecruitRequirement,
+  Refusal,
   ReplenishOrder,
   ResourceId,
   Resources,
@@ -45,22 +47,11 @@ export function holdsTerritory(scenario: Scenario, state: Pick<GameState, "contr
   return capital === undefined || state.subTerritories[capital]?.holder === factionId;
 }
 
-const territoryLabel = (scenario: Scenario, territoryId: TerritoryId): string => scenario.index.territories.get(territoryId)?.name ?? territoryId;
-const subLabel = (scenario: Scenario, id: SubTerritoryId): string => scenario.index.subTerritories.get(id)?.name ?? id;
-
-/** R3: the building's or the track's name. */
-export function requirementName(scenario: Scenario, requirement: RecruitRequirement): string {
-  return requirement.kind === "building"
-    ? scenario.index.buildings.get(requirement.buildingId)?.name ?? requirement.buildingId
-    : scenario.index.development.get(requirement.developmentId)?.name ?? requirement.developmentId;
-}
-
 /** R2, C1, C8: why the faction cannot recruit in this territory at all, or undefined when it can. */
-export function recruitSiteProblem(scenario: Scenario, state: GameState, factionId: FactionId, territoryId: TerritoryId): string | undefined {
-  if (scenario.recruitment === undefined) return "Recruiting is not part of this scenario.";
-  const name = territoryLabel(scenario, territoryId);
-  if (isContested(scenario, state, territoryId)) return `${name} is contested. No new units can be recruited there.`;
-  if (!holdsTerritory(scenario, state, factionId, territoryId)) return `You must hold ${name} to recruit there.`;
+export function recruitSiteProblem(scenario: Scenario, state: GameState, factionId: FactionId, territoryId: TerritoryId): RecruitmentRefusal | undefined {
+  if (scenario.recruitment === undefined) return { code: "recruiting-unavailable" };
+  if (isContested(scenario, state, territoryId)) return { code: "recruit-contested", territoryId };
+  if (!holdsTerritory(scenario, state, factionId, territoryId)) return { code: "recruit-not-held", territoryId };
   return undefined;
 }
 
@@ -82,42 +73,32 @@ export function meetsRequirement(scenario: Scenario, state: Pick<GameState, "sub
   });
 }
 
-/** What locks one unit type, in words: one reason per missing condition. */
+/** What locks one unit type: one refusal per condition it fails. */
 export interface TypeLock {
   /** R3: the requirements the territory lacks, in the type's order. */
   readonly missing: readonly RecruitRequirement[];
-  readonly reasons: readonly string[];
+  readonly refusals: readonly Refusal[];
 }
 
 /**
  * R2, R3: why the faction cannot recruit this type here, besides the site itself. Faction limits
  * and what the territory has are read from the state (both are captured intact, $5); other
- * areas add their reasons through the `recruitRequirements` hook.
+ * areas add their refusals through the `recruitRequirements` hook.
  */
 export function typeLock(scenario: Scenario, state: GameState, factionId: FactionId, territoryId: TerritoryId, type: UnitTypeDefinition): TypeLock {
   const recruit = type.recruit;
-  if (recruit === undefined) return { missing: [], reasons: [`${type.name} cannot be recruited.`] };
-  const reasons: string[] = [];
+  if (recruit === undefined) return { missing: [], refusals: [{ code: "type-not-recruited", unitTypeId: type.id }] };
+  const refusals: Refusal[] = [];
   if (recruit.factionIds !== undefined && !recruit.factionIds.includes(factionId)) {
-    reasons.push(`Not raised by the ${scenario.index.factions.get(factionId)?.name ?? factionId}.`);
+    refusals.push({ code: "type-not-raised-by", factionId });
   }
   const missing = recruit.requires.filter((requirement) => !meetsRequirement(scenario, state, factionId, territoryId, requirement));
   const capital = capitalOf(scenario, territoryId);
-  if (missing.length > 0) reasons.push(`Needs ${missingWords(scenario, territoryId, missing)}.`);
+  if (missing.length > 0) refusals.push({ code: "requirements-missing", missing, territoryId });
   if (capital !== undefined) {
-    reasons.push(...hookedRecruitRequirements({ factionId, scenario, state, subTerritoryId: capital, territoryId, unitTypeId: type.id }));
+    refusals.push(...hookedRecruitRequirements({ factionId, scenario, state, subTerritoryId: capital, territoryId, unitTypeId: type.id }));
   }
-  return { missing, reasons };
-}
-
-/** R3: "a Barracks in Valladolid and a Factory in Castilla y Leon": buildings belong in the capital, tracks anywhere in the territory. */
-function missingWords(scenario: Scenario, territoryId: TerritoryId, missing: readonly RecruitRequirement[]): string {
-  const capital = capitalOf(scenario, territoryId);
-  const places = { building: capital === undefined ? territoryLabel(scenario, territoryId) : subLabel(scenario, capital), development: territoryLabel(scenario, territoryId) };
-  return (["building", "development"] as const).flatMap((kind) => {
-    const names = missing.filter((requirement) => requirement.kind === kind).map((requirement) => `a ${requirementName(scenario, requirement)}`);
-    return names.length === 0 ? [] : [`${listWords(names)} in ${places[kind]}`];
-  }).join(" and ");
+  return { missing, refusals };
 }
 
 /** D7: Recruit orders the territory may take this turn: the scenario's number plus `recruit-slots` for every level in its sub-territories. */
@@ -138,12 +119,12 @@ export function recruitableTypes(scenario: Scenario): readonly UnitTypeDefinitio
 /** R2, R3: static checks of one Recruit order against the start-of-turn state. Funds and the D7 limit are checked at reveal. */
 export function validateRecruitOrder(scenario: Scenario, state: GameState, order: RecruitOrder): ValidationResult {
   const type = scenario.index.unitTypes.get(order.unitTypeId);
-  if (type === undefined) return { ok: false, reason: "Unknown unit type." };
-  if (!scenario.index.territories.has(order.territoryId)) return { ok: false, reason: "Unknown territory." };
+  if (type === undefined) return { ok: false, refusal: { code: "unknown-unit-type" } };
+  if (!scenario.index.territories.has(order.territoryId)) return { ok: false, refusal: { code: "unknown-territory" } };
   const site = recruitSiteProblem(scenario, state, order.factionId, order.territoryId);
-  if (site !== undefined) return { ok: false, reason: site };
+  if (site !== undefined) return { ok: false, refusal: site };
   const lock = typeLock(scenario, state, order.factionId, order.territoryId, type);
-  return lock.reasons.length === 0 ? { ok: true } : { ok: false, reason: lock.reasons.join(" ") };
+  return lock.refusals.length === 0 ? { ok: true } : { ok: false, refusal: { code: "recruit-locked", refusals: lock.refusals } };
 }
 
 // R6: recruited units' ids and definitions. ---------------------------------------------------
@@ -205,10 +186,10 @@ function parseRaisedId(id: UnitId): { readonly factionId: FactionId; readonly se
 }
 
 /**
- * R6: the definition of a recruited unit, derived from its id alone: the type's name and
- * establishment, numbered by its serial. `GameState.raised` records the same definition; this
- * lets every lookup that has only the scenario name the unit. A unit still in training (m7)
- * has no number yet: it reads "<type> (new)". Undefined for other ids.
+ * R6: the definition of a recruited unit, derived from its id alone: its type, the type's
+ * establishment, and its serial. `GameState.raised` records the same definition; this
+ * lets every lookup that has only the scenario find the unit. A unit still in training (m7)
+ * has no number yet. Undefined for other ids.
  */
 export function raisedDefinition(scenario: Scenario, id: UnitId): RaisedUnitDefinition | undefined {
   const parsed = parseRaisedId(id) ?? trainingParts(id);
@@ -219,7 +200,7 @@ export function raisedDefinition(scenario: Scenario, id: UnitId): RaisedUnitDefi
     factionId: parsed.factionId,
     fullStrength: type.recruit.establishment,
     id,
-    name: parsed.serial === undefined ? `${type.name} (new)` : `${type.name} No. ${String(parsed.serial)}`,
+    ...(parsed.serial === undefined ? {} : { serial: parsed.serial }),
     type: type.id
   };
 }
@@ -355,31 +336,21 @@ export function priceReplenishments(
 /** R5, C1, C5: static checks of one Replenish order against the start-of-turn state. */
 export function validateReplenishOrder(scenario: Scenario, state: GameState, order: ReplenishOrder): ValidationResult {
   const unit = state.units[order.unitId];
-  if (unit === undefined) return { ok: false, reason: "Unknown unit." };
-  if (unit.factionId !== order.factionId) return { ok: false, reason: "Selected unit belongs to another player." };
+  if (unit === undefined) return { ok: false, refusal: { code: "unknown-unit" } };
+  if (unit.factionId !== order.factionId) return { ok: false, refusal: { code: "unit-of-another-faction" } };
   const problem = replenishProblem(scenario, state, unit);
-  return problem === undefined ? { ok: true } : { ok: false, reason: problem };
+  return problem === undefined ? { ok: true } : { ok: false, refusal: problem };
 }
 
 /** Why this unit cannot replenish now, or undefined when it can. */
-export function replenishProblem(scenario: Scenario, state: GameState, unit: UnitState): string | undefined {
+export function replenishProblem(scenario: Scenario, state: GameState, unit: UnitState): RecruitmentRefusal | undefined {
   const basics = unitBasics(scenario, state, unit.id);
-  if (scenario.recruitment === undefined || basics === undefined) return "Replenishing is not part of this scenario.";
-  if (!basics.type.orders.includes("replenish") || basics.type.recruit === undefined) return `${basics.type.name} units cannot replenish.`;
-  const name = territoryLabel(scenario, unit.territoryId);
-  if (isContested(scenario, state, unit.territoryId)) return `${name} is contested. Units replenish only in uncontested ground.`;
+  if (scenario.recruitment === undefined || basics === undefined) return { code: "replenishing-unavailable" };
+  if (!basics.type.orders.includes("replenish") || basics.type.recruit === undefined) return { code: "type-cannot-replenish", unitTypeId: basics.type.id };
+  if (isContested(scenario, state, unit.territoryId)) return { code: "replenish-contested", territoryId: unit.territoryId };
   const control = state.control[unit.territoryId];
-  if (control?.kind !== "controlled" || control.factionId !== unit.factionId) return `Units replenish only in territory you hold.`;
+  if (control?.kind !== "controlled" || control.factionId !== unit.factionId) return { code: "replenish-not-held" };
   // RR-12: Replenish brings men; a demoralized unit at full strength recovers by resting or a general's rally (C5).
-  if (unit.strength >= basics.fullStrength) {
-    return unit.morale.demoralized
-      ? "This unit is at full strength. It recovers its morale by resting, or with a general's rally."
-      : "This unit is at full strength and in good order.";
-  }
+  if (unit.strength >= basics.fullStrength) return { code: unit.morale.demoralized ? "full-strength-demoralized" : "full-strength" };
   return undefined;
-}
-
-function listWords(words: readonly string[]): string {
-  const last = words.length - 1;
-  return last < 1 ? words.join("") : `${words.slice(0, last).join(", ")} and ${String(words[last])}`;
 }

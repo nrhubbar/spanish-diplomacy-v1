@@ -68,10 +68,16 @@ export function gradeEffect(grade: GradeDefinition): string {
   ].join(` ${glyphs.dot} `) || "no effect";
 }
 
+function requireGrade(grades: readonly GradeDefinition[], id: GradeDefinition["id"]): GradeDefinition {
+  const grade = grades.find((candidate) => candidate.id === id);
+  if (grade === undefined) throw new Error(`Unknown grade "${id}".`);
+  return grade;
+}
+
 /** D8: a battle's column as bands, each with its grade, for the card. */
 export interface BandView {
   readonly band: GradeBand;
-  readonly grade: GradeDefinition | undefined;
+  readonly grade: GradeDefinition;
   readonly hit: boolean;
   readonly range: string;
 }
@@ -80,7 +86,7 @@ export function battleBands(scenario: Scenario, battle: BattleOutcome): readonly
   const rules = scenario.d20;
   return columnBands(rules, battle.column).map((band) => ({
     band,
-    grade: rules.grades.find((grade) => grade.id === band.gradeId),
+    grade: requireGrade(rules.grades, band.gradeId),
     hit: battle.score >= band.from && battle.score <= band.to,
     range: band.from === band.to ? String(band.from) : `${String(band.from)}\u2013${String(band.to)}`
   }));

@@ -1,8 +1,9 @@
 import { connectionBetween, landNeighbors } from "../engine/movement/network";
 import { boardingRefusal, type MoveRoute } from "../engine/movement/routes";
 import type { MoveMode } from "../engine/network/reach";
-import type { FactionId, GameState, MoveLeg, MoveOrder, Scenario, TerritoryId, UnitId } from "../engine/types";
+import type { FactionId, GameState, MoveLeg, MovementRefusal, MoveOrder, Refusal, Scenario, TerritoryId, UnitId } from "../engine/types";
 import { validateMoveOrder } from "../engine/validation";
+import { refusalText } from "./refusals";
 
 /**
  * U6: the move modes a unit could take to one target, for the Invade and Reinforce cards: the
@@ -50,13 +51,14 @@ function candidates(scenario: Scenario, mode: LandMode, from: TerritoryId, to: T
 }
 
 /** Why a mode has no route at all to the target (no candidate legs; Rail always tries the direct ride). */
-function noRouteReason(scenario: Scenario, mode: LandMode): string {
-  const reasons: Readonly<Record<LandMode, string>> = {
-    march: "March reaches only a neighbouring territory.",
-    motor: `Motor reaches at most ${String(scenario.linkModifiers.road?.motorRange ?? 2)} territories.`,
-    rail: "No rail line your side holds reaches it this turn."
+function noRoute(scenario: Scenario, mode: LandMode): MovementRefusal {
+  const range = scenario.linkModifiers.road?.motorRange;
+  const refusals: Readonly<Record<LandMode, MovementRefusal>> = {
+    march: { code: "march-neighbours-only" },
+    motor: range === undefined ? { code: "out-of-reach" } : { code: "motor-too-far", territories: range },
+    rail: { code: "no-rail-line" }
   };
-  return reasons[mode];
+  return refusals[mode];
 }
 
 /** One mode of travel to a target: every leg list the engine's own order check takes (none for a plain step), or why there is none. */
@@ -78,16 +80,16 @@ function wayKey(legs: readonly MoveLeg[] | undefined): string {
 export function modeOptions(scenario: Scenario, state: GameState, factionId: FactionId, unitId: UnitId, offered: MoveRoute): readonly ModeOption[] {
   const { from, to } = offered;
   const option = (mode: LandMode): ModeOption => {
-    let reason: string | undefined;
+    let refusal: Refusal | undefined;
     const ways = candidates(scenario, mode, from, to).flatMap((each): (readonly MoveLeg[] | undefined)[] => {
       // A plain step carries no legs (CT-6).
       const legs = mode === "march" ? undefined : each;
       const verdict = validateMoveOrder(scenario, state, { factionId, from, kind: "move", ...(legs === undefined ? {} : { legs }), to, unitId });
       if (verdict.ok) return [legs];
-      reason ??= verdict.reason;
+      refusal ??= verdict.refusal;
       return [];
     });
-    if (mode !== offered.mode) return { mode, reason: reason ?? noRouteReason(scenario, mode), ways };
+    if (mode !== offered.mode) return { mode, reason: refusalText(scenario, refusal ?? noRoute(scenario, mode)), ways };
     const first = orderLegs(offered);
     return { mode, reason: "", ways: [first, ...ways.filter((legs) => wayKey(legs) !== wayKey(first))] };
   };
@@ -109,7 +111,7 @@ export function modeChips(scenario: Scenario, state: GameState, factionId: Facti
       const carried = legs === undefined ? {} : { legs };
       const refused = mode === offered.mode ? undefined : boardingRefusal(scenario, state, [{ factionId, from, kind: "move", ...carried, to, unitId }], others);
       if (refused === undefined) return { ...carried, mode, ok: true };
-      full ??= refused;
+      full ??= refusalText(scenario, refused);
     }
     return { mode, ok: false, reason: full ?? reason };
   });

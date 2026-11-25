@@ -1,11 +1,10 @@
 import { plannedSpend } from "../../engine/economy/catalogue";
 import { upkeepProblem } from "../../engine/economy/upkeep";
-import { isContested, priceReplenishments, recruitSiteProblem, recruitSlots, replenishProblem, typeLock } from "../../engine/recruitment/rules";
+import { priceReplenishments, recruitSiteProblem, recruitSlots, replenishProblem, typeLock } from "../../engine/recruitment/rules";
 import { addResources, subtractResources, treasuryOf } from "../../engine/resources";
-import type { FactionId, GameState, Order, RecruitOrder, ReplenishOrder, Resources, Scenario, TerritoryId, UnitId, UnitState, UnitTypeId } from "../../engine/types";
-import { andList } from "../../presentation/queues";
-import { replenishDetail } from "../../presentation/recruitment";
-import { unitName } from "../../presentation/text";
+import type { FactionId, GameState, Order, RecruitOrder, Refusal, ReplenishOrder, ResourceId, Resources, Scenario, TerritoryId, UnitState, UnitTypeId } from "../../engine/types";
+import { refusedFeedback } from "../../presentation/feedback";
+import type { ReplenishPlan, ReplenishSkip } from "../../presentation/replenish";
 import type { Draft } from "../session";
 import { type PlanningSession, feedback, selectedUnits, selecting, withDraft } from "./selection";
 
@@ -61,25 +60,25 @@ export function setRecruitQuantity(scenario: Scenario, session: PlanningSession,
   const current = recruitQuantity(session.draft, territoryId, typeId);
   if (wanted > current) {
     const site = recruitSiteProblem(scenario, state, session.factionId, territoryId);
-    if (site !== undefined) return feedback(session, site);
+    if (site !== undefined) return feedback(session, refusedFeedback(site));
     const lock = typeLock(scenario, state, session.factionId, territoryId, type);
-    if (lock.reasons.length > 0) return feedback(session, lock.reasons.join(" "));
+    if (lock.refusals.length > 0) return feedback(session, refusedFeedback(...lock.refusals));
     const others = (session.draft.recruits ?? []).filter((order) => order.territoryId === territoryId).length - current;
     const slots = recruitSlots(scenario, state, territoryId);
-    if (others + wanted > slots) return feedback(session, `At most ${String(slots)} new units a turn can be recruited here.`);
+    if (others + wanted > slots) return feedback(session, { code: "recruit-slots", slots });
   }
   // Every order that stays keeps its place: only the last of this type go, and new ones join at the end.
   const last = (session.draft.recruits ?? []).filter((order) => order.territoryId === territoryId && order.unitTypeId === typeId).slice(wanted);
   const kept = (session.draft.recruits ?? []).filter((order) => !last.includes(order));
   const added: RecruitOrder[] = Array.from({ length: Math.max(0, wanted - current) }, () => ({ factionId: session.factionId, kind: "recruit", territoryId, unitTypeId: typeId }));
   const draft: Draft = { ...session.draft, recruits: [...kept, ...added] };
-  delete (draft as { feedback?: string }).feedback;
+  delete (draft as { feedback?: unknown }).feedback;
   const short = wanted > current ? upkeepProblem(scenario, state, session.factionId, draftOrders(draft)) : undefined;
-  return short === undefined ? withDraft(session, draft) : feedback(session, short);
+  return short === undefined ? withDraft(session, draft) : feedback(session, refusedFeedback(short));
 }
 
 /** D1: why one more unit of a type is refused for its price and upkeep, the draft's other orders counted, or undefined. */
-export function recruitUpkeepProblem(scenario: Scenario, session: PlanningSession, territoryId: TerritoryId, unitTypeId: UnitTypeId): string | undefined {
+export function recruitUpkeepProblem(scenario: Scenario, session: PlanningSession, territoryId: TerritoryId, unitTypeId: UnitTypeId): Refusal | undefined {
   const { draft, factionId, game } = session;
   return upkeepProblem(scenario, game.state, factionId, [...draftOrders(draft), { factionId, kind: "recruit", territoryId, unitTypeId }]);
 }
@@ -89,39 +88,8 @@ export function takeBackRecruit(session: PlanningSession, territoryId: Territory
   const order = (session.draft.recruits ?? []).filter((other) => other.territoryId === territoryId)[at];
   if (order === undefined) return session;
   const draft: Draft = { ...session.draft, recruits: (session.draft.recruits ?? []).filter((other) => other !== order) };
-  delete (draft as { feedback?: string }).feedback;
+  delete (draft as { feedback?: unknown }).feedback;
   return withDraft(session, draft);
-}
-
-/** D1: why a unit is left out whose Replenish next turn's stock cannot cover. */
-const upkeepSkip = "upkeep leaves too little next turn";
-
-/** U12: a selected unit the Replenish order leaves out, and why, in a few words. */
-export interface ReplenishSkip {
-  readonly name: string;
-  readonly reason: string;
-  readonly unitId: UnitId;
-}
-
-/** U12: what Replenish does for the selection: the units it refills, those it skips and why, and the price. */
-export interface ReplenishPlan {
-  readonly cost: Resources;
-  readonly ready: readonly UnitState[];
-  readonly selected: number;
-  readonly skipped: readonly ReplenishSkip[];
-}
-
-/** U12: why this unit cannot replenish now, in a few words for a list, or undefined when it can. */
-export function replenishSkipReason(scenario: Scenario, state: GameState, unit: UnitState): string | undefined {
-  const problem = replenishProblem(scenario, state, unit);
-  if (problem === undefined || scenario.recruitment === undefined) return problem;
-  const definition = state.raised[unit.id] ?? scenario.index.units.get(unit.id);
-  const type = definition === undefined ? undefined : scenario.index.unitTypes.get(definition.type);
-  if (type !== undefined && (!type.orders.includes("replenish") || type.recruit === undefined)) return `${type.name} units cannot replenish`;
-  if (isContested(scenario, state, unit.territoryId)) return "in contested ground";
-  const control = state.control[unit.territoryId];
-  if (control?.kind !== "controlled" || control.factionId !== unit.factionId) return "outside your territory";
-  return "at full strength";
 }
 
 /**
@@ -139,8 +107,8 @@ export function replenishPlan(scenario: Scenario, session: PlanningSession): Rep
     const unit = state.units[order.unitId];
     return unit === undefined ? [] : [unit];
   });
-  const reasons = new Map(units.map((unit) => [unit.id, replenishSkipReason(scenario, state, unit)]));
-  const eligible = units.filter((unit) => reasons.get(unit.id) === undefined);
+  const refusals = new Map(units.map((unit) => [unit.id, replenishProblem(scenario, state, unit)]));
+  const eligible = units.filter((unit) => refusals.get(unit.id) === undefined);
   const funded = state.treasuries[session.factionId] === undefined
     ? undefined
     : balanceAfterBasket(scenario, { ...session, draft: { ...session.draft, replenishments: [] } });
@@ -150,13 +118,15 @@ export function replenishPlan(scenario: Scenario, session: PlanningSession): Rep
   const affordable = new Set(priced.filter((entry) => entry.affordable).map((entry) => entry.unitId));
   const paidFor = all.filter((entry) => entry.affordable).reduce<Resources>((sum, entry) => addResources(sum, entry.paid), {});
   const left = funded === undefined ? undefined : subtractResources(funded, paidFor);
-  const short = shortfallNames(scenario, priced.filter((entry) => !entry.affordable).map((entry) => entry.paid), left);
+  const resourceIds = shortfall(scenario, priced.filter((entry) => !entry.affordable).map((entry) => entry.paid), left);
   const covered = eligible.filter((unit) => affordable.has(unit.id));
   const ready = withinUpkeep(scenario, session, covered, kept);
   const granted = new Set(ready.map((unit) => unit.id));
   const skipped = units.flatMap((unit): ReplenishSkip[] => {
-    const reason = reasons.get(unit.id) ?? (granted.has(unit.id) ? undefined : affordable.has(unit.id) ? upkeepSkip : `not enough ${short}`);
-    return reason === undefined ? [] : [{ name: unitName(scenario, unit.id), reason, unitId: unit.id }];
+    const refusal = refusals.get(unit.id);
+    if (refusal !== undefined) return [{ reason: { code: "refused", refusal }, unitId: unit.id }];
+    if (granted.has(unit.id)) return [];
+    return [{ reason: affordable.has(unit.id) ? { code: "upkeep" } : { code: "unpaid", resourceIds }, unitId: unit.id }];
   });
   const cost = priced.filter((entry) => granted.has(entry.unitId)).reduce<Resources>((sum, entry) => addResources(sum, entry.paid), {});
   return { cost, ready, selected: units.length, skipped };
@@ -172,19 +142,10 @@ function withinUpkeep(scenario: Scenario, { draft, factionId, game }: PlanningSe
   }, []);
 }
 
-/** The resources short for the orders left unpaid, against what the paid ones leave: "Funds", "Funds and Manpower". */
-function shortfallNames(scenario: Scenario, prices: readonly Resources[], balance: Resources | undefined): string {
+/** The resources short for the orders left unpaid, against what the paid ones leave. */
+function shortfall(scenario: Scenario, prices: readonly Resources[], balance: Resources | undefined): readonly ResourceId[] {
   const price = prices.reduce<Resources>((sum, paid) => addResources(sum, paid), {});
-  const names = scenario.resources.filter((resource) => (price[resource.id] ?? 0) > (balance?.[resource.id] ?? 0)).map((resource) => resource.name);
-  return names.length === 0 ? "Funds or Manpower" : names.join(" and ");
-}
-
-/** U12: "Skips Madrid Assault and Civil Guards (at full strength) and General Miaja (General units cannot replenish)." */
-export function skippedText(skipped: readonly ReplenishSkip[]): string {
-  const byReason = new Map<string, string[]>();
-  for (const skip of skipped) byReason.set(skip.reason, [...byReason.get(skip.reason) ?? [], skip.name]);
-  const parts = [...byReason].map(([reason, names]) => `${andList(names)} (${reason})`);
-  return parts.length === 0 ? "" : `Skips ${andList(parts)}.`;
+  return scenario.resources.map((resource) => resource.id).filter((id) => (price[id] ?? 0) > (balance?.[id] ?? 0));
 }
 
 /** True when at least one selected unit may take a Replenish order now (U12: the rest are skipped). */
@@ -202,9 +163,10 @@ export function chooseReplenish(scenario: Scenario, session: PlanningSession): P
   if (units.length === 0) {
     // Nothing selected, none allowed (the first unit's reason, in full), or none the balance covers.
     const problems = selectedUnits(session).map((unit) => replenishProblem(scenario, session.game.state, unit));
-    const allowed = problems.some((problem) => problem === undefined);
-    const unpaid = plan.skipped.some((skip) => skip.reason === upkeepSkip) ? `No selected unit can replenish. ${skippedText(plan.skipped)}` : "Not enough Funds or Manpower left to replenish.";
-    return feedback(session, problems.length === 0 ? "Select at least one unit first." : allowed ? unpaid : String(problems[0]));
+    const [first] = problems;
+    if (problems.length === 0) return feedback(session, { code: "no-units-selected" });
+    if (first !== undefined && !problems.includes(undefined)) return feedback(session, refusedFeedback(first));
+    return feedback(session, plan.skipped.some((skip) => skip.reason.code === "upkeep") ? { code: "replenish-none", skipped: plan.skipped } : { code: "replenish-unpaid" });
   }
   const chosen = new Set(units.map((unit) => unit.id));
   const orders = session.draft.orders.filter((order) => !chosen.has(order.unitId));
@@ -215,17 +177,7 @@ export function chooseReplenish(scenario: Scenario, session: PlanningSession): P
   const territoryId = session.draft.selectedTerritoryId;
   // Note 11: once the order is given, nothing is selected.
   const base: Draft = territoryId === undefined ? { orders, selectedUnitIds: [] } : selecting(territoryId, [], orders);
-  const who = units.length === 1 ? "1 unit" : `${String(units.length)} units`;
-  const skips = skippedText(plan.skipped);
-  return withDraft(session, { ...keepBasket(session.draft), ...base, ...unitOrdersWithout(session.draft, chosen), replenishments, feedback: `${who} will replenish.${skips === "" ? "" : ` ${skips}`}` });
-}
-
-/** U12: the selection bar's line for Replenish: what it brings and costs, and which units it skips. */
-export function replenishSelectionDetail(scenario: Scenario, session: PlanningSession): string {
-  const plan = replenishPlan(scenario, session);
-  if (plan.ready.length === 0) return `No selected unit can replenish. ${skippedText(plan.skipped)}`;
-  const detail = replenishDetail(scenario, session.game.state, plan.ready);
-  return plan.skipped.length === 0 ? detail : `Refills ${String(plan.ready.length)} of the ${String(plan.selected)} selected units: ${detail}. ${skippedText(plan.skipped)}`;
+  return withDraft(session, { ...keepBasket(session.draft), ...base, ...unitOrdersWithout(session.draft, chosen), replenishments, feedback: { code: "replenish-planned", skipped: plan.skipped, units: units.length } });
 }
 
 /** The draft's Replenish and Disband orders less those of these units (they were given another order). */

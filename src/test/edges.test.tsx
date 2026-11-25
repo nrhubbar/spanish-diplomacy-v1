@@ -24,11 +24,12 @@ import { unitDesignation } from "../main/presentation/text";
 import { loadPackage } from "../main/scenarios/loader";
 import { builtInSources } from "../main/scenarios/builtInSources";
 import { createScenarioRegistry } from "../main/scenarios/registry";
-import { advance, lockSubmission, resolve } from "../main/state/coordinator";
+import { applyCommand, createGame } from "../main/game/service";
+import type { GameRecord, GameView, Seat } from "../main/game/types";
 import { addNotification } from "../main/state/notificationSlice";
 import { cancelOrder, chooseDestination, chooseOrder, clearSelection, type PlanningSession } from "../main/state/planning";
 import { selectRevealedOrders, selectSubmissionStatus } from "../main/state/selectors";
-import { emptyDraft, type GameRecord } from "../main/state/session";
+import { emptyDraft } from "../main/state/session";
 import { loadMapAssets } from "../main/state/mapAssetsSlice";
 import { createAppStore } from "../main/state/store";
 import { ResultsScreen } from "../main/screens/ResolutionScreen";
@@ -37,7 +38,7 @@ import { openSetup } from "../main/state/gameSlice";
 import { MemoryRouter } from "react-router";
 import tinyMap from "./fixtures/scenarios/tiny-front/map.json";
 import tinyScenario from "./fixtures/scenarios/tiny-front/scenario.json";
-import { faction, move, territory, testRegistry, testStore, tiny, tinyId, unit, withUnits } from "./support";
+import { commanded, faction, move, territory, testRegistry, testStore, tiny, tinyId, unit, withUnits, testGame, testPlayer, told } from "./support";
 
 type Json = Record<string, unknown>;
 
@@ -125,36 +126,44 @@ describe("engine and computer edge cases", () => {
 
   it("refuses invalid submissions and resolves with missing submissions", () => {
     const scenario = tiny();
-    const game: GameRecord = { assignments: { [faction("red")]: "computer", [faction("blue")]: "computer" }, history: [], locked: {}, scenarioId: tinyId, seed: 3, state: initialGameState(scenario) };
-    expect(() => lockSubmission(scenario, game, { factionId: faction("red"), orders: [move("red", "red-guard", "westfold", "harbor")] })).toThrow("Rejected submission");
-    expect(resolve(scenario, game).phase).toBe("resolution");
-    expect(["resolution", "game-over"]).toContain(advance(scenario, game).phase);
+    const game = (red: Seat): GameRecord => createGame(scenario, { gameId: testGame, rollScheme: "numeric-1", scenarioVersion: "test", seats: { [faction("red")]: red, [faction("blue")]: { kind: "computer" } }, seed: "3", seedChosen: true, timerMinutes: 0 }, 0);
+    const played = game({ kind: "human", playerId: testPlayer });
+    for (const kind of ["save-orders", "end-turn"] as const) {
+      expect(applyCommand(scenario, played, testPlayer, { factionId: faction("red"), kind, orders: [move("red", "red-guard", "westfold", "harbor")], revision: 1, turnNumber: 1 }, 0))
+        .toMatchObject({ ok: false, refusal: { code: "bad-orders" } });
+    }
+    const watched = game({ kind: "computer" });
+    for (const record of [watched, { ...watched, orders: {} }]) {
+      const after = commanded(scenario, record, { kind: "advance", turnNumber: 1 });
+      expect(after.report).toMatchObject({ turnNumber: 1, ...(record === watched ? {} : { submittedOrders: [] }) });
+      expect(after.turns).toHaveLength(1);
+    }
   });
 
   it("explains a destination choice made outside move mode", () => {
     const scenario = tiny();
-    const game: GameRecord = { assignments: {}, history: [], locked: {}, scenarioId: tinyId, seed: 1, state: initialGameState(scenario) };
+    const game: GameView = { assignments: {}, history: [], ready: [], scenarioId: tinyId, gameId: testGame, state: initialGameState(scenario) };
     const planning: PlanningSession = { draft: emptyDraft, factionId: faction("red"), game, phase: "planning" };
-    expect(chooseDestination(scenario, planning, territory("harbor")).draft.feedback).toContain("choose Move first");
+    expect(told(scenario, chooseDestination(scenario, planning, territory("harbor")).draft.feedback)).toContain("choose Move first");
   });
 
   it("keeps a territory-less draft intact when clearing or cancelling, and refuses orders with no destinations", () => {
     const scenario = tiny();
-    const game: GameRecord = { assignments: {}, history: [], locked: {}, scenarioId: tinyId, seed: 1, state: initialGameState(scenario) };
+    const game: GameView = { assignments: {}, history: [], ready: [], scenarioId: tinyId, gameId: testGame, state: initialGameState(scenario) };
     const planning: PlanningSession = { draft: { orders: [], selectedUnitIds: [unit("red-guard")], stage: { orderKind: "move", step: "choose-destination" } }, factionId: faction("red"), game, phase: "planning" };
     expect(clearSelection(planning).draft).toEqual({ orders: [], selectedUnitIds: [] });
     expect(cancelOrder(planning).draft).toEqual({ orders: [], selectedUnitIds: [unit("red-guard")] });
     const stranded: PlanningSession = { ...planning, draft: { orders: [], selectedTerritoryId: territory("westfold"), selectedUnitIds: [unit("ghost")] } };
-    expect(chooseOrder(scenario, stranded, "move").draft).toMatchObject({ feedback: expect.stringContaining("cannot move anywhere"), selectedUnitIds: ["ghost"] });
+    expect(chooseOrder(scenario, stranded, "move").draft).toMatchObject({ feedback: { code: "cannot-move-together" }, selectedUnitIds: ["ghost"] });
   });
 });
 
 describe("selectors and small helpers", () => {
   it("reports status and reveals only resolved orders", () => {
     const scenario = tiny();
-    const game: GameRecord = { assignments: {}, history: [], locked: { [faction("red")]: { factionId: faction("red"), orders: [] } }, scenarioId: tinyId, seed: 1, state: initialGameState(scenario) };
+    const game: GameView = { assignments: { [faction("red")]: "local-human" }, history: [], ready: [faction("red")], scenarioId: tinyId, gameId: testGame, state: initialGameState(scenario) };
     expect(selectSubmissionStatus(scenario, { phase: "idle" })).toEqual([]);
-    const result = resolveTurn(scenario, game.state, [], 1);
+    const result = { ...resolveTurn(scenario, game.state, [], 1), turnNumber: 1 };
     expect(selectSubmissionStatus(scenario, { game, phase: "resolution", result }).every((entry) => entry.ready)).toBe(true);
     expect(selectRevealedOrders({ game, phase: "resolution", result })).toEqual([{ factionId: "red", orders: [] }]);
   });
@@ -264,8 +273,8 @@ describe("component edge cases", () => {
   it("names a shared victory", async () => {
     const scenario = tiny();
     const state = initialGameState(scenario);
-    const result = { ...resolveTurn(scenario, state, [], 1), victory: { condition: "shared" as const, factionIds: [faction("red"), faction("blue")] } };
-    const store = testStore({ game: { session: { game: { assignments: {}, history: [], locked: {}, scenarioId: tinyId, seed: 1, state }, phase: "game-over", result } } });
+    const result = { ...resolveTurn(scenario, state, [], 1), turnNumber: 1, victory: { condition: "shared" as const, factionIds: [faction("red"), faction("blue")] } };
+    const store = testStore({ game: { session: { game: { assignments: {}, history: [], ready: [], scenarioId: tinyId, gameId: testGame, state }, phase: "game-over", result } } });
     render(<Provider store={store}><RegistryContext value={testRegistry()}><MemoryRouter><ResultsScreen /></MemoryRouter></RegistryContext></Provider>);
     expect(screen.getByRole("heading", { level: 1, name: "Red League and Blue Union share victory" })).toBeVisible();
     expect(await screen.findByText(/equal claims/)).toBeVisible();

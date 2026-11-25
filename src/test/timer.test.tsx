@@ -13,17 +13,17 @@ import { RegistryContext } from "../main/hooks";
 import { TurnConditions } from "../main/screens/report/TurnConditions";
 import { beginPlanning, endTurn } from "../main/state/gameSlice";
 import { timeRanOut } from "../main/state/timeout";
-import { chooseTimer, pauseClock, planningBudgetMs, remainingMs, resumeClock, startClock, timerSlice } from "../main/state/timerSlice";
+import { chooseTimer, clockKey, pauseClock, planningBudgetMs, remainingMs, resumeClock, startClock, timerSlice } from "../main/state/timerSlice";
 import { emptyDraft } from "../main/state/session";
-import { faction, move, spain, spainId, territory, testRegistry, testStore, unit, withUnits } from "./support";
+import { createAppStore } from "../main/state/store";
+import { faction, move, spain, spainId, territory, testRegistry, testStore, unit, withUnits, testGame } from "./support";
 
 afterEach(cleanup);
 
 function planningStore(minutes: 0 | 1 | 5 | 10, turnNumber = 2) {
   const state = { ...initialGameState(spain()), turnNumber, weather: { outcomes: { cantabrian: "rain", mediterranean: "clear", meseta: "snow", south: "mud" } as Record<WeatherZoneId, WeatherId>, roll: 15 } };
-  const game = { assignments: { [faction("republic")]: "local-human" as const, [faction("north")]: "computer" as const, [faction("south")]: "computer" as const }, history: [], locked: {}, scenarioId: spainId, seed: 1, state };
-  const store = testStore({ game: { session: { draft: emptyDraft, factionId: faction("republic"), game, phase: "planning" } } });
-  store.dispatch(chooseTimer(minutes));
+  const game = { assignments: { [faction("republic")]: "local-human" as const, [faction("north")]: "computer" as const, [faction("south")]: "computer" as const }, history: [], ready: [], scenarioId: spainId, gameId: testGame, state };
+  const store = testStore({ game: { session: { draft: emptyDraft, factionId: faction("republic"), game, phase: "planning" } }, timer: { minutes } });
   return store;
 }
 
@@ -130,26 +130,31 @@ describe("weather in the UI (T3)", () => {
   });
 
   it("reports the turn's conditions: time, weather and frostbite", () => {
-    const state = { ...withUnits(spain(), [["r1", "republic", "madrid"], ["r2", "republic", "madrid"]]), weather: { outcomes: { meseta: "severe-cold" } as Record<WeatherZoneId, WeatherId>, roll: 20 } };
-    const result: TurnResolutionResult = resolveTurn(spain(), state, [{ factionId: faction("republic"), orders: [move("republic", "r1", "madrid", "castilla-la-mancha")], timedOut: true }], 1);
+    const state = { ...withUnits(spain(), [["r_republic_militia-column_1", "republic", "madrid"], ["r_republic_militia-column_2", "republic", "madrid"]]), weather: { outcomes: { meseta: "severe-cold" } as Record<WeatherZoneId, WeatherId>, roll: 20 } };
+    const result: TurnResolutionResult = resolveTurn(spain(), state, [{ factionId: faction("republic"), orders: [move("republic", "r_republic_militia-column_1", "madrid", "castilla-la-mancha")], timedOut: true }], 1);
     render(<TurnConditions result={result} scenario={spain()} />);
     expect(screen.getByText("Republican Government's time ran out: 1 unit held.")).toBeInTheDocument();
     expect(screen.getByLabelText("Weather this turn")).toHaveTextContent("Meseta: Severe cold");
-    expect(screen.getByText(/lost 5 men to frostbite in Castilla-La Mancha/)).toBeInTheDocument();
-    expect(result.finalState.units[unit("r1")]?.strength).toBe(95);
+    expect(screen.getByText(/^Militia column No\. 1 lost 5 men to frostbite in Castilla-La Mancha/)).toBeInTheDocument();
+    expect(result.finalState.units[unit("r_republic_militia-column_1")]?.strength).toBe(95);
   });
 });
 
 describe("time running out in hot-seat play (T5)", () => {
+  afterEach(() => { vi.useRealTimers(); });
+
   it("hands over to the next player, who gets a fresh full clock, and reports only the player who ran out", () => {
+    vi.useFakeTimers({ now: 0, toFake: ["Date"] });
     const session = planningStore(5).getState().game.session;
     if (session.phase !== "planning") throw new Error("Not planning.");
-    const hotSeat = testStore({ game: { session: { draft: emptyDraft, factionId: faction("republic"), game: { ...session.game, assignments: { ...session.game.assignments, [faction("north")]: "local-human" } }, phase: "planning" } } });
-    hotSeat.dispatch(startClock({ budgetMs: planningBudgetMs(5, 2), key: "1:2:republic", now: 0 }));
+    const hotSeat = testStore({ game: { session: { draft: emptyDraft, factionId: faction("republic"), game: { ...session.game, assignments: { ...session.game.assignments, [faction("north")]: "local-human" } }, phase: "planning" } }, timer: { minutes: 5 } });
+    hotSeat.dispatch(startClock({ budgetMs: planningBudgetMs(5, 2), key: clockKey(testGame, 2, "republic"), now: 0 }));
+    vi.setSystemTime(300_000);
     hotSeat.dispatch(timeRanOut());
     expect(hotSeat.getState().game.session).toMatchObject({ factionId: "north", fromFactionId: "republic", phase: "handoff" });
+    vi.setSystemTime(500_000);
     hotSeat.dispatch(beginPlanning());
-    hotSeat.dispatch(startClock({ budgetMs: planningBudgetMs(5, 2), key: "1:2:north", now: 500_000 }));
+    hotSeat.dispatch(startClock({ budgetMs: planningBudgetMs(5, 2), key: clockKey(testGame, 2, "north"), now: 500_000 }));
     const clock = hotSeat.getState().timer.clock;
     if (clock === undefined) throw new Error("No clock.");
     expect(remainingMs(clock, 500_000)).toBe(300_000);
@@ -157,5 +162,28 @@ describe("time running out in hot-seat play (T5)", () => {
     const after = hotSeat.getState().game.session;
     expect(after.phase).toBe("resolution");
     if (after.phase === "resolution") expect(after.result.outcomes.filter((outcome) => outcome.kind === "time-ran-out")).toEqual([{ factionId: "republic", heldUnitCount: expect.any(Number) as number, kind: "time-ran-out" }]);
+  });
+});
+
+describe("a host that has not ended the turn when the player's clock reaches zero", () => {
+  beforeEach(() => { vi.useFakeTimers(); });
+  afterEach(() => { vi.useRealTimers(); });
+
+  it("is asked again every two seconds, until it has", () => {
+    const sent: string[] = [];
+    const base = planningStore(1).getState();
+    const store = createAppStore({
+      client: { send: (command) => { if (command.kind === "game") sent.push(command.command.kind); }, subscribe: () => () => undefined },
+      preloadedState: { game: base.game, timer: { minutes: 1 } },
+      registry: testRegistry()
+    });
+    renderWith(store, <TimerChip scenario={spain()} state={initialGameState(spain())} />);
+    const pass = (ms: number): void => { for (let step = 0; step < ms / 250; step += 1) act(() => { vi.advanceTimersByTime(250); }); };
+    pass(60_250);
+    expect(sent).toEqual(["open", "expire"]);
+    pass(1000);
+    expect(sent).toHaveLength(2);
+    pass(4000);
+    expect(sent).toEqual(["open", "expire", "expire", "expire"]);
   });
 });

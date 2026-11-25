@@ -25,7 +25,6 @@ export interface TurnInput {
   /** M26: each battle's own seeded stream; tests may load the dice. */
   readonly dice: BattleDice;
   readonly scenario: Scenario;
-  readonly seed: number;
   /** The start-of-turn state; orders validate against it (M1). */
   readonly start: GameState;
   /** Section 2: the seeded streams of the other roll kinds (weather, raid, general death). */

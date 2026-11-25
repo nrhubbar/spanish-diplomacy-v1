@@ -1,6 +1,8 @@
+import { raidChances, raidDefence } from "../../engine/air/missions";
 import { isAirbaseFor, territoriesWithin, unitKindIn, unitTypeIn } from "../../engine/air/pieces";
 import { validateAirMission, validateSack } from "../../engine/air/validation";
 import { compareIds } from "../../engine/board";
+import { requireTerritory } from "../../engine/lookup";
 import type {
   AirMission,
   AirMissionKind,
@@ -13,6 +15,7 @@ import type {
   TerritoryId,
   UnitId
 } from "../../engine/types";
+import { type Feedback, refusedFeedback } from "../../presentation/feedback";
 import type { Draft } from "../session";
 import { unitOrdersWithout } from "./recruitment";
 import type { PlanningSession } from "./selection";
@@ -56,7 +59,7 @@ export function selectAircraft(session: PlanningSession, unitId: UnitId): Planni
   if (unit === undefined || unit.factionId !== session.factionId) return session;
   // Everything planned stays (the Recruit basket, builds, Replenish, U2's armies told to stay); the selection, stage and feedback go.
   const draft: Draft = { ...session.draft, selectedAircraftId: unitId, selectedTerritoryId: unit.territoryId, selectedUnitIds: [] };
-  const cleared = draft as { feedback?: string; focusedSubTerritoryId?: unknown; stage?: unknown };
+  const cleared = draft as { feedback?: unknown; focusedSubTerritoryId?: unknown; stage?: unknown };
   delete cleared.feedback;
   delete cleared.focusedSubTerritoryId;
   delete cleared.stage;
@@ -73,7 +76,7 @@ export function closeAircraft(session: PlanningSession): PlanningSession {
 /** N6: leaves the choice of a mission's target, and what was said about it; the aircraft stays selected. */
 export function leaveTargets(session: PlanningSession): PlanningSession {
   const draft: Draft = { ...session.draft };
-  delete (draft as { feedback?: string }).feedback;
+  delete (draft as { feedback?: unknown }).feedback;
   delete (draft as { stage?: unknown }).stage;
   return { ...session, draft };
 }
@@ -83,7 +86,7 @@ export function chooseMission(scenario: Scenario, session: PlanningSession, unit
   const open = leaveTargets(selectAircraft(session, unitId));
   const stage = { mission, step: "choose-target" } as const;
   const none = airTargets(scenario, open.game.state, unitId, mission).length === 0;
-  return { ...open, draft: { ...open.draft, ...(none ? { feedback: "Nothing in range for this mission." } : { stage }) } };
+  return { ...open, draft: { ...open.draft, ...(none ? { feedback: { code: "no-mission-target" } as const } : { stage }) } };
 }
 
 /** N6: the targets being chosen from, when a mission is choosing one. */
@@ -98,20 +101,19 @@ export function targetTerritories(scenario: Scenario, session: PlanningSession):
 }
 
 /** N6: why a territory is no target of the mission being chosen; undefined when it is one, or none is being chosen. */
-export function targetRefusal(scenario: Scenario, session: PlanningSession, territoryId: TerritoryId): { readonly inRange: boolean; readonly reason: string } | undefined {
+export function targetRefusal(scenario: Scenario, session: PlanningSession, territoryId: TerritoryId): { readonly inRange: boolean; readonly reason: Feedback } | undefined {
   const { draft: { selectedAircraftId: unitId, stage }, factionId, game: { state } } = session;
   const unit = unitId === undefined ? undefined : state.units[unitId];
   if (stage?.step !== "choose-target" || unit === undefined || targetTerritories(scenario, session).includes(territoryId)) return undefined;
   const range = unitTypeIn(scenario, state.raised, unit.id)?.air?.range ?? 0;
   if (!territoriesWithin(scenario, unit.territoryId, range).has(territoryId)) {
-    const flies = `flies up to ${range === 1 ? "1 territory" : `${String(range)} territories`} from its airfield.`;
-    return { inRange: false, reason: `Out of range: it ${flies}` };
+    return { inRange: false, reason: { code: "out-of-range", range } };
   }
   const [first] = scenario.index.subTerritoriesByTerritory.get(territoryId) ?? [];
   const kind = stage.mission;
   const mission: AirMission | undefined = kind !== "raid" ? { kind, territoryId } : first === undefined ? undefined : { kind, subTerritoryId: first.id };
   const validation = mission === undefined ? undefined : validateAirMission(scenario, state, { factionId, kind: "air-mission", mission, unitId: unit.id });
-  return { inRange: true, reason: validation?.ok === false ? validation.reason : "Nothing to hit there." };
+  return { inRange: true, reason: validation?.ok === false ? refusedFeedback(validation.refusal) : { code: "nothing-to-hit" } };
 }
 
 /** N6: a click on a territory while a mission chooses its target plans it; a raid with several targets there asks which sub-territory. */
@@ -136,8 +138,8 @@ export function chooseTargetSite(scenario: Scenario, session: PlanningSession, s
   return target === undefined || unitId === undefined ? session : setAirMission(scenario, session, unitId, target.mission);
 }
 
-function withAirOrders(session: PlanningSession, airOrders: readonly AirDraftOrder[], feedback?: string): PlanningSession {
-  return { ...session, draft: { ...session.draft, airOrders, ...(feedback === undefined ? {} : { feedback }) } };
+function withAirOrders(session: PlanningSession, airOrders: readonly AirDraftOrder[]): PlanningSession {
+  return { ...session, draft: { ...session.draft, airOrders } };
 }
 
 /** U2: plans (or with no mission, stands down) an aircraft's one mission this turn. */
@@ -146,7 +148,7 @@ export function setAirMission(scenario: Scenario, session: PlanningSession, unit
   if (mission === undefined) return withAirOrders(leaveTargets(session), others);
   const order: AirMissionOrder = { factionId: session.factionId, kind: "air-mission", mission, unitId };
   const validation = validateAirMission(scenario, session.game.state, order);
-  if (!validation.ok) return { ...session, draft: { ...session.draft, feedback: validation.reason } };
+  if (!validation.ok) return { ...session, draft: { ...session.draft, feedback: refusedFeedback(validation.refusal) } };
   const open = leaveTargets(session);
   return withAirOrders({ ...open, draft: { ...open.draft, ...unitOrdersWithout(session.draft, [unitId]) } }, [...others, order]);
 }
@@ -157,7 +159,7 @@ export function toggleSack(scenario: Scenario, session: PlanningSession, unitId:
   if (isSackPlanned(session.draft, unitId)) return withAirOrders(session, current.filter((order) => order.unitId !== unitId));
   const order: SackOrder = { factionId: session.factionId, kind: "sack", unitId };
   const validation = validateSack(scenario, session.game.state, order);
-  if (!validation.ok) return { ...session, draft: { ...session.draft, feedback: validation.reason } };
+  if (!validation.ok) return { ...session, draft: { ...session.draft, feedback: refusedFeedback(validation.refusal) } };
   return {
     ...session,
     draft: { ...session.draft, airOrders: [...current.filter((other) => other.unitId !== unitId), order], orders: session.draft.orders.filter((move) => move.unitId !== unitId) }
@@ -180,7 +182,7 @@ export function airTargets(scenario: Scenario, state: GameState, unitId: UnitId,
   const reach = territoriesWithin(scenario, unit.territoryId, range);
   const targets: AirTarget[] = [];
   for (const [territoryId, distance] of reach) {
-    const territoryName = scenario.index.territories.get(territoryId)?.name ?? territoryId;
+    const territoryName = requireTerritory(scenario, territoryId).name;
     const missions: { readonly mission: AirMission; readonly name: string }[] = kind === "raid"
       ? (scenario.index.subTerritoriesByTerritory.get(territoryId) ?? []).map((sub) => ({ mission: { kind, subTerritoryId: sub.id }, name: sub.name === territoryName ? sub.name : `${sub.name} (${territoryName})` }))
       : [{ mission: { kind, territoryId }, name: territoryName }];
@@ -191,11 +193,6 @@ export function airTargets(scenario: Scenario, state: GameState, unitId: UnitId,
     }
   }
   return targets.sort((a, b) => a.distance - b.distance || compareIds(a.name, b.name));
-}
-
-/** The territory a planned mission flies to. */
-export function missionTerritoryId(scenario: Scenario, mission: AirMission): TerritoryId | undefined {
-  return mission.kind === "raid" ? scenario.index.subTerritories.get(mission.subTerritoryId)?.territoryId : mission.territoryId;
 }
 
 /** What the pane says about a raid before it flies: anti-air there, enemy fighters in reach, the outcome chances. */
@@ -210,20 +207,13 @@ export function raidPreview(scenario: Scenario, state: GameState, unitId: UnitId
   const unit = state.units[unitId];
   const territoryId = scenario.index.subTerritories.get(subTerritoryId)?.territoryId;
   if (unit === undefined || territoryId === undefined || scenario.air === undefined) return undefined;
-  let antiAir = 0;
   let fightersInReach = 0;
   for (const other of Object.values(state.units)) {
     if (other.factionId === unit.factionId) continue;
     const type = unitTypeIn(scenario, state.raised, other.id);
-    if (other.territoryId === territoryId) for (const effect of type?.effects ?? []) if (effect.kind === "raid-defence") antiAir = Math.min(antiAir, effect.roll);
     if (type?.air?.missions.includes("patrol") === true && isAirbaseFor(scenario, state, other.territoryId, other.factionId)
       && territoriesWithin(scenario, other.territoryId, type.air.range).has(territoryId)) fightersInReach += 1;
   }
-  const chances: Record<RaidOutcome, number> = { "air-eliminated": 0, "building-hit": 0, "income-cut": 0, "nothing-hit": 0 };
-  for (let die = 1; die <= 20; die += 1) {
-    const roll = Math.min(20, Math.max(1, die + antiAir));
-    const band = scenario.air.raidTable.find((entry) => roll <= entry.upTo);
-    if (band !== undefined) chances[band.outcome] += 1 / 20;
-  }
-  return { antiAir, chances, fightersInReach };
+  const antiAir = raidDefence(scenario, state.raised, Object.values(state.units), territoryId, unit.factionId);
+  return { antiAir, chances: raidChances(scenario, antiAir), fightersInReach };
 }

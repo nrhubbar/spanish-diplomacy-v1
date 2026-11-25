@@ -9,17 +9,17 @@ import { App } from "../main/app";
 import { neighborsOf } from "../main/engine/lookup";
 import { initialGameState, resolveTurn } from "../main/engine/resolution";
 import type { Assignments } from "../main/state/session";
-import type { AirMissionOrder, FactionId, GameState, PlayerSubmission, Scenario, SubTerritoryId, TurnOutcome, TurnResolutionResult, UnitId, UnitTypeId } from "../main/engine/types";
+import type { AirMissionOrder, FactionId, GameState, RecruitOrder, Scenario, SubTerritoryId, TurnOutcome, UnitId, UnitTypeId } from "../main/engine/types";
 import { victoryProgress } from "../main/engine/victory";
 import { viewFor } from "../main/engine/visibility";
 import { RegistryContext } from "../main/hooks";
 import { describeOutcome } from "../main/presentation/text";
 import type { ScenarioRegistry } from "../main/scenarios/registry";
 import { paths } from "../main/state/routing";
-import { emptyDraft, type Session } from "../main/state/session";
+import type { GameRecord, TurnReport } from "../main/game/types";
+import { emptyDraft, type InGameSession } from "../main/state/session";
 import { createAppStore } from "../main/state/store";
-import { visibleSession } from "../main/state/visible";
-import { faction, shippedRegistry, spain, spainId, clickTerritoryIn, territory, testRegistry, tiny, unit } from "./support";
+import { faction, projected, shippedRegistry, spain, spainId, clickTerritoryIn, territory, testRegistry, tiny, unit, testGame } from "./support";
 
 afterEach(cleanup);
 
@@ -28,8 +28,10 @@ const north = faction("north");
 const south = faction("south");
 const funds = "funds" as never;
 
-function mount(registry: ScenarioRegistry, session: Session, path: string) {
-  const store = createAppStore({ preloadedState: { briefing: { autoOpenedFor: [republic, north, south] }, game: { session } }, registry });
+/** Mounts a session as its host sends it: projected for the player at the screen, with nothing more in the store. */
+function mount(registry: ScenarioRegistry, session: InGameSession, path: string, record: Partial<GameRecord> = {}) {
+  const game = projected(registry.require(session.game.scenarioId).scenario, session, record);
+  const store = createAppStore({ preloadedState: { briefing: { autoOpenedFor: [republic, north, south] }, game }, registry });
   render(
     <Provider store={store}>
       <RegistryContext value={registry}>
@@ -40,6 +42,14 @@ function mount(registry: ScenarioRegistry, session: Session, path: string) {
     </Provider>
   );
   return store;
+}
+
+/** What the device holds of the whole game: all of `seen`, and none of `hidden`, each of which the whole game has. */
+function expectHeld(store: ReturnType<typeof mount>, whole: unknown, seen: readonly string[], hidden: readonly string[]) {
+  const held = JSON.stringify(store.getState().game);
+  for (const text of [...seen, ...hidden]) expect(JSON.stringify(whole)).toContain(text);
+  for (const text of seen) expect(held).toContain(text);
+  for (const text of hidden) expect(held).not.toContain(text);
 }
 
 /** A board on which every faction has money, a queued build and a unit in training. */
@@ -63,22 +73,24 @@ describe("the turn report keeps other factions' secrets (CT-45, CT-46)", () => {
   const raid: AirMissionOrder = { factionId: south, kind: "air-mission", mission: { kind: "raid", subTerritoryId: "barcelona" as SubTerritoryId }, unitId: unit("south-ju52-bombers") };
   const outcomes: readonly TurnOutcome[] = [
     { kind: "recon", order: recon(republic, "rep-catalan-recon"), territoryId: territory("aragon"), untilTurn: 3 },
-    { kind: "grounded", order: recon(north, "north-leon-recon"), reason: "weather" },
-    { kind: "grounded", order: raid, reason: "weather" },
+    { kind: "grounded", order: recon(north, "north-leon-recon"), refusal: { code: "grounded-by-weather" } },
+    { kind: "grounded", order: raid, refusal: { code: "grounded-by-weather" } },
     ...[republic, north, south].map((factionId): TurnOutcome => ({ cut: {}, cutSubTerritoryIds: [], factionId, kind: "income", paid: { [funds]: 5 } }))
   ];
   const line = (outcome: TurnOutcome | undefined) => (outcome === undefined ? "" : describeOutcome(scenario, outcome, outcomes));
 
-  function report(assignments: Assignments): Session {
+  function report(assignments: Assignments): InGameSession {
     const state = busy(scenario);
-    const result: TurnResolutionResult = { cityChanges: [], controlChanges: [], finalState: state, outcomes, progress: victoryProgress(scenario, state), subTerritoryChanges: [], submittedOrders: outcomes.flatMap((outcome) => ("order" in outcome ? [outcome.order] : [])) };
-    return { game: { assignments, history: [], locked: {}, scenarioId: scenario.id, seed: 1, state }, phase: "resolution", result };
+    const result: TurnReport = { cityChanges: [], controlChanges: [], finalState: state, outcomes, progress: victoryProgress(scenario, state), subTerritoryChanges: [], submittedOrders: outcomes.flatMap((outcome) => ("order" in outcome ? [outcome.order] : [])), turnNumber: state.turnNumber };
+    return { game: { assignments, history: [], ready: [], scenarioId: scenario.id, gameId: testGame, state }, phase: "resolution", result };
   }
 
   for (const humans of [2, 3]) {
     it(`shows only public lines and no balances with ${String(humans)} local players`, async () => {
       const assignments = Object.fromEntries([republic, north, south].map((factionId, index) => [factionId, index < humans ? "local-human" : "computer"])) as Assignments;
-      mount(registry, report(assignments), paths.resolution);
+      const whole = report(assignments);
+      const store = mount(registry, whole, paths.resolution);
+      expectHeld(store, whole, [], ["777", "888", "999", '"mission":{"kind":"recon"', '"kind":"income"']);
       await screen.findByRole("application", { name: /map/ });
       // The Map Layers toolbar names its own Rail switch; the secrets are looked for in the rest of the page.
       const toolbar = document.querySelector(".map-layers-toolbar, .map-layers-menu")?.textContent ?? "";
@@ -92,7 +104,9 @@ describe("the turn report keeps other factions' secrets (CT-45, CT-46)", () => {
   }
 
   it("shows a single local player its own private lines and balance, and none of the computers'", async () => {
-    mount(registry, report({ [republic]: "local-human", [north]: "computer", [south]: "computer" }), paths.resolution);
+    const whole = report({ [republic]: "local-human", [north]: "computer", [south]: "computer" });
+    const store = mount(registry, whole, paths.resolution);
+    expectHeld(store, whole, ["777", '"unitId":"rep-catalan-recon"'], ["888", "999", '"unitId":"north-leon-recon"']);
     await screen.findByRole("application", { name: /map/ });
     const page = document.body.textContent;
     expect(page).toContain(line(outcomes[0]));
@@ -109,16 +123,21 @@ describe("hot-seat planning after another player locked orders (CT-52)", () => {
   it("shows the earlier player's readiness only: no orders, queue, training or balance", async () => {
     const scenario = spain();
     const state = busy(scenario);
-    const locked: PlayerSubmission = { factionId: republic, orders: [{ factionId: republic, kind: "recruit", territoryId: territory("catalunya"), unitTypeId: "militia-column" as UnitTypeId }] };
-    const session: Session = {
+    const locked: RecruitOrder = { factionId: republic, kind: "recruit", territoryId: territory("catalunya"), unitTypeId: "militia-column" as UnitTypeId };
+    const own: RecruitOrder = { factionId: north, kind: "recruit", territoryId: territory("castilla-y-leon"), unitTypeId: "militia-column" as UnitTypeId };
+    const session: InGameSession = {
       draft: emptyDraft,
       factionId: north,
-      game: { assignments: { [republic]: "local-human", [north]: "local-human", [south]: "computer" }, history: [], locked: { [republic]: locked }, scenarioId: spainId, seed: 1, state },
+      game: { assignments: { [republic]: "local-human", [north]: "local-human", [south]: "computer" }, history: [], ready: [republic], scenarioId: spainId, gameId: testGame, state },
       phase: "planning"
     };
-    const seen = visibleSession(scenario, session);
-    expect(seen.game.locked).toEqual({ [republic]: { factionId: republic, orders: [] } });
-    const store = mount(testRegistry(), session, paths.orders);
+    const orders = { [republic]: { ended: true, orders: [locked], revision: 1 }, [north]: { ended: false, orders: [own], revision: 1 }, [south]: { ended: true, orders: [], revision: 1 } };
+    const { view } = projected(scenario, session, { orders });
+    expect(view.ready).toContain(republic);
+    expect(view.saved).toEqual(orders[north]);
+    expect(view).not.toHaveProperty("orders");
+    const store = mount(testRegistry(), session, paths.orders, { orders });
+    expectHeld(store, { orders, session }, [JSON.stringify(own), "888"], [JSON.stringify(locked), "777", "999", "t_republic_militia-column_x_1"]);
     await screen.findByRole("application", { name: /map/ });
     expect(screen.getAllByRole("listitem").find((item) => item.textContent.startsWith("Republican Government"))).toHaveTextContent(/ready$/);
     act(() => { clickTerritoryIn(store, "catalunya"); });
@@ -138,7 +157,7 @@ describe("what recon shows in the pane (U4)", () => {
     const scenario = spain();
     const state = busy(scenario, { reveals: [{ territoryId: territory("catalunya"), untilTurn: 2, viewerFactionId: north }] });
     const emptied = { ...state, subTerritories: { ...state.subTerritories, barcelona: { ...state.subTerritories["barcelona" as SubTerritoryId]!, queue: [] } } };
-    const session: Session = { draft: emptyDraft, factionId: north, game: { assignments: { [north]: "local-human", [republic]: "computer", [south]: "computer" }, history: [], locked: {}, scenarioId: spainId, seed: 1, state: emptied }, phase: "planning" };
+    const session: InGameSession = { draft: emptyDraft, factionId: north, game: { assignments: { [north]: "local-human", [republic]: "computer", [south]: "computer" }, history: [], ready: [], scenarioId: spainId, gameId: testGame, state: emptied }, phase: "planning" };
     const store = mount(testRegistry(), session, paths.orders);
     await screen.findByRole("application", { name: /map/ });
     act(() => { clickTerritoryIn(store, "catalunya"); });
@@ -151,14 +170,24 @@ describe("what recon shows in the pane (U4)", () => {
   });
 });
 
-describe("only the session hook reads the raw session (m3)", () => {
-  it("leaves every other module to read through useSession", () => {
+describe("only the host holds the whole game (m3)", () => {
+  const sources = () => {
     const files = (dir: string): string[] => readdirSync(dir).flatMap((name) => {
       const path = join(dir, name);
       return statSync(path).isDirectory() ? files(path) : /\.tsx?$/.test(name) ? [path] : [];
     });
-    const readers = files("src/main").filter((path) => /\bgame\.session\b/.test(readFileSync(path, "utf8")));
-    expect(readers).toEqual([join("src/main", "hooks.ts")]);
+    return files("src/main").map((path) => ({ path, text: readFileSync(path, "utf8") }));
+  };
+  const matching = (pattern: RegExp) => sources().filter(({ text }) => pattern.test(text)).map(({ path }) => path).sort();
+
+  it("keeps the record and the service out of everything but the host, which main.tsx starts", () => {
+    const outside = (paths: readonly string[]) => paths.filter((path) => !path.startsWith(join("src/main/game", "/")));
+    expect(outside(matching(/\bGameRecord\b/))).toEqual([]);
+    expect(outside(matching(/(?:from|import\()\s*"[^"]*\/game\/(?:commandSchema|localHost|projection|service)"/))).toEqual([join("src/main", "main.tsx")]);
+  });
+
+  it("leaves every screen to read the session through useSession", () => {
+    expect(matching(/\bgame\.session\b/)).toEqual([join("src/main", "audio", "start.ts"), join("src/main", "hooks.ts"), join("src/main", "state", "commands.ts")]);
   });
 });
 

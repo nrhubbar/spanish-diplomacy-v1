@@ -7,10 +7,11 @@ import { AirLayer } from "../../main/map/layers/AirLayer";
 import { layoutPieces, type PieceLayout, placeAircraft } from "../../main/map/pieceLayout";
 import { intersects, type ScreenRect } from "../../main/map/placement";
 import { staticMapView } from "../../main/map/view";
-import { clickUnit, orderChoices, type PlanningSession, selectTerritory } from "../../main/state/planning";
+import { orderChoices } from "../../main/presentation/orderMenu";
+import { clickUnit, orderOffer, type PlanningSession, selectTerritory } from "../../main/state/planning";
 import { emptyDraft } from "../../main/state/session";
 import { AirPane } from "../../main/screens/pane/AirPane";
-import { faction, shippedRegistry, spainId, spainWithAir, territory, testStore, unit } from "../support";
+import { faction, shippedRegistry, spainId, spainWithAir, territory, testStore, unit, testGame } from "../support";
 
 /** U14: air on the map. Note 7's cases are copied from the `m3r2-probe` branch's `uiBugs.test.tsx`. */
 
@@ -20,7 +21,7 @@ function planning(state: GameState): PlanningSession {
   return {
     draft: emptyDraft,
     factionId: faction("republic"),
-    game: { assignments: {}, history: [], locked: {}, scenarioId: spainId, seed: 1, state },
+    game: { assignments: {}, history: [], ready: [], scenarioId: spainId, gameId: testGame, state },
     phase: "planning"
   };
 }
@@ -89,7 +90,7 @@ describe("many aircraft and armies at one territory", () => {
       ...Array.from({ length: aircraft }, (_, index) => [`air-${String(index)}`, "fighter-squadron"] as const),
       ...Array.from({ length: armies }, (_, index) => [`army-${String(index)}`, "infantry-regiment"] as const)
     ];
-    const raised = Object.fromEntries(ids.map(([id, type]): [string, RaisedUnitDefinition] => [id, { factionId: faction("republic"), fullStrength: 300, id: unit(id), name: id, type: type as UnitTypeId }]));
+    const raised = Object.fromEntries(ids.map(([id, type]): [string, RaisedUnitDefinition] => [id, { factionId: faction("republic"), fullStrength: 300, id: unit(id), type: type as UnitTypeId }]));
     const units = Object.fromEntries(ids.map(([id]) => [id, { factionId: faction("republic"), fatigue: 0, id: unit(id), morale: { demoralized: false, quietTurns: 0 }, strength: 300, territoryId: territory("madrid") }]));
     return { ...start, raised, units };
   }
@@ -128,7 +129,8 @@ describe("U14: selecting an aircraft offers only air orders", () => {
     const picked = clickUnit(scenario, withArmies, bomber);
     expect(picked.draft.selectedAircraftId).toBe(bomber);
     expect(picked.draft.selectedUnitIds).toEqual([]);
-    expect(orderChoices(scenario, picked)).toEqual([]);
+    expect(orderOffer(scenario, picked)).toEqual({ kinds: [] });
+    expect(orderChoices(scenario, picked.game.state, orderOffer(scenario, picked))).toEqual([]);
   });
 
   it("names the missions Patrol, Ground Support, Raid and Recon, in that order", () => {

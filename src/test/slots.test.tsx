@@ -10,12 +10,12 @@ import { TerritoryView } from "../main/screens/shell/views/TerritoryView";
 import { clickMapTerritory, focusSubTerritory } from "../main/state/gameSlice";
 import type { PlanningSession } from "../main/state/planning";
 import { emptyDraft } from "../main/state/session";
-import { faction, spain, spainId, territory, testRegistry, testStore, tiny, tinyId } from "./support";
+import { faction, spain, spainId, territory, testRegistry, testStore, tiny, tinyId, testGame } from "./support";
 
 afterEach(cleanup);
 
 function planning(scenario: Scenario, scenarioId: ScenarioId, factionId: string) {
-  const game = { assignments: { [faction(factionId)]: "local-human" as const }, history: [], locked: {}, scenarioId, seed: 1, state: initialGameState(scenario) };
+  const game = { assignments: { [faction(factionId)]: "local-human" as const }, history: [], ready: [], scenarioId, gameId: testGame, state: initialGameState(scenario) };
   return testStore({ game: { session: { draft: emptyDraft, factionId: faction(factionId), game, phase: "planning" } } });
 }
 

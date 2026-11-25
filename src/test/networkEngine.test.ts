@@ -13,7 +13,7 @@ import { initialGameState } from "../main/engine/resolution";
 import type { BuildProject, CombatModifier, GameState, LinkModifier, MoveLeg, MoveOrder, Scenario, SubTerritoryId } from "../main/engine/types";
 import { validateMoveOrder } from "../main/engine/validation";
 import { modifierName } from "../main/presentation/odds";
-import { faction, play, spainWithAir, spainM2, territory, unit, withUnits } from "./support";
+import { faction, play, said, spainM2, spainWithAir, territory, unit, withUnits } from "./support";
 import { pinned } from "./pinned";
 
 const scenario = pinned(spainWithAir());
@@ -48,7 +48,7 @@ function withTruck(state: GameState, territoryId: string): GameState {
   const id = unit("rep-test-trucks");
   return {
     ...state,
-    raised: { ...state.raised, [id]: { factionId: faction("republic"), fullStrength: 300, id, name: "Trucks", type: "truck-column" as never } },
+    raised: { ...state.raised, [id]: { factionId: faction("republic"), fullStrength: 300, id, type: "truck-column" as never } },
     units: { ...state.units, [id]: { factionId: faction("republic"), fatigue: 0, id, morale: { demoralized: false, quietTurns: 0 }, strength: 300, territoryId: territory(territoryId) } }
   };
 }
@@ -94,9 +94,9 @@ describe("links as they stand (network/links.ts)", () => {
     expect(afterWork(single, "road-upgrade", mainOnly)).toEqual([{ kind: "rail", level: "single" }, { kind: "road", level: "main" }]);
     expect(afterWork(single, "rail-upgrade", undefined)).toEqual([{ kind: "road", level: "track" }, { kind: "rail", level: "main" }]);
     expect([workMisfit(single, "new-rail", undefined), workMisfit(none, "rail-upgrade", undefined), workMisfit(main, "rail-upgrade", undefined), workMisfit(main, "road-upgrade", undefined), workMisfit(none, "new-rail", undefined)])
-      .toEqual(["There is a railway here already.", "Needs a railway first.", "This is a main line already.", "Trucks can use this road already.", undefined]);
+      .toEqual([{ code: "link-railway-already" }, { code: "link-needs-railway" }, { code: "link-main-line-already" }, { code: "link-road-serves" }, undefined]);
     // Where every road takes trucks, a better one gives nothing, so only a link with no road takes the work.
-    expect(workMisfit(single, "road-upgrade", tracksServe)).toBe("Trucks can use this road already.");
+    expect(said(scenario, workMisfit(single, "road-upgrade", tracksServe))).toBe("Trucks can use this road already.");
     expect(workMisfit(single, "road-upgrade", mainOnly)).toBeUndefined();
   });
 });
@@ -120,7 +120,7 @@ describe("March and Motor along the links (R5)", () => {
     const roadless: GameState = { ...start, builtLinks: { [linkKey("madrid", "avila")]: [], [linkKey("guadarrama", "avila")]: [] } };
     expect(marchCrossing(scenario, roadless, madrid, territory("castilla-y-leon"), false)).toMatchObject({ ok: true, step: { to: "segovia" } });
     const noRoads: GameState = { ...roadless, builtLinks: { ...roadless.builtLinks, [linkKey("guadarrama", "segovia")]: [{ kind: "pass", name: "Somosierra" }] } };
-    expect(marchCrossing(scenario, noRoads, madrid, territory("castilla-y-leon"), false)).toEqual({ code: "not-foot", ok: false, reason: "Only foot units can cross where there is no road." });
+    expect(marchCrossing(scenario, noRoads, madrid, territory("castilla-y-leon"), false)).toEqual({ code: "not-foot", ok: false, refusal: { code: "foot-only" } });
     expect(marchCrossing(scenario, noRoads, madrid, territory("castilla-y-leon"), true)).toMatchObject({ ok: true, step: { to: "avila" } });
     expect(marchCrossing(scenario, start, madrid, territory("galicia"), true)).toMatchObject({ code: "not-connected", ok: false });
   });
@@ -134,10 +134,10 @@ describe("March and Motor along the links (R5)", () => {
 
   it("runs Motor along main roads only, never over a pass", () => {
     const madrid = startSubTerritories(scenario, castile, faction("republic"), territory("madrid"));
-    expect(motorPath(scenario, castile, madrid, [territory("castilla-y-leon"), territory("galicia")])).toEqual({ code: "pass-blocks-motor", ok: false, reason: "Motor can't cross the Somosierra pass." });
+    expect(motorPath(scenario, castile, madrid, [territory("castilla-y-leon"), territory("galicia")])).toEqual({ code: "pass-blocks-motor", ok: false, refusal: { code: "motor-pass-closed", link: ["guadarrama", "segovia"] } });
     const toValencia = motorPath(scenario, start, madrid, [territory("castilla-la-mancha"), territory("valencia")]);
     expect(toValencia.ok && toValencia.path.map(({ step }) => `${step.from}>${step.to}`)).toEqual(["madrid>cuenca", "cuenca>valencia"]);
-    expect(motorPath(scenario, start, madrid, [territory("castilla-la-mancha"), territory("murcia")])).toEqual({ code: "no-road", ok: false, reason: "Motor needs a main road all the way." });
+    expect(motorPath(scenario, start, madrid, [territory("castilla-la-mancha"), territory("murcia")])).toEqual({ code: "no-road", ok: false, refusal: { code: "motor-needs-road" } });
   });
 
   it("checks a Motor route's range, destination and roads", () => {
@@ -147,7 +147,7 @@ describe("March and Motor along the links (R5)", () => {
     // The main road through mountainous Cuenca costs no extra step (declog D13).
     expect(check(trucked, [land("castilla-la-mancha"), land("valencia")])).toMatchObject({ ok: true, route: { cost: 2, mode: "motor", path: [{ mode: "motor", to: "cuenca" }, { mode: "motor", to: "valencia" }], rough: [] } });
     expect(check(trucked, [land("castilla-la-mancha"), land("valencia"), land("catalunya")])).toMatchObject({ code: "too-far", ok: false });
-    expect(check(trucked, [land("castilla-la-mancha"), land("extremadura")])).toEqual({ code: "contested", ok: false, reason: "Motor can't enter contested ground." });
+    expect(check(trucked, [land("castilla-la-mancha"), land("extremadura")])).toEqual({ code: "contested", ok: false, refusal: { code: "motor-contested-ground" } });
     expect(check(trucked, [land("castilla-y-leon"), land("galicia")])).toMatchObject({ code: "pass-blocks-motor", ok: false });
     // Without the partition rules there are no pockets, and the links still carry the roads.
     expect(describeRoute(spainM2(), trucked, faction("republic"), territory("madrid"), [land("castilla-la-mancha"), land("valencia")], false, undefined, units).ok).toBe(true);
@@ -180,7 +180,7 @@ describe("routes without links or road rules", () => {
     expect(describeRoute(roadless, trucks, republic, territory("madrid"), [land("castilla-la-mancha"), land("murcia")], false, undefined, units).ok).toBe(true);
     expect(describeRoute(roadless, trucks, republic, territory("madrid"), [land("castilla-la-mancha"), land("valencia"), land("catalunya")], false, undefined, units).ok).toBe(true);
     expect(marchCrossing(roadless, start, [sub("madrid")], territory("castilla-y-leon"), false).ok).toBe(true);
-    expect(reachFor(roadless, madrid, republic, [unit("rep-wad-ras-1")]).get(territory("ceuta"))).toMatchObject({ reasons: [{ code: "too-far" }, { text: "Motor reaches at most 2 territories." }, { code: "no-rail" }] });
+    expect(reachFor(roadless, madrid, republic, [unit("rep-wad-ras-1")]).get(territory("ceuta"))).toMatchObject({ reasons: [{ code: "too-far", refusal: { code: "march-neighbours-only" } }, { code: "no-rail" }] });
   });
 });
 
@@ -201,7 +201,7 @@ describe("route capacity (M3, M5)", () => {
   it("counts port landings and amphibious lanes, an army already counted going free", () => {
     const valencia = withUnits(scenario, [["rep-wad-ras-1", "republic", "valencia"], ["rep-covadonga-4", "republic", "valencia"]]);
     const check = describeRoute(scenario, valencia, faction("republic"), territory("valencia"), [sea("islas-baleares")]);
-    if (!check.ok) throw new Error(check.reason);
+    if (!check.ok) throw new Error(check.refusal.code);
     const route = check.route;
     const landed = usageOf([{ army: "first", places: 1, route }]);
     const amphibious = { ...route, sea: { departure: sub("valencia"), kind: "amphibious" as const } };
@@ -233,12 +233,12 @@ describe("reach (network/reach.ts)", () => {
     expect(alone).toEqual({
       ok: false,
       reasons: [
-        { code: "too-far", text: "March reaches only a neighbouring territory." },
-        { code: "no-trucks", text: "Motor needs trucks for every unit." }
+        { code: "too-far", refusal: { code: "march-neighbours-only" } },
+        { code: "no-trucks", refusal: { code: "motor-needs-trucks" } }
       ]
     });
     const trucked = reachFor(noRail, withTruck(castile, "madrid"), faction("republic"), [unit("rep-wad-ras-1"), unit("rep-test-trucks")]);
-    expect(trucked.get(territory("galicia"))).toEqual({ ok: false, reasons: [{ code: "too-far", text: "March reaches only a neighbouring territory." }, { code: "pass-blocks-motor", text: "Motor can't cross the Somosierra pass." }] });
+    expect(trucked.get(territory("galicia"))).toEqual({ ok: false, reasons: [{ code: "too-far", refusal: { code: "march-neighbours-only" } }, { code: "pass-blocks-motor", refusal: { code: "motor-pass-closed", link: ["guadarrama", "segovia"] } }] });
     expect(codes(reachFor(scenario, start, faction("republic"), [unit("rep-wad-ras-1")]).get(territory("ceuta")))).toEqual(["too-far", "too-far", "no-rail"]);
     // No rail reason where the army could not board at all.
     expect(codes(reachFor(scenario, withSite(start, "madrid", { rail: 0 }), faction("republic"), [unit("rep-wad-ras-1")]).get(territory("ceuta")))).toEqual(["too-far", "too-far"]);
@@ -246,7 +246,7 @@ describe("reach (network/reach.ts)", () => {
 
   it("names a contested start, a demoralized army and a missing port", () => {
     expect(reachFor(scenario, start, faction("republic"), [unit("rep-asturian-militia")]).get(territory("cantabria"))).toEqual({
-      ok: false, reasons: [{ code: "contested", text: "Not in contested ground: units here attack or withdraw." }]
+      ok: false, reasons: [{ code: "contested", refusal: { code: "move-in-contested-ground" } }]
     });
     const shaken = withUnits(scenario, [["rep-wad-ras-1", "republic", "madrid"], ["north-san-marcial-22", "north", "castilla-y-leon"]]);
     const army = shaken.units[unit("rep-wad-ras-1")];
@@ -261,7 +261,7 @@ describe("reach (network/reach.ts)", () => {
 
   it("falls back to a plain reason when nothing else applies", () => {
     // Trucks alone may not advance into enemy ground, though every link allows it.
-    expect(reachFor(noRail, withTruck(start, "madrid"), faction("republic"), [unit("rep-test-trucks")]).get(territory("castilla-y-leon"))).toEqual({ ok: false, reasons: [{ code: "not-connected", text: "Out of reach this turn." }] });
+    expect(reachFor(noRail, withTruck(start, "madrid"), faction("republic"), [unit("rep-test-trucks")]).get(territory("castilla-y-leon"))).toEqual({ ok: false, reasons: [{ code: "not-connected", refusal: { code: "out-of-reach" } }] });
     // A territory with no capital has no station to board at.
     const territories = new Map([...scenario.index.territories].map(([id, entry]) => {
       const copy = { ...entry };
@@ -347,25 +347,25 @@ describe("link works (R7)", () => {
   it("prices them from the scenario and checks the link, both ends and the work", () => {
     expect(projectCost(scenario, work("new-rail", "cuenca", "valencia"))).toEqual({ cost: { funds: 24 }, turns: 8 });
     expect(siteRefusal(scenario, start, republic, sub("cuenca"), work("new-rail", "cuenca", "valencia"))).toBeUndefined();
-    expect(siteRefusal(scenario, start, republic, sub("madrid"), work("new-rail", "cuenca", "valencia"))).toBe("Queue link works at one end of the link.");
-    expect(siteRefusal(scenario, start, republic, sub("madrid"), work("new-rail", "madrid", "barcelona"))).toBe("Those sub-territories don't border each other.");
-    expect(siteRefusal(scenario, start, republic, sub("guadarrama"), work("road-upgrade", "guadarrama", "segovia"))).toBe("Segovia is not yours.");
-    expect(siteRefusal(scenario, start, republic, sub("ciudad-real"), work("road-upgrade", "ciudad-real", "cordoba"))).toMatch(/is not yours/u);
-    expect(siteRefusal(scenario, start, republic, sub("madrid"), work("new-rail", "madrid", "cuenca"))).toBe("There is a railway here already.");
+    expect(said(scenario, siteRefusal(scenario, start, republic, sub("madrid"), work("new-rail", "cuenca", "valencia")))).toBe("Queue link works at one end of the link.");
+    expect(said(scenario, siteRefusal(scenario, start, republic, sub("madrid"), work("new-rail", "madrid", "barcelona")))).toBe("Those sub-territories don't border each other.");
+    expect(said(scenario, siteRefusal(scenario, start, republic, sub("guadarrama"), work("road-upgrade", "guadarrama", "segovia")))).toBe("Segovia is not yours.");
+    expect(said(scenario, siteRefusal(scenario, start, republic, sub("ciudad-real"), work("road-upgrade", "ciudad-real", "cordoba")))).toMatch(/is not yours/u);
+    expect(said(scenario, siteRefusal(scenario, start, republic, sub("madrid"), work("new-rail", "madrid", "cuenca")))).toBe("There is a railway here already.");
     expect(siteRefusal(scenario, start, republic, sub("madrid"), work("rail-upgrade", "madrid", "cuenca"))).toBeUndefined();
     const free: Scenario = { ...scenario, linkProjects: undefined as never };
-    expect(siteRefusal(free, start, republic, sub("madrid"), work("rail-upgrade", "madrid", "cuenca"))).toBe("Not available in this scenario.");
+    expect(said(free, siteRefusal(free, start, republic, sub("madrid"), work("rail-upgrade", "madrid", "cuenca")))).toBe("Not available in this scenario.");
   });
 
   it("refuses the other end's contested territory and a work the queue already covers", () => {
     // Jaén (Andalucía, contested) at the far end of Despeñaperros.
-    expect(siteRefusal(scenario, start, republic, sub("ciudad-real"), work("road-upgrade", "ciudad-real", "jaen"))).toMatch(/Contested/u);
+    expect(said(scenario, siteRefusal(scenario, start, republic, sub("ciudad-real"), work("road-upgrade", "ciudad-real", "jaen")))).toMatch(/Contested/u);
     const cuenca = start.subTerritories[sub("cuenca")];
     if (cuenca === undefined) throw new Error("fixture");
     const queued: GameState = { ...start, subTerritories: { ...start.subTerritories, [sub("cuenca")]: { ...cuenca, queue: [{ factionId: republic, paid: {}, progress: 0, project: work("new-rail", "valencia", "cuenca") }] } } };
-    expect(siteRefusal(scenario, queued, republic, sub("valencia"), work("road-upgrade", "cuenca", "valencia"))).toBe("Trucks can use this road already.");
+    expect(said(scenario, siteRefusal(scenario, queued, republic, sub("valencia"), work("road-upgrade", "cuenca", "valencia")))).toBe("Trucks can use this road already.");
     // One work at a time on a link, at either end.
-    expect(siteRefusal(scenario, queued, republic, sub("valencia"), work("new-rail", "cuenca", "valencia"))).toBe("Another work on this link is in the queue.");
+    expect(said(scenario, siteRefusal(scenario, queued, republic, sub("valencia"), work("new-rail", "cuenca", "valencia")))).toBe("Another work on this link is in the queue.");
   });
 
   it("changes the link when done, and raises the stations at its ends", () => {

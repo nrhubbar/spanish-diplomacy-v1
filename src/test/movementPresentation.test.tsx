@@ -5,10 +5,11 @@ import { initialGameState } from "../main/engine/resolution";
 import type { GameState, Scenario, SubTerritoryId, UnitState } from "../main/engine/types";
 import { armyLeaving, routeChips, routeDetail, routeRows, routeTag, selectionRoutes } from "../main/presentation/movement";
 import { RouteCard } from "../main/screens/movement/RouteCard";
-import { blockedOrders, enemyPresent, inContestedGround, selectedWithdrawRoutes, withdrawDestinations } from "../main/state/planning/contested";
+import { blockedOrders } from "../main/presentation/orderMenu";
+import { enemyPresent, inContestedGround, selectedWithdrawRoutes, withdrawDestinations } from "../main/state/planning/contested";
 import { type PlanningSession, selectTerritory } from "../main/state/planning";
 import { emptyDraft } from "../main/state/session";
-import { armyIn, faction, spainWithAir, spainId, territory, tiny, unit, withUnits } from "./support";
+import { armyIn, faction, spainWithAir, spainId, territory, tiny, unit, withUnits, testGame } from "./support";
 
 /**
  * M-9: the route chips, rows, detail line and "Army leaving" summary for every route shape
@@ -148,7 +149,7 @@ describe("planning in contested ground: the helpers (C1)", () => {
   const session = (state: GameState, factionId = "republic"): PlanningSession => ({
     draft: emptyDraft,
     factionId: faction(factionId),
-    game: { assignments: {}, history: [], locked: {}, scenarioId: spainId, seed: 1, state },
+    game: { assignments: {}, history: [], ready: [], scenarioId: spainId, gameId: testGame, state },
     phase: "planning"
   });
 

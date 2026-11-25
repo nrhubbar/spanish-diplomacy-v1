@@ -122,7 +122,7 @@ describe("the air battle in words (presentation/battleAir)", () => {
 
 describe("the battle card in a turn (U10, R11)", () => {
   const aaId = raisedUnitId(north, "anti-air-battery" as UnitTypeId, 1);
-  const raised: RaisedUnitDefinition = { factionId: north, fullStrength: 300, id: aaId, name: "Anti-air battery No. 1", type: "anti-air-battery" as UnitTypeId };
+  const raised: RaisedUnitDefinition = { factionId: north, fullStrength: 300, id: aaId, type: "anti-air-battery" as UnitTypeId };
   const start = initialGameState(scenario);
   const state: GameState = {
     ...start,

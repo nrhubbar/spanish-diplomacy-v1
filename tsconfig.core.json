@@ -1,0 +1,8 @@
+{
+  // The layers a server runs (and the engine under them), without browser types: `npm run typecheck`
+  // fails if one of them reaches for the DOM. Node's types come only through `types`, so none here.
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "lib": ["ES2024"], "types": [] },
+  "include": ["src/main/engine/**/*.ts", "src/main/ai/**/*.ts", "src/main/game/**/*.ts", "src/main/scenarios/schema/**/*.ts", "src/main/scenarios/loader/**/*.ts", "src/main/scenarios/loader.ts"],
+  "exclude": ["src/main/game/localHost.ts"]
+}

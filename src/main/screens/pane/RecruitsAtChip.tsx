@@ -1,7 +1,7 @@
 import type { JSX } from "react";
 import { EconomyIcon } from "../../components/economy/EconomyIcon";
-import { capitalOf, holdsTerritory, isContested } from "../../engine/recruitment/rules";
-import { SiteIcon } from "./SiteIcons";
+import { SiteIcon } from "../../components/SiteIcons";
+import { recruitingAt } from "../../presentation/holdings";
 import type { TerritoryTabProps } from "./TerritoryTabs";
 
 /**
@@ -10,9 +10,8 @@ import type { TerritoryTabProps } from "./TerritoryTabs";
  * which pauses recruiting (C8), it says "No recruiting" (M12). Renders nothing elsewhere.
  */
 export function RecruitsAtChip({ scenario, session, territoryId }: TerritoryTabProps): JSX.Element | null {
-  if (scenario.rules.recruitment === "none") return null;
-  const { state } = session.game;
-  if (isContested(scenario, state, territoryId)) {
+  const recruiting = recruitingAt(scenario, session.game.state, territoryId, session.factionId);
+  if (recruiting === "paused") {
     return (
       <span className="site-chip" data-tone="paused">
         <SiteIcon kind="paused" />
@@ -20,14 +19,11 @@ export function RecruitsAtChip({ scenario, session, territoryId }: TerritoryTabP
       </span>
     );
   }
-  if (!holdsTerritory(scenario, state, session.factionId, territoryId)) return null;
-  const capital = capitalOf(scenario, territoryId);
-  const place = capital === undefined ? scenario.index.territories.get(territoryId)?.name : scenario.index.subTerritories.get(capital)?.name;
-  if (place === undefined) return null;
+  if (recruiting === undefined) return null;
   return (
     <span className="site-chip recruits-at-chip">
       <EconomyIcon name="flag" />
-      {`Recruits at ${place}`}
+      {`Recruits at ${recruiting.place}`}
     </span>
   );
 }

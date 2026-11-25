@@ -1,6 +1,7 @@
 import { type JSX, useEffect, useId, useRef, useState } from "react";
 import type { Scenario } from "../../engine/types";
-import { orderButtonLabel, type PlanningSession } from "../../state/planning";
+import { orderButtonLabel } from "../../presentation/orderMenu";
+import type { PlanningSession } from "../../state/planning";
 import { OrderMenu } from "./OrderMenu";
 
 /**

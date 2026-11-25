@@ -13,11 +13,11 @@ describe("order validation (M1, M2)", () => {
     const scenario = tiny();
     const state = initialGameState(scenario);
     expect(validateMoveOrder(scenario, state, move("red", "red-guard", "westfold", "highlands"))).toEqual({ ok: true });
-    expect(validateMoveOrder(scenario, state, move("red", "missing", "westfold", "highlands"))).toMatchObject({ reason: "Unknown unit." });
+    expect(validateMoveOrder(scenario, state, move("red", "missing", "westfold", "highlands"))).toMatchObject({ refusal: { code: "unknown-unit" } });
     expect(validateMoveOrder(scenario, state, move("blue", "red-guard", "westfold", "highlands"))).toMatchObject({ ok: false });
     expect(validateMoveOrder(scenario, state, move("red", "red-guard", "highlands", "harbor"))).toMatchObject({ ok: false });
-    expect(validateMoveOrder(scenario, state, move("red", "red-guard", "westfold", "westfold"))).toMatchObject({ reason: expect.stringContaining("different") });
-    expect(validateMoveOrder(scenario, state, move("red", "red-guard", "westfold", "harbor"))).toMatchObject({ reason: expect.stringContaining("not connected") });
+    expect(validateMoveOrder(scenario, state, move("red", "red-guard", "westfold", "westfold"))).toMatchObject({ refusal: { code: "same-destination" } });
+    expect(validateMoveOrder(scenario, state, move("red", "red-guard", "westfold", "harbor"))).toMatchObject({ refusal: { code: "not-connected" } });
   });
 
   it("validates whole submissions, including duplicates and ownership", () => {

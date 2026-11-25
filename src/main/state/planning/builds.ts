@@ -1,6 +1,7 @@
 import { applyBuildOrder, validateBuildOrder, withBuildOrders } from "../../engine/economy/catalogue";
 import { subtractResources, treasuryOf } from "../../engine/resources";
 import type { BuildOrder, GameState, Scenario } from "../../engine/types";
+import { refusedFeedback } from "../../presentation/feedback";
 import type { Draft } from "../session";
 import { basketCost } from "./recruitment";
 import { feedback, type PlanningSession, withDraft } from "./selection";
@@ -36,10 +37,10 @@ export function previewState(scenario: Scenario, session: PlanningSession): Game
 export function planBuild(scenario: Scenario, session: PlanningSession, order: BuildOrder): PlanningSession {
   const own = { ...order, factionId: session.factionId };
   const alone = validateBuildOrder(scenario, session.game.state, own);
-  if (!alone.ok) return feedback(session, alone.reason);
+  if (!alone.ok) return feedback(session, refusedFeedback(alone.refusal));
   const after = applyBuildOrder(scenario, previewState(scenario, session), own);
-  if (!after.ok) return feedback(session, after.reason);
-  const draft: Draft = { ...session.draft, builds: [...plannedBuilds(session), own], feedback: "Queued. It is paid when orders are revealed." };
+  if (!after.ok) return feedback(session, refusedFeedback(after.refusal));
+  const draft: Draft = { ...session.draft, builds: [...plannedBuilds(session), own], feedback: { code: "build-queued" } };
   return withDraft(session, draft);
 }
 
@@ -57,6 +58,6 @@ export function cancelBuild(scenario: Scenario, session: PlanningSession, index:
     }
   }
   const draft: Draft = { ...session.draft, builds: kept };
-  delete (draft as { feedback?: string }).feedback;
+  delete (draft as { feedback?: unknown }).feedback;
   return withDraft(session, draft);
 }

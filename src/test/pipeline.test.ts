@@ -43,7 +43,7 @@ describe("the turn pipeline (section 2)", () => {
 
   it("keeps the Milestone 3 steps as pass-throughs until their slices land", () => {
     const scenario = tiny();
-    const draft = startDraft({ dice: () => seededRandom(1), scenario, seed: 1, start: initialGameState(scenario), streams: seededRollStreams(1, 1), submissions: [] });
+    const draft = startDraft({ dice: () => seededRandom(1), scenario, start: initialGameState(scenario), streams: seededRollStreams(1, 1), submissions: [] });
     for (const phase of [weatherStep, airStep, trainingStep, incomeStep]) expect(phase(draft)).toBe(draft);
     const presets = new Set(ruleAreas.flatMap((area) => Object.values(builtInModuleRegistry.require(area, builtInModules[area][0]).steps)));
     // Landed slices are no longer skeletons: movement (`allowance`), partition `provinces` (m3r1-sub-territories) and air (m3r1-air-generals).

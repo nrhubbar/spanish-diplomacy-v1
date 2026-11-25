@@ -1,6 +1,6 @@
 import { onGroundBoard } from "./air/pieces";
 import type { Armies } from "./board";
-import type { GameState, InvalidOrderOutcome, MoveOrder, Order, RejectedOrderOutcome, Scenario, UnitId, UnitState } from "./types";
+import type { GameState, InvalidOrderOutcome, MoveOrder, Order, Refusal, RejectedOrderOutcome, Scenario, UnitId, UnitState } from "./types";
 import { validateOrder } from "./validation";
 
 /** The orders an army follows when it has no move order. They are derived, never submitted (O5). */
@@ -36,17 +36,17 @@ export function partitionOrders(
   const invalid: InvalidOrderOutcome[] = [];
   const rejected: RejectedOrderOutcome[] = [];
   const valid: MoveOrder[] = [];
-  const fail = (order: Order, reason: string): void => {
-    if (order.kind === "move") invalid.push({ kind: "invalid-order", men: state.units[order.unitId]?.strength ?? 0, order, reason });
-    else rejected.push({ kind: "rejected-order", order, reason });
+  const fail = (order: Order, refusal: Refusal): void => {
+    if (order.kind === "move") invalid.push({ kind: "invalid-order", men: state.units[order.unitId]?.strength ?? 0, order, refusal });
+    else rejected.push({ kind: "rejected-order", order, refusal });
   };
   for (const order of orders) {
     if ("unitId" in order && (orderCount.get(order.unitId) ?? 0) > 1) {
-      fail(order, "A unit can receive only one order per turn.");
+      fail(order, { code: "one-order-per-unit" });
       continue;
     }
     const validation = validateOrder(scenario, state, order);
-    if (!validation.ok) fail(order, validation.reason);
+    if (!validation.ok) fail(order, validation.refusal);
     else if (order.kind === "move") valid.push(order);
   }
   return { invalid, rejected, valid };

@@ -3,7 +3,7 @@ import { holdWhole } from "./holdWhole";
 import { generalUnitDefinition } from "../../main/engine/generals/identity";
 import { nextOnRoster } from "../../main/engine/generals/roster";
 import { type AttackEstimate, estimateAttack } from "../../main/engine/combat";
-import { requireUnitDefinition } from "../../main/engine/lookup";
+import { unitName } from "../../main/presentation/text";
 import { initialGameState, resolveTurn } from "../../main/engine/resolution";
 import type { CombatModifier, GameState, GeneralId, Scenario, SackOrder, TurnOutcome, UnitId, UnitState } from "../../main/engine/types";
 import { faction, move, spainWithAir, territory, tiny, unit } from "../support";
@@ -86,7 +86,7 @@ describe("sacking and replacements (U5, D7)", () => {
     expect(second.outcomes).toContainEqual({ factionId: "republic", generalId: "vicente-rojo", kind: "replacement-arrived", territoryId: "madrid", unitId: "general-vicente-rojo" });
     expect(second.finalState.units[unit("general-vicente-rojo")]?.territoryId).toBe("madrid");
     expect(second.finalState.generals[faction("republic")]?.pending).toEqual([]);
-    expect(requireUnitDefinition(scenario, unit("general-vicente-rojo")).name).toBe("Vicente Rojo");
+    expect(unitName(scenario, unit("general-vicente-rojo"))).toBe("Vicente Rojo");
   });
 
   it("skips generals in play or on their way, and stops when the roster runs out", () => {
@@ -97,7 +97,7 @@ describe("sacking and replacements (U5, D7)", () => {
 
   it("rejects a Sack order for a unit that is not a general", () => {
     const result = resolveTurn(scenario, state, [{ factionId: faction("republic"), orders: [sack("republic", "rep-wad-ras-1")] }], seed);
-    expect(result.outcomes).toContainEqual(expect.objectContaining({ kind: "rejected-order", reason: "Only a general can be sacked." }));
+    expect(result.outcomes).toContainEqual(expect.objectContaining({ kind: "rejected-order", refusal: { code: "sack-needs-general" } }));
   });
 });
 

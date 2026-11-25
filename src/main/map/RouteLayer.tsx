@@ -2,7 +2,7 @@ import type { JSX } from "react";
 import type { BattleOutcome, FactionId, GameState, Scenario, TerritoryId, TurnOutcome } from "../engine/types";
 import { battleKind } from "../presentation/battle";
 import { isBattle } from "../presentation/grades";
-import { medallionMarkup } from "../presentation/outcomeArt";
+import { medallionMarkup } from "../assets/outcomes/outcomeArt";
 import type { MapPoint } from "../scenarios/loader";
 import { groupRoutes, type RouteBattle, routeBattle, type RouteGroup, type RoutePoints, routeShape } from "./routes";
 import type { MapView } from "./view";

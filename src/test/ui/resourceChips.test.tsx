@@ -8,14 +8,14 @@ import type { FactionId, GameState, Scenario, SubTerritoryId, UnitTypeId } from 
 import { RegistryContext } from "../../main/hooks";
 import type { PlanningSession } from "../../main/state/planning";
 import { emptyDraft, type Draft } from "../../main/state/session";
-import { faction, spain, spainId, territory, testRegistry, testStore } from "../support";
+import { faction, spain, spainId, territory, testRegistry, testStore, testGame } from "../support";
 
 afterEach(cleanup);
 
 const republic = faction("republic");
 
 function renderChips(state: GameState, options: { readonly draft?: Draft; readonly scenario?: Scenario; readonly viewer?: FactionId | undefined } = {}) {
-  const session: PlanningSession = { draft: options.draft ?? emptyDraft, factionId: republic, game: { assignments: { [republic]: "local-human" }, history: [], locked: {}, scenarioId: spainId, seed: 1, state }, phase: "planning" };
+  const session: PlanningSession = { draft: options.draft ?? emptyDraft, factionId: republic, game: { assignments: { [republic]: "local-human" }, history: [], ready: [], scenarioId: spainId, gameId: testGame, state }, phase: "planning" };
   const store = testStore({ game: { session } });
   const user = userEvent.setup();
   const viewer = "viewer" in options ? options.viewer : republic;

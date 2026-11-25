@@ -1,5 +1,5 @@
 import type { JSX } from "react";
-import { isContested, subTerritoriesOf } from "../../engine/economy/holdings";
+import { buildsPaused, subTerritoriesIn } from "../../presentation/holdings";
 import type { SubTerritoryId } from "../../engine/types";
 import { useAppDispatch } from "../../hooks";
 import { plannedAt } from "../../presentation/queues";
@@ -23,11 +23,11 @@ export function BuildingsTab({ expanded, onExpand, scenario, session, territoryI
         <h4>Sub-territories</h4>
         <span className="pane-hint">Open one to queue work</span>
       </div>
-      {isContested(scenario, state.subTerritories, territoryId) ? (
+      {buildsPaused(scenario, state, territoryId) ? (
         <p className="pane-callout build-paused">Contested: queues here are paused, and the territory pays no income.</p>
       ) : null}
       <ul className="site-cards">
-        {subTerritoriesOf(scenario, territoryId).map((sub) => (
+        {subTerritoriesIn(scenario, territoryId).map((sub) => (
           <li key={sub.id}>
             <SiteCard
               expanded={expanded === sub.id}

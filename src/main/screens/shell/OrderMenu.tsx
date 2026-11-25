@@ -2,7 +2,8 @@ import { type JSX, useId, useState } from "react";
 import type { Scenario } from "../../engine/types";
 import { useAppDispatch } from "../../hooks";
 import { chooseOrderKind } from "../../state/gameSlice";
-import { disbandableSelection, orderChoices, type PlanningSession } from "../../state/planning";
+import { orderChoices } from "../../presentation/orderMenu";
+import { disbandableSelection, orderOffer, type PlanningSession } from "../../state/planning";
 import type { OrderKind } from "../../state/session";
 import { DisbandConfirm } from "../pane/DisbandConfirm";
 import { focusWhenShown } from "./focus";
@@ -32,7 +33,7 @@ function Orders({ focusFirst = false, label, onChosen, rows = false, scenario, s
   const dispatch = useAppDispatch();
   const ids = useId();
   const [step, setStep] = useState<"choose" | "confirm" | "kept">("choose");
-  const choices = orderChoices(scenario, session);
+  const choices = orderChoices(scenario, session.game.state, orderOffer(scenario, session));
   const give = (kind: OrderKind): void => {
     onChosen?.();
     dispatch(chooseOrderKind(kind));

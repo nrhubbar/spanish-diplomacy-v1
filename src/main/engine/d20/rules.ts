@@ -1,3 +1,4 @@
+import { dieFaces } from "../dice";
 import type { CombatRole, GameState, RaisedUnitDefinition, Scenario, TerritoryId, UnitDefinition, UnitId, UnitState, UnitTypeDefinition, WeatherId, WeatherState } from "../types";
 
 /**
@@ -5,9 +6,9 @@ import type { CombatRole, GameState, RaisedUnitDefinition, Scenario, TerritoryId
  * the numbers come from the scenario's `d20` block.
  */
 
-/** The d20's faces, 1 to 20, and the highest table score (D1). */
-export const d20Faces: readonly number[] = Array.from({ length: 20 }, (_, index) => index + 1);
-export const lastScore = 20;
+/** The die's faces, 1 up, and the highest table score (D1). */
+export const d20Faces: readonly number[] = Array.from({ length: dieFaces }, (_, index) => index + 1);
+export const lastScore = dieFaces;
 
 /** A unit's definition, from the scenario or, for a unit raised in play (R6), from the state. */
 export function definitionOf(scenario: Scenario, raised: GameState["raised"], id: UnitId): UnitDefinition | RaisedUnitDefinition {

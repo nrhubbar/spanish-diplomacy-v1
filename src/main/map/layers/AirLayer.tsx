@@ -1,8 +1,6 @@
 import { type JSX, useMemo } from "react";
-import { territoriesWithin, unitTypeIn } from "../../engine/air/pieces";
 import type { AirMission, GameState, Scenario, UnitId, UnitState } from "../../engine/types";
-import { aircraftCounterText, aircraftGroupText } from "../../presentation/airPane";
-import { missionTerritoryId } from "../../state/planning/air";
+import { aircraftCounterText, aircraftGroupText, flightRange, missionOver } from "../../presentation/airPane";
 import type { MapPackage, MapPoint } from "../../scenarios/loader";
 import { mapTerritory } from "../anchors";
 import { itemUnits } from "../counterItems";
@@ -34,7 +32,7 @@ export function AirLayer({ game, layout, level, scenarioPackage, toScreen, unitS
   const ring = selected === undefined || selectedBase === undefined ? undefined : rangeRing(scenario, map, game, selected, selectedBase, toScreen);
   const lines = (view.plannedAirMissions ?? []).flatMap((order) => {
     const from = placementOf(order.unitId);
-    const target = missionTerritoryId(scenario, order.mission);
+    const target = missionOver(scenario, order.mission);
     if (from === undefined || target === undefined) return [];
     const to = toScreen(missionPoint(map, order.mission) ?? mapTerritory(map, target).label);
     return [{ from: { x: from.position.x + metrics.width / 2, y: from.position.y + metrics.height / 2 }, id: order.unitId, kind: order.mission.kind, to }];
@@ -110,10 +108,10 @@ function rangeRing(
   base: MapPoint,
   toScreen: MapLayerProps["toScreen"]
 ): { readonly r: number; readonly x: number; readonly y: number } | undefined {
-  const range = unitTypeIn(scenario, game.raised, unit.id)?.air?.range;
+  const range = flightRange(scenario, game, unit);
   if (range === undefined) return undefined;
   let r = 0;
-  for (const territoryId of territoriesWithin(scenario, unit.territoryId, range).keys()) {
+  for (const territoryId of range) {
     const point = toScreen(mapTerritory(map, territoryId).label);
     r = Math.max(r, Math.hypot(point.x - base.x, point.y - base.y));
   }

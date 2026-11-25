@@ -3,7 +3,7 @@ import { initialGameState } from "../main/engine/resolution";
 import type { GameState, SubTerritoryId } from "../main/engine/types";
 import { chooseOrder, chooseDestination, orderCounts, orderKindsFor, orderOf, type PlanningSession, selectTerritory, toggleUnit } from "../main/state/planning";
 import { emptyDraft } from "../main/state/session";
-import { armyIn, faction, spain, spainId, territory, unit, withUnits } from "./support";
+import { armyIn, faction, spain, spainId, territory, unit, withUnits, testGame, told } from "./support";
 
 /** R1: with Granada the Republic's Andalusian ground is one pocket, with ways out to Castilla-La Mancha and Murcia. */
 function withGranada(state: GameState): GameState {
@@ -16,7 +16,7 @@ function planning(state: GameState, factionId = "republic"): PlanningSession {
   return {
     draft: emptyDraft,
     factionId: faction(factionId),
-    game: { assignments: {}, history: [], locked: {}, scenarioId: spainId, seed: 1, state },
+    game: { assignments: {}, history: [], ready: [], scenarioId: spainId, gameId: testGame, state },
     phase: "planning"
   };
 }
@@ -48,7 +48,7 @@ describe("planning in contested ground (C1, Q-UX-14)", () => {
   it("plans a Withdraw at once when there is one way out, and refuses when there is none", () => {
     const scenario = spain();
     const pocket = selectTerritory(planning(withUnits(scenario, [["north-milan-32", "north", "asturias"]]), "north"), territory("asturias"));
-    expect(chooseOrder(scenario, pocket, "withdraw").draft.feedback).toMatch(/no way out/);
+    expect(told(scenario, chooseOrder(scenario, pocket, "withdraw").draft.feedback)).toMatch(/no way out/);
     const state = withUnits(scenario, [["rep-castilla-3", "republic", "extremadura"]]);
     const single = chooseOrder(scenario, selectTerritory(planning(state), territory("extremadura")), "withdraw");
     expect(single.draft.orders.map((order) => order.to)).toEqual(["castilla-la-mancha"]);

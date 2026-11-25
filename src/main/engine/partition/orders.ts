@@ -1,4 +1,4 @@
-import { type OrderHookContext, type OrderValidationContext, type RetreatContext, unavailableOrderReason } from "../hooks";
+import type { OrderHookContext, OrderValidationContext, RetreatContext } from "../hooks";
 import { isNeighbor } from "../lookup";
 import type { GameState, Scenario, TerritoryId, UnitId, ValidationResult, WithdrawOrder } from "../types";
 import { isSeaRouteClosed } from "../weather";
@@ -12,16 +12,6 @@ import { hasPath, pathThrough } from "./paths";
  * validates (M1).
  */
 
-/** Player-facing reasons, shared with the order menu. */
-export const contestedReasons = {
-  move: "Not in contested ground: units here attack or withdraw.",
-  replenish: "Not in contested ground.",
-  withdrawNoPath: "No way out through your own sub-territories.",
-  withdrawSeaClosed: "The sea is closed by winter storms this turn.",
-  withdrawNotContested: "Withdraw is only for contested ground. Use Move.",
-  withdrawTarget: "Withdraw to a neighbouring territory you hold whole."
-} as const;
-
 /** W5: whether the unit's type takes Withdraw orders (aircraft do not); a type without a list allows it. */
 export function canWithdraw(scenario: Scenario, state: GameState, unitId: UnitId): boolean {
   const definition = scenario.index.units.get(unitId) ?? state.raised[unitId];
@@ -32,29 +22,29 @@ export function canWithdraw(scenario: Scenario, state: GameState, unitId: UnitId
 /** C1, P6: a Withdraw order, against the start-of-turn state. */
 export function validateWithdrawOrder(scenario: Scenario, state: GameState, order: WithdrawOrder): ValidationResult {
   const unit = state.units[order.unitId];
-  if (unit === undefined) return { ok: false, reason: "Unknown unit." };
-  if (unit.factionId !== order.factionId) return { ok: false, reason: "Selected unit belongs to another player." };
-  if (unit.territoryId !== order.from) return { ok: false, reason: "Selected unit is no longer in that territory." };
-  if (!canWithdraw(scenario, state, order.unitId)) return { ok: false, reason: "This unit cannot withdraw." };
-  if (!isContested(scenario, state, order.from)) return { ok: false, reason: contestedReasons.withdrawNotContested };
+  if (unit === undefined) return { ok: false, refusal: { code: "unknown-unit" } };
+  if (unit.factionId !== order.factionId) return { ok: false, refusal: { code: "unit-of-another-faction" } };
+  if (unit.territoryId !== order.from) return { ok: false, refusal: { code: "unit-elsewhere" } };
+  if (!canWithdraw(scenario, state, order.unitId)) return { ok: false, refusal: { code: "unit-cannot-withdraw" } };
+  if (!isContested(scenario, state, order.from)) return { ok: false, refusal: { code: "withdraw-not-contested" } };
   if (!isNeighbor(scenario, order.from, order.to) || !holdsWhole(scenario, state, order.to, order.factionId)) {
-    return { ok: false, reason: contestedReasons.withdrawTarget };
+    return { ok: false, refusal: { code: "withdraw-target" } };
   }
   if (pathThrough(scenario, state, order.factionId, order.from, order.to, [order.unitId]).length === 0) {
-    return { ok: false, reason: isSeaRouteClosed(scenario, state, order.from, order.to) ? contestedReasons.withdrawSeaClosed : contestedReasons.withdrawNoPath };
+    return { ok: false, refusal: { code: isSeaRouteClosed(scenario, state, order.from, order.to) ? "sea-closed" : "withdraw-no-way-out" } };
   }
   return { ok: true };
 }
 
 /** The partition module's `validateOrder.withdraw` hook: Withdraw is its order, in a scenario with sub-territories. */
 export function partitionValidateWithdraw({ order, scenario, state }: OrderValidationContext<"withdraw">): ValidationResult {
-  return isPartitioned(scenario) ? validateWithdrawOrder(scenario, state, order) : { ok: false, reason: unavailableOrderReason };
+  return isPartitioned(scenario) ? validateWithdrawOrder(scenario, state, order) : { ok: false, refusal: { code: "order-unavailable" } };
 }
 
 /** The partition module's `orderVerdict` hook: moves out of contested ground are refused (C1). */
 export function partitionOrderVerdict({ order, scenario, state }: OrderHookContext): ValidationResult | undefined {
   if (!isPartitioned(scenario)) return undefined;
-  if (order.kind === "move" && isContested(scenario, state, order.from)) return { ok: false, reason: contestedReasons.move };
+  if (order.kind === "move" && isContested(scenario, state, order.from)) return { ok: false, refusal: { code: "move-in-contested-ground" } };
   return undefined;
 }
 

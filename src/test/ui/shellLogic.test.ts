@@ -9,7 +9,7 @@ import { beginPlanning, endTurn, exitGame } from "../../main/state/gameSlice";
 import { musterModeChosen, musterTicked, noMusterChoices, openView, paneSlice, type PaneView, popped, popView, pushed, pushView, resetPane, rootView, topView, viewKey } from "../../main/state/paneSlice";
 import { armiesWithoutOrders, chooseOrder, clearSelection, type PlanningSession, selectTerritory, toggleUnit } from "../../main/state/planning";
 import { emptyDraft } from "../../main/state/session";
-import { faction, move, spain, spainId, spainWithAir, territory, unit } from "../support";
+import { faction, move, spain, spainId, spainWithAir, territory, unit, testGame } from "../support";
 
 const madrid: PaneView = { id: territory("madrid"), kind: "territory" };
 const valencia: PaneView = { id: territory("valencia"), kind: "territory", tab: "recruit" };
@@ -73,7 +73,7 @@ describe("U3: the pane stack", () => {
 });
 
 function planning(state: GameState): PlanningSession {
-  return { draft: emptyDraft, factionId: faction("republic"), game: { assignments: {}, history: [], locked: {}, scenarioId: spainId, seed: 1, state }, phase: "planning" };
+  return { draft: emptyDraft, factionId: faction("republic"), game: { assignments: {}, history: [], ready: [], scenarioId: spainId, gameId: testGame, state }, phase: "planning" };
 }
 
 describe("U2: the armies with no order", () => {

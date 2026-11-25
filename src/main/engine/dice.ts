@@ -48,6 +48,9 @@ export function seededBattleDice(seed: number, turnNumber: number): BattleDice {
   return (battleIndex) => rollStream(seed, "battle", turnNumber, battleIndex);
 }
 
+/** The die every roll in the game uses: a d20. */
+export const dieFaces = 20;
+
 /** A whole number from 1 to `count`, each equally likely. */
 export function pick(random: RandomSource, count: number): number {
   return 1 + Math.min(count - 1, Math.max(0, Math.floor(random() * count)));

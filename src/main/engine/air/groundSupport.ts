@@ -1,5 +1,4 @@
-import { d20Faces } from "../d20/rules";
-import { pick } from "../dice";
+import { dieFaces, pick } from "../dice";
 import { type CombatHookContext, hookedGrounded } from "../hooks";
 import type {
   AirBattleAircraft,
@@ -121,7 +120,7 @@ export function flightsAfter(scratch: AirScratch, air: AirOverBattle): AirScratc
 /** R11: a battle's air battle d20, from the `air-battle` stream of its index. */
 export function airBattleDie(scratch: AirScratch, battleIndex: number): number {
   const streams = scratch.streams;
-  return streams === undefined ? 1 : pick(streams("air-battle", battleIndex), 20);
+  return streams === undefined ? 1 : pick(streams("air-battle", battleIndex), dieFaces);
 }
 
 /** The defending units a hook context names, or else the defenders' units in the territory at the start of the turn. */
@@ -180,7 +179,7 @@ export interface PlannedAir {
 
 /** The chance of the results a test picks, added up in the d20's faces, so that seven of them read as exactly 0.35. */
 function chanceOf(results: readonly PlannedAirResult[], test: (result: PlannedAirResult) => boolean): number {
-  const faces = d20Faces.length;
+  const faces = dieFaces;
   return results.filter(test).reduce((sum, result) => sum + Math.round(result.chance * faces), 0) / faces;
 }
 
@@ -219,7 +218,7 @@ export function plannedSupport(scenario: Scenario, input: AirBattleInput): Omit<
     roll: groundSupport(input, row).attacker.roll,
     support: row.support
   }));
-  const average = results.reduce((sum, result) => sum + Math.round(result.chance * d20Faces.length) * result.roll, 0) / d20Faces.length;
+  const average = results.reduce((sum, result) => sum + Math.round(result.chance * dieFaces) * result.roll, 0) / dieFaces;
   return {
     average,
     lossChance: chanceOf(results, (result) => result.aircraftLost > 0),

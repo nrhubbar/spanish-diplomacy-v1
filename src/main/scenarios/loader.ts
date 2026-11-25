@@ -69,6 +69,8 @@ export interface MapPackage {
 export interface ScenarioPackage {
   readonly map: MapPackage;
   readonly scenario: Scenario;
+  /** A fingerprint of the scenario data, so a saved game knows the data it was made with. */
+  readonly version: string;
 }
 
 export class PackageValidationError extends Error {
@@ -91,29 +93,45 @@ export interface PackageInput {
   readonly scenarioPath: string;
 }
 
+export type RulesInput = Pick<PackageInput, "modules" | "scenarioDocument" | "scenarioPath">;
+
+function readRules({ modules = builtInModuleRegistry, scenarioDocument, scenarioPath }: RulesInput): { readonly document: ScenarioDocument; readonly scenario: Scenario; readonly version: string } {
+  const parsed = scenarioSchema.safeParse(scenarioDocument);
+  if (!parsed.success) throw new PackageValidationError(scenarioPath, formatZodIssues(parsed.error));
+  const issues = checkScenario(parsed.data, modules);
+  if (issues.length > 0) throw new PackageValidationError(scenarioPath, issues);
+  const scenario = indexScenario(parsed.data, modules);
+  return { document: parsed.data, scenario, version: fingerprint(JSON.stringify(scenarioDocument)) };
+}
+
+/** A scenario's rules alone, for whoever resolves turns and draws nothing: no map, no art, no bundler. */
+export function loadRules(input: RulesInput): Pick<ScenarioPackage, "scenario" | "version"> {
+  const { scenario, version } = readRules(input);
+  const issues = checkStartingPosition(scenario);
+  if (issues.length > 0) throw new PackageValidationError(input.scenarioPath, issues);
+  return { scenario, version };
+}
+
 /** Validates a scenario and its map (rules L1-L25 except SVG element checks) and indexes them. */
 export function loadPackage(input: PackageInput): ScenarioPackage {
-  const scenarioResult = scenarioSchema.safeParse(input.scenarioDocument);
-  if (!scenarioResult.success) {
-    throw new PackageValidationError(input.scenarioPath, formatZodIssues(scenarioResult.error));
-  }
-  const mapResult = mapSchema.safeParse(input.mapDocument);
-  if (!mapResult.success) {
-    throw new PackageValidationError(input.mapPath, formatZodIssues(mapResult.error));
-  }
+  const map = mapSchema.safeParse(input.mapDocument);
+  const { document, scenario, version } = readRules(input);
+  if (!map.success) throw new PackageValidationError(input.mapPath, formatZodIssues(map.error));
+  const issues = [...checkStartingPosition(scenario), ...checkMap(document, map.data, input.assetPaths)];
+  if (issues.length > 0) throw new PackageValidationError(input.scenarioPath, issues);
+  return { map: indexMap(map.data), scenario, version };
+}
 
-  const modules = input.modules ?? builtInModuleRegistry;
-  const scenarioIssues = checkScenario(scenarioResult.data, modules);
-  if (scenarioIssues.length > 0) {
-    throw new PackageValidationError(input.scenarioPath, scenarioIssues);
+/** FNV-1a over two lanes: tells one version of a document from another; not a secret. */
+function fingerprint(text: string): string {
+  let low = 0x811c9dc5;
+  let high = 0x01000193;
+  for (let index = 0; index < text.length; index += 1) {
+    const code = text.charCodeAt(index);
+    low = Math.imul(low ^ code, 0x01000193) >>> 0;
+    high = Math.imul(high ^ (code + index), 0x01000193) >>> 0;
   }
-  const scenario = indexScenario(scenarioResult.data, modules);
-  const startIssues = checkStartingPosition(scenario);
-  const mapIssues = checkMap(scenarioResult.data, mapResult.data, input.assetPaths);
-  if (startIssues.length + mapIssues.length > 0) {
-    throw new PackageValidationError(input.scenarioPath, [...startIssues, ...mapIssues]);
-  }
-  return { map: indexMap(mapResult.data), scenario };
+  return [low, high].map((lane) => lane.toString(16).padStart(8, "0")).join("");
 }
 
 /** L10 (geometry part): every bound region must exist as an element in the SVG. */

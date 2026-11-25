@@ -20,7 +20,7 @@ import {
   type PlanningSession
 } from "../main/state/planning";
 import { emptyDraft } from "../main/state/session";
-import { faction, spain, spainId, territory } from "./support";
+import { faction, spain, spainId, territory, testGame, told } from "./support";
 import { pinned } from "./pinned";
 
 const scenario = pinned(spain());
@@ -32,7 +32,7 @@ function planning(state: GameState = initialGameState(scenario)): PlanningSessio
   return {
     draft: emptyDraft,
     factionId: republic,
-    game: { assignments: {}, history: [], locked: {}, scenarioId: spainId, seed: 1, state },
+    game: { assignments: {}, history: [], ready: [], scenarioId: spainId, gameId: testGame, state },
     phase: "planning"
   };
 }
@@ -42,7 +42,7 @@ describe("the Recruit basket (X4)", () => {
     let session = setRecruitQuantity(scenario, planning(), catalunya, type("infantry-regiment"), 2);
     expect(recruitQuantity(session.draft, catalunya, type("infantry-regiment"))).toBe(2);
     session = setRecruitQuantity(scenario, session, catalunya, type("militia-column"), 3);
-    expect(session.draft.feedback).toMatch(/At most 4/u);
+    expect(told(scenario, session.draft.feedback)).toMatch(/At most 4/u);
     session = setRecruitQuantity(scenario, session, catalunya, type("militia-column"), 1);
     expect(basketCost(scenario, session)).toEqual({ funds: 14, manpower: 5 });
     expect(balanceAfterBasket(scenario, session)).toEqual({ funds: 26, manpower: 5 });
@@ -66,8 +66,8 @@ describe("the Recruit basket (X4)", () => {
   });
 
   it("refuses locked types and sites with the engine's reason, and keeps the basket across selection", () => {
-    expect(setRecruitQuantity(scenario, planning(), catalunya, type("colonial-veterans"), 1).draft.feedback).toMatch(/Not raised/u);
-    expect(setRecruitQuantity(scenario, planning(), territory("asturias"), type("militia-column"), 1).draft.feedback).toMatch(/contested/u);
+    expect(told(scenario, setRecruitQuantity(scenario, planning(), catalunya, type("colonial-veterans"), 1).draft.feedback)).toMatch(/Not raised/u);
+    expect(told(scenario, setRecruitQuantity(scenario, planning(), territory("asturias"), type("militia-column"), 1).draft.feedback)).toMatch(/contested/u);
     const session = selectTerritory(setRecruitQuantity(scenario, planning(), catalunya, type("militia-column"), 1), territory("madrid"));
     expect(session.draft.recruits).toHaveLength(1);
   });
@@ -105,7 +105,7 @@ describe("the Replenish order (X7, R5)", () => {
     let session = selectTerritory(planning(poor), catalunya);
     session = chooseOrder(scenario, { ...session, draft: { ...session.draft, selectedUnitIds: [unitHere.id] } }, "replenish");
     expect(session.draft.replenishments ?? []).toEqual([]);
-    expect(session.draft.feedback).toMatch(/Not enough/u);
+    expect(told(scenario, session.draft.feedback)).toMatch(/Not enough/u);
     // With money, the same order is taken and counts in the basket.
     let rich = selectTerritory(planning(worn), catalunya);
     rich = chooseOrder(scenario, { ...rich, draft: { ...rich.draft, selectedUnitIds: [unitHere.id] } }, "replenish");

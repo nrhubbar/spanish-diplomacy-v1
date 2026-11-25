@@ -5,19 +5,20 @@ import { MemoryRouter } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { App } from "../main/app";
 import { initialGameState } from "../main/engine/resolution";
-import type { GameState, TurnOutcome, TurnResolutionResult } from "../main/engine/types";
+import type { GameState, TurnOutcome } from "../main/engine/types";
 import { victoryProgress } from "../main/engine/victory";
+import type { TurnReport } from "../main/game/types";
 import { RegistryContext } from "../main/hooks";
 import { groupBattles } from "../main/presentation/battle";
 import { battleKeysAt, eventsAt, revealInPane } from "../main/screens/report/focus";
 import type { Session } from "../main/state/session";
 import { roadMeeting, spainShowcaseOutcomes } from "./battleFixtures";
-import { faction, spain, spainId, territory, testRegistry, testStore } from "./support";
+import { faction, spain, spainId, territory, testRegistry, testStore, testGame } from "./support";
 
 function session(outcomes: readonly TurnOutcome[], phase: "game-over" | "resolution" = "resolution"): Session {
   const scenario = spain();
   const state: GameState = initialGameState(scenario);
-  const result: TurnResolutionResult = {
+  const result: TurnReport = {
     subTerritoryChanges: [],
     cityChanges: [],
     controlChanges: [{ after: { factionId: faction("south"), kind: "controlled" }, before: { factionId: faction("republic"), kind: "controlled" }, territoryId: territory("aragon") }],
@@ -25,15 +26,14 @@ function session(outcomes: readonly TurnOutcome[], phase: "game-over" | "resolut
     outcomes,
     progress: victoryProgress(scenario, state),
     submittedOrders: [],
+    turnNumber: state.turnNumber,
     ...(phase === "game-over" ? { victory: { condition: "territories" as const, factionIds: [faction("south")] } } : {})
   };
   return {
     game: {
       assignments: { [faction("republic")]: "local-human", [faction("north")]: "computer", [faction("south")]: "computer" },
       history: [],
-      locked: {},
-      scenarioId: spainId,
-      seed: 1936,
+      ready: [], scenarioId: spainId, gameId: testGame,
       state
     },
     phase,

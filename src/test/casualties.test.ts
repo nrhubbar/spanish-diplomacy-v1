@@ -25,7 +25,7 @@ describe("casualties", () => {
   it("counts surrenders on a blocked path, units disbanded by an impossible move, and cold", () => {
     expect(totals(
       { factionId: faction("republic"), from: territory("madrid"), kind: "path-surrender", men: 400, unitId: unit("rep-wad-ras-1") },
-      { kind: "invalid-order", men: 30, order: { ...order, unitId: unit("rep-covadonga-4") }, reason: "No way." },
+      { kind: "invalid-order", men: 30, order: { ...order, unitId: unit("rep-covadonga-4") }, refusal: { code: "not-connected" } },
       { factionId: faction("north"), kind: "frostbite", men: 5, territoryId: territory("castilla-y-leon"), unitId: unit("north-san-marcial-22") }
     )).toEqual({ north: 5, republic: 430 });
     expect(totals({ capturedByFactionId: faction("north"), cause: { kind: "standoff", opposingFactionIds: [] }, kind: "disbanded-move", men: 9, order })).toEqual({ republic: 9 });

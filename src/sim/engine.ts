@@ -13,8 +13,8 @@ import { isMoveOrder } from "../main/engine/types/orders";
 import { linkWorks } from "../main/engine/types/state";
 import { builtInSources } from "../main/scenarios/builtInSources";
 import { createScenarioRegistry, normalizeSourcePath, type PackageSources } from "../main/scenarios/registry";
-import { advance, nextTurn } from "../main/state/coordinator";
-import type { GameRecord, Session } from "../main/state/session";
+import { applyCommand, createGame } from "../main/game/service";
+import type { GameId, PlayerId } from "../main/game/types";
 
 export type { FactionId, GameState, Order, PackageSources, Resources, Scenario, TurnOutcome, TurnResolutionResult, UnitId };
 
@@ -72,27 +72,28 @@ export function loadScenario(sources: readonly PackageSources[], scenarioId: str
 /** One resolved turn, as the harness reads it. */
 export interface PlayedTurn {
   /** The board before the turn resolved; units destroyed in it are still here. */
-  readonly before: GameRecord["state"];
+  readonly before: GameState;
   readonly result: TurnResolutionResult;
   readonly turn: number;
 }
 
 /**
- * Plays one all-computer game through the real submission coordinator: the same seeds per
+ * Plays one all-computer game through the real game service: the same seeds per
  * faction and turn, the same history the computer player reads, and the same validation as a
  * game in the app. Calls `onTurn` after each turn and stops at a victory or the turn limit.
  */
 export function playComputerGame(scenario: Scenario, seed: number, turnLimit: number, onTurn: (turn: PlayedTurn) => void): void {
-  const assignments = Object.fromEntries(scenario.factions.map((faction) => [faction.id, "computer" as const]));
-  let before: GameRecord = { assignments, history: [], locked: {}, scenarioId: scenario.id, seed, state: initialGameState(scenario) };
-  let session: Session = advance(scenario, before);
+  const seats = Object.fromEntries(scenario.factions.map((faction) => [faction.id, { kind: "computer" as const }]));
+  let before = initialGameState(scenario);
+  let record = createGame(scenario, { gameId: "sim" as GameId, rollScheme: "numeric-1", scenarioVersion: "", seats, seed: String(seed), seedChosen: true, timerMinutes: 0 }, 0);
   for (let turn = 1; turn <= turnLimit; turn += 1) {
-    if (session.phase !== "resolution" && session.phase !== "game-over") throw new Error(`Unexpected phase "${session.phase}".`);
-    const { game, result } = session;
-    onTurn({ before: before.state, result, turn });
-    if (session.phase === "game-over" || turn === turnLimit) return;
-    before = game;
-    session = nextTurn(scenario, game, result.outcomes);
+    const next = applyCommand(scenario, record, "sim" as PlayerId, { kind: "advance", turnNumber: record.state.turnNumber }, 0);
+    if (!next.ok || next.record.report === undefined) throw new Error("The turn did not resolve.");
+    record = next.record;
+    const { report } = next.record;
+    onTurn({ before, result: report, turn });
+    if (record.status === "ended") return;
+    before = report.finalState;
   }
 }
 

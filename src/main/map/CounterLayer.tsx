@@ -3,7 +3,7 @@ import { requireFaction, requireUnitDefinition } from "../engine/lookup";
 import type { GameState, Scenario, TerritoryId } from "../engine/types";
 import { armyFigures, counterLabel, groupFigures, groupLabel, groupOrdersDescription } from "../presentation/army";
 import { generalWords } from "../presentation/generals";
-import { territoryName } from "../presentation/text";
+import { territoryName, unitName } from "../presentation/text";
 import type { MapPackage, MapPoint } from "../scenarios/loader";
 import { territoryAnchor } from "./anchors";
 import { type SemanticLevel, semanticLevel } from "./camera";
@@ -166,7 +166,7 @@ export function CounterLayer({ game, layout, level, scenario, unitSymbols, view 
             label={counterLabel(scenario, figures, unit, view.unitOrders?.get(unit.id))}
             metrics={metrics}
             designation={definition.designation}
-            name={definition.name}
+            name={unitName(scenario, unit.id)}
             onSelect={view.onSelectUnit}
             ordered={ordered}
             position={position}

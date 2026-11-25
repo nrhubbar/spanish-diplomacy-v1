@@ -1,5 +1,6 @@
 import { monthOfTurn } from "./calendar";
-import { pick, rollStream } from "./dice";
+import { dieFaces, pick } from "./dice";
+import { type Rolls, rollSource } from "./rolls";
 import type {
   ConnectionDefinition,
   GameState,
@@ -24,8 +25,6 @@ import type {
  * state that planning, the computer player and every hook read already holds it (CT-44).
  */
 
-const weatherDieFaces = 20;
-
 /** Whether the scenario plays with weather: the module is on and its data is present. */
 export function weatherRules(scenario: Scenario): WeatherRules | undefined {
   return scenario.rules.weather === "none" || scenario.calendar === undefined ? undefined : scenario.weather;
@@ -41,13 +40,13 @@ function readTable(zone: WeatherZone, season: Season, roll: number): WeatherId |
   return zone.tables[season.id]?.find((band) => roll <= band.upTo)?.outcome;
 }
 
-/** T2: the turn's weather, the same for a given game seed and turn wherever it is computed. */
-export function rollWeather(scenario: Scenario, seed: number, turnNumber: number): WeatherState | undefined {
+/** T2: the turn's weather, the same for a given game's rolls and turn wherever it is computed. */
+export function rollWeather(scenario: Scenario, rolls: Rolls, turnNumber: number): WeatherState | undefined {
   const rules = weatherRules(scenario);
   if (rules === undefined || scenario.calendar === undefined) return undefined;
   const season = seasonOf(rules, monthOfTurn(scenario.calendar, turnNumber));
   if (season === undefined) return undefined;
-  const roll = pick(rollStream(seed, "weather", turnNumber, 0), weatherDieFaces);
+  const roll = pick(rollSource(rolls).stream("weather", turnNumber, 0), dieFaces);
   const outcomes: Record<WeatherZoneId, WeatherId> = {};
   for (const zone of rules.zones) {
     const outcome = readTable(zone, season, roll);
@@ -66,8 +65,8 @@ function sameWeather(a: WeatherState | undefined, b: WeatherState | undefined): 
  * Section 2, step 0: what the state holds before anyone plans the turn. Idempotent, and it
  * returns the same object when nothing changes, so it may run on every hand-off.
  */
-export function beforePlanning(scenario: Scenario, state: GameState, seed: number): GameState {
-  const weather = rollWeather(scenario, seed, state.turnNumber);
+export function beforePlanning(scenario: Scenario, state: GameState, rolls: Rolls): GameState {
+  const weather = rollWeather(scenario, rolls, state.turnNumber);
   if (weather === undefined || sameWeather(state.weather, weather)) return state;
   return { ...state, weather };
 }
@@ -131,7 +130,7 @@ export function forecast(scenario: Scenario, zoneId: WeatherZoneId, turnNumber: 
   return [...faces]
     .flatMap(([id, count]) => {
       const outcome = weatherOutcome(scenario, id);
-      return outcome === undefined ? [] : [{ chance: count / weatherDieFaces, outcome }];
+      return outcome === undefined ? [] : [{ chance: count / dieFaces, outcome }];
     })
     .sort((a, b) => b.chance - a.chance);
 }

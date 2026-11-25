@@ -31,7 +31,7 @@ import { mapLayersChosen } from "../../main/state/mapLayersSlice";
 import { paths } from "../../main/state/routing";
 import { emptyDraft } from "../../main/state/session";
 import { standingBattle } from "../battleFixtures";
-import { faction, shippedRegistry, spainId, territory, testRegistry, testStore, unit } from "../support";
+import { faction, shippedRegistry, spainId, territory, testRegistry, testStore, unit, testGame } from "../support";
 
 afterEach(() => {
   cleanup();
@@ -267,7 +267,7 @@ describe("the Map Layers toolbar (U13)", () => {
     const { scenario } = registry.require(spainId);
     const store = testStore({
       briefing: { autoOpenedFor: scenario.factions.map((entry) => entry.id) },
-      game: { session: { draft: emptyDraft, factionId: faction("republic"), game: { assignments: {}, history: [], locked: {}, scenarioId: spainId, seed: 1, state: initialGameState(scenario) }, phase: "planning" } }
+      game: { session: { draft: emptyDraft, factionId: faction("republic"), game: { assignments: {}, history: [], ready: [], scenarioId: spainId, gameId: testGame, state: initialGameState(scenario) }, phase: "planning" } }
     });
     render(
       <Provider store={store}>

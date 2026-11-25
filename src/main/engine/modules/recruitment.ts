@@ -1,5 +1,5 @@
 import { disbandUnits, validateDisbandOrder } from "../recruitment/disband";
-import { type OrderValidationContext, unavailableOrderReason } from "../hooks";
+import type { OrderValidationContext } from "../hooks";
 import type { RuleModule } from "../modules";
 import type { ValidationResult } from "../types";
 import { advanceTraining, payForRecruits, replenish } from "../recruitment/phases";
@@ -7,7 +7,7 @@ import { validateRecruitOrder, validateReplenishOrder } from "../recruitment/rul
 
 /** M9: the rules name the area's module, as the economy and air validators also check. */
 function whenSelected(scenario: OrderValidationContext["scenario"]): ValidationResult | undefined {
-  return scenario.rules.recruitment === "none" ? { ok: false, reason: unavailableOrderReason } : undefined;
+  return scenario.rules.recruitment === "none" ? { ok: false, refusal: { code: "order-unavailable" } } : undefined;
 }
 
 /**

@@ -372,7 +372,7 @@ describe("the odds with planned Ground Support (R11)", () => {
 });
 
 function raise(state: GameState, id: string, factionId: string, type: string, territoryId: string): GameState {
-  const definition: RaisedUnitDefinition = { factionId: faction(factionId), fullStrength: 300, id: unit(id), name: id, type: type as UnitTypeId };
+  const definition: RaisedUnitDefinition = { factionId: faction(factionId), fullStrength: 300, id: unit(id), type: type as UnitTypeId };
   return {
     ...state,
     raised: { ...state.raised, [id]: definition },

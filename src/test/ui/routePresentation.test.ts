@@ -55,7 +55,7 @@ const reinforce = { kind: "reinforcement" } as never;
 /** Raises a unit of the type in play, under the id the engine gives recruits (R6). */
 function withRaised(state: GameState, serial: number, type: string, territoryId: string, factionId = "republic"): readonly [GameState, UnitId] {
   const id = raisedUnitId(faction(factionId), type as UnitTypeId, serial);
-  const definition: RaisedUnitDefinition = { factionId: faction(factionId), fullStrength: 300, id, name: id, type: type as UnitTypeId };
+  const definition: RaisedUnitDefinition = { factionId: faction(factionId), fullStrength: 300, id, type: type as UnitTypeId };
   return [{
     ...state,
     raised: { ...state.raised, [id]: definition },

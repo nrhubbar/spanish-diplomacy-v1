@@ -1,9 +1,9 @@
+import { blockedOrders } from "../../main/presentation/orderMenu";
 import { describe, expect, it } from "vitest";
 import { initialGameState } from "../../main/engine/resolution";
 import type { GameState, ReplenishOrder, Scenario, UnitTypeId } from "../../main/engine/types";
 import {
   basketCost,
-  blockedOrders,
   canReplenishSelection,
   chooseReplenish,
   draftOrders,
@@ -18,14 +18,14 @@ import {
   withdrawDestinations
 } from "../../main/state/planning";
 import { emptyDraft } from "../../main/state/session";
-import { armyIn, faction, spain, spainId, spainM2, territory, unit } from "../support";
+import { armyIn, faction, spain, spainId, spainM2, territory, unit, testGame, told } from "../support";
 
 const republic = faction("republic");
 const type = (id: string): UnitTypeId => id as UnitTypeId;
 const catalunya = territory("catalunya");
 
 function planning(state: GameState, draft = emptyDraft): PlanningSession {
-  return { draft, factionId: republic, game: { assignments: {}, history: [], locked: {}, scenarioId: spainId, seed: 1, state }, phase: "planning" };
+  return { draft, factionId: republic, game: { assignments: {}, history: [], ready: [], scenarioId: spainId, gameId: testGame, state }, phase: "planning" };
 }
 
 const replenish = (unitId: string): ReplenishOrder => ({ factionId: republic, kind: "replenish", unitId: unit(unitId) });
@@ -46,14 +46,14 @@ describe("the Recruit basket's edges (X4, R2)", () => {
 
   it("clears earlier feedback once a quantity is accepted", () => {
     const refused = setRecruitQuantity(scenario, planning(state), catalunya, type("colonial-veterans"), 1);
-    expect(refused.draft.feedback).toMatch(/Not raised/u);
+    expect(told(scenario, refused.draft.feedback)).toMatch(/Not raised/u);
     expect(setRecruitQuantity(scenario, refused, catalunya, type("militia-column"), 1).draft.feedback).toBeUndefined();
   });
 
   it("refuses a recruit where the scenario has no recruitment", () => {
     const noRecruiting = { ...scenario };
     delete (noRecruiting as { recruitment?: unknown }).recruitment;
-    expect(setRecruitQuantity(noRecruiting, planning(state), catalunya, type("militia-column"), 1).draft.feedback).toBe("Recruiting is not part of this scenario.");
+    expect(told(scenario, setRecruitQuantity(noRecruiting, planning(state), catalunya, type("militia-column"), 1).draft.feedback)).toBe("Recruiting is not part of this scenario.");
   });
 
   it("costs recruits of unknown types and replenishments of missing units as nothing", () => {
@@ -94,20 +94,20 @@ describe("the Replenish order's edges (R5)", () => {
 
   it("asks for a selection first", () => {
     expect(canReplenishSelection(scenario, planning(worn))).toBe(false);
-    expect(chooseReplenish(scenario, planning(worn)).draft.feedback).toBe("Select at least one unit first.");
+    expect(told(scenario, chooseReplenish(scenario, planning(worn)).draft.feedback)).toBe("Select at least one unit first.");
   });
 
   it("refuses a unit at full strength with the engine's reason", () => {
     const session = planning(base, { orders: [], selectedTerritoryId: territory("madrid"), selectedUnitIds: [wadRas.id] });
     expect(canReplenishSelection(scenario, session)).toBe(false);
-    expect(chooseReplenish(scenario, session).draft.feedback).toBe("This unit is at full strength and in good order.");
+    expect(told(scenario, chooseReplenish(scenario, session).draft.feedback)).toBe("This unit is at full strength and in good order.");
   });
 
   it("plans several units at once, keeping the territory selected", () => {
     const session = planning(worn, { orders: [], selectedTerritoryId: territory("madrid"), selectedUnitIds: [wadRas.id, covadonga.id] });
     expect(canReplenishSelection(scenario, session)).toBe(true);
     const planned = chooseReplenish(scenario, session);
-    expect(planned.draft.feedback).toBe("2 units will replenish.");
+    expect(told(scenario, planned.draft.feedback)).toBe("2 units will replenish.");
     expect(planned.draft.replenishments?.map((order) => order.unitId)).toEqual([wadRas.id, covadonga.id]);
     expect(planned.draft.selectedTerritoryId).toBe("madrid");
     expect(planned.draft.selectedUnitIds).not.toContain(wadRas.id);
@@ -116,7 +116,7 @@ describe("the Replenish order's edges (R5)", () => {
   it("plans a unit selected without a territory, and clears the selection", () => {
     const session = planning(worn, { orders: [], replenishments: [replenish("rep-covadonga-4")], selectedUnitIds: [wadRas.id] });
     const planned = chooseReplenish(scenario, session);
-    expect(planned.draft.feedback).toBe("1 unit will replenish.");
+    expect(told(scenario, planned.draft.feedback)).toBe("1 unit will replenish.");
     expect(planned.draft.selectedUnitIds).toEqual([]);
     expect(planned.draft.selectedTerritoryId).toBeUndefined();
     expect(planned.draft.replenishments?.map((order) => order.unitId)).toEqual(["rep-covadonga-4", wadRas.id]);

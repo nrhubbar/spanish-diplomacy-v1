@@ -4,7 +4,7 @@ import { type AudioState, musicNoticeShown, previewSound, setMuted } from "../st
 import { addNotification } from "../state/notificationSlice";
 import { isInGame } from "../state/session";
 import { cuesFor, type HeardState } from "./cues";
-import { channelGain } from "./levels";
+import { channelGain } from "../state/soundLevels";
 import { decide, type MixerState, type Play, silentMixer, withoutPlay } from "./mixer";
 import type { CueId } from "./sounds";
 

@@ -1,9 +1,9 @@
 import { validateAirMission } from "../../engine/air/validation";
 import type { AirMissionOrder, FactionId, Scenario, TerritoryId, UnitId } from "../../engine/types";
 import type { MoveMode } from "../../engine/network/reach";
+import { type Feedback, refusedFeedback } from "../../presentation/feedback";
 import { moveOrders, type Muster, muster, type MusterKind, type MusterMove, type MusterPicks } from "../../presentation/muster";
 import { plannedSupport } from "../../presentation/odds";
-import { territoryName } from "../../presentation/text";
 import type { MusterChoices, PaneView } from "../paneSlice";
 import type { Draft, PlannedOrder } from "../session";
 import { airDraftOrders, isAircraft } from "./air";
@@ -28,10 +28,6 @@ export interface MusterOrder {
 
 export type { MusterPicks } from "../../presentation/muster";
 
-function plural(count: number, one: string, many: string): string {
-  return `${String(count)} ${count === 1 ? one : many}`;
-}
-
 function flightsOf(factionId: FactionId, order: MusterOrder): readonly AirMissionOrder[] {
   return order.support.map((unitId) => ({ factionId, kind: "air-mission", mission: { kind: "support", territoryId: order.target }, unitId }));
 }
@@ -46,14 +42,14 @@ function keptOrders(draft: Draft, moving: ReadonlySet<UnitId>, order: MusterOrde
  * U6: the engine's first refusal of the pane's moves and missions, or undefined when it takes
  * them all. The moves board their trains together or not at all, beside the orders kept (D5).
  */
-export function musterRefusal(scenario: Scenario, { draft, factionId, game }: PlanningSession, order: MusterOrder): string | undefined {
+export function musterRefusal(scenario: Scenario, { draft, factionId, game }: PlanningSession, order: MusterOrder): Feedback | undefined {
   const { state } = game;
   const moves = moveOrders(state, factionId, order.target, order.moves);
   const refused = movesRefusal(scenario, state, moves, keptOrders(draft, new Set(moves.map((move) => move.unitId)), order));
   if (refused !== undefined) return refused;
   for (const flight of flightsOf(factionId, order)) {
     const verdict = validateAirMission(scenario, state, flight);
-    if (!verdict.ok) return verdict.reason;
+    if (!verdict.ok) return refusedFeedback(verdict.refusal);
   }
   return undefined;
 }
@@ -76,13 +72,10 @@ export function orderMuster(scenario: Scenario, session: PlanningSession, order:
   const kept = keptOrders(session.draft, moving, order);
   const airOrders = (session.draft.airOrders ?? []).filter((each) => !flying.has(each.unitId)
     && !(shown.has(each.unitId) && each.kind === "air-mission" && each.mission.kind === "support" && each.mission.territoryId === order.target));
-  const name = territoryName(scenario, order.target);
-  const what = [moves.length === 0 ? "" : plural(moves.length, "unit", "units"), flights.length === 0 ? "" : plural(flights.length, "aircraft", "aircraft")].filter((part) => part !== "").join(" and ");
-  const feedback = what === "" ? `No units are ordered to ${order.kind} ${name}.` : `${what} ordered to ${order.kind} ${name}.`;
   const draft: Draft = {
     ...draftWithMoves(session.draft, moves, kept),
     airOrders: [...airOrders, ...flights],
-    feedback,
+    feedback: { aircraft: flights.length, code: "muster-ordered", kind: order.kind, territoryId: order.target, units: moves.length },
     ...unitOrdersWithout(session.draft, [...moving, ...flying])
   };
   return withDraft(session, draft);

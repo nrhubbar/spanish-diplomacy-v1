@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { type HeardState, cuesFor, moveCue, moveModeOf } from "../../main/audio/cues";
-import { channelGain, clampLevel, dbGain, defaultSettings, parseSettings, sliderGain } from "../../main/audio/levels";
+import { channelGain, clampLevel, dbGain, defaultSettings, parseSettings, sliderGain } from "../../main/state/soundLevels";
 import { decide, silentMixer } from "../../main/audio/mixer";
 import { chooseSource, firstTrack, joinStep, nextTrack, type MusicSource } from "../../main/audio/playlist";
 import type { CueId } from "../../main/audio/sounds";
@@ -13,7 +13,7 @@ import { changeRecruitQuantity, clickMapTerritory, endTurn, orderFromMuster, sel
 import { type Assignments, type Draft, emptyDraft, type Session } from "../../main/state/session";
 import { timeRanOut } from "../../main/state/timeout";
 import { clockWarned, type TimerState } from "../../main/state/timerSlice";
-import { faction, spainId, spainWithAir, territory, unit } from "../support";
+import { faction, spainId, spainWithAir, territory, unit, testGame } from "../support";
 
 type Planning = Extract<Session, { readonly phase: "planning" }>;
 
@@ -24,7 +24,7 @@ const state = initialGameState(scenario);
 function planning(draft: Partial<Draft> = {}, humans = 1, factionId = "republic"): Planning {
   const kind = (at: number): ActorKind => (at < humans ? "local-human" : "computer");
   const assignments: Assignments = { [faction("republic")]: kind(0), [faction("north")]: kind(1), [faction("south")]: kind(2) };
-  return { draft: { ...emptyDraft, ...draft }, factionId: faction(factionId), game: { assignments, history: [], locked: {}, scenarioId: spainId, seed: 1, state }, phase: "planning" };
+  return { draft: { ...emptyDraft, ...draft }, factionId: faction(factionId), game: { assignments, history: [], ready: [], scenarioId: spainId, gameId: testGame, state }, phase: "planning" };
 }
 const timer: TimerState = { minutes: 1 };
 const at = (session: Session, clock: TimerState = timer): HeardState => ({ session, timer: clock });
@@ -79,15 +79,15 @@ describe("cues", () => {
       expect(heard(planning(after, 2), planning({}, 2))).toEqual(["order"]);
     }
     const orders = [moved("a")];
-    expect(heard(planning({ orders }, 2), planning({ feedback: "No room.", orders }, 2), { type: orderFromMuster.type })).toEqual(["order"]);
+    expect(heard(planning({ orders }, 2), planning({ feedback: { code: "no-mission-target" }, orders }, 2), { type: orderFromMuster.type })).toEqual(["order"]);
   });
 
   it("sounds a refusal only for an order that changed nothing and was told why", () => {
     const orders = [moved("a")];
     const before = planning({ orders });
-    const refused = planning({ feedback: "No room.", orders });
+    const refused = planning({ feedback: { code: "no-mission-target" }, orders });
     expect(heard({ ...before, draft: { ...before.draft, orders } }, refused, changeRecruitQuantity({ quantity: 1, territoryId: territory("madrid"), unitTypeId: recruit.unitTypeId }))).toEqual(["refused"]);
-    expect(heard(before, planning({ feedback: "Ordered.", orders: [moved("a")] }), { type: orderFromMuster.type })).toEqual([]);
+    expect(heard(before, planning({ feedback: { code: "build-queued" }, orders: [moved("a")] }), { type: orderFromMuster.type })).toEqual([]);
     expect(heard(before, refused, selectAllAvailableUnits())).toEqual([]);
     expect(heard(before, refused, clickMapTerritory(territory("madrid")))).toEqual([]);
     const choosing = planning({ orders, stage: { orderKind: "move", step: "choose-destination" } });

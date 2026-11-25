@@ -1,5 +1,6 @@
 import type { RecruitmentTurnOutcome, Resources, Scenario } from "../../engine/types";
 import { replenishPriceLabel, resourcesLabel, turnsLabel } from "../recruitment";
+import { refusalText } from "../refusals";
 import { capitalLabel, type ReportLines, territoryLabel, typeLabel, unitLabel } from "./lines";
 
 /** " 6 Funds refunded." after a reason, or nothing when nothing comes back. */
@@ -21,10 +22,10 @@ export const recruitmentLines: ReportLines<RecruitmentTurnOutcome> = {
   "training-paused": (outcome, { scenario }) =>
     `${unitLabel(scenario, outcome.unitId)} stopped training at ${capitalLabel(scenario, outcome.territoryId)} while ${territoryLabel(scenario, outcome.territoryId)} is contested.`,
   "training-refunded": (outcome, { scenario }) =>
-    `A ${typeLabel(scenario, outcome.typeId)} at ${capitalLabel(scenario, outcome.territoryId)} was not raised. ${outcome.reason}${refunded(scenario, outcome.refund)}`,
+    `A ${typeLabel(scenario, outcome.typeId)} at ${capitalLabel(scenario, outcome.territoryId)} was not raised. ${refusalText(scenario, outcome.refusal)}${refunded(scenario, outcome.refund)}`,
   "replenish-applied": (outcome, { scenario }) =>
     `${unitLabel(scenario, outcome.order.unitId)} took in ${String(outcome.men)} men for ${replenishPriceLabel(scenario, outcome.paid)}${outcome.recovered ? " and recovered its morale" : ""}.`,
   "replenish-cancelled": (outcome, { scenario }) =>
-    `${unitLabel(scenario, outcome.order.unitId)} was not replenished: ${outcome.reason}${refunded(scenario, outcome.refund)}`,
+    `${unitLabel(scenario, outcome.order.unitId)} was not replenished: ${refusalText(scenario, outcome.refusal)}${refunded(scenario, outcome.refund)}`,
   "unit-disbanded": (outcome, { scenario }) => `${unitLabel(scenario, outcome.unitId)} was disbanded in ${territoryLabel(scenario, outcome.territoryId)}.`
 };

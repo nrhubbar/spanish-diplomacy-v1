@@ -25,7 +25,7 @@ import { outcomesFor } from "../main/engine/visibility";
 import { amountText, resourceAmount, resourceAmountInFull, signedAmountText, signedResourceAmount } from "../main/presentation/economy";
 import { loadPackage } from "../main/scenarios/loader";
 import { modularMap, modularScenario } from "./modularFixture";
-import { faction, spain, territory, unit } from "./support";
+import { faction, said, spain, territory, unit } from "./support";
 
 const assetPaths = new Set(["src/test/fixtures/scenarios/tiny-front/geometry.svg", "src/test/fixtures/scenarios/tiny-front/foot.svg"]);
 const scenario = loadPackage({ assetPaths, mapDocument: modularMap(), mapPath: "m", scenarioDocument: modularScenario(), scenarioPath: "s" }).scenario;
@@ -123,25 +123,25 @@ describe("income ($2, $3)", () => {
 describe("Build orders ($4, $5)", () => {
   it("validates against the catalogue's limits", () => {
     const state = start();
-    expect(siteRefusal(scenario, state, faction("red"), sub("port-quarter"), building("airfield"))).toMatch(/not yours/);
-    expect(siteRefusal(scenario, state, faction("red"), sub("west-town-quarter"), building("barracks"))).toBe("Already built.");
-    expect(siteRefusal(scenario, state, faction("red"), sub("west-hills"), building("palace"))).toBe("Capital sub-territory only.");
-    expect(siteRefusal(scenario, state, faction("red"), sub("highlands"), building("palace"))).toBe("Needs a city.");
-    expect(siteRefusal(scenario, state, faction("red"), sub("west-town-quarter"), building("paved-airfield"))).toBe("Needs Airfield first.");
-    expect(siteRefusal(scenario, state, faction("red"), sub("west-hills"), develop("industry"))).toBe("Needs a city.");
+    expect(said(scenario, siteRefusal(scenario, state, faction("red"), sub("port-quarter"), building("airfield")))).toMatch(/not yours/);
+    expect(said(scenario, siteRefusal(scenario, state, faction("red"), sub("west-town-quarter"), building("barracks")))).toBe("Already built.");
+    expect(said(scenario, siteRefusal(scenario, state, faction("red"), sub("west-hills"), building("palace")))).toBe("Capital sub-territory only.");
+    expect(said(scenario, siteRefusal(scenario, state, faction("red"), sub("highlands"), building("palace")))).toBe("Needs a city.");
+    expect(said(scenario, siteRefusal(scenario, state, faction("red"), sub("west-town-quarter"), building("paved-airfield")))).toBe("Needs Airfield first.");
+    expect(said(scenario, siteRefusal(scenario, state, faction("red"), sub("west-hills"), develop("industry")))).toBe("Needs a city.");
     expect(siteRefusal(scenario, state, faction("red"), sub("west-town-quarter"), building("palace"))).toBeUndefined();
-    expect(siteRefusal(scenario, state, faction("red"), sub("nowhere"), rail)).toBe("Unknown sub-territory.");
+    expect(said(scenario, siteRefusal(scenario, state, faction("red"), sub("nowhere"), rail))).toBe("Unknown sub-territory.");
     // Declog D12: a station is repaired up to its best link, single rail (1) here.
-    expect(siteRefusal(scenario, withSites(state, { "west-hills": { rail: 1 } }), faction("red"), sub("west-hills"), rail)).toBe("Max level is 1.");
+    expect(said(scenario, siteRefusal(scenario, withSites(state, { "west-hills": { rail: 1 } }), faction("red"), sub("west-hills"), rail))).toBe("Max level is 1.");
     const contested = withSites(state, { highlands: { holder: faction("red") }, "west-hills": { holder: faction("blue") } });
-    expect(siteRefusal(scenario, contested, faction("red"), sub("west-town-quarter"), rail)).toMatch(/Contested/);
+    expect(said(scenario, siteRefusal(scenario, contested, faction("red"), sub("west-town-quarter"), rail))).toMatch(/Contested/);
     expect(buildRefusal(scenario, state, build("red", "west-town-quarter", building("palace")))).toBeUndefined();
-    expect(buildRefusal(scenario, { ...state, treasuries: { [faction("red")]: funds(2) } }, build("red", "west-town-quarter", building("palace")))).toBe("Needs 7 more Funds.");
+    expect(said(scenario, buildRefusal(scenario, { ...state, treasuries: { [faction("red")]: funds(2) } }, build("red", "west-town-quarter", building("palace"))))).toBe("Needs 7 more Funds.");
   });
 
   it("counts queued items toward levels and upgrades", () => {
     const queued = withBuildOrders(scenario, start(), [build("red", "west-town-quarter", building("airfield")), build("red", "west-hills", rail)]);
-    expect(siteRefusal(scenario, queued, faction("red"), sub("west-town-quarter"), building("airfield"))).toBe("Already in the queue.");
+    expect(said(scenario, siteRefusal(scenario, queued, faction("red"), sub("west-town-quarter"), building("airfield")))).toBe("Already in the queue.");
     expect(siteRefusal(scenario, queued, faction("red"), sub("west-town-quarter"), building("paved-airfield"))).toBeUndefined();
     expect(queued.treasuries[faction("red")]).toEqual({ funds: 1, manpower: 5 });
     const twice = withBuildOrders(scenario, start(), [build("red", "west-hills", rail), build("red", "west-hills", rail)]);
@@ -166,7 +166,7 @@ describe("Build orders ($4, $5)", () => {
     const failed = result.outcomes.filter((outcome) => outcome.kind === "build-refunded");
     expect(queued).toHaveLength(1);
     expect(failed).toHaveLength(2);
-    expect(failed[0]).toMatchObject({ reason: "Needs 2 more Funds.", refund: {} });
+    expect(failed[0]).toMatchObject({ refund: {}, refusal: { code: "resources-short", short: [{ amount: 2, resourceId: "funds" }] } });
     expect(result.outcomes.some((outcome) => outcome.kind === "rejected-order")).toBe(false);
     // $6: the failure is private: another faction does not see it.
     const seenByBlue = outcomesFor(scenario, result.finalState, result.outcomes, faction("blue"));

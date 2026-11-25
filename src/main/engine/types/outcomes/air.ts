@@ -1,5 +1,6 @@
 import type { BuildingId, DevelopmentId, FactionId, SubTerritoryId, TerritoryId, UnitId } from "../../ids";
 import type { AirMissionOrder } from "../orders";
+import type { Refusal } from "../refusals";
 import type { RaidOutcome } from "../systems";
 
 /** Air mission outcomes (U2-U4, D7), owned by `m3r1-air-generals` (phases 2, 5, 11). */
@@ -60,7 +61,7 @@ export interface SupportFlownOutcome {
 export interface GroundedOutcome {
   readonly kind: "grounded";
   readonly order: AirMissionOrder;
-  readonly reason: string;
+  readonly refusal: Refusal;
 }
 
 /** AG-9: an aircraft whose base was lost flew to the nearest airbase of its faction in range. */

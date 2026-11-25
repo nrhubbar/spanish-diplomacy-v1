@@ -1,7 +1,7 @@
 import type { JSX } from "react";
 import { type ArmyFigures, fatigueLabel, figuresDugInLabel, figuresDescription, menLabel, strengthShare, valuesLabel } from "../presentation/army";
-import { medallionMarkup } from "../presentation/outcomeArt";
-import { cssVariables } from "../presentation/style";
+import { medallionMarkup } from "../assets/outcomes/outcomeArt";
+import { cssVariables } from "../components/style";
 
 /**
  * An army's figures in the Orders pane, matching its counter: values (full values struck through

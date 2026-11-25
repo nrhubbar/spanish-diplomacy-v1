@@ -1,11 +1,15 @@
+import { replenishProblem } from "../../main/engine/recruitment/rules";
+import { unitName } from "../../main/presentation/text";
+import { replenishSkipText } from "../../main/presentation/refusals";
+import { replenishSelectionDetail, skippedText } from "../../main/presentation/replenish";
 import { describe, expect, it } from "vitest";
 import { initialGameState } from "../../main/engine/resolution";
-import type { BuildingId, BuildOrder, BuildProject, DevelopmentId, FactionId, GameState, QueueItem, RecruitOrder, Scenario, SubTerritoryId, SubTerritoryState, TerritoryId, UnitTypeId } from "../../main/engine/types";
+import type { BuildingId, BuildOrder, BuildProject, DevelopmentId, FactionId, GameState, QueueItem, RecruitOrder, Scenario, SubTerritoryId, SubTerritoryState, TerritoryId, UnitId, UnitState, UnitTypeId } from "../../main/engine/types";
 import { ledgersFor, productionOf, yieldSources } from "../../main/presentation/ledger";
 import { andList, buildEntries, countOf, buildingGroups, buildingSummary, plannedAt, recruitmentGroups, recruitmentSummary, trainingEntries } from "../../main/presentation/queues";
-import { canReplenishSelection, chooseReplenish, type PlanningSession, replenishPlan, replenishSelectionDetail, replenishSkipReason, skippedText } from "../../main/state/planning";
+import { canReplenishSelection, chooseReplenish, type PlanningSession, replenishPlan } from "../../main/state/planning";
 import { emptyDraft } from "../../main/state/session";
-import { armyIn, faction, spain, spainId, territory } from "../support";
+import { armyIn, faction, spain, spainId, territory, testGame, told } from "../support";
 import { pinned } from "../pinned";
 
 const scenario = pinned(spain());
@@ -195,9 +199,15 @@ describe("Replenish for the whole selection (U12)", () => {
   const selecting = (state: GameState, ids: readonly string[], extra: Partial<PlanningSession["draft"]> = {}): PlanningSession => ({
     draft: { ...emptyDraft, orders: [], selectedTerritoryId: territory("madrid"), selectedUnitIds: ids as never, ...extra },
     factionId: republic,
-    game: { assignments: {}, history: [], locked: {}, scenarioId: spainId, seed: 1, state },
+    game: { assignments: {}, history: [], ready: [], scenarioId: spainId, gameId: testGame, state },
     phase: "planning"
   });
+
+  const replenishSkipReason = (within: Scenario, state: GameState, unit: UnitState): string | undefined => {
+    const refusal = replenishProblem(within, state, unit);
+    return refusal === undefined ? undefined : replenishSkipText(within, refusal);
+  };
+  const detail = (session: PlanningSession): string => replenishSelectionDetail(scenario, session.game.state, replenishPlan(scenario, session));
 
   it("says in a few words why a unit is skipped", () => {
     expect(replenishSkipReason(scenario, worn, worn.units[wadRas.id]!)).toBeUndefined();
@@ -219,20 +229,20 @@ describe("Replenish for the whole selection (U12)", () => {
     const plan = replenishPlan(scenario, session);
     expect(plan.ready.map((unit) => unit.id)).toEqual([wadRas.id]);
     expect(plan.selected).toBe(2);
-    expect(plan.skipped.map((skip) => [skip.unitId, skip.reason])).toEqual([[covadonga.id, "at full strength"]]);
-    expect(replenishSelectionDetail(scenario, session)).toMatch(/^Refills 1 of the 2 selected units: \+\d+ men, arriving at the end of the turn .*\. Skips .+ \(at full strength\)\.$/u);
+    expect(plan.skipped.map((skip) => [skip.unitId, skip.reason])).toEqual([[covadonga.id, { code: "refused", refusal: { code: "full-strength" } }]]);
+    expect(detail(session)).toMatch(/^Refills 1 of the 2 selected units: \+\d+ men, arriving at the end of the turn .*\. Skips .+ \(at full strength\)\.$/u);
     const planned = chooseReplenish(scenario, session);
     expect(planned.draft.replenishments?.map((order) => order.unitId)).toEqual([wadRas.id]);
-    expect(planned.draft.feedback).toMatch(/^1 unit will replenish\. Skips .+ \(at full strength\)\.$/u);
+    expect(told(scenario, planned.draft.feedback)).toMatch(/^1 unit will replenish\. Skips .+ \(at full strength\)\.$/u);
     expect(planned.draft.selectedUnitIds).toEqual([]);
   });
 
   it("reads the selection line plainly when every unit is refilled, or none can be", () => {
     const all = selecting(worn, [wadRas.id]);
-    expect(replenishSelectionDetail(scenario, all)).toMatch(/^\+\d+ men, arriving at the end of the turn/u);
+    expect(detail(all)).toMatch(/^\+\d+ men, arriving at the end of the turn/u);
     const none = selecting(base, [wadRas.id, covadonga.id]);
-    expect(replenishSelectionDetail(scenario, none)).toMatch(/^No selected unit can replenish\. Skips .+ and .+ \(at full strength\)\.$/u);
-    expect(chooseReplenish(scenario, none).draft.feedback).toBe("This unit is at full strength and in good order.");
+    expect(detail(none)).toMatch(/^No selected unit can replenish\. Skips .+ and .+ \(at full strength\)\.$/u);
+    expect(told(scenario, chooseReplenish(scenario, none).draft.feedback)).toBe("This unit is at full strength and in good order.");
   });
 
   it("skips units the balance cannot pay for, and refuses when it covers none", () => {
@@ -240,8 +250,8 @@ describe("Replenish for the whole selection (U12)", () => {
     const session = selecting(broke, [wadRas.id]);
     const plan = replenishPlan(scenario, session);
     expect(plan.ready).toEqual([]);
-    expect(plan.skipped[0]?.reason).toMatch(/^not enough (Funds|Manpower|Funds and Manpower)$/u);
-    expect(chooseReplenish(scenario, session).draft.feedback).toBe("Not enough Funds or Manpower left to replenish.");
+    expect(skippedText(scenario, plan.skipped.slice(0, 1))).toMatch(/\(not enough (Funds|Manpower|Funds and Manpower)\)\.$/u);
+    expect(told(scenario, chooseReplenish(scenario, session).draft.feedback)).toBe("Not enough Funds or Manpower left to replenish.");
     const free: GameState = { ...worn, treasuries: {} };
     expect(replenishPlan(scenario, selecting(free, [wadRas.id])).ready).toHaveLength(1);
   });
@@ -267,11 +277,14 @@ describe("Replenish for the whole selection (U12)", () => {
     const tight: GameState = { ...both, treasuries: { ...both.treasuries, [republic]: { ...both.treasuries[republic], funds: (one as Record<string, number>)["funds"] ?? 0 } } };
     const plan = replenishPlan(scenario, selecting(tight, [wadRas.id, covadonga.id]));
     expect(plan.ready.map((unit) => unit.id)).toEqual([wadRas.id]);
-    expect(plan.skipped.map((skip) => [skip.unitId, skip.reason])).toEqual([[covadonga.id, "not enough Funds"]]);
+    expect(plan.skipped.map((skip) => [skip.unitId, skip.reason])).toEqual([[covadonga.id, { code: "unpaid", resourceIds: ["funds"] }]]);
   });
 
   it("groups skipped units by reason", () => {
-    expect(skippedText([])).toBe("");
-    expect(skippedText([{ name: "A", reason: "x", unitId: "a" as never }, { name: "B", reason: "y", unitId: "b" as never }, { name: "C", reason: "x", unitId: "c" as never }])).toBe("Skips A and C (x) and B (y).");
+    expect(skippedText(scenario, [])).toBe("");
+    const [a, b, c] = Object.keys(base.units).slice(0, 3) as [UnitId, UnitId, UnitId];
+    const upkeep = { code: "upkeep" } as const;
+    expect(skippedText(scenario, [{ reason: upkeep, unitId: a }, { reason: { code: "unpaid", resourceIds: [] }, unitId: b }, { reason: upkeep, unitId: c }]))
+      .toBe(`Skips ${unitName(scenario, a)} and ${unitName(scenario, c)} (upkeep leaves too little next turn) and ${unitName(scenario, b)} (not enough Funds or Manpower).`);
   });
 });

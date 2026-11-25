@@ -5,7 +5,7 @@ import { orderStatus } from "../../../presentation/army";
 import { groupThisTurn, ordersGivenLine, thisTurnEntries, type ThisTurnGrouping } from "../../../presentation/thisTurn";
 import { airDraftOrders, orderCounts, orderOf, type PlanningSession } from "../../../state/planning";
 import type { Scenario, UnitId } from "../../../engine/types";
-import { orderLabels } from "../../../state/planning/orderChoices";
+import { orderLabels } from "../../../presentation/orderMenu";
 import { PlannedOddsInfo, PlannedOrderOdds } from "../../PlannedOrderOdds";
 import { cancelAction } from "../cancel";
 import type { PaneViewProps } from "./types";

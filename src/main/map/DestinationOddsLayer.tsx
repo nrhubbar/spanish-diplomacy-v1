@@ -4,7 +4,7 @@ import type { TerritoryId, WeatherId } from "../engine/types";
 import { glyphs } from "../presentation/glyphs";
 import { type DestinationEstimate, oddsSummary } from "../presentation/odds";
 import type { MapPoint } from "../scenarios/loader";
-import { SiteIcon } from "../screens/pane/SiteIcons";
+import { SiteIcon } from "../components/SiteIcons";
 import { intersects, type ScreenRect, type ScreenSize } from "./placement";
 
 interface DestinationOddsLayerProps {

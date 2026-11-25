@@ -1,8 +1,7 @@
 import { hookedOrderVerdict } from "../hooks";
 import { connectionBetween, enemyArmyIn, landNeighbors } from "../movement/network";
-import { armyMovement, describeRoute, railShortageText, type RouteCheck, routeOffers } from "../movement/routes";
-import { demoralizedAttackReason } from "../movement/validation";
-import type { FactionId, GameState, MoveLeg, MoveOrder, RailShortage, Scenario, SubTerritoryId, TerritoryId, UnitId } from "../types";
+import { armyMovement, describeRoute, railFullRefusal, type RouteCheck, routeOffers } from "../movement/routes";
+import type { FactionId, GameState, MoveLeg, MoveOrder, RailShortage, Refusal, Scenario, SubTerritoryId, TerritoryId, UnitId } from "../types";
 
 /**
  * R5, U7: where a selection of units can go this turn, and how, or why not. Movement
@@ -21,7 +20,7 @@ export interface LinkStep {
   readonly to: SubTerritoryId;
 }
 
-/** Why a territory cannot be reached, as a code for logic and a plain sentence for players. */
+/** Why a territory cannot be reached: the kinds of rule that stop a mode, for logic to compare. */
 export const unreachableCodes = [
   "too-far",
   "no-road",
@@ -40,8 +39,8 @@ export type UnreachableCode = (typeof unreachableCodes)[number];
 
 export interface UnreachableReason {
   readonly code: UnreachableCode;
-  /** A plain-English sentence for the hover card, for example "Motor can't cross the Somosierra pass." */
-  readonly text: string;
+  /** The refusal itself, for the hover card to write out. */
+  readonly refusal: Refusal;
 }
 
 export type Reach =
@@ -60,39 +59,42 @@ const priority: readonly UnreachableCode[] = ["pass-blocks-motor", "contested", 
  */
 function unreachable(scenario: Scenario, state: GameState, factionId: FactionId, from: TerritoryId, unitIds: readonly [UnitId, ...UnitId[]], to: TerritoryId, full: RailShortage | undefined): readonly UnreachableReason[] {
   const verdict = hookedOrderVerdict({ order: { factionId, from, kind: "move", to, unitId: unitIds[0] }, scenario, state });
-  if (verdict?.ok === false) return [{ code: "contested", text: verdict.reason }];
+  if (verdict?.ok === false) return [{ code: "contested", refusal: verdict.refusal }];
   const reasons: UnreachableReason[] = [];
-  const add = (code: UnreachableCode, text: string): void => {
-    reasons.push({ code, text });
+  const add = (code: UnreachableCode, refusal: Refusal): void => {
+    reasons.push({ code, refusal });
   };
-  if (unitIds.some((unitId) => state.units[unitId]?.morale.demoralized === true) && enemyArmyIn(state, factionId, to)) add("enemy-ground", demoralizedAttackReason);
+  if (unitIds.some((unitId) => state.units[unitId]?.morale.demoralized === true) && enemyArmyIn(state, factionId, to)) add("enemy-ground", { code: "demoralized-attack" });
   const movement = armyMovement(scenario, state, factionId, from, unitIds);
   const check = (legs: readonly MoveLeg[]): RouteCheck => describeRoute(scenario, state, factionId, from, legs, movement.allMobile, undefined, unitIds);
   const first = (checks: readonly RouteCheck[]): void => {
     const failures = checks.flatMap((each) => (each.ok ? [] : [each]));
     failures.sort((a, b) => priority.indexOf(a.code) - priority.indexOf(b.code));
     const [best] = failures;
-    if (best !== undefined && failures.length === checks.length) add(best.code, best.reason);
+    if (best !== undefined && failures.length === checks.length) add(best.code, best.refusal);
   };
   const neighbour = connectionBetween(scenario, from, to, "land") !== undefined;
   // March: one territory.
   if (neighbour) first([check([{ kind: "land", to }])]);
-  else add("too-far", "March reaches only a neighbouring territory.");
+  else add("too-far", { code: "march-neighbours-only" });
   // Motor: two territories along roads trucks may use, with trucks.
   const vias = landNeighbors(scenario, from).filter((via) => connectionBetween(scenario, via, to, "land") !== undefined);
-  if (!neighbour && vias.length === 0) add("too-far", `Motor reaches at most ${String(scenario.linkModifiers.road?.motorRange ?? 2)} territories.`);
-  else if (!neighbour && movement.allowance < 2) add("no-trucks", "Motor needs trucks for every unit.");
+  const range = scenario.linkModifiers.road?.motorRange;
+  if (!neighbour && vias.length === 0) {
+    // A scenario without road rules sets no range, so there is none to name.
+    if (range !== undefined) add("too-far", { code: "motor-too-far", territories: range });
+  } else if (!neighbour && movement.allowance < 2) add("no-trucks", { code: "motor-needs-trucks" });
   else if (!neighbour) {
     first(vias.map((via) => check([{ kind: "land", to: via }, { kind: "land", to }])));
   }
   // Rail: a ride from the capital, or a ride and then a step. D5: a train that could take the units has too few places left.
   // Only where the army could board at all: its territory's capital is its side's, with an open station.
   const station = state.subTerritories[scenario.index.territories.get(from)?.capitalSubTerritoryId ?? capitalless];
-  if (full !== undefined) add("rail-full", railShortageText(scenario, full));
-  else if (scenario.linkModifiers.rail !== undefined && station?.holder === factionId && station.rail > 0) add("no-rail", "No rail line your side holds reaches it this turn.");
+  if (full !== undefined) add("rail-full", railFullRefusal(full));
+  else if (scenario.linkModifiers.rail !== undefined && station?.holder === factionId && station.rail > 0) add("no-rail", { code: "no-rail-line" });
   // Sea: as today.
   if (connectionBetween(scenario, from, to, "sea") !== undefined) first([check([{ kind: "sea", to }])]);
-  return reasons.length > 0 ? reasons : [{ code: "not-connected", text: "Out of reach this turn." }];
+  return reasons.length > 0 ? reasons : [{ code: "not-connected", refusal: { code: "out-of-reach" } }];
 }
 
 /**

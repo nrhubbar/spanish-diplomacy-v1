@@ -14,7 +14,7 @@
     "test:e2e": "playwright test --grep-invert @capture --project=chromium",
     "e2e:capture": "playwright test --grep @capture --project=chromium --project=mobile-chromium",
     "lint": "eslint src e2e scripts *.ts *.js",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.core.json",
     "spec:build": "node scripts/build-schemas.ts",
     "spec:check": "vitest run src/test/spec.test.ts",
     "budgets:check": "node scripts/check-budgets.mjs",

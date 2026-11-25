@@ -1,5 +1,5 @@
 import type { JSX } from "react";
-import type { TerrainKind } from "../../engine/types";
+import type { TerrainKind } from "../engine/types";
 
 /** X8: small inline symbols for sub-territory facts, decorative beside their text. */
 const shapes: Readonly<Record<"mountain" | "swamp" | "open" | "port" | "rail" | "contested" | "withdraw" | "attack" | "paused", JSX.Element>> = {

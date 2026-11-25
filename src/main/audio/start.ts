@@ -1,4 +1,3 @@
-import { viewedSession } from "../hooks";
 import type { ScenarioRegistry } from "../scenarios/registry";
 import type { AppStore, RootState } from "../state/store";
 import { createDirector, type DirectorState, type SoundOutput } from "./director";
@@ -29,7 +28,7 @@ export function startSound({ document, now, output, registry, storage, store }: 
     output,
     scenarioOf: (id) => registry.require(id).scenario
   });
-  const view = (state: RootState): DirectorState => ({ audio: state.audio, session: viewedSession(registry, state), timer: state.timer });
+  const view = (state: RootState): DirectorState => ({ audio: state.audio, session: state.game.session, timer: state.timer });
   const stopListening = store.listenToActions((before, after, action) => {
     director.heard(view(before), view(after), action);
     if (before.audio !== after.audio) keepSound(storage, after.audio);

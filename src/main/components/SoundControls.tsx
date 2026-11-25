@@ -1,5 +1,5 @@
 import { type JSX, useId } from "react";
-import { type Channel, channels, levelStep } from "../audio/levels";
+import { type Channel, channels, levelStep } from "../state/soundLevels";
 import { useAppDispatch, useAppSelector } from "../hooks";
 import { previewSound, selectSoundLevels, setLevel, setMuted } from "../state/audioSlice";
 

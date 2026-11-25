@@ -1,8 +1,8 @@
 import { type JSX, useMemo } from "react";
-import { capitalOf, railLinks, rideableNetwork } from "../../engine/movement/network";
-import { armyKey, describeRoute, legsOf, type MoveRoute } from "../../engine/movement/routes";
-import type { FactionId, GameState, MoveOrder, Scenario, SubTerritoryId, TerritoryId } from "../../engine/types";
+import type { MoveRoute } from "../../engine/movement/routes";
+import type { GameState, Scenario, SubTerritoryId, TerritoryId } from "../../engine/types";
 import { routeTag, selectionRoutes } from "../../presentation/movement";
+import { plannedRides, railLines, rideableStations, ridesFor, routeStops, selectedArmy } from "../../presentation/railLayer";
 import type { MapView } from "../view";
 import type { MapPackage, MapPoint, MapSubTerritory } from "../../scenarios/loader";
 import type { MapLayerProps } from "./slots";
@@ -27,18 +27,18 @@ interface RailLayerProps extends MapLayerProps {
  */
 export function RailLayer({ game, level, narrow = false, scenarioPackage, toScreen, view }: RailLayerProps): JSX.Element | null {
   const { map, scenario } = scenarioPackage;
-  const links = useMemo(() => railLinks(scenario, game), [scenario, game]);
+  const links = useMemo(() => railLines(scenario, game), [scenario, game]);
   const selection = useMemo(() => selectedArmy(game, [...view.selectedUnitIds]), [game, view.selectedUnitIds]);
   const rideable = useMemo(
-    () => (selection === undefined || scenario.rules.movement !== "allowance" ? new Set<SubTerritoryId>() : rideableNetwork(scenario, game, selection.factionId, selection.from)),
+    () => rideableStations(scenario, game, selection),
     [game, scenario, selection]
   );
   const choosing = view.destinationIds.length > 0 && selection !== undefined;
   const routes = useMemo(
-    () => (choosing ? [...(selectionRoutes(scenario, game, selection.factionId, selection.from, [...view.selectedUnitIds], view.plannedOrders)?.values() ?? [])] : []),
+    () => (choosing ? ridesFor(scenario, game, selection, [...view.selectedUnitIds], view.plannedOrders) : []),
     [choosing, game, scenario, selection, view.plannedOrders, view.selectedUnitIds]
   );
-  const planned = useMemo(() => plannedRouteList(scenario, game, view.plannedOrders), [game, scenario, view.plannedOrders]);
+  const planned = useMemo(() => plannedRides(scenario, game, view.plannedOrders), [game, scenario, view.plannedOrders]);
   if (stationPoints(map).size === 0 || links.length === 0) return null;
 
   const station = (id: SubTerritoryId): Point | undefined => {
@@ -48,7 +48,7 @@ export function RailLayer({ game, level, narrow = false, scenarioPackage, toScre
   const branchLines = narrow ? level === "detail" : level !== "overview";
   const shown = links.filter((link) => branchLines || link.level >= 2 || (rideable.has(link.a) && rideable.has(link.b)));
   const stations = new Set(shown.flatMap((link) => [link.a, link.b]));
-  const traced = [...routes.filter((route) => route.shape !== "step" && route.shape !== "march"), ...planned];
+  const traced = [...routes, ...planned];
 
   return (
     <g aria-hidden="true" className="rail-layer" data-testid="rail-layer">
@@ -108,51 +108,13 @@ export function destinationTags(scenario: Scenario, game: GameState, view: MapVi
   }));
 }
 
-/** The faction and territory of the selected units, when they stand together. */
-function selectedArmy(game: GameState, unitIds: readonly string[]): { readonly factionId: FactionId; readonly from: TerritoryId } | undefined {
-  const units = unitIds.flatMap((id) => game.units[id as keyof typeof game.units] ?? []);
-  const [first] = units;
-  if (first === undefined || units.some((unit) => unit.territoryId !== first.territoryId)) return undefined;
-  return { factionId: first.factionId, from: first.territoryId };
-}
-
-/** Planned rail and sea moves, one per army. */
-function plannedRouteList(scenario: Scenario, game: GameState, orders: readonly MoveOrder[]): readonly MoveRoute[] {
-  if (scenario.rules.movement !== "allowance") return [];
-  const seen = new Set<string>();
-  const routes: MoveRoute[] = [];
-  for (const order of orders) {
-    const key = armyKey(scenario, order);
-    if (seen.has(key)) continue;
-    seen.add(key);
-    const check = describeRoute(scenario, game, order.factionId, order.from, legsOf(scenario, order), true);
-    if (check.ok && check.route.shape !== "step" && check.route.shape !== "march") routes.push(check.route);
-  }
-  return routes;
-}
-
 /** Map points a route passes: territory labels for its ends and steps, each station for a ride. */
 export function routePoints(scenario: Scenario, map: MapPackage, route: MoveRoute): readonly MapPoint[] {
-  const territoryPoint = (id: TerritoryId): MapPoint | undefined => {
-    const capital = capitalOf(scenario, id);
-    return (capital === undefined ? undefined : stationPoints(map).get(capital)?.capital) ?? map.territories.get(id)?.label;
-  };
-  const points: MapPoint[] = [];
-  const push = (point: MapPoint | undefined): void => {
-    if (point !== undefined) points.push(point);
-  };
-  push(territoryPoint(route.from));
-  for (const leg of route.legs) {
-    if (leg.kind === "rail" && route.rail !== undefined) {
-      for (const id of route.rail.stations) push(stationPoints(map).get(id)?.capital);
-    } else if (leg.kind === "sea" && route.sea !== undefined) {
-      push(stationPoints(map).get(route.sea.departure)?.capital);
-      push(stationPoints(map).get(route.sea.port ?? route.sea.departure)?.capital ?? territoryPoint(leg.to));
-      if (route.sea.port === undefined) push(territoryPoint(leg.to));
-    } else {
-      push(territoryPoint(leg.to));
-    }
-  }
+  const points = routeStops(scenario, route).flatMap(({ stations, territory }): readonly MapPoint[] => {
+    const placed = stations.flatMap((id) => stationPoints(map).get(id)?.capital ?? [])[0];
+    const point = placed ?? (territory === undefined ? undefined : map.territories.get(territory)?.label);
+    return point === undefined ? [] : [point];
+  });
   return points.filter((point, index) => index === 0 || point.x !== points[index - 1]?.x || point.y !== points[index - 1]?.y);
 }
 

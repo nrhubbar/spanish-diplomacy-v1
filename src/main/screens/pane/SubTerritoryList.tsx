@@ -1,6 +1,6 @@
 import type { JSX } from "react";
 import { requireFaction } from "../../engine/lookup";
-import { isPartitioned, subTerritoriesOf } from "../../engine/partition/holders";
+import { subTerritoryEntries } from "../../presentation/holdings";
 import type { GameState, Scenario, TerritoryId } from "../../engine/types";
 import { useAppDispatch } from "../../hooks";
 import { glyphs } from "../../presentation/glyphs";
@@ -14,14 +14,13 @@ import { focusSubTerritory } from "../../state/gameSlice";
  */
 export function SubTerritoryList({ scenario, state, territoryId }: { readonly scenario: Scenario; readonly state: GameState; readonly territoryId: TerritoryId }): JSX.Element | null {
   const dispatch = useAppDispatch();
-  const subs = subTerritoriesOf(scenario, territoryId);
-  if (!isPartitioned(scenario) || subs.length === 0) return null;
-  const capital = scenario.index.territories.get(territoryId)?.capitalSubTerritoryId;
+  const subs = subTerritoryEntries(scenario, territoryId);
+  if (subs.length === 0) return null;
   return (
     <div className="sub-territory-list">
       <h4>Sub-territories</h4>
       <ul className="plain-list">
-        {subs.map((sub) => {
+        {subs.map(({ capital, sub }) => {
           const holder = state.subTerritories[sub.id]?.holder ?? sub.startHolder;
           return (
             <li key={sub.id}>
@@ -32,7 +31,7 @@ export function SubTerritoryList({ scenario, state, territoryId }: { readonly sc
                 type="button"
               >
                 <span aria-hidden="true" className="holder-swatch" style={{ background: requireFaction(scenario, holder).color }} />
-                {sub.id === capital ? <span aria-hidden="true" className="capital-star">{glyphs.star}</span> : null}
+                {capital ? <span aria-hidden="true" className="capital-star">{glyphs.star}</span> : null}
                 <span>{sub.name}</span>
               </button>
             </li>

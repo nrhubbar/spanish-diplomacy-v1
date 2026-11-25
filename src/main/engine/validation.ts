@@ -1,4 +1,4 @@
-import { hookedOrderVerdict, hookedValidateOrder, unavailableOrderReason } from "./hooks";
+import { hookedOrderVerdict, hookedValidateOrder } from "./hooks";
 import type {
   FactionId,
   GameState,
@@ -11,9 +11,6 @@ import type {
   ValidationResult
 } from "./types";
 
-export { unavailableOrderReason } from "./hooks";
-export { demoralizedAttackReason } from "./movement/validation";
-
 /**
  * M1, M9: validates any order against the start-of-turn state. Each order kind belongs to the
  * selected module that validates it (`RuleHooks.validateOrder`): Move to the movement module,
@@ -22,7 +19,7 @@ export { demoralizedAttackReason } from "./movement/validation";
  * still be refused by another module's `orderVerdict` (C1: no move leaves contested ground).
  */
 export function validateOrder(scenario: Scenario, state: GameState, order: Order): ValidationResult {
-  const owned = hookedValidateOrder({ order, scenario, state }) ?? { ok: false, reason: unavailableOrderReason };
+  const owned = hookedValidateOrder({ order, scenario, state }) ?? { ok: false, refusal: { code: "order-unavailable" } };
   if (!owned.ok) return owned;
   const verdict = hookedOrderVerdict({ order, scenario, state });
   return verdict === undefined || verdict.ok ? { ok: true } : verdict;
@@ -40,14 +37,15 @@ export function validateSubmission(
   submission: PlayerSubmission
 ): ValidationResult {
   if (submission.factionId !== factionId) {
-    return { ok: false, reason: "Submission belongs to another faction." };
+    return { ok: false, refusal: { code: "submission-of-another-faction" } };
   }
 
   const seen = new Set<UnitId>();
   for (const order of submission.orders) {
+    if (order.factionId !== factionId) return { ok: false, refusal: { code: "order-of-another-faction" } };
     if ("unitId" in order) {
       if (seen.has(order.unitId)) {
-        return { ok: false, reason: "A unit can receive only one order per turn." };
+        return { ok: false, refusal: { code: "one-order-per-unit" } };
       }
       seen.add(order.unitId);
     }

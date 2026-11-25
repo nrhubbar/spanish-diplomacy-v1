@@ -14,23 +14,21 @@ import { planningMapHandlers } from "../../main/screens/shell/mapHandlers";
 import { paneViewTitle } from "../../main/screens/shell/paneTitles";
 import { SelectionBar } from "../../main/screens/shell/SelectionBar";
 import { TerritoryView } from "../../main/screens/shell/views/TerritoryView";
-import { historyEntry } from "../../main/state/history";
+import { outcomesSeen, turnRecord } from "../../main/game/service";
 import { openView, type PaneView, pushView } from "../../main/state/paneSlice";
 import type { Draft, Session } from "../../main/state/session";
-import { faction, move, spain, spainId, spainWithAir, territory, testRegistry, testStore, unit } from "../support";
+import { faction, move, spain, spainId, spainWithAir, territory, testRegistry, testStore, unit, testGame } from "../support";
 
 afterEach(cleanup);
 
 const republic = faction("republic");
 const sub = (id: string): SubTerritoryId => id as SubTerritoryId;
 
-function planningStore(state: GameState, draft: Draft = { orders: [], selectedUnitIds: [] }, history?: Parameters<typeof historyEntry>[2], scenario: Scenario = spain()) {
+function planningStore(state: GameState, draft: Draft = { orders: [], selectedUnitIds: [] }, history?: Parameters<typeof turnRecord>[2], scenario: Scenario = spain()) {
   const game = {
     assignments: { [faction("north")]: "computer" as const, [republic]: "local-human" as const, [faction("south")]: "computer" as const },
-    history: history === undefined ? [] : [historyEntry(scenario, state, history)],
-    locked: {},
-    scenarioId: spainId,
-    seed: 1,
+    history: history === undefined ? [] : [{ outcomes: outcomesSeen(turnRecord(scenario, state, history), republic), turnNumber: state.turnNumber }],
+    ready: [], scenarioId: spainId, gameId: testGame,
     // Turn 2: the Briefing opens by itself only on turn 1.
     state: { ...state, turnNumber: 2 }
   };
@@ -248,7 +246,7 @@ describe("U4: the selection bar", () => {
   it("names the selection with no territory, and leaves out a feedback line it does not have", () => {
     const scenario = spain();
     const state = initialGameState(scenario);
-    const game = { assignments: {}, history: [], locked: {}, scenarioId: spainId, seed: 1, state };
+    const game = { assignments: {}, history: [], ready: [], scenarioId: spainId, gameId: testGame, state };
     const session = { draft: { orders: [], selectedUnitIds: [unit("rep-wad-ras-1")] }, factionId: republic, game, phase: "planning" as const };
     render(<Provider store={testStore({ game: { session } })}><SelectionBar scenario={scenario} session={session} /></Provider>);
     expect(screen.getByText("1 unit selected").parentElement).toHaveTextContent(/^1 unit selectedClear$/u);
@@ -297,7 +295,7 @@ describe("the planning map's clicks (U3)", () => {
 describe("the destination panel (O1, C15)", () => {
   const scenario = spain();
   const state = initialGameState(scenario);
-  const game = { assignments: {}, history: [], locked: {}, scenarioId: spainId, seed: 1, state };
+  const game = { assignments: {}, history: [], ready: [], scenarioId: spainId, gameId: testGame, state };
   const show = (draft: Draft) => {
     const session = { draft, factionId: republic, game, phase: "planning" as const };
     return render(<Provider store={testStore({ game: { session } })}><RegistryContext value={testRegistry()}><DestinationPanel estimates={new Map()} scenario={scenario} session={session} /></RegistryContext></Provider>);
@@ -326,7 +324,7 @@ describe("Territory Info with an aircraft selected (U2)", () => {
   it("shows the aircraft's missions", () => {
     const scenario = spainWithAir();
     const state = initialGameState(scenario);
-    const game = { assignments: {}, history: [], locked: {}, scenarioId: spainId, seed: 1, state };
+    const game = { assignments: {}, history: [], ready: [], scenarioId: spainId, gameId: testGame, state };
     const session = { draft: { orders: [], selectedAircraftId: unit("rep-breguet-bombers"), selectedTerritoryId: territory("madrid"), selectedUnitIds: [] }, factionId: republic, game, phase: "planning" as const };
     render(<Provider store={testStore({ game: { session } })}><RegistryContext value={testRegistry()}><TerritoryView scenario={scenario} session={session} territoryId={territory("madrid")} /></RegistryContext></Provider>);
     expect(screen.getByRole("heading", { name: /Breguet/u })).toBeVisible();
@@ -359,7 +357,7 @@ describe("U2, U3: stay orders in This turn", () => {
   it("lists the armies told to stay, without those given another order since, and cancels them", async () => {
     const state = initialGameState(spain());
     const draft: Draft = {
-      feedback: "1 unit will entrench.",
+      feedback: { code: "stay-planned", order: "entrench", units: 1 },
       orderedToStay: [unit("rep-wad-ras-1"), unit("rep-covadonga-4"), unit("rep-gone")],
       orders: [move("republic", "rep-covadonga-4", "madrid", "aragon")],
       selectedUnitIds: []
