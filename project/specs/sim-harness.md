@@ -5,8 +5,8 @@ The harness plays seeded all-computer games with no browser and reports what hap
 ## Running it
 
 ```
-npm run sim -- --games 200
-npm run sim -- --games 1000 --variant src/sim/variants/digging-in-cap-2.json --run dig-cap
+npm run sim -- --scenario spanish-civil-war-1936 --games 200
+npm run sim -- --scenario spanish-civil-war-1936 --games 1000 --variant src/sim/variants/digging-in-cap-2.json --run dig-cap
 ```
 
 `npm run sim` builds the bundle with `vite.sim.config.ts`, then runs `build/sim-cli/sim.mjs`. `npm run sim:build` only builds it. The bundle is a single Node file. On the main thread it is the command-line tool; it also starts copies of itself as the worker threads that play the games.

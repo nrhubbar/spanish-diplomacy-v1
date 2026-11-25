@@ -13,7 +13,10 @@ test("the production build plays without test fixtures or console errors", async
   await page.goto(productionUrl ?? "");
   await page.getByRole("button", { name: "Create Game" }).click();
   await expect(page.getByRole("heading", { name: "Choose the players" })).toBeVisible();
-  await expect(page.getByLabel("Scenario")).toHaveCount(0);
+  // Exactly the shipped scenarios, so no test fixture is among them, with Spain chosen.
+  const scenarios = page.getByLabel("Scenario");
+  await expect(scenarios.locator("option")).toHaveText(["Spain, July 1936", "Europe, September 1805"]);
+  await expect(scenarios).toHaveValue("spanish-civil-war-1936");
   await page.getByRole("button", { name: "Start Campaign" }).click();
   await expect(page.locator(".map-vector")).toBeVisible();
   await expect(page.locator(".terrain-layer")).toHaveAttribute("data-renderer", "webgl", { timeout: 15000 });

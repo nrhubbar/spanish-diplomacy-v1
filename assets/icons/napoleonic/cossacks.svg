@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400" viewBox="0 0 600 400">
+  <path id="Friendly Fill" d="M5 5H595V395H5Z" style="fill:#7de1ff"/>
+  <path d="M110 350 L470 70" fill="none" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="18"/><path d="M470 70 L524 28 L506 92 Z" fill="#000" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="8"/><path d="M420 108 L350 92 L392 150 L330 150 L380 184 L440 138 Z" fill="#000" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="8"/><path d="M120 300 C200 220 400 220 480 300" fill="none" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/>
+  <path d="M5 5H595V395H5Z" style="fill:none;stroke:#000;stroke-width:10"/>
+</svg>

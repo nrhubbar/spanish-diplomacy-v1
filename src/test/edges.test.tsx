@@ -38,7 +38,7 @@ import { openSetup } from "../main/state/gameSlice";
 import { MemoryRouter } from "react-router";
 import tinyMap from "./fixtures/scenarios/tiny-front/map.json";
 import tinyScenario from "./fixtures/scenarios/tiny-front/scenario.json";
-import { commanded, faction, move, territory, testRegistry, testStore, tiny, tinyId, unit, withUnits, testGame, testPlayer, told } from "./support";
+import { commanded, faction, move, spainId, territory, testRegistry, testStore, tiny, tinyId, unit, withUnits, testGame, testPlayer, told } from "./support";
 
 type Json = Record<string, unknown>;
 
@@ -223,7 +223,8 @@ describe("component edge cases", () => {
     render(<GameHeader kicker="k" status={[{ abbreviation: "R", factionId: faction("red"), name: "Red", ready: true }]} title="t" />, { wrapper: ({ children }) => <Provider store={testStore()}>{children}</Provider> });
     expect(screen.getByText("ready")).toBeInTheDocument();
     cleanup();
-    const registry = createScenarioRegistry(builtInSources);
+    const onlySpain = Object.fromEntries(Object.entries(builtInSources.scenarios).filter(([path]) => path.includes(spainId)));
+    const registry = createScenarioRegistry({ ...builtInSources, scenarios: onlySpain });
     const store = createAppStore({ registry });
     store.dispatch(openSetup());
     render(<Provider store={store}><RegistryContext value={registry}><SetupScreen /></RegistryContext></Provider>);

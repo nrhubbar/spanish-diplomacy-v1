@@ -1,0 +1,19 @@
+{
+  "retrieved": "2026-11-24",
+  "sources": {
+    "naturalEarth": "https://github.com/nvkelso/natural-earth-vector (10m admin-1 states and provinces, rivers, lakes; public domain)",
+    "elevation": "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/6/{x}/{y}.png"
+  },
+  "elevation": {
+    "zoom": 6,
+    "firstColumn": 24,
+    "firstRow": 8,
+    "encoding": "16-bit grayscale; value = whole metres + 12000"
+  },
+  "sha256": {
+    "scripts/sources/dem/terrarium-europe-z6.tif": "0dd1e5d7d69dd18dd9fda29cf75906c28e582d8f98b899a083d6421a671f5c3c",
+    "scripts/sources/naturalearth/europe-1805.topo.json": "e607ef20d7db4979b0fbb211d6bf29404cc382c91235e87396a5fd3a126d0640",
+    "scripts/sources/naturalearth/europe-lakes.geojson": "24e00c19c93bfd180077f560d6c3e170d5ec2e090856c0fef04b8dcc91c4a6ae",
+    "scripts/sources/naturalearth/europe-rivers.geojson": "ba608d79985f7ad1b951e38df30d86bdff00c2115f9fe6d2454f4be26ff2d81f"
+  }
+}

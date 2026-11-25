@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { fixtureSources } from "../fixtures/scenarios/fixtureSources";
 import { faction } from "../support";
-import { defaultScenarioId, holdsGround, loadScenario, objectivesOf, scenarioSources, territoryIdsOf, type TurnOutcome } from "../../sim/engine";
+import { holdsGround, loadScenario, objectivesOf, scenarioSources, territoryIdsOf, type TurnOutcome } from "../../sim/engine";
+import { spainId } from "../support";
 import { assertInTerritories, playGame, retreatedUnits } from "../../sim/game";
 import { initialGameState } from "../../main/engine/resolution";
 import { PatchError } from "../../sim/patch";
@@ -63,7 +64,7 @@ describe("harness core on the tiny-front fixture", () => {
 
   it("judges S3 on units that hold ground, and still counts withdrawals (D24)", () => {
     // Aircraft never hold ground (D17), nor do units that cannot fight, such as generals (D27.1).
-    const spain = loadScenario(sources, defaultScenarioId(scenarioSources()));
+    const spain = loadScenario(sources, spainId);
     const start = initialGameState(spain);
     expect(holdsGround(spain, start, "rep-catalan-recon")).toBe(false);
     expect(holdsGround(spain, start, "rep-wad-ras-1")).toBe(true);

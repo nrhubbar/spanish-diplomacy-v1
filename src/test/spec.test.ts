@@ -49,7 +49,7 @@ describe("published specification", () => {
 
   it("loads every registered package without problems", () => {
     expect(testRegistry().problems.map((problem) => problem.message)).toEqual([]);
-    expect(testRegistry().list().map((summary) => summary.id)).toEqual(["spanish-civil-war-1936", "tiny-front"]);
+    expect(testRegistry().list().map((summary) => summary.id)).toEqual(["spanish-civil-war-1936", "third-coalition-1805", "tiny-front"]);
     expect(createScenarioRegistry(builtInSources).problems).toEqual([]);
   });
 

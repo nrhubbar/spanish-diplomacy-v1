@@ -1,16 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { defaultScenarioId, scenarioSources } from "../../sim/engine";
+import { scenarioSources } from "../../sim/engine";
 import { earlyWinTurn } from "../../sim/game";
 import { defaultTurnLimit, type RunPlan, runInProcess } from "../../sim/run";
+import { spainId } from "../support";
 
-// H2: the 10-game smoke run that replaced the 200-game soak in npm test. It plays the shipped
+// H2: the 10-game smoke run that replaced the 200-game soak in npm test. It plays the Spain
 // scenario through the same harness core as `npm run sim`, and checks structure, determinism,
 // S1 and S3 only. Balance (win shares, freeze and stall rates) is measured by `npm run sim`
 // and reported, never asserted here.
-describe("harness smoke run on the shipped scenario", () => {
+describe("harness smoke run on the Spain scenario", () => {
   const sources = scenarioSources();
   const plan: RunPlan = {
-    scenarioId: defaultScenarioId(sources),
+    scenarioId: spainId,
     seeds: Array.from({ length: 10 }, (_, index) => index + 1),
     turnLimit: defaultTurnLimit,
     variants: []

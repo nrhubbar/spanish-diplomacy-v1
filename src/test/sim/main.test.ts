@@ -9,6 +9,7 @@ import { formatSummary, runStamp } from "../../sim/output";
 import type { FromWorker, ToWorker } from "../../sim/pool";
 import type { GameTask, PlayedGame, Summary } from "../../sim/run";
 import { serveWorker } from "../../sim/worker";
+import { spainId } from "../support";
 import { clearTempOut, cliIo as io, cliSources as sources, finished, tempOut } from "./cliFixture";
 
 afterEach(clearTempOut);
@@ -89,10 +90,13 @@ describe("sim command line", () => {
     expect(posted[1]?.kind).toBe("result");
   });
 
-  it("defaults to the only shipped scenario", () => {
-    const shipped = scenarioSources();
-    const plan = planOf(parseArgs([]), [], shipped);
-    expect(plan.scenarioId).toBe(defaultScenarioId(shipped));
+  it("defaults to the only shipped scenario, and asks when there are several", () => {
+    const [shipped] = scenarioSources();
+    const onlySpain = [{ ...shipped!, scenarios: Object.fromEntries(Object.entries(shipped!.scenarios).filter(([path]) => path.includes(spainId))) }];
+    const plan = planOf(parseArgs([]), [], onlySpain);
+    expect(plan.scenarioId).toBe(spainId);
+    expect(defaultScenarioId(onlySpain)).toBe(spainId);
+    expect(() => defaultScenarioId(scenarioSources())).toThrow(/Name a scenario with --scenario/);
     expect(() => defaultScenarioId([])).toThrow(/playable ones are: none/);
     expect(planOf(parseArgs(["--scenario", "x"]), [], []).scenarioId).toBe("x");
   });

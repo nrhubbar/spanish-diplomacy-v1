@@ -1,0 +1,3942 @@
+{
+  "$comment": "Territories and sub-territories of the europe-1805 map: names, chief towns, and the modern Natural Earth provinces each is made of (~ marks a province shared between sub-territories). Read by scripts/build-europe-map.ts.",
+  "territories": [
+    {
+      "id": "ile-de-france",
+      "name": "\u00cele-de-France",
+      "capital": "paris"
+    },
+    {
+      "id": "picardy",
+      "name": "Picardy",
+      "capital": "boulogne"
+    },
+    {
+      "id": "brittany",
+      "name": "Brittany",
+      "capital": "brest"
+    },
+    {
+      "id": "gascony",
+      "name": "Gascony",
+      "capital": "bordeaux"
+    },
+    {
+      "id": "languedoc",
+      "name": "Languedoc",
+      "capital": "toulouse"
+    },
+    {
+      "id": "provence",
+      "name": "Provence",
+      "capital": "marseille"
+    },
+    {
+      "id": "corsica",
+      "name": "Corsica",
+      "capital": "ajaccio"
+    },
+    {
+      "id": "burgundy",
+      "name": "Burgundy",
+      "capital": "lyon"
+    },
+    {
+      "id": "alsace-lorraine",
+      "name": "Alsace",
+      "capital": "strasbourg"
+    },
+    {
+      "id": "belgium",
+      "name": "Belgium",
+      "capital": "brussels"
+    },
+    {
+      "id": "rhineland",
+      "name": "Rhineland",
+      "capital": "mainz"
+    },
+    {
+      "id": "piedmont",
+      "name": "Piedmont",
+      "capital": "turin"
+    },
+    {
+      "id": "lombardy",
+      "name": "Italy",
+      "capital": "milan"
+    },
+    {
+      "id": "hanover",
+      "name": "Hanover",
+      "capital": "hannover"
+    },
+    {
+      "id": "southern-england",
+      "name": "Southern England",
+      "capital": "london"
+    },
+    {
+      "id": "northern-england",
+      "name": "Northern England",
+      "capital": "birmingham"
+    },
+    {
+      "id": "scotland",
+      "name": "Scotland",
+      "capital": "edinburgh"
+    },
+    {
+      "id": "ireland",
+      "name": "Ireland",
+      "capital": "dublin"
+    },
+    {
+      "id": "gibraltar",
+      "name": "Gibraltar",
+      "capital": "gibraltar"
+    },
+    {
+      "id": "malta",
+      "name": "Malta",
+      "capital": "valletta"
+    },
+    {
+      "id": "brandenburg",
+      "name": "Brandenburg",
+      "capital": "berlin"
+    },
+    {
+      "id": "pomerania",
+      "name": "Pomerania",
+      "capital": "stettin"
+    },
+    {
+      "id": "mecklenburg",
+      "name": "Mecklenburg",
+      "capital": "schwerin"
+    },
+    {
+      "id": "east-prussia",
+      "name": "East Prussia",
+      "capital": "konigsberg"
+    },
+    {
+      "id": "silesia",
+      "name": "Silesia",
+      "capital": "breslau"
+    },
+    {
+      "id": "south-prussia",
+      "name": "South Prussia",
+      "capital": "warsaw"
+    },
+    {
+      "id": "westphalia",
+      "name": "Westphalia",
+      "capital": "munster"
+    },
+    {
+      "id": "ansbach",
+      "name": "Ansbach",
+      "capital": "ansbach"
+    },
+    {
+      "id": "austria",
+      "name": "Austria",
+      "capital": "vienna"
+    },
+    {
+      "id": "tyrol",
+      "name": "Tyrol",
+      "capital": "innsbruck"
+    },
+    {
+      "id": "inner-austria",
+      "name": "Styria",
+      "capital": "graz"
+    },
+    {
+      "id": "venetia",
+      "name": "Venetia",
+      "capital": "venice"
+    },
+    {
+      "id": "bohemia",
+      "name": "Bohemia",
+      "capital": "prague"
+    },
+    {
+      "id": "moravia",
+      "name": "Moravia",
+      "capital": "brunn"
+    },
+    {
+      "id": "hungary",
+      "name": "Hungary",
+      "capital": "buda"
+    },
+    {
+      "id": "upper-hungary",
+      "name": "Upper Hungary",
+      "capital": "debreczin"
+    },
+    {
+      "id": "banat",
+      "name": "Banat",
+      "capital": "temesvar"
+    },
+    {
+      "id": "transylvania",
+      "name": "Transylvania",
+      "capital": "klausenburg"
+    },
+    {
+      "id": "austrian-galicia",
+      "name": "Galicia",
+      "capital": "lemberg"
+    },
+    {
+      "id": "croatia",
+      "name": "Croatia",
+      "capital": "agram"
+    },
+    {
+      "id": "lithuania",
+      "name": "Lithuania",
+      "capital": "vilna"
+    },
+    {
+      "id": "livonia",
+      "name": "Livonia",
+      "capital": "riga"
+    },
+    {
+      "id": "ingria",
+      "name": "Ingria",
+      "capital": "petersburg"
+    },
+    {
+      "id": "archangel",
+      "name": "Archangel",
+      "capital": "archangel"
+    },
+    {
+      "id": "white-russia",
+      "name": "White Russia",
+      "capital": "minsk"
+    },
+    {
+      "id": "volhynia",
+      "name": "Volhynia",
+      "capital": "zhitomir"
+    },
+    {
+      "id": "little-russia",
+      "name": "Little Russia",
+      "capital": "kiev"
+    },
+    {
+      "id": "new-russia",
+      "name": "New Russia",
+      "capital": "odessa"
+    },
+    {
+      "id": "crimea",
+      "name": "Crimea",
+      "capital": "sevastopol"
+    },
+    {
+      "id": "smolensk",
+      "name": "Smolensk",
+      "capital": "smolensk"
+    },
+    {
+      "id": "moscow",
+      "name": "Moscow",
+      "capital": "moscow"
+    },
+    {
+      "id": "don",
+      "name": "Don",
+      "capital": "voronezh"
+    },
+    {
+      "id": "kuban",
+      "name": "Kuban",
+      "capital": "yekaterinodar"
+    },
+    {
+      "id": "georgia",
+      "name": "Georgia",
+      "capital": "tiflis"
+    },
+    {
+      "id": "thrace",
+      "name": "Thrace",
+      "capital": "constantinople"
+    },
+    {
+      "id": "bulgaria",
+      "name": "Bulgaria",
+      "capital": "rustchuk"
+    },
+    {
+      "id": "wallachia",
+      "name": "Wallachia",
+      "capital": "bucharest"
+    },
+    {
+      "id": "moldavia",
+      "name": "Moldavia",
+      "capital": "jassy"
+    },
+    {
+      "id": "serbia",
+      "name": "Serbia",
+      "capital": "belgrade"
+    },
+    {
+      "id": "bosnia",
+      "name": "Bosnia",
+      "capital": "sarajevo"
+    },
+    {
+      "id": "albania",
+      "name": "Albania",
+      "capital": "janina"
+    },
+    {
+      "id": "macedonia",
+      "name": "Macedonia",
+      "capital": "salonica"
+    },
+    {
+      "id": "greece",
+      "name": "Greece",
+      "capital": "athens"
+    },
+    {
+      "id": "ionian-islands",
+      "name": "Ionian Islands",
+      "capital": "corfu"
+    },
+    {
+      "id": "crete",
+      "name": "Crete",
+      "capital": "candia"
+    },
+    {
+      "id": "western-anatolia",
+      "name": "Western Anatolia",
+      "capital": "smyrna"
+    },
+    {
+      "id": "central-anatolia",
+      "name": "Central Anatolia",
+      "capital": "angora"
+    },
+    {
+      "id": "eastern-anatolia",
+      "name": "Eastern Anatolia",
+      "capital": "trebizond"
+    },
+    {
+      "id": "cyprus",
+      "name": "Cyprus",
+      "capital": "nicosia"
+    },
+    {
+      "id": "syria",
+      "name": "Syria",
+      "capital": "damascus"
+    },
+    {
+      "id": "egypt",
+      "name": "Egypt",
+      "capital": "cairo"
+    },
+    {
+      "id": "tripolitania",
+      "name": "Tripoli",
+      "capital": "tripoli"
+    },
+    {
+      "id": "tunis",
+      "name": "Tunis",
+      "capital": "tunis"
+    },
+    {
+      "id": "algiers",
+      "name": "Algiers",
+      "capital": "algiers"
+    },
+    {
+      "id": "morocco",
+      "name": "Morocco",
+      "capital": "fez"
+    },
+    {
+      "id": "castile",
+      "name": "Castile",
+      "capital": "madrid"
+    },
+    {
+      "id": "spanish-galicia",
+      "name": "Asturias",
+      "capital": "corunna"
+    },
+    {
+      "id": "navarre",
+      "name": "Navarre",
+      "capital": "pamplona"
+    },
+    {
+      "id": "aragon-catalonia",
+      "name": "Aragon",
+      "capital": "barcelona"
+    },
+    {
+      "id": "valencia",
+      "name": "Valencia",
+      "capital": "valencia"
+    },
+    {
+      "id": "andalusia",
+      "name": "Andalusia",
+      "capital": "seville"
+    },
+    {
+      "id": "balearics",
+      "name": "Balearic Islands",
+      "capital": "palma"
+    },
+    {
+      "id": "northern-portugal",
+      "name": "Northern Portugal",
+      "capital": "oporto"
+    },
+    {
+      "id": "lisbon",
+      "name": "Southern Portugal",
+      "capital": "lisbon"
+    },
+    {
+      "id": "holland",
+      "name": "Holland",
+      "capital": "amsterdam"
+    },
+    {
+      "id": "jutland",
+      "name": "Jutland",
+      "capital": "kiel"
+    },
+    {
+      "id": "zealand",
+      "name": "Zealand",
+      "capital": "copenhagen"
+    },
+    {
+      "id": "southern-norway",
+      "name": "Southern Norway",
+      "capital": "christiania"
+    },
+    {
+      "id": "northern-norway",
+      "name": "Northern Norway",
+      "capital": "trondheim"
+    },
+    {
+      "id": "svealand",
+      "name": "Svealand",
+      "capital": "stockholm"
+    },
+    {
+      "id": "gotaland",
+      "name": "G\u00f6taland",
+      "capital": "gothenburg"
+    },
+    {
+      "id": "norrland",
+      "name": "Norrland",
+      "capital": "sundsvall"
+    },
+    {
+      "id": "finland",
+      "name": "Finland",
+      "capital": "abo"
+    },
+    {
+      "id": "swedish-pomerania",
+      "name": "Swedish Pomerania",
+      "capital": "stralsund"
+    },
+    {
+      "id": "bavaria",
+      "name": "Bavaria",
+      "capital": "munich"
+    },
+    {
+      "id": "franconia",
+      "name": "Franconia",
+      "capital": "wurzburg"
+    },
+    {
+      "id": "swabia",
+      "name": "Swabia",
+      "capital": "stuttgart"
+    },
+    {
+      "id": "hesse",
+      "name": "Hesse",
+      "capital": "kassel"
+    },
+    {
+      "id": "saxony",
+      "name": "Saxony",
+      "capital": "dresden"
+    },
+    {
+      "id": "switzerland",
+      "name": "Switzerland",
+      "capital": "bern"
+    },
+    {
+      "id": "tuscany",
+      "name": "Tuscany",
+      "capital": "florence"
+    },
+    {
+      "id": "papal-states",
+      "name": "Papal States",
+      "capital": "rome"
+    },
+    {
+      "id": "naples",
+      "name": "Naples",
+      "capital": "naples"
+    },
+    {
+      "id": "sicily",
+      "name": "Sicily",
+      "capital": "palermo"
+    },
+    {
+      "id": "sardinia",
+      "name": "Sardinia",
+      "capital": "cagliari"
+    }
+  ],
+  "subTerritories": [
+    {
+      "id": "paris",
+      "territoryId": "ile-de-france",
+      "name": "Paris",
+      "town": {
+        "longitude": 2.352,
+        "latitude": 48.857
+      },
+      "city": "Paris",
+      "provinces": [
+        "FRA:Paris, Hauts-de-Seine, Seine-Saint-Denis, Val-d'Oise, Yvelines, Essonne, Seien-et-Marne, Val-de-Marne"
+      ]
+    },
+    {
+      "id": "orleans",
+      "territoryId": "ile-de-france",
+      "name": "Orl\u00e9anais",
+      "town": {
+        "longitude": 1.909,
+        "latitude": 47.902
+      },
+      "provinces": [
+        "FRA:Loiret, Loir-et-Cher, Eure-et-Loir, Cher, Indre, Indre-et-Loire"
+      ]
+    },
+    {
+      "id": "reims",
+      "territoryId": "ile-de-france",
+      "name": "Champagne",
+      "town": {
+        "longitude": 4.032,
+        "latitude": 49.258
+      },
+      "provinces": [
+        "FRA:Marne, Aube, Haute-Marne, Ardennes, Yonne"
+      ]
+    },
+    {
+      "id": "boulogne",
+      "territoryId": "picardy",
+      "name": "Boulogne",
+      "town": {
+        "longitude": 1.614,
+        "latitude": 50.725
+      },
+      "city": "Boulogne",
+      "provinces": [
+        "FRA:Pas-de-Calais, Nord"
+      ]
+    },
+    {
+      "id": "amiens",
+      "territoryId": "picardy",
+      "name": "Amiens",
+      "town": {
+        "longitude": 2.302,
+        "latitude": 49.894
+      },
+      "provinces": [
+        "FRA:Somme, Oise, Aisne"
+      ]
+    },
+    {
+      "id": "brest",
+      "territoryId": "brittany",
+      "name": "Brittany",
+      "town": {
+        "longitude": -4.486,
+        "latitude": 48.39
+      },
+      "city": "Brest",
+      "provinces": [
+        "FRA:Finist\u00e8re, C\u00f4tes-d'Armor, Morbihan, Ille-et-Vilaine"
+      ]
+    },
+    {
+      "id": "rouen",
+      "territoryId": "brittany",
+      "name": "Normandy",
+      "town": {
+        "longitude": 1.099,
+        "latitude": 49.443
+      },
+      "city": "Rouen",
+      "provinces": [
+        "FRA:Calvados, Manche, Orne, Eure, Seine-Maritime"
+      ]
+    },
+    {
+      "id": "nantes",
+      "territoryId": "brittany",
+      "name": "Loire and Vend\u00e9e",
+      "town": {
+        "longitude": -1.554,
+        "latitude": 47.218
+      },
+      "city": "Nantes",
+      "provinces": [
+        "FRA:Loire-Atlantique, Vend\u00e9e, Maine-et-Loire, Mayenne, Sarthe"
+      ]
+    },
+    {
+      "id": "bordeaux",
+      "territoryId": "gascony",
+      "name": "Bordelais",
+      "town": {
+        "longitude": -0.579,
+        "latitude": 44.838
+      },
+      "city": "Bordeaux",
+      "provinces": [
+        "FRA:Gironde, Landes, Lot-et-Garonne, Dordogne"
+      ]
+    },
+    {
+      "id": "la-rochelle",
+      "territoryId": "gascony",
+      "name": "Poitou and Saintonge",
+      "town": {
+        "longitude": -1.151,
+        "latitude": 46.16
+      },
+      "city": "La Rochelle",
+      "provinces": [
+        "FRA:Vienne, Deux-S\u00e8vres, Charente, Charente-Maritime, Haute-Vienne, Creuse, Corr\u00e8ze"
+      ]
+    },
+    {
+      "id": "bayonne",
+      "territoryId": "gascony",
+      "name": "B\u00e9arn and Gascony",
+      "town": {
+        "longitude": -1.475,
+        "latitude": 43.493
+      },
+      "city": "Bayonne",
+      "provinces": [
+        "FRA:Pyr\u00e9n\u00e9es-Atlantiques, Hautes-Pyr\u00e9n\u00e9es, Gers"
+      ]
+    },
+    {
+      "id": "toulouse",
+      "territoryId": "languedoc",
+      "name": "Upper Languedoc",
+      "town": {
+        "longitude": 1.444,
+        "latitude": 43.605
+      },
+      "city": "Toulouse",
+      "provinces": [
+        "FRA:Haute-Garonne, Ari\u00e8ge, Tarn, Tarn-et-Garonne, Lot, Aveyron"
+      ]
+    },
+    {
+      "id": "montpellier",
+      "territoryId": "languedoc",
+      "name": "Lower Languedoc",
+      "town": {
+        "longitude": 3.877,
+        "latitude": 43.611
+      },
+      "provinces": [
+        "FRA:Gard, H\u00e9rault, Aude, Loz\u00e8re, Pyr\u00e9n\u00e9es-Orientales"
+      ]
+    },
+    {
+      "id": "marseille",
+      "territoryId": "provence",
+      "name": "Provence",
+      "town": {
+        "longitude": 5.37,
+        "latitude": 43.296
+      },
+      "city": "Marseille",
+      "provinces": [
+        "FRA:Bouches-du-Rh\u00f4ne, Var, Vaucluse",
+        "MCO:*",
+        "FRA:Alpes-Maritimes"
+      ]
+    },
+    {
+      "id": "grenoble",
+      "territoryId": "provence",
+      "name": "Dauphin\u00e9 and Savoy",
+      "town": {
+        "longitude": 5.725,
+        "latitude": 45.188
+      },
+      "provinces": [
+        "FRA:Is\u00e8re, Dr\u00f4me, Hautes-Alpes, Alpes-de-Haute-Provence, Savoie, Haute-Savoie"
+      ]
+    },
+    {
+      "id": "ajaccio",
+      "territoryId": "corsica",
+      "name": "Ajaccio",
+      "town": {
+        "longitude": 8.737,
+        "latitude": 41.927
+      },
+      "city": "Ajaccio",
+      "provinces": [
+        "FRA:Corse-du-Sud"
+      ]
+    },
+    {
+      "id": "bastia",
+      "territoryId": "corsica",
+      "name": "Bastia",
+      "town": {
+        "longitude": 9.45,
+        "latitude": 42.697
+      },
+      "provinces": [
+        "FRA:Haute-Corse"
+      ]
+    },
+    {
+      "id": "lyon",
+      "territoryId": "burgundy",
+      "name": "Lyonnais",
+      "town": {
+        "longitude": 4.836,
+        "latitude": 45.764
+      },
+      "city": "Lyon",
+      "provinces": [
+        "FRA:Rh\u00f4ne, Loire, Ain, Ard\u00e8che, Haute-Loire"
+      ]
+    },
+    {
+      "id": "dijon",
+      "territoryId": "burgundy",
+      "name": "Burgundy and Franche-Comt\u00e9",
+      "town": {
+        "longitude": 5.041,
+        "latitude": 47.322
+      },
+      "city": "Dijon",
+      "provinces": [
+        "FRA:C\u00f4te-d'Or, Sa\u00f4ne-et-Loire, Ni\u00e8vre, Jura, Doubs, Haute-Sa\u00f4ne, Territoire de Belfort"
+      ]
+    },
+    {
+      "id": "clermont",
+      "territoryId": "burgundy",
+      "name": "Auvergne",
+      "town": {
+        "longitude": 3.087,
+        "latitude": 45.778
+      },
+      "provinces": [
+        "FRA:Puy-de-D\u00f4me, Cantal, Allier"
+      ]
+    },
+    {
+      "id": "strasbourg",
+      "territoryId": "alsace-lorraine",
+      "name": "Alsace",
+      "town": {
+        "longitude": 7.752,
+        "latitude": 48.573
+      },
+      "city": "Strasbourg",
+      "provinces": [
+        "FRA:Bas-Rhin, Haute-Rhin"
+      ]
+    },
+    {
+      "id": "metz",
+      "territoryId": "alsace-lorraine",
+      "name": "Lorraine",
+      "town": {
+        "longitude": 6.176,
+        "latitude": 49.12
+      },
+      "provinces": [
+        "FRA:Moselle, Meurthe-et-Moselle, Meuse, Vosges"
+      ]
+    },
+    {
+      "id": "brussels",
+      "territoryId": "belgium",
+      "name": "Brabant and Hainaut",
+      "town": {
+        "longitude": 4.352,
+        "latitude": 50.846
+      },
+      "city": "Brussels",
+      "provinces": [
+        "BEL:Brussels, Flemish Brabant, Walloon Brabant, Hainaut, Namur"
+      ]
+    },
+    {
+      "id": "antwerp",
+      "territoryId": "belgium",
+      "name": "Flanders and Antwerp",
+      "town": {
+        "longitude": 4.402,
+        "latitude": 51.22
+      },
+      "city": "Antwerp",
+      "provinces": [
+        "BEL:Antwerp, East Flanders, West Flanders"
+      ]
+    },
+    {
+      "id": "liege",
+      "territoryId": "belgium",
+      "name": "Li\u00e8ge and Luxembourg",
+      "town": {
+        "longitude": 5.567,
+        "latitude": 50.633
+      },
+      "provinces": [
+        "BEL:Liege, Limburg, Luxembourg",
+        "LUX:*"
+      ]
+    },
+    {
+      "id": "mainz",
+      "territoryId": "rhineland",
+      "name": "Mainz and the Palatinate",
+      "town": {
+        "longitude": 8.271,
+        "latitude": 50
+      },
+      "city": "Mainz",
+      "provinces": [
+        "DEU:Rheinland-Pfalz, Saarland"
+      ]
+    },
+    {
+      "id": "cologne",
+      "territoryId": "rhineland",
+      "name": "Cologne and Aachen",
+      "town": {
+        "longitude": 6.957,
+        "latitude": 50.938
+      },
+      "city": "Cologne",
+      "provinces": [
+        "~DEU:Nordrhein-Westfalen @ 50.9, 6.6"
+      ]
+    },
+    {
+      "id": "turin",
+      "territoryId": "piedmont",
+      "name": "Piedmont",
+      "town": {
+        "longitude": 7.687,
+        "latitude": 45.07
+      },
+      "city": "Turin",
+      "provinces": [
+        "ITA:Turin, Cuneo, Asti, Alessandria, Vercelli, Biella, Aoste, Verbano-Cusio-Ossola"
+      ]
+    },
+    {
+      "id": "genoa",
+      "territoryId": "piedmont",
+      "name": "Liguria",
+      "town": {
+        "longitude": 8.934,
+        "latitude": 44.407
+      },
+      "city": "Genoa",
+      "provinces": [
+        "ITA:Imperia, Savona, Genova, La Spezia"
+      ]
+    },
+    {
+      "id": "milan",
+      "territoryId": "lombardy",
+      "name": "Lombardy",
+      "town": {
+        "longitude": 9.19,
+        "latitude": 45.464
+      },
+      "city": "Milan",
+      "provinces": [
+        "ITA:Milano, Monza e Brianza, Como, Lecco, Varese, Sondrio, Bergamo, Pavia, Lodi, Cremona, Novara"
+      ]
+    },
+    {
+      "id": "mantua",
+      "territoryId": "lombardy",
+      "name": "Mantua and Brescia",
+      "town": {
+        "longitude": 10.791,
+        "latitude": 45.156
+      },
+      "city": "Mantua",
+      "provinces": [
+        "ITA:Mantova, Brescia"
+      ]
+    },
+    {
+      "id": "bologna",
+      "territoryId": "lombardy",
+      "name": "Emilia and Romagna",
+      "town": {
+        "longitude": 11.343,
+        "latitude": 44.494
+      },
+      "city": "Bologna",
+      "provinces": [
+        "ITA:Piacenza, Parma, Reggio Emilia, Modena, Bologna, Ferrara, Ravenna, Forl\u00ec-Cesena, Rimini"
+      ]
+    },
+    {
+      "id": "hannover",
+      "territoryId": "hanover",
+      "name": "Calenberg and L\u00fcneburg",
+      "town": {
+        "longitude": 9.738,
+        "latitude": 52.374
+      },
+      "city": "Hanover",
+      "provinces": [
+        "~DEU:Niedersachsen"
+      ]
+    },
+    {
+      "id": "bremen",
+      "territoryId": "hanover",
+      "name": "Bremen and Oldenburg",
+      "town": {
+        "longitude": 8.8,
+        "latitude": 53.08
+      },
+      "provinces": [
+        "~DEU:Niedersachsen @ 53.15, 8.4",
+        "DEU:Bremen"
+      ]
+    },
+    {
+      "id": "gottingen",
+      "territoryId": "hanover",
+      "name": "G\u00f6ttingen and Brunswick",
+      "town": {
+        "longitude": 10.2,
+        "latitude": 51.75
+      },
+      "provinces": [
+        "~DEU:Niedersachsen"
+      ]
+    },
+    {
+      "id": "london",
+      "territoryId": "southern-england",
+      "name": "London and the Home Counties",
+      "town": {
+        "longitude": -0.128,
+        "latitude": 51.507
+      },
+      "city": "London",
+      "provinces": [
+        "GBR:Greater London, South East (region)"
+      ]
+    },
+    {
+      "id": "plymouth",
+      "territoryId": "southern-england",
+      "name": "The West Country",
+      "town": {
+        "longitude": -4.143,
+        "latitude": 50.375
+      },
+      "city": "Plymouth",
+      "provinces": [
+        "GBR:South West (region)"
+      ]
+    },
+    {
+      "id": "norwich",
+      "territoryId": "southern-england",
+      "name": "East Anglia",
+      "town": {
+        "longitude": 1.297,
+        "latitude": 52.63
+      },
+      "provinces": [
+        "GBR:East (region)"
+      ]
+    },
+    {
+      "id": "birmingham",
+      "territoryId": "northern-england",
+      "name": "The Midlands",
+      "town": {
+        "longitude": -1.903,
+        "latitude": 52.48
+      },
+      "city": "Birmingham",
+      "provinces": [
+        "GBR:East Midlands, West Midlands (region)"
+      ]
+    },
+    {
+      "id": "york",
+      "territoryId": "northern-england",
+      "name": "Yorkshire and Lancashire",
+      "town": {
+        "longitude": -1.087,
+        "latitude": 53.96
+      },
+      "city": "York",
+      "provinces": [
+        "GBR:North West, Yorkshire and the Humber, North East (region)"
+      ]
+    },
+    {
+      "id": "cardiff",
+      "territoryId": "northern-england",
+      "name": "Wales",
+      "town": {
+        "longitude": -3.8,
+        "latitude": 51.85
+      },
+      "provinces": [
+        "GBR:West Wales and the Valleys, East Wales (region)"
+      ]
+    },
+    {
+      "id": "edinburgh",
+      "territoryId": "scotland",
+      "name": "The Lowlands",
+      "town": {
+        "longitude": -3.189,
+        "latitude": 55.953
+      },
+      "city": "Edinburgh",
+      "provinces": [
+        "GBR:Eastern, South Western (region)"
+      ]
+    },
+    {
+      "id": "inverness",
+      "territoryId": "scotland",
+      "name": "The Highlands",
+      "town": {
+        "longitude": -4.224,
+        "latitude": 57.478
+      },
+      "provinces": [
+        "GBR:North Eastern, Highlands and Islands (region)"
+      ]
+    },
+    {
+      "id": "dublin",
+      "territoryId": "ireland",
+      "name": "Leinster",
+      "town": {
+        "longitude": -6.26,
+        "latitude": 53.35
+      },
+      "city": "Dublin",
+      "provinces": [
+        "IRL:Carlow, D\u00fan Laoghaire\u2013Rathdown, Fingal, South Dublin, Dublin, Kildare, Kilkenny, Laoighis, Longford, Louth, Meath, Offaly, Westmeath, Wexford, Wicklow"
+      ]
+    },
+    {
+      "id": "belfast",
+      "territoryId": "ireland",
+      "name": "Ulster",
+      "town": {
+        "longitude": -5.93,
+        "latitude": 54.597
+      },
+      "provinces": [
+        "GBR:Northern Ireland (region)",
+        "IRL:Donegal, Cavan, Monaghan"
+      ]
+    },
+    {
+      "id": "cork",
+      "territoryId": "ireland",
+      "name": "Munster and Connacht",
+      "town": {
+        "longitude": -8.475,
+        "latitude": 51.898
+      },
+      "city": "Cork",
+      "provinces": [
+        "IRL:Cork, Clare, Kerry, Limerick, North Tipperary, South Tipperary, Waterford, Galway, Mayo, Roscommon, Sligo, Leitrim"
+      ]
+    },
+    {
+      "id": "gibraltar",
+      "territoryId": "gibraltar",
+      "name": "Gibraltar",
+      "town": {
+        "longitude": -5.353,
+        "latitude": 36.14
+      },
+      "city": "Gibraltar",
+      "provinces": [
+        "GIB:*"
+      ]
+    },
+    {
+      "id": "valletta",
+      "territoryId": "malta",
+      "name": "Malta",
+      "town": {
+        "longitude": 14.514,
+        "latitude": 35.899
+      },
+      "city": "Valletta",
+      "provinces": [
+        "MLT:*"
+      ]
+    },
+    {
+      "id": "berlin",
+      "territoryId": "brandenburg",
+      "name": "Berlin and the Mittelmark",
+      "town": {
+        "longitude": 13.405,
+        "latitude": 52.52
+      },
+      "city": "Berlin",
+      "provinces": [
+        "DEU:Berlin",
+        "~DEU:Brandenburg @ 52.6, 12.8"
+      ]
+    },
+    {
+      "id": "kustrin",
+      "territoryId": "brandenburg",
+      "name": "Neumark",
+      "town": {
+        "longitude": 14.646,
+        "latitude": 52.586
+      },
+      "provinces": [
+        "POL:Lubusz",
+        "~DEU:Brandenburg @ 51.9, 14.6"
+      ]
+    },
+    {
+      "id": "magdeburg",
+      "territoryId": "brandenburg",
+      "name": "Magdeburg and Halle",
+      "town": {
+        "longitude": 11.629,
+        "latitude": 52.131
+      },
+      "city": "Magdeburg",
+      "provinces": [
+        "DEU:Sachsen-Anhalt"
+      ]
+    },
+    {
+      "id": "stettin",
+      "territoryId": "pomerania",
+      "name": "Hither Pomerania",
+      "town": {
+        "longitude": 14.553,
+        "latitude": 53.428
+      },
+      "city": "Stettin",
+      "provinces": [
+        "POL:West Pomeranian"
+      ]
+    },
+    {
+      "id": "danzig",
+      "territoryId": "pomerania",
+      "name": "West Prussia",
+      "town": {
+        "longitude": 18.646,
+        "latitude": 54.352
+      },
+      "city": "Danzig",
+      "provinces": [
+        "POL:Pomeranian"
+      ]
+    },
+    {
+      "id": "schwerin",
+      "territoryId": "mecklenburg",
+      "name": "Mecklenburg",
+      "town": {
+        "longitude": 11.415,
+        "latitude": 53.63
+      },
+      "provinces": [
+        "~DEU:Mecklenburg-Vorpommern @ 53.75, 11.6"
+      ]
+    },
+    {
+      "id": "konigsberg",
+      "territoryId": "east-prussia",
+      "name": "K\u00f6nigsberg",
+      "town": {
+        "longitude": 20.452,
+        "latitude": 54.71
+      },
+      "city": "K\u00f6nigsberg",
+      "provinces": [
+        "RUS:Kaliningrad"
+      ]
+    },
+    {
+      "id": "allenstein",
+      "territoryId": "east-prussia",
+      "name": "Masuria and Ermland",
+      "town": {
+        "longitude": 20.48,
+        "latitude": 53.778
+      },
+      "provinces": [
+        "POL:Warmian-Masurian"
+      ]
+    },
+    {
+      "id": "breslau",
+      "territoryId": "silesia",
+      "name": "Lower Silesia",
+      "town": {
+        "longitude": 17.039,
+        "latitude": 51.108
+      },
+      "city": "Breslau",
+      "provinces": [
+        "POL:Lower Silesian"
+      ]
+    },
+    {
+      "id": "oppeln",
+      "territoryId": "silesia",
+      "name": "Upper Silesia",
+      "town": {
+        "longitude": 17.921,
+        "latitude": 50.675
+      },
+      "provinces": [
+        "POL:Opole, Silesian"
+      ]
+    },
+    {
+      "id": "warsaw",
+      "territoryId": "south-prussia",
+      "name": "Warsaw",
+      "town": {
+        "longitude": 21.012,
+        "latitude": 52.23
+      },
+      "city": "Warsaw",
+      "provinces": [
+        "POL:Masovian"
+      ]
+    },
+    {
+      "id": "posen",
+      "territoryId": "south-prussia",
+      "name": "Posen",
+      "town": {
+        "longitude": 16.93,
+        "latitude": 52.407
+      },
+      "city": "Posen",
+      "provinces": [
+        "POL:Greater Poland, Kuyavian-Pomeranian"
+      ]
+    },
+    {
+      "id": "kalisch",
+      "territoryId": "south-prussia",
+      "name": "Kalisch",
+      "town": {
+        "longitude": 19.454,
+        "latitude": 51.776
+      },
+      "provinces": [
+        "POL:\u0141\u00f3d\u017a"
+      ]
+    },
+    {
+      "id": "bialystok",
+      "territoryId": "south-prussia",
+      "name": "New East Prussia",
+      "town": {
+        "longitude": 23.164,
+        "latitude": 53.133
+      },
+      "provinces": [
+        "POL:Podlachian"
+      ]
+    },
+    {
+      "id": "munster",
+      "territoryId": "westphalia",
+      "name": "M\u00fcnster and Minden",
+      "town": {
+        "longitude": 7.626,
+        "latitude": 51.961
+      },
+      "city": "M\u00fcnster",
+      "provinces": [
+        "~DEU:Nordrhein-Westfalen @ 52.1, 8.2"
+      ]
+    },
+    {
+      "id": "wesel",
+      "territoryId": "westphalia",
+      "name": "Cleves, Mark and Berg",
+      "town": {
+        "longitude": 7.1,
+        "latitude": 51.659
+      },
+      "provinces": [
+        "~DEU:Nordrhein-Westfalen @ 51.45, 7.6"
+      ]
+    },
+    {
+      "id": "ansbach",
+      "territoryId": "ansbach",
+      "name": "Ansbach and Bayreuth",
+      "town": {
+        "longitude": 10.572,
+        "latitude": 49.3
+      },
+      "city": "Ansbach",
+      "provinces": [
+        "~DEU:Bayern @ 49.55, 11.2"
+      ]
+    },
+    {
+      "id": "vienna",
+      "territoryId": "austria",
+      "name": "Lower Austria",
+      "town": {
+        "longitude": 16.373,
+        "latitude": 48.208
+      },
+      "city": "Vienna",
+      "provinces": [
+        "AUT:Nieder\u00f6sterreich, Wien, Burgenland"
+      ]
+    },
+    {
+      "id": "linz",
+      "territoryId": "austria",
+      "name": "Upper Austria",
+      "town": {
+        "longitude": 14.286,
+        "latitude": 48.306
+      },
+      "city": "Linz",
+      "provinces": [
+        "AUT:Ober\u00f6sterreich"
+      ]
+    },
+    {
+      "id": "innsbruck",
+      "territoryId": "tyrol",
+      "name": "Northern Tyrol",
+      "town": {
+        "longitude": 11.394,
+        "latitude": 47.263
+      },
+      "city": "Innsbruck",
+      "provinces": [
+        "AUT:Tirol, Vorarlberg",
+        "LIE:*"
+      ]
+    },
+    {
+      "id": "salzburg",
+      "territoryId": "tyrol",
+      "name": "Salzburg",
+      "town": {
+        "longitude": 13.045,
+        "latitude": 47.8
+      },
+      "city": "Salzburg",
+      "provinces": [
+        "AUT:Salzburg"
+      ]
+    },
+    {
+      "id": "trent",
+      "territoryId": "tyrol",
+      "name": "Trent and Southern Tyrol",
+      "town": {
+        "longitude": 11.121,
+        "latitude": 46.067
+      },
+      "provinces": [
+        "ITA:Bozen, Trento"
+      ]
+    },
+    {
+      "id": "graz",
+      "territoryId": "inner-austria",
+      "name": "Styria",
+      "town": {
+        "longitude": 15.438,
+        "latitude": 47.07
+      },
+      "city": "Graz",
+      "provinces": [
+        "AUT:Steiermark"
+      ]
+    },
+    {
+      "id": "klagenfurt",
+      "territoryId": "inner-austria",
+      "name": "Carinthia",
+      "town": {
+        "longitude": 14.308,
+        "latitude": 46.624
+      },
+      "provinces": [
+        "AUT:K\u00e4rnten"
+      ]
+    },
+    {
+      "id": "laibach",
+      "territoryId": "inner-austria",
+      "name": "Carniola",
+      "town": {
+        "longitude": 14.506,
+        "latitude": 46.056
+      },
+      "provinces": [
+        "SVN:*"
+      ]
+    },
+    {
+      "id": "trieste",
+      "territoryId": "inner-austria",
+      "name": "Trieste and Istria",
+      "town": {
+        "longitude": 13.777,
+        "latitude": 45.649
+      },
+      "city": "Trieste",
+      "provinces": [
+        "ITA:Trieste, Gorizia",
+        "HRV:Istarska"
+      ]
+    },
+    {
+      "id": "venice",
+      "territoryId": "venetia",
+      "name": "Venice",
+      "town": {
+        "longitude": 12.316,
+        "latitude": 45.44
+      },
+      "city": "Venice",
+      "provinces": [
+        "ITA:Venezia, Padova, Rovigo, Treviso"
+      ]
+    },
+    {
+      "id": "verona",
+      "territoryId": "venetia",
+      "name": "Verona and Vicenza",
+      "town": {
+        "longitude": 10.992,
+        "latitude": 45.438
+      },
+      "city": "Verona",
+      "provinces": [
+        "ITA:Verona, Vicenza"
+      ]
+    },
+    {
+      "id": "udine",
+      "territoryId": "venetia",
+      "name": "Friuli",
+      "town": {
+        "longitude": 13.235,
+        "latitude": 46.063
+      },
+      "provinces": [
+        "ITA:Udine, Pordenone, Belluno"
+      ]
+    },
+    {
+      "id": "prague",
+      "territoryId": "bohemia",
+      "name": "Central Bohemia",
+      "town": {
+        "longitude": 14.421,
+        "latitude": 50.087
+      },
+      "city": "Prague",
+      "provinces": [
+        "CZE:Prague, St\u0159edo\u010desk\u00fd, \u00dasteck\u00fd, Libereck\u00fd, Karlovarsk\u00fd"
+      ]
+    },
+    {
+      "id": "budweis",
+      "territoryId": "bohemia",
+      "name": "Southern Bohemia",
+      "town": {
+        "longitude": 14.474,
+        "latitude": 48.975
+      },
+      "provinces": [
+        "CZE:Jiho\u010desk\u00fd, Plze\u0148sk\u00fd"
+      ]
+    },
+    {
+      "id": "koniggratz",
+      "territoryId": "bohemia",
+      "name": "Eastern Bohemia",
+      "town": {
+        "longitude": 15.833,
+        "latitude": 50.209
+      },
+      "provinces": [
+        "CZE:Kr\u00e1lov\u00e9hradeck\u00fd, Pardubick\u00fd, Vyso\u010dina"
+      ]
+    },
+    {
+      "id": "brunn",
+      "territoryId": "moravia",
+      "name": "Southern Moravia",
+      "town": {
+        "longitude": 16.608,
+        "latitude": 49.195
+      },
+      "city": "Br\u00fcnn",
+      "provinces": [
+        "CZE:Jihomoravsk\u00fd, Zl\u00ednsk\u00fd"
+      ]
+    },
+    {
+      "id": "olmutz",
+      "territoryId": "moravia",
+      "name": "Northern Moravia",
+      "town": {
+        "longitude": 17.251,
+        "latitude": 49.594
+      },
+      "city": "Olm\u00fctz",
+      "provinces": [
+        "CZE:Olomouck\u00fd, Moravskoslezsk\u00fd"
+      ]
+    },
+    {
+      "id": "buda",
+      "territoryId": "hungary",
+      "name": "Buda and Pest",
+      "town": {
+        "longitude": 19.04,
+        "latitude": 47.498
+      },
+      "city": "Buda",
+      "provinces": [
+        "HUN:Budapest, Pest, Fej\u00e9r, Kom\u00e1rom-Esztergom, Tatab\u00e1nya, Sz\u00e9kesfeh\u00e9rv\u00e1r, Duna\u00fajv\u00e1ros, N\u00f3gr\u00e1d, Salg\u00f3tarj\u00e1n, \u00c9rd"
+      ]
+    },
+    {
+      "id": "pressburg",
+      "territoryId": "hungary",
+      "name": "Pressburg and Nitra",
+      "town": {
+        "longitude": 17.11,
+        "latitude": 48.144
+      },
+      "city": "Pressburg",
+      "provinces": [
+        "SVK:Bratislavsk\u00fd, Trnavsk\u00fd, Nitriansky, Trenciansky"
+      ]
+    },
+    {
+      "id": "raab",
+      "territoryId": "hungary",
+      "name": "Transdanubia",
+      "town": {
+        "longitude": 17.635,
+        "latitude": 47.688
+      },
+      "provinces": [
+        "HUN:Baranya, Gyor-Moson-Sopron, Gy\u00f4r, Kaposv\u00e1r, Nagykanizsa, P\u00e9cs, Somogy, Sopron, Szeksz\u00e1rd, Szombathely, Tolna, Vas, Veszpr\u00e9m, Zala, Zalaegerszeg"
+      ]
+    },
+    {
+      "id": "debreczin",
+      "territoryId": "upper-hungary",
+      "name": "The Great Plain",
+      "town": {
+        "longitude": 21.627,
+        "latitude": 47.532
+      },
+      "city": "Debreczin",
+      "provinces": [
+        "HUN:Debrecen, Hajd\u00fa-Bihar, J\u00e1sz-Nagykun-Szolnok, Szolnok, B\u00e9k\u00e9s, B\u00e9k\u00e9scsaba, Ny\u00edregyh\u00e1za, Szabolcs-Szatm\u00e1r-Bereg, Heves, Eger, Borsod-Aba\u00faj-Zempl\u00e9n, Miskolc",
+        "ROU:Bihor, Satu Mare"
+      ]
+    },
+    {
+      "id": "kaschau",
+      "territoryId": "upper-hungary",
+      "name": "Upper Hungary",
+      "town": {
+        "longitude": 21.261,
+        "latitude": 48.716
+      },
+      "provinces": [
+        "SVK:\u017dilinsk\u00fd, Banskobystrick\u00fd, Pre\u0161ov, Ko\u0161ick\u00fd",
+        "UKR:Transcarpathia"
+      ]
+    },
+    {
+      "id": "szegedin",
+      "territoryId": "upper-hungary",
+      "name": "Szegedin",
+      "town": {
+        "longitude": 20.148,
+        "latitude": 46.253
+      },
+      "provinces": [
+        "HUN:Szeged, Csongr\u00e1d, H\u00f3dmez\u00f4v\u00e1s\u00e1rhely, B\u00e1cs-Kiskun, Kecskem\u00e9t"
+      ]
+    },
+    {
+      "id": "temesvar",
+      "territoryId": "banat",
+      "name": "Banat of Temesvar",
+      "town": {
+        "longitude": 21.227,
+        "latitude": 45.749
+      },
+      "city": "Temesvar",
+      "provinces": [
+        "ROU:Timis, Caras-Severin, Arad"
+      ]
+    },
+    {
+      "id": "peterwardein",
+      "territoryId": "banat",
+      "name": "Peterwardein",
+      "town": {
+        "longitude": 19.862,
+        "latitude": 45.252
+      },
+      "provinces": [
+        "SRB:Ju\u017eno-Banatski, Severno-Backi, Severno-Banatski, Srednje-Banatski, Sremski, Zapadno-Backi, Ju\u017eno-Backi"
+      ]
+    },
+    {
+      "id": "klausenburg",
+      "territoryId": "transylvania",
+      "name": "Northern Transylvania",
+      "town": {
+        "longitude": 23.59,
+        "latitude": 46.77
+      },
+      "city": "Klausenburg",
+      "provinces": [
+        "ROU:Cluj, Salaj, Bistrita-Nasaud, Maramures, Mures"
+      ]
+    },
+    {
+      "id": "hermannstadt",
+      "territoryId": "transylvania",
+      "name": "Southern Transylvania",
+      "town": {
+        "longitude": 24.125,
+        "latitude": 45.798
+      },
+      "provinces": [
+        "ROU:Sibiu, Alba, Hunedoara, Brasov, Covasna, Harghita"
+      ]
+    },
+    {
+      "id": "lemberg",
+      "territoryId": "austrian-galicia",
+      "name": "Eastern Galicia",
+      "town": {
+        "longitude": 24.03,
+        "latitude": 49.84
+      },
+      "city": "Lemberg",
+      "provinces": [
+        "UKR:L'viv, Ivano-Frankivs'k, Ternopil'"
+      ]
+    },
+    {
+      "id": "krakau",
+      "territoryId": "austrian-galicia",
+      "name": "Western Galicia",
+      "town": {
+        "longitude": 19.938,
+        "latitude": 50.062
+      },
+      "provinces": [
+        "POL:Lesser Poland, \u015awi\u0119tokrzyskie, Subcarpathian"
+      ]
+    },
+    {
+      "id": "lublin",
+      "territoryId": "austrian-galicia",
+      "name": "Lublin",
+      "town": {
+        "longitude": 22.568,
+        "latitude": 51.246
+      },
+      "provinces": [
+        "POL:Lublin"
+      ]
+    },
+    {
+      "id": "czernowitz",
+      "territoryId": "austrian-galicia",
+      "name": "Bukovina",
+      "town": {
+        "longitude": 25.936,
+        "latitude": 48.292
+      },
+      "provinces": [
+        "UKR:Chernivtsi",
+        "ROU:Suceava"
+      ]
+    },
+    {
+      "id": "agram",
+      "territoryId": "croatia",
+      "name": "Croatia",
+      "town": {
+        "longitude": 15.982,
+        "latitude": 45.815
+      },
+      "city": "Agram",
+      "provinces": [
+        "HRV:Grad Zagreb, Zagrebacka, Krapinsko-Zagorska, Vara\u017edinska, Medimurska, Koprivni\u010dko-Kri\u017eeva\u010dka, Bjelovarsko-bilogorska, Sisacko-Moslavacka, Karlovacka, Primorsko-Goranska, Licko-Senjska"
+      ]
+    },
+    {
+      "id": "essegg",
+      "territoryId": "croatia",
+      "name": "Slavonia",
+      "town": {
+        "longitude": 18.694,
+        "latitude": 45.555
+      },
+      "provinces": [
+        "HRV:Brodsko-Posavska, Osjecko-Baranjska, Viroviticko-Podravska, Vukovarsko-Srijemska"
+      ]
+    },
+    {
+      "id": "zara",
+      "territoryId": "croatia",
+      "name": "Dalmatia",
+      "town": {
+        "longitude": 15.231,
+        "latitude": 44.119
+      },
+      "provinces": [
+        "HRV:Zadarska, \u0160ibensko-Kninska, Splitsko-Dalmatinska, Dubrovacko-Neretvanska"
+      ]
+    },
+    {
+      "id": "vilna",
+      "territoryId": "lithuania",
+      "name": "Vilna",
+      "town": {
+        "longitude": 25.28,
+        "latitude": 54.687
+      },
+      "city": "Vilna",
+      "provinces": [
+        "LTU:Vilniaus, Alytaus, Utenos"
+      ]
+    },
+    {
+      "id": "kovno",
+      "territoryId": "lithuania",
+      "name": "Kovno and Samogitia",
+      "town": {
+        "longitude": 23.886,
+        "latitude": 54.897
+      },
+      "provinces": [
+        "LTU:Kauno, Klaipedos, Marijampoles, Panevezio, Taurages, Tel\u0161iai, \u0160iauliai"
+      ]
+    },
+    {
+      "id": "grodno",
+      "territoryId": "lithuania",
+      "name": "Grodno",
+      "town": {
+        "longitude": 23.813,
+        "latitude": 53.669
+      },
+      "city": "Grodno",
+      "provinces": [
+        "BLR:Grodno"
+      ]
+    },
+    {
+      "id": "riga",
+      "territoryId": "livonia",
+      "name": "Livonia and Courland",
+      "town": {
+        "longitude": 24.106,
+        "latitude": 56.946
+      },
+      "city": "Riga",
+      "provinces": [
+        "LVA:*"
+      ]
+    },
+    {
+      "id": "reval",
+      "territoryId": "livonia",
+      "name": "Estonia",
+      "town": {
+        "longitude": 24.745,
+        "latitude": 59.437
+      },
+      "city": "Reval",
+      "provinces": [
+        "EST:*"
+      ]
+    },
+    {
+      "id": "petersburg",
+      "territoryId": "ingria",
+      "name": "Ingria",
+      "town": {
+        "longitude": 30.31,
+        "latitude": 59.938
+      },
+      "city": "Saint Petersburg",
+      "provinces": [
+        "RUS:Leningrad, City of St. Petersburg"
+      ]
+    },
+    {
+      "id": "novgorod",
+      "territoryId": "ingria",
+      "name": "Novgorod",
+      "town": {
+        "longitude": 31.275,
+        "latitude": 58.521
+      },
+      "provinces": [
+        "RUS:Novgorod"
+      ]
+    },
+    {
+      "id": "pskov",
+      "territoryId": "ingria",
+      "name": "Pskov",
+      "town": {
+        "longitude": 28.332,
+        "latitude": 57.819
+      },
+      "city": "Pskov",
+      "provinces": [
+        "RUS:Pskov"
+      ]
+    },
+    {
+      "id": "viborg",
+      "territoryId": "ingria",
+      "name": "Old Finland",
+      "town": {
+        "longitude": 28.75,
+        "latitude": 60.71
+      },
+      "provinces": [
+        "FIN:South Karelia, Kymenlaakso"
+      ]
+    },
+    {
+      "id": "archangel",
+      "territoryId": "archangel",
+      "name": "Archangel",
+      "town": {
+        "longitude": 40.54,
+        "latitude": 64.54
+      },
+      "city": "Archangel",
+      "provinces": [
+        "RUS:Arkhangel'sk, Vologda"
+      ]
+    },
+    {
+      "id": "petrozavodsk",
+      "territoryId": "archangel",
+      "name": "Karelia",
+      "town": {
+        "longitude": 34.347,
+        "latitude": 61.785
+      },
+      "provinces": [
+        "RUS:Karelia"
+      ]
+    },
+    {
+      "id": "kola",
+      "territoryId": "archangel",
+      "name": "Kola",
+      "town": {
+        "longitude": 34,
+        "latitude": 68
+      },
+      "provinces": [
+        "RUS:Murmansk"
+      ]
+    },
+    {
+      "id": "minsk",
+      "territoryId": "white-russia",
+      "name": "Minsk",
+      "town": {
+        "longitude": 27.567,
+        "latitude": 53.9
+      },
+      "city": "Minsk",
+      "provinces": [
+        "BLR:Minsk, City of Minsk"
+      ]
+    },
+    {
+      "id": "vitebsk",
+      "territoryId": "white-russia",
+      "name": "Vitebsk",
+      "town": {
+        "longitude": 30.205,
+        "latitude": 55.19
+      },
+      "provinces": [
+        "BLR:Vitebsk"
+      ]
+    },
+    {
+      "id": "mogilev",
+      "territoryId": "white-russia",
+      "name": "Mogilev",
+      "town": {
+        "longitude": 30.336,
+        "latitude": 53.9
+      },
+      "provinces": [
+        "BLR:Mogilev, Gomel"
+      ]
+    },
+    {
+      "id": "zhitomir",
+      "territoryId": "volhynia",
+      "name": "Zhitomir",
+      "town": {
+        "longitude": 28.657,
+        "latitude": 50.254
+      },
+      "city": "Zhitomir",
+      "provinces": [
+        "UKR:Zhytomyr, Rivne"
+      ]
+    },
+    {
+      "id": "brest-litovsk",
+      "territoryId": "volhynia",
+      "name": "Brest-Litovsk",
+      "town": {
+        "longitude": 23.7,
+        "latitude": 52.1
+      },
+      "city": "Brest-Litovsk",
+      "provinces": [
+        "BLR:Brest",
+        "UKR:Volyn"
+      ]
+    },
+    {
+      "id": "kamenets",
+      "territoryId": "volhynia",
+      "name": "Podolia",
+      "town": {
+        "longitude": 26.585,
+        "latitude": 48.68
+      },
+      "provinces": [
+        "UKR:Khmel'nyts'kyy, Vinnytsya"
+      ]
+    },
+    {
+      "id": "kiev",
+      "territoryId": "little-russia",
+      "name": "Kiev",
+      "town": {
+        "longitude": 30.523,
+        "latitude": 50.45
+      },
+      "city": "Kiev",
+      "provinces": [
+        "UKR:Kiev, Kiev City, Cherkasy"
+      ]
+    },
+    {
+      "id": "chernigov",
+      "territoryId": "little-russia",
+      "name": "Chernigov",
+      "town": {
+        "longitude": 31.295,
+        "latitude": 51.494
+      },
+      "provinces": [
+        "UKR:Chernihiv, Sumy"
+      ]
+    },
+    {
+      "id": "kharkov",
+      "territoryId": "little-russia",
+      "name": "Poltava and Kharkov",
+      "town": {
+        "longitude": 36.23,
+        "latitude": 49.993
+      },
+      "city": "Kharkov",
+      "provinces": [
+        "UKR:Poltava, Kharkiv"
+      ]
+    },
+    {
+      "id": "odessa",
+      "territoryId": "new-russia",
+      "name": "Odessa and Kherson",
+      "town": {
+        "longitude": 30.73,
+        "latitude": 46.483
+      },
+      "city": "Odessa",
+      "provinces": [
+        "~UKR:Odessa @ 47.2, 30.3",
+        "UKR:Mykolayiv, Kherson"
+      ]
+    },
+    {
+      "id": "yekaterinoslav",
+      "territoryId": "new-russia",
+      "name": "Yekaterinoslav",
+      "town": {
+        "longitude": 35.046,
+        "latitude": 48.464
+      },
+      "city": "Yekaterinoslav",
+      "provinces": [
+        "UKR:Kirovohrad, Dnipropetrovs'k, Zaporizhzhya"
+      ]
+    },
+    {
+      "id": "taganrog",
+      "territoryId": "new-russia",
+      "name": "Azov",
+      "town": {
+        "longitude": 37.8,
+        "latitude": 48
+      },
+      "provinces": [
+        "UKR:Donets'k"
+      ]
+    },
+    {
+      "id": "sevastopol",
+      "territoryId": "crimea",
+      "name": "Sevastopol",
+      "town": {
+        "longitude": 33.53,
+        "latitude": 44.6
+      },
+      "city": "Sevastopol",
+      "provinces": [
+        "~RUS:Crimea @ 44.8, 33.6",
+        "RUS:Sevastopol"
+      ]
+    },
+    {
+      "id": "kaffa",
+      "territoryId": "crimea",
+      "name": "Kaffa and Kerch",
+      "town": {
+        "longitude": 35.38,
+        "latitude": 45.03
+      },
+      "provinces": [
+        "~RUS:Crimea @ 45.4, 35.4"
+      ]
+    },
+    {
+      "id": "smolensk",
+      "territoryId": "smolensk",
+      "name": "Smolensk",
+      "town": {
+        "longitude": 32.045,
+        "latitude": 54.783
+      },
+      "city": "Smolensk",
+      "provinces": [
+        "RUS:Smolensk"
+      ]
+    },
+    {
+      "id": "kaluga",
+      "territoryId": "smolensk",
+      "name": "Kaluga and Bryansk",
+      "town": {
+        "longitude": 36.261,
+        "latitude": 54.514
+      },
+      "provinces": [
+        "RUS:Kaluga, Bryansk"
+      ]
+    },
+    {
+      "id": "tula",
+      "territoryId": "smolensk",
+      "name": "Tula and Orel",
+      "town": {
+        "longitude": 37.617,
+        "latitude": 54.193
+      },
+      "city": "Tula",
+      "provinces": [
+        "RUS:Tula, Orel"
+      ]
+    },
+    {
+      "id": "moscow",
+      "territoryId": "moscow",
+      "name": "Moscow",
+      "town": {
+        "longitude": 37.617,
+        "latitude": 55.756
+      },
+      "city": "Moscow",
+      "provinces": [
+        "RUS:Moskovskaya, Moskva"
+      ]
+    },
+    {
+      "id": "tver",
+      "territoryId": "moscow",
+      "name": "Tver",
+      "town": {
+        "longitude": 35.912,
+        "latitude": 56.859
+      },
+      "provinces": [
+        "RUS:Tver'"
+      ]
+    },
+    {
+      "id": "yaroslavl",
+      "territoryId": "moscow",
+      "name": "Yaroslavl and Vladimir",
+      "town": {
+        "longitude": 39.885,
+        "latitude": 57.626
+      },
+      "city": "Yaroslavl",
+      "provinces": [
+        "RUS:Yaroslavl', Kostroma, Ivanovo, Vladimir, Nizhegorod"
+      ]
+    },
+    {
+      "id": "ryazan",
+      "territoryId": "moscow",
+      "name": "Ryazan and Tambov",
+      "town": {
+        "longitude": 39.737,
+        "latitude": 54.627
+      },
+      "provinces": [
+        "RUS:Ryazan', Tambov, Lipetsk"
+      ]
+    },
+    {
+      "id": "voronezh",
+      "territoryId": "don",
+      "name": "Voronezh and Kursk",
+      "town": {
+        "longitude": 39.184,
+        "latitude": 51.672
+      },
+      "city": "Voronezh",
+      "provinces": [
+        "RUS:Voronezh, Belgorod, Kursk"
+      ]
+    },
+    {
+      "id": "cherkassk",
+      "territoryId": "don",
+      "name": "Don Host",
+      "town": {
+        "longitude": 40.09,
+        "latitude": 47.42
+      },
+      "provinces": [
+        "RUS:Rostov",
+        "UKR:Luhans'k"
+      ]
+    },
+    {
+      "id": "tsaritsyn",
+      "territoryId": "don",
+      "name": "Tsaritsyn",
+      "town": {
+        "longitude": 44.513,
+        "latitude": 48.708
+      },
+      "provinces": [
+        "RUS:Volgograd"
+      ]
+    },
+    {
+      "id": "yekaterinodar",
+      "territoryId": "kuban",
+      "name": "Kuban",
+      "town": {
+        "longitude": 38.975,
+        "latitude": 45.035
+      },
+      "city": "Yekaterinodar",
+      "provinces": [
+        "RUS:Krasnodar, Adygey"
+      ]
+    },
+    {
+      "id": "stavropol",
+      "territoryId": "kuban",
+      "name": "Caucasus Line",
+      "town": {
+        "longitude": 41.969,
+        "latitude": 45.044
+      },
+      "provinces": [
+        "RUS:Stavropol', Karachay-Cherkess"
+      ]
+    },
+    {
+      "id": "vladikavkaz",
+      "territoryId": "kuban",
+      "name": "Vladikavkaz",
+      "town": {
+        "longitude": 44.68,
+        "latitude": 43.02
+      },
+      "provinces": [
+        "RUS:Kabardin-Balkar, North Ossetia, Ingush"
+      ]
+    },
+    {
+      "id": "tiflis",
+      "territoryId": "georgia",
+      "name": "Kartli and Kakheti",
+      "town": {
+        "longitude": 44.8,
+        "latitude": 41.715
+      },
+      "city": "Tiflis",
+      "provinces": [
+        "GEO:Tbilisi, Kakheti, Kvemo Kartli, Shida Kartli, Mtskheta-Mtianeti"
+      ]
+    },
+    {
+      "id": "kutaisi",
+      "territoryId": "georgia",
+      "name": "Imereti and Mingrelia",
+      "town": {
+        "longitude": 42.7,
+        "latitude": 42.268
+      },
+      "provinces": [
+        "GEO:Imereti, Samegrelo-Zemo Svaneti, Racha-Lechkhumi-Kvemo Svaneti, Guria, Abkhazia, Ajaria"
+      ]
+    },
+    {
+      "id": "constantinople",
+      "territoryId": "thrace",
+      "name": "Constantinople",
+      "town": {
+        "longitude": 28.75,
+        "latitude": 41.05
+      },
+      "city": "Constantinople",
+      "provinces": [
+        "TUR:Istanbul, Tekirdag, Kirklareli"
+      ]
+    },
+    {
+      "id": "adrianople",
+      "territoryId": "thrace",
+      "name": "Adrianople",
+      "town": {
+        "longitude": 26.556,
+        "latitude": 41.677
+      },
+      "city": "Adrianople",
+      "provinces": [
+        "TUR:Edirne",
+        "BGR:Haskovo, Kardzhali, Yambol, Burgas"
+      ]
+    },
+    {
+      "id": "philippopolis",
+      "territoryId": "thrace",
+      "name": "Philippopolis",
+      "town": {
+        "longitude": 24.749,
+        "latitude": 42.143
+      },
+      "provinces": [
+        "BGR:Plovdiv, Pazardzhik, Smolyan, Stara Zagora, Sliven"
+      ]
+    },
+    {
+      "id": "rustchuk",
+      "territoryId": "bulgaria",
+      "name": "Rustchuk and Shumla",
+      "town": {
+        "longitude": 25.971,
+        "latitude": 43.856
+      },
+      "city": "Rustchuk",
+      "provinces": [
+        "BGR:Ruse, Silistra, Razgrad, Targovishte, Shumen, Veliko Tarnovo, Gabrovo"
+      ]
+    },
+    {
+      "id": "varna",
+      "territoryId": "bulgaria",
+      "name": "Varna and Dobruja",
+      "town": {
+        "longitude": 27.91,
+        "latitude": 43.205
+      },
+      "provinces": [
+        "BGR:Varna, Dobrich",
+        "ROU:Constanta, Tulcea"
+      ]
+    },
+    {
+      "id": "vidin",
+      "territoryId": "bulgaria",
+      "name": "Vidin and Nikopol",
+      "town": {
+        "longitude": 22.88,
+        "latitude": 43.99
+      },
+      "city": "Vidin",
+      "provinces": [
+        "BGR:Vidin, Montana, Vratsa, Pleven, Lovech"
+      ]
+    },
+    {
+      "id": "sofia",
+      "territoryId": "bulgaria",
+      "name": "Sofia",
+      "town": {
+        "longitude": 23.322,
+        "latitude": 42.698
+      },
+      "provinces": [
+        "BGR:Sofia, Grad Sofiya, Pernik, Kyustendil"
+      ]
+    },
+    {
+      "id": "bucharest",
+      "territoryId": "wallachia",
+      "name": "Bucharest",
+      "town": {
+        "longitude": 26.103,
+        "latitude": 44.427
+      },
+      "city": "Bucharest",
+      "provinces": [
+        "ROU:Bucharest, Ilfov, Calarasi, Giurgiu, Ialomita, Braila, Buzau, Prahova, D\u00e2mbovita, Teleorman"
+      ]
+    },
+    {
+      "id": "craiova",
+      "territoryId": "wallachia",
+      "name": "Oltenia",
+      "town": {
+        "longitude": 23.801,
+        "latitude": 44.319
+      },
+      "provinces": [
+        "ROU:Dolj, Gorj, Mehedinti, Olt, V\u00e2lcea, Arges"
+      ]
+    },
+    {
+      "id": "jassy",
+      "territoryId": "moldavia",
+      "name": "Moldavia",
+      "town": {
+        "longitude": 27.601,
+        "latitude": 47.158
+      },
+      "city": "Jassy",
+      "provinces": [
+        "ROU:Iasi, Botosani, Neamt, Bacau, Vaslui, Vrancea, Galati"
+      ]
+    },
+    {
+      "id": "bender",
+      "territoryId": "moldavia",
+      "name": "Bessarabia",
+      "town": {
+        "longitude": 29.477,
+        "latitude": 46.83
+      },
+      "city": "Bender",
+      "provinces": [
+        "MDA:*"
+      ]
+    },
+    {
+      "id": "akkerman",
+      "territoryId": "moldavia",
+      "name": "Budjak",
+      "town": {
+        "longitude": 30.1,
+        "latitude": 46.2
+      },
+      "provinces": [
+        "~UKR:Odessa @ 45.75, 29.4"
+      ]
+    },
+    {
+      "id": "belgrade",
+      "territoryId": "serbia",
+      "name": "Belgrade",
+      "town": {
+        "longitude": 20.457,
+        "latitude": 44.787
+      },
+      "city": "Belgrade",
+      "provinces": [
+        "SRB:Grad Beograd, Podunavski, Macvanski, Kolubarski"
+      ]
+    },
+    {
+      "id": "kragujevac",
+      "territoryId": "serbia",
+      "name": "\u0160umadija",
+      "town": {
+        "longitude": 20.911,
+        "latitude": 44.013
+      },
+      "provinces": [
+        "SRB:\u0160umadijski, Moravicki, Pomoravski, Ra\u0161ki, Zlatiborski"
+      ]
+    },
+    {
+      "id": "nish",
+      "territoryId": "serbia",
+      "name": "Nish and Old Serbia",
+      "town": {
+        "longitude": 21.896,
+        "latitude": 43.321
+      },
+      "provinces": [
+        "SRB:Ni\u0161avski, Toplicki, Jablanicki, Pcinjski, Pirotski, Zajecarski, Borski, Branicevski",
+        "KOS:*"
+      ]
+    },
+    {
+      "id": "sarajevo",
+      "territoryId": "bosnia",
+      "name": "Bosnia",
+      "town": {
+        "longitude": 18.413,
+        "latitude": 43.856
+      },
+      "city": "Sarajevo",
+      "provinces": [
+        "BIH:Central Bosnia, Sarajevo, Sarajevo-romanija, Tuzla, Vlasenica, Bijeljina, Br\u010dko Distrikt, Doboj, Posavina, Zenica-Doboj, Fo\u010da, Bosnian Podrinje"
+      ]
+    },
+    {
+      "id": "banjaluka",
+      "territoryId": "bosnia",
+      "name": "Banja Luka",
+      "town": {
+        "longitude": 17.19,
+        "latitude": 44.77
+      },
+      "provinces": [
+        "BIH:Banja Luka, Una-Sana, West Bosnia"
+      ]
+    },
+    {
+      "id": "mostar",
+      "territoryId": "bosnia",
+      "name": "Herzegovina and Montenegro",
+      "town": {
+        "longitude": 17.808,
+        "latitude": 43.343
+      },
+      "provinces": [
+        "BIH:Herzegovina-Neretva, West Herzegovina, Trebinje",
+        "MNE:*"
+      ]
+    },
+    {
+      "id": "janina",
+      "territoryId": "albania",
+      "name": "Epirus",
+      "town": {
+        "longitude": 20.85,
+        "latitude": 39.665
+      },
+      "city": "Janina",
+      "provinces": [
+        "GRC:Ipeiros",
+        "ALB:Gjirokast\u00ebr, Vlor\u00eb, Berat, Kor\u00e7\u00eb, Fier"
+      ]
+    },
+    {
+      "id": "scutari",
+      "territoryId": "albania",
+      "name": "Northern Albania",
+      "town": {
+        "longitude": 19.513,
+        "latitude": 42.068
+      },
+      "provinces": [
+        "ALB:Dib\u00ebr, Kuk\u00ebs, Elbasan, Shkod\u00ebr, Tiran\u00eb, Durr\u00ebs, Lezh\u00eb"
+      ]
+    },
+    {
+      "id": "salonica",
+      "territoryId": "macedonia",
+      "name": "Salonica",
+      "town": {
+        "longitude": 22.944,
+        "latitude": 40.64
+      },
+      "city": "Salonica",
+      "provinces": [
+        "GRC:Kentriki Makedonia, Ayion Oros, Anatoliki Makedonia kai Thraki"
+      ]
+    },
+    {
+      "id": "monastir",
+      "territoryId": "macedonia",
+      "name": "Monastir",
+      "town": {
+        "longitude": 21.334,
+        "latitude": 41.031
+      },
+      "provinces": [
+        "MKD:*",
+        "GRC:Dytiki Makedonia",
+        "BGR:Blagoevgrad"
+      ]
+    },
+    {
+      "id": "athens",
+      "territoryId": "greece",
+      "name": "Attica and Rumeli",
+      "town": {
+        "longitude": 23.728,
+        "latitude": 37.984
+      },
+      "city": "Athens",
+      "provinces": [
+        "GRC:Attiki, Stere\u00e1 Ell\u00e1da"
+      ]
+    },
+    {
+      "id": "tripolitza",
+      "territoryId": "greece",
+      "name": "The Morea",
+      "town": {
+        "longitude": 22.37,
+        "latitude": 37.51
+      },
+      "provinces": [
+        "GRC:Peloponnisos, Dytiki Ellada"
+      ]
+    },
+    {
+      "id": "larissa",
+      "territoryId": "greece",
+      "name": "Thessaly",
+      "town": {
+        "longitude": 22.419,
+        "latitude": 39.639
+      },
+      "provinces": [
+        "GRC:Thessalia"
+      ]
+    },
+    {
+      "id": "corfu",
+      "territoryId": "ionian-islands",
+      "name": "Ionian Islands",
+      "town": {
+        "longitude": 19.85,
+        "latitude": 39.62
+      },
+      "city": "Corfu",
+      "provinces": [
+        "GRC:Ionioi Nisoi"
+      ]
+    },
+    {
+      "id": "candia",
+      "territoryId": "crete",
+      "name": "Crete",
+      "town": {
+        "longitude": 25,
+        "latitude": 35.2
+      },
+      "city": "Candia",
+      "provinces": [
+        "GRC:Kriti"
+      ]
+    },
+    {
+      "id": "rhodes",
+      "territoryId": "crete",
+      "name": "Aegean Islands",
+      "town": {
+        "longitude": 28,
+        "latitude": 36.2
+      },
+      "provinces": [
+        "GRC:Notio Aigaio, Voreio Aigaio"
+      ]
+    },
+    {
+      "id": "smyrna",
+      "territoryId": "western-anatolia",
+      "name": "Smyrna and Aidin",
+      "town": {
+        "longitude": 27.139,
+        "latitude": 38.419
+      },
+      "city": "Smyrna",
+      "provinces": [
+        "TUR:Izmir, Aydin, Manisa, Mugla, Denizli, Usak"
+      ]
+    },
+    {
+      "id": "bursa",
+      "territoryId": "western-anatolia",
+      "name": "Bursa",
+      "town": {
+        "longitude": 29.067,
+        "latitude": 40.183
+      },
+      "provinces": [
+        "TUR:Bursa, Balikesir, \u00c7anakkale, Kocaeli, Yalova, Sakarya, Bilecik"
+      ]
+    },
+    {
+      "id": "kutahya",
+      "territoryId": "western-anatolia",
+      "name": "Kutahya",
+      "town": {
+        "longitude": 29.983,
+        "latitude": 39.424
+      },
+      "provinces": [
+        "TUR:K\u00fctahya, Eskisehir, Afyonkarahisar, Isparta, Burdur, Antalya"
+      ]
+    },
+    {
+      "id": "angora",
+      "territoryId": "central-anatolia",
+      "name": "Angora",
+      "town": {
+        "longitude": 32.86,
+        "latitude": 39.933
+      },
+      "city": "Angora",
+      "provinces": [
+        "TUR:Ankara, \u00c7ankiri, Kinkkale, Kirsehir, Yozgat, Bolu, D\u00fczce"
+      ]
+    },
+    {
+      "id": "kastamonu",
+      "territoryId": "central-anatolia",
+      "name": "Kastamonu",
+      "town": {
+        "longitude": 33.78,
+        "latitude": 41.39
+      },
+      "provinces": [
+        "TUR:Kastamonu, Zinguldak, Bart\u0131n, Karab\u00fck, Sinop, \u00c7orum, Bart\u0131n"
+      ]
+    },
+    {
+      "id": "konya",
+      "territoryId": "central-anatolia",
+      "name": "Konya",
+      "town": {
+        "longitude": 32.485,
+        "latitude": 37.872
+      },
+      "city": "Konya",
+      "provinces": [
+        "TUR:Konya, Karaman, Aksaray, Nigde, Nevsehir, Mersin"
+      ]
+    },
+    {
+      "id": "trebizond",
+      "territoryId": "eastern-anatolia",
+      "name": "Trebizond",
+      "town": {
+        "longitude": 39.717,
+        "latitude": 41.003
+      },
+      "city": "Trebizond",
+      "provinces": [
+        "TUR:Trabzon, Rize, Giresun, Ordu, G\u00fcm\u00fcshane, Bayburt, Artvin, Samsun"
+      ]
+    },
+    {
+      "id": "erzurum",
+      "territoryId": "eastern-anatolia",
+      "name": "Erzurum and Kars",
+      "town": {
+        "longitude": 41.268,
+        "latitude": 39.904
+      },
+      "city": "Erzurum",
+      "provinces": [
+        "TUR:Erzurum, Kars, Ardahan, Agri, I\u011fdir, Mus, Bing\u00f6l, Tunceli, Erzincan, Bitlis, Van",
+        "GEO:Samtskhe-Javakheti"
+      ]
+    },
+    {
+      "id": "sivas",
+      "territoryId": "eastern-anatolia",
+      "name": "Sivas",
+      "town": {
+        "longitude": 37.016,
+        "latitude": 39.748
+      },
+      "provinces": [
+        "TUR:Sivas, Tokat, Amasya, Kayseri, Malatya"
+      ]
+    },
+    {
+      "id": "diyarbekir",
+      "territoryId": "eastern-anatolia",
+      "name": "Diyarbekir",
+      "town": {
+        "longitude": 40.231,
+        "latitude": 37.914
+      },
+      "provinces": [
+        "TUR:Diyarbakir, Elazig, Adiyaman, Sanliurfa, Mardin, Batman, Siirt, Sirnak, Hakkari"
+      ]
+    },
+    {
+      "id": "nicosia",
+      "territoryId": "cyprus",
+      "name": "Cyprus",
+      "town": {
+        "longitude": 33.367,
+        "latitude": 35.167
+      },
+      "city": "Nicosia",
+      "provinces": [
+        "CYP:*",
+        "CYN:*",
+        "ESB:*",
+        "WSB:*"
+      ]
+    },
+    {
+      "id": "damascus",
+      "territoryId": "syria",
+      "name": "Damascus",
+      "town": {
+        "longitude": 36.292,
+        "latitude": 33.513
+      },
+      "city": "Damascus",
+      "provinces": [
+        "SYR:Rif Dimashq, Damascus, Dar`a, As Suwayda', Quneitra, UNDOF, Homs (Hims)",
+        "LBN:Beqaa"
+      ]
+    },
+    {
+      "id": "aleppo",
+      "territoryId": "syria",
+      "name": "Aleppo",
+      "town": {
+        "longitude": 37.134,
+        "latitude": 36.202
+      },
+      "city": "Aleppo",
+      "provinces": [
+        "SYR:Aleppo, Idlib, Hamah, Lattakia, Tartus",
+        "TUR:Hatay, Gaziantep, Kilis, K. Maras, Osmaniye, Adana"
+      ]
+    },
+    {
+      "id": "acre",
+      "territoryId": "syria",
+      "name": "Acre and Palestine",
+      "town": {
+        "longitude": 35.082,
+        "latitude": 32.928
+      },
+      "city": "Acre",
+      "provinces": [
+        "LBN:An Nabatiyah, South Lebanon, North Lebanon, Mount Lebanon, Beirut",
+        "ISR:HaZafon, Haifa, HaMerkaz, Jerusalem, Tel Aviv",
+        "PSX:*",
+        "ISR:HaDarom"
+      ]
+    },
+    {
+      "id": "cairo",
+      "territoryId": "egypt",
+      "name": "Cairo and the Delta",
+      "town": {
+        "longitude": 31.236,
+        "latitude": 30.044
+      },
+      "city": "Cairo",
+      "provinces": [
+        "EGY:Al Qahirah, Al Qalyubiyah, Al Minufiyah, Al Gharbiyah, Ad Daqahliyah, Ash Sharqiyah, Dumyat, Bur Sa`id, Al Isma`iliyah, As Suways, Al Jizah, Al Fayyum, Bani Suwayf"
+      ]
+    },
+    {
+      "id": "alexandria",
+      "territoryId": "egypt",
+      "name": "Alexandria",
+      "town": {
+        "longitude": 29.919,
+        "latitude": 31.2
+      },
+      "city": "Alexandria",
+      "provinces": [
+        "EGY:Al Iskandariyah, Al Buhayrah, Kafr ash Shaykh, Matruh"
+      ]
+    },
+    {
+      "id": "el-arish",
+      "territoryId": "egypt",
+      "name": "Sinai",
+      "town": {
+        "longitude": 33.803,
+        "latitude": 31.132
+      },
+      "provinces": [
+        "EGY:Shamal Sina', Janub Sina'"
+      ]
+    },
+    {
+      "id": "tripoli",
+      "territoryId": "tripolitania",
+      "name": "Tripoli",
+      "town": {
+        "longitude": 13.191,
+        "latitude": 32.887
+      },
+      "city": "Tripoli",
+      "provinces": [
+        "LBY:Tajura' wa an Nawahi al Arba, Az Zawiyah, Al Jifarah, An Nuqat al Khams, Al Marqab, Misratah, Mizdah"
+      ]
+    },
+    {
+      "id": "sirte",
+      "territoryId": "tripolitania",
+      "name": "Sirte",
+      "town": {
+        "longitude": 17.5,
+        "latitude": 31
+      },
+      "provinces": [
+        "LBY:Surt"
+      ]
+    },
+    {
+      "id": "benghazi",
+      "territoryId": "tripolitania",
+      "name": "Cyrenaica",
+      "town": {
+        "longitude": 20.067,
+        "latitude": 32.117
+      },
+      "provinces": [
+        "LBY:Benghazi, Al Marj, Al Jabal al Akhdar, Al Qubbah, Al Butnan, Ajdabiya"
+      ]
+    },
+    {
+      "id": "tunis",
+      "territoryId": "tunis",
+      "name": "Tunis",
+      "town": {
+        "longitude": 10.181,
+        "latitude": 36.806
+      },
+      "city": "Tunis",
+      "provinces": [
+        "TUN:Tunis, Ben Arous (Tunis Sud), Manubah, Nabeul, Bizerte, B\u00e9ja, Jendouba, Le Kef, Siliana, Zaghouan, Sousse, Kairouan, Monastir"
+      ]
+    },
+    {
+      "id": "sfax",
+      "territoryId": "tunis",
+      "name": "Sfax and the Sahel",
+      "town": {
+        "longitude": 10.76,
+        "latitude": 34.74
+      },
+      "provinces": [
+        "TUN:Sfax, Mahdia, Sidi Bou Zid, Kass\u00e9rine, Gafsa, Gab\u00e8s, M\u00e9denine, Tozeur, Kebili, Tataouine"
+      ]
+    },
+    {
+      "id": "algiers",
+      "territoryId": "algiers",
+      "name": "Algiers",
+      "town": {
+        "longitude": 3.087,
+        "latitude": 36.737
+      },
+      "city": "Algiers",
+      "provinces": [
+        "DZA:Alger, Tipaza, Boumerd\u00e8s, Blida, Tizi Ouzou, Bouira, M\u00e9d\u00e9a, A\u00efn Defla, Chlef, Tissemsilt, Djelfa, Laghouat, M'Sila, B\u00e9ja\u00efa"
+      ]
+    },
+    {
+      "id": "oran",
+      "territoryId": "algiers",
+      "name": "Oran",
+      "town": {
+        "longitude": -0.633,
+        "latitude": 35.697
+      },
+      "city": "Oran",
+      "provinces": [
+        "DZA:Oran, Mostaganem, Mascara, Relizane, Tlemcen, A\u00efn T\u00e9mouchent, Sidi Bel Abb\u00e8s, Sa\u00efda, Tiaret, Na\u00e2ma, El Bayadh"
+      ]
+    },
+    {
+      "id": "constantine",
+      "territoryId": "algiers",
+      "name": "Constantine",
+      "town": {
+        "longitude": 6.615,
+        "latitude": 36.365
+      },
+      "city": "Constantine",
+      "provinces": [
+        "DZA:Constantine, Annaba, Skikda, Jijel, Mila, S\u00e9tif, Bordj Bou Arr\u00e9ridj, Batna, Oum el Bouaghi, Guelma, El Tarf, Souk Ahras, T\u00e9bessa, Khenchela, Biskra, El Oued"
+      ]
+    },
+    {
+      "id": "fez",
+      "territoryId": "morocco",
+      "name": "Fez and Meknes",
+      "town": {
+        "longitude": -5,
+        "latitude": 34.033
+      },
+      "city": "Fez",
+      "provinces": [
+        "MAR:F\u00e8s - Boulemane, Mekn\u00e8s - Tafilalet, Taza - Al Hoceima - Taounate"
+      ]
+    },
+    {
+      "id": "tangier",
+      "territoryId": "morocco",
+      "name": "Tangier and Rabat",
+      "town": {
+        "longitude": -5.8,
+        "latitude": 35.767
+      },
+      "city": "Tangier",
+      "provinces": [
+        "MAR:Tanger - T\u00e9touan, Gharb - Chrarda - B\u00e9ni Hssen, Rabat - Sal\u00e9 - Zemmour - Zaer"
+      ]
+    },
+    {
+      "id": "marrakesh",
+      "territoryId": "morocco",
+      "name": "Marrakesh",
+      "town": {
+        "longitude": -8,
+        "latitude": 31.63
+      },
+      "city": "Marrakesh",
+      "provinces": [
+        "MAR:Marrakech - Tensift - Al Haouz, Doukkala - Abda, Chaouia - Ouardigha, Grand Casablanca, Tadla - Azilal, Souss - Massa - Dra\u00e2"
+      ]
+    },
+    {
+      "id": "oujda",
+      "territoryId": "morocco",
+      "name": "Oujda and the East",
+      "town": {
+        "longitude": -1.91,
+        "latitude": 34.68
+      },
+      "provinces": [
+        "MAR:Oriental"
+      ]
+    },
+    {
+      "id": "madrid",
+      "territoryId": "castile",
+      "name": "New Castile",
+      "town": {
+        "longitude": -3.703,
+        "latitude": 40.417
+      },
+      "city": "Madrid",
+      "provinces": [
+        "ESP:Madrid, Toledo, Guadalajara, Cuenca, Ciudad Real"
+      ]
+    },
+    {
+      "id": "valladolid",
+      "territoryId": "castile",
+      "name": "Old Castile",
+      "town": {
+        "longitude": -4.724,
+        "latitude": 41.653
+      },
+      "provinces": [
+        "ESP:Valladolid, Burgos, Palencia, Soria, Segovia, \u00c1vila, Salamanca, Zamora"
+      ]
+    },
+    {
+      "id": "badajoz",
+      "territoryId": "castile",
+      "name": "Extremadura",
+      "town": {
+        "longitude": -6.97,
+        "latitude": 38.879
+      },
+      "city": "Badajoz",
+      "provinces": [
+        "ESP:Badajoz, C\u00e1ceres"
+      ]
+    },
+    {
+      "id": "corunna",
+      "territoryId": "spanish-galicia",
+      "name": "Galicia",
+      "town": {
+        "longitude": -8.396,
+        "latitude": 43.371
+      },
+      "city": "Corunna",
+      "provinces": [
+        "ESP:La Coru\u00f1a, Lugo, Orense, Pontevedra"
+      ]
+    },
+    {
+      "id": "oviedo",
+      "territoryId": "spanish-galicia",
+      "name": "Asturias and Le\u00f3n",
+      "town": {
+        "longitude": -5.845,
+        "latitude": 43.36
+      },
+      "provinces": [
+        "ESP:Asturias, Cantabria, Le\u00f3n"
+      ]
+    },
+    {
+      "id": "pamplona",
+      "territoryId": "navarre",
+      "name": "Navarre and Rioja",
+      "town": {
+        "longitude": -1.644,
+        "latitude": 42.818
+      },
+      "city": "Pamplona",
+      "provinces": [
+        "ESP:Navarra, La Rioja"
+      ]
+    },
+    {
+      "id": "bilbao",
+      "territoryId": "navarre",
+      "name": "Basque Provinces",
+      "town": {
+        "longitude": -2.935,
+        "latitude": 43.263
+      },
+      "provinces": [
+        "ESP:Bizkaia, Gipuzkoa, \u00c1lava"
+      ]
+    },
+    {
+      "id": "barcelona",
+      "territoryId": "aragon-catalonia",
+      "name": "Catalonia",
+      "town": {
+        "longitude": 2.17,
+        "latitude": 41.387
+      },
+      "city": "Barcelona",
+      "provinces": [
+        "ESP:Barcelona, Gerona, L\u00e9rida, Tarragona",
+        "AND:*"
+      ]
+    },
+    {
+      "id": "saragossa",
+      "territoryId": "aragon-catalonia",
+      "name": "Aragon",
+      "town": {
+        "longitude": -0.877,
+        "latitude": 41.656
+      },
+      "city": "Saragossa",
+      "provinces": [
+        "ESP:Zaragoza, Huesca, Teruel"
+      ]
+    },
+    {
+      "id": "valencia",
+      "territoryId": "valencia",
+      "name": "Valencia",
+      "town": {
+        "longitude": -0.376,
+        "latitude": 39.47
+      },
+      "city": "Valencia",
+      "provinces": [
+        "ESP:Valencia, Castell\u00f3n, Alicante"
+      ]
+    },
+    {
+      "id": "cartagena",
+      "territoryId": "valencia",
+      "name": "Murcia",
+      "town": {
+        "longitude": -0.986,
+        "latitude": 37.605
+      },
+      "city": "Cartagena",
+      "provinces": [
+        "ESP:Murcia, Albacete"
+      ]
+    },
+    {
+      "id": "seville",
+      "territoryId": "andalusia",
+      "name": "Seville and C\u00f3rdoba",
+      "town": {
+        "longitude": -5.984,
+        "latitude": 37.389
+      },
+      "city": "Seville",
+      "provinces": [
+        "ESP:Sevilla, Huelva, C\u00f3rdoba"
+      ]
+    },
+    {
+      "id": "cadiz",
+      "territoryId": "andalusia",
+      "name": "C\u00e1diz and M\u00e1laga",
+      "town": {
+        "longitude": -6.293,
+        "latitude": 36.53
+      },
+      "city": "C\u00e1diz",
+      "provinces": [
+        "ESP:C\u00e1diz, M\u00e1laga"
+      ]
+    },
+    {
+      "id": "granada",
+      "territoryId": "andalusia",
+      "name": "Granada",
+      "town": {
+        "longitude": -3.599,
+        "latitude": 37.177
+      },
+      "provinces": [
+        "ESP:Granada, Ja\u00e9n, Almer\u00eda"
+      ]
+    },
+    {
+      "id": "palma",
+      "territoryId": "balearics",
+      "name": "Balearic Islands",
+      "town": {
+        "longitude": 2.65,
+        "latitude": 39.57
+      },
+      "city": "Palma",
+      "provinces": [
+        "ESP:Baleares"
+      ]
+    },
+    {
+      "id": "oporto",
+      "territoryId": "northern-portugal",
+      "name": "Minho and Douro",
+      "town": {
+        "longitude": -8.629,
+        "latitude": 41.158
+      },
+      "city": "Oporto",
+      "provinces": [
+        "PRT:Porto, Braga, Viana do Castelo, Vila Real, Bragan\u00e7a"
+      ]
+    },
+    {
+      "id": "coimbra",
+      "territoryId": "northern-portugal",
+      "name": "Beira",
+      "town": {
+        "longitude": -8.41,
+        "latitude": 40.203
+      },
+      "provinces": [
+        "PRT:Aveiro, Coimbra, Viseu, Guarda, Castelo Branco"
+      ]
+    },
+    {
+      "id": "lisbon",
+      "territoryId": "lisbon",
+      "name": "Estremadura",
+      "town": {
+        "longitude": -9.139,
+        "latitude": 38.722
+      },
+      "city": "Lisbon",
+      "provinces": [
+        "PRT:Lisboa, Leiria, Santar\u00e9m, Set\u00fabal"
+      ]
+    },
+    {
+      "id": "evora",
+      "territoryId": "lisbon",
+      "name": "Alentejo and Algarve",
+      "town": {
+        "longitude": -7.913,
+        "latitude": 38.571
+      },
+      "city": "Elvas",
+      "provinces": [
+        "PRT:\u00c9vora, Beja, Faro, Portalegre"
+      ]
+    },
+    {
+      "id": "amsterdam",
+      "territoryId": "holland",
+      "name": "Holland",
+      "town": {
+        "longitude": 4.895,
+        "latitude": 52.37
+      },
+      "city": "Amsterdam",
+      "provinces": [
+        "NLD:Noord-Holland, Zuid-Holland, Utrecht, Flevoland, Zeeland"
+      ]
+    },
+    {
+      "id": "groningen",
+      "territoryId": "holland",
+      "name": "Friesland and Groningen",
+      "town": {
+        "longitude": 6.567,
+        "latitude": 53.219
+      },
+      "provinces": [
+        "NLD:Groningen, Friesland, Drenthe, Overijssel"
+      ]
+    },
+    {
+      "id": "breda",
+      "territoryId": "holland",
+      "name": "Brabant and Gelderland",
+      "town": {
+        "longitude": 4.78,
+        "latitude": 51.589
+      },
+      "provinces": [
+        "NLD:Noord-Brabant, Gelderland, Limburg"
+      ]
+    },
+    {
+      "id": "kiel",
+      "territoryId": "jutland",
+      "name": "Schleswig and Holstein",
+      "town": {
+        "longitude": 10.135,
+        "latitude": 54.323
+      },
+      "city": "Kiel",
+      "provinces": [
+        "DEU:Schleswig-Holstein, Hamburg"
+      ]
+    },
+    {
+      "id": "aarhus",
+      "territoryId": "jutland",
+      "name": "Jutland",
+      "town": {
+        "longitude": 10.204,
+        "latitude": 56.163
+      },
+      "provinces": [
+        "DNK:Midtjylland, Nordjylland, Syddanmark"
+      ]
+    },
+    {
+      "id": "copenhagen",
+      "territoryId": "zealand",
+      "name": "Zealand",
+      "town": {
+        "longitude": 12.568,
+        "latitude": 55.676
+      },
+      "city": "Copenhagen",
+      "provinces": [
+        "DNK:Hovedstaden, Sja\u00e6lland"
+      ]
+    },
+    {
+      "id": "christiania",
+      "territoryId": "southern-norway",
+      "name": "Akershus",
+      "town": {
+        "longitude": 10.752,
+        "latitude": 59.913
+      },
+      "city": "Christiania",
+      "provinces": [
+        "NOR:Akershus, Oslo, \u00d8stfold, Vestfold, Buskerud, Hedmark, Oppland"
+      ]
+    },
+    {
+      "id": "bergen",
+      "territoryId": "southern-norway",
+      "name": "Bergen",
+      "town": {
+        "longitude": 5.324,
+        "latitude": 60.393
+      },
+      "city": "Bergen",
+      "provinces": [
+        "NOR:Hordaland, Sogn og Fjordane"
+      ]
+    },
+    {
+      "id": "christiansand",
+      "territoryId": "southern-norway",
+      "name": "Christiansand",
+      "town": {
+        "longitude": 7.996,
+        "latitude": 58.146
+      },
+      "provinces": [
+        "NOR:Rogaland, Telemark, Aust-Agder, Vest-Agder"
+      ]
+    },
+    {
+      "id": "trondheim",
+      "territoryId": "northern-norway",
+      "name": "Trondheim",
+      "town": {
+        "longitude": 10.395,
+        "latitude": 63.43
+      },
+      "city": "Trondheim",
+      "provinces": [
+        "NOR:M\u00f8re og Romsdal, S\u00f8r-Tr\u00f8ndelag, Nord-Tr\u00f8ndelag"
+      ]
+    },
+    {
+      "id": "tromso",
+      "territoryId": "northern-norway",
+      "name": "Nordland and Finnmark",
+      "town": {
+        "longitude": 17,
+        "latitude": 68.5
+      },
+      "provinces": [
+        "NOR:Nordland, Troms, Finnmark"
+      ]
+    },
+    {
+      "id": "stockholm",
+      "territoryId": "svealand",
+      "name": "Stockholm and Uppland",
+      "town": {
+        "longitude": 18.069,
+        "latitude": 59.329
+      },
+      "city": "Stockholm",
+      "provinces": [
+        "SWE:Stockholm, Uppsala, S\u00f6dermanland, V\u00e4stmanland"
+      ]
+    },
+    {
+      "id": "falun",
+      "territoryId": "svealand",
+      "name": "Dalarna and V\u00e4rmland",
+      "town": {
+        "longitude": 15.626,
+        "latitude": 60.607
+      },
+      "provinces": [
+        "SWE:Dalarna, V\u00e4rmland, Orebro, G\u00e4vleborg"
+      ]
+    },
+    {
+      "id": "gothenburg",
+      "territoryId": "gotaland",
+      "name": "V\u00e4sterg\u00f6tland",
+      "town": {
+        "longitude": 11.975,
+        "latitude": 57.709
+      },
+      "city": "Gothenburg",
+      "provinces": [
+        "SWE:V\u00e4stra G\u00f6taland, Halland"
+      ]
+    },
+    {
+      "id": "malmo",
+      "territoryId": "gotaland",
+      "name": "Sk\u00e5ne and Sm\u00e5land",
+      "town": {
+        "longitude": 13,
+        "latitude": 55.605
+      },
+      "provinces": [
+        "SWE:Sk\u00e5ne, Blekinge, Kronoberg, Kalmar"
+      ]
+    },
+    {
+      "id": "norrkoping",
+      "territoryId": "gotaland",
+      "name": "\u00d6sterg\u00f6tland",
+      "town": {
+        "longitude": 16.192,
+        "latitude": 58.588
+      },
+      "provinces": [
+        "SWE:\u00d6sterg\u00f6tland, J\u00f6nk\u00f6ping"
+      ]
+    },
+    {
+      "id": "visby",
+      "territoryId": "gotaland",
+      "name": "Gotland",
+      "town": {
+        "longitude": 18.295,
+        "latitude": 57.634
+      },
+      "provinces": [
+        "SWE:Gotland"
+      ]
+    },
+    {
+      "id": "sundsvall",
+      "territoryId": "norrland",
+      "name": "\u00c5ngermanland and J\u00e4mtland",
+      "town": {
+        "longitude": 17.306,
+        "latitude": 62.391
+      },
+      "provinces": [
+        "SWE:V\u00e4sternorrland, J\u00e4mtland"
+      ]
+    },
+    {
+      "id": "umea",
+      "territoryId": "norrland",
+      "name": "V\u00e4sterbotten",
+      "town": {
+        "longitude": 20.263,
+        "latitude": 63.826
+      },
+      "provinces": [
+        "SWE:V\u00e4sterbotten, Norrbotten"
+      ]
+    },
+    {
+      "id": "abo",
+      "territoryId": "finland",
+      "name": "\u00c5bo and H\u00e4me",
+      "town": {
+        "longitude": 22.267,
+        "latitude": 60.452
+      },
+      "city": "\u00c5bo",
+      "provinces": [
+        "FIN:Finland Proper, Satakunta, Pirkanmaa, Tavastia Proper",
+        "ALD:*"
+      ]
+    },
+    {
+      "id": "helsingfors",
+      "territoryId": "finland",
+      "name": "Nyland and Sveaborg",
+      "town": {
+        "longitude": 24.938,
+        "latitude": 60.169
+      },
+      "city": "Helsingfors",
+      "provinces": [
+        "FIN:Uusimaa, P\u00e4ij\u00e4t-H\u00e4me"
+      ]
+    },
+    {
+      "id": "kuopio",
+      "territoryId": "finland",
+      "name": "Savolax",
+      "town": {
+        "longitude": 27.677,
+        "latitude": 62.893
+      },
+      "provinces": [
+        "FIN:Northern Savonia, Southern Savonia, North Karelia, Central Finland"
+      ]
+    },
+    {
+      "id": "uleaborg",
+      "territoryId": "finland",
+      "name": "Ostrobothnia and Lapland",
+      "town": {
+        "longitude": 25.465,
+        "latitude": 65.012
+      },
+      "provinces": [
+        "FIN:Northern Ostrobothnia, Central Ostrobothnia, Southern Ostrobothnia, Ostrobothnia, Kainuu, Lapland"
+      ]
+    },
+    {
+      "id": "stralsund",
+      "territoryId": "swedish-pomerania",
+      "name": "Swedish Pomerania",
+      "town": {
+        "longitude": 13.082,
+        "latitude": 54.309
+      },
+      "city": "Stralsund",
+      "provinces": [
+        "~DEU:Mecklenburg-Vorpommern @ 54.05, 13.4"
+      ]
+    },
+    {
+      "id": "munich",
+      "territoryId": "bavaria",
+      "name": "Upper and Lower Bavaria",
+      "town": {
+        "longitude": 11.575,
+        "latitude": 48.137
+      },
+      "city": "Munich",
+      "provinces": [
+        "~DEU:Bayern @ 48.4, 12.2"
+      ]
+    },
+    {
+      "id": "augsburg",
+      "territoryId": "bavaria",
+      "name": "Bavarian Swabia and Ulm",
+      "town": {
+        "longitude": 10.898,
+        "latitude": 48.37
+      },
+      "city": "Augsburg",
+      "provinces": [
+        "~DEU:Bayern @ 48.3, 10.2",
+        "~DEU:Baden-W\u00fcrttemberg @ 48.3, 9.95"
+      ]
+    },
+    {
+      "id": "regensburg",
+      "territoryId": "bavaria",
+      "name": "Upper Palatinate",
+      "town": {
+        "longitude": 12.102,
+        "latitude": 49.013
+      },
+      "provinces": [
+        "~DEU:Bayern @ 49.2, 12.4"
+      ]
+    },
+    {
+      "id": "wurzburg",
+      "territoryId": "franconia",
+      "name": "W\u00fcrzburg and Bamberg",
+      "town": {
+        "longitude": 9.953,
+        "latitude": 49.793
+      },
+      "city": "W\u00fcrzburg",
+      "provinces": [
+        "~DEU:Bayern @ 49.98, 9.9"
+      ]
+    },
+    {
+      "id": "stuttgart",
+      "territoryId": "swabia",
+      "name": "W\u00fcrttemberg",
+      "town": {
+        "longitude": 9.183,
+        "latitude": 48.776
+      },
+      "city": "Stuttgart",
+      "provinces": [
+        "~DEU:Baden-W\u00fcrttemberg @ 48.95, 9.4"
+      ]
+    },
+    {
+      "id": "karlsruhe",
+      "territoryId": "swabia",
+      "name": "Baden",
+      "town": {
+        "longitude": 8.404,
+        "latitude": 49.007
+      },
+      "provinces": [
+        "~DEU:Baden-W\u00fcrttemberg @ 49.1, 8.45"
+      ]
+    },
+    {
+      "id": "freiburg",
+      "territoryId": "swabia",
+      "name": "Breisgau and the Black Forest",
+      "town": {
+        "longitude": 7.842,
+        "latitude": 47.999
+      },
+      "provinces": [
+        "~DEU:Baden-W\u00fcrttemberg @ 48.1, 8.1"
+      ]
+    },
+    {
+      "id": "kassel",
+      "territoryId": "hesse",
+      "name": "Hesse-Kassel",
+      "town": {
+        "longitude": 9.48,
+        "latitude": 51.313
+      },
+      "city": "Kassel",
+      "provinces": [
+        "~DEU:Hessen @ 51, 9.4"
+      ]
+    },
+    {
+      "id": "frankfurt",
+      "territoryId": "hesse",
+      "name": "Frankfurt and Darmstadt",
+      "town": {
+        "longitude": 8.682,
+        "latitude": 50.111
+      },
+      "provinces": [
+        "~DEU:Hessen @ 50, 8.6"
+      ]
+    },
+    {
+      "id": "dresden",
+      "territoryId": "saxony",
+      "name": "Dresden and Lusatia",
+      "town": {
+        "longitude": 13.738,
+        "latitude": 51.05
+      },
+      "city": "Dresden",
+      "provinces": [
+        "~DEU:Sachsen @ 51.1, 14"
+      ]
+    },
+    {
+      "id": "leipzig",
+      "territoryId": "saxony",
+      "name": "Leipzig",
+      "town": {
+        "longitude": 12.375,
+        "latitude": 51.34
+      },
+      "city": "Leipzig",
+      "provinces": [
+        "~DEU:Sachsen @ 51, 12.6"
+      ]
+    },
+    {
+      "id": "erfurt",
+      "territoryId": "saxony",
+      "name": "Thuringia",
+      "town": {
+        "longitude": 11.029,
+        "latitude": 50.978
+      },
+      "provinces": [
+        "DEU:Th\u00fcringen"
+      ]
+    },
+    {
+      "id": "bern",
+      "territoryId": "switzerland",
+      "name": "Bern and Vaud",
+      "town": {
+        "longitude": 7.447,
+        "latitude": 46.948
+      },
+      "city": "Bern",
+      "provinces": [
+        "CHE:Bern, Fribourg, Vaud, Gen\u00e8ve, Neuch\u00e2tel, Jura, Valais, Solothurn, Basel-Landschaft, Basel-Stadt"
+      ]
+    },
+    {
+      "id": "zurich",
+      "territoryId": "switzerland",
+      "name": "Z\u00fcrich and the Forest Cantons",
+      "town": {
+        "longitude": 8.54,
+        "latitude": 47.377
+      },
+      "provinces": [
+        "CHE:Aargau, Appenzell Ausserrhoden, Appenzell Innerrhoden, Glarus, Lucerne, Nidwalden, Obwalden, Sankt Gallen, Schaffhausen, Schwyz, Thurgau, Uri, Zug, Z\u00fcrich"
+      ]
+    },
+    {
+      "id": "chur",
+      "territoryId": "switzerland",
+      "name": "Grisons and Ticino",
+      "town": {
+        "longitude": 9.53,
+        "latitude": 46.85
+      },
+      "provinces": [
+        "CHE:Graub\u00fcnden, Ticino"
+      ]
+    },
+    {
+      "id": "florence",
+      "territoryId": "tuscany",
+      "name": "Florence",
+      "town": {
+        "longitude": 11.255,
+        "latitude": 43.77
+      },
+      "city": "Florence",
+      "provinces": [
+        "ITA:Firenze, Prato, Pistoia, Arezzo, Siena, Grosseto"
+      ]
+    },
+    {
+      "id": "leghorn",
+      "territoryId": "tuscany",
+      "name": "Pisa and Leghorn",
+      "town": {
+        "longitude": 10.31,
+        "latitude": 43.548
+      },
+      "city": "Leghorn",
+      "provinces": [
+        "ITA:Livorno, Pisa, Lucca, Massa-Carrara"
+      ]
+    },
+    {
+      "id": "rome",
+      "territoryId": "papal-states",
+      "name": "Rome and Lazio",
+      "town": {
+        "longitude": 12.483,
+        "latitude": 41.894
+      },
+      "city": "Rome",
+      "provinces": [
+        "ITA:Roma, Viterbo, Latina, Frosinone, Rieti",
+        "VAT:*"
+      ]
+    },
+    {
+      "id": "ancona",
+      "territoryId": "papal-states",
+      "name": "The Marches",
+      "town": {
+        "longitude": 13.519,
+        "latitude": 43.616
+      },
+      "city": "Ancona",
+      "provinces": [
+        "ITA:Ancona, Pesaro e Urbino, Macerata, Fermo, Ascoli Piceno",
+        "SMR:*"
+      ]
+    },
+    {
+      "id": "perugia",
+      "territoryId": "papal-states",
+      "name": "Umbria",
+      "town": {
+        "longitude": 12.389,
+        "latitude": 43.112
+      },
+      "provinces": [
+        "ITA:Perugia, Terni"
+      ]
+    },
+    {
+      "id": "naples",
+      "territoryId": "naples",
+      "name": "Campania",
+      "town": {
+        "longitude": 14.268,
+        "latitude": 40.852
+      },
+      "city": "Naples",
+      "provinces": [
+        "ITA:Napoli, Caserta, Benevento, Avellino, Salerno"
+      ]
+    },
+    {
+      "id": "pescara",
+      "territoryId": "naples",
+      "name": "Abruzzi and Molise",
+      "town": {
+        "longitude": 13.4,
+        "latitude": 42.35
+      },
+      "provinces": [
+        "ITA:L'Aquila, Teramo, Pescara, Chieti, Campobasso, Isernia"
+      ]
+    },
+    {
+      "id": "bari",
+      "territoryId": "naples",
+      "name": "Apulia",
+      "town": {
+        "longitude": 16.872,
+        "latitude": 41.117
+      },
+      "provinces": [
+        "ITA:Foggia, Barletta-Andria Trani, Bari, Taranto, Brindisi, Lecce"
+      ]
+    },
+    {
+      "id": "cosenza",
+      "territoryId": "naples",
+      "name": "Calabria and Basilicata",
+      "town": {
+        "longitude": 16.254,
+        "latitude": 39.298
+      },
+      "provinces": [
+        "ITA:Potenza, Matera, Cosenza, Crotene, Catanzaro, Vibo Valentia, Reggio Calabria"
+      ]
+    },
+    {
+      "id": "palermo",
+      "territoryId": "sicily",
+      "name": "Western Sicily",
+      "town": {
+        "longitude": 13.362,
+        "latitude": 38.116
+      },
+      "city": "Palermo",
+      "provinces": [
+        "ITA:Palermo, Trapani, Agrigento, Caltanissetta, Enna"
+      ]
+    },
+    {
+      "id": "messina",
+      "territoryId": "sicily",
+      "name": "Eastern Sicily",
+      "town": {
+        "longitude": 15.554,
+        "latitude": 38.194
+      },
+      "city": "Messina",
+      "provinces": [
+        "ITA:Messina, Catania, Siracusa, Ragusa"
+      ]
+    },
+    {
+      "id": "cagliari",
+      "territoryId": "sardinia",
+      "name": "Cagliari",
+      "town": {
+        "longitude": 9.122,
+        "latitude": 39.224
+      },
+      "city": "Cagliari",
+      "provinces": [
+        "ITA:Cagliari, Carbonia-Iglesias, Medio Campidano, Ogliastra, Oristrano"
+      ]
+    },
+    {
+      "id": "sassari",
+      "territoryId": "sardinia",
+      "name": "Sassari",
+      "town": {
+        "longitude": 8.56,
+        "latitude": 40.726
+      },
+      "provinces": [
+        "ITA:Sassari, Nuoro, Olbia-Tempio"
+      ]
+    }
+  ]
+}

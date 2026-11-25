@@ -15,6 +15,7 @@
 *.tif filter=lfs diff=lfs merge=lfs -text
 *.tiff filter=lfs diff=lfs merge=lfs -text
 scripts/sources/**/*.geojson filter=lfs diff=lfs merge=lfs -text
+scripts/sources/**/*.topo.json filter=lfs diff=lfs merge=lfs -text
 
 # Audio, video, 3D, and fonts
 *.mp3 filter=lfs diff=lfs merge=lfs -text
