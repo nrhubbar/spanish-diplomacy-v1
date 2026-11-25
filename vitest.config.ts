@@ -7,8 +7,9 @@ export default defineConfig({
     exclude: ["e2e/**", "node_modules/**", "build/**", ".claude/**", "infra/**"],
     setupFiles: ["src/test/setup.ts"],
     // Full user flows in jsdom, measured with coverage, share the CPU with every other test file
-    // (and the harness smoke run); under that load the 5 s default can time out a passing test.
-    testTimeout: 15000,
+    // (and the harness smoke run). The slowest takes 11 s on the CI host, and a longer limit only
+    // lengthens a test that would fail.
+    testTimeout: 60_000,
     coverage: {
       provider: "v8",
       reporter: ["text-summary", "text", "html"],

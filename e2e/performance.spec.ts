@@ -50,23 +50,37 @@ test("P2 and P3: interactive map and selection response", async ({ page, isMobil
 
 test("P5: repeated games leave no canvases or WebGL contexts behind", async ({ page, isMobile }) => {
   test.skip(isMobile, "Measured once, on desktop.");
+  // Holds on to every context, so whether each was given back never depends on when the browser
+  // collects garbage, nor on how many contexts it allows.
+  await page.addInitScript(() => {
+    const contexts: WebGL2RenderingContext[] = [];
+    Object.assign(window, { webglContexts: contexts });
+    const getContext = Reflect.get(HTMLCanvasElement.prototype, "getContext") as (this: HTMLCanvasElement, ...args: unknown[]) => unknown;
+    HTMLCanvasElement.prototype.getContext = function open(this: HTMLCanvasElement, ...args: unknown[]): unknown {
+      const context = getContext.apply(this, args);
+      if (context instanceof WebGL2RenderingContext && !contexts.includes(context)) contexts.push(context);
+      return context;
+    } as typeof HTMLCanvasElement.prototype.getContext;
+  });
+  const contexts = () => page.evaluate(() => {
+    const opened = (window as unknown as { webglContexts: readonly WebGL2RenderingContext[] }).webglContexts;
+    return { live: opened.filter((context) => !context.isContextLost()).length, opened: opened.length };
+  });
   await page.goto("./");
   for (let cycle = 0; cycle < 20; cycle += 1) {
     await page.getByRole("button", { name: "Create Game" }).click();
     await page.getByRole("button", { name: "Start Campaign" }).click();
     await expect(page.locator(".map-vector")).toBeVisible();
+    // Every fifth game draws its relief first; the others may be left before WebGL starts.
+    if (cycle % 5 === 0) await expect(page.locator(".terrain-layer")).toHaveAttribute("data-renderer", "webgl");
     await page.getByRole("button", { exact: true, name: "Menu" }).click();
     await page.getByRole("button", { name: "Exit Game" }).click();
     await page.getByRole("button", { name: "Leave" }).click();
     await expect(page.getByRole("heading", { name: "Spanish Diplomacy" })).toBeVisible();
   }
   await expect(page.locator("canvas")).toHaveCount(0);
-  const warnings: string[] = [];
-  page.on("console", (message) => { if (/Too many active WebGL contexts/.test(message.text())) warnings.push(message.text()); });
-  await page.getByRole("button", { name: "Create Game" }).click();
-  await page.getByRole("button", { name: "Start Campaign" }).click();
-  await expect(page.locator(".terrain-layer")).toHaveAttribute("data-renderer", "webgl", { timeout: 15000 });
-  expect(warnings).toEqual([]);
+  await expect.poll(async () => (await contexts()).live).toBe(0);
+  expect((await contexts()).opened).toBeGreaterThanOrEqual(4);
 });
 
 interface PanCost {

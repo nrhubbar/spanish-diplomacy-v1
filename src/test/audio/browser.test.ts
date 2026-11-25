@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { startBrowserSound } from "../../main/audio/browser";
 import type { Play } from "../../main/audio/mixer";
+import { ducking } from "../../main/audio/sounds";
 import { createWebAudioOutput, musicSupport } from "../../main/audio/webAudio";
 import { testRegistry, testStore } from "../support";
 
@@ -220,6 +221,10 @@ describe("effects", () => {
 });
 
 describe("music", () => {
+  // Fades run on the test's own clock, so none can outlive its test or depend on the host's speed.
+  beforeEach(() => { vi.useFakeTimers(); return () => { vi.useRealTimers(); }; });
+
+  const fadeMs = 300;
   const ignoreVolume = () => vi.spyOn(HTMLMediaElement.prototype, "volume", "get").mockReturnValue(1);
   /** The elements music was asked to play on, in order. */
   const played = (): HTMLAudioElement[] => vi.mocked(HTMLMediaElement.prototype.play).mock.contexts as HTMLAudioElement[];
@@ -236,12 +241,15 @@ describe("music", () => {
     output.setMusic(true, 0.4);
     const [first] = played() as [HTMLAudioElement];
     expect(first.src).toContain(".ogg");
-    await vi.waitFor(() => { expect(first.volume).toBeCloseTo(0.4); });
+    await vi.advanceTimersByTimeAsync(fadeMs);
+    expect(first.volume).toBeCloseTo(0.4);
     output.duckMusic();
-    await vi.waitFor(() => { expect(first.volume).toBeCloseTo(0.4 * 0.398, 2); });
+    await vi.advanceTimersByTimeAsync(ducking.attackMs);
+    expect(first.volume).toBeCloseTo(0.4 * 0.398, 2);
     expect(contexts).toHaveLength(0);
     output.setMusic(false, 0);
-    await vi.waitFor(() => { expect(first.getAttribute("src")).toBeNull(); });
+    await vi.advanceTimersByTimeAsync(fadeMs);
+    expect(first.getAttribute("src")).toBeNull();
   });
 
   it("goes through a gain node where it cannot", async () => {
@@ -251,12 +259,12 @@ describe("music", () => {
     expect(played()[0]?.src).toContain(".m4a");
     output.unlock();
     const context = opened();
-    await vi.waitFor(() => { expect(context.gains[1]?.gain.events.at(-1)).toEqual(["target", 0.4, 10]); });
+    await vi.advanceTimersByTimeAsync(fadeMs);
+    expect(context.gains[1]?.gain.events.at(-1)).toEqual(["target", 0.4, 10]);
     expect(context.media).toHaveLength(2);
     expect(context.media[0]?.to).toEqual([context.gains[1]]);
     expect(context.gains[1]?.to).toEqual([context.destination]);
     expect(HTMLMediaElement.prototype.play).toHaveBeenCalledTimes(2);
-    output.setMusic(false, 0);
   });
 });
 

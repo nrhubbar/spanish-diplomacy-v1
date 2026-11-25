@@ -204,6 +204,8 @@ function ReliefPictures({ layers: given, onFallback, place, visible }: TerrainLa
             if (texture.image instanceof ImageBitmap) texture.image.close();
           }
           gl.dispose();
+          // Frees the context now: browsers allow few, and disposing leaves it to garbage collection.
+          gl.forceContextLoss();
           gl.domElement.remove();
         },
         load,
