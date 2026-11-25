@@ -1,0 +1,124 @@
+[
+{"id":"B-1","idea":"goals","text":"What counts as fair between the seats?","context":"Today: Republic 43.5%, North 37%, South 19.5%.","options":[
+{"label":"A. A third each, 28 to 39% per seat","rationale":"The simplest target to tune for and to test.","recommended":true},
+{"label":"B. Republic the underdog at about 25%, North and South equal","rationale":"The cloud session asked you this. Historically nearer, but the Republic player has the hardest game."},
+{"label":"C. Insurgents favoured, South strongest late","rationale":"Closest to 1936. Needs most change: the South is weakest now."},
+{"label":"D. No seat under 20%, otherwise anything","rationale":"Loose enough that the other goals drive the numbers."}]},
+{"id":"B-2","idea":"goals","text":"How strict is 20 to 30 turns?","context":"Today the median is 15 turns, and 25% of games land in 20 to 30.","options":[
+{"label":"A. Median in 20 to 30, and at least 60% of games inside","rationale":"Leaves room for some short and long games.","recommended":true},
+{"label":"B. At least 75% inside","rationale":"Very even games. Harder to reach, and may flatten variety."},
+{"label":"C. Median only","rationale":"Easy to reach, but hides a split between very short and very long games."}]},
+{"id":"B-3","idea":"goals","text":"How many early wins are acceptable?","context":"Today 27.5% of games are over by turn 8; 53 of those 55 are Republic wins.","options":[
+{"label":"A. At most 5% by turn 8","rationale":"The limit your early-win check already uses for turn 4.","recommended":true},
+{"label":"B. At most 5% by turn 12","rationale":"Stricter, since nobody can have an economy working by turn 8 anyway."},
+{"label":"C. None by turn 8","rationale":"Hard: dice alone will sometimes end a game early."}]},
+{"id":"B-4","idea":"goals","text":"How do we measure \"the winner leads for only a few turns\"?","context":"Today the winner leads alone for a median of 3 turns, counting territories only. If cities decide more games, territories alone will mislead.","options":[
+{"label":"A. Steps to the nearer victory; median under 2 turns","rationale":"Counts both ways to win. Needs new recording in the harness.","recommended":true},
+{"label":"B. Territories only, as measured now","rationale":"No new recording."},
+{"label":"C. Share of games under 2 turns, at least 60%","rationale":"Today 28%. Protects against a few runaway games hiding behind a median."}]},
+{"id":"B-5","idea":"goals","text":"What shows that winning needs an economy?","context":"The side that ordered the most development by turn 8 wins only 20% of longer games. That is association, not proof.","options":[
+{"label":"A. A player that never builds wins at most 10% from any seat","rationale":"Tests it directly. Today's computer player always builds something.","recommended":true},
+{"label":"B. At most 5%","rationale":"Makes building close to mandatory."},
+{"label":"C. At most half its seat's normal rate","rationale":"Scales with the seat, so a weak seat isn't punished twice."}]},
+{"id":"B-6","idea":"goals","text":"What shows that a mixed army is needed?","context":"97% of winners end with three or more of foot, guns, tanks and aircraft. Having one is not the same as needing it.","options":[
+{"label":"A. Banning guns, tanks or aircraft each costs a seat at least 10 points","rationale":"Tests need directly, one arm at a time.","recommended":true},
+{"label":"B. A foot-only army wins at most 10%, and any one ban may be cheap","rationale":"Lets a player skip tanks, say, but not all three."},
+{"label":"C. Winners give at least three arms 10% or more of their combat recruits","rationale":"No extra games, but the computer player can mix an army without needing it."}]},
+{"id":"B-7","idea":"goals","text":"Which history should the game roughly follow?","context":"Choose all that should matter. Each is recorded in every 400-game run once the harness can.","multi":true,"options":[
+{"label":"Madrid stands at turn 8","rationale":"The real city held until the end.","recommended":true},
+{"label":"Andalucía is not all insurgent by turn 6","rationale":"Jaén and Almería held to the end. Today it falls in a couple of turns.","recommended":true},
+{"label":"The north coast holds at turn 12","rationale":"It fell around turn 31.","recommended":true},
+{"label":"The insurgents win more often than the Republic","rationale":"Conflicts with fair thirds (B-1)."},
+{"label":"Most games reach winter 1937","rationale":"A length check, not a date check."}]},
+{"id":"B-8","idea":"strategies","text":"Which strategies should be good, with a fair chance of winning?","context":"Choose all you want to see. Each is played from every seat.","multi":true,"options":[
+{"label":"Builder: develops first, fights late","rationale":"The economy goal in person.","recommended":true},
+{"label":"Combined arms: keeps a mix of foot, guns, tanks and aircraft","rationale":"The mixed-army goal in person.","recommended":true},
+{"label":"Aggressor: attacks early, accepts losses","rationale":"Should be viable, not dominant.","recommended":true},
+{"label":"Turtle: digs in and waits","rationale":"Should hold but struggle to win.","recommended":true},
+{"label":"City hunter: plays for cities","rationale":"Matters most if the city target changes.","recommended":true}]},
+{"id":"B-9","idea":"strategies","text":"Which cheese should we test first?","context":"Choose all to build in the first wave. The rest follow if these pass.","multi":true,"options":[
+{"label":"Rush: replays the fastest opening land grab","rationale":"Today's early Republic wins.","recommended":true},
+{"label":"Denier: one unit in each of a rival's richest territories","rationale":"Contested land pays nobody, and stops recruiting and building.","recommended":true},
+{"label":"Air stacker: buys aircraft and flies only support","rationale":"Two fighters add +6 when no enemy aircraft or anti-air contests them.","recommended":true},
+{"label":"Threshold attacker: sends exactly enough for the next odds step","rationale":"Ratios round down, so 1.9:1 fights as 1:1.","recommended":true},
+{"label":"No-build: never builds or develops","rationale":"Same test as B-5.","recommended":true},
+{"label":"Single arm: foot only","rationale":"Same test as B-6.","recommended":true},
+{"label":"Elite core: few units, always topped up","rationale":"Upkeep is per unit at any strength, and replenishing is half price per man."},
+{"label":"Waiter: sits out winter, attacks in clear weather","rationale":"Mud and snow cost attackers 3."}]},
+{"id":"B-10","idea":"strategies","text":"When is a strategy too strong?","context":"Judged only at 400 games.","options":[
+{"label":"A. More than 10 points above its seat's normal rate, or over 50%","rationale":"Fair to strong and weak seats alike.","recommended":true},
+{"label":"B. Over 60% from any seat","rationale":"The cloud session's rule. Only catches the very worst."},
+{"label":"C. More than 5 points above its seat's normal rate","rationale":"At 400 games 5 points is within the noise, so close calls need 1,500."}]},
+{"id":"B-11","idea":"strategies","text":"Where do the personas live?","context":"The weight personas are data. The cheese bots are small pieces of code.","options":[
+{"label":"A. In the simulator only","rationale":"Nothing ships to players. Fastest, and cheese stays out of the game.","recommended":true},
+{"label":"B. The good ones ship as opponents","rationale":"More variety for players, but each needs a name, a menu and tests."},
+{"label":"C. All in the scenario data","rationale":"Easy for anyone to edit. Puts cheese in the shipped data."}]},
+{"id":"B-12","idea":"strategies","text":"Fix the standard computer player first?","context":"It buys one aircraft per 6 ground units by quota, buys anti-air wherever an enemy bomber reaches, and trucks are 15 to 23% of every side's orders.","options":[
+{"label":"A. Yes: aircraft, anti-air and trucks, then a new baseline","rationale":"Every test measures against this player, so its blind spots are in every result.","recommended":true},
+{"label":"B. Aircraft and anti-air only","rationale":"Smaller change. Trucks already had one fix this revision."},
+{"label":"C. Leave it","rationale":"Keeps comparison with the 200 games. Air and truck results can't be trusted."}]},
+{"id":"B-13","idea":"changes","text":"Which win targets may I try?","context":"Today 10 of 18 territories or 19 of 25 cities. Choose all. On Rev 3, 13 territories added about 11 turns and made most wins city wins.","multi":true,"options":[
+{"label":"12 territories","rationale":"The smaller step.","recommended":true},
+{"label":"13 territories","rationale":"The cloud session's recommendation.","recommended":true},
+{"label":"20 to 22 cities","rationale":"Needed beside 13 territories, or cities become the short cut.","recommended":true},
+{"label":"Hold the target for one full turn before winning","rationale":"Rivals get one chance to answer. A rule change."}]},
+{"id":"B-14","idea":"changes","text":"Which numbers may I change?","context":"Choose all. Each is data, and easy to undo.","multi":true,"options":[
+{"label":"Starting Funds for every side","rationale":"The strongest lever on who wins.","recommended":true},
+{"label":"Air support per squadron, and its cap","rationale":"+3 each and 2 squadrons today. Too cheap beside more men.","recommended":true},
+{"label":"Development prices and yields","rationale":"A mine pays back in about 7 turns.","recommended":true},
+{"label":"Digging-in cap, 3 pips to 4","rationale":"Helped Madrid hold on Rev 3.","recommended":true},
+{"label":"Unit prices, training times and upkeep","rationale":"Only where the price and dominance tables show a problem.","recommended":true},
+{"label":"Barricades","rationale":"Left at 2: dropping to 1 swung 25 to 34 points between seats on Rev 3."}]},
+{"id":"B-15","idea":"changes","text":"Which rule changes may I try?","context":"Choose all that are on the table. Each touches the engine, tests and player text.","multi":true,"options":[
+{"label":"Contested land pays each side for the provinces it holds","rationale":"The direct answer to denial.","recommended":true},
+{"label":"Smoother odds between columns","rationale":"The direct answer to threshold attacks.","recommended":true},
+{"label":"Captured buildings lose a level","rationale":"A lead stops paying for itself."},
+{"label":"Upkeep scales with strength","rationale":"The answer to the elite core."},
+{"label":"None","rationale":"Numbers only."}]},
+{"id":"B-16","idea":"changes","text":"When may rule changes be tried?","options":[
+{"label":"A. Only where numbers failed","rationale":"Cheapest first, and every rule change is yours to approve.","recommended":true},
+{"label":"B. Early, alongside numbers","rationale":"Faster if you already know you want them."},
+{"label":"C. Ask me each time","rationale":"Slower, but you see each one before it is built."}]},
+{"id":"B-17","idea":"changes","text":"May opening garrisons change?","context":"Andalucía falls in about two turns and the South is the weakest seat. On Rev 3, extra Cantabria militia helped the coast but added early Republic wins.","options":[
+{"label":"A. Yes, after the win target and money are settled","rationale":"Then we can tell which change did what.","recommended":true},
+{"label":"B. Yes, now","rationale":"If the opening bothers you most."},
+{"label":"C. No","rationale":"Keep the historical order of battle."}]},
+{"id":"B-18","idea":"sims","text":"How do we find the best starting money?","context":"About 16 combinations. 50 games each can't rank them one by one.","options":[
+{"label":"A. 16 cells of 50, fitted as one model, best three at 400","rationale":"The cloud session's method.","recommended":true},
+{"label":"B. 6 cells of 200","rationale":"Simpler, but a rougher search."}]},
+{"id":"B-19","idea":"sims","text":"The model-fitting script from the cloud session (doe-kit.zip)?","context":"I didn't find it in Downloads or the project folder. It only matters for B-18 A.","options":[
+{"label":"A. I'll send it","rationale":"Saves the rewrite.","recommended":true},
+{"label":"B. Rewrite it","rationale":"A short script."},
+{"label":"C. Skip it","rationale":"Choose B-18 B."}]},
+{"id":"B-20","idea":"sims","text":"When do games mix several personas?","context":"Each game has three different personas, seats balanced.","options":[
+{"label":"A. After each persona is understood alone: 400 games, then 1,200","rationale":"A mixed result is hard to explain before then.","recommended":true},
+{"label":"B. From the start, beside the solo tests","rationale":"Finds odd interactions early, costs more games."},
+{"label":"C. Only mixed games","rationale":"Closest to a real table."}]},
+{"id":"B-21","idea":"sims","text":"When does the balancing stop?","options":[
+{"label":"A. Goals met, or three changes in a row that don't improve them","rationale":"Then you decide what to relax.","recommended":true},
+{"label":"B. At the token cap","rationale":"Predictable cost."},
+{"label":"C. When you say so","rationale":"You check in after every change."}]},
+{"id":"B-22","idea":"run","text":"Token cap for the balancing?","context":"Five rounds: 500k, 150k, 500k, 400k and 150k. Sims are cheap to run; tokens go on code and reading results.","options":[
+{"label":"A. 1.7M for all five","rationale":"Stops for you after each round.","recommended":true},
+{"label":"B. 1M: rounds 0 to 2 only","rationale":"Baseline, length, money and personas, no rule changes."},
+{"label":"C. Up to 2M","rationale":"Room for rule changes that take two tries."}]},
+{"id":"B-23","idea":"run","text":"Put a language model in one seat?","context":"The engine already takes orders from any seat.","options":[
+{"label":"A. Not yet","rationale":"Cheaper tests first.","recommended":true},
+{"label":"B. One seat, about 20 games, at the end","rationale":"A check on what the personas miss. It costs real money per game."},
+{"label":"C. Instead of the cheese bots","rationale":"Finds tricks we didn't think of, but costs the most."}]},
+{"id":"B-24","idea":"run","text":"The early-win check in the unit suite?","context":"Its 10 games missed the 8.5% early-win rate in the 200-game run.","options":[
+{"label":"A. A separate 100-game check, under a minute; the suite keeps 10","rationale":"Run before each merge.","recommended":true},
+{"label":"B. 100 games inside the suite","rationale":"About 5 minutes of one core every time."},
+{"label":"C. Leave it","rationale":"Nothing new to run."}]},
+{"id":"B-25","idea":"run","text":"Where does this work live?","options":[
+{"label":"A. A new branch from m3r4","rationale":"Rev 4 stays as it is for your playtest.","recommended":true},
+{"label":"B. Straight on m3r4","rationale":"One branch, but Rev 4 can't be played unchanged."},
+{"label":"C. Merge Rev 4 to main first","rationale":"Needs your playtest before any balancing starts."}]},
+{"id":"B-26","idea":"rev4","text":"Air battles: when is an aircraft lost?","context":"Left from Rev 4. As built, only the first and last rows of the air table cost a squadron.","options":[
+{"label":"A. Keep as built: first and last rows only","rationale":"Middle winning rows drive aircraft off, none lost.","recommended":true},
+{"label":"B. Any row that gives one side Ground Support","rationale":"Air losses become common. Balance numbers would move."},
+{"label":"C. I meant something else","rationale":"Say what in the notes."}]},
+{"id":"B-27","idea":"rev4","text":"One-turn units against a rival two steps from winning?","context":"Rev 3 said they always come first. Rev 4 narrows that to sites the rival would likely take (35% or more).","options":[
+{"label":"A. Keep the Rev 4 rule","rationale":"Stops the computer player buying mostly security forces.","recommended":true},
+{"label":"B. Go back to the Rev 3 rule","rationale":"Safer against a sudden win, more security forces."}]}
+]

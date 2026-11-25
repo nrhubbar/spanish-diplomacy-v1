@@ -90,9 +90,9 @@ describe("the Factory's Manpower (D3)", () => {
 
   it("charges its 4 Manpower with the Funds when it is queued", () => {
     const applied = applyBuildOrder(scenario, short(10), cantabria());
-    expect(applied.ok && applied.paid).toEqual({ funds: 6, manpower: 4 });
-    expect(applied.ok && applied.state.treasuries[republic]).toEqual({ funds: 93, manpower: 6 });
-    expect(plannedSpend(scenario, [cantabria()])).toEqual({ funds: 6, manpower: 4 });
+    expect(applied.ok && applied.paid).toEqual({ funds: 4, manpower: 4 });
+    expect(applied.ok && applied.state.treasuries[republic]).toEqual({ funds: 95, manpower: 6 });
+    expect(plannedSpend(scenario, [cantabria()])).toEqual({ funds: 4, manpower: 4 });
   });
 
   it("refuses the order when the Manpower is short", () => {

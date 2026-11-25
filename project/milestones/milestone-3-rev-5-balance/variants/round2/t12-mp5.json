@@ -1,0 +1,46 @@
+{
+ "name": "t12-mp5",
+ "description": "12 territories; Funds (30, 15, 15); South Manpower 5",
+ "patch": [
+  {
+   "op": "replace",
+   "path": "/victory/territoryShare",
+   "value": 0.66
+  },
+  {
+   "op": "test",
+   "path": "/factions/0/id",
+   "value": "republic"
+  },
+  {
+   "op": "replace",
+   "path": "/factions/0/startingStock/funds",
+   "value": 30
+  },
+  {
+   "op": "test",
+   "path": "/factions/1/id",
+   "value": "north"
+  },
+  {
+   "op": "replace",
+   "path": "/factions/1/startingStock/funds",
+   "value": 15
+  },
+  {
+   "op": "test",
+   "path": "/factions/2/id",
+   "value": "south"
+  },
+  {
+   "op": "replace",
+   "path": "/factions/2/startingStock/funds",
+   "value": 15
+  },
+  {
+   "op": "replace",
+   "path": "/factions/2/startingStock/manpower",
+   "value": 5
+  }
+ ]
+}

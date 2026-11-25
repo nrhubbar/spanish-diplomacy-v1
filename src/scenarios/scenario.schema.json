@@ -168,6 +168,11 @@
                     "type": "integer",
                     "minimum": 0,
                     "maximum": 9007199254740991
+                  },
+                  "thrift": {
+                    "description": "Cost per point of attack value sent into an attack on defended ground, so the least force that still scores best goes. Absent: 0.",
+                    "type": "number",
+                    "minimum": 0
                   }
                 },
                 "required": [
@@ -206,6 +211,11 @@
                   },
                   "territory": {
                     "type": "number"
+                  },
+                  "income": {
+                    "description": "Added to the stake of a territory a rival holds whole, per point of income a turn it pays the rival (every resource alike), which any ground taken there stops. Absent: 0.",
+                    "type": "number",
+                    "minimum": 0
                   }
                 },
                 "required": [
@@ -245,6 +255,43 @@
                     "exclusiveMinimum": 0,
                     "maximum": 9007199254740991,
                     "description": "Turns of upkeep the Recruit orders leave in stock, at today's income, for what the unit types' upkeep takes."
+                  },
+                  "aircraftPerTurn": {
+                    "description": "Aircraft recruited a turn, at most. Absent: 1.",
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "maxUnits": {
+                    "description": "Units that can fight, on the map and in training, at which the faction recruits nothing more of any type; it still replenishes. Absent: no limit.",
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "trucksPerTurn": {
+                    "description": "Transport units that cannot fight recruited a turn, at most. Absent: 1.",
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "typeWorth": {
+                    "description": "What a unit type's worth is multiplied by, per type id; 0 is never recruited. A type not listed, and all of them when absent: 1.",
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string",
+                      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                      "description": "Stable kebab-case identifier. Never shown to players."
+                    },
+                    "additionalProperties": {
+                      "type": "number",
+                      "minimum": 0
+                    }
+                  },
+                  "variety": {
+                    "description": "The share of its worth a unit type loses as the faction's force already holds it: half of this share at an even split of the force over the types, nearing all of it beyond. Absent: 0.",
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
                   }
                 },
                 "required": [
@@ -376,6 +423,302 @@
             "additionalProperties": false
           },
           "description": "E7: one profile per faction, keyed by faction id (L23)."
+        },
+        "personas": {
+          "description": "Strategies a computer player may be given to play, for the simulation harness (L30).",
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+            "description": "Stable kebab-case identifier. Never shown to players."
+          },
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "note": {
+                "description": "What the persona plays for, in a sentence.",
+                "type": "string",
+                "minLength": 1
+              },
+              "overrides": {
+                "type": "object",
+                "properties": {
+                  "computer": {
+                    "type": "object",
+                    "properties": {
+                      "approachObjective": {
+                        "type": "number"
+                      },
+                      "bouncedLastTurn": {
+                        "type": "number"
+                      },
+                      "caution": {
+                        "type": "number"
+                      },
+                      "demoralizedShare": {
+                        "type": "number"
+                      },
+                      "enemyLoss": {
+                        "type": "number"
+                      },
+                      "ownLoss": {
+                        "type": "number"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "offensive": {
+                    "type": "object",
+                    "properties": {
+                      "reach": {
+                        "type": "integer",
+                        "exclusiveMinimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "oddsTieBreak": {
+                        "type": "number"
+                      },
+                      "staging": {
+                        "type": "number"
+                      },
+                      "focus": {
+                        "type": "number"
+                      },
+                      "stallStep": {
+                        "type": "number"
+                      },
+                      "stallCap": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "thrift": {
+                        "description": "Cost per point of attack value sent into an attack on defended ground, so the least force that still scores best goes. Absent: 0.",
+                        "type": "number",
+                        "minimum": 0
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "air": {
+                    "type": "object",
+                    "properties": {
+                      "supportChance": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1,
+                        "description": "R11: the least chance that an attack's Ground Support applies after the air battle, for aircraft to fly it."
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "stakes": {
+                    "type": "object",
+                    "properties": {
+                      "city": {
+                        "type": "number"
+                      },
+                      "objective": {
+                        "type": "number"
+                      },
+                      "territory": {
+                        "type": "number"
+                      },
+                      "income": {
+                        "description": "Added to the stake of a territory a rival holds whole, per point of income a turn it pays the rival (every resource alike), which any ground taken there stops. Absent: 0.",
+                        "type": "number",
+                        "minimum": 0
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "recruits": {
+                    "type": "object",
+                    "properties": {
+                      "delayDrag": {
+                        "type": "number",
+                        "description": "How much each turn until a unit can fight lowers its worth: it is divided by one plus this for each turn."
+                      },
+                      "fightersPerSupport": {
+                        "type": "integer",
+                        "exclusiveMinimum": 0,
+                        "maximum": 9007199254740991,
+                        "description": "Own units that can fight for each support unit (cannot-attack-alone), at least."
+                      },
+                      "quickTakeChance": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1,
+                        "description": "At this chance or more that a rival near victory takes a site, units that train in one turn come first there."
+                      },
+                      "upkeepHorizon": {
+                        "type": "integer",
+                        "exclusiveMinimum": 0,
+                        "maximum": 9007199254740991,
+                        "description": "Turns of upkeep counted in a unit's price, and of income and upkeep in what the faction can spend on recruits."
+                      },
+                      "upkeepTurns": {
+                        "type": "integer",
+                        "exclusiveMinimum": 0,
+                        "maximum": 9007199254740991,
+                        "description": "Turns of upkeep the Recruit orders leave in stock, at today's income, for what the unit types' upkeep takes."
+                      },
+                      "aircraftPerTurn": {
+                        "description": "Aircraft recruited a turn, at most. Absent: 1.",
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "maxUnits": {
+                        "description": "Units that can fight, on the map and in training, at which the faction recruits nothing more of any type; it still replenishes. Absent: no limit.",
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "trucksPerTurn": {
+                        "description": "Transport units that cannot fight recruited a turn, at most. Absent: 1.",
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "typeWorth": {
+                        "description": "What a unit type's worth is multiplied by, per type id; 0 is never recruited. A type not listed, and all of them when absent: 1.",
+                        "type": "object",
+                        "propertyNames": {
+                          "type": "string",
+                          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                          "description": "Stable kebab-case identifier. Never shown to players."
+                        },
+                        "additionalProperties": {
+                          "type": "number",
+                          "minimum": 0
+                        }
+                      },
+                      "variety": {
+                        "description": "The share of its worth a unit type loses as the faction's force already holds it: half of this share at an even split of the force over the types, nearing all of it beyond. Absent: 0.",
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "victoryAlarm": {
+                    "type": "object",
+                    "properties": {
+                      "critical": {
+                        "type": "number"
+                      },
+                      "perStep": {
+                        "type": "number"
+                      },
+                      "riskFloor": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1,
+                        "description": "The least share of own losses and of the danger at home that count when attacking a rival near victory."
+                      },
+                      "spendSteps": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991,
+                        "description": "At this many steps or fewer short of victory, a rival makes the faction spend without a Build reserve, and on the quickest units where they can reach it."
+                      },
+                      "steps": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "withdraw": {
+                    "type": "object",
+                    "properties": {
+                      "hopelessTakeChance": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      },
+                      "lastStandTakeChance": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "builds": {
+                    "type": "object",
+                    "properties": {
+                      "spendShare": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1,
+                        "description": "Share of each resource left after Recruit orders that builds may spend."
+                      },
+                      "reserveShare": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1,
+                        "description": "M5: share of each resource that builds cost which Recruit orders leave unspent; at least the price of the development item saved for."
+                      },
+                      "developmentShare": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1,
+                        "description": "M5: the most of a resource's balance the saved-for development item may take; above it, Recruit orders come first."
+                      },
+                      "developmentProjects": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991,
+                        "description": "M5: development items the faction keeps queued. While it has fewer, Recruit orders leave the best one's price and Build orders buy it first."
+                      },
+                      "maxOrdersPerTurn": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991,
+                        "description": "Build orders a turn."
+                      },
+                      "itemsPerEmptyQueue": {
+                        "type": "integer",
+                        "exclusiveMinimum": 0,
+                        "maximum": 9007199254740991,
+                        "description": "New items a sub-territory with an empty queue may take in a turn."
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                },
+                "additionalProperties": false,
+                "description": "The profile fields the persona changes; it keeps every other field of its seat's own profile."
+              }
+            },
+            "required": [
+              "name",
+              "overrides"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "seats": {
+          "description": "The persona each faction plays, by faction id; a faction not named plays its own profile (L30).",
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+            "description": "Stable kebab-case identifier. Never shown to players."
+          },
+          "additionalProperties": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+            "description": "Stable kebab-case identifier. Never shown to players."
+          }
         },
         "sources": {
           "default": [],

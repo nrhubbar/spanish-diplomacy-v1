@@ -25,12 +25,12 @@ describe("the Factory's starting sites (D3)", () => {
   const funds = (state: GameState, id: FactionId): number => incomeFor(scenario, state, id).paid["funds" as ResourceId] ?? 0;
   const held = (id: string, owner: FactionId): GameState => withSites(start, (site, value) => (scenario.index.subTerritories.get(site)?.territoryId === id ? { ...value, holder: owner } : value));
 
-  it("pays each side an opening income within 1 Fund of the numbers agreed, and the South 11 with Andalucía clear", () => {
-    expect(Math.abs(funds(start, faction("republic")) - 14)).toBeLessThanOrEqual(1);
-    expect(Math.abs(funds(start, faction("north")) - 5)).toBeLessThanOrEqual(1);
-    expect(Math.abs(funds(start, faction("south")) - 1)).toBeLessThanOrEqual(1);
+  it("pays each side an opening income within 1 Fund of the Rev 5 yields, and the South 16.5 with Andalucía clear", () => {
+    expect(Math.abs(funds(start, faction("republic")) - 21.75)).toBeLessThanOrEqual(1);
+    expect(Math.abs(funds(start, faction("north")) - 9)).toBeLessThanOrEqual(1);
+    expect(Math.abs(funds(start, faction("south")) - 1.5)).toBeLessThanOrEqual(1);
     const clear = held("andalucia", faction("south"));
-    expect(Math.abs(funds({ ...clear, control: { ...clear.control, [territory("andalucia")]: { factionId: faction("south"), kind: "controlled" } } }, faction("south")) - 11)).toBeLessThanOrEqual(1);
+    expect(Math.abs(funds({ ...clear, control: { ...clear.control, [territory("andalucia")]: { factionId: faction("south"), kind: "controlled" } } }, faction("south")) - 16.5)).toBeLessThanOrEqual(1);
   });
 
   it("puts level 2 in Barcelona and Bizkaia, level 1 in the other sites, and none in Alicante or Málaga", () => {
@@ -86,7 +86,7 @@ describe("a requirement that names a development track (D3, R3)", () => {
   });
 
   it("says what a level gives", () => {
-    expect(projectEffectText(scenario, factory)).toBe("+1.5 Funds a turn, +1 Recruit order a turn, recruits Artillery group, Tank company");
+    expect(projectEffectText(scenario, factory)).toBe("+2.3 Funds a turn, +1 Recruit order a turn, recruits Artillery group, Tank company");
   });
 });
 

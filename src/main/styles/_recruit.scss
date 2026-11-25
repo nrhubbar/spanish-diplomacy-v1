@@ -164,9 +164,11 @@
     }
   }
 
-  // A term breaks between terms only. In red, not bolder: the line must not wrap anew.
+  // A term breaks between terms, and inside itself only where it is wider than the row. In red,
+  // not bolder: the line must not wrap anew.
   [data-short] {
-    white-space: nowrap;
+    display: inline-block;
+    max-width: 100%;
   }
 
   [data-short="true"] {
@@ -362,10 +364,6 @@
 
   .recruit-note {
     height: 5.2em;
-  }
-
-  .recruit-row [data-short] {
-    white-space: normal;
   }
 
   .order-line {

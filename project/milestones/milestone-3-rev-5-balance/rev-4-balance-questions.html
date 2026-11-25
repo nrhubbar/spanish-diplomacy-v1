@@ -1,0 +1,623 @@
+<title>Rev 4 Balance Plan</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,500;8..60,700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a design-review dossier. Sticky index on the left (top bar on phones), one reading column, widgets and questions as set-off "cards on the table". */
+:root {
+  --bg: #e6dfcd;          /* table canvas, from the app's --canvas */
+  --paper: #fbf6ea;       /* reading sheet, the app's --paper */
+  --surface: #f4eddc;     /* widget card */
+  --surface-2: #ebe2cc;   /* inset rows, table heads */
+  --ink: #241d18;
+  --ink-soft: #5b4d40;
+  --line: #c9bba0;
+  --accent: #7d2f2a;      /* oxblood, the app's --accent */
+  --accent-ink: #fbf6ea;
+  --gold: #b8891a;
+  --route: #1f3550;
+  --good: #2f7d4f;
+  --bad: #9e2b2b;
+  --warn: #b5730f;
+  --rep: #b1493f;
+  --nic: #a3841f;
+  --sic: #665089;
+  --c1: #7a1f1a; --c2: #b5483c; --c3: #d99a6c; --c4: #cbbf9f; --c5: #7d9bb5; --c6: #3f6a90; --c7: #1f3550;
+  --serif: "Source Serif 4", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --shadow: 0 1px 0 rgb(36 29 24 / 8%), 0 6px 18px rgb(36 29 24 / 8%);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #17120e; --paper: #221a14; --surface: #2b221a; --surface-2: #352a20;
+    --ink: #efe5d2; --ink-soft: #c2b29b; --line: #4d3f31; --accent: #d9897e; --accent-ink: #1b1410;
+    --gold: #e0b54a; --route: #9cb7d6; --good: #6fc08f; --bad: #e07a72; --warn: #e5a54a;
+    --rep: #d9786d; --nic: #d9b84a; --sic: #a88fd1;
+    --c1: #e07a72; --c2: #c9665b; --c3: #b98a63; --c4: #6f6555; --c5: #5f86a8; --c6: #7fa6cc; --c7: #b5cfe8;
+    --shadow: 0 1px 0 rgb(0 0 0 / 30%), 0 6px 18px rgb(0 0 0 / 30%);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #17120e; --paper: #221a14; --surface: #2b221a; --surface-2: #352a20;
+  --ink: #efe5d2; --ink-soft: #c2b29b; --line: #4d3f31; --accent: #d9897e; --accent-ink: #1b1410;
+  --gold: #e0b54a; --route: #9cb7d6; --good: #6fc08f; --bad: #e07a72; --warn: #e5a54a;
+  --rep: #d9786d; --nic: #d9b84a; --sic: #a88fd1;
+  --c1: #e07a72; --c2: #c9665b; --c3: #b98a63; --c4: #6f6555; --c5: #5f86a8; --c6: #7fa6cc; --c7: #b5cfe8;
+  --shadow: 0 1px 0 rgb(0 0 0 / 30%), 0 6px 18px rgb(0 0 0 / 30%);
+  color-scheme: dark;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 72px; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 var(--sans); -webkit-font-smoothing: antialiased; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+a { color: var(--route); text-underline-offset: 2px; }
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+h1, h2, h3, h4 { font-family: var(--serif); line-height: 1.2; text-wrap: balance; margin: 0; }
+code, kbd { font-family: var(--mono); font-size: 0.86em; background: var(--surface-2); padding: 0.05em 0.3em; border-radius: 3px; }
+
+.shell { display: grid; grid-template-columns: 270px minmax(0, 1fr); gap: 28px; max-width: 1180px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 24px 64px; }
+.toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); align-self: start; max-height: calc(100vh - 32px); overflow: auto;
+  background: var(--paper); border: 1px solid var(--line); border-radius: 6px; padding: 14px 14px 16px; font-size: 0.86rem; }
+.toc h2 { font-size: 1rem; margin-bottom: 6px; }
+.toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; }
+.toc li.group { margin-top: 10px; font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-soft); font-weight: 600; }
+.toc a { display: flex; justify-content: space-between; gap: 8px; padding: 3px 6px; border-radius: 4px; text-decoration: none; color: var(--ink); }
+.toc a:hover { background: var(--surface-2); }
+.toc a.active { background: var(--surface-2); box-shadow: inset 2px 0 0 var(--accent); }
+.toc .count { font-family: var(--mono); font-size: 0.72rem; color: var(--ink-soft); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.answerbox { display: grid; gap: 8px; padding-bottom: 12px; margin-bottom: 10px; border-bottom: 1px solid var(--line); }
+.progress-text { font-family: var(--mono); font-size: 0.8rem; font-variant-numeric: tabular-nums; }
+.progress-track { height: 6px; background: var(--surface-2); border-radius: 3px; overflow: hidden; }
+.progress-fill { height: 100%; width: 0; background: var(--accent); transition: width 0.2s; }
+.btn { font: 600 0.86rem var(--sans); border: 1px solid var(--ink); background: var(--accent); color: var(--accent-ink); border-radius: 5px; padding: 8px 12px; cursor: pointer; min-height: 38px; }
+.btn.secondary { background: transparent; color: var(--ink); border-color: var(--line); font-weight: 500; }
+.btn-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.copy-status { font-size: 0.78rem; color: var(--good); min-height: 1.1em; }
+.copy-fallback { width: 100%; min-height: 140px; font: 0.75rem/1.4 var(--mono); }
+.mobile-bar { display: none; }
+
+main { min-width: 0; display: grid; gap: 22px; }
+.sheet { background: var(--paper); border: 1px solid var(--line); border-radius: 6px; padding: 28px clamp(16px, 4vw, 44px) 32px; box-shadow: var(--shadow); min-width: 0; }
+.sheet > * + * { margin-top: 0.9rem; }
+.masthead .eyebrow, .eyebrow { font: 600 0.72rem var(--sans); letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
+.masthead h1 { font-size: clamp(1.9rem, 4.5vw, 2.7rem); }
+.masthead .meta { font-family: var(--mono); font-size: 0.8rem; color: var(--ink-soft); display: flex; flex-wrap: wrap; gap: 6px 18px; }
+.group-head { padding: 6px 4px 0; }
+.group-head h2 { font-size: 1.05rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-soft); font-family: var(--sans); font-weight: 600; }
+.group-head p { color: var(--ink-soft); font-size: 0.92rem; max-width: 70ch; }
+.sheet h2 { font-size: clamp(1.4rem, 3vw, 1.8rem); }
+.sheet h2 .idea-no { font-family: var(--mono); font-size: 0.8em; color: var(--accent); margin-right: 0.4em; }
+.sheet h3 { font-size: 1.12rem; margin-top: 1.6rem; padding-top: 0.9rem; border-top: 1px solid var(--line); }
+.sheet h4 { font-size: 1rem; margin-top: 1.2rem; }
+.sheet p, .sheet li { max-width: 72ch; }
+.sheet ul, .sheet ol { padding-left: 1.25rem; }
+.sheet li + li { margin-top: 0.25rem; }
+.sheet blockquote { margin: 0; padding: 8px 14px; border-left: 3px solid var(--gold); background: var(--surface); font-family: var(--serif); font-style: italic; }
+.summary-line { font-family: var(--serif); font-size: 1.12rem; }
+.table-wrap, .w-scroll { overflow-x: auto; max-width: 100%; -webkit-overflow-scrolling: touch; }
+.sheet table, .w-table { border-collapse: collapse; width: 100%; font-size: 0.88rem; }
+.sheet th, .sheet td, .w-table th, .w-table td { border-bottom: 1px solid var(--line); padding: 6px 8px; text-align: left; vertical-align: top; }
+.sheet th, .w-table th { background: var(--surface-2); font-weight: 600; }
+.sheet td:first-child { min-width: 9rem; }
+.recommend { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--good); padding: 10px 14px; border-radius: 4px; }
+
+figure.mockup { margin: 1rem 0 0; }
+figure.mockup img { display: block; width: 100%; height: auto; border: 1px solid var(--line); border-radius: 4px; background: var(--surface-2); }
+figure.mockup figcaption { font-size: 0.8rem; color: var(--ink-soft); margin-top: 6px; }
+.missing { font-size: 0.85rem; color: var(--ink-soft); background: var(--surface-2); padding: 10px 12px; border-radius: 4px; border: 1px dashed var(--line); }
+
+/* Widgets */
+.widget { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 14px 16px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; font-size: 0.9rem; min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
+.widget > *, .w-row > *, .w-grid > * { min-width: 0; max-width: 100%; }
+.widget svg, .widget canvas { max-width: 100%; height: auto; }
+.widget h4, .widget h5 { margin: 0; font-family: var(--serif); }
+.w-row { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
+.w-label { font-weight: 600; font-size: 0.82rem; color: var(--ink-soft); }
+.w-out { font-family: var(--mono); font-weight: 500; background: var(--paper); border: 1px solid var(--line); border-radius: 4px; padding: 1px 7px; font-variant-numeric: tabular-nums; }
+.w-note { font-size: 0.78rem; color: var(--ink-soft); }
+.w-bar-track { background: var(--surface-2); border-radius: 3px; height: 14px; overflow: hidden; min-width: 60px; flex: 1; }
+.w-bar { height: 100%; background: var(--accent); min-width: 1px; }
+.w-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+.w-card { background: var(--paper); border: 1px solid var(--line); border-radius: 4px; padding: 8px 10px; min-width: 0; }
+.widget select, .widget input[type=number], .widget input[type=text] { font: inherit; color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 4px; padding: 4px 6px; min-height: 34px; max-width: 100%; }
+.widget input[type=range] { accent-color: var(--accent); max-width: 100%; }
+.widget button { font: 500 0.84rem var(--sans); color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 4px; padding: 5px 10px; cursor: pointer; min-height: 34px; }
+.widget button[aria-pressed="true"], .widget button.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.widget label { display: inline-flex; align-items: center; gap: 6px; }
+.widget-error { color: var(--bad); font-size: 0.85rem; }
+
+/* Questions */
+.questions { display: grid; gap: 12px; }
+.q { border: 1px solid var(--line); border-radius: 6px; background: var(--surface); padding: 12px 14px 14px; margin: 0; min-width: 0; }
+.q.answered { border-left: 4px solid var(--good); }
+.q legend { display: contents; }
+.q .q-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; margin-bottom: 8px; }
+.q .q-id { font-family: var(--mono); font-size: 0.74rem; background: var(--paper); border: 1px solid var(--line); border-radius: 3px; padding: 0 6px; color: var(--ink-soft); }
+.q .q-text { font-weight: 600; flex: 1 1 260px; }
+.q .q-ctx { font-size: 0.84rem; color: var(--ink-soft); margin: 0 0 8px; max-width: 72ch; }
+.q .opt > span { min-width: 0; overflow-wrap: anywhere; }
+.sheet h2 + .questions, .questions { margin-top: 1.4rem; }
+.q .q-multi { font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--route); border: 1px solid currentColor; border-radius: 3px; padding: 0 5px; }
+.q .opt { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; align-items: start; padding: 6px 8px; border-radius: 4px; cursor: pointer; }
+.q .opt:hover { background: var(--surface-2); }
+.q .opt input { margin-top: 4px; accent-color: var(--accent); width: 17px; height: 17px; }
+.q .opt .rec { color: var(--good); font-weight: 600; font-size: 0.82rem; margin-left: 4px; }
+.q .opt .why { grid-column: 2; font-size: 0.8rem; color: var(--ink-soft); }
+.q textarea { width: 100%; margin-top: 8px; min-height: 2.4rem; font: 0.86rem var(--sans); color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 4px; padding: 6px 8px; resize: vertical; }
+.q .notes-label { font-size: 0.76rem; color: var(--ink-soft); display: block; margin-top: 6px; }
+
+.sources ol { font-size: 0.82rem; overflow-wrap: anywhere; }
+.diagram { overflow-x: auto; }
+.diagram svg { display: block; min-width: 640px; width: 100%; height: auto; }
+.diagram svg text { fill: var(--ink); font-family: var(--sans); font-size: 12px; }
+.diagram .node { fill: var(--paper); stroke: var(--good); stroke-width: 1.2; }
+.diagram .node.later { fill: var(--surface-2); stroke: var(--ink-soft); stroke-dasharray: 4 3; }
+.diagram .edge { fill: none; stroke: var(--ink-soft); stroke-width: 1.4; }
+.diagram .arrowhead { fill: var(--ink-soft); }
+.diagram .band { fill: var(--surface-2); stroke: var(--line); }
+.diagram svg text.col { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; fill: var(--ink-soft); }
+.pill { display: inline-block; font: 600 0.72rem var(--sans); letter-spacing: 0.04em; padding: 1px 7px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface-2); }
+.pill.m3 { background: var(--good); color: var(--paper); border-color: var(--good); }
+.pill.later { background: var(--surface-2); }
+.pill.drop { color: var(--bad); border-color: var(--bad); }
+
+@media (max-width: 900px) {
+  html { scroll-padding-top: 64px; }
+  .shell { grid-template-columns: minmax(0, 1fr); gap: 16px; padding-block: 0 48px; }
+  .toc { position: static; max-height: none; display: none; }
+  .toc.open { display: block; position: fixed; inset: calc(env(safe-area-inset-top, 0px) + 56px) 0 0; z-index: 20; border-radius: 0; overflow: auto;
+    padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .mobile-bar { display: flex; position: sticky; top: env(safe-area-inset-top, 0px); z-index: 15; align-items: center; justify-content: space-between; gap: 10px;
+    background: var(--paper); border-bottom: 1px solid var(--line); margin: 0 calc(-1 * max(16px, env(safe-area-inset-left, 0px))); padding: 8px max(16px, env(safe-area-inset-right, 0px)) 8px max(16px, env(safe-area-inset-left, 0px)); }
+  .mobile-bar .progress-text { font-size: 0.75rem; }
+  .sheet { padding: 20px 16px 24px; }
+}
+</style>
+
+<div class="shell">
+  <div class="mobile-bar">
+    <button class="btn secondary" id="toc-toggle" type="button" aria-expanded="false" aria-controls="toc">Contents</button>
+    <span class="progress-text" data-progress-text>0 of 0 answered</span>
+    <button class="btn" type="button" data-copy>Copy my answers</button>
+  </div>
+  <nav class="toc" id="toc" aria-label="Contents">
+    <div class="answerbox">
+      <h2>Your answers</h2>
+      <span class="progress-text" data-progress-text>0 of 0 answered</span>
+      <div class="progress-track" aria-hidden="true"><div class="progress-fill" id="progress-fill"></div></div>
+      <div class="btn-row">
+        <button class="btn" type="button" data-copy>Copy my answers</button>
+        <button class="btn secondary" type="button" id="fill-rec">Use recommended for blanks</button>
+      </div>
+      <div class="btn-row">
+        <button class="btn secondary" type="button" id="clear-all">Clear all</button>
+        <button class="btn secondary" type="button" id="clear-confirm" hidden>Yes, clear every answer</button>
+      </div>
+      <div class="copy-status" id="copy-status" role="status" aria-live="polite"></div>
+      <div class="w-note" id="remote-status">Answers save in this browser. Use Copy my answers to send them to the team.</div>
+      <textarea class="copy-fallback" id="copy-fallback" hidden readonly aria-label="Your answers as Markdown"></textarea>
+    </div>
+    <h2>Contents</h2>
+    <ol>
+<li><a href="#goals"><span>What we're optimizing for</span><span class="count" data-toc-idea="goals"></span></a></li>
+<li><a href="#findings"><span>What still holds from the cloud analysis</span><span class="count"></span></a></li>
+<li><a href="#static"><span>Static analyses, before any games</span><span class="count"></span></a></li>
+<li><a href="#strategies"><span>Strategies and personas</span><span class="count" data-toc-idea="strategies"></span></a></li>
+<li><a href="#changes"><span>Changes to the game</span><span class="count" data-toc-idea="changes"></span></a></li>
+<li><a href="#sims"><span>Experiments and sim strategy</span><span class="count" data-toc-idea="sims"></span></a></li>
+<li><a href="#run"><span>Running it</span><span class="count" data-toc-idea="run"></span></a></li>
+<li><a href="#rev4"><span>Left over from Rev 4</span><span class="count" data-toc-idea="rev4"></span></a></li>
+</ol>
+  </nav>
+  <main id="main">
+    <section class="sheet masthead-sheet" id="intro">
+<header class="masthead">
+<p class="eyebrow">Milestone 3 · Revision 4 · Balance</p>
+<h1>Rev 4 Balance Plan</h1>
+<p class="meta"><span>24 Nov 2026</span><span>27 questions</span><span>No new games run, no code changed</span></p>
+</header>
+
+<p class="summary-line">We tune for long, close games that need an economy and a mixed army, then attack the result with computer players built to cheese it. A number is accepted only when 400 fresh games meet the goals and no cheese player beats its limit.</p>
+
+<p>Every question has a recommended answer and a notes box. Choose an option, add your reasons or a different idea, and your answers save as you go. <strong>Use recommended for blanks</strong> fills the ones you skip, for you to review; <strong>Copy my answers</strong> gives you Markdown to paste back here. Plan numbers come from the <a href="https://claude.ai/artifact/E76Q1uwaM3BGvs3qmSBUUU">200 recorded games</a> and the Rev 4 code.</p>
+
+</section>
+<section class="sheet" id="goals">
+<h2>What we&#39;re optimizing for</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Goal</th>
+<th>Today</th>
+<th>Proposed target</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>20 to 30 turns</td>
+<td>Median 15; 25% of games inside</td>
+<td>Median inside, 60% of games inside</td>
+</tr>
+<tr>
+<td>No snap wins</td>
+<td>27.5% over by turn 8</td>
+<td>At most 5%</td>
+</tr>
+<tr>
+<td>Winner leads only briefly</td>
+<td>Leads alone a median of 3 turns</td>
+<td>Under 2</td>
+</tr>
+<tr>
+<td>Economy needed</td>
+<td>Not tested; early developers win 20% of longer games</td>
+<td>A player that never builds wins at most 10%</td>
+</tr>
+<tr>
+<td>Mixed army needed</td>
+<td>Not tested; 97% of winners have three arms</td>
+<td>Each banned arm costs 10 points</td>
+</tr>
+<tr>
+<td>Fair seats</td>
+<td>43.5 / 37 / 19.5%</td>
+<td>28 to 39% each</td>
+</tr>
+<tr>
+<td>History</td>
+<td>Not recorded yet</td>
+<td>Your pick, in half of games</td>
+</tr>
+<tr>
+<td>No cheese</td>
+<td>Not tested</td>
+<td>No strategy more than 10 points above its seat</td>
+</tr>
+</tbody></table></div>
+<div class="questions" data-idea="goals"></div>
+</section>
+<section class="sheet" id="findings">
+<h2>What still holds from the cloud analysis</h2>
+<p>It ran on Rev 3, so its four recommended numbers are starting points. I checked each claim against the Rev 4 code and the recorded games.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Claim</th>
+<th>On Rev 4</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>One unit stops a territory paying</td>
+<td><strong>True, and worse.</strong> Contested land also stops recruiting and replenishing, and pauses building</td>
+</tr>
+<tr>
+<td>Ratios round down, so 1.9:1 fights as 1:1</td>
+<td><strong>True</strong></td>
+</tr>
+<tr>
+<td>A full-strength unit is the best value</td>
+<td><strong>True.</strong> Upkeep is per unit at any strength, and replenishing is half price per man</td>
+</tr>
+<tr>
+<td>Two fighters give +6</td>
+<td><strong>Partly.</strong> One anti-air battery cuts their chance of support to 45%</td>
+</tr>
+<tr>
+<td>Militia can be raised in enemy territory</td>
+<td><strong>False.</strong> You must hold the ground whole</td>
+</tr>
+<tr>
+<td>Security forces are 57% of recruits</td>
+<td><strong>No longer.</strong> 4.7%, so leave their price alone</td>
+</tr>
+<tr>
+<td>Early wins come from a solved opening</td>
+<td><strong>True.</strong> The winner led alone at turn 1 in 93% of games over by turn 8, and in 22% of the rest</td>
+</tr>
+<tr>
+<td>Buildings are captured intact</td>
+<td><strong>True</strong></td>
+</tr>
+<tr>
+<td>Long games take 10 seconds a turn</td>
+<td><strong>No.</strong> A 20 to 30 turn game takes about 4 seconds here</td>
+</tr>
+</tbody></table></div>
+
+</section>
+<section class="sheet" id="static">
+<h2>Static analyses, before any games</h2>
+<ol>
+<li><strong>Price per roll point:</strong> what +1 on the roll costs from aircraft, guns, forts and digging in, next to more men. A fighter&#39;s +3 is one odds column for 6 Funds; doubling a 20-attack army with infantry costs 25.</li>
+<li><strong>Exact odds:</strong> where the cliffs are.</li>
+<li><strong>Dominance:</strong> any unit that is at least as good and cheaper. Colonial veterans beat infantry on attack per Fund, and the Republic can&#39;t recruit them.</li>
+<li><strong>Reachability:</strong> how soon each side could reach the win target if nobody answered. The Republic starts with 6 whole territories and part of 6 more, so 4 of those 6 reach 10.</li>
+<li><strong>Economy limits:</strong> what army each side can keep, and when each building pays back.</li>
+<li><strong>Denial:</strong> what one cheap unit takes from a rival, and what that first province costs to take. Andalucía is worth 10 Funds and 9 Manpower a turn.</li>
+</ol>
+<p>A script prints all six and reruns after each accepted change.</p>
+
+</section>
+<section class="sheet" id="strategies">
+<h2>Strategies and personas</h2>
+<p><strong>Kinds of player.</strong> Weight personas change the computer player&#39;s numbers only. Cheese bots are the standard player plus one override, and each records how often it used its trick, so a harmless result can&#39;t mean a broken bot. Nothing is written against a named territory or unit.</p>
+<p><strong>Fixes to the standard player come first</strong> and are a new baseline. The standard player is frozen inside each round.</p>
+<div class="questions" data-idea="strategies"></div>
+</section>
+<section class="sheet" id="changes">
+<h2>Changes to the game</h2>
+<p>Order: win target, then money, then unit prices, then rules. Barricades stay at 2. If the win target changes, the Republic briefing&#39;s &quot;10 of 18 territories or 19 of 25 cities&quot; must change with it.</p>
+<div class="questions" data-idea="changes"></div>
+</section>
+<section class="sheet" id="sims">
+<h2>Experiments and sim strategy</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Run</th>
+<th>What it tests</th>
+<th>Games</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1. Baseline</td>
+<td>Rev 4 with the standard-player fixes</td>
+<td>400</td>
+</tr>
+<tr>
+<td>2. Length</td>
+<td>Win targets</td>
+<td>50 each, best at 400</td>
+</tr>
+<tr>
+<td>3. Fair seats</td>
+<td>Starting money</td>
+<td>Depends on B-18</td>
+</tr>
+<tr>
+<td>4. Strategies we want</td>
+<td>Each in every seat, beside two standard players</td>
+<td>400 for builder and combined arms; 50 for the rest</td>
+</tr>
+<tr>
+<td>5. Strategies we don&#39;t want</td>
+<td>The cheese list in every seat</td>
+<td>50 each, flags at 400</td>
+</tr>
+<tr>
+<td>6. Arms</td>
+<td>Ban guns, tanks or aircraft in one seat</td>
+<td>400 each</td>
+</tr>
+<tr>
+<td>7. Mixed games</td>
+<td>Three different personas per game</td>
+<td>400, then 1,200</td>
+</tr>
+<tr>
+<td>8. History</td>
+<td>Markers read from the 400-game runs</td>
+<td>0 extra</td>
+</tr>
+</tbody></table></div>
+<p><svg viewBox="0 0 760 330" role="img" aria-label="Only a change that survives 400 fresh games and the cheese bots becomes the baseline" style="width:100%;height:auto;font-family:var(--sans)" font-size="13"><defs><marker id="rr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--ink-soft)"/></marker></defs><g fill="none" stroke="var(--ink-soft)" stroke-width="1.25"><path d="M166 98H198" marker-end="url(#rr)"/><path d="M338 98H370" marker-end="url(#rr)"/><path d="M510 98H564" marker-end="url(#rr)"/><path d="M628 54V34H96V72" marker-end="url(#rr)"/><path d="M628 142V204" marker-end="url(#rr)"/><path d="M548 240H484" marker-end="url(#rr)"/><path d="M400 188V160H96V122" marker-end="url(#rr)"/><path d="M316 240H210" marker-end="url(#rr)"/></g><g fill="var(--surface)" stroke="var(--ink-soft)" stroke-width="1.25"><rect x="26" y="74" width="140" height="48" rx="8"/><rect x="198" y="74" width="140" height="48" rx="8"/><rect x="370" y="74" width="140" height="48" rx="8"/><polygon points="564,98 628,54 692,98 628,142"/><rect x="548" y="204" width="160" height="72" rx="8"/><polygon points="316,240 400,188 484,240 400,292"/></g><rect x="30" y="216" width="180" height="48" rx="8" fill="var(--surface-2)" stroke="var(--accent)" stroke-width="2"/><g fill="var(--ink)" text-anchor="middle"><text x="96" y="102">Pick one change</text><text x="268" y="102">Static check</text><text x="440" y="102">Screen: 50 games</text><text x="628" y="102">Helps?</text><text x="628" y="228">Confirm: 400 fresh</text><text x="628" y="246">games, then the</text><text x="628" y="264">cheese bots</text><text x="400" y="236">Goals met,</text><text x="400" y="254">no cheese?</text><text x="120" y="244" font-weight="600">Accept: new baseline</text></g><g fill="var(--ink-soft)" font-size="11.5" text-anchor="middle"><text x="362" y="28">no: drop it</text><text x="250" y="152">no: undo it, try another</text><text x="263" y="232">yes, you agree</text><text x="650" y="178">yes</text></g></svg></p>
+<ul>
+<li><strong>Screens:</strong> 50 games in the seat, compared with that seat&#39;s own normal rate, flagged at 5 points above it. That is a trigger for a 400-game run, not a result.</li>
+<li><strong>Confirmations:</strong> 400 games on unused seeds, where a lift is good to about 7 points. <strong>Close calls:</strong> 1,500.</li>
+<li><strong>Cost:</strong> about 25 seconds for 50 games and 3.5 minutes for 400, so compute isn&#39;t the limit. A script prints one table per run.</li>
+</ul>
+<div class="questions" data-idea="sims"></div>
+</section>
+<section class="sheet" id="run">
+<h2>Running it</h2>
+<p>Five rounds, stopping for you after each: <strong>0</strong> harness, static tables, personas&#39; plumbing and the fixes (500k); <strong>1</strong> win target and money (150k); <strong>2</strong> personas and cheese (500k); <strong>3</strong> rules, only if agreed (400k); <strong>4</strong> mixed games and the final check (150k).</p>
+<div class="questions" data-idea="run"></div>
+</section>
+<section class="sheet" id="rev4">
+<h2>Left over from Rev 4</h2>
+<div class="questions" data-idea="rev4"></div>
+</section>
+
+  </main>
+</div>
+
+<script id="questions-data" type="application/json">[{"id":"B-1","idea":"goals","text":"What counts as fair between the seats?","context":"Today: Republic 43.5%, North 37%, South 19.5%.","options":[{"label":"A. A third each, 28 to 39% per seat","rationale":"The simplest target to tune for and to test.","recommended":true},{"label":"B. Republic the underdog at about 25%, North and South equal","rationale":"The cloud session asked you this. Historically nearer, but the Republic player has the hardest game."},{"label":"C. Insurgents favoured, South strongest late","rationale":"Closest to 1936. Needs most change: the South is weakest now."},{"label":"D. No seat under 20%, otherwise anything","rationale":"Loose enough that the other goals drive the numbers."}],"groupTitle":"Goals"},{"id":"B-2","idea":"goals","text":"How strict is 20 to 30 turns?","context":"Today the median is 15 turns, and 25% of games land in 20 to 30.","options":[{"label":"A. Median in 20 to 30, and at least 60% of games inside","rationale":"Leaves room for some short and long games.","recommended":true},{"label":"B. At least 75% inside","rationale":"Very even games. Harder to reach, and may flatten variety."},{"label":"C. Median only","rationale":"Easy to reach, but hides a split between very short and very long games."}],"groupTitle":"Goals"},{"id":"B-3","idea":"goals","text":"How many early wins are acceptable?","context":"Today 27.5% of games are over by turn 8; 53 of those 55 are Republic wins.","options":[{"label":"A. At most 5% by turn 8","rationale":"The limit your early-win check already uses for turn 4.","recommended":true},{"label":"B. At most 5% by turn 12","rationale":"Stricter, since nobody can have an economy working by turn 8 anyway."},{"label":"C. None by turn 8","rationale":"Hard: dice alone will sometimes end a game early."}],"groupTitle":"Goals"},{"id":"B-4","idea":"goals","text":"How do we measure \"the winner leads for only a few turns\"?","context":"Today the winner leads alone for a median of 3 turns, counting territories only. If cities decide more games, territories alone will mislead.","options":[{"label":"A. Steps to the nearer victory; median under 2 turns","rationale":"Counts both ways to win. Needs new recording in the harness.","recommended":true},{"label":"B. Territories only, as measured now","rationale":"No new recording."},{"label":"C. Share of games under 2 turns, at least 60%","rationale":"Today 28%. Protects against a few runaway games hiding behind a median."}],"groupTitle":"Goals"},{"id":"B-5","idea":"goals","text":"What shows that winning needs an economy?","context":"The side that ordered the most development by turn 8 wins only 20% of longer games. That is association, not proof.","options":[{"label":"A. A player that never builds wins at most 10% from any seat","rationale":"Tests it directly. Today's computer player always builds something.","recommended":true},{"label":"B. At most 5%","rationale":"Makes building close to mandatory."},{"label":"C. At most half its seat's normal rate","rationale":"Scales with the seat, so a weak seat isn't punished twice."}],"groupTitle":"Goals"},{"id":"B-6","idea":"goals","text":"What shows that a mixed army is needed?","context":"97% of winners end with three or more of foot, guns, tanks and aircraft. Having one is not the same as needing it.","options":[{"label":"A. Banning guns, tanks or aircraft each costs a seat at least 10 points","rationale":"Tests need directly, one arm at a time.","recommended":true},{"label":"B. A foot-only army wins at most 10%, and any one ban may be cheap","rationale":"Lets a player skip tanks, say, but not all three."},{"label":"C. Winners give at least three arms 10% or more of their combat recruits","rationale":"No extra games, but the computer player can mix an army without needing it."}],"groupTitle":"Goals"},{"id":"B-7","idea":"goals","text":"Which history should the game roughly follow?","context":"Choose all that should matter. Each is recorded in every 400-game run once the harness can.","multi":true,"options":[{"label":"Madrid stands at turn 8","rationale":"The real city held until the end.","recommended":true},{"label":"Andalucía is not all insurgent by turn 6","rationale":"Jaén and Almería held to the end. Today it falls in a couple of turns.","recommended":true},{"label":"The north coast holds at turn 12","rationale":"It fell around turn 31.","recommended":true},{"label":"The insurgents win more often than the Republic","rationale":"Conflicts with fair thirds (B-1)."},{"label":"Most games reach winter 1937","rationale":"A length check, not a date check."}],"groupTitle":"Goals"},{"id":"B-8","idea":"strategies","text":"Which strategies should be good, with a fair chance of winning?","context":"Choose all you want to see. Each is played from every seat.","multi":true,"options":[{"label":"Builder: develops first, fights late","rationale":"The economy goal in person.","recommended":true},{"label":"Combined arms: keeps a mix of foot, guns, tanks and aircraft","rationale":"The mixed-army goal in person.","recommended":true},{"label":"Aggressor: attacks early, accepts losses","rationale":"Should be viable, not dominant.","recommended":true},{"label":"Turtle: digs in and waits","rationale":"Should hold but struggle to win.","recommended":true},{"label":"City hunter: plays for cities","rationale":"Matters most if the city target changes.","recommended":true}],"groupTitle":"Strategies and personas"},{"id":"B-9","idea":"strategies","text":"Which cheese should we test first?","context":"Choose all to build in the first wave. The rest follow if these pass.","multi":true,"options":[{"label":"Rush: replays the fastest opening land grab","rationale":"Today's early Republic wins.","recommended":true},{"label":"Denier: one unit in each of a rival's richest territories","rationale":"Contested land pays nobody, and stops recruiting and building.","recommended":true},{"label":"Air stacker: buys aircraft and flies only support","rationale":"Two fighters add +6 when no enemy aircraft or anti-air contests them.","recommended":true},{"label":"Threshold attacker: sends exactly enough for the next odds step","rationale":"Ratios round down, so 1.9:1 fights as 1:1.","recommended":true},{"label":"No-build: never builds or develops","rationale":"Same test as B-5.","recommended":true},{"label":"Single arm: foot only","rationale":"Same test as B-6.","recommended":true},{"label":"Elite core: few units, always topped up","rationale":"Upkeep is per unit at any strength, and replenishing is half price per man."},{"label":"Waiter: sits out winter, attacks in clear weather","rationale":"Mud and snow cost attackers 3."}],"groupTitle":"Strategies and personas"},{"id":"B-10","idea":"strategies","text":"When is a strategy too strong?","context":"Judged only at 400 games.","options":[{"label":"A. More than 10 points above its seat's normal rate, or over 50%","rationale":"Fair to strong and weak seats alike.","recommended":true},{"label":"B. Over 60% from any seat","rationale":"The cloud session's rule. Only catches the very worst."},{"label":"C. More than 5 points above its seat's normal rate","rationale":"At 400 games 5 points is within the noise, so close calls need 1,500."}],"groupTitle":"Strategies and personas"},{"id":"B-11","idea":"strategies","text":"Where do the personas live?","context":"The weight personas are data. The cheese bots are small pieces of code.","options":[{"label":"A. In the simulator only","rationale":"Nothing ships to players. Fastest, and cheese stays out of the game.","recommended":true},{"label":"B. The good ones ship as opponents","rationale":"More variety for players, but each needs a name, a menu and tests."},{"label":"C. All in the scenario data","rationale":"Easy for anyone to edit. Puts cheese in the shipped data."}],"groupTitle":"Strategies and personas"},{"id":"B-12","idea":"strategies","text":"Fix the standard computer player first?","context":"It buys one aircraft per 6 ground units by quota, buys anti-air wherever an enemy bomber reaches, and trucks are 15 to 23% of every side's orders.","options":[{"label":"A. Yes: aircraft, anti-air and trucks, then a new baseline","rationale":"Every test measures against this player, so its blind spots are in every result.","recommended":true},{"label":"B. Aircraft and anti-air only","rationale":"Smaller change. Trucks already had one fix this revision."},{"label":"C. Leave it","rationale":"Keeps comparison with the 200 games. Air and truck results can't be trusted."}],"groupTitle":"Strategies and personas"},{"id":"B-13","idea":"changes","text":"Which win targets may I try?","context":"Today 10 of 18 territories or 19 of 25 cities. Choose all. On Rev 3, 13 territories added about 11 turns and made most wins city wins.","multi":true,"options":[{"label":"12 territories","rationale":"The smaller step.","recommended":true},{"label":"13 territories","rationale":"The cloud session's recommendation.","recommended":true},{"label":"20 to 22 cities","rationale":"Needed beside 13 territories, or cities become the short cut.","recommended":true},{"label":"Hold the target for one full turn before winning","rationale":"Rivals get one chance to answer. A rule change."}],"groupTitle":"Changes to the game"},{"id":"B-14","idea":"changes","text":"Which numbers may I change?","context":"Choose all. Each is data, and easy to undo.","multi":true,"options":[{"label":"Starting Funds for every side","rationale":"The strongest lever on who wins.","recommended":true},{"label":"Air support per squadron, and its cap","rationale":"+3 each and 2 squadrons today. Too cheap beside more men.","recommended":true},{"label":"Development prices and yields","rationale":"A mine pays back in about 7 turns.","recommended":true},{"label":"Digging-in cap, 3 pips to 4","rationale":"Helped Madrid hold on Rev 3.","recommended":true},{"label":"Unit prices, training times and upkeep","rationale":"Only where the price and dominance tables show a problem.","recommended":true},{"label":"Barricades","rationale":"Left at 2: dropping to 1 swung 25 to 34 points between seats on Rev 3."}],"groupTitle":"Changes to the game"},{"id":"B-15","idea":"changes","text":"Which rule changes may I try?","context":"Choose all that are on the table. Each touches the engine, tests and player text.","multi":true,"options":[{"label":"Contested land pays each side for the provinces it holds","rationale":"The direct answer to denial.","recommended":true},{"label":"Smoother odds between columns","rationale":"The direct answer to threshold attacks.","recommended":true},{"label":"Captured buildings lose a level","rationale":"A lead stops paying for itself."},{"label":"Upkeep scales with strength","rationale":"The answer to the elite core."},{"label":"None","rationale":"Numbers only."}],"groupTitle":"Changes to the game"},{"id":"B-16","idea":"changes","text":"When may rule changes be tried?","options":[{"label":"A. Only where numbers failed","rationale":"Cheapest first, and every rule change is yours to approve.","recommended":true},{"label":"B. Early, alongside numbers","rationale":"Faster if you already know you want them."},{"label":"C. Ask me each time","rationale":"Slower, but you see each one before it is built."}],"groupTitle":"Changes to the game"},{"id":"B-17","idea":"changes","text":"May opening garrisons change?","context":"Andalucía falls in about two turns and the South is the weakest seat. On Rev 3, extra Cantabria militia helped the coast but added early Republic wins.","options":[{"label":"A. Yes, after the win target and money are settled","rationale":"Then we can tell which change did what.","recommended":true},{"label":"B. Yes, now","rationale":"If the opening bothers you most."},{"label":"C. No","rationale":"Keep the historical order of battle."}],"groupTitle":"Changes to the game"},{"id":"B-18","idea":"sims","text":"How do we find the best starting money?","context":"About 16 combinations. 50 games each can't rank them one by one.","options":[{"label":"A. 16 cells of 50, fitted as one model, best three at 400","rationale":"The cloud session's method.","recommended":true},{"label":"B. 6 cells of 200","rationale":"Simpler, but a rougher search."}],"groupTitle":"Experiments and sims"},{"id":"B-19","idea":"sims","text":"The model-fitting script from the cloud session (doe-kit.zip)?","context":"I didn't find it in Downloads or the project folder. It only matters for B-18 A.","options":[{"label":"A. I'll send it","rationale":"Saves the rewrite.","recommended":true},{"label":"B. Rewrite it","rationale":"A short script."},{"label":"C. Skip it","rationale":"Choose B-18 B."}],"groupTitle":"Experiments and sims"},{"id":"B-20","idea":"sims","text":"When do games mix several personas?","context":"Each game has three different personas, seats balanced.","options":[{"label":"A. After each persona is understood alone: 400 games, then 1,200","rationale":"A mixed result is hard to explain before then.","recommended":true},{"label":"B. From the start, beside the solo tests","rationale":"Finds odd interactions early, costs more games."},{"label":"C. Only mixed games","rationale":"Closest to a real table."}],"groupTitle":"Experiments and sims"},{"id":"B-21","idea":"sims","text":"When does the balancing stop?","options":[{"label":"A. Goals met, or three changes in a row that don't improve them","rationale":"Then you decide what to relax.","recommended":true},{"label":"B. At the token cap","rationale":"Predictable cost."},{"label":"C. When you say so","rationale":"You check in after every change."}],"groupTitle":"Experiments and sims"},{"id":"B-22","idea":"run","text":"Token cap for the balancing?","context":"Five rounds: 500k, 150k, 500k, 400k and 150k. Sims are cheap to run; tokens go on code and reading results.","options":[{"label":"A. 1.7M for all five","rationale":"Stops for you after each round.","recommended":true},{"label":"B. 1M: rounds 0 to 2 only","rationale":"Baseline, length, money and personas, no rule changes."},{"label":"C. Up to 2M","rationale":"Room for rule changes that take two tries."}],"groupTitle":"Running it"},{"id":"B-23","idea":"run","text":"Put a language model in one seat?","context":"The engine already takes orders from any seat.","options":[{"label":"A. Not yet","rationale":"Cheaper tests first.","recommended":true},{"label":"B. One seat, about 20 games, at the end","rationale":"A check on what the personas miss. It costs real money per game."},{"label":"C. Instead of the cheese bots","rationale":"Finds tricks we didn't think of, but costs the most."}],"groupTitle":"Running it"},{"id":"B-24","idea":"run","text":"The early-win check in the unit suite?","context":"Its 10 games missed the 8.5% early-win rate in the 200-game run.","options":[{"label":"A. A separate 100-game check, under a minute; the suite keeps 10","rationale":"Run before each merge.","recommended":true},{"label":"B. 100 games inside the suite","rationale":"About 5 minutes of one core every time."},{"label":"C. Leave it","rationale":"Nothing new to run."}],"groupTitle":"Running it"},{"id":"B-25","idea":"run","text":"Where does this work live?","options":[{"label":"A. A new branch from m3r4","rationale":"Rev 4 stays as it is for your playtest.","recommended":true},{"label":"B. Straight on m3r4","rationale":"One branch, but Rev 4 can't be played unchanged."},{"label":"C. Merge Rev 4 to main first","rationale":"Needs your playtest before any balancing starts."}],"groupTitle":"Running it"},{"id":"B-26","idea":"rev4","text":"Air battles: when is an aircraft lost?","context":"Left from Rev 4. As built, only the first and last rows of the air table cost a squadron.","options":[{"label":"A. Keep as built: first and last rows only","rationale":"Middle winning rows drive aircraft off, none lost.","recommended":true},{"label":"B. Any row that gives one side Ground Support","rationale":"Air losses become common. Balance numbers would move."},{"label":"C. I meant something else","rationale":"Say what in the notes."}],"groupTitle":"Left over from Rev 4"},{"id":"B-27","idea":"rev4","text":"One-turn units against a rival two steps from winning?","context":"Rev 3 said they always come first. Rev 4 narrows that to sites the rival would likely take (35% or more).","options":[{"label":"A. Keep the Rev 4 rule","rationale":"Stops the computer player buying mostly security forces.","recommended":true},{"label":"B. Go back to the Rev 3 rule","rationale":"Safer against a sudden win, more security forces."}],"groupTitle":"Left over from Rev 4"}]</script>
+<script>
+window.M3W = {};
+</script>
+<script>
+(function () {
+  "use strict";
+  var KEY = "m3r4-balance-v1";
+  var questions = [];
+  try { questions = JSON.parse(document.getElementById("questions-data").textContent); } catch (e) { questions = []; }
+  var byId = {};
+  questions.forEach(function (q) { byId[q.id] = q; });
+  var answers = {};
+  try { var raw = window.localStorage.getItem(KEY); if (raw) answers = JSON.parse(raw) || {}; } catch (e) { answers = {}; }
+  var remote = null, remoteTimer = null;
+  function remoteStatus(text) { var s = document.getElementById("remote-status"); if (s) s.textContent = text; }
+  function pushRemote() {
+    if (!remote) return;
+    clearTimeout(remoteTimer);
+    remoteTimer = setTimeout(function () {
+      var n = 0; questions.forEach(function (q) { if (isAnswered(q.id)) n += 1; });
+      remote.set({ answers: answers, answered: n, total: questions.length, updatedAt: new Date().toISOString() }).then(
+        function () { remoteStatus("Saved to this artifact for the team."); },
+        function (e) { if (e && (e.code === "invalid_argument" || e.code === "revoked" || e.code === "not_granted")) { remote = null; remoteStatus("Saved in this browser only. Use Copy my answers to send them."); } });
+    }, 1200);
+  }
+  function save() { try { window.localStorage.setItem(KEY, JSON.stringify(answers)); } catch (e) { /* storage unavailable: answers live in the page only */ } pushRemote(); }
+  function isAnswered(id) { var a = answers[id]; return !!(a && a.choices && a.choices.length); }
+
+  function el(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
+
+  function renderQuestion(q) {
+    var fs = el("fieldset", "q"); fs.id = q.id; fs.setAttribute("data-qid", q.id);
+    var lg = el("legend"); var head = el("div", "q-head");
+    head.appendChild(el("span", "q-id", q.id));
+    head.appendChild(el("span", "q-text", q.text));
+    if (q.multi) head.appendChild(el("span", "q-multi", "Choose all that apply"));
+    lg.appendChild(head); if (q.context) lg.appendChild(el("p", "q-ctx", q.context)); fs.appendChild(lg);
+    var type = q.multi ? "checkbox" : "radio";
+    (q.options || []).forEach(function (o, i) {
+      var lab = el("label", "opt");
+      var inp = document.createElement("input"); inp.type = type; inp.name = q.id; inp.value = String(i); inp.id = q.id + "-o" + i;
+      var txt = el("span"); txt.appendChild(document.createTextNode(o.label));
+      if (o.recommended) txt.appendChild(el("span", "rec", "(Recommended)"));
+      lab.appendChild(inp); lab.appendChild(txt);
+      if (o.rationale) lab.appendChild(el("span", "why", o.rationale));
+      fs.appendChild(lab);
+      inp.addEventListener("change", function () { readQuestion(fs, q); });
+    });
+    var nl = el("label", "notes-label", "Other / notes"); nl.htmlFor = q.id + "-notes";
+    var ta = document.createElement("textarea"); ta.id = q.id + "-notes"; ta.rows = 1; ta.placeholder = "Optional: another option, a condition, or a reason";
+    ta.addEventListener("input", function () { readQuestion(fs, q); });
+    fs.appendChild(nl); fs.appendChild(ta);
+    applyAnswer(fs, q);
+    return fs;
+  }
+  function applyAnswer(fs, q) {
+    var a = answers[q.id] || {};
+    var chosen = (a.choices || []).map(String);
+    Array.prototype.forEach.call(fs.querySelectorAll("input"), function (inp) { inp.checked = chosen.indexOf(inp.value) >= 0; });
+    var ta = fs.querySelector("textarea"); if (ta) ta.value = a.notes || "";
+    fs.classList.toggle("answered", isAnswered(q.id));
+  }
+  function readQuestion(fs, q) {
+    var choices = [];
+    Array.prototype.forEach.call(fs.querySelectorAll("input"), function (inp) { if (inp.checked) choices.push(Number(inp.value)); });
+    var notes = fs.querySelector("textarea").value;
+    if (!choices.length && !notes.trim()) delete answers[q.id]; else answers[q.id] = { choices: choices, notes: notes };
+    fs.classList.toggle("answered", isAnswered(q.id));
+    save(); updateProgress();
+  }
+
+  var groups = {};
+  questions.forEach(function (q) { var k = String(q.idea); (groups[k] = groups[k] || []).push(q); });
+  Array.prototype.forEach.call(document.querySelectorAll(".questions[data-idea]"), function (box) {
+    var list = groups[box.getAttribute("data-idea")] || [];
+    if (!list.length) { box.appendChild(el("p", "missing", "No questions were drafted for this item.")); return; }
+    list.forEach(function (q) { box.appendChild(renderQuestion(q)); });
+  });
+
+  function updateProgress() {
+    var n = 0; questions.forEach(function (q) { if (isAnswered(q.id)) n += 1; });
+    var label = n + " of " + questions.length + " answered";
+    Array.prototype.forEach.call(document.querySelectorAll("[data-progress-text]"), function (s) { s.textContent = label; });
+    var fill = document.getElementById("progress-fill"); if (fill) fill.style.width = (questions.length ? (100 * n / questions.length) : 0) + "%";
+    Array.prototype.forEach.call(document.querySelectorAll("[data-toc-idea]"), function (c) {
+      var list = [];
+      c.getAttribute("data-toc-idea").split(",").forEach(function (k) { list = list.concat(groups[k] || []); });
+      var m = 0; list.forEach(function (q) { if (isAnswered(q.id)) m += 1; });
+      c.textContent = list.length ? (m + "/" + list.length) : "";
+    });
+  }
+
+  function answersMarkdown() {
+    var lines = ["# Rev 4 balance answers", ""];
+    var n = 0; questions.forEach(function (q) { if (isAnswered(q.id) || (answers[q.id] && answers[q.id].notes)) n += 1; });
+    lines.push("Answered " + n + " of " + questions.length + " questions. Copied " + new Date().toISOString().slice(0, 10) + ".", "");
+    var currentIdea = null;
+    questions.forEach(function (q) {
+      var a = answers[q.id]; if (!a) return;
+      if (q.idea !== currentIdea) { currentIdea = q.idea; lines.push("## " + (q.groupTitle || ("Idea " + q.idea)), ""); }
+      var picked = (a.choices || []).map(function (i) { var o = q.options[i]; return o ? o.label + (o.recommended ? " (Recommended)" : "") : "?"; });
+      lines.push("- **" + q.id + "** " + q.text);
+      lines.push("  - Answer: " + (picked.length ? picked.join("; ") : "(no option chosen)"));
+      if (a.notes && a.notes.trim()) lines.push("  - Notes: " + a.notes.trim().replace(/\s*\n\s*/g, " / "));
+    });
+    var blanks = questions.filter(function (q) { return !answers[q.id]; }).map(function (q) { return q.id; });
+    if (blanks.length) { lines.push("", "## Unanswered", "", blanks.join(", ")); }
+    return lines.join("\n") + "\n";
+  }
+  var status = document.getElementById("copy-status");
+  var fallback = document.getElementById("copy-fallback");
+  function showFallback(text) {
+    fallback.hidden = false; fallback.value = text; fallback.focus(); fallback.select();
+    status.textContent = "Copying is blocked here. The answers are selected below: copy them by hand.";
+  }
+  Array.prototype.forEach.call(document.querySelectorAll("[data-copy]"), function (b) {
+    b.addEventListener("click", function () {
+      var text = answersMarkdown();
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(function () { status.textContent = "Copied as Markdown. Paste it into the chat or the tasks doc."; fallback.hidden = true; },
+            function () { showFallback(text); });
+        } else { showFallback(text); }
+      } catch (e) { showFallback(text); }
+      if (window.matchMedia("(max-width: 900px)").matches) { document.getElementById("toc").classList.add("open"); document.getElementById("toc-toggle").setAttribute("aria-expanded", "true"); }
+    });
+  });
+  document.getElementById("fill-rec").addEventListener("click", function () {
+    var filled = 0;
+    questions.forEach(function (q) {
+      if (isAnswered(q.id)) return;
+      var picks = []; (q.options || []).forEach(function (o, i) { if (o.recommended && (q.multi || picks.length === 0)) picks.push(i); });
+      if (!picks.length) return;
+      var prev = answers[q.id] || { notes: "" };
+      answers[q.id] = { choices: picks, notes: prev.notes || "" }; filled += 1;
+    });
+    save();
+    Array.prototype.forEach.call(document.querySelectorAll("fieldset.q"), function (fs) { applyAnswer(fs, byId[fs.getAttribute("data-qid")]); });
+    updateProgress(); status.textContent = filled + " blank questions set to the recommended option. Review and change any you disagree with.";
+  });
+  var clearAll = document.getElementById("clear-all"), clearConfirm = document.getElementById("clear-confirm");
+  clearAll.addEventListener("click", function () { clearConfirm.hidden = !clearConfirm.hidden; });
+  clearConfirm.addEventListener("click", function () {
+    answers = {}; save(); clearConfirm.hidden = true;
+    Array.prototype.forEach.call(document.querySelectorAll("fieldset.q"), function (fs) { applyAnswer(fs, byId[fs.getAttribute("data-qid")]); });
+    updateProgress(); status.textContent = "All answers cleared.";
+  });
+  var toggle = document.getElementById("toc-toggle"), toc = document.getElementById("toc");
+  toggle.addEventListener("click", function () { var open = toc.classList.toggle("open"); toggle.setAttribute("aria-expanded", open ? "true" : "false"); });
+  Array.prototype.forEach.call(toc.querySelectorAll("ol a"), function (a) { a.addEventListener("click", function () { toc.classList.remove("open"); toggle.setAttribute("aria-expanded", "false"); }); });
+
+  // Widgets
+  Array.prototype.forEach.call(document.querySelectorAll(".widget[data-widget]"), function (w) {
+    var fn = window.M3W && window.M3W[w.getAttribute("data-widget")];
+    if (typeof fn !== "function") { w.appendChild(el("p", "widget-error", "This widget is not available.")); return; }
+    try { fn(w); } catch (e) { w.appendChild(el("p", "widget-error", "This widget failed to start: " + (e && e.message))); }
+  });
+
+  // Active section in the contents
+  var links = Array.prototype.slice.call(toc.querySelectorAll("ol a[href^='#']"));
+  if ("IntersectionObserver" in window) {
+    var map = {}; links.forEach(function (a) { map[a.getAttribute("href").slice(1)] = a; });
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) { if (en.isIntersecting && map[en.target.id]) { links.forEach(function (l) { l.classList.remove("active"); }); map[en.target.id].classList.add("active"); } });
+    }, { rootMargin: "-10% 0px -80% 0px" });
+    Object.keys(map).forEach(function (id) { var t = document.getElementById(id); if (t) io.observe(t); });
+  }
+  updateProgress();
+
+  // Optional: when this page runs as a claude.ai Artifact with storage, also keep answers there.
+  try {
+    if (window.claude && typeof window.claude.use === "function") {
+      Promise.all([window.claude.use("db"), window.claude.use("user")]).then(function (r) {
+        var db = r[0], user = r[1];
+        if (!db || !user) return null;
+        return user.id().then(function (uid) {
+          if (!uid) return null;
+          var ref; try { ref = db.doc("answers/" + uid); } catch (e) { return null; }
+          return ref.get().then(function (snap) {
+            remote = ref;
+            var d = snap.exists ? snap.data() : null;
+            if (d && d.answers && !Object.keys(answers).length) {
+              answers = d.answers;
+              try { window.localStorage.setItem(KEY, JSON.stringify(answers)); } catch (e) { /* ignore */ }
+              Array.prototype.forEach.call(document.querySelectorAll("fieldset.q"), function (fs) { applyAnswer(fs, byId[fs.getAttribute("data-qid")]); });
+              updateProgress();
+            }
+            remoteStatus("Answers save to this artifact for the team, and to this browser.");
+          });
+        });
+      }).catch(function () { /* no shared storage: browser only */ });
+    }
+  } catch (e) { /* no runtime */ }
+})();
+</script>

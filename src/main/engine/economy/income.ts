@@ -1,7 +1,7 @@
 import { hookedIncome } from "../hooks";
 import { toThousandth } from "../resources";
-import type { FactionId, GameState, ResourceId, Resources, Scenario, SubTerritoryId, SubTerritoryState } from "../types";
-import { subTerritoriesOf, territoriesHeldWhole } from "./holdings";
+import type { FactionId, GameState, ResourceId, Resources, Scenario, SubTerritoryId, SubTerritoryState, TerritoryId } from "../types";
+import { subTerritoriesOf, territoriesHeldWhole, wholeHolder } from "./holdings";
 import { sumResources, subtractResources } from "./resources";
 
 /**
@@ -18,6 +18,16 @@ export function subTerritoryYield(scenario: Scenario, site: Pick<SubTerritorySta
     if (level > 0) total[track.resource] = toThousandth((total[track.resource] ?? 0) + level * track.yieldPerLevel);
   }
   return total;
+}
+
+/** What a territory pays a turn, every resource added up, to the one faction that holds it whole; nothing where none does. */
+export function territoryIncome(scenario: Scenario, state: GameState, territoryId: TerritoryId): number {
+  if (wholeHolder(scenario, state.subTerritories, territoryId) === undefined) return 0;
+  const yields = subTerritoriesOf(scenario, territoryId).flatMap((sub) => {
+    const site = state.subTerritories[sub.id];
+    return site === undefined ? [] : [subTerritoryYield(scenario, site)];
+  });
+  return Object.values(sumResources(...yields)).reduce((sum, amount) => sum + amount, 0);
 }
 
 export interface IncomeBreakdown {

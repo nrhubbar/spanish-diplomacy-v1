@@ -119,62 +119,99 @@ export const generalsSchema = z.strictObject({
 });
 
 const weight = z.number();
+const nonNegativeSchema = z.number().min(0);
+
+const computerSchema = z.strictObject({
+  approachObjective: weight,
+  bouncedLastTurn: weight,
+  caution: weight,
+  demoralizedShare: weight,
+  enemyLoss: weight,
+  ownLoss: weight
+});
+const offensiveSchema = z.strictObject({
+  reach: positiveWholeSchema,
+  oddsTieBreak: weight,
+  staging: weight,
+  focus: weight,
+  stallStep: weight,
+  stallCap: wholeSchema,
+  thrift: nonNegativeSchema.optional().meta({ description: "Cost per point of attack value sent into an attack on defended ground, so the least force that still scores best goes. Absent: 0." })
+});
+const aiAirSchema = z.strictObject({
+  supportChance: shareSchema.meta({ description: "R11: the least chance that an attack's Ground Support applies after the air battle, for aircraft to fly it." })
+});
+const stakesSchema = z.strictObject({
+  city: weight,
+  objective: weight,
+  territory: weight,
+  income: nonNegativeSchema.optional().meta({ description: "Added to the stake of a territory a rival holds whole, per point of income a turn it pays the rival (every resource alike), which any ground taken there stops. Absent: 0." })
+});
+const recruitsSchema = z.strictObject({
+  delayDrag: weight.meta({ description: "How much each turn until a unit can fight lowers its worth: it is divided by one plus this for each turn." }),
+  fightersPerSupport: positiveWholeSchema.meta({ description: "Own units that can fight for each support unit (cannot-attack-alone), at least." }),
+  quickTakeChance: shareSchema.meta({ description: "At this chance or more that a rival near victory takes a site, units that train in one turn come first there." }),
+  upkeepHorizon: positiveWholeSchema.meta({ description: "Turns of upkeep counted in a unit's price, and of income and upkeep in what the faction can spend on recruits." }),
+  upkeepTurns: positiveWholeSchema.meta({ description: "Turns of upkeep the Recruit orders leave in stock, at today's income, for what the unit types' upkeep takes." }),
+  aircraftPerTurn: wholeSchema.optional().meta({ description: "Aircraft recruited a turn, at most. Absent: 1." }),
+  maxUnits: wholeSchema.optional().meta({ description: "Units that can fight, on the map and in training, at which the faction recruits nothing more of any type; it still replenishes. Absent: no limit." }),
+  trucksPerTurn: wholeSchema.optional().meta({ description: "Transport units that cannot fight recruited a turn, at most. Absent: 1." }),
+  typeWorth: z.record(slugSchema, nonNegativeSchema).optional().meta({ description: "What a unit type's worth is multiplied by, per type id; 0 is never recruited. A type not listed, and all of them when absent: 1." }),
+  variety: shareSchema.optional().meta({ description: "The share of its worth a unit type loses as the faction's force already holds it: half of this share at an even split of the force over the types, nearing all of it beyond. Absent: 0." })
+});
+const alarmSchema = z.strictObject({
+  critical: weight,
+  perStep: weight,
+  riskFloor: shareSchema.meta({ description: "The least share of own losses and of the danger at home that count when attacking a rival near victory." }),
+  spendSteps: wholeSchema.meta({ description: "At this many steps or fewer short of victory, a rival makes the faction spend without a Build reserve, and on the quickest units where they can reach it." }),
+  steps: wholeSchema
+});
+const withdrawSchema = z.strictObject({ hopelessTakeChance: shareSchema, lastStandTakeChance: shareSchema });
+const buildsSchema = z.strictObject({
+  spendShare: shareSchema.meta({ description: "Share of each resource left after Recruit orders that builds may spend." }),
+  reserveShare: shareSchema.meta({ description: "M5: share of each resource that builds cost which Recruit orders leave unspent; at least the price of the development item saved for." }),
+  developmentShare: shareSchema.meta({ description: "M5: the most of a resource's balance the saved-for development item may take; above it, Recruit orders come first." }),
+  developmentProjects: wholeSchema.meta({ description: "M5: development items the faction keeps queued. While it has fewer, Recruit orders leave the best one's price and Build orders buy it first." }),
+  maxOrdersPerTurn: wholeSchema.meta({ description: "Build orders a turn." }),
+  itemsPerEmptyQueue: positiveWholeSchema.meta({ description: "New items a sub-territory with an empty queue may take in a turn." })
+});
+
+/** E7: one computer player's weights. The loader also reads a seat's persona against it, merged over the faction's own profile (L30). */
+export const aiProfileSchema = z.strictObject({
+  computer: computerSchema,
+  offensive: offensiveSchema,
+  air: aiAirSchema,
+  stakes: stakesSchema,
+  recruits: recruitsSchema,
+  victoryAlarm: alarmSchema,
+  withdraw: withdrawSchema,
+  builds: buildsSchema.optional().meta({ description: "EB-15: the computer player's Build budget. Required with an economy module (L27)." })
+});
+
+/** Any part of a profile: the fields a persona changes. */
+const aiOverridesSchema = z.strictObject({
+  computer: computerSchema.partial().optional(),
+  offensive: offensiveSchema.partial().optional(),
+  air: aiAirSchema.partial().optional(),
+  stakes: stakesSchema.partial().optional(),
+  recruits: recruitsSchema.partial().optional(),
+  victoryAlarm: alarmSchema.partial().optional(),
+  withdraw: withdrawSchema.partial().optional(),
+  builds: buildsSchema.partial().optional()
+});
 
 export const aiSchema = z
   .strictObject({
-    profiles: z
-      .record(
-        slugSchema,
-        z.strictObject({
-          computer: z.strictObject({
-            approachObjective: weight,
-            bouncedLastTurn: weight,
-            caution: weight,
-            demoralizedShare: weight,
-            enemyLoss: weight,
-            ownLoss: weight
-          }),
-          offensive: z.strictObject({
-            reach: positiveWholeSchema,
-            oddsTieBreak: weight,
-            staging: weight,
-            focus: weight,
-            stallStep: weight,
-            stallCap: wholeSchema
-          }),
-          air: z.strictObject({
-            supportChance: shareSchema.meta({ description: "R11: the least chance that an attack's Ground Support applies after the air battle, for aircraft to fly it." })
-          }),
-          stakes: z.strictObject({ city: weight, objective: weight, territory: weight }),
-          recruits: z.strictObject({
-            delayDrag: weight.meta({ description: "How much each turn until a unit can fight lowers its worth: it is divided by one plus this for each turn." }),
-            fightersPerSupport: positiveWholeSchema.meta({ description: "Own units that can fight for each support unit (cannot-attack-alone), at least." }),
-            quickTakeChance: shareSchema.meta({ description: "At this chance or more that a rival near victory takes a site, units that train in one turn come first there." }),
-            upkeepHorizon: positiveWholeSchema.meta({ description: "Turns of upkeep counted in a unit's price, and of income and upkeep in what the faction can spend on recruits." }),
-            upkeepTurns: positiveWholeSchema.meta({ description: "Turns of upkeep the Recruit orders leave in stock, at today's income, for what the unit types' upkeep takes." })
-          }),
-          victoryAlarm: z.strictObject({
-            critical: weight,
-            perStep: weight,
-            riskFloor: shareSchema.meta({ description: "The least share of own losses and of the danger at home that count when attacking a rival near victory." }),
-            spendSteps: wholeSchema.meta({ description: "At this many steps or fewer short of victory, a rival makes the faction spend without a Build reserve, and on the quickest units where they can reach it." }),
-            steps: wholeSchema
-          }),
-          withdraw: z.strictObject({ hopelessTakeChance: shareSchema, lastStandTakeChance: shareSchema }),
-          builds: z
-            .strictObject({
-              spendShare: shareSchema.meta({ description: "Share of each resource left after Recruit orders that builds may spend." }),
-              reserveShare: shareSchema.meta({ description: "M5: share of each resource that builds cost which Recruit orders leave unspent; at least the price of the development item saved for." }),
-              developmentShare: shareSchema.meta({ description: "M5: the most of a resource's balance the saved-for development item may take; above it, Recruit orders come first." }),
-              developmentProjects: wholeSchema.meta({ description: "M5: development items the faction keeps queued. While it has fewer, Recruit orders leave the best one's price and Build orders buy it first." }),
-              maxOrdersPerTurn: wholeSchema.meta({ description: "Build orders a turn." }),
-              itemsPerEmptyQueue: positiveWholeSchema.meta({ description: "New items a sub-territory with an empty queue may take in a turn." })
-            })
-            .optional()
-            .meta({ description: "EB-15: the computer player's Build budget. Required with an economy module (L27)." })
-        })
-      )
-      .meta({ description: "E7: one profile per faction, keyed by faction id (L23)." }),
+    profiles: z.record(slugSchema, aiProfileSchema).meta({ description: "E7: one profile per faction, keyed by faction id (L23)." }),
+    personas: z
+      .record(slugSchema, z.strictObject({
+        name: textSchema,
+        note: textSchema.optional().meta({ description: "What the persona plays for, in a sentence." }),
+        overrides: aiOverridesSchema.meta({ description: "The profile fields the persona changes; it keeps every other field of its seat's own profile." })
+      }))
+      .optional()
+      .meta({ description: "Strategies a computer player may be given to play, for the simulation harness (L30)." }),
+    seats: z.record(slugSchema, slugSchema).optional().meta({ description: "The persona each faction plays, by faction id; a faction not named plays its own profile (L30)." }),
     ...basisShape
   })
   .meta({ description: "E7: the computer players' weights per faction." });

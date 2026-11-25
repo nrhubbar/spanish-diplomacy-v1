@@ -80,12 +80,12 @@ describe("the Recruit tab (X4)", () => {
     expect(militia).toHaveAttribute("data-locked", "false");
     expect(militia).not.toHaveAttribute("tabindex");
     expect(within(militia).getByTitle("Attack-defence at full strength").textContent).toMatch(/^\d+-\d+$/u);
-    expect(terms(militia)).toBe("3 Funds \u00b7 3k Manpower \u00b7 2.5k men \u00b7 1 turn \u00b7 upkeep 1.5k Manpower");
+    expect(terms(militia)).toBe("4 Funds \u00b7 3k Manpower \u00b7 2.5k men \u00b7 1 turn \u00b7 upkeep 0.3 Funds and 1.5k Manpower");
     expect(within(militia).getByRole("tooltip").textContent).toContain("Needs no buildings.");
     expect(within(militia).getByRole("button", { name: "One fewer Militia column" })).toHaveAttribute("aria-disabled", "true");
     expect(within(militia).getByRole("button", { name: "One more Militia column" })).toHaveAttribute("aria-disabled", "false");
     const infantry = row("Infantry regiment");
-    expect(terms(infantry)).toBe("5 Funds \u00b7 1k Manpower \u00b7 700 men \u00b7 2 turns \u00b7 upkeep 0.3k Manpower");
+    expect(terms(infantry)).toBe("6 Funds \u00b7 1k Manpower \u00b7 700 men \u00b7 2 turns \u00b7 upkeep 0.3 Funds and 0.3k Manpower");
     expect(within(infantry).getByRole("tooltip").textContent).toContain("Needs: Barracks \u2713");
   });
 
@@ -154,7 +154,7 @@ describe("the Recruit tab (X4)", () => {
     expect(militia.querySelector(".recruit-note")?.textContent).toBe("No orders left");
     expect(within(militia).getByRole("button", { name: "One fewer Militia column" })).toHaveAttribute("aria-disabled", "false");
     expect(within(militia).getByRole("tooltip").textContent).toContain("No Recruit orders left here this turn.");
-    expect(screen.getByText(/^All recruiting and replenishing this turn: 6 Funds, 6k? Manpower$/u)).toBeTruthy();
+    expect(screen.getByText(/^All recruiting and replenishing this turn: 8 Funds, 6k? Manpower$/u)).toBeTruthy();
   });
 
   it("disables adding what the treasury cannot pay, naming the resource", () => {
@@ -165,7 +165,7 @@ describe("the Recruit tab (X4)", () => {
     expect(more).toHaveAttribute("aria-disabled", "true");
     expect(more).toHaveAttribute("title", "Not enough Funds.");
     expect(militia.querySelector(".recruit-note")?.textContent).toBe("Not enough Funds");
-    expect(militia.querySelector('[data-short="true"]')?.textContent).toBe("3 Funds \u00b7 3k Manpower");
+    expect(militia.querySelector('[data-short="true"]')?.textContent).toBe("4 Funds \u00b7 3k Manpower");
   });
 
   it("adds and removes a unit through the store", async () => {
@@ -204,7 +204,7 @@ describe("the Recruit tab (X4)", () => {
     const planning = session(start, { ...emptyDraft, recruits: [recruit("madrid", "militia-column"), recruit("valencia", "militia-column"), recruit("madrid", "infantry-regiment")] });
     const { store, user } = renderTab(planning, territory("madrid"));
     const ledger = within(screen.getByRole("list", { name: "Recruit orders at Madrid" }));
-    expect(ledger.getAllByRole("listitem").map((line) => line.textContent.replaceAll(/\s+/gu, " "))).toEqual(["Militia column3 Funds 3k Manpower Cancel", "Infantry regiment5 Funds 1k Manpower Cancel", "EmptyCancel"]);
+    expect(ledger.getAllByRole("listitem").map((line) => line.textContent.replaceAll(/\s+/gu, " "))).toEqual(["Militia column4 Funds 3k Manpower Cancel", "Infantry regiment6 Funds 1k Manpower Cancel", "EmptyCancel"]);
     const slots = ledger.getAllByRole("button");
     expect(slots.map((slot) => slot.getAttribute("aria-label"))).toEqual(["Cancel Militia column, order 1 of 3", "Cancel Infantry regiment, order 2 of 3", "Nothing to cancel, order 3 of 3"]);
     expect(slots[2]).toHaveAttribute("tabindex", "-1");

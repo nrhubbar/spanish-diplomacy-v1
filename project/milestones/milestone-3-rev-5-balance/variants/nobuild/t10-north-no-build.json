@@ -1,0 +1,46 @@
+{
+ "name": "t10-north-no-build",
+ "description": "10 territories; Funds (30, 15, 15); north never builds",
+ "patch": [
+  {
+   "op": "test",
+   "path": "/factions/0/id",
+   "value": "republic"
+  },
+  {
+   "op": "replace",
+   "path": "/factions/0/startingStock/funds",
+   "value": 30
+  },
+  {
+   "op": "test",
+   "path": "/factions/1/id",
+   "value": "north"
+  },
+  {
+   "op": "replace",
+   "path": "/factions/1/startingStock/funds",
+   "value": 15
+  },
+  {
+   "op": "test",
+   "path": "/factions/2/id",
+   "value": "south"
+  },
+  {
+   "op": "replace",
+   "path": "/factions/2/startingStock/funds",
+   "value": 15
+  },
+  {
+   "op": "replace",
+   "path": "/factions/2/startingStock/manpower",
+   "value": 5
+  },
+  {
+   "op": "add",
+   "path": "/ai/seats/north",
+   "value": "no-build"
+  }
+ ]
+}

@@ -142,7 +142,7 @@ describe("the balance view's rows (U11)", () => {
     expect(funds!.rows.slice(-3).map((row) => [row.label, row.note, row.value])).toEqual([
       ["Builds under way", "paid when queued", 0],
       ["Replenish", "none planned", -0],
-      ["Upkeep", "none", 0]
+      ["Upkeep", "18 units", -4.5]
     ]);
     expect(funds!.now).toBe(funds!.held - funds!.spent);
     expect(funds!.spent).toBeGreaterThan(0);

@@ -32,7 +32,7 @@ All ids are lowercase kebab-case (`[a-z0-9]+(-[a-z0-9]+)*`) and are never shown 
 | `victory.cityShare` | 0-1 | Share of victory-eligible cities that wins (rounded up). |
 | `victory.tieBreak` | list of `cities` / `territories` | Order in which qualifying factions are compared. |
 | `combat` | see below | Digging in and demoralization. The battle table and its modifiers are the `d20` block. |
-| `ai` | `{ profiles: { [factionId]: profile }, sources?, note? }` | E7: one computer-player profile per faction (see "AI profiles"). Rev 2 removed the blunder chance. |
+| `ai` | `{ profiles: { [factionId]: profile }, personas?, seats?, sources?, note? }` | E7: one computer-player profile per faction, and the personas a seat may play instead (see "AI profiles"). Rev 2 removed the blunder chance. |
 | `unitTypes[]` | `{ id, name, attack, defence }` | Unit types. `attack` and `defence` are positive whole numbers: the values of a full-strength army of the type (C4). Symbols come from the map package. |
 | `factions[]` | see below | At least two. |
 | `territories[]` | see below | At least two. |
@@ -59,6 +59,21 @@ Combat (`combat`), every field required:
 ### AI profiles
 
 `ai.profiles` is keyed by faction id, one profile per faction (E7), so a harness variant patches `/ai/profiles/<factionId>`. A profile is `{ computer, offensive, stakes, victoryAlarm, withdraw, builds }`, the weights of today's computer player. `computer`: `approachObjective`, `bouncedLastTurn`, `caution`, `demoralizedShare`, `enemyLoss`, `ownLoss`. `offensive`: `reach`, `oddsTieBreak`, `staging`, `focus`, `stallStep`, `stallCap`. `stakes`: `city`, `objective`, `territory`. `victoryAlarm`: `critical`, `perStep`, `steps` (`critical` raises a territory whose change of hands alone would decide the game: own ground a rival in reach would win by taking, and ground the faction itself would win by taking; `perStep` and `steps` raise a rival's other territories as it nears victory). `withdraw`: `hopelessTakeChance`, `lastStandTakeChance`, shares from 0 to 1 (C1: the enemy's chance to take contested ground whole in the standing battle at which the faction withdraws; the second applies to its seat, last objective and victory-critical ground). `builds` (EB-15, required with an economy module, L27): `spendShare`, the share of each resource left after Recruit orders that Build orders may spend; `reserveShare`, the share of each resource builds cost that Recruit orders leave unspent; `developmentProjects`, the development items the faction keeps queued (while it has fewer, Recruit orders leave the best one's price and Build orders buy it first, M5); `developmentShare`, the most of a balance that saved-for item may take, so a poor faction recruits first; `maxOrdersPerTurn`; and `itemsPerEmptyQueue`, the new items one sub-territory with an empty queue may take in a turn. The strategy logic stays in code. `victoryAlarm` raises the stakes of a rival near victory (`steps`, `perStep`), discounts own losses and the danger at home when striking it (`riskFloor`), and stops saving for builds (`spendSteps`). `recruits.upkeepTurns` is how many turns of upkeep the Recruit, Replenish and Build orders leave in stock, at today's income.
+
+A profile may also have these fields. A profile that leaves one out plays by the value in the last column, so none of them changes a profile that doesn't name it.
+
+| Field | Meaning | Absent |
+|---|---|---|
+| `recruits.typeWorth` | `{ [unitTypeId]: multiplier }`: what a type's worth is multiplied by. 0 is never recruited (trucks, anti-air and aircraft included), and Build orders unlock nothing for it. | 1 for each type |
+| `recruits.variety` | 0 to 1: the share of its worth a type loses as the force (on the map, in training and ordered this turn) already holds it. With `r` the type's units against an even split of the force over every type that joins battles, it loses `variety * r / (1 + r)`: nothing for a type it has none of, half of `variety` at the even split, and never all of its worth. | 0 |
+| `recruits.maxUnits` | Units that can fight, on the map and in training, at which the faction recruits nothing more of any type. It still replenishes. | no limit |
+| `recruits.aircraftPerTurn`, `recruits.trucksPerTurn` | Aircraft, and trucks, recruited a turn, at most. | 1, 1 |
+| `stakes.income` | Added to the stake of a territory a rival holds whole, for each point of income it pays that rival a turn, every resource alike. A contested territory pays nobody, so this share of the prize counts in full for any ground taken there, where the rest of a prize counts half. Own and contested territories are unaffected. | 0 |
+| `offensive.thrift` | Cost per point of attack value sent into an attack on ground that is, or may be, defended. The least force that still scores best goes. One army walking into empty ground costs nothing. | 0 |
+
+A profile that gives no Build orders of any kind has `builds` with `spendShare`, `reserveShare`, `developmentProjects`, `developmentShare` and `maxOrdersPerTurn` all 0 (`maxOrdersPerTurn` stops the orders; the other zeros stop Recruit orders from holding anything back for builds).
+
+**Personas.** `ai.personas` (optional) is a library of strategies, by id: `{ name, note?, overrides }`. `overrides` is any part of a profile, down to single fields. `ai.seats` (optional) is `{ [factionId]: personaId }`. The profile a faction plays is its `ai.profiles` entry with its seat's `overrides` merged over it, field by field, when the package is loaded; a faction without a seat plays its own entry. The loader checks the merged profile as it checks any other (L30). The app's players never choose a persona: seats are for the simulation harness (`--lineup`, or a variant patch that adds `/ai/seats/<factionId>`), and the shipped scenario's `seats` is empty.
 
 ## System blocks
 
@@ -167,6 +182,7 @@ The loader applies these when the app starts. Each failure names the JSON path a
 | L25 | `air.raidTable` rises to 20. |
 | L26 | With the `provinces` partition module: a territory's `initialControl` matches its sub-territories' start holders (one holder: controlled by it; two or more: contested by exactly them), and a city's `initialController` is its sub-territory's start holder. |
 | L27 | With an economy module other than `none`, every AI profile has a `builds` budget. |
+| L30 | `ai.seats` names known factions and personas, and the profile each seat plays (the faction's own with the persona's `overrides` merged over it) is a whole profile within every range. Every `typeWorth` names unit types (L3). |
 
 ## The turn and its modules
 

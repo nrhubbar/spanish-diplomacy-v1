@@ -71,6 +71,11 @@ export function resolveFront(scenario: Scenario, front: Front): FrontResolution 
       leaving.push(...advancing.map((order) => bounceOf(scenario, order, factionsOf(advancing))));
     } else if (site !== undefined) {
       const settled = settleSite(scenario, front, site, next);
+      // D5, D27.1: where every other entrant turned back without a battle, the leader walked in unopposed.
+      if (site.kind === "entry" && settled.battles.length === 0) {
+        const leaders = new Set(site.defenders.map((combatant) => combatant.unit.id));
+        arrivals.push(...advancing.filter((order) => leaders.has(order.unitId)).map((order): SuccessfulMoveOutcome => ({ kind: "successful-move", order })));
+      }
       next += settled.battles.length;
       battles.push(...settled.battles);
       leaving.push(...settled.leaving);

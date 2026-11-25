@@ -72,7 +72,7 @@ describe("the Recruit tab and the Replenish order (X4, X7)", () => {
     expect(screen.getByText("Recruit at Barcelona")).toBeTruthy();
     expect(screen.getAllByText(/Not raised by the Republican Government/u).length).toBeGreaterThan(0);
     await user.click(screen.getByRole("button", { name: "One more Militia column" }));
-    expect(screen.getByText(/All recruiting and replenishing this turn: 3 Funds, 3k Manpower/u)).toBeTruthy();
+    expect(screen.getByText(/All recruiting and replenishing this turn: 4 Funds, 3k Manpower/u)).toBeTruthy();
     const session = store.getState().game.session;
     expect(session.phase === "planning" ? session.draft.recruits?.length : 0).toBe(1);
   });
@@ -93,11 +93,16 @@ describe("the Recruit tab and the Replenish order (X4, X7)", () => {
     act(() => { clickTerritoryIn(again.store, "madrid"); });
     await again.user.click(await screen.findByRole("tab", { name: /^Recruit/u }));
     expect(screen.getByText("0 of 3 Recruit orders here this turn")).toBeTruthy();
-    // 9 Funds: one infantry regiment (5) leaves too little for a second, and three militia columns (3 each) take it all.
+    // 9 Funds: one infantry regiment (6) leaves too little for a second.
     await again.user.click(screen.getByRole("button", { name: "One more Infantry regiment" }));
     expect(screen.getByRole("button", { name: "One more Infantry regiment" }).getAttribute("title")).toBe("Not enough Funds.");
-    await again.user.click(screen.getByRole("button", { name: "One fewer Infantry regiment" }));
-    for (let index = 0; index < 3; index += 1) await again.user.click(screen.getByRole("button", { name: "One more Militia column" }));
+    cleanup();
+    // 12 Funds: three militia columns (4 each) take it all.
+    const exact: GameState = { ...state, treasuries: { ...state.treasuries, [republic]: { funds: 12, manpower: 30 } as never } };
+    const full = renderPlanning(exact);
+    act(() => { clickTerritoryIn(full.store, "madrid"); });
+    await full.user.click(await screen.findByRole("tab", { name: /^Recruit/u }));
+    for (let index = 0; index < 3; index += 1) await full.user.click(screen.getByRole("button", { name: "One more Militia column" }));
     expect(screen.getByText("3 of 3 Recruit orders here this turn")).toBeTruthy();
     expect(screen.getByRole("button", { name: "One more Militia column" }).getAttribute("title")).toBe("No Recruit orders left here this turn.");
     expect(screen.getByText(/Left: 21k Manpower/u)).toBeTruthy();

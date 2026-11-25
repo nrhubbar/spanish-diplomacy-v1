@@ -7,6 +7,7 @@ describe("sim arguments", () => {
     const options = parseArgs([]);
     expect(options).toEqual({
       help: false,
+      lineups: [],
       outDir: defaultOutDir,
       seeds: Array.from({ length: defaultGames }, (_, index) => index + 1),
       turnLimit: defaultTurnLimit,
@@ -25,10 +26,12 @@ describe("sim arguments", () => {
   it("reads every option, in either --flag value or --flag=value form", () => {
     const options = parseArgs([
       "--games", "3", "--first-seed=10", "--turns", "12", "--variant", "a.json", "--variant=b.json",
+      "--lineup", "republic=builder, north=denier", "--lineup=south=rush",
       "--scenario", "tiny-front", "--workers", "2", "--run", "ab_1.x", "--out", "tmp/sim"
     ]);
     expect(options).toEqual({
       help: false,
+      lineups: [{ north: "denier", republic: "builder" }, { south: "rush" }],
       outDir: "tmp/sim",
       run: "ab_1.x",
       scenarioId: "tiny-front",
@@ -41,6 +44,7 @@ describe("sim arguments", () => {
     expect(parseArgs(["-h"]).help).toBe(true);
     expect(parseArgs(["--help"]).help).toBe(true);
     expect(usage).toContain("--variant FILE");
+    expect(usage).toContain("--lineup SEATS");
   });
 
   it("rejects what it cannot read", () => {
@@ -52,6 +56,8 @@ describe("sim arguments", () => {
     expect(() => parseArgs(new Array<string>(1))).toThrow(/Unknown option ""/);
     expect(() => parseArgs(["--run", "../up"])).toThrow(/--run/);
     expect(() => parseArgs(["--fast"])).toThrow(/Unknown option/);
+    for (const seats of ["republic", "republic=", "=builder", "republic=builder,", "Republic=builder"]) expect(() => parseArgs([`--lineup=${seats}`])).toThrow(/is not a seat/);
+    expect(() => parseArgs(["--lineup", "republic=builder,republic=rush"])).toThrow(/two personas/);
   });
 
   it("parses seed lists", () => {

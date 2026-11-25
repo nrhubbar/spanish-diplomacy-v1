@@ -38,7 +38,7 @@ test("Disband is an order for several units, with one confirm, and each can be t
   await page.keyboard.press("Enter");
   await menu.getByRole("button", { name: "Disband" }).click();
   const confirm = page.getByRole("group", { name: /^Disband / });
-  await expect(confirm).toContainText(/Saves [\d.]+k Manpower a turn together\./);
+  await expect(confirm).toContainText(/Saves [\d.]+ Funds and [\d.]+k Manpower a turn together\./);
   await confirm.getByRole("button", { name: "Disband" }).click();
   await expect(page.getByRole("button", { name: "Select units first" })).toBeFocused();
   const going = page.getByText("Goes home at the end of the turn.");
@@ -78,17 +78,17 @@ test("a general's counter says what he does to the dice on hover, and so does hi
   await expect(page.locator(".general-effect").first()).toContainText(/battle roll of his army/);
 });
 
-test("a Factory is queued in a city for Funds and Manpower, and pays 1.5 Funds a turn", async ({ page }) => {
+test("a Factory is queued in a city for Funds and Manpower, and pays 2.3 Funds a turn", async ({ page }) => {
   await startCampaign(page);
   await selectTerritory(page, "castilla-la-mancha");
   await page.getByRole("tab", { name: "Buildings" }).click();
   await page.getByRole("button", { name: /^Albacete/ }).click();
   const factory = page.getByRole("article", { name: "Albacete" }).getByRole("listitem").filter({ hasText: /^Factory/ }).filter({ has: page.getByRole("button", { name: /Queue/ }) });
-  await expect(factory).toContainText("6 Funds");
+  await expect(factory).toContainText("4 Funds");
   await expect(factory).toContainText("4k Manpower");
-  await expect(factory).toContainText("+1.5 Funds");
+  await expect(factory).toContainText("+2.3 Funds");
   await expect(page.getByText(/pays for itself/i)).toHaveCount(0);
   await factory.getByRole("button", { name: /Queue/ }).click();
-  await expect(page.getByRole("button", { name: /^Funds/ })).toContainText("34");
+  await expect(page.getByRole("button", { name: /^Funds/ })).toContainText("36");
   await expect(page.getByRole("button", { name: /^Manpower/ })).toContainText("6k");
 });

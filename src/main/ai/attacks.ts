@@ -106,31 +106,33 @@ export function bestAttackOn(
 
 /**
  * Take chance times the prize, plus the hostile value expected to be destroyed, minus the
- * own value expected to be lost and what the armies' absence costs at home. An empty
- * territory is simply the prize. `cost` is the armies' exposure at home (`Plan.exposure`).
+ * own value expected to be lost, what the armies' absence costs at home and, on defended
+ * ground, the profile's `thrift` for the force sent. An empty territory is simply the prize. `cost` is the armies' exposure at home (`Plan.exposure`).
  */
 function scoreAttack(context: AttackContext, target: TerritoryId, armies: readonly UnitState[], cost: number): number {
   const { factionId, scenario, state, weights } = context;
   const bias = armies.reduce((sum, unit) => sum + context.moveBias(unit, target), 0);
   const risk = context.assessment.risk(target);
   const home = weights.caution * risk * cost;
+  const attack = armies.reduce((sum, unit) => sum + context.assessment.attackOf(unit), 0);
+  // `offensive.thrift`: what the force sent costs, so the least force that still scores best goes. One army walks into empty ground free.
+  const thrift = (context.assessment.profile.offensive.thrift ?? 0) * attack;
   const estimate = estimateAttack(scenario, state, factionId, armies.map((unit) => unit.id), target);
   if (estimate.kind === "battle") {
     // D5: artillery alone would turn back; C6: attacking again tires, and at the top of the track demoralizes.
     if ("cannotAttack" in estimate && estimate.cannotAttack) return Number.NEGATIVE_INFINITY;
-    return battleScore(context, target, estimate) - risk * fatigueCost(context, armies) - home + bias;
+    return battleScore(context, target, estimate) - risk * fatigueCost(context, armies) - home + bias - thrift;
   }
   const relief = context.assessment.relief(target);
   if (relief === undefined) return context.prize(target) - home + bias;
   // Its owner may move in first (M11): count that battle as likely as the dangers at home.
-  const attack = armies.reduce((sum, unit) => sum + context.assessment.attackOf(unit), 0);
   const fought = battleScore(context, target, oddsForValues(scenario, state, {
     attackerFactionId: factionId,
     defenderFactionIds: [relief.factionId],
     diggingIn: true,
     territoryId: target
   }, attack, relief.defence));
-  return (1 - weights.caution) * context.prize(target) + weights.caution * fought - home + bias;
+  return (1 - weights.caution) * context.prize(target) + weights.caution * fought - home + bias - thrift;
 }
 
 /** Take chance times the prize, plus expected hostile losses, minus expected own losses. */
@@ -139,7 +141,9 @@ function battleScore(context: AttackContext, target: TerritoryId, odds: BattleOd
   const losses = expectedLosses(odds, weights.demoralizedShare);
   // P4: a partial grade takes some of the territory; count it at `partialGround` of the prize, or in full where
   // any ground at all takes the territory off the count of a rival near victory.
-  const partial = (odds.gainChance - odds.takeChance) * (assessment.spoils(target) ? 1 : partialGround);
+  // The income taken from a rival there (`stakes.income`) stops with any of it, so that share of the prize counts in full.
+  const denied = assessment.deniedShare(target);
+  const partial = (odds.gainChance - odds.takeChance) * (assessment.spoils(target) ? 1 : partialGround + (1 - partialGround) * denied);
   return (odds.takeChance + partial) * context.prize(target)
     + weights.enemyLoss * losses.defender
     - weights.ownLoss * assessment.risk(target) * losses.attacker;

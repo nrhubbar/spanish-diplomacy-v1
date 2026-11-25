@@ -73,8 +73,15 @@ export function threatReach(scenario: Scenario, state: GameState, unit: UnitStat
  * which is one pocket at a recruit site (uncontested ground).
  */
 export function motorPays(scenario: Scenario, state: GameState, factionId: FactionId, territoryId: TerritoryId): boolean {
-  if (!hasLinks(scenario)) return true;
-  const start = startSubTerritories(scenario, state, factionId, territoryId);
-  return landNeighbors(scenario, territoryId).some((via) => isFriendlyGround(scenario, state, factionId, via)
-    && landNeighbors(scenario, via).some((to) => to !== territoryId && !isContested(scenario, state, to) && motorPath(scenario, state, start, [via, to]).ok));
+  return !hasLinks(scenario) || motorReach(scenario, state, factionId, territoryId).length > 0;
+}
+
+/** R5: where trucks carry foot from a territory: two territories on by such a road (`motorPays`), or by any two steps without links. */
+export function motorReach(scenario: Scenario, state: GameState, factionId: FactionId, territoryId: TerritoryId): readonly TerritoryId[] {
+  const start = hasLinks(scenario) ? startSubTerritories(scenario, state, factionId, territoryId) : undefined;
+  const reached = landNeighbors(scenario, territoryId)
+    .filter((via) => isFriendlyGround(scenario, state, factionId, via))
+    .flatMap((via) => landNeighbors(scenario, via).filter((to) => to !== territoryId
+      && (start === undefined || (!isContested(scenario, state, to) && motorPath(scenario, state, start, [via, to]).ok))));
+  return [...new Set(reached)];
 }

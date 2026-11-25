@@ -7,11 +7,22 @@ import { type Comparison, compare, type RunMetrics, summarize } from "./summary"
 export const defaultTurnLimit = 66;
 export const baselineName = "baseline";
 
+/** The personas a lineup gives its factions, by faction id. */
+export type Seats = Readonly<Record<string, string>>;
+
 /** A named patch over the scenario document (H4). The baseline's patch is empty. Plain data, so it crosses to worker threads. */
 export interface Variant {
   readonly description?: string;
   readonly name: string;
   readonly patch: readonly PatchOperation[];
+}
+
+/** A lineup as a variant: its seats in place of whatever the scenario seats, under a name such as `republic-builder_north-denier`. */
+export function lineupVariant(seats: Seats): Variant {
+  return {
+    name: Object.entries(seats).map((seat) => seat.join("-")).join("_"),
+    patch: [{ op: "add", path: "/ai/seats", value: seats }]
+  };
 }
 
 /** Everything a run is asked to do. */
@@ -106,6 +117,8 @@ export function seedRanges(seeds: readonly number[]): string {
 export interface CellSummary {
   readonly id: string;
   readonly metrics: RunMetrics;
+  /** The personas its factions play, where any is given one. */
+  readonly seats?: Seats;
   readonly variant: string;
   readonly variantDescription?: string;
 }
@@ -123,7 +136,8 @@ export interface Summary {
   readonly turnLimit: number;
 }
 
-export function buildSummary(plan: RunPlan, factionIds: readonly string[], lines: readonly GameLine[]): Summary {
+/** `seats` are the cells' personas, by cell id (`prepare`). */
+export function buildSummary(plan: RunPlan, factionIds: readonly string[], lines: readonly GameLine[], seats: ReadonlyMap<string, Seats> = new Map()): Summary {
   const cells = cellsOf(plan);
   const linesOf = (cell: Cell) => lines.filter((line) => line.variant === cell.variant.name);
   const comparisons: Comparison[] = [];
@@ -134,12 +148,16 @@ export function buildSummary(plan: RunPlan, factionIds: readonly string[], lines
     }
   }
   return {
-    cells: cells.map((cell) => ({
-      id: cell.id,
-      metrics: summarize(linesOf(cell), factionIds, plan.turnLimit),
-      variant: cell.variant.name,
-      ...(cell.variant.description === undefined ? {} : { variantDescription: cell.variant.description })
-    })),
+    cells: cells.map((cell) => {
+      const seated = seats.get(cell.id);
+      return {
+        id: cell.id,
+        metrics: summarize(linesOf(cell), factionIds, plan.turnLimit),
+        ...(seated === undefined ? {} : { seats: seated }),
+        variant: cell.variant.name,
+        ...(cell.variant.description === undefined ? {} : { variantDescription: cell.variant.description })
+      };
+    }),
     comparisons,
     factions: factionIds,
     format: "spanish-diplomacy-sim/1",
@@ -162,19 +180,27 @@ export interface RunResult {
   readonly summary: Summary;
 }
 
-/**
- * Validates every cell's scenario up front, before any game is played, and returns every
- * faction id across all cells (a variant may add one), in order of first appearance.
- */
-export function prepare(sources: readonly PackageSources[], plan: RunPlan): readonly string[] {
-  const scenarios = cellsOf(plan).map((cell) => cellScenario(sources, plan, cell));
-  return [...new Set(scenarios.flatMap((scenario) => scenario.factions.map((faction) => faction.id as string)))];
+/** What a run knows from its cells' scenarios before it plays. */
+export interface Prepared {
+  /** Every faction id across all cells (a variant may add one), in order of first appearance. */
+  readonly factionIds: readonly string[];
+  /** The personas each cell's scenario seats, by cell id; a cell that seats none is left out. */
+  readonly seats: ReadonlyMap<string, Seats>;
+}
+
+/** Validates every cell's scenario up front, before any game is played. */
+export function prepare(sources: readonly PackageSources[], plan: RunPlan): Prepared {
+  const cells = cellsOf(plan).map((cell) => ({ id: cell.id, scenario: cellScenario(sources, plan, cell) }));
+  return {
+    factionIds: [...new Set(cells.flatMap(({ scenario }) => scenario.factions.map((faction) => faction.id as string)))],
+    seats: new Map(cells.flatMap(({ id, scenario }): (readonly [string, Seats])[] => (scenario.ai.seats === undefined ? [] : [[id, scenario.ai.seats]])))
+  };
 }
 
 /** Runs a whole plan on this thread: the smoke test's path, and the core every worker shares. */
 export function runInProcess(sources: readonly PackageSources[], plan: RunPlan): RunResult {
-  const factionIds = prepare(sources, plan);
+  const { factionIds, seats } = prepare(sources, plan);
   const run = createTaskRunner(sources, plan);
   const lines = orderLines(plan, tasksOf(plan).map(run));
-  return { lines, summary: buildSummary(plan, factionIds, lines) };
+  return { lines, summary: buildSummary(plan, factionIds, lines, seats) };
 }

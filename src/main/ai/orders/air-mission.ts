@@ -6,6 +6,7 @@ import { hookedGrounded } from "../../engine/hooks";
 import { neighborsOf, requireAiProfile } from "../../engine/lookup";
 import type { AirMission, AirMissionOrder, FactionId, GameState, Scenario, SubTerritoryId, TerritoryId, UnitId, UnitState, UnitTypeId } from "../../engine/types";
 import { validateAirMission } from "../../engine/air/validation";
+import { combinations } from "../airWorth";
 import type { OrderPlanner, PlanningContext } from "./planner";
 
 /** A sub-territory's worth to a raider: its development levels plus its buildings. */
@@ -94,12 +95,15 @@ export const planAirMissions: OrderPlanner<AirMissionOrder> = (context) => {
   });
   const support = planSupport(context, ready, attacks);
   const supported = new Set<TerritoryId>(support.values());
+  // Each raid goes to a target no other raider has this turn, while there is one.
+  const raided = new Set<SubTerritoryId>();
   for (const { missions, reach, unit } of ready) {
-    const mission = chooseMission(context, unit, missions, reach, support.get(unit.id), supported, enemyBombers);
+    const mission = chooseMission(context, unit, missions, reach, support.get(unit.id), supported, enemyBombers, raided);
     if (mission === undefined) continue;
     const order: AirMissionOrder = { factionId, kind: "air-mission", mission, unitId: unit.id };
     if (!validateAirMission(scenario, state, order).ok) continue;
     if (mission.kind === "support") supported.add(mission.territoryId);
+    if (mission.kind === "raid") raided.add(mission.subTerritoryId);
     orders.push(order);
   }
   return orders;
@@ -111,20 +115,6 @@ interface FreeAircraft {
   readonly reach: readonly TerritoryId[];
   readonly typeId: UnitTypeId;
   readonly unit: UnitState;
-}
-
-/**
- * Every way to send at most `cap` of these aircraft. Aircraft of one type count alike, so only
- * how many of each type go matters, and the first of them in id order go.
- */
-function combinations(aircraft: readonly FreeAircraft[], cap: number): readonly (readonly UnitId[])[] {
-  const byType = new Map<UnitTypeId, UnitId[]>();
-  for (const { typeId, unit } of aircraft) byType.set(typeId, [...(byType.get(typeId) ?? []), unit.id]);
-  let ways: readonly (readonly UnitId[])[] = [[]];
-  for (const ids of byType.values()) {
-    ways = ways.flatMap((way) => Array.from({ length: Math.min(ids.length, cap - way.length) + 1 }, (_, count) => [...way, ...ids.slice(0, count)]));
-  }
-  return ways.filter((way) => way.length > 0);
 }
 
 /**
@@ -142,7 +132,8 @@ function planSupport({ factionId, scenario, state }: PlanningContext, ready: rea
     if (defenders.length === 0) continue;
     const setting = { attackerFactionId: factionId, defenderFactionIds: [...new Set(defenders.map((other) => other.factionId))], defenderUnitIds: defenders.map((other) => other.id), territoryId };
     const free = ready.filter(({ missions, reach, unit }) => missions.includes("support") && reach.includes(territoryId) && !flying.has(unit.id));
-    const options = combinations(free, cap).flatMap((ids) => {
+    const options = combinations(free, ({ typeId }) => typeId, cap).flatMap((sent) => {
+      const ids = sent.map(({ unit }) => unit.id);
       const air = plannedAir(scenario, state, setting, ids);
       return air !== undefined && air.supportChance >= least ? [{ average: air.average, ids }] : [];
     });
@@ -160,7 +151,8 @@ function chooseMission(
   reach: readonly TerritoryId[],
   attack: TerritoryId | undefined,
   supported: ReadonlySet<TerritoryId>,
-  enemyBombers: readonly UnitState[]
+  enemyBombers: readonly UnitState[],
+  raided: ReadonlySet<SubTerritoryId>
 ): AirMission | undefined {
   const { factionId, scenario, state } = context;
   if (missions.includes("support")) {
@@ -172,7 +164,9 @@ function chooseMission(
     const targets = reach.flatMap((territoryId) => subTerritoriesOf(scenario, territoryId)
       .filter((sub) => { const holder = state.subTerritories[sub.id]?.holder; return holder !== undefined && holder !== factionId; })
       .map((sub) => ({ id: sub.id, score: yieldOf(state, sub.id) + antiAir(scenario, state, territoryId, factionId) })));
-    const target = best(targets.filter((entry) => entry.score > 0), (entry) => entry.score, (entry) => entry.id);
+    const worth = targets.filter((entry) => entry.score > 0);
+    const fresh = worth.filter((entry) => !raided.has(entry.id));
+    const target = best(fresh.length > 0 ? fresh : worth, (entry) => entry.score, (entry) => entry.id);
     if (target !== undefined) return { kind: "raid", subTerritoryId: target.id };
   }
   if (missions.includes("patrol")) {

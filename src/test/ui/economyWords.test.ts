@@ -93,13 +93,13 @@ describe("projects in words ($3-$5)", () => {
 
   it("says what finishing a project gives", () => {
     expect(projectEffectText(scenario, development("farms"))).toBe("+0.6k Manpower a turn");
-    expect(projectEffectText(scenario, development("mines"))).toBe("+1 Funds a turn");
+    expect(projectEffectText(scenario, development("mines"))).toBe("+1.5 Funds a turn");
     expect(projectEffectText(scenario, development("orchards"))).toBeUndefined();
     expect(projectEffectText(scenario, rail)).toBe("longer rail moves");
     expect(projectEffectText(scenario, port)).toMatch(/^lands more (armies|units)$/u);
     expect(projectEffectText(scenario, building("mystery"))).toBeUndefined();
     // Effects first, then what it unlocks, at most three types named.
-    expect(projectEffectText(scenario, development("factory"))).toBe("+1.5 Funds a turn, +1 Recruit order a turn, recruits Artillery group, Tank company");
+    expect(projectEffectText(scenario, development("factory"))).toBe("+2.3 Funds a turn, +1 Recruit order a turn, recruits Artillery group, Tank company");
     expect(projectEffectText(scenario, building("depot"))).toBe("replenishing costs 25% less Funds, recruits Tank company, Truck column, Anti-air battery");
     expect(projectEffectText(scenario, building("fortifications"))).toBe("+2 defence");
     expect(projectEffectText(scenario, building("barracks"))).toMatch(/^recruits Infantry regiment, Colonial veterans, Security forces\u2026$/u);
@@ -116,7 +116,7 @@ describe("projects in words ($3-$5)", () => {
     expect(projectTerms(scenario, development("farms"))).toBe(`6 Funds ${dot} 3 turns ${dot} +0.6k Manpower a turn`);
     expect(projectTerms(scenario, building("mystery"))).toBe("");
     const quick: Scenario = { ...scenario, index: { ...scenario.index, development: new Map([...scenario.index.development].map(([id, track]) => [id, { ...track, upgrade: { ...track.upgrade, turns: 1 } }])) } };
-    expect(projectTerms(quick, development("mines"))).toBe(`8 Funds ${dot} 1 turn ${dot} +1 Funds a turn`);
+    expect(projectTerms(quick, development("mines"))).toBe(`8 Funds ${dot} 1 turn ${dot} +1.5 Funds a turn`);
     const bare: Scenario = { ...scenario, unitTypes: [] };
     expect(projectTerms(bare, building("barracks"))).toMatch(/^\d+ Funds .*turns?$/u);
   });

@@ -13,11 +13,14 @@ import {
 } from "../../main/state/planning";
 import { type Draft, emptyDraft } from "../../main/state/session";
 import { submitOnTimeout } from "../../main/state/timeout";
+import { withoutFundsUpkeep } from "../pinned";
 import { faction, spainWithAir } from "../support";
 
 /** D1: Disband, the upkeep refusals and the Upkeep row on the planning screen. */
 
 const scenario = spainWithAir();
+/** Manpower alone has an upkeep, so Funds are a resource that no upkeep takes. */
+const manpowerOnly = withoutFundsUpkeep(scenario);
 const noUpkeep: Scenario = { ...scenario };
 delete (noUpkeep as { upkeep?: unknown }).upkeep;
 const republic = faction("republic");
@@ -188,7 +191,7 @@ describe("upkeep refusals while planning (D1)", () => {
   });
 
   it("says what a Disband saves", () => {
-    expect(disbandSaving(scenario, [scenario.index.unitTypes.get(militiaType)!])).toBe("Saves 1.5k Manpower a turn");
+    expect(disbandSaving(scenario, [scenario.index.unitTypes.get(militiaType)!])).toBe("Saves 0.3 Funds and 1.5k Manpower a turn");
     expect(disbandSaving(scenario, [{ upkeep: {} }])).toBe("Costs no upkeep");
     expect(disbandSaving(noUpkeep, [scenario.index.unitTypes.get(militiaType)!])).toBe("Costs no upkeep");
   });
@@ -215,7 +218,7 @@ describe("the Upkeep row (D1)", () => {
 
   it("reads \"none\" for a resource no upkeep takes, \"1 unit\" for one, and says so without upkeep", () => {
     const alone: GameState = { ...initial, units: { [first.id]: first } };
-    const [funds, men] = ledgersFor(scenario, alone, republic, {});
+    const [funds, men] = ledgersFor(manpowerOnly, alone, republic, {});
     expect(funds!.rows.find((row) => row.key === "upkeep")).toMatchObject({ note: "none", value: 0 });
     expect(men!.rows.find((row) => row.key === "upkeep")?.note).toBe("1 unit");
     expect(men!.rows.some((row) => row.key === "carried")).toBe(false);

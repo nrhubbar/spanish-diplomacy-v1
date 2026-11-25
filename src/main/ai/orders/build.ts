@@ -256,13 +256,14 @@ function supportScore(building: BuildingDefinition, where: Site, rail: number): 
 
 /**
  * R3: how much a building or a track's first level opens up in a territory: 4 for each recruitable type it completes, 1 for
- * each it brings closer.
+ * each it brings closer. A type the profile never recruits (`typeWorth` 0) counts for nothing.
  */
 function unlockScore(scenario: Scenario, state: GameState, factionId: FactionId, territoryId: TerritoryId, project: RecruitRequirement): number {
   let score = 0;
+  const { typeWorth } = requireAiProfile(scenario, factionId).recruits;
   for (const type of scenario.unitTypes) {
     const recruit = type.recruit;
-    if (recruit === undefined || (recruit.factionIds !== undefined && !recruit.factionIds.includes(factionId))) continue;
+    if (recruit === undefined || typeWorth?.[type.id] === 0 || (recruit.factionIds !== undefined && !recruit.factionIds.includes(factionId))) continue;
     const missing = recruit.requires.filter((requirement) => !meetsRequirement(scenario, state, factionId, territoryId, requirement));
     if (!missing.some((requirement) => sameProject(requirement, project))) continue;
     score += missing.length === 1 ? 4 : 1;

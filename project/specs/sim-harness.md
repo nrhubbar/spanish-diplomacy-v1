@@ -18,6 +18,7 @@ npm run sim -- --games 1000 --variant src/sim/variants/digging-in-cap-2.json --r
 | `--seeds LIST` | | Explicit seeds, for example `1-50,77`. Overrides the two options above. |
 | `--turns N` | 66 | The turn limit. A game still running after it is a freeze. |
 | `--variant FILE` | | A variant patch file, played on the same seeds as the baseline. Repeatable. |
+| `--lineup SEATS` | | Personas by faction, for example `republic=builder,north=denier`, played on the same seeds as the baseline (see Lineups). Repeatable. |
 | `--scenario ID` | the only shipped scenario | Which scenario package to play. Required when more than one is shipped. |
 | `--workers N` | cores less one | Worker threads. The results do not depend on it. |
 | `--run NAME` | a UTC time stamp | The run folder's name. |
@@ -38,7 +39,7 @@ Standard sizes (H2): `npm run test:unit` runs a 10-game smoke run (`src/test/sim
 
 ## Cells
 
-A run plays one cell per variant: the baseline first, then each variant in the order given. Each cell plays every seed. A cell's id is the variant's name, for example `baseline`. (Rev 2 removed the computer player's blunders, and with them the `--blunders` option.)
+A run plays one cell per variant: the baseline first, then each variant in the order given, then each lineup. Each cell plays every seed. A cell's id is the variant's name, for example `baseline`. (Rev 2 removed the computer player's blunders, and with them the `--blunders` option.)
 
 ## Outputs
 
@@ -66,7 +67,7 @@ The console prints a few ASCII lines per cell and per comparison. There is no HT
 
 ### `summary.json`
 
-Top level: `format` (`spanish-diplomacy-sim/1`), `scenarioId`, `seeds` (as ranges), `turnLimit`, `games`, `factions`, `cells[]` and `comparisons[]`. Each cell has `id`, `variant`, `variantDescription` (if any) and `metrics`.
+Top level: `format` (`spanish-diplomacy-sim/1`), `scenarioId`, `seeds` (as ranges), `turnLimit`, `games`, `factions`, `cells[]` and `comparisons[]`. Each cell has `id`, `variant`, `variantDescription` (if any), `seats` (the personas its factions play, if any is given one) and `metrics`.
 
 Every interval is `{ value, low, high }`, rounded to 4 decimal places. It is `null` when there is nothing to measure, for example a share of decided games when no game was decided.
 
@@ -163,7 +164,13 @@ A variant is a JSON file. It is either an object, or a bare patch array, which t
 - **Names:** a variant's name must be lowercase letters, digits and hyphens. It must be unique and must not be `baseline`.
 - **Example:** `src/sim/variants/digging-in-cap-2.json`.
 
-**AI profiles.** Each faction's computer-player profile (E7) is expected at `/ai/profiles/<factionId>` in `scenario.json`. Once `m3r1-contract` adds it and the computer player reads it, a variant can change a profile with an ordinary patch, for example `{ "op": "replace", "path": "/ai/profiles/south/caution", "value": 0.3 }`. Until then the weights are code constants, and such a patch fails validation.
+**AI profiles.** Each faction's computer-player profile (E7) is at `/ai/profiles/<factionId>` in `scenario.json`, so a variant changes one side's weights with an ordinary patch, for example `{ "op": "replace", "path": "/ai/profiles/south/computer/caution", "value": 0.3 }`.
+
+**Personas.** The scenario's persona library is at `/ai/personas` (see "AI profiles" in `scenario-package.md`). A variant seats one with `{ "op": "add", "path": "/ai/seats/north", "value": "denier" }`, beside whatever else it changes; the shipped scenario has an empty `seats` for this. A scenario without `seats` needs `{ "op": "add", "path": "/ai/seats", "value": { "north": "denier" } }`.
+
+## Lineups
+
+`--lineup republic=builder,north=denier` plays a cell in which the Republic plays the `builder` persona, the North `denier`, and every faction not named its own profile. It is a variant the command line writes: it sets `/ai/seats` as a whole, so it replaces any seats the scenario has. The cell's name is its seats in the order given (`republic-builder_north-denier`), after the baseline and the `--variant` cells. An unknown faction or persona, or a name used twice, stops the run before any game is played. A cell whose scenario seats a persona, by lineup or by patch, has `seats` in `summary.json` and `report.json`; other cells have no such field. To test a strategy against a balance change, put the change and the seats in one variant file, or change the scenario and play lineups.
 
 ## Re-check at the contract merge
 

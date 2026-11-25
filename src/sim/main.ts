@@ -9,10 +9,13 @@ import {
   baselineName,
   buildSummary,
   type GameTask,
+  lineupVariant,
   orderLines,
   type PlayedGame,
   prepare,
+  type Prepared,
   type RunPlan,
+  type Seats,
   tasksOf,
   type Variant
 } from "./run";
@@ -37,9 +40,9 @@ export interface CliIo {
   readonly stdout: (text: string) => void;
 }
 
-/** Reads every variant file; names must be unique and must not be the baseline's. */
-export function readVariants(files: readonly string[], readText: (path: string) => string): readonly Variant[] {
-  const variants = files.map((file) => {
+/** Reads every variant file, and makes a variant of every lineup; names must be unique and must not be the baseline's. */
+export function readVariants(files: readonly string[], readText: (path: string) => string, lineups: readonly Seats[] = []): readonly Variant[] {
+  const read = files.map((file) => {
     let parsed: unknown;
     try {
       parsed = JSON.parse(readText(file));
@@ -48,6 +51,7 @@ export function readVariants(files: readonly string[], readText: (path: string) 
     }
     return parseVariantFile(parsed, file);
   });
+  const variants: readonly Variant[] = [...read, ...lineups.map(lineupVariant)];
   const names = new Set<string>([baselineName]);
   for (const variant of variants) {
     if (names.has(variant.name)) throw new PatchError(`Variant name "${variant.name}" is used twice (or is the baseline's).`);
@@ -71,7 +75,7 @@ export function planOf(options: CliOptions, variants: readonly Variant[], source
 export async function runCli(argv: readonly string[], io: CliIo): Promise<number> {
   let options: CliOptions;
   let plan: RunPlan;
-  let factionIds: readonly string[];
+  let prepared: Prepared;
   try {
     options = parseArgs(argv);
     if (options.help) {
@@ -85,10 +89,10 @@ export async function runCli(argv: readonly string[], io: CliIo): Promise<number
       io.stdout(formatReport(report, options.report));
       return 0;
     }
-    plan = planOf(options, readVariants(options.variantFiles, io.readText), io.sources);
-    factionIds = prepare(io.sources, plan);
+    plan = planOf(options, readVariants(options.variantFiles, io.readText, options.lineups), io.sources);
+    prepared = prepare(io.sources, plan);
   } catch (error) {
-    // Everything before the first game is input: arguments, variant files, scenario data.
+    // Everything before the first game is input: arguments, variant files, lineups, scenario data.
     io.stderr(`${error instanceof Error ? error.message : String(error)}\n`);
     return 2;
   }
@@ -109,7 +113,7 @@ export async function runCli(argv: readonly string[], io: CliIo): Promise<number
   });
   const totalMilliseconds = io.now().getTime() - began;
   const ordered = orderLines(plan, played.map((game) => game.line));
-  const summary = buildSummary(plan, factionIds, ordered);
+  const summary = buildSummary(plan, prepared.factionIds, ordered, prepared.seats);
   writeRun(dir, summary, ordered);
   io.stdout(formatSummary(summary, dir));
   if (plan.record !== undefined) {

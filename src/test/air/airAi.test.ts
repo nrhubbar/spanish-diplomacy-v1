@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { generateComputerSubmission } from "../../main/ai/computerPlayer";
 import { planAirMissions } from "../../main/ai/orders/air-mission";
-import { airRecruitChoices } from "../../main/ai/orders/airRecruits";
 import { planGeneralMoves } from "../../main/ai/orders/general";
 import type { PlanningContext } from "../../main/ai/orders/planner";
 import { planSackings } from "../../main/ai/orders/sack";
 import { generalUnitDefinition } from "../../main/engine/generals/identity";
 import { seededRandom } from "../../main/engine/random";
 import { initialGameState } from "../../main/engine/resolution";
+import { raisedDefinition, raisedUnitId } from "../../main/engine/recruitment/rules";
 import type { GameState, Order, Scenario, UnitId, UnitTypeDefinition, UnitTypeId } from "../../main/engine/types";
 import { validateSubmission } from "../../main/engine/validation";
 import { faction, move, spainWithAir, territory, unit } from "../support";
@@ -38,6 +38,17 @@ describe("the computer player's air missions (H5)", () => {
     const attack = [move("republic", "rep-wad-ras-1", "madrid", "castilla-y-leon"), move("republic", "rep-covadonga-4", "madrid", "castilla-y-leon")];
     const orders = planAirMissions(context(state, "republic", attack));
     expect(orders.find((order) => order.unitId === "rep-breguet-bombers")?.mission).toEqual({ kind: "support", territoryId: "castilla-y-leon" });
+  });
+
+  it("sends each raider to a target no other raider has, while there is one", () => {
+    const pilots = Object.values(state.units).filter((entry) => entry.id === unit("rep-breguet-bombers"));
+    const twin = raisedUnitId(faction("republic"), "bomber-squadron" as UnitTypeId, 1);
+    const definition = raisedDefinition(spainWithAir(), twin)!;
+    const [first] = pilots;
+    const pair: GameState = { ...state, raised: { ...state.raised, [twin]: definition }, units: { ...state.units, [twin]: { ...first!, id: twin, strength: definition.fullStrength } } };
+    const raids = planAirMissions(context(pair, "republic")).flatMap((order) => (order.mission.kind === "raid" ? [order.mission.subTerritoryId] : []));
+    expect(raids).toHaveLength(2);
+    expect(new Set(raids).size).toBe(2);
   });
 
   it("has a support-only type cover a threatened own territory when no attack needs it", () => {
@@ -139,28 +150,5 @@ describe("the computer player's generals (H5)", () => {
     const sackings = planSackings(context(field(["general-sebastian-pozas", "general-jose-asensio"]), "republic"));
     expect(sackings).toEqual([{ factionId: "republic", kind: "sack", unitId: "general-jose-asensio" }]);
     expect(planSackings(context(field(["general-jose-asensio", "general-sebastian-pozas"]), "republic"))).toEqual(sackings);
-  });
-});
-
-describe("the computer player's aircraft and anti-air recruits (H5, U1)", () => {
-  it("buys anti-air where enemy bombers reach, and an aircraft when it has too few", () => {
-    const scenario = spainWithAir();
-    const state = initialGameState(scenario);
-    const open = scenario.unitTypes.filter((type) => type.air !== undefined || type.effects.some((effect) => effect.kind === "raid-defence"));
-    // The North has one aircraft for twelve ground units, and Republican bombers reach Castilla y Leon.
-    expect(airRecruitChoices(scenario, state, faction("north"), territory("castilla-y-leon"), open).map((type) => type.id)).toEqual(["anti-air-battery", "bomber-squadron"]);
-    // The Republic has three aircraft for its fifteen ground units: enough.
-    expect(airRecruitChoices(scenario, state, faction("republic"), territory("madrid"), open).map((type) => type.id)).toEqual(["anti-air-battery"]);
-    expect(airRecruitChoices(scenario, state, faction("republic"), territory("catalunya"), []).length).toBe(0);
-  });
-
-  it("breaks a tie between equally needed aircraft types by type id", () => {
-    const scenario = spainWithAir();
-    const state = initialGameState(scenario);
-    const bomber = scenario.unitTypes.find((type) => type.id === "bomber-squadron")!;
-    const twin: UnitTypeDefinition = { ...bomber, id: "attack-bombers" as UnitTypeId, name: "Attack Bombers" };
-    const air = (open: readonly UnitTypeDefinition[]) => airRecruitChoices(scenario, state, faction("north"), territory("castilla-y-leon"), open).filter((type) => type.air !== undefined).map((type) => type.id);
-    expect(air([bomber, twin])).toEqual(["attack-bombers"]);
-    expect(air([twin, bomber])).toEqual(["attack-bombers"]);
   });
 });

@@ -44,3 +44,23 @@ function gained(outcome: TurnOutcome, factionId: FactionId): boolean {
   const { occupation } = outcome.site;
   return occupation.kind === "taken" && occupation.factionId === factionId;
 }
+
+/** A unit's trip in an earlier turn, whether it took ground, reinforced, attacked or bounced. */
+export interface Trip {
+  readonly from: TerritoryId;
+  readonly to: TerritoryId;
+  readonly unitId: UnitId;
+}
+
+/** The trips a faction's units made in a turn. */
+export function tripsMade(outcomes: readonly TurnOutcome[], factionId: FactionId): readonly Trip[] {
+  return outcomes.flatMap((outcome): readonly Trip[] => {
+    if (outcome.kind === "successful-move" || outcome.kind === "reinforcement-arrived" || outcome.kind === "bounced-move") {
+      const { from, to, unitId } = outcome.order;
+      return outcome.order.factionId === factionId ? [{ from, to, unitId }] : [];
+    }
+    if (outcome.kind !== "battle" || outcome.attackerFactionId !== factionId || (outcome.site.kind !== "assault" && outcome.site.kind !== "entry")) return [];
+    const { territoryId } = outcome.site;
+    return outcome.attacker.armies.map((army) => ({ from: army.from, to: territoryId, unitId: army.unitId }));
+  });
+}

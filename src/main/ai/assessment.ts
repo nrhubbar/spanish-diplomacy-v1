@@ -1,4 +1,5 @@
 import { armyValue, oddsForValues } from "../engine/combat";
+import { territoryIncome } from "../engine/economy/income";
 import { citiesIn, requireAiProfile, requireFaction, requireTerritory } from "../engine/lookup";
 import { holdsWhole } from "../engine/partition/holders";
 import type { AiProfile, FactionId, GameState, Scenario, TerritoryId, UnitId, UnitState, VictoryProgress } from "../engine/types";
@@ -48,6 +49,8 @@ export interface Assessment {
   readonly risk: (territoryId: TerritoryId) => number;
   /** Whether a rival near victory holds the territory whole: any ground taken there spoils it, off its count. */
   readonly spoils: (territoryId: TerritoryId) => boolean;
+  /** The share of the territory's stake that is the income it pays a rival (`stakes.income`): any ground taken there stops it. */
+  readonly deniedShare: (territoryId: TerritoryId) => number;
   /** Whether an attack on `target` strikes a rival that would win by taking `origin`. */
   readonly strikesThreat: (origin: TerritoryId, target: TerritoryId) => boolean;
   /**
@@ -184,13 +187,20 @@ export function assess(scenario: Scenario, state: GameState, factionId: FactionI
     return Math.max(leaderAlarm(territoryId), pairAlarm(territoryId));
   };
 
-  const stake = (territoryId: TerritoryId): number => cached(stakes, territoryId, () => {
+  /** What holding the territory is worth for itself, before any alarm. */
+  const ownWorth = (territoryId: TerritoryId): number => {
     const cities = citiesIn(scenario, territoryId).filter((city) => city.countsForVictory).length;
-    const base = (requireTerritory(scenario, territoryId).countsForVictory ? profile.stakes.territory : 0)
+    return (requireTerritory(scenario, territoryId).countsForVictory ? profile.stakes.territory : 0)
       + cities * profile.stakes.city
       + (objectives.has(territoryId) ? profile.stakes.objective : 0);
-    return base * (1 + alarmFor(territoryId));
-  });
+  };
+  /** `stakes.income`: what stopping a rival's income there is worth, before any alarm; nothing on own or contested ground. */
+  const denied = (territoryId: TerritoryId): number => {
+    const weight = profile.stakes.income ?? 0;
+    const control = state.control[territoryId];
+    return weight === 0 || control?.kind !== "controlled" || control.factionId === factionId ? 0 : weight * territoryIncome(scenario, state, territoryId);
+  };
+  const stake = (territoryId: TerritoryId): number => cached(stakes, territoryId, () => (ownWorth(territoryId) + denied(territoryId)) * (1 + alarmFor(territoryId)));
 
   const relief = (territoryId: TerritoryId): Relief | undefined => {
     const control = state.control[territoryId];
@@ -207,6 +217,10 @@ export function assess(scenario: Scenario, state: GameState, factionId: FactionI
     criticalWith,
     danger,
     defenceOf,
+    deniedShare: (territoryId) => {
+      const income = denied(territoryId);
+      return income === 0 ? 0 : income / (ownWorth(territoryId) + income);
+    },
     factionId,
     isCritical,
     isObjective: (territoryId) => objectives.has(territoryId),

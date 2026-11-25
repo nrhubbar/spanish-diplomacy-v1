@@ -1,11 +1,13 @@
 import type { RecordKind } from "./game";
-import { defaultTurnLimit } from "./run";
+import { defaultTurnLimit, type Seats } from "./run";
 
 export const defaultGames = 200;
 export const defaultOutDir = "build/sim";
 
 export interface CliOptions {
   readonly help: boolean;
+  /** Who plays which persona, one lineup a cell, in the order given. */
+  readonly lineups: readonly Seats[];
   readonly outDir: string;
   /** What each game records beyond its outcome; absent, nothing more. */
   readonly record?: RecordKind;
@@ -30,6 +32,9 @@ export const usage = `Usage: npm run sim -- [options]
   --seeds LIST       explicit seeds, for example 1-50,77 (overrides --games and --first-seed)
   --turns N          turn limit; a game still running after it is a freeze (default ${defaultTurnLimit})
   --variant FILE     a JSON patch variant, played on the same seeds as the baseline (repeatable)
+  --lineup SEATS     personas by faction, for example republic=builder,north=denier; factions
+                     not named play their own profile. A cell of its own, named like
+                     republic-builder_north-denier, on the same seeds (repeatable)
   --scenario ID      scenario id (default: the only shipped scenario)
   --workers N        worker threads (default: one per core, less one)
   --run NAME         run folder name under the output folder (default: a time stamp)
@@ -68,6 +73,18 @@ export function parseSeeds(raw: string): readonly number[] {
   return unique;
 }
 
+/** Parses a lineup such as `republic=builder,north=denier`. The scenario says which factions and personas there are. */
+export function parseLineup(raw: string): Seats {
+  const seats = raw.split(",").map((part): readonly [string, string] => {
+    const match = /^([a-z0-9][a-z0-9-]*)=([a-z0-9][a-z0-9-]*)$/.exec(part.trim());
+    if (match === null) throw new UsageError(`--lineup: "${part}" is not a seat such as republic=builder.`);
+    return [String(match[1]), String(match[2])];
+  });
+  const lineup = Object.fromEntries(seats);
+  if (Object.keys(lineup).length !== seats.length) throw new UsageError(`--lineup: "${raw}" gives a faction two personas.`);
+  return lineup;
+}
+
 export function parseArgs(argv: readonly string[]): CliOptions {
   let games = defaultGames;
   let firstSeed = 1;
@@ -81,6 +98,7 @@ export function parseArgs(argv: readonly string[]): CliOptions {
   let record: RecordKind | undefined;
   let report: string | undefined;
   const variantFiles: string[] = [];
+  const lineups: Seats[] = [];
 
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index] ?? "";
@@ -102,6 +120,7 @@ export function parseArgs(argv: readonly string[]): CliOptions {
       case "--seeds": seeds = parseSeeds(value()); break;
       case "--turns": turnLimit = positiveInteger(flag, value()); break;
       case "--variant": variantFiles.push(value()); break;
+      case "--lineup": lineups.push(parseLineup(value())); break;
       case "--scenario": scenarioId = value(); break;
       case "--workers": workers = positiveInteger(flag, value()); break;
       case "--report": report = value(); break;
@@ -123,6 +142,7 @@ export function parseArgs(argv: readonly string[]): CliOptions {
   }
   return {
     help,
+    lineups,
     outDir,
     ...(record === undefined ? {} : { record }),
     ...(report === undefined ? {} : { report }),

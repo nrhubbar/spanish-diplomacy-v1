@@ -5,6 +5,7 @@ import { planDisbands } from "../main/ai/orders/disband";
 import { planRecruits } from "../main/ai/orders/recruit";
 import { planReplenishment } from "../main/ai/orders/replenish";
 import { balanceLeft, starves } from "../main/ai/orders/spending";
+import { raidGain } from "../main/ai/airWorth";
 import { assess } from "../main/ai/assessment";
 import { movePlanningView } from "../main/ai/planningView";
 import { marginalGain, nextRollBonus, priceOf, recruitBoard, recruitSupply, siteBattles, smoothOdds, worthOf } from "../main/ai/unitWorth";
@@ -15,10 +16,12 @@ import { projectedHoldings, upkeepShortfall } from "../main/engine/economy/upkee
 import { seededRandom } from "../main/engine/random";
 import { initialGameState, resolveTurn } from "../main/engine/resolution";
 import { type GameState, isMoveOrder, type Order, type RecruitOrder, type Resources, type Scenario, type UnitTypeDefinition } from "../main/engine/types";
+import { fortified, revFourNumbers } from "./pinned";
 import { demoralize, heldWhole, oneShortOwners, type Placement } from "./aiBoards";
 import { armyIn, battlesOf, faction, spain, territory, unit, withUnits, withoutUpkeep } from "./support";
 
-const scenario = spain();
+// The rankings below were written against the Rev 4 prices and yields, so they do not move with the shipped ones.
+const scenario = revFourNumbers(spain());
 const start = initialGameState(scenario);
 const [republic, north, south] = [faction("republic"), faction("north"), faction("south")];
 const context = (state: GameState, factionId = republic, planned: readonly Order[] = [], on: Scenario = scenario) => ({ factionId, memory: {}, planned, random: seededRandom(1), scenario: on, state });
@@ -72,17 +75,13 @@ describe("mixed armies (D6)", () => {
     expect(smoothOdds(scenario.d20, 0.001, 0).expected).toEqual(smoothOdds(scenario.d20, 1 / 16, 0).expected);
   });
 
-  it("counts what one more gun, tank or squadron adds, until the effect's most", () => {
-    expect([0, 1, 2, 3].map((count) => nextRollBonus(scenario, typeOf("artillery-group"), count))).toEqual([1, 1, 1, 0]);
-    expect([0, 1, 2].map((count) => nextRollBonus(scenario, typeOf("tank-company"), count))).toEqual([1, 1, 0]);
-    const cap = scenario.air?.supportMax ?? 0;
-    const uncapped: Scenario = { ...scenario, air: { ...scenario.air!, supportMax: undefined } };
-    expect(nextRollBonus(scenario, typeOf("bomber-squadron"), cap - 1)).toBe(3);
-    expect(nextRollBonus(scenario, typeOf("bomber-squadron"), cap)).toBe(0);
-    expect(nextRollBonus(uncapped, typeOf("bomber-squadron"), 9)).toBe(3);
-    expect(nextRollBonus(scenario, typeOf("infantry-regiment"), 0)).toBe(0);
-    // Guns and Ground Support help an attack, not a defence.
-    expect(["artillery-group", "bomber-squadron"].map((id) => nextRollBonus(scenario, typeOf(id), 0, "defence"))).toEqual([0, 0]);
+  it("counts what one more gun or tank adds, until the effect's most", () => {
+    expect([0, 1, 2, 3].map((count) => nextRollBonus(typeOf("artillery-group"), count))).toEqual([1, 1, 1, 0]);
+    expect([0, 1, 2].map((count) => nextRollBonus(typeOf("tank-company"), count))).toEqual([1, 1, 0]);
+    expect(nextRollBonus(typeOf("infantry-regiment"), 0)).toBe(0);
+    // Guns help an attack, not a defence. Ground Support is the battle's (airWorth.test.ts).
+    expect(["artillery-group", "bomber-squadron"].map((id) => nextRollBonus(typeOf(id), 0, "defence"))).toEqual([0, 0]);
+    expect(nextRollBonus(typeOf("bomber-squadron"), 0)).toBe(0);
   });
 
   const own: Placement = [["rep-vitoria-8", "republic", "madrid"], ["rep-sevilla-34", "republic", "madrid"], ["rep-castilla-3", "republic", "madrid"]];
@@ -92,6 +91,7 @@ describe("mixed armies (D6)", () => {
     const board = boardOf(withUnits(scenario, placement));
     const near = siteBattles(board, territory(at), ordered);
     return {
+      board,
       gain: (id: string) => marginalGain(board, typeOf(id), near),
       near,
       worth: (id: string, supply: Resources = { funds: 127, manpower: 95 } as Resources) => worthOf(board, typeOf(id), supply, near)
@@ -121,8 +121,9 @@ describe("mixed armies (D6)", () => {
     expect(site([...own, ...stack], ordered("artillery-group", 3)).gain("artillery-group")).toBeLessThan(site([...own, ...stack], ordered("artillery-group", 2)).gain("artillery-group") / 2);
     // Two squadrons of any kind fill a battle's Ground Support.
     const flown = site([...own, ...stack], [...ordered("bomber-squadron", 1), ...ordered("fighter-squadron", 1)]);
-    expect(flown.near.count(typeOf("bomber-squadron"))).toBe(2);
-    expect(flown.gain("bomber-squadron")).toBe(0);
+    expect(flown.gain("fighter-squadron")).toBe(0);
+    // A bomber more would still raid.
+    expect(flown.gain("bomber-squadron")).toBe(raidGain(flown.board, typeOf("bomber-squadron"), flown.near));
     const state: GameState = { ...withUnits(scenario, [...own, ...stack]), training: [{ factionId: republic, paid: {}, paused: false, territoryId: territory("madrid"), turnsLeft: 2, typeId: typeOf("artillery-group").id, unitId: unit("new-gun") }] };
     expect(siteBattles(boardOf(state), territory("madrid"), []).count(typeOf("artillery-group"))).toBe(1);
   });
@@ -180,7 +181,8 @@ describe("mixed armies (D6)", () => {
   });
 
   it("prices what is left as a turn's orders pile up", () => {
-    const rich = funded(start, republic, 200, 60);
+    // A fortified Madrid, whose battles make a tank and a gun close to each other in worth.
+    const rich = funded(fortified(start, "madrid", "barcelona"), republic, 200, 60);
     const board = boardOf(rich);
     const orders = planRecruits(context(rich));
     const last = orders.map((order) => `${order.territoryId} ${order.unitTypeId}`).lastIndexOf("madrid artillery-group");

@@ -99,6 +99,12 @@ describe("the report", () => {
     expect(csv([{ a: "x,\"y\"" }, { b: 2 }])).toBe("a,b\n\"x,\"\"y\"\"\",\n,2\n");
   });
 
+  it("says which personas a cell's factions play, where any is given one", () => {
+    const seated = buildSummary(plan, ["red", "blue"], lines, new Map([["baseline", { red: "calm" }]]));
+    expect(buildReport({ ...run, summary: seated }).cells[0]?.seats).toEqual({ red: "calm" });
+    expect("seats" in buildReport(run).cells[0]!).toBe(false);
+  });
+
   it("gives a freeze no victory and a game without a winner no credit", () => {
     const frozen = [line(1, 2, [], {})];
     const only = { lines: frozen, summary: buildSummary({ ...plan, seeds: [1] }, ["red", "blue"], frozen), timings: [] };

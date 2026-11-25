@@ -151,7 +151,7 @@ describe("raids (U3)", () => {
   it("cuts the target's income for one turn through the incomeDelta hook", () => {
     const cut: GameState = { ...state, raidCuts: [{ factionId: faction("north"), subTerritoryId: "valladolid" as SubTerritoryId, turnNumber: 1 }] };
     // Valladolid: farms 2 at 0.6 (Manpower) and Factory 1 (Funds), and the North holds Castilla y Leon whole.
-    expect(raidIncomeDelta({ factionId: faction("north"), income: {}, scenario, state: cut })).toEqual({ funds: -1.5, manpower: -1.2 });
+    expect(raidIncomeDelta({ factionId: faction("north"), income: {}, scenario, state: cut })).toEqual({ funds: -2.25, manpower: -1.2 });
     expect(raidIncomeDelta({ factionId: faction("republic"), income: {}, scenario, state: cut })).toEqual({});
     expect(raidIncomeDelta({ factionId: faction("north"), income: {}, scenario, state: { ...cut, turnNumber: 2 } })).toEqual({});
   });

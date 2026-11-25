@@ -93,16 +93,18 @@ describe("each sea lane names its ports (M-10, M5, Q-CITY-7)", () => {
 });
 
 describe("the computer player recruits trucks (M-5, M1, H5)", () => {
-  it("adds a truck column where a Depot allows it, while its trucks carry too few", async () => {
+  it("adds one truck column where a Depot allows it, while its trucks carry too few", async () => {
     const { planRecruits } = await import("../main/ai/orders/recruit");
     const { seededRandom } = await import("../main/engine/random");
     const scenario = spainWithAir();
-    const start = initialGameState(scenario);
+    const opening = initialGameState(scenario);
+    const start = { ...opening, treasuries: { ...opening.treasuries, [faction("republic")]: { funds: 200, manpower: 60 } } } as GameState;
     const plan = (state: GameState) => planRecruits({ factionId: faction("republic"), memory: {}, planned: [], random: seededRandom(1), scenario, state });
     const trucks = (state: GameState) => plan(state).filter((order) => order.unitTypeId === "truck-column");
-    expect(trucks(start)).toHaveLength(1);
-    // A Depot is enough, so the North trains them too.
-    expect(planRecruits({ factionId: faction("north"), memory: {}, planned: [], random: seededRandom(1), scenario, state: start }).some((order) => order.unitTypeId === "truck-column")).toBe(true);
+    // On the opening board only Valencia's foot has a better attack to join by road than next door.
+    expect(trucks(start).map((order) => order.territoryId)).toEqual(["valencia"]);
+    const without = Object.fromEntries(Object.entries(start.subTerritories).map(([id, site]) => [id, { ...site, buildings: site.buildings.filter((building) => building !== "depot") }])) as GameState["subTerritories"];
+    expect(trucks({ ...start, subTerritories: without })).toEqual([]);
     // Enough trucks already: one for every two Republican units.
     const republicans = Object.values(start.units).filter((entry) => entry.factionId === "republic");
     const { raisedDefinition, raisedUnitId } = await import("../main/engine/recruitment/rules");

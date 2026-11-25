@@ -2,7 +2,7 @@ import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { earlyWinTurn, type GameLine } from "./game";
 import { byMeasure, flows, type Inventory, type InventoryColumns, type Measure, measureColumns, stocks } from "./inventory";
-import type { Summary } from "./run";
+import type { Seats, Summary } from "./run";
 import { type Distribution, distribution, round } from "./stats";
 import { type RunMetrics, stallQuietTurns } from "./summary";
 import type { GameTiming, RunTiming, TimingLine } from "./timings";
@@ -38,6 +38,8 @@ export interface CellReport {
   readonly columns: InventoryColumns;
   /** Wall-clock milliseconds per game on its worker thread, and per turn played. Not deterministic. */
   readonly milliseconds: { readonly perGame: Distribution | null; readonly perTurn: Distribution | null };
+  /** The personas its factions play, where any is given one. */
+  readonly seats?: Seats;
   readonly outcomes: Pick<RunMetrics, "decided" | "decidedRate" | "freezeRate" | "freezes" | "games" | "length" | "sharedVictories" | "stalled" | "stalledRate" | "wins"> & {
     readonly earlyWinRate: RunMetrics["sanity"]["earlyWinRate"];
     readonly earlyWins: number;
@@ -142,6 +144,7 @@ export function buildReport(run: RecordedRun): Report {
       const victories = own.flatMap((line) => line.victory ?? []);
       return [{
         id: cell.id,
+        ...(cell.seats === undefined ? {} : { seats: cell.seats }),
         columns: first.inventory.columns,
         milliseconds: {
           perGame: distribution(ownTimes.map((game) => game.milliseconds)),

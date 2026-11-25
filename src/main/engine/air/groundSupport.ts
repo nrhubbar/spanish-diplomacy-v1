@@ -13,7 +13,8 @@ import type {
   GroundSupportApplied,
   Scenario,
   TerritoryId,
-  UnitId
+  UnitId,
+  UnitTypeDefinition
 } from "../types";
 import { aircraftLost, airBattle, airBattleFought, airBattleOdds, groundSupport } from "./airBattle";
 import { unitTypeIn } from "./pieces";
@@ -27,28 +28,32 @@ import type { AirScratch } from "./scratch";
  * planned flights.
  */
 
+/** An aircraft type's numbers in the air battle and on Ground Support, from its effects. */
+export function flightRolls(type: Pick<UnitTypeDefinition, "effects"> | undefined, mission: AirBattleAircraft["mission"]): Pick<AirBattleAircraft, "airRoll" | "supportRoll"> {
+  let airRoll = 0;
+  let supportRoll = 0;
+  for (const effect of type?.effects ?? []) {
+    if (effect.kind === "air-battle") airRoll = Math.max(airRoll, effect.roll);
+    if (effect.kind === "battle-support" && mission === "support") supportRoll = Math.max(supportRoll, effect.roll);
+  }
+  return { airRoll, supportRoll };
+}
+
 /** An aircraft's numbers in the air battle and on Ground Support, from its type's effects. */
 export function airBattleAircraft(scenario: Scenario, raised: GameState["raised"], order: AirMissionOrder): AirBattleAircraft | undefined {
   const { mission } = order;
   if (mission.kind !== "support" && mission.kind !== "patrol") return undefined;
-  let airRoll = 0;
-  let supportRoll = 0;
-  for (const effect of unitTypeIn(scenario, raised, order.unitId)?.effects ?? []) {
-    if (effect.kind === "air-battle") airRoll = Math.max(airRoll, effect.roll);
-    if (effect.kind === "battle-support" && mission.kind === "support") supportRoll = Math.max(supportRoll, effect.roll);
-  }
-  return { airRoll, factionId: order.factionId, mission: mission.kind, supportRoll, unitId: order.unitId };
+  return { ...flightRolls(unitTypeIn(scenario, raised, order.unitId), mission.kind), factionId: order.factionId, mission: mission.kind, unitId: order.unitId };
+}
+
+/** U3, R11: a type's AA: its best `raid-defence`, as a plus; 0 for a type with none. */
+export function antiAirRoll(type: Pick<UnitTypeDefinition, "effects"> | undefined): number {
+  return Math.max(0, ...(type?.effects ?? []).map((effect) => (effect.kind === "raid-defence" ? -effect.roll : 0)));
 }
 
 /** U3, R11: the AA of a set of units: the best `raid-defence` among them, as a plus. */
 export function antiAirOf(scenario: Scenario, raised: GameState["raised"], unitIds: readonly UnitId[]): number {
-  let best = 0;
-  for (const id of unitIds) {
-    for (const effect of unitTypeIn(scenario, raised, id)?.effects ?? []) {
-      if (effect.kind === "raid-defence") best = Math.max(best, -effect.roll);
-    }
-  }
-  return best;
+  return Math.max(0, ...unitIds.map((id) => antiAirRoll(unitTypeIn(scenario, raised, id))));
 }
 
 /** Where and between whom a battle is fought, as its air battle sees it. */
@@ -196,9 +201,17 @@ export function plannedAir(scenario: Scenario, state: GameState, setting: AirBat
   const input = airBattleInput(scenario, state, setting, flights);
   const { roll, unitIds } = groundSupport(input, undefined).attacker;
   if (roll === 0) return undefined;
-  const modifier: CombatModifier = { factionId: setting.attackerFactionId, kind: "air-support", role: "attack", roll, unitIds };
+  return { ...plannedSupport(scenario, input), input, modifier: { factionId: setting.attackerFactionId, kind: "air-support", role: "attack", roll, unitIds } };
+}
+
+/**
+ * R11 for planning: what the attacker's Ground Support in an air battle's input adds on average,
+ * and the chances that it applies and that it costs aircraft. The computer player's recruiting
+ * reads the same odds for aircraft it does not have yet.
+ */
+export function plannedSupport(scenario: Scenario, input: AirBattleInput): Omit<PlannedAir, "input" | "modifier"> {
   const table = foughtOn(scenario, input);
-  if (table === undefined) return { average: roll, input, lossChance: 0, modifier, supportChance: 1 };
+  if (table === undefined) return { average: groundSupport(input, undefined).attacker.roll, lossChance: 0, supportChance: 1 };
   const results = airBattleOdds(table, input).map(({ chance, row }): PlannedAirResult => ({
     aircraftLost: aircraftLost(input, row).length,
     chance,
@@ -209,9 +222,7 @@ export function plannedAir(scenario: Scenario, state: GameState, setting: AirBat
   const average = results.reduce((sum, result) => sum + Math.round(result.chance * d20Faces.length) * result.roll, 0) / d20Faces.length;
   return {
     average,
-    input,
     lossChance: chanceOf(results, (result) => result.aircraftLost > 0),
-    modifier,
     results,
     supportChance: chanceOf(results, (result) => result.roll > 0)
   };

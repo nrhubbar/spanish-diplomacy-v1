@@ -46,6 +46,49 @@ function pinnedTrack(track: DevelopmentDefinition): DevelopmentDefinition {
 
 const byId = <T extends { readonly id: string }>(items: readonly T[]): ReadonlyMap<T["id"], T> => new Map(items.map((item) => [item.id, item]));
 
+/** Rev 4 Funds prices; the Rev 5 ones are a quarter dearer and each unit also costs Funds a turn. */
+const revFourFunds: Readonly<Record<string, number>> = {
+  "anti-air-battery": 5,
+  "artillery-group": 6,
+  "bomber-squadron": 7,
+  "cavalry-regiment": 4,
+  "colonial-veterans": 7,
+  "fighter-squadron": 6,
+  "infantry-regiment": 5,
+  "militia-column": 3,
+  "recon-flight": 5,
+  "security-forces": 4,
+  "tank-company": 8,
+  "truck-column": 3
+};
+
+/** Spain with units that cost no Funds a turn, for tests of a resource that no upkeep takes. */
+export function withoutFundsUpkeep(scenario: Scenario): Scenario {
+  const unitTypes = scenario.unitTypes.map((type) => ({ ...type, upkeep: Object.fromEntries(Object.entries(type.upkeep).filter(([id]) => id !== "funds")) as Resources }));
+  return { ...scenario, index: { ...scenario.index, unitTypes: byId(unitTypes) }, unitTypes };
+}
+
+/** Rev 4 prices and yields of the development tracks. */
+const revFourTracks: Readonly<Record<string, { readonly funds: number; readonly yieldPerLevel: number }>> = {
+  factory: { funds: 6, yieldPerLevel: 1.5 },
+  farms: { funds: 3, yieldPerLevel: 0.6 },
+  mines: { funds: 5, yieldPerLevel: 1 }
+};
+
+/** Spain with the Rev 4 unit and development numbers and no Funds upkeep, for tests of how the computer ranks units, which were written against those numbers. */
+export function revFourNumbers(scenario: Scenario): Scenario {
+  const plain = withoutFundsUpkeep(scenario);
+  const development = plain.development.map((track) => {
+    const numbers = revFourTracks[track.id];
+    return numbers === undefined ? track : { ...track, upgrade: { ...track.upgrade, cost: { ...track.upgrade.cost, funds: numbers.funds } as Resources }, yieldPerLevel: numbers.yieldPerLevel };
+  });
+  const unitTypes = plain.unitTypes.map((type) => {
+    const funds = revFourFunds[type.id];
+    return type.recruit === undefined || funds === undefined ? type : { ...type, recruit: { ...type.recruit, cost: { ...type.recruit.cost, funds } as Resources } };
+  });
+  return { ...plain, development, index: { ...plain.index, development: byId(development), unitTypes: byId(unitTypes) }, unitTypes };
+}
+
 /** Trucks need main roads, so a track stops them and a road upgrade opens a route. */
 export function mainRoadsOnly(scenario: Scenario): Scenario {
   const { road } = scenario.linkModifiers;
@@ -57,6 +100,11 @@ const works = "fortifications";
 /** A state with no fortifications standing, for tests that count a battle's modifiers or build them. */
 export function unfortified(state: GameState): GameState {
   return { ...state, subTerritories: Object.fromEntries(Object.entries(state.subTerritories).map(([id, site]) => [id, { ...site, buildings: site.buildings.filter((building) => building !== works) }])) };
+}
+
+/** A state with fortifications standing in these sub-territories, for tests that need a garrison behind them. */
+export function fortified(state: GameState, ...ids: readonly string[]): GameState {
+  return { ...state, subTerritories: Object.fromEntries(Object.entries(state.subTerritories).map(([id, site]) => [id, ids.includes(id) && !site.buildings.includes(works as never) ? { ...site, buildings: [...site.buildings, works as never] } : site])) };
 }
 
 /** Spain with a faction's own die modifier, a mechanism its data does not use now. */

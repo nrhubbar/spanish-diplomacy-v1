@@ -9,6 +9,7 @@ import {
   baselineName,
   buildSummary,
   cellsOf,
+  lineupVariant,
   orderLines,
   prepare,
   type RunPlan,
@@ -138,7 +139,7 @@ describe("harness core on the tiny-front fixture", () => {
 
   it("refuses a variant whose patch breaks the package before any game is played", () => {
     const broken = { name: "broken", patch: [{ op: "remove", path: "/victory" }] } as const;
-    expect(prepare(sources, tinyPlan({ seeds: [1] }))).toEqual(["red", "blue"]);
+    expect(prepare(sources, tinyPlan({ seeds: [1] }))).toEqual({ factionIds: ["red", "blue"], seats: new Map() });
     expect(() => prepare(sources, tinyPlan({ seeds: [1], variants: [broken] }))).toThrow(/Invalid package .*tiny-front/);
   });
 
@@ -158,7 +159,28 @@ describe("harness core on the tiny-front fixture", () => {
         ]
       }]
     });
-    expect(prepare(sources, plan)).toEqual(["red", "blue", "green"]);
+    expect(prepare(sources, plan).factionIds).toEqual(["red", "blue", "green"]);
+  });
+
+  it("plays a lineup as its own cell, and says in the summary who plays what", () => {
+    const personas = { op: "add", path: "/ai/personas", value: { calm: { name: "Calm", overrides: { computer: { caution: 5 }, offensive: { stallStep: 0 } } } } } as const;
+    const lineup = lineupVariant({ red: "calm", blue: "calm" });
+    expect(lineup.name).toBe("red-calm_blue-calm");
+    const plan = tinyPlan({
+      seeds: [1, 2],
+      variants: [
+        { ...lineup, patch: [personas, ...lineup.patch] },
+        // A variant's own patch may seat a persona too, where the scenario has seats.
+        { name: "seated", patch: [personas, { op: "add", path: "/ai/seats", value: {} }, { op: "add", path: "/ai/seats/red", value: "calm" }] },
+        { name: "unseated", patch: [personas] }
+      ]
+    });
+    const { lines, summary } = runInProcess(sources, plan);
+    expect(summary.cells.map((cell) => [cell.id, cell.seats])).toEqual([["baseline", undefined], ["red-calm_blue-calm", { blue: "calm", red: "calm" }], ["seated", { red: "calm" }], ["unseated", undefined]]);
+    expect(summary.cells.map((cell) => "seats" in cell)).toEqual([false, true, true, false]);
+    const games = (variant: string) => lines.filter((line) => line.variant === variant).map((line) => ({ ...line, variant: "" }));
+    expect(games("red-calm_blue-calm")).not.toEqual(games("baseline"));
+    expect(games("unseated")).toEqual(games("baseline"));
   });
 
   it("rejects a bad patch, a patched scenario that fails validation, and an unknown scenario", () => {

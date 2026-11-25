@@ -182,6 +182,8 @@ export interface AiProfile {
     readonly stallCap: number;
     readonly stallStep: number;
     readonly staging: number;
+    /** Cost per point of attack value sent into an attack on defended ground; absent means 0. */
+    readonly thrift?: number | undefined;
   };
   readonly air: {
     /** R11: the least chance that an attack's Ground Support applies after the air battle, for aircraft to fly it. */
@@ -198,8 +200,24 @@ export interface AiProfile {
     readonly upkeepHorizon: number;
     /** Turns of upkeep, at today's income, that Recruit orders leave in stock. */
     readonly upkeepTurns: number;
+    /** Aircraft recruited a turn, at most; absent means 1. */
+    readonly aircraftPerTurn?: number | undefined;
+    /** Units that can fight, on the map and in training, at which it recruits nothing more; absent means no limit. */
+    readonly maxUnits?: number | undefined;
+    /** Trucks recruited a turn, at most; absent means 1. */
+    readonly trucksPerTurn?: number | undefined;
+    /** What each unit type's worth is multiplied by; 0 is never recruited, and a type not listed counts in full. */
+    readonly typeWorth?: Readonly<Record<string, number>> | undefined;
+    /** The share of its worth a type loses as the force already holds it (`unitWorth.ts`); absent means 0. */
+    readonly variety?: number | undefined;
   };
-  readonly stakes: { readonly city: number; readonly objective: number; readonly territory: number };
+  readonly stakes: {
+    readonly city: number;
+    /** Per point of income that taking any ground of a rival's territory stops; absent means 0. */
+    readonly income?: number | undefined;
+    readonly objective: number;
+    readonly territory: number;
+  };
   /**
    * `steps` and `perStep` raise the stakes of a rival's territories as it nears victory, so the
    * faction attacks the leader. `critical` raises, by stake times (1 + critical), a territory whose
@@ -225,6 +243,8 @@ export interface AiProfile {
 
 /** E7, H6: computer players' data. */
 export interface AiRules {
-  /** E7: one profile per faction, keyed by faction id. */
+  /** E7: the profile each faction plays, keyed by faction id: its own, with its seat's persona merged over it at load. */
   readonly profiles: Readonly<Record<FactionId, AiProfile>>;
+  /** The persona each faction plays, for the simulation harness to report; absent where none is given. */
+  readonly seats?: Readonly<Record<FactionId, string>>;
 }

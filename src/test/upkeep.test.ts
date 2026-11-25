@@ -15,11 +15,13 @@ import { validateOrder } from "../main/engine/validation";
 import { isPublicOrder, ordersFor, outcomesFor } from "../main/engine/visibility";
 import { describeSystemOutcome } from "../main/presentation/systemText";
 import { faction, spainWithAir } from "./support";
-import { pinned } from "./pinned";
+import { pinned, withoutFundsUpkeep } from "./pinned";
 
 /** D1: upkeep, shortage and Disband. */
 
 const scenario = pinned(spainWithAir());
+/** Manpower alone has an upkeep, so Funds are a resource that no upkeep takes. */
+const manpowerOnly = withoutFundsUpkeep(scenario);
 const republic = faction("republic");
 const north = faction("north");
 const manpower = "manpower" as ResourceId;
@@ -49,6 +51,13 @@ describe("the bill", () => {
     const [first] = own(initial, "militia-column");
     expect(billOf({ ...initial, units: { ...initial.units, [first!.id]: { ...first!, strength: 1 } } })).toBe(expected);
     expect(typeOf("general").upkeep).toEqual({});
+  });
+
+  it("costs every unit but a general a quarter Fund a turn", () => {
+    const paying = scenario.unitTypes.filter((type) => type.recruit !== undefined);
+    expect(paying.length).toBeGreaterThan(0);
+    for (const type of paying) expect(type.upkeep["funds" as ResourceId], type.id).toBe(0.25);
+    expect(upkeepBill(upkeepLines(scenario, initial, republic, []))["funds" as ResourceId]).toBe(own(initial).filter((unit) => typeOf(scenario.index.units.get(unit.id)?.type ?? "general").recruit !== undefined).length * 250);
   });
 
   it("leaves out planned Disbands and adds units finishing training, one-turn recruits included", () => {
@@ -84,7 +93,9 @@ describe("the projection", () => {
     expect(at({ factionId: republic, kind: "replenish", unitId: "nobody" as never })).toBe(base);
     expect(at({ factionId: republic, kind: "build", project: { buildingId: "nothing" as never, kind: "building" }, subTerritoryId: "madrid" as never })).toBe(base);
     const debt: GameState = { ...withStock(400), treasuries: { [republic]: { ["funds" as ResourceId]: -99, [manpower]: 400 } } };
-    expect(upkeepShortfall(scenario, debt, republic, [])).toEqual({});
+    expect(upkeepShortfall(manpowerOnly, debt, republic, [])).toEqual({});
+    // Funds now have an upkeep too, so a Funds debt is a shortage of its own.
+    expect(upkeepShortfall(scenario, debt, republic, [])["funds" as ResourceId]).toBeGreaterThan(0);
     const free: Scenario = Object.fromEntries(Object.entries(scenario).filter(([key]) => key !== "upkeep")) as unknown as Scenario;
     expect(upkeepShortfall(free, broke(), republic, [])).toEqual({});
     expect(upkeepLines(free, broke(), republic, [])).toEqual([]);
@@ -144,6 +155,14 @@ describe("a shortage", () => {
     expect(text({ ...event, short: {} })).toMatch(/in upkeep\.$/u);
   });
 
+  it("sends men home for Funds alone, while the Manpower is paid", () => {
+    const state: GameState = { ...broke(400), treasuries: { ...initial.treasuries, [republic]: { ["funds" as ResourceId]: 0, [manpower]: 400 } } };
+    const event = ofKind(charge(state).events, "upkeep").find((entry) => entry.factionId === republic)!;
+    expect(event.short["funds" as ResourceId]).toBeGreaterThan(0);
+    expect(event.short[manpower] ?? 0).toBe(0);
+    expect(event.left.length).toBeGreaterThan(0);
+  });
+
   it("rounds to the exact total, ties by id, and passes nothing on from a capped unit", () => {
     const three = own(initial, "infantry-regiment").slice(0, 3).map((unit) => ({ ...unit, strength: scenario.index.units.get(unit.id)!.fullStrength }));
     const left = menLeaving(scenario, {}, rules, three, manpower, 10);
@@ -153,7 +172,7 @@ describe("a shortage", () => {
     const low = { ...three[0]!, strength: Math.ceil(scenario.index.units.get(three[0]!.id)!.fullStrength / 2) };
     expect(menLeaving(scenario, {}, rules, [low], manpower, 100)).toEqual([]);
     expect(menLeaving(scenario, {}, rules, [], manpower, 100)).toEqual([]);
-    expect(menLeaving(scenario, {}, rules, three, "funds" as ResourceId, 9000)).toEqual([]);
+    expect(menLeaving(manpowerOnly, {}, rules, three, "funds" as ResourceId, 9000)).toEqual([]);
   });
 
   it("leaves an older debt in the carry, and charges nobody without a treasury", () => {

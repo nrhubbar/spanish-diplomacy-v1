@@ -1,6 +1,7 @@
 import { type ModuleRegistry, selectModules } from "../../engine/modules";
 import type {
   AiProfile,
+  AiRules,
   CityDefinition,
   CityId,
   ConnectionDefinition,
@@ -22,6 +23,7 @@ import type {
 import type { ScenarioDocument } from "../schema/scenarioSchema";
 import { citations } from "./convert";
 import { indexSystems, indexUnitTypes } from "./indexModular";
+import { seatProfile } from "./personas";
 
 /** Indexes a validated package. */
 export function indexScenario(document: ScenarioDocument, modules: ModuleRegistry): Scenario {
@@ -94,7 +96,7 @@ export function indexScenario(document: ScenarioDocument, modules: ModuleRegistr
 
   return {
     ...parts.scenario,
-    ai: { profiles: aiProfiles(document.ai.profiles) },
+    ai: aiRules(document.ai),
     cities,
     combat: document.combat,
     connections,
@@ -123,7 +125,11 @@ export function indexScenario(document: ScenarioDocument, modules: ModuleRegistr
   };
 }
 
-/** E7: the profiles as the engine reads them; a profile without a Build budget leaves the key out. */
-function aiProfiles(profiles: ScenarioDocument["ai"]["profiles"]): Readonly<Record<FactionId, AiProfile>> {
-  return Object.fromEntries(Object.entries(profiles).map(([id, { builds, ...weights }]) => [id, builds === undefined ? weights : { ...weights, builds }]));
+/** E7: the profiles as the engine reads them, each seat's persona merged in; a profile without a Build budget leaves the key out. */
+function aiRules(ai: ScenarioDocument["ai"]): AiRules {
+  const profiles = Object.fromEntries(Object.keys(ai.profiles).map((id) => {
+    const { builds, ...weights } = seatProfile(ai, id) as AiProfile;
+    return [id, builds === undefined ? weights : { ...weights, builds }];
+  }));
+  return { profiles, ...(Object.keys(ai.seats ?? {}).length === 0 ? {} : { seats: ai.seats as Readonly<Record<FactionId, string>> }) };
 }

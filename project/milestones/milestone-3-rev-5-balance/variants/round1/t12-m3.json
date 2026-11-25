@@ -1,0 +1,41 @@
+{
+ "name": "t12-m3",
+ "description": "12 territories to win; Funds (25, 25, 35)",
+ "patch": [
+  {
+   "op": "replace",
+   "path": "/victory/territoryShare",
+   "value": 0.66
+  },
+  {
+   "op": "test",
+   "path": "/factions/0/id",
+   "value": "republic"
+  },
+  {
+   "op": "replace",
+   "path": "/factions/0/startingStock/funds",
+   "value": 25
+  },
+  {
+   "op": "test",
+   "path": "/factions/1/id",
+   "value": "north"
+  },
+  {
+   "op": "replace",
+   "path": "/factions/1/startingStock/funds",
+   "value": 25
+  },
+  {
+   "op": "test",
+   "path": "/factions/2/id",
+   "value": "south"
+  },
+  {
+   "op": "replace",
+   "path": "/factions/2/startingStock/funds",
+   "value": 35
+  }
+ ]
+}

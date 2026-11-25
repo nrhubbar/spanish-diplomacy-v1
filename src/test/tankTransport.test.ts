@@ -106,9 +106,9 @@ describe("the army summary", () => {
 });
 
 describe("the Rev 3 rules data", () => {
-  it("starts Madrid and Barcelona fortified, with no Popular Resistance", () => {
+  it("starts with no fortifications anywhere, and no Popular Resistance", () => {
     const sites = initialGameState(scenario).subTerritories;
-    expect(Object.entries(sites).filter(([, site]) => site.buildings.includes("fortifications" as never)).map(([id]) => id).sort()).toEqual(["barcelona", "madrid"]);
+    expect(Object.entries(sites).filter(([, site]) => site.buildings.includes("fortifications" as never)).map(([id]) => id)).toEqual([]);
     expect(scenario.d20.factionModifiers).toEqual([]);
     expect(scenario.d20.modifiers.barricades).toBe(2);
     expect(scenario.buildings.find((building) => building.id === "fortifications")?.effects).toEqual([{ kind: "defence-roll", roll: 2 }]);

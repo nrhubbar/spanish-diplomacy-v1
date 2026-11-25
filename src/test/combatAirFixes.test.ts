@@ -132,6 +132,22 @@ describe("B1, D27.1: forces that cannot attack alone never attack", () => {
     expect(ofKind(result, "bounced-move").map((outcome) => outcome.order.unitId).sort()).toEqual(["art1", "art2"]);
   });
 
+  it("lets the leading army into empty ground, and reports its move, when the only other entrant cannot attack alone", () => {
+    const { scenario: field, state } = board([
+      { faction: "north", id: "inf1", territory: "castilla-y-leon", type: "infantry-regiment" },
+      { faction: "republic", id: "art1", territory: "castilla-la-mancha", type: "artillery-group" }
+    ]);
+    // Madrid is the South's and empty: for the two entrants it is nobody's to defend.
+    const start = holdWhole(field, state, territory("madrid"), faction("south"));
+    const result = resolveTurn(field, start, submit(move("north", "inf1", "castilla-y-leon", "madrid"), move("republic", "art1", "castilla-la-mancha", "madrid")), 7);
+    expect(battles(result)).toEqual([]);
+    expect(ofKind(result, "successful-move").map((outcome) => outcome.order.unitId)).toEqual(["inf1"]);
+    expect(ofKind(result, "bounced-move").map((outcome) => outcome.order.unitId)).toEqual(["art1"]);
+    expect(result.finalState.units[unit("inf1")]?.territoryId).toBe("madrid");
+    expect(result.finalState.control[territory("madrid")]).toEqual({ factionId: "north", kind: "controlled" });
+    expect(result.finalState.units[unit("art1")]?.territoryId).toBe("castilla-la-mancha");
+  });
+
   it("turns back a lone general, a truck or anti-air battery attacking defended ground, without a battle", () => {
     for (const type of ["truck-column", "anti-air-battery"]) {
       const { scenario: field, state } = board([
@@ -199,7 +215,7 @@ describe("B2, D27.4: the top of the fatigue track", () => {
 describe("B3: a raid cut falls on the faction raided", () => {
   it("cuts the raided faction only while it holds the ground, never the raider who took it", () => {
     const cut: GameState = { ...opening, raidCuts: [{ factionId: faction("north"), subTerritoryId: "valladolid" as SubTerritoryId, turnNumber: 1 }] };
-    expect(raidIncomeDelta({ factionId: faction("north"), income: {}, scenario, state: cut })).toEqual({ funds: -1.5, manpower: -1.2 });
+    expect(raidIncomeDelta({ factionId: faction("north"), income: {}, scenario, state: cut })).toEqual({ funds: -2.25, manpower: -1.2 });
     const taken = holdWhole(scenario, cut, territory("castilla-y-leon"), faction("republic"));
     expect(raidIncomeDelta({ factionId: faction("republic"), income: {}, scenario, state: taken })).toEqual({});
     expect(raidIncomeDelta({ factionId: faction("north"), income: {}, scenario, state: taken })).toEqual({});

@@ -6,13 +6,17 @@ import { afterLinkWork, linkWorkCandidate, linkWorkGain } from "../main/ai/order
 import { legalMoves, withRoutes } from "../main/ai/orders/move";
 import type { PlanningContext } from "../main/ai/orders/planner";
 import { planRecruits } from "../main/ai/orders/recruit";
+import { assess } from "../main/ai/assessment";
+import { movePlanningView } from "../main/ai/planningView";
 import { motorPays, unitRoutes } from "../main/ai/reach";
+import { marginalGain, recruitBoard, siteBattles } from "../main/ai/unitWorth";
 import { moveRoutes } from "../main/engine/movement/routes";
 import { linkBetween, linkKey, linkModifiers, linksOf, railOn, territoryOfSub } from "../main/engine/network/links";
 import { seededRandom } from "../main/engine/random";
 import { raisedUnitId } from "../main/engine/recruitment/rules";
 import { initialGameState } from "../main/engine/resolution";
-import { type FactionId, type GameState, isMoveOrder, type LinkModifier, type LinkWork, type MoveOrder, type Order, type Resources, type Scenario } from "../main/engine/types";
+import { type FactionId, type GameState, isMoveOrder, type LinkModifier, type LinkWork, type MoveOrder, type Order, type Resources, type Scenario, type TurnOutcome, type UnitId } from "../main/engine/types";
+import { isTruckType } from "../main/engine/units/fighting";
 import { holdWhole } from "./air/holdWhole";
 import { faction, move, spainWithAir, territory, unit, withUnits } from "./support";
 import { pinned } from "./pinned";
@@ -117,28 +121,85 @@ describe("March, Motor and the foot rule (R5)", () => {
     expect(motorPays({ ...scenario, links: [] }, tracks, republic, territory("madrid"))).toBe(true);
   });
 
-  it("recruits trucks only where Motor pays", () => {
-    const rich = (state: GameState): GameState => ({ ...state, treasuries: { ...state.treasuries, [republic]: { funds: 200, manpower: 50 } as Resources } });
-    const held = rich(republicBut(withUnits(scenario, [["rep-wad-ras-1", "republic", "madrid"], ["rep-covadonga-4", "republic", "madrid"], ["north-argel-27", "north", "valencia"]]), { valencia: "north" }));
-    const trucks = (state: GameState) => planRecruits(context(state)).filter((order) => order.unitTypeId === "truck-column");
-    expect(trucks(held).length).toBeGreaterThan(0);
-    const tracks: GameState = { ...held, builtLinks: Object.fromEntries(scenario.links.map((link) => [linkKey(link.a, link.b), [{ kind: "road", level: "track" }] as const])) };
-    expect(trucks(tracks)).toEqual([]);
+  // Only trucks can be recruited, and the North stands in Valencia, two territories from Madrid by road.
+  const trucksOnly: Scenario = { ...scenario, unitTypes: scenario.unitTypes.filter(isTruckType) };
+  const foot = "infantry-regiment";
+  const trainees = (...types: readonly string[]): GameState["training"] => types.map((typeId, index) => ({ factionId: republic, paid: {}, paused: false, territoryId: territory("madrid"), turnsLeft: 2, typeId: typeId as never, unitId: unit(`trainee-${String(index)}`) }));
+  const board = (training: GameState["training"], standing: readonly (readonly [string, string])[] = [], enemyIn = "valencia"): GameState => {
+    const held = republicBut(withUnits(scenario, [["north-argel-27", "north", enemyIn]]), { [enemyIn]: "north" });
+    const stood = standing.reduce((state, [type, at], index) => raise(state, "republic", type, at, index + 1), held);
+    return { ...stood, training, treasuries: { ...stood.treasuries, [republic]: { funds: 60, manpower: 50 } as Resources } };
+  };
+  const trucksIn = (state: GameState, memory: PlanningContext["memory"] = {}, target: Scenario = trucksOnly, planned: readonly Order[] = []) =>
+    planRecruits({ ...context(state, republic, planned, target), memory }).filter((order) => order.unitTypeId === "truck-column");
+  const tracked = (state: GameState): GameState => ({ ...state, builtLinks: Object.fromEntries(scenario.links.map((link) => [linkKey(link.a, link.b), [{ kind: "road", level: "track" }] as const])) });
+
+  it("recruits a truck for foot that a Motor road takes to a battle sooner, one a turn", () => {
+    const ready = board(trainees(foot, foot));
+    const standing = board([], [[foot, "madrid"], [foot, "madrid"]]);
+    expect(trucksIn(standing).map((order) => order.territoryId)).toEqual(["madrid"]);
+    expect(trucksIn(ready).map((order) => order.territoryId)).toEqual(["madrid"]);
+    expect(trucksIn(board(trainees(foot, foot, foot, foot)))).toHaveLength(1);
+    // No Motor road, no trucks; without links every two steps are Motor.
+    expect(trucksIn(tracked(ready))).toEqual([]);
+    expect(trucksIn(tracked(ready), {}, { ...trucksOnly, links: [] })).toHaveLength(1);
+    // With nobody to fight, or the battle next door, the foot gets there as soon on its own.
+    const quiet = Object.fromEntries(Object.entries(ready.units).filter(([, entry]) => entry.factionId === republic));
+    expect(trucksIn({ ...ready, units: quiet })).toEqual([]);
+    expect(trucksIn(board(trainees(foot, foot), [], "castilla-la-mancha"))).toEqual([]);
+    // Foot this turn's orders take away has no use for a truck that trains meanwhile; foot they bring has.
+    const marchers = [1, 2].map((serial) => raisedUnitId(republic, foot as never, serial));
+    const going = (from: string, to: string) => marchers.map((id) => move("republic", id, from, to));
+    expect(trucksIn(standing, {}, trucksOnly, going("madrid", "castilla-y-leon")).map((order) => order.territoryId)).not.toContain("madrid");
+    const coming = board([], [[foot, "castilla-la-mancha"], [foot, "castilla-la-mancha"]]);
+    expect(trucksIn(coming)).toEqual([]);
+    expect(trucksIn(coming, {}, trucksOnly, going("castilla-la-mancha", "madrid")).map((order) => order.territoryId)).toEqual(["madrid"]);
   });
 
-  it("recruits a truck only for two foot at the site that nothing there carries", () => {
-    const board = (types: readonly string[], training: GameState["training"] = []): GameState => {
-      const held = republicBut(withUnits(scenario, [["north-argel-27", "north", "valencia"]]), { valencia: "north" });
-      const stood = types.reduce((state, type, index) => raise(state, "republic", type, "madrid", index + 1), held);
-      return { ...stood, training, treasuries: { ...stood.treasuries, [republic]: { funds: 6, manpower: 50 } as Resources } };
+  it("values a truck over the horizon it serves, and only by foot it carries", () => {
+    const worth = (state: GameState, on: Scenario = scenario) => {
+      const read = recruitBoard(on, state, assess(on, movePlanningView(on, state, republic), republic));
+      return marginalGain(read, on.unitTypes.find(isTruckType)!, siteBattles(read, territory("madrid"), []));
     };
-    const trucks = (state: GameState) => planRecruits(context(state)).filter((order) => order.unitTypeId === "truck-column" && order.territoryId === "madrid").length;
-    const trainee = (typeId: string): GameState["training"] => [{ factionId: republic, paid: {}, paused: false, territoryId: territory("madrid"), turnsLeft: 2, typeId: typeId as never, unitId: unit("trainee") }];
-    const foot = "infantry-regiment";
-    expect(trucks(board([foot, foot]))).toBe(1);
-    expect([board([foot]), board([foot, "cavalry-regiment"]), board([foot, foot, "truck-column"]), board([foot, foot, "tank-company"])].map(trucks)).toEqual([0, 0, 0, 0]);
-    expect(trucks(board([foot, foot, foot, foot, "truck-column"]))).toBe(1);
-    expect([trucks(board([foot], trainee(foot))), trucks(board([foot, foot], trainee("truck-column")))]).toEqual([1, 0]);
+    const standing = board([], [[foot, "madrid"], [foot, "madrid"]]);
+    const horizon = (turns: number): Scenario => ({ ...scenario, ai: { profiles: Object.fromEntries(Object.entries(scenario.ai.profiles).map(([id, profile]) => [id, { ...profile, recruits: { ...profile.recruits, upkeepHorizon: turns } }])) } });
+    // It trains in a turn, so it serves one turn less than the horizon; foot still training uses it later.
+    expect(worth(standing)).toBeGreaterThan(0);
+    expect(worth(standing, horizon(11)) / worth(standing, horizon(6))).toBeCloseTo(2);
+    expect(worth(standing, horizon(1))).toBe(0);
+    expect(worth(board(trainees(foot, foot))) / worth(standing)).toBeCloseTo(4 / 5);
+    expect(worth(board([], [[foot, "madrid"]]))).toBe(0);
+  });
+
+  it("recruits a truck only for foot enough to fill it that nothing there carries", () => {
+    const counts = [trainees(foot), trainees(foot, "cavalry-regiment"), trainees(foot, foot, "truck-column"), trainees(foot, foot, "tank-company"), trainees(foot, foot, foot, foot, "truck-column")];
+    expect(counts.map((training) => trucksIn(board(training)).length)).toEqual([0, 0, 0, 0, 1]);
+  });
+
+  it("recruits no truck while one is idle", () => {
+    const ready = trainees(foot, foot);
+    // A truck with no foot beside it, and one whose foot no Motor road leaves.
+    const loaded = (at: string) => board(ready, [["truck-column", at], [foot, at], [foot, at]]);
+    expect(trucksIn(board(ready, [["truck-column", "aragon"]]))).toEqual([]);
+    expect(motorPays(scenario, loaded("murcia"), republic, territory("murcia"))).toBe(false);
+    expect(trucksIn(loaded("murcia"))).toEqual([]);
+    const full = loaded("aragon");
+    expect(trucksIn(full)).toHaveLength(1);
+    // Last turn it carried foot two territories on, or it did not.
+    const [truck, rider] = [raisedUnitId(republic, "truck-column" as never, 1), raisedUnitId(republic, foot as never, 2)];
+    const trip = (unitId: UnitId, from = "extremadura", to = "aragon"): TurnOutcome => ({ kind: "successful-move", order: { factionId: republic, from: territory(from), kind: "move", to: territory(to), unitId } });
+    const after = (...previousOutcomes: readonly TurnOutcome[]) => trucksIn(full, { previousOutcomes });
+    expect(after(trip(truck), trip(rider))).toHaveLength(1);
+    expect(after()).toEqual([]);
+    expect(after(trip(truck))).toEqual([]);
+    expect(after(trip(truck), trip(rider, "murcia"))).toEqual([]);
+    expect(after(trip(truck, "catalunya"), trip(rider, "catalunya"))).toEqual([]);
+    // A truck that joins an attack carries its foot there too; another faction's trips carry nothing.
+    const attack = (attackerFactionId: FactionId, kind = "assault") => ({ attacker: { armies: [truck, rider].map((unitId) => ({ from: territory("extremadura"), unitId })) }, attackerFactionId, kind: "battle", site: { kind, territoryId: territory("aragon") } }) as unknown as TurnOutcome;
+    expect([after(attack(republic)), after(attack(faction("north"))), after(attack(republic, "standing"))].map((orders) => orders.length)).toEqual([1, 0, 0]);
+    expect(after(...[truck, rider].map((unitId): TurnOutcome => ({ kind: "reinforcement-arrived", order: { factionId: faction("north"), from: territory("extremadura"), kind: "move", to: territory("aragon"), unitId } })))).toEqual([]);
+    // One that finished training last turn had no trip to make.
+    expect(after({ factionId: republic, kind: "training-completed", territoryId: territory("aragon"), typeId: "truck-column" as never, unitId: truck })).toHaveLength(1);
   });
 });
 

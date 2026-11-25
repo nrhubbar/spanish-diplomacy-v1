@@ -54,7 +54,7 @@ describe("the resource chips (X1, EB-12)", () => {
     expect(rows.at(-1)?.textContent).toBe(`Next turn${String(next)}`);
     expect(within(table).getByRole("rowheader", { name: /^Builds under way/u }).textContent).toBe("Builds under way none");
     expect(within(table).getByRole("rowheader", { name: /^Replenish/u }).textContent).toBe("Replenish none planned");
-    expect(within(table).getByRole("rowheader", { name: /^Upkeep/u }).textContent).toBe("Upkeep none");
+    expect(within(table).getByRole("rowheader", { name: /^Upkeep/u }).textContent).toBe("Upkeep 17 units");
     // A contested territory's loss is on its own row, which pays nothing.
     const contested = rows.find((row) => row.getAttribute("data-contested") === "true");
     expect(contested?.querySelector(".ledger-loss")?.textContent).toMatch(/^ \u2212[\d.]+ contested$/u);
@@ -115,8 +115,9 @@ describe("the resource chips (X1, EB-12)", () => {
     expect(heads[0]).toBe("Madrid");
     expect(heads).toContain("Raids cut for a turn");
     expect(heads.some((head) => /^Andaluc\u00eda \d+\/\d+ held$/u.test(head))).toBe(true);
-    const values = within(table).getAllByRole("row").slice(0, -1).map((row) => Number(row.querySelector(".ledger-value")?.textContent.replace("\u2212", "-")));
-    expect(`+${String(values.reduce((sum, value) => sum + value, 0))}`).toBe(next);
+    const values = within(table).getAllByRole("row").slice(0, -1).filter((row) => row.getAttribute("data-kind") !== "line").map((row) => Number(row.querySelector(".ledger-value")?.textContent.replace("\u2212", "-")));
+    const sum = values.reduce((total, value) => total + value, 0);
+    expect(sum < 0 ? `\u2212${String(Math.abs(sum))}` : `+${String(sum)}`).toBe(next);
   });
 
   it("renders nothing without a viewer, without the economy, or without the viewer's treasury", () => {

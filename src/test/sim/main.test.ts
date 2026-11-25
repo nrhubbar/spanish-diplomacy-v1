@@ -54,13 +54,28 @@ describe("sim command line", () => {
       [["--games", "1"], {}, /Name a scenario with --scenario; the playable ones are: .*tiny-front/],
       [["--scenario", "tiny-front", "--variant", "missing.json"], {}, /missing.json: ENOENT/],
       [["--scenario", "tiny-front", "--variant", "bad.json"], { "bad.json": "{" }, /bad.json/],
-      [["--scenario", "tiny-front", "--variant", "a.json"], { "a.json": "[{\"op\":\"replace\",\"path\":\"/nope\",\"value\":1}]" }, /nope/]
+      [["--scenario", "tiny-front", "--variant", "a.json"], { "a.json": "[{\"op\":\"replace\",\"path\":\"/nope\",\"value\":1}]" }, /nope/],
+      [["--scenario", "tiny-front", "--lineup", "red"], {}, /is not a seat/],
+      [["--scenario", "tiny-front", "--lineup", "red=ghost"], {}, /unknown persona "ghost"/],
+      [["--scenario", "spanish-civil-war-1936", "--lineup", "green=builder"], {}, /unknown faction "green"/],
+      [["--scenario", "spanish-civil-war-1936", "--lineup", "north=rush", "--lineup", "north=rush"], {}, /"north-rush" is used twice/]
     ];
     for (const [argv, files, message] of cases) {
       const run = io(files);
       expect(await runCli(argv, run.io)).toBe(2);
       expect(run.err.join("")).toMatch(message);
     }
+  });
+
+  it("plays the shipped personas by lineup, and by a variant's own seats", async () => {
+    const out = tempOut();
+    const files = { "v.json": JSON.stringify({ name: "v", patch: [{ op: "add", path: "/ai/seats/south", value: "denier" }] }) };
+    const argv = ["--scenario", "spanish-civil-war-1936", "--games", "1", "--turns", "1", "--lineup", "republic=no-build,north=rush", "--variant", "v.json", "--out", out, "--run", "r"];
+    expect(await runCli(argv, io(files).io)).toBe(0);
+    const summary = JSON.parse(readFileSync(join(out, "r", "summary.json"), "utf8")) as Summary;
+    expect(summary.cells.map((cell) => [cell.id, cell.seats])).toEqual([
+      ["baseline", undefined], ["v", { south: "denier" }], ["republic-no-build_north-rush", { north: "rush", republic: "no-build" }]
+    ]);
   });
 
   it("reports a game that fails on a worker thread instead of losing it", () => {

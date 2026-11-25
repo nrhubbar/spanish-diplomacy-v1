@@ -107,6 +107,11 @@
     padding: 0.15rem 0.55rem;
     font-size: 0.8rem;
   }
+
+  // "10k" and "9k" take the same room, so an order never rewraps the header and moves the pane.
+  .resource-balance {
+    min-width: 3ch;
+  }
 }
 
 // X7: the Build tab's sub-territory cards.

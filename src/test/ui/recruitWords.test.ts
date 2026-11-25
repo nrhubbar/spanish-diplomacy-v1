@@ -45,8 +45,8 @@ describe("the Recruit tab's words (X4, Q-UX-05)", () => {
     const cost = resourcesLabel(scenario, infantry.recruit!.cost, ` ${dot} `);
     const terms = recruitTerms(scenario, infantry);
     expect(terms.map(({ kind }) => kind)).toEqual(["cost", "men", "training", "upkeep"]);
-    expect(termsLine(terms, "detail")).toBe(`${cost} ${dot} ${menShort(700)} ${dot} trains in ${turnsLabel(2)} ${dot} upkeep 0.3k Manpower a turn`);
-    expect(termsLine(terms, "meta")).toBe(`${cost} ${dot} ${menShort(700)} ${dot} ${turnsLabel(2)} ${dot} upkeep 0.3k Manpower`);
+    expect(termsLine(terms, "detail")).toBe(`${cost} ${dot} ${menShort(700)} ${dot} trains in ${turnsLabel(2)} ${dot} upkeep 0.3 Funds and 0.3k Manpower a turn`);
+    expect(termsLine(terms, "meta")).toBe(`${cost} ${dot} ${menShort(700)} ${dot} ${turnsLabel(2)} ${dot} upkeep 0.3 Funds and 0.3k Manpower`);
     // A type the scenario does not recruit costs nothing and trains no one.
     const notRecruited = { ...infantry };
     delete (notRecruited as { recruit?: unknown }).recruit;

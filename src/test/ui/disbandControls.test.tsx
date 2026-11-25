@@ -58,7 +58,7 @@ describe("Disband for the selected units (D1, N1)", () => {
     const menu = screen.getByRole("group", { name: "Order for 3 selected units" });
     expect(document.activeElement).toBe(within(menu).getAllByRole("button")[0]);
     await user.click(within(menu).getByRole("button", { name: "Disband" }));
-    expect(screen.getByText(/^Disband 3 units\? Saves [\d.]+k Manpower a turn together\.$/u)).toBeVisible();
+    expect(screen.getByText(/^Disband 3 units\? Saves [\d.]+ Funds and [\d.]+k Manpower a turn together\.$/u)).toBeVisible();
     expect(document.activeElement).toBe(screen.getByRole("button", { name: "Keep" }));
     await user.click(screen.getByRole("button", { name: "Keep" }));
     expect(document.activeElement).toBe(screen.getByRole("button", { name: "Disband" }));
@@ -122,7 +122,7 @@ describe("Disband for the selected units (D1, N1)", () => {
   it("is the same menu in the selection bar, which keeps the focus", async () => {
     const { draft, user } = renderLive((session) => <SelectionBar scenario={scenario} session={session} />, [infantry]);
     await user.click(screen.getByRole("button", { name: "Disband" }));
-    expect(screen.getByText(/Saves [\d.]+k Manpower a turn\.$/u).textContent).toContain(`Disband ${unitName(scenario, infantry.id)}?`);
+    expect(screen.getByText(/Saves [\d.]+ Funds and [\d.]+k Manpower a turn\.$/u).textContent).toContain(`Disband ${unitName(scenario, infantry.id)}?`);
     await user.click(screen.getByRole("button", { name: "Disband" }));
     expect(draft().disbands).toHaveLength(1);
     expect(draft().selectedUnitIds).toEqual([]);
@@ -158,7 +158,7 @@ describe("the shortage warning (D1)", () => {
   it("shows only while next turn's stock falls short", () => {
     const broke: GameState = { ...initial, subTerritories: {}, treasuries: { ...initial.treasuries, [republic]: {} } };
     render(<ShortageWarning scenario={scenario} session={planning(broke)} />);
-    expect(screen.getByRole("status").textContent).toMatch(/^Manpower will be [\d.]+k short next turnRecruiting and Replenish are off\./u);
+    expect(screen.getByRole("status").textContent).toMatch(/^Funds will be [\d.]+ short next turn\. Manpower will be [\d.]+k short next turnRecruiting and Replenish are off\./u);
     cleanup();
     render(<ShortageWarning scenario={scenario} session={planning()} />);
     expect(screen.queryByRole("status")).toBeNull();

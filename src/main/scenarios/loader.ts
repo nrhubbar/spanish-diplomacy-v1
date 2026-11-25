@@ -8,6 +8,7 @@ import { indexScenario } from "./loader/indexScenario";
 import { createIssues } from "./loader/issues";
 import { checkMap, indexMap } from "./loader/map";
 import { checkModular } from "./loader/modularChecks";
+import { checkPersonas } from "./loader/personas";
 import { checkSystems } from "./loader/systemChecks";
 import { mapSchema } from "./schema/mapSchema";
 import { type ScenarioDocument, scenarioSchema } from "./schema/scenarioSchema";
@@ -130,6 +131,7 @@ function checkScenario(document: ScenarioDocument, modules: ModuleRegistry): rea
   const issues = createIssues();
   checkCore(document, issues);
   checkModular(document, issues, modules);
+  checkPersonas(document, issues);
   checkSystems(document, issues);
   return issues.list;
 }
